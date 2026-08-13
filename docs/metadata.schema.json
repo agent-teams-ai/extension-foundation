@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "type", "status", "owner", "summary"],
+  "properties": {
+    "id": {"type": "string"},
+    "type": {"type": "string"},
+    "status": {"type": "string"},
+    "owner": {"type": "string"},
+    "summary": {"type": "string"},
+    "approved_by": {"type": "string"},
+    "accepted_at": {"type": "string"},
+    "resolved_by": {"type": "string"},
+    "supersedes": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "superseded_by": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "related": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "blocked_by": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}
+  }
+}

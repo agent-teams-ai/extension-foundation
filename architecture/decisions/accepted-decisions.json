@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "algorithm": "sha256",
+  "decisions": [
+    {
+      "id": "ADR-0001",
+      "path": "docs/decisions/0001-product-neutral-extension-foundation-boundary.md",
+      "immutableDigest": "sha256:95ed6f3a5abf230eb674ae51683a8cb071c9105ce6b44fe5e29767b277e8e473"
+    },
+    {
+      "id": "ADR-0002",
+      "path": "docs/decisions/0002-oci-oras-and-cosign-distribution-baseline.md",
+      "immutableDigest": "sha256:8614a39fd8a7fec87bbbe6be398934b379ea85e031fb758257bd888cfc48f3bf"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "name": "@agent-teams/extension-foundation-repository",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Product-neutral extension contracts, OCI distribution, lifecycle primitives, and conformance tooling for Agent Teams products.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "packageManager": "pnpm@11.18.0",
+  "engines": {
+    "node": ">=24.18.0 <25",
+    "pnpm": ">=11.17.0 <12"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agent-teams-ai/extension-foundation.git"
+  },
+  "scripts": {
+    "check": "pnpm foundation:check && pnpm docs:check",
+    "check:changed": "agent-teams-foundation agent-workflow changed --consumer .",
+    "check:fast": "pnpm foundation:check && pnpm docs:check",
+    "docs:check": "markdownlint-cli2 && cspell --config .cspell.json --no-progress",
+    "docs:find": "agent-teams-foundation docs find --consumer . --profile architecture/foundation/compatibility/document-catalog-0.15.yaml",
+    "foundation:assert-dev-only": "agent-teams-foundation assert-dev-only",
+    "foundation:assert-registry": "agent-teams-foundation assert-registry",
+    "foundation:attach": "agent-teams-foundation attach",
+    "foundation:check": "agent-teams-foundation check && pnpm foundation:assert-dev-only && pnpm foundation:assert-registry",
+    "foundation:detach": "agent-teams-foundation detach",
+    "foundation:status": "agent-teams-foundation status"
+  },
+  "devDependencies": {
+    "@agent-teams/engineering-foundation": "0.15.0",
+    "cspell": "catalog:",
+    "markdownlint-cli2": "catalog:"
+  }
+}

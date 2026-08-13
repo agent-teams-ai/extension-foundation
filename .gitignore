@@ -39,7 +39,12 @@ build/Release
 
 # Dependency directories
 node_modules/
+.agent-teams-local/
+.foundation-*.lock
 jspm_packages/
+
+# Canonical agent-instruction projection; a user-global ignore may hide it.
+!CLAUDE.md
 
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
