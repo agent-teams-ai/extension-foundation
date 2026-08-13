@@ -14,7 +14,8 @@ related:
 
 - Repository: `agent-teams-ai/engineering-foundation`
 - Pull request: `#99`
-- Exact head: `6a2703d267032a0a19847e6b80ad96bdeeddf584`
+- Exact merged head: `bb474e013c23fe4923fddf0ca946b51aafd3152d`
+- Merge commit: `a0302673c0ba5d2dd2e38f9e32942f0aea80772f`
 - Published registry baseline retained by this repository: `0.15.0`
 
 ## Evidence
