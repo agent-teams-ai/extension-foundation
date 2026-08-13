@@ -69,7 +69,7 @@ test("document writer previews, creates, and reports healthy recovery state", as
     assert.equal(doctor.outcome, "success");
     assert.equal(doctor.result.transactionState, "none");
     const recover = run(fixture, "docs", "recover");
-    assert.equal(recover.result.writeState, "no-op");
+    assert.equal(recover.result.writeState, "unchanged");
   } finally {
     await rm(fixture, { recursive: true, force: true });
   }
