@@ -1,0 +1,8 @@
+version: 1
+owners:
+  architecture:
+    kind: architecture
+  architecture/security:
+    kind: architecture
+  architecture/tooling:
+    kind: architecture

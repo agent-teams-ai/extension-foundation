@@ -1,0 +1,20 @@
+schemaVersion: 1
+instructions:
+  canonical: AGENTS.md
+  claude: CLAUDE.md
+  gemini: GEMINI.md
+  copilot: .github/copilot-instructions.md
+scripts:
+  changed: check:changed
+  fast: check:fast
+  full: check
+changedChecks:
+  - id: docs
+    script: docs:check
+    extensions: [.md]
+    passPaths: false
+fullScanPaths:
+  - .github/workflows
+  - architecture/foundation
+  - pnpm-lock.yaml
+  - pnpm-workspace.yaml

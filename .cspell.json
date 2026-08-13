@@ -1,0 +1,14 @@
+{
+  "version": "0.2",
+  "useGitignore": true,
+  "language": "en",
+  "files": ["README.md", "AGENTS.md", "docs/**/*.md"],
+  "dictionaryDefinitions": [
+    {
+      "name": "project-words",
+      "path": ".cspell/project-words.txt",
+      "addWords": true
+    }
+  ],
+  "dictionaries": ["project-words"]
+}

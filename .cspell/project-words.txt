@@ -1,0 +1,11 @@
+AgentTeams
+air-gapped
+Cosign
+digest-pinned
+GHCR
+OpenCode
+ORAS
+product-neutral
+replaceability
+self-hosted
+SemVer
