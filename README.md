@@ -38,8 +38,8 @@ pnpm check
 Engineering policy and deterministic checks come from the exact published
 `@agent-teams/engineering-foundation` development dependency.
 
-The repository is already qualified against the durable document writer in
-Engineering Foundation PR `#99`. Registry mode remains pinned to the latest
-published exact version until that pull request is merged and released. The
-read-only `docs:find` command uses an explicitly temporary `0.15.x`
-compatibility profile; the canonical writer profile is not weakened.
+The repository is already qualified against the merged durable document writer
+from Engineering Foundation PR `#99`. Registry mode remains pinned to the
+latest published exact version until that change is released. The read-only
+`docs:find` command uses an explicitly temporary `0.15.x` compatibility
+profile; the canonical writer profile is not weakened.

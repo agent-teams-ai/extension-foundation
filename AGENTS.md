@@ -41,10 +41,10 @@ production dependencies. Use:
 - `pnpm foundation:detach` before commit, followed by
   `pnpm foundation:assert-registry`.
 
-After the durable document writer from Engineering Foundation PR `#99` is
-released, use `agent-teams-foundation docs new` with the repository-owned
+After the durable document writer merged through Engineering Foundation PR
+`#99` is released, use `agent-teams-foundation docs new` with the repository-owned
 `docs/document-authoring.yaml` profile for new ADR and open-decision files. Until
-that release, the profile is checked against the exact PR head in disposable
+that release, the profile is checked against the exact merged head in disposable
 qualification only; the mergeable repository remains pinned to the published
 registry package.
 
