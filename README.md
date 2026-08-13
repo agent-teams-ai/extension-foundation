@@ -32,14 +32,16 @@ See the [documentation index](docs/README.md) and
 ```bash
 pnpm install --frozen-lockfile
 pnpm docs:find "extension lifecycle"
+pnpm docs:doctor
 pnpm check
 ```
 
 Engineering policy and deterministic checks come from the exact published
 `@agent-teams/engineering-foundation` development dependency.
 
-The repository is already qualified against the merged durable document writer
-from Engineering Foundation PR `#99`. Registry mode remains pinned to the
-latest published exact version until that change is released. The read-only
-`docs:find` command uses an explicitly temporary `0.15.x` compatibility
-profile; the canonical writer profile is not weakened.
+Document discovery and create-only authoring use the canonical
+`docs/document-authoring.yaml` profile. Preview a new document with
+`pnpm docs:new -- --type <type> --id <id> --title <title> --owner <owner>
+--summary <summary> --dry-run`, then rerun without `--dry-run`. The writer never
+creates directories or edits indexes; add the reported link to the fixed index
+for that artifact type.
