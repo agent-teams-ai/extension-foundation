@@ -41,12 +41,19 @@ production dependencies. Use:
 - `pnpm foundation:detach` before commit, followed by
   `pnpm foundation:assert-registry`.
 
-After the durable document writer merged through Engineering Foundation PR
-`#99` is released, use `agent-teams-foundation docs new` with the repository-owned
-`docs/document-authoring.yaml` profile for new ADR and open-decision files. Until
-that release, the profile is checked against the exact merged head in disposable
-qualification only; the mergeable repository remains pinned to the published
-registry package.
+Use the repository-owned `docs/document-authoring.yaml` profile through these
+scripts:
+
+- `pnpm docs:find [text]` discovers documents;
+- `pnpm docs:new -- --type <type> --id <id> --title <title> --owner <owner>
+  --summary <summary> --dry-run` previews an ADR or open decision;
+- rerun `pnpm docs:new` without `--dry-run` to create the reviewed file;
+- `pnpm docs:doctor` inspects document-writer transaction health;
+- `pnpm docs:recover` performs the recovery prescribed by the doctor.
+
+The writer is create-only: it does not create directories or edit indexes. After
+creation, add the exact link reported by the command to the artifact type's
+fixed index, then run `pnpm check:fast`.
 
 Accepted ADRs are immutable. A changed decision requires a superseding ADR.
 Keep unresolved implementation choices in `docs/open-decisions/`.

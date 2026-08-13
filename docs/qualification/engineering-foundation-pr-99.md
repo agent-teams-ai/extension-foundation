@@ -16,7 +16,7 @@ related:
 - Pull request: `#99`
 - Exact merged head: `bb474e013c23fe4923fddf0ca946b51aafd3152d`
 - Merge commit: `a0302673c0ba5d2dd2e38f9e32942f0aea80772f`
-- Published registry baseline retained by this repository: `0.15.0`
+- First published registry adoption: `0.16.0-rc.0`
 
 ## Evidence
 
@@ -36,8 +36,6 @@ the merge gate.
 ## Adoption Rule
 
 This record does not authorize depending on a pull request or mutable branch.
-After the change is merged and published, adoption requires an exact-version
-dependency update, lockfile update, explicit reachability policy in the
-authoring profile, removal of the temporary `0.15.x` read-only catalog profile,
-and the complete repository gate. The canonical authoring profile already
-declares reachability; the old registry release rejects that new field.
+The published release candidate is adopted as an exact development dependency;
+the canonical authoring profile retains explicit reachability for each artifact
+type and the temporary `0.15.x` read-only profile has been retired.
