@@ -31,7 +31,8 @@ See the [documentation index](docs/README.md) and
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm docs:find "extension lifecycle"
+pnpm docs:info
+pnpm docs:find -- "extension lifecycle"
 pnpm docs:doctor
 pnpm check
 ```
@@ -39,9 +40,10 @@ pnpm check
 Engineering policy and deterministic checks come from the exact published
 `@agent-teams/engineering-foundation` development dependency.
 
-Document discovery and create-only authoring use the canonical
-`docs/document-authoring.yaml` profile. Preview a new document with
+Document discovery and create-only authoring use the canonical unified Docs
+Protocol profile at `architecture/foundation/docs-protocol.yaml`. Start with
+`pnpm docs:info`, then preview a new document with
 `pnpm docs:new -- --type <type> --id <id> --title <title> --owner <owner>
---summary <summary> --dry-run`, then rerun without `--dry-run`. The writer never
-creates directories or edits indexes; add the reported link to the fixed index
-for that artifact type.
+--summary <summary> --dry-run`. After review, replace `--dry-run` with `--apply`.
+The writer never edits indexes; add the exact reported link to the reported
+index. See the [authoring Skill](.agents/skills/docs-authoring/SKILL.md).
