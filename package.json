@@ -15,9 +15,9 @@
     "url": "git+https://github.com/agent-teams-ai/extension-foundation.git"
   },
   "scripts": {
-    "check": "pnpm foundation:check && pnpm docs:check && pnpm docs:quality && pnpm docs:contract-test",
+    "check": "pnpm foundation:check && pnpm docs:protocol:check",
     "check:changed": "agent-teams-foundation agent-workflow changed --consumer .",
-    "check:fast": "pnpm foundation:check && pnpm docs:check && pnpm docs:quality && pnpm docs:contract-test",
+    "check:fast": "pnpm foundation:check && pnpm docs:protocol:check",
     "docs:changed": "pnpm docs:check && pnpm docs:quality",
     "docs:check": "agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml",
     "docs:contract-test": "node --test tests/document-authoring.test.mjs tests/docs-protocol-qualification.test.mjs",
@@ -25,7 +25,7 @@
     "docs:find": "agent-teams-docs find --consumer . --profile architecture/foundation/docs-protocol.yaml",
     "docs:info": "agent-teams-docs info --consumer . --profile architecture/foundation/docs-protocol.yaml",
     "docs:new": "agent-teams-docs new --consumer . --profile architecture/foundation/docs-protocol.yaml",
-    "docs:protocol:check": "pnpm docs:check",
+    "docs:protocol:check": "pnpm docs:check && pnpm docs:quality && pnpm docs:contract-test",
     "docs:quality": "markdownlint-cli2 && cspell --config .cspell.json --no-progress",
     "docs:recover": "agent-teams-docs recover --consumer . --profile architecture/foundation/docs-protocol.yaml",
     "foundation:assert-dev-only": "agent-teams-foundation assert-dev-only",
