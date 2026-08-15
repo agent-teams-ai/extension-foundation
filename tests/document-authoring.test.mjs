@@ -143,11 +143,11 @@ test("required code anchors pass when reachable and fail closed when stale", asy
     const valid = run(fixture, "check");
     assert.equal(valid.result.valid, true);
 
-    const decisionPath = join(fixture, "docs/decisions/0001-product-neutral-extension-foundation-boundary.md");
-    const decision = await readFile(decisionPath, "utf8");
+    const indexPath = join(fixture, "docs/README.md");
+    const index = await readFile(indexPath, "utf8");
     await writeFile(
-      decisionPath,
-      decision.replace("architecture/foundation/docs-protocol.yaml", "packages/missing-required-anchor.ts"),
+      indexPath,
+      index.replace("architecture/foundation/docs-protocol.yaml", "packages/missing-required-anchor.ts"),
       "utf8",
     );
     const stale = execute(fixture, "check");

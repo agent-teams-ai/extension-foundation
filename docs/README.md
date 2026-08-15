@@ -4,6 +4,9 @@ type: index
 status: active
 owner: architecture
 summary: Entry point for Extension Foundation architecture, decisions, and unresolved questions.
+code_anchors:
+  - enforcement: required
+    pattern: architecture/foundation/docs-protocol.yaml
 ---
 
 # Documentation

@@ -6,9 +6,6 @@ owner: architecture
 summary: Keep shared extension infrastructure product-neutral while every product owns its extension points, host, authority, and state.
 approved_by: product-owner
 accepted_at: 2026-08-13
-code_anchors:
-  - enforcement: required
-    pattern: architecture/foundation/docs-protocol.yaml
 ---
 
 # ADR-0001: Product-Neutral Extension Foundation Boundary
