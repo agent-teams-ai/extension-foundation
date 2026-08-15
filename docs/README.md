@@ -4,6 +4,9 @@ type: index
 status: active
 owner: architecture
 summary: Entry point for Extension Foundation architecture, decisions, and unresolved questions.
+code_anchors:
+  - enforcement: required
+    pattern: architecture/foundation/docs-protocol.yaml
 ---
 
 # Documentation
@@ -18,6 +21,8 @@ Read by responsibility:
 | Unresolved decisions | [Open decision index](open-decisions/README.md) |
 | Dependency qualification evidence | [Qualification index](qualification/README.md) |
 
-Documentation is repository-owned and checked through Engineering Foundation.
-Accepted ADRs are immutable; unresolved choices remain explicit open decisions.
-The consumer-owned authoring profile is `docs/document-authoring.yaml`.
+Documentation is repository-owned and checked through the unified Docs Protocol
+and Engineering Foundation. Accepted ADRs are immutable; unresolved choices
+remain explicit open decisions. The consumer-owned adoption authority is
+`architecture/foundation/docs-protocol.yaml`; agents follow
+`.agents/skills/docs-authoring/SKILL.md` and begin with `pnpm docs:info`.

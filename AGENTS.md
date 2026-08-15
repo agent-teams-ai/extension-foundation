@@ -41,19 +41,13 @@ production dependencies. Use:
 - `pnpm foundation:detach` before commit, followed by
   `pnpm foundation:assert-registry`.
 
-Use the repository-owned `docs/document-authoring.yaml` profile through these
-scripts:
+Use [.agents/skills/docs-authoring/SKILL.md](.agents/skills/docs-authoring/SKILL.md) for documentation.
 
-- `pnpm docs:find [text]` discovers documents;
-- `pnpm docs:new -- --type <type> --id <id> --title <title> --owner <owner>
-  --summary <summary> --dry-run` previews an ADR or open decision;
-- rerun `pnpm docs:new` without `--dry-run` to create the reviewed file;
-- `pnpm docs:doctor` inspects document-writer transaction health;
-- `pnpm docs:recover` performs the recovery prescribed by the doctor.
-
-The writer is create-only: it does not create directories or edit indexes. After
-creation, add the exact link reported by the command to the artifact type's
-fixed index, then run `pnpm check:fast`.
+Start every documentation task with that standalone route, then run
+`pnpm docs:info`. The repository-owned unified Docs Protocol is authoritative for
+supported types, owners, metadata, placement, and reachability. Preview is
+non-mutating, creation requires explicit `--apply`, and the protocol never edits
+indexes.
 
 Accepted ADRs are immutable. A changed decision requires a superseding ADR.
 Keep unresolved implementation choices in `docs/open-decisions/`.

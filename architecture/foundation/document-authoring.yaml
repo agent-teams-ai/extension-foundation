@@ -1,4 +1,4 @@
-schemaVersion: 1
+schemaVersion: 2
 projectId: extension-foundation
 catalog:
   metadataSchemaPath: docs/metadata.schema.json
@@ -20,6 +20,7 @@ authoring:
       template: {kind: fenced-markdown-body, path: docs/templates/adr.md}
       heading: {kind: id-colon-title}
       reachability: {kind: manual-fixed-index, indexPath: docs/decisions/README.md}
+      allowedOwnerIds: [architecture, architecture/security, architecture/tooling]
     - type: open-decision
       initialStatus: open
       identity: {kind: explicit, format: open-decision-three-digits}
@@ -27,3 +28,4 @@ authoring:
       template: {kind: fenced-markdown-body, path: docs/templates/open-decision.md}
       heading: {kind: id-colon-title}
       reachability: {kind: manual-fixed-index, indexPath: docs/open-decisions/README.md}
+      allowedOwnerIds: [architecture, architecture/security, architecture/tooling]

@@ -10,7 +10,7 @@ scripts:
   full: check
 changedChecks:
   - id: docs
-    script: docs:check
+    script: docs:changed
     extensions: [.md]
     passPaths: false
 fullScanPaths:

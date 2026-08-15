@@ -4,17 +4,85 @@
   "additionalProperties": false,
   "required": ["id", "type", "status", "owner", "summary"],
   "properties": {
-    "id": {"type": "string"},
-    "type": {"type": "string"},
-    "status": {"type": "string"},
-    "owner": {"type": "string"},
-    "summary": {"type": "string"},
-    "approved_by": {"type": "string"},
-    "accepted_at": {"type": "string"},
-    "resolved_by": {"type": "string"},
+    "id": {"type": "string", "minLength": 1},
+    "type": {"enum": ["adr", "architecture", "index", "open-decision", "qualification"]},
+    "status": {"type": "string", "minLength": 1},
+    "owner": {"enum": ["architecture", "architecture/security", "architecture/tooling"]},
+    "summary": {"type": "string", "minLength": 1},
+    "approved_by": {"type": "string", "minLength": 1},
+    "accepted_at": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+    "resolved_by": {"type": "string", "minLength": 1},
     "supersedes": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
     "superseded_by": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
     "related": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
-    "blocked_by": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}
-  }
+    "blocked_by": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "code_anchors": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["enforcement", "pattern"],
+        "properties": {
+          "enforcement": {"enum": ["advisory", "required"]},
+          "pattern": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"type": {"const": "adr"}}, "required": ["type"]},
+      "then": {
+        "properties": {
+          "id": {"type": "string", "pattern": "^ADR-[0-9]{4}$"},
+          "status": {"enum": ["accepted", "proposed", "superseded"]}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"type": {"const": "open-decision"}}, "required": ["type"]},
+      "then": {
+        "properties": {
+          "id": {"type": "string", "pattern": "^OD-[0-9]{3}$"},
+          "status": {"enum": ["open", "resolved"]}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"type": {"const": "adr"}, "status": {"const": "accepted"}},
+        "required": ["type", "status"]
+      },
+      "then": {
+        "required": ["approved_by", "accepted_at"],
+        "properties": {
+          "approved_by": {"type": "string", "minLength": 1},
+          "accepted_at": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"type": {"const": "open-decision"}, "status": {"const": "resolved"}},
+        "required": ["type", "status"]
+      },
+      "then": {
+        "required": ["resolved_by"],
+        "properties": {"resolved_by": {"type": "string", "minLength": 1}}
+      }
+    },
+    {
+      "if": {"properties": {"type": {"const": "index"}}, "required": ["type"]},
+      "then": {"properties": {"status": {"const": "active"}}}
+    },
+    {
+      "if": {"properties": {"type": {"const": "architecture"}}, "required": ["type"]},
+      "then": {"properties": {"status": {"enum": ["accepted", "proposed", "superseded"]}}}
+    },
+    {
+      "if": {"properties": {"type": {"const": "qualification"}}, "required": ["type"]},
+      "then": {"properties": {"status": {"const": "qualified"}}}
+    }
+  ]
 }
