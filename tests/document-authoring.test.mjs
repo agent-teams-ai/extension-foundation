@@ -40,7 +40,7 @@ function run(consumerRoot, ...args) {
 }
 
 async function disposableRepository() {
-  const fixture = await mkdtemp(join(tmpdir(), "extension-docs-protocol-"));
+  const fixture = await mkdtemp(join(tmpdir(), "atd-e-"));
   await cp(join(repositoryRoot, "architecture"), join(fixture, "architecture"), { recursive: true });
   await cp(join(repositoryRoot, "docs"), join(fixture, "docs"), { recursive: true });
   await cp(join(repositoryRoot, ".agents"), join(fixture, ".agents"), { recursive: true });
