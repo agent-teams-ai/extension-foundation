@@ -32,7 +32,7 @@
     "foundation:status": "agent-teams-foundation status"
   },
   "devDependencies": {
-    "@agent-teams/engineering-foundation": "0.16.0-rc.0",
+    "@agent-teams/engineering-foundation": "0.16.1",
     "cspell": "catalog:",
     "markdownlint-cli2": "catalog:"
   }
