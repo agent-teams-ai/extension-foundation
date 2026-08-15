@@ -12,4 +12,4 @@ minimumReleaseAgeStrict: true
 
 minimumReleaseAgeExclude:
   - "@agent-teams/engineering-foundation"
-  - "@agent-teams/docs-protocol@0.1.0-rc.0"
+  - "@agent-teams/docs-protocol@0.1.0-rc.1"
