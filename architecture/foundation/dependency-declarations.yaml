@@ -12,4 +12,5 @@ policies:
     - cspell
     - markdownlint-cli2
   exactRegistryDevelopmentOnlyPackages:
+    - "@agent-teams/docs-protocol"
     - "@agent-teams/engineering-foundation"
