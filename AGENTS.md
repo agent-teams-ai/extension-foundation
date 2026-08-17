@@ -20,6 +20,10 @@ products. Start with:
 - Manifest permissions are requests, not grants.
 - Artifact signatures, catalog listings, commercial entitlements, product
   authorization, and runtime enforcement are independent facts.
+- Each writable catalog source has one PostgreSQL canonical store. Git, search
+  indexes, signed snapshots, and OCI registries are never co-equal writers.
+- Catalog federation selects one explicit authority route and fails closed. It
+  never merges mutable names or falls back after an authority failure.
 - Installed and active artifacts are identified by immutable OCI digest, never
   by a mutable tag alone.
 - Extension code is never invoked inside a product database transaction.

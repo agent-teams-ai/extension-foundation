@@ -23,6 +23,9 @@ an independent implementation prove substitutability.
 - Installation, activation, rollback, and audit pin immutable digests.
 - Artifact registries, extension catalogs, and product authorization remain
   separate.
+- PostgreSQL is the only canonical state for each writable catalog source.
+- Signed catalog snapshots and search indexes are derived, reproducible outputs.
+- Federation routes each extension to one explicit authority and fails closed.
 
 See the [documentation index](docs/README.md) and
 [architecture decisions](docs/decisions/README.md).

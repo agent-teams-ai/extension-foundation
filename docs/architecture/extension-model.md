@@ -18,8 +18,11 @@ summary: Defines extension terminology, contribution boundaries, integration bun
   contributions released and qualified together.
 - **Extension host** is the product-owned runtime that validates, activates,
   invokes, drains, and isolates extensions for that product.
-- **Catalog** supplies discovery and governance metadata. It does not store the
-  artifact and does not grant product authority.
+- **Catalog** supplies discovery and governance metadata from one authoritative
+  PostgreSQL-backed source. It does not store the artifact or grant product
+  authority.
+- **Catalog snapshot** is a signed immutable publication or export of catalog
+  state. It is not a writable source or product authorization.
 
 ## Simple Plugin and Integration Bundle
 

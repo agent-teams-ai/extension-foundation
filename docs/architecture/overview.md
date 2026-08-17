@@ -20,7 +20,12 @@ flowchart LR
     Foundation --> OCI["OCI Distribution adapter"]
     OCI --> GHCR["GHCR"]
     OCI --> Harbor["Harbor"]
-    Catalog["One or more catalog sources"] --> Ref["Digest-pinned artifact reference"]
+    Product --> Source["CatalogSource port"]
+    Source --> Catalog["Authoritative catalog service"]
+    Catalog --> Postgres["PostgreSQL canonical state"]
+    Catalog --> Snapshot["Signed immutable snapshot"]
+    Catalog --> Search["Derived search index"]
+    Catalog --> Ref["Digest-pinned artifact reference"]
     Ref --> Host
 ```
 
@@ -56,3 +61,16 @@ Full DDD belongs inside products where business invariants exist. This
 repository uses domain modelling only for real extension lifecycle and trust
 semantics; adapters, schema codecs, and OCI clients do not receive artificial
 aggregates.
+
+## Catalog State and Publication
+
+Each writable catalog source owns one PostgreSQL canonical store. Signed
+snapshots, search indexes, and OCI artifacts are derived or separately owned;
+none can write back into catalog state. Federation selects one authority for an
+extension route and does not merge records or fall back after an authority
+failure.
+
+The future `extension-catalog` owns Catalog Governance business behavior and
+persistence. Foundation may provide portable source descriptors, snapshot
+schemas, verification primitives, ports, and conformance fixtures without
+becoming a catalog service or shared product database.
