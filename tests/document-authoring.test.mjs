@@ -68,8 +68,8 @@ test("unified info and check expose the qualified Extension authority", () => {
 });
 
 test("find combines catalog and relation filters and treats zero matches as success", () => {
-  const related = run(repositoryRoot, "find", "--type", "open-decision", "--status", "open", "--owner", "architecture", "--related", "ADR-0001");
-  assert.deepEqual(related.result.documents.map(({ id }) => id), ["OD-001"]);
+  const related = run(repositoryRoot, "find", "--type", "open-decision", "--status", "open", "--owner", "architecture", "--related", "ADR-0003");
+  assert.deepEqual(related.result.documents.map(({ id }) => id), ["OD-002"]);
 
   const missing = run(repositoryRoot, "find", "--id", "ADR-9999", "--related", "ADR-0001");
   assert.equal(missing.result.matches, 0);
@@ -95,7 +95,7 @@ test("new previews and applies both supported types only inside a disposable rep
       "new", "--type", "adr", "--id", "ADR-0099",
       "--title", "Disposable Contract Proof", "--owner", "architecture/tooling",
       "--summary", "Proves unified authoring in an isolated fixture.",
-      "--related", "ADR-0001", "--blocked-by", "OD-001",
+      "--related", "ADR-0001", "--blocked-by", "OD-002",
       "--code-anchor", '{"enforcement":"advisory","pattern":"package.json"}',
     ];
 
