@@ -14,9 +14,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  docs-protocol-check:
-    uses: agent-teams-ai/.github/.github/workflows/docs-protocol-check.yml@2679c8bc1e432091271d2f68ef904694e4d5838e
-
   check:
     name: check
     runs-on: ubuntu-24.04
