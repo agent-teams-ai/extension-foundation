@@ -45,7 +45,9 @@ production dependencies. Use:
 - `pnpm foundation:detach` before commit, followed by
   `pnpm foundation:assert-registry`.
 
+<!-- agent-teams-docs:route/v1 begin -->
 Use [.agents/skills/docs-authoring/SKILL.md](.agents/skills/docs-authoring/SKILL.md) for documentation.
+<!-- agent-teams-docs:route/v1 end -->
 
 Start every documentation task with that standalone route, then run
 `pnpm docs:info`. The repository-owned unified Docs Protocol is authoritative for
