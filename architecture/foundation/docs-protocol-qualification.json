@@ -4,11 +4,11 @@
   "protocolVersion": 1,
   "consumer": "agent-teams-ai/extension-foundation",
   "packages": {
-    "@agent-teams/docs-protocol": "0.1.0-rc.1",
-    "@agent-teams/engineering-foundation": "0.17.0-rc.0"
+    "@agent-teams/docs-protocol": "0.1.0-rc.10",
+    "@agent-teams/engineering-foundation": "0.17.0-rc.7"
   },
   "profilePath": "architecture/foundation/docs-protocol.yaml",
-  "callerWorkflowPath": ".github/workflows/ci.yml",
+  "callerWorkflowPath": ".github/workflows/docs-protocol.yml",
   "skillPath": ".agents/skills/docs-authoring/SKILL.md",
   "gateCommand": "pnpm docs:protocol:check",
   "qualificationTests": [
