@@ -41,6 +41,11 @@
       "id": "ADR-0008",
       "path": "docs/decisions/0008-extension-authority-and-lifecycle-corrections.md",
       "immutableDigest": "sha256:88647400caa04b41b81a867843f05f63b5b338090d4bd8b5497bb8a7239880db"
+    },
+    {
+      "id": "ADR-0009",
+      "path": "docs/decisions/0009-extension-activation-and-retirement-corrections.md",
+      "immutableDigest": "sha256:32ef623b73827c0873bdc0fcabeff4ae49006de55c05d6bfb1219303ab0d9fcf"
     }
   ]
 }

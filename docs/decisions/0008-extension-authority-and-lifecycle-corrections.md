@@ -1,11 +1,13 @@
 ---
 id: ADR-0008
 type: adr
-status: accepted
+status: superseded
 owner: architecture
 summary: Closes grant-lineage, entitlement, graph-scope, activation-failure, and private-state attachment ambiguities.
 approved_by: product-owner
 accepted_at: 2026-08-23
+superseded_by:
+  - ADR-0009
 supersedes:
   - ADR-0007
 related:

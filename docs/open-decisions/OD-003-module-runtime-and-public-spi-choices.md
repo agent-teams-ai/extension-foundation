@@ -9,6 +9,7 @@ related:
   - ADR-0006
   - ADR-0007
   - ADR-0008
+  - ADR-0009
 ---
 
 # OD-003: Module Runtime And Public SPI Choices
@@ -21,7 +22,7 @@ for trusted and isolated implementations.
 
 ## Constraints
 
-- ADR-0008 ownership, authority, identity, transaction, trust-tier, graph, and
+- ADR-0009 ownership, authority, identity, transaction, trust-tier, graph, and
   state boundaries are fixed.
 - Product-specific SPIs remain in Orchestrator, Agent Runtime, Frontend, or
   another consuming product.
@@ -30,6 +31,9 @@ for trusted and isolated implementations.
 - A built-in module is not a plugin artifact. One admitted plugin artifact may
   provide multiple contributions. Artifact installation, contribution
   authorization, graph activation, and runtime generation remain distinct.
+- A runtime generation has exactly one discriminated activation source:
+  artifact-backed contribution installation or authority-scoped built-in module
+  installation. Built-ins never receive synthetic artifact identities.
 - Public contracts cannot contain Cordis Context, Fiber, Awilix, container,
   loader, or configuration types.
 - Every invocation is fenced by authority scope, graph generation, runtime
@@ -72,6 +76,9 @@ dependency closure. Per-contribution route or drain policies are valid only
 when their combined ordering is acyclic and preserves every required dependency;
 an incompatible mixed-policy chain is rejected before staging. The old grant is
 fenced before its runtime enters drain, so no new invocation can enter it.
+Candidate cleanup owns only newly staged runtimes. Referenced existing runtimes
+remain pinned until no live graph or accepted bounded invocation references
+them; retirement rechecks reachability under its fence.
 
 The final contract must still decide health gates, bounded completion versus
 cancellation of already accepted in-flight work, and when recovery may activate
@@ -88,7 +95,7 @@ Foundation.
 
 ### Public API evidence
 
-ADR-0008 already fixes the minimum publication floor: one real product slice, a
+ADR-0009 already fixes the minimum publication floor: one real product slice, a
 stable owner, two independently authored conforming implementations,
 compatibility fixtures, negative tests, and an executable conformance suite.
 This decision chooses the evidence format, independence proof, compatibility
@@ -99,7 +106,7 @@ not weaken that floor.
 
 The following layout preserves the current research without reserving packages
 or accepting their public APIs. Create a package only when a real product slice
-and the ADR-0008 evidence justify it.
+and the ADR-0009 evidence justify it.
 
 ```text
 packages/
@@ -147,15 +154,27 @@ packages/
   selected recovery behavior.
 - Prove grant binding, revocation fencing, stale-generation rejection, drain,
   cancellation, unknown-outcome reconciliation, and bounded streaming.
-- Prove that the same numeric revision under a different grant identity is
-  rejected, revoke-and-reissue cannot reuse a lineage tuple, and stale proxies
-  cannot cross an authority scope.
+- Prove that a current new grant lineage may start at the same numeric revision
+  as an old lineage, while the stale old grant tuple is rejected and cannot
+  cross an authority scope.
+- Prove artifact-backed and built-in activation sources, immutable built-in
+  implementation identity, and same-scope versus cross-scope graph admission.
+- Prove exact one-contribution installation mapping, explicit multi-instance
+  identity, manifest-local uniqueness, and wrong-parent or grouped-sibling
+  rejection.
 - Prove that a graph contains only same-scope runtimes and that cross-scope
   dependency or routing edges fail compilation.
 - Prove closure-wide handover planning, pre-drain fencing, and rejection of an
   incompatible mixed route/drain policy chain.
+- Prove failed-candidate and successful-handover reuse of an existing runtime,
+  including graph and in-flight reachability pins before retirement.
 - Prove exact artifact-versus-contribution private-state attachment, compatible
   schema lineage, and sibling-contribution isolation.
+- Prove catalog and direct-digest trust routes with applicable and explicitly
+  not-applicable entitlement, independent product authorization, and mismatched
+  graph-to-runtime-to-source-to-grant relationships.
+- Prove interruption, retry, uncertain termination, state detachment, and
+  artifact removal at every ordered uninstall checkpoint.
 - Prove N/N-1 request and response fixtures for every direction selected by the
   final compatibility decision.
 - Prove that Cordis or any other composition library can be replaced without
