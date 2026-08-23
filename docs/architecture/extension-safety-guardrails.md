@@ -33,6 +33,12 @@ and third-party plugins. A product may impose stricter rules for its own host.
 - Direct capability calls use narrow typed ports. Events represent facts,
   interception, observation, or durable integration; an event bus is not a hidden
   request-response service locator.
+- Module discovery and graph compilation are pure. Importing a manifest,
+  calculating a plan, or resolving dependency order cannot execute extension code
+  or perform external effects.
+- Extensions do not import each other's private packages or resolve unpublished
+  services by string name. Collaboration uses product-owned contracts and explicit
+  graph edges.
 
 ## Authority and transaction boundaries
 
@@ -48,6 +54,11 @@ and third-party plugins. A product may impose stricter rules for its own host.
   access.
 - Unknown external outcomes are reconciled before retry unless the operation has a
   proven idempotency key and protocol guarantee.
+- A dependency-injection scope is not a security boundary. Untrusted code runs in
+  a process, worker, sandbox, or WASM host with explicit capabilities and resource
+  limits; it never runs in-process merely because the container is scoped.
+- Filesystem, network, environment, process, IPC, and secret access are denied by
+  default and exposed only through capability-scoped host ports.
 
 ## Identity, lifecycle, and updates
 
@@ -64,6 +75,47 @@ and third-party plugins. A product may impose stricter rules for its own host.
   deadlines, cancellation, leak diagnostics, and forced containment.
 - Registration order is never business semantics. Dependency and contribution
   ordering must be explicit, deterministic, and testable.
+- Activation is transactional at the graph level: partial startup failure drains
+  and disposes everything activated by that attempt before the generation can
+  become routable.
+- Update and uninstall wait for explicit drain or fencing. A cleanup callback does
+  not prove that timers, child processes, listeners, streams, or remote effects
+  have stopped.
+
+## Distribution and admission boundaries
+
+- Discovery, manifest parsing, signature verification, and permission review do
+  not execute plugin code. Package install scripts and equivalent pre-admission
+  hooks are prohibited.
+- The admitted identity binds publisher, artifact digest, manifest digest,
+  protocol versions, requested capabilities, and target products. Resolving a tag
+  or package name again cannot silently change an admitted artifact.
+- Plugin-to-plugin dependencies are explicit lockfile edges with compatible
+  digests and one selected authority. Hosts do not perform ambient dependency
+  discovery or registry fallback during activation.
+- Admission and activation are distinct. Installing an artifact never grants
+  permissions, starts code, migrates product state, or changes active routing.
+
+## Resource, data, and presentation boundaries
+
+- Every invocation has a deadline, cancellation contract, bounded input/output,
+  backpressure policy, and typed terminal outcome. Unbounded listeners, queues,
+  streams, retries, or telemetry cardinality are prohibited.
+- Extension failure is contained by an error boundary and bulkhead. An exception,
+  malformed stream item, or stalled contribution cannot crash the product host or
+  block unrelated extensions.
+- Extension-owned state declares an owner, schema version, migration policy,
+  retention, export, backup, and deletion behavior. Update and uninstall never
+  infer destructive data migration.
+- Cross-process and WASM contracts use explicit serializable values. Framework
+  objects, functions, classes, container tokens, native handles, and object
+  identity do not cross the wire.
+- UI contributions cannot mutate global DOM, CSS, routing, storage, or privileged
+  IPC directly. They receive product-owned contribution surfaces and scoped
+  commands.
+- Logs, metrics, traces, and diagnostics follow product data classification,
+  redaction, tenant scope, and cardinality budgets. Raw user content and secrets
+  are not emitted by default.
 
 ## Public API evolution
 
@@ -83,3 +135,18 @@ Once production packages materialize, CI must fail closed on hidden dependencies
 cycles, undeclared providers, deep imports, framework-type leakage, missing public
 entrypoints, and absent conformance evidence. Architecture validation complements
 runtime containment; neither replaces the other.
+
+The following shortcuts are prohibited even if they appear convenient:
+
+- one global `PluginManager`, container, resolver, or event bus as the integration
+  surface for unrelated features;
+- one universal plugin interface spanning product domains;
+- optional extension availability silently changing a protected domain invariant;
+- mutable `latest` resolution, silent provider override, or registration order as
+  runtime selection;
+- blind retry after an ambiguous external effect;
+- direct extension writes to product databases, aggregates, migration tables, or
+  authorization state;
+- hot replacement by mutating an active object graph in place;
+- treating successful cleanup, signature verification, entitlement, or manifest
+  permission requests as proof of authorization or containment.

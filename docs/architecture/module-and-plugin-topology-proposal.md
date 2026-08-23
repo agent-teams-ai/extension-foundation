@@ -37,6 +37,9 @@ flowchart LR
 This reuses module graph and lifecycle principles after admission while keeping
 distribution, trust, permissions, installation, and update state explicit. One
 plugin may supply several modules; a built-in module does not require a plugin.
+The plugin artifact itself is never activated as a module. Each admitted
+contribution is adapted into a module descriptor or an isolated proxy and then
+passes through the same graph compiler and lifecycle rules as a built-in module.
 
 ## Dependency-injection neutrality
 
@@ -61,17 +64,14 @@ A pure compiler validates identities, missing dependencies, cycles, provider
 ambiguity, version compatibility, scope, and deterministic ordering before
 activation. Execution is delegated through a narrow host port. Cordis, a native
 runner, a process host, a browser worker, and a future Extism host are adapters,
-not public semantics. No implementation is selected by this proposal.
+not public semantics. Cordis remains an adapter candidate that must pass the same
+conformance suite as a native implementation; its Context, Fiber, loader,
+configuration syntax, and declaration merging cannot escape the adapter.
 
 ## Proposed repository topology
 
 ```text
 packages/
-  contracts/
-    src/features/
-      extension-identity/
-      capability-contracts/
-      lifecycle-diagnostics/
   module-kit/
     src/features/
       module-definition/
@@ -83,20 +83,36 @@ packages/
       compatibility-negotiation/
       contribution-invocation/
       generation-transition/
-  adapters/
+  integrations/
     cordis-module-host/
+      src/features/cordis-module-host/
     process-plugin-host/
+      src/features/process-plugin-host/
     oras-distribution/
+      src/features/oci-distribution/
     cosign-verification/
+      src/features/signature-verification/
     extism-plugin-host/        # deferred until after MVP
   testing/
-    conformance/
+    extension-conformance/
 ```
 
 Every non-trivial package uses feature-owned slices. Internal layers follow the
 package role and actual behavior: complex lifecycle invariants may use domain and
 application layers; codecs, schemas, adapters, and test kits do not receive
 ceremonial DDD directories.
+
+Ownership precedes artifact kind. A contract, port, adapter, schema, fixture, or
+migration stays inside its owning feature by default. The owning package exports
+the intentionally public contract through a curated package entrypoint. A
+top-level generic `contracts` or `adapters` package is prohibited.
+
+An adapter receives an independent package only when isolating its dependency,
+release, replacement, or deployment lifecycle provides concrete value. Otherwise
+it remains under `src/features/<owner>/adapters/inbound|outbound/<technology>/`.
+Product-specific contracts and adapters always remain in the owning product.
+Product-neutral primitives become shared packages only after two independent
+consumers prove identical semantics and ownership.
 
 Package roots contain only curated exports and package composition. Product-owned
 SPIs remain in Orchestrator, Agent Runtime, Frontend, or another consumer. This
@@ -130,7 +146,7 @@ exceptions. Orchestrator documents remain the donor until parity is proven.
 ## Open implementation choices
 
 - exact TypeScript contract-token representation and compile-time diagnostics;
-- first trusted in-process host adapter and its replacement evidence;
+- Cordis-versus-native host spike and replacement evidence;
 - collection contribution ordering and conflict policy;
 - generation handover and leak-detection protocol;
 - minimum two-consumer spike required before publishing the first public API.
