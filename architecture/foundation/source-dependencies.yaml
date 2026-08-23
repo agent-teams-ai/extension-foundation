@@ -4,7 +4,6 @@ workspace:
   manifest: pnpm-workspace.yaml
 governedRoots:
   - architecture/checks
-  - packages
   - tests
 boundaries:
   - id: repository.architecture-checks
@@ -13,6 +12,7 @@ boundaries:
       - architecture/checks
     entrypoints:
       - architecture/checks/package-topology.mjs
+      - architecture/checks/scaffold.mjs
     allow:
       boundaries: []
       builtins:
@@ -21,17 +21,8 @@ boundaries:
         - node:url
       packages:
         - "@agent-teams/docs-protocol"
+        - "@agent-teams/engineering-foundation"
         - yaml
-      runtimeReferences: []
-  - id: repository.packages-closed
-    dependencyMode: runtime
-    roots:
-      - packages
-    entrypoints: []
-    allow:
-      boundaries: []
-      packages: []
-      builtins: []
       runtimeReferences: []
   - id: repository.tests
     dependencyMode: development

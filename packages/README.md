@@ -1,6 +1,6 @@
 # Packages
 
-This directory is closed until an accepted owner document and a real
+This directory is closed until an accepted package-specific ADR and a real
 feature-owned implementation slice admit a package through
 `architecture/package-catalog.json`.
 

@@ -3,6 +3,7 @@ air-gapped
 Cosign
 digest-pinned
 GHCR
+journaled
 OpenCode
 ORAS
 product-neutral

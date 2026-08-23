@@ -23,7 +23,6 @@ compositions:
         parameters:
           allowedStatuses:
             - accepted
-            - active
           documentRoots:
             - docs
     policies: []

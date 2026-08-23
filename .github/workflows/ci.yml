@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  merge_group:
   pull_request:
   push:
     branches:
@@ -29,5 +30,5 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm check

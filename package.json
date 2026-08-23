@@ -15,11 +15,12 @@
     "url": "git+https://github.com/agent-teams-ai/extension-foundation.git"
   },
   "scripts": {
-    "architecture:check": "pnpm architecture:topology:check && node --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/scaffolding.test.mjs",
-    "architecture:check:fast": "pnpm architecture:topology:check && node --test --test-concurrency=1 tests/architecture-topology.test.mjs",
-    "architecture:scaffold:apply": "agent-teams-foundation scaffold-apply",
-    "architecture:scaffold:plan": "agent-teams-foundation scaffold-plan",
-    "architecture:scaffold:recover": "agent-teams-foundation scaffold-recover --consumer .",
+    "architecture:check": "pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && node --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/scaffolding.test.mjs",
+    "architecture:check:fast": "pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && node --test --test-concurrency=1 tests/architecture-topology.test.mjs",
+    "architecture:scaffold:apply": "node architecture/checks/scaffold.mjs apply",
+    "architecture:scaffold:plan": "node architecture/checks/scaffold.mjs plan",
+    "architecture:scaffold:recover": "node architecture/checks/scaffold.mjs recover",
+    "architecture:source-dependencies:check": "agent-teams-foundation check architecture.source-dependencies",
     "architecture:topology:check": "node architecture/checks/package-topology.mjs",
     "check": "pnpm foundation:check && pnpm docs:protocol:check && pnpm architecture:check && pnpm typecheck && pnpm packages:check",
     "check:changed": "agent-teams-foundation agent-workflow changed --consumer .",
@@ -40,7 +41,7 @@
     "foundation:check": "agent-teams-foundation check && pnpm foundation:assert-dev-only && pnpm foundation:assert-registry",
     "foundation:detach": "agent-teams-foundation detach",
     "foundation:status": "agent-teams-foundation status",
-    "packages:check": "pnpm --recursive --filter './packages/**' --if-present check",
+    "packages:check": "pnpm --recursive --filter './packages/**' check",
     "typecheck": "tsc --project tsconfig.json --noEmit --pretty false"
   },
   "devDependencies": {
