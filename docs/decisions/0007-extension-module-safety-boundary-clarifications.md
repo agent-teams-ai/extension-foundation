@@ -1,21 +1,27 @@
 ---
-id: ADR-0006
+id: ADR-0007
 type: adr
-status: superseded
+status: accepted
 owner: architecture
-summary: Defines fail-closed authority, identity, lifecycle, trust, and data ownership boundaries for modules and plugin artifacts.
+summary: Clarifies fail-closed extension authority, identity cardinality, lifecycle atomicity, and durable private-state custody.
 approved_by: product-owner
 accepted_at: 2026-08-23
-superseded_by:
-  - ADR-0007
+supersedes:
+  - ADR-0006
 related:
   - ADR-0001
   - ADR-0005
 ---
 
-# ADR-0006: Extension Module Safety Boundaries
+# ADR-0007: Extension Module Safety Boundary Clarifications
 
 ## Context
+
+ADR-0006 established the safety floor for modules and plugin artifacts. Review
+identified ambiguities around grant revocation, identity cardinality, external
+startup effects, multi-contribution artifacts, and private-state custody. This
+ADR supersedes ADR-0006 with explicit fail-closed semantics while preserving its
+product-owned authority model.
 
 Extension Foundation must support built-in modules, first-party engines, and
 independently distributed plugins without turning a dependency-injection
@@ -36,8 +42,10 @@ state must remain owned by the consuming product.
   decision, durable installation intent, active routing decision, and canonical
   state mutation.
 - Extension Foundation owns product-neutral identities, immutable manifest and
-  lifecycle values, serializable protocols, pure graph validation, and
-  conformance fixtures. It does not run product workflows or store product
+  lifecycle values, lifecycle, distribution, verification, and transport
+  envelopes and codecs, pure graph validation, and conformance fixtures. Product
+  contribution commands, queries, events, and payload schemas remain
+  product-owned. Foundation does not run product workflows or store product
   installation state.
 - Engineering Foundation owns generic repository schemas, source and package
   boundary validation, scaffolding protocols, and diagnostics. Products own
@@ -56,7 +64,7 @@ flowchart LR
     Adapter["Built-in adapter or contribution proxy"] --> SPI
     Composition["Composition root"] --> UseCase
     Composition --> Adapter
-    Foundation["Foundation values and conformance"] --> Adapter
+    Adapter --> Foundation["Foundation values and conformance"]
 ```
 
 ### Admission, authority, and identity
@@ -67,29 +75,56 @@ are separate decisions. Success at one stage does not imply success at another.
 
 ```mermaid
 flowchart LR
-    Artifact["Digest-pinned artifact"] --> Verify["Verify provenance"]
-    Verify --> Admit["Catalog admission"]
-    Admit --> Compatible["Compatibility"]
-    Compatible --> Authorize["Product authorization"]
-    Authorize --> Grant["Capability grant"]
-    Grant --> Activate["Runtime activation"]
+    Artifact["Digest-pinned artifact"] --> Verify["Provenance verification"]
+    Catalog["Catalog admission"] --> Trust["Applicable trust route"]
+    Direct["Direct digest policy"] --> Trust
+    Compatible["Compatibility decision"] --> Join["Fail-closed admission join"]
+    Entitlement["Entitlement or explicit N/A"] --> Join
+    Authorize["Product authorization"] --> Join
+    Verify --> Join
+    Trust --> Join
+    Join --> Stage["Stage runtime generation"]
+    Stage --> Route["Publish routing snapshot"]
+    Grant["Capability grant revision"] --> Enforce["Per-invocation enforcement"]
+    Route --> Enforce
 ```
 
-- Publisher, extension, artifact, manifest, installation, contribution,
-  graph-generation, runtime-generation, proxy, invocation, and grant identities
-  are distinct. The term plugin artifact refers only to immutable distributed
-  bytes and metadata, never to a running actor.
-- A capability grant binds product and tenant scope, installation,
-  contribution, artifact and manifest digests, exact capabilities, and runtime
-  generation. Any expansion or digest change requires a new authorization.
-- Revocation fences new invocations before drain starts. A stale handle or
-  generation cannot exercise a newer grant.
+Catalog admission and commercial entitlement can be explicitly not applicable
+for a product-approved direct OCI installation or a deployment without that
+commercial plane. They are never silently skipped. Runtime enforcement is a
+continuing invocation boundary, not evidence produced once by activation.
+
+- Publisher, extension, artifact, manifest, artifact-installation,
+  contribution-installation, graph-generation, runtime-generation, proxy,
+  invocation, grant, and state-space identities are distinct. The term plugin
+  artifact refers only to immutable distributed bytes and metadata, never to a
+  running actor.
+- An artifact installation belongs to exactly one product deployment and one
+  explicit product authority scope. That scope can represent a deployment,
+  tenant, project, or another product-owned boundary, but is never implicit.
+  Each contribution installation belongs to exactly one artifact installation.
+- A runtime generation belongs to exactly one contribution installation. An
+  immutable graph generation is a routing snapshot that references one or more
+  runtime generations; an unchanged runtime generation may appear in successive
+  graph snapshots.
+- A capability grant binds the product authority scope, artifact and
+  contribution installations, artifact and manifest digests, exact
+  capabilities, runtime generation, and a monotonic grant revision. Any scope or
+  capability expansion or digest change requires a new authorization.
+- Every proxy and invocation carries the graph generation, runtime generation,
+  and grant revision it observed. Enforcement validates all three at each
+  dispatch and capability boundary. Revocation advances or invalidates the grant
+  revision and fences routing before drain starts; stale handles cannot exercise
+  either an old revoked grant or a newer grant.
 - Mutable tags such as `latest` are discovery hints only. Admission, activation,
   lock files, rollback, and audit evidence use immutable digests.
-- One artifact installation may expose multiple contributions. The host either
-  admits the declared compatible contribution set atomically or records an
-  explicit product-owned partial-admission decision. No accidental per-item
-  activation is allowed.
+- One artifact installation may expose multiple contributions. The manifest
+  declares required and optional contribution dependencies. Product admission
+  selects an explicit contribution set, closes its required dependency graph,
+  and authorizes each contribution separately. Installation, contribution
+  authorization, graph activation, and artifact rollback remain separate
+  records; no accidental per-item activation or unspecified partial admission is
+  allowed.
 
 ### Runtime and invocation boundaries
 
@@ -104,9 +139,12 @@ flowchart LR
   explicit deadlines, cancellation, bounded input and output, backpressure, and
   typed terminal outcomes. Pure local function calls are not forced through a
   network-shaped protocol.
-- Plugin or provider calls never occur inside a product Unit of Work. The
-  product commits durable intent first, invokes the effect after commit, and
-  reconciles an unknown outcome before retrying.
+- No extension code executes inside a product Unit of Work, regardless of
+  whether it is built in, isolated, invoked through a direct port, used as an
+  interceptor, or subscribed to an event. The transaction may validate an
+  already returned proposal and commit canonical state, durable intent, and an
+  outbox record. Extension effects run after commit and an unknown outcome is
+  reconciled before retry.
 - Events represent observed facts. A command, query, or optional interception
   uses a named product-owned typed port or ordered chain with explicit
   authority, result, failure, and ordering semantics. An event bus is never a
@@ -118,11 +156,17 @@ flowchart LR
   extension code. Compilation rejects missing dependencies, cycles, provider
   ambiguity, incompatible versions, undeclared edges, and nondeterministic
   ordering.
-- Activation is atomic at graph-generation scope. The host computes the full
-  affected dependency closure, starts and health-checks a candidate generation,
-  commits routing once, then drains the prior generation. Failure before the
-  routing commit disposes the whole candidate generation; failure after it
-  invokes explicit reconciliation and rollback for the whole affected closure.
+- The host computes the full affected dependency closure and stages a candidate
+  graph without invocation or external-effect authority. Unavoidable startup
+  effects require declared compensation and reconciliation; cleanup alone does
+  not make them atomic.
+- Atomicity applies only to publishing and fencing one immutable routing
+  snapshot. Exact health gates, route-versus-drain ordering, in-flight behavior,
+  and rollback eligibility are contract-specific choices governed by OD-003.
+  Before publication, the host disposes the complete candidate closure and
+  reconciles startup effects. After publication, recovery creates another
+  explicit routing generation and reconciles or rolls forward; it is not a
+  transactional reversal of external effects.
 - Activation, drain, deactivation, uninstall, data export, and deletion are
   separate operations. Cleanup hooks are necessary but do not prove that
   timers, processes, streams, listeners, or remote effects stopped.
@@ -135,10 +179,14 @@ flowchart LR
   written by an extension.
 - Foundation protocol schemas are immutable versioned contracts, not a shared
   product database.
-- Plugin-private state is installation-scoped. Its owner declares schema
-  version, idempotent migration policy, compatibility window, checkpoint or
-  backup behavior, retention, export, and deletion. The product host
-  orchestrates lifecycle but does not infer destructive migration or deletion.
+- Plugin-private state uses a durable state-space identity bound to one product
+  authority scope and logical extension or contribution. An installation may be
+  attached to that state space only by an explicit compatible binding; uninstall
+  detaches it without creating an orphan or authorizing automatic reuse.
+- The publisher owns private-state schema and migration intent. The product or
+  tenant owns custody, retention, export, backup, and deletion authority. The
+  product host orchestrates idempotent migration, compatibility, checkpoint, and
+  explicit rebind or tombstone transitions without inferring destructive action.
 - Uninstall never deletes product or plugin-private user data implicitly.
 - Credentials remain inside product-owned secret adapters. Contributions
   receive scoped capabilities or opaque references, not raw secrets or an
@@ -180,5 +228,5 @@ flowchart LR
 - Calling extension code inside database transactions or blindly retrying an
   ambiguous external effect.
 - In-place hot mutation of an active graph. Generation replacement with explicit
-  routing, drain, and rollback is required.
+  routing, fencing, drain, and reconciliation is required.
 - Publishing an SPI after one implementation or only two consumers.

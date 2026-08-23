@@ -31,6 +31,11 @@
       "id": "ADR-0006",
       "path": "docs/decisions/0006-extension-module-safety-boundaries.md",
       "immutableDigest": "sha256:43ee1789a1ae3951fd2360dafd9e9c36904562bdd9efed1c0b57dab6f1790a06"
+    },
+    {
+      "id": "ADR-0007",
+      "path": "docs/decisions/0007-extension-module-safety-boundary-clarifications.md",
+      "immutableDigest": "sha256:b8beac11915c923196d094b1bd8bb4691e02bfcdc25d7b49980bc20138ea6771"
     }
   ]
 }
