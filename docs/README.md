@@ -17,6 +17,8 @@ Read by responsibility:
 | --- | --- |
 | Product boundary and topology | [Architecture overview](architecture/overview.md) |
 | Extension terminology and ownership | [Extension model](architecture/extension-model.md) |
+| Module and plugin safety rules | [Extension safety guardrails](architecture/extension-safety-guardrails.md) |
+| Proposed reusable module topology | [Module and plugin topology proposal](architecture/module-and-plugin-topology-proposal.md) |
 | Catalog state, federation, and trust | [ADR-0003](decisions/0003-postgresql-canonical-catalog-state-and-signed-snapshots.md), [ADR-0004](decisions/0004-deterministic-catalog-federation-and-namespace-authority.md), and [ADR-0005](decisions/0005-catalog-trust-and-moderation-boundaries.md) |
 | Accepted decisions | [ADR index](decisions/README.md) |
 | Unresolved decisions | [Open decision index](open-decisions/README.md) |
