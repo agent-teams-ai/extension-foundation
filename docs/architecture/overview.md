@@ -62,6 +62,33 @@ repository uses domain modelling only for real extension lifecycle and trust
 semantics; adapters, schema codecs, and OCI clients do not receive artificial
 aggregates.
 
+## Package Admission
+
+The package catalog is closed and intentionally empty until an accepted owner
+document and a real implementation slice exist. A package is admitted in one
+reviewed change that adds its catalog entry, deterministic scaffold output, and
+non-empty `src/features/<feature>/` implementation. Reserving empty packages or
+root-level `domain`, `application`, `contracts`, or `adapters` directories is
+not allowed.
+
+Feature-specific contracts and adapters stay inside their owning feature.
+Only product-neutral contracts with an independent release lifecycle may
+become package boundaries. Technology adapters become separate packages only
+when they are independently replaced, released, or deployed.
+
+Use the reviewable scaffolding sequence; planning never writes source files:
+
+```bash
+pnpm --silent architecture:scaffold:plan -- <intent-path> --consumer . --json > <plan-path>
+pnpm --silent architecture:scaffold:apply -- <plan-path> --consumer . --json
+pnpm architecture:scaffold:recover
+pnpm architecture:check
+```
+
+The Engineering Foundation owns the source-graph and scaffolding protocols.
+This repository owns its package roles, catalog entries, allowed dependency
+edges, feature names, and owner documents.
+
 ## Catalog State and Publication
 
 Each writable catalog source owns one PostgreSQL canonical store. Signed

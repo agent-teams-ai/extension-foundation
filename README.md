@@ -37,6 +37,8 @@ pnpm install --frozen-lockfile
 pnpm docs:info
 pnpm docs:find -- "extension lifecycle"
 pnpm docs:doctor
+pnpm architecture:check
+pnpm typecheck
 pnpm check
 ```
 
