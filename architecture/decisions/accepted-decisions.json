@@ -26,6 +26,11 @@
       "id": "ADR-0005",
       "path": "docs/decisions/0005-catalog-trust-and-moderation-boundaries.md",
       "immutableDigest": "sha256:9aa601d6a7d4697d2ed7b3b1b9a8d5d290698ec4eaa317828c3471c7fbe64819"
+    },
+    {
+      "id": "ADR-0006",
+      "path": "docs/decisions/0006-extension-module-safety-boundaries.md",
+      "immutableDigest": "sha256:43ee1789a1ae3951fd2360dafd9e9c36904562bdd9efed1c0b57dab6f1790a06"
     }
   ]
 }

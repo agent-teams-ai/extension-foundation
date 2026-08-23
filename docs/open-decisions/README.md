@@ -9,6 +9,7 @@ summary: Canonical index of unresolved Extension Foundation architecture decisio
 # Open Decisions
 
 - [OD-002: Catalog security and offline operational parameters](OD-002-catalog-security-and-offline-operational-parameters.md)
+- [OD-003: Module runtime and public SPI choices](OD-003-module-runtime-and-public-spi-choices.md)
 
 ## Resolved Decisions
 

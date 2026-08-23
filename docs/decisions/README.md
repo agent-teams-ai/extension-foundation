@@ -19,6 +19,7 @@ No proposed decisions.
 - [ADR-0003: PostgreSQL canonical catalog state and signed snapshots](0003-postgresql-canonical-catalog-state-and-signed-snapshots.md)
 - [ADR-0004: Deterministic catalog federation and namespace authority](0004-deterministic-catalog-federation-and-namespace-authority.md)
 - [ADR-0005: Catalog trust and moderation boundaries](0005-catalog-trust-and-moderation-boundaries.md)
+- [ADR-0006: Extension module safety boundaries](0006-extension-module-safety-boundaries.md)
 
 ## Superseded decisions
 
