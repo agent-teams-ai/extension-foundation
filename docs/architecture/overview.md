@@ -64,10 +64,11 @@ aggregates.
 
 ## Package Admission
 
-The package catalog is closed and intentionally empty until an accepted,
-package-specific ADR and a real implementation slice exist. A package is admitted in one
-reviewed change that adds its catalog entry, deterministic scaffold output, and
-non-empty `src/features/<feature>/` implementation. Reserving empty packages or
+The package catalog is closed and intentionally empty until an effective
+accepted ADR binds the exact package ID, name, path, and feature names. A
+package is admitted in one reviewed change that adds its catalog entry,
+deterministic scaffold output, value-level `src/features/<feature>/`
+implementation, and executable package-specific test evidence. Reserving empty packages or
 root-level `domain`, `application`, `contracts`, or `adapters` directories is
 not allowed.
 
@@ -82,18 +83,26 @@ identity, or operations outside the cataloged package root:
 
 ```bash
 pnpm architecture:scaffold:plan -- <intent-path> architecture/scaffolding-plans/<name>.json
-pnpm architecture:scaffold:apply -- architecture/scaffolding-plans/<name>.json
+pnpm architecture:scaffold:apply -- architecture/scaffolding-plans/<name>.json <printed-plan-digest>
 pnpm architecture:scaffold:recover
 pnpm architecture:check
 ```
 
-The generic scaffold creates the private package boundary, `tsconfig`, and public
-entrypoint. Before apply output can pass admission, the author must add the
+The generic scaffold creates a private internal package boundary, `tsconfig`,
+and curated package entrypoint. This is not publication of a public extension
+SPI. Before apply output can pass admission, the author must add the
 package-specific feature implementation and its exact `package.<catalog-id>`
-source boundary in the same change. Package `check` is mandatory; CI never skips
-it with `--if-present`.
+source boundary in the same change. Each package keeps the governed check,
+typecheck, build, and test scripts; CI never skips them with `--if-present`.
 
-The current filesystem adapter proves journaled process-crash recovery. This
+Publishing an external extension SPI remains a separate decision and requires
+the stable product owner, real product slice, independent implementations,
+compatibility fixtures, negative tests, and conformance evidence defined by the
+extension safety ADR. Internal package exports do not satisfy that gate.
+
+The current filesystem adapter proves journaled process-crash recovery in a
+trusted single-writer workspace. Plan apply additionally requires the digest
+printed during review. This
 repository does not claim power-loss durability on every operating system until
 the shared Foundation publishes that qualification evidence.
 

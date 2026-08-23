@@ -1,27 +1,28 @@
+import { constants } from "node:fs";
 import { lstat, mkdir, open, readFile, realpath, rm } from "node:fs/promises";
 import { dirname, isAbsolute, join, posix, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
   applyFilesystemScaffold,
+  assertScaffoldPlanDigest,
   planScaffoldFromFile,
   recoverFilesystemScaffold,
 } from "@agent-teams/engineering-foundation/scaffolding";
 
-const CATALOG_PATH = "architecture/package-catalog.json";
+import {
+  CATALOG_PATH,
+  PACKAGE_PATH,
+  createDocsOwnerResolver,
+  isRecord,
+  loadAllowedPackageRoles,
+  packageOwnerFeatures,
+} from "./package-policy.mjs";
+
 const PLAN_DIRECTORY = "architecture/scaffolding-plans";
 const PLAN_PATH = /^architecture\/scaffolding-plans\/[a-z0-9][a-z0-9-]*\.json$/;
-const PACKAGE_PATH = /^packages\/[a-z0-9][a-z0-9-]*(?:\/[a-z0-9][a-z0-9-]*)*$/;
-const ALLOWED_ROLES = new Set([
-  "foundation-component",
-  "integration-adapter",
-  "testing-support",
-]);
 const MAX_PLAN_BYTES = 4 * 1024 * 1024;
-
-function isRecord(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+const SUCCESS_RECEIPT_OUTCOMES = new Set(["already-applied", "applied", "failed-recovered"]);
 
 function contained(root, candidate) {
   const relation = relative(root, candidate);
@@ -66,11 +67,15 @@ async function readBoundedJson(root, path) {
   }
   const [canonicalRoot, canonicalPath] = await Promise.all([realpath(root), realpath(path)]);
   if (!contained(canonicalRoot, canonicalPath)) throw new Error("scaffold plan escapes the repository");
-  const handle = await open(path, "r");
+  const flags = constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0);
+  const handle = await open(path, flags);
   try {
     const metadata = await handle.stat();
-    if (!metadata.isFile() || metadata.size > MAX_PLAN_BYTES) {
-      throw new Error("JSON input must be one bounded regular file");
+    if (!metadata.isFile()
+      || metadata.size > MAX_PLAN_BYTES
+      || metadata.dev !== metadataBeforeOpen.dev
+      || metadata.ino !== metadataBeforeOpen.ino) {
+      throw new Error("JSON input must remain one bounded regular file");
     }
     return JSON.parse(await handle.readFile("utf8"));
   } finally {
@@ -78,11 +83,19 @@ async function readBoundedJson(root, path) {
   }
 }
 
-async function validatePlanAgainstCatalog(root, plan) {
+function pathsOverlap(left, right) {
+  return left === right || left.startsWith(`${right}/`) || right.startsWith(`${left}/`);
+}
+
+async function validatePlanAgainstCatalog(root, plan, resolveOwner) {
   if (!isRecord(plan) || !isRecord(plan.target) || !Array.isArray(plan.operations)) {
     throw new Error("scaffold plan has an invalid shape");
   }
-  const catalog = JSON.parse(await readFile(join(root, CATALOG_PATH), "utf8"));
+  assertScaffoldPlanDigest(plan);
+  const [catalog, allowedRoles] = await Promise.all([
+    readFile(join(root, CATALOG_PATH), "utf8").then(JSON.parse),
+    loadAllowedPackageRoles(root),
+  ]);
   if (!isRecord(catalog) || !Array.isArray(catalog.packages)) {
     throw new Error("package catalog is invalid");
   }
@@ -91,12 +104,22 @@ async function validatePlanAgainstCatalog(root, plan) {
   const entry = matches[0];
   if (!isRecord(entry)
     || !PACKAGE_PATH.test(entry.path)
-    || !ALLOWED_ROLES.has(entry.role)
+    || !allowedRoles.has(entry.role)
     || plan.target.path !== entry.path
     || plan.target.packageName !== entry.package_name
     || plan.target.role !== entry.role
     || plan.target.ownerDocument?.id !== entry.owner_document) {
     throw new Error("scaffold target differs from the repository-owned package policy");
+  }
+  if (catalog.packages.some(candidate => (
+    candidate !== entry
+    && typeof candidate?.path === "string"
+    && pathsOverlap(entry.path, candidate.path)
+  ))) {
+    throw new Error("scaffold target overlaps another cataloged package root");
+  }
+  if (packageOwnerFeatures(entry, await resolveOwner(entry.owner_document)) === undefined) {
+    throw new Error("scaffold owner must be one effective accepted ADR bound to the exact package and features");
   }
   if (plan.operations.length === 0) throw new Error("scaffold plan must contain materialization operations");
   const operationPaths = new Set();
@@ -113,55 +136,115 @@ async function validatePlanAgainstCatalog(root, plan) {
   return plan;
 }
 
-export async function publishScaffoldPlan({ root, intentPath, planPath }) {
+export async function publishScaffoldPlan({
+  root,
+  intentPath,
+  planPath,
+  resolveOwner = createDocsOwnerResolver(root),
+}) {
   const destination = safePlanPath(root, planPath);
   await ensurePlanDirectory(root);
   const plan = await validatePlanAgainstCatalog(root, await planScaffoldFromFile({
     consumerRoot: root,
     intentPath,
-  }));
+  }), resolveOwner);
   const handle = await open(destination, "wx", 0o644);
   let complete = false;
+  let primaryError;
+  let cleanupError;
   try {
     await handle.writeFile(`${JSON.stringify(plan, null, 2)}\n`, "utf8");
     await handle.sync();
-    complete = true;
-  } finally {
     await handle.close();
-    if (!complete) await rm(destination, { force: true });
+    complete = true;
+  } catch (error) {
+    primaryError = error;
+    await handle.close().catch(() => undefined);
+  } finally {
+    if (!complete) {
+      try {
+        await rm(destination, { force: true });
+      } catch (error) {
+        cleanupError = error;
+      }
+    }
   }
-  return plan;
+  if (primaryError !== undefined && cleanupError !== undefined) {
+    throw new AggregateError([primaryError, cleanupError], "plan publication and cleanup both failed");
+  }
+  if (primaryError !== undefined) throw primaryError;
+  if (cleanupError !== undefined) throw cleanupError;
+  return { plan, planDigest: plan.planDigest };
 }
 
-export async function applyScaffoldPlan({ root, planPath }) {
-  const plan = await validatePlanAgainstCatalog(root, await readBoundedJson(root, safePlanPath(root, planPath)));
-  return applyFilesystemScaffold(root, plan);
+export async function applyScaffoldPlan({
+  root,
+  planPath,
+  expectedPlanDigest,
+  resolveOwner = createDocsOwnerResolver(root),
+}) {
+  if (typeof expectedPlanDigest !== "string" || !expectedPlanDigest.startsWith("sha256:")) {
+    throw new Error("apply requires the reviewed plan digest printed by the plan command");
+  }
+  const plan = await readBoundedJson(root, safePlanPath(root, planPath));
+  assertScaffoldPlanDigest(plan);
+  if (plan.planDigest !== expectedPlanDigest) {
+    throw new Error("scaffold plan differs from the reviewed plan digest");
+  }
+  return applyFilesystemScaffold(
+    root,
+    await validatePlanAgainstCatalog(root, plan, resolveOwner),
+  );
 }
 
-async function runCli() {
-  const root = fileURLToPath(new URL("../..", import.meta.url));
-  const [command, first, second, ...rest] = process.argv.slice(2);
+function receiptExitCode(receipt) {
+  return SUCCESS_RECEIPT_OUTCOMES.has(receipt.outcome) ? 0 : 2;
+}
+
+export async function runScaffoldCli({
+  root,
+  args,
+  write = value => console.log(value),
+  resolveOwner = createDocsOwnerResolver(root),
+  recover = recoverFilesystemScaffold,
+}) {
+  const [command, first, second, ...rest] = args;
   if (rest.length > 0) throw new Error("unexpected scaffold arguments");
   if (command === "plan" && first !== undefined && second !== undefined) {
-    const plan = await publishScaffoldPlan({ root, intentPath: first, planPath: second });
-    console.log(JSON.stringify({ outcome: "planned", planPath: second, intentDigest: plan.intentDigest }));
-    return;
+    const { plan, planDigest } = await publishScaffoldPlan({
+      root,
+      intentPath: first,
+      planPath: second,
+      resolveOwner,
+    });
+    write(JSON.stringify({ outcome: "planned", planPath: second, intentDigest: plan.intentDigest, planDigest }));
+    return 0;
   }
-  if (command === "apply" && first !== undefined && second === undefined) {
-    console.log(JSON.stringify(await applyScaffoldPlan({ root, planPath: first })));
-    return;
+  if (command === "apply" && first !== undefined && second !== undefined) {
+    const receipt = await applyScaffoldPlan({
+      root,
+      planPath: first,
+      expectedPlanDigest: second,
+      resolveOwner,
+    });
+    write(JSON.stringify(receipt));
+    return receiptExitCode(receipt);
   }
   if (command === "recover" && first === undefined && second === undefined) {
-    const recovery = await recoverFilesystemScaffold(root);
-    console.log(JSON.stringify(recovery ?? { outcome: "no-pending-transaction" }));
-    return;
+    const recovery = await recover(root);
+    const receipt = recovery ?? { outcome: "no-pending-transaction" };
+    write(JSON.stringify(receipt));
+    return recovery === undefined ? 0 : receiptExitCode(receipt);
   }
-  throw new Error("usage: scaffold.mjs plan <intent> <plan> | apply <plan> | recover");
+  throw new Error("usage: scaffold.mjs plan <intent> <plan> | apply <plan> <plan-digest> | recover");
 }
 
 if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
-    await runCli();
+    process.exitCode = await runScaffoldCli({
+      root: fileURLToPath(new URL("../..", import.meta.url)),
+      args: process.argv.slice(2),
+    });
   } catch (error) {
     console.error(`SCAFFOLD_POLICY_REJECTED: ${error instanceof Error ? error.message : String(error)}`);
     process.exitCode = 2;

@@ -6,6 +6,7 @@ catalogMode: strict
 catalog:
   cspell: 10.0.1
   markdownlint-cli2: 0.23.2
+  oxc-parser: 0.146.0
   typescript: 7.0.2
   yaml: 2.9.0
 

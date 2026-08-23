@@ -16,7 +16,7 @@
   },
   "scripts": {
     "architecture:check": "pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && node --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/scaffolding.test.mjs",
-    "architecture:check:fast": "pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && node --test --test-concurrency=1 tests/architecture-topology.test.mjs",
+    "architecture:check:fast": "pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && node --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/scaffolding.test.mjs",
     "architecture:scaffold:apply": "node architecture/checks/scaffold.mjs apply",
     "architecture:scaffold:plan": "node architecture/checks/scaffold.mjs plan",
     "architecture:scaffold:recover": "node architecture/checks/scaffold.mjs recover",
@@ -24,7 +24,7 @@
     "architecture:topology:check": "node architecture/checks/package-topology.mjs",
     "check": "pnpm foundation:check && pnpm docs:protocol:check && pnpm architecture:check && pnpm typecheck && pnpm packages:check",
     "check:changed": "agent-teams-foundation agent-workflow changed --consumer .",
-    "check:fast": "pnpm foundation:check && pnpm docs:protocol:check && pnpm architecture:check:fast && pnpm typecheck",
+    "check:fast": "pnpm foundation:check && pnpm docs:protocol:check && pnpm architecture:check:fast && pnpm typecheck && pnpm packages:check",
     "docs:changed": "pnpm docs:check && pnpm docs:quality",
     "docs:check": "agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml",
     "docs:contract-test": "node --test tests/document-authoring.test.mjs tests/docs-protocol-qualification.test.mjs",
@@ -42,13 +42,14 @@
     "foundation:detach": "agent-teams-foundation detach",
     "foundation:status": "agent-teams-foundation status",
     "packages:check": "pnpm --recursive --filter './packages/**' check",
-    "typecheck": "tsc --project tsconfig.json --noEmit --pretty false"
+    "typecheck": "tsc --project tsconfig.json --noEmit --pretty false && pnpm --recursive --filter './packages/**' typecheck"
   },
   "devDependencies": {
     "@agent-teams/docs-protocol": "0.1.1",
     "@agent-teams/engineering-foundation": "0.17.0",
     "cspell": "catalog:",
     "markdownlint-cli2": "catalog:",
+    "oxc-parser": "catalog:",
     "typescript": "catalog:",
     "yaml": "catalog:"
   }

@@ -11,17 +11,24 @@ boundaries:
     roots:
       - architecture/checks
     entrypoints:
+      - architecture/checks/package-policy.mjs
       - architecture/checks/package-topology.mjs
       - architecture/checks/scaffold.mjs
+      - architecture/checks/source-safety.mjs
     allow:
       boundaries: []
       builtins:
+        - node:child_process
+        - node:fs
         - node:fs/promises
         - node:path
         - node:url
+        - node:util
       packages:
         - "@agent-teams/docs-protocol"
         - "@agent-teams/engineering-foundation"
+        - oxc-parser
+        - typescript
         - yaml
       runtimeReferences: []
   - id: repository.tests
