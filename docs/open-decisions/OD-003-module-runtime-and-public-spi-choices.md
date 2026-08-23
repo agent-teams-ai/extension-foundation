@@ -8,6 +8,7 @@ related:
   - ADR-0001
   - ADR-0006
   - ADR-0007
+  - ADR-0008
 ---
 
 # OD-003: Module Runtime And Public SPI Choices
@@ -20,7 +21,7 @@ for trusted and isolated implementations.
 
 ## Constraints
 
-- ADR-0007 ownership, authority, identity, transaction, trust-tier, graph, and
+- ADR-0008 ownership, authority, identity, transaction, trust-tier, graph, and
   state boundaries are fixed.
 - Product-specific SPIs remain in Orchestrator, Agent Runtime, Frontend, or
   another consuming product.
@@ -31,8 +32,9 @@ for trusted and isolated implementations.
   authorization, graph activation, and runtime generation remain distinct.
 - Public contracts cannot contain Cordis Context, Fiber, Awilix, container,
   loader, or configuration types.
-- Every invocation is fenced by graph generation, runtime generation, and a
-  monotonic grant revision. This safety floor is not open for selection here.
+- Every invocation is fenced by authority scope, graph generation, runtime
+  generation, immutable grant identity, and a monotonic non-reused revision in
+  that grant lineage. This safety floor is not open for selection here.
 
 ## Options
 
@@ -65,10 +67,16 @@ isolation alone is not conformance evidence.
 - Generation handover with either drain-before-route or route-before-drain,
   selected per contribution contract and tested against in-flight invocations.
 
-The final contract must also decide health gates, cancellation of in-flight
-work, the exact point at which old grants are fenced, and when recovery may
-activate another generation versus requiring reconciliation or roll-forward.
-External startup effects cannot be made transactional by graph publication.
+The host must compile one valid handover plan for the complete affected
+dependency closure. Per-contribution route or drain policies are valid only
+when their combined ordering is acyclic and preserves every required dependency;
+an incompatible mixed-policy chain is rejected before staging. The old grant is
+fenced before its runtime enters drain, so no new invocation can enter it.
+
+The final contract must still decide health gates, bounded completion versus
+cancellation of already accepted in-flight work, and when recovery may activate
+another generation versus requiring reconciliation or roll-forward. External
+startup effects cannot be made transactional by graph publication.
 
 ### Compatibility and state migration
 
@@ -80,7 +88,7 @@ Foundation.
 
 ### Public API evidence
 
-ADR-0007 already fixes the minimum publication floor: one real product slice, a
+ADR-0008 already fixes the minimum publication floor: one real product slice, a
 stable owner, two independently authored conforming implementations,
 compatibility fixtures, negative tests, and an executable conformance suite.
 This decision chooses the evidence format, independence proof, compatibility
@@ -91,7 +99,7 @@ not weaken that floor.
 
 The following layout preserves the current research without reserving packages
 or accepting their public APIs. Create a package only when a real product slice
-and the ADR-0007 evidence justify it.
+and the ADR-0008 evidence justify it.
 
 ```text
 packages/
@@ -139,6 +147,15 @@ packages/
   selected recovery behavior.
 - Prove grant binding, revocation fencing, stale-generation rejection, drain,
   cancellation, unknown-outcome reconciliation, and bounded streaming.
+- Prove that the same numeric revision under a different grant identity is
+  rejected, revoke-and-reissue cannot reuse a lineage tuple, and stale proxies
+  cannot cross an authority scope.
+- Prove that a graph contains only same-scope runtimes and that cross-scope
+  dependency or routing edges fail compilation.
+- Prove closure-wide handover planning, pre-drain fencing, and rejection of an
+  incompatible mixed route/drain policy chain.
+- Prove exact artifact-versus-contribution private-state attachment, compatible
+  schema lineage, and sibling-contribution isolation.
 - Prove N/N-1 request and response fixtures for every direction selected by the
   final compatibility decision.
 - Prove that Cordis or any other composition library can be replaced without

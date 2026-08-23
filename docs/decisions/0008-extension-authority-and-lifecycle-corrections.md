@@ -1,29 +1,27 @@
 ---
-id: ADR-0007
+id: ADR-0008
 type: adr
-status: superseded
+status: accepted
 owner: architecture
-summary: Clarifies fail-closed extension authority, identity cardinality, lifecycle atomicity, and durable private-state custody.
+summary: Closes grant-lineage, entitlement, graph-scope, activation-failure, and private-state attachment ambiguities.
 approved_by: product-owner
 accepted_at: 2026-08-23
-superseded_by:
-  - ADR-0008
 supersedes:
-  - ADR-0006
+  - ADR-0007
 related:
   - ADR-0001
   - ADR-0005
 ---
 
-# ADR-0007: Extension Module Safety Boundary Clarifications
+# ADR-0008: Extension Authority And Lifecycle Corrections
 
 ## Context
 
-ADR-0006 established the safety floor for modules and plugin artifacts. Review
-identified ambiguities around grant revocation, identity cardinality, external
-startup effects, multi-contribution artifacts, and private-state custody. This
-ADR supersedes ADR-0006 with explicit fail-closed semantics while preserving its
-product-owned authority model.
+ADR-0007 clarified the module and plugin safety floor, but final adversarial
+review identified remaining ambiguity in grant revision lineages, direct-digest
+entitlement handling, graph authority scope, successful activation, and
+private-state attachment. This ADR supersedes ADR-0007 while preserving its
+product-owned authority and transaction model.
 
 Extension Foundation must support built-in modules, first-party engines, and
 independently distributed plugins without turning a dependency-injection
@@ -91,10 +89,13 @@ flowchart LR
     Route --> Enforce
 ```
 
-Catalog admission and commercial entitlement can be explicitly not applicable
-for a product-approved direct OCI installation or a deployment without that
-commercial plane. They are never silently skipped. Runtime enforcement is a
-continuing invocation boundary, not evidence produced once by activation.
+Catalog admission may be explicitly not applicable only when product policy
+selects a product-approved direct-digest trust route. Commercial entitlement may
+be explicitly not applicable only when product policy declares that no
+entitlement requirement or entitlement plane applies to that deployment and
+capability. Direct installation never bypasses an applicable entitlement
+decision. Runtime enforcement is a continuing invocation boundary, not evidence
+produced once by activation.
 
 - Publisher, extension, artifact, manifest, artifact-installation,
   contribution-installation, graph-generation, runtime-generation, proxy,
@@ -106,18 +107,24 @@ continuing invocation boundary, not evidence produced once by activation.
   tenant, project, or another product-owned boundary, but is never implicit.
   Each contribution installation belongs to exactly one artifact installation.
 - A runtime generation belongs to exactly one contribution installation. An
-  immutable graph generation is a routing snapshot that references one or more
-  runtime generations; an unchanged runtime generation may appear in successive
-  graph snapshots.
+  immutable graph generation belongs to exactly one explicit product authority
+  scope and is a routing snapshot that references one or more same-scope runtime
+  generations. Cross-scope routes require separate graph generations. An
+  unchanged same-scope runtime generation may appear in successive graph
+  snapshots.
 - A capability grant binds the product authority scope, artifact and
   contribution installations, artifact and manifest digests, exact
-  capabilities, runtime generation, and a monotonic grant revision. Any scope or
-  capability expansion or digest change requires a new authorization.
+  capabilities, runtime generation, an immutable grant identity, and a monotonic revision that
+  is never reused within that grant lineage. Any scope or capability expansion,
+  digest change, revoke-and-reissue, or lineage replacement requires a new
+  authorization and cannot inherit an old revision tuple.
 - Every proxy and invocation carries the graph generation, runtime generation,
-  and grant revision it observed. Enforcement validates all three at each
-  dispatch and capability boundary. Revocation advances or invalidates the grant
-  revision and fences routing before drain starts; stale handles cannot exercise
-  either an old revoked grant or a newer grant.
+  grant identity, and grant revision it observed. Enforcement validates the
+  authority scope, current grant tuple, and graph-to-runtime-to-grant relationship
+  at each dispatch and capability boundary. Revocation advances or invalidates
+  the grant revision and fences routing before drain starts; stale handles cannot
+  exercise either an old revoked grant or a different grant with the same numeric
+  revision.
 - Mutable tags such as `latest` are discovery hints only. Admission, activation,
   lock files, rollback, and audit evidence use immutable digests.
 - One artifact installation may expose multiple contributions. The manifest
@@ -165,8 +172,9 @@ continuing invocation boundary, not evidence produced once by activation.
 - Atomicity applies only to publishing and fencing one immutable routing
   snapshot. Exact health gates, route-versus-drain ordering, in-flight behavior,
   and rollback eligibility are contract-specific choices governed by OD-003.
-  Before publication, the host disposes the complete candidate closure and
-  reconciles startup effects. After publication, recovery creates another
+  On failure or abandonment before publication, the host disposes the complete
+  candidate closure and reconciles startup effects. A healthy candidate remains
+  live for successful publication. After publication, recovery creates another
   explicit routing generation and reconciles or rolls forward; it is not a
   transactional reversal of external effects.
 - Activation, drain, deactivation, uninstall, data export, and deletion are
@@ -181,10 +189,14 @@ continuing invocation boundary, not evidence produced once by activation.
   written by an extension.
 - Foundation protocol schemas are immutable versioned contracts, not a shared
   product database.
-- Plugin-private state uses a durable state-space identity bound to one product
-  authority scope and logical extension or contribution. An installation may be
-  attached to that state space only by an explicit compatible binding; uninstall
-  detaches it without creating an orphan or authorizing automatic reuse.
+- Plugin-private state uses a durable state-space identity with a discriminated
+  owner `{ ownerKind: extension | contribution, ownerId }` bound to one product
+  authority scope. Extension-owned state accepts only the corresponding artifact
+  installation attachment; contribution-owned state accepts only the
+  corresponding contribution installation attachment. Binding requires the same
+  authority scope and compatible schema lineage. Sibling contributions cannot
+  read, migrate, rebind, or reuse one another's state. Uninstall detaches the
+  exact attachment without creating an orphan or authorizing automatic reuse.
 - The publisher owns private-state schema and migration intent. The product or
   tenant owns custody, retention, export, backup, and deletion authority. The
   product host orchestrates idempotent migration, compatibility, checkpoint, and
