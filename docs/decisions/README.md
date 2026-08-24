@@ -20,6 +20,7 @@ summary: Canonical index of proposed, accepted, and superseded Extension Foundat
 - [ADR-0004: Deterministic catalog federation and namespace authority](0004-deterministic-catalog-federation-and-namespace-authority.md)
 - [ADR-0005: Catalog trust and moderation boundaries](0005-catalog-trust-and-moderation-boundaries.md)
 - [ADR-0010: Extension safety floor and retirement closure](0010-extension-safety-floor-and-retirement-closure.md)
+- [ADR-0012: Reusable library, module, and plugin boundaries](0012-reusable-library-module-and-plugin-boundaries.md)
 
 ## Superseded decisions
 

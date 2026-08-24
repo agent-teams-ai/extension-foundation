@@ -11,6 +11,7 @@ related:
   - ADR-0008
   - ADR-0009
   - ADR-0010
+  - ADR-0012
 ---
 
 # OD-003: Module Runtime And Public SPI Choices
@@ -73,7 +74,7 @@ evidence immediately before adding any dependency.
 
 | Candidate | Observed version | Possible role | Required boundary |
 | --- | --- | --- | --- |
-| [`@deepseek-ai/cordis`](https://github.com/deepseek-ai/deepseek-harness) | `4.0.1` | Experimental trusted in-process module-host adapter with scoped services, fibers, and reverse effect cleanup | Pin exactly; keep `Context`, `Fiber`, loader, and configuration types inside the adapter; do not delegate product readiness, routing, fencing, or recovery. |
+| [`@deepseek-ai/cordis`](https://github.com/deepseek-ai/deepseek-harness/tree/master/vendor/cordis) | `4.0.1` | Experimental trusted in-process module-host adapter with scoped services, fibers, and reverse effect cleanup | This DeepSeek-owned package is distinct from upstream `cordis@4.0.0-rc.8`. Pin exactly; keep `Context`, `Fiber`, loader, and configuration types inside the adapter; do not delegate product readiness, routing, fencing, durable recovery, or isolation. Reject it if the qualification requires a second competing lifecycle state machine. |
 | [`awilix`](https://github.com/jeffijoe/awilix) | `13.0.5` | Consumer-owned bounded-context composition | Not a Foundation module runtime. Keep it under product `composition/**`; no cradle, container, registration, or resolver types may cross into features or contracts. |
 | [`@dagrejs/graphlib`](https://github.com/dagrejs/graphlib) | `4.0.5` | Private graph-algorithm implementation or differential test oracle | The owned compiler still defines canonical identity, stable tie-breaking, provider selection, diagnostics, serialization, and digest semantics. No mutable graph object or library error crosses the boundary. |
 | [`fast-check`](https://github.com/dubzzz/fast-check) | `4.9.0` | Property-based graph and lifecycle conformance tests | Development dependency only; generated cases must assert product-owned invariants and retain deterministic seeds for failures. |
@@ -89,6 +90,16 @@ The first qualification slice should prefer native typed factories and standard
 resource-management primitives. A candidate library is introduced only when a
 measured reduction in lifecycle or composition complexity outweighs its adapter,
 upgrade, and negative-conformance cost.
+
+The agreed reuse boundary is recorded by ADR-0012. Commodity primitives remain
+behind owned ports and diagnostics: Node resource disposal for cooperative local
+cleanup, `fast-check` for property and fault generation, a graph package only as
+a private algorithm or differential oracle, OpenTelemetry through an
+observability adapter, and the already accepted ORAS and Cosign distribution
+baseline. Awilix remains consumer composition machinery, and Extism remains a
+deferred isolated-host adapter. Package admission and exact dependency versions
+still require executable qualification; this list is not permission to expose
+their types or install all candidates preemptively.
 
 ### Ordering and handover
 
