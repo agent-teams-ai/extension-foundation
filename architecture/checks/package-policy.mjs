@@ -7,9 +7,19 @@ import { parse as parseYaml } from "yaml";
 export const CATALOG_PATH = "architecture/package-catalog.json";
 export const DOCS_PROFILE_PATH = "architecture/foundation/docs-protocol.yaml";
 export const SCAFFOLDING_POLICY_PATH = "architecture/foundation/scaffolding.yaml";
+export const CATALOG_ROOT_KEYS = Object.freeze(["packages", "version"]);
+export const CATALOG_ENTRY_KEYS = Object.freeze([
+  "id",
+  "owner_document",
+  "package_name",
+  "path",
+  "role",
+]);
+export const PACKAGE_ID = /^[a-z0-9][a-z0-9.-]*$/;
 export const PACKAGE_PATH = /^packages\/[a-z0-9][a-z0-9-]*(?:\/[a-z0-9][a-z0-9-]*)*$/;
 export const PACKAGE_NAME = /^@agent-teams\/[a-z0-9][a-z0-9._-]*$/;
 export const FEATURE_NAME = /^[a-z0-9][a-z0-9-]*$/;
+export const OWNER_DOCUMENT = /^ADR-[0-9]{4}$/;
 
 export function isRecord(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -33,6 +43,103 @@ export async function loadAllowedPackageRoles(root) {
     }
   }
   return roles;
+}
+
+function compareBinary(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function hasExactKeys(value, expected) {
+  return isRecord(value)
+    && Object.keys(value).sort(compareBinary).join("|") === [...expected].sort(compareBinary).join("|");
+}
+
+export function pathsOverlap(left, right) {
+  return left === right || left.startsWith(`${right}/`) || right.startsWith(`${left}/`);
+}
+
+export async function loadPackagePolicy(root) {
+  const [catalog, allowedRoles] = await Promise.all([
+    readFile(join(root, CATALOG_PATH), "utf8").then(JSON.parse),
+    loadAllowedPackageRoles(root),
+  ]);
+  const errors = [];
+  const entries = [];
+  const entriesById = new Map();
+  const entriesByPath = new Map();
+
+  if (!hasExactKeys(catalog, CATALOG_ROOT_KEYS)
+    || catalog.version !== 1
+    || !Array.isArray(catalog.packages)) {
+    return {
+      allowedRoles,
+      catalog,
+      entries,
+      entriesById,
+      entriesByPath,
+      errors: [`${CATALOG_PATH} must contain exactly version 1 and a packages array`],
+    };
+  }
+
+  const seen = { id: new Set(), path: new Set(), package_name: new Set() };
+  for (const entry of catalog.packages) {
+    if (!hasExactKeys(entry, CATALOG_ENTRY_KEYS)
+      || CATALOG_ENTRY_KEYS.some(key => typeof entry[key] !== "string" || entry[key].length === 0)) {
+      errors.push(`${CATALOG_PATH}: every entry must contain exactly ${CATALOG_ENTRY_KEYS.join(", ")}`);
+      continue;
+    }
+    if (!PACKAGE_ID.test(entry.id)) errors.push(`${entry.id}: package id is invalid`);
+    if (!allowedRoles.has(entry.role)) errors.push(`${entry.id}: unknown role ${entry.role}`);
+    if (!PACKAGE_PATH.test(entry.path)) {
+      errors.push(`${entry.id}: path must be a normalized directory under packages/`);
+    }
+    if (!PACKAGE_NAME.test(entry.package_name)) {
+      errors.push(`${entry.id}: package_name must use the @agent-teams scope`);
+    }
+    if (!OWNER_DOCUMENT.test(entry.owner_document)) {
+      errors.push(`${entry.id}: owner_document must be an ADR identity`);
+    }
+    for (const field of Object.keys(seen)) {
+      if (seen[field].has(entry[field])) errors.push(`${entry.id}: duplicate ${field} ${entry[field]}`);
+      seen[field].add(entry[field]);
+    }
+    for (const existing of entries) {
+      if (pathsOverlap(entry.path, existing.path)) {
+        errors.push(`${entry.id}: package path overlaps ${existing.id}`);
+      }
+    }
+    entries.push(entry);
+    entriesById.set(entry.id, entry);
+    entriesByPath.set(entry.path, entry);
+  }
+
+  return {
+    allowedRoles,
+    catalog,
+    entries,
+    entriesById,
+    entriesByPath,
+    errors,
+  };
+}
+
+export async function requireValidPackagePolicy(root) {
+  const policy = await loadPackagePolicy(root);
+  if (policy.errors.length !== 0) {
+    throw new Error(`package catalog is invalid: ${policy.errors.join("; ")}`);
+  }
+  return policy;
+}
+
+export function packageExportTargets(value) {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value)) {
+    const nested = value.map(packageExportTargets);
+    return nested.some(entry => entry === undefined) ? undefined : nested.flat();
+  }
+  if (!isRecord(value)) return undefined;
+  const nested = Object.values(value).map(packageExportTargets);
+  return nested.some(entry => entry === undefined) ? undefined : nested.flat();
 }
 
 function normalizePackageOwnership(value) {

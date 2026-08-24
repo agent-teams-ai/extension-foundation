@@ -17,6 +17,7 @@
   "scripts": {
     "architecture:check": "pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && node --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/scaffolding.test.mjs",
     "architecture:check:fast": "pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && node --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/scaffolding.test.mjs",
+    "architecture:package-artifacts:check": "node architecture/checks/package-artifacts.mjs",
     "architecture:scaffold:apply": "node architecture/checks/scaffold.mjs apply",
     "architecture:scaffold:plan": "node architecture/checks/scaffold.mjs plan",
     "architecture:scaffold:recover": "node architecture/checks/scaffold.mjs recover",
@@ -41,7 +42,8 @@
     "foundation:check": "agent-teams-foundation check && pnpm foundation:assert-dev-only && pnpm foundation:assert-registry",
     "foundation:detach": "agent-teams-foundation detach",
     "foundation:status": "agent-teams-foundation status",
-    "packages:check": "pnpm --recursive --filter './packages/**' check",
+    "packages:artifacts:check": "pnpm architecture:package-artifacts:check",
+    "packages:check": "pnpm --recursive --filter './packages/**' check && pnpm packages:artifacts:check",
     "typecheck": "tsc --project tsconfig.json --noEmit --pretty false && pnpm --recursive --filter './packages/**' typecheck"
   },
   "devDependencies": {

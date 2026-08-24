@@ -11,6 +11,7 @@ boundaries:
     roots:
       - architecture/checks
     entrypoints:
+      - architecture/checks/package-artifacts.mjs
       - architecture/checks/package-policy.mjs
       - architecture/checks/package-topology.mjs
       - architecture/checks/scaffold.mjs

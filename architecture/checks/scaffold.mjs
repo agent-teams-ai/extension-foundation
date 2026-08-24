@@ -1,5 +1,5 @@
 import { constants } from "node:fs";
-import { lstat, mkdir, open, readFile, realpath, rm } from "node:fs/promises";
+import { lstat, mkdir, open, realpath, rm } from "node:fs/promises";
 import { dirname, isAbsolute, join, posix, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -11,18 +11,16 @@ import {
 } from "@agent-teams/engineering-foundation/scaffolding";
 
 import {
-  CATALOG_PATH,
-  PACKAGE_PATH,
   createDocsOwnerResolver,
   isRecord,
-  loadAllowedPackageRoles,
   packageOwnerFeatures,
+  requireValidPackagePolicy,
 } from "./package-policy.mjs";
 
 const PLAN_DIRECTORY = "architecture/scaffolding-plans";
 const PLAN_PATH = /^architecture\/scaffolding-plans\/[a-z0-9][a-z0-9-]*\.json$/;
 const MAX_PLAN_BYTES = 4 * 1024 * 1024;
-const SUCCESS_RECEIPT_OUTCOMES = new Set(["already-applied", "applied", "failed-recovered"]);
+const SUCCESS_RECEIPT_OUTCOMES = new Set(["already-applied", "applied"]);
 
 function contained(root, candidate) {
   const relation = relative(root, candidate);
@@ -83,56 +81,42 @@ async function readBoundedJson(root, path) {
   }
 }
 
-function pathsOverlap(left, right) {
-  return left === right || left.startsWith(`${right}/`) || right.startsWith(`${left}/`);
+export function assertScaffoldOperationPaths(root, packagePath, operations) {
+  const packageRoot = resolve(root, packagePath);
+  const operationPaths = new Set();
+  for (const operation of operations) {
+    if (!isRecord(operation)
+      || typeof operation.path !== "string"
+      || operation.path.includes("\\")
+      || posix.normalize(operation.path) !== operation.path
+      || !operation.path.startsWith(`${packagePath}/`)
+      || !contained(packageRoot, resolve(root, operation.path))) {
+      throw new Error("every scaffold operation must stay inside the cataloged package root");
+    }
+    if (operationPaths.has(operation.path)) throw new Error(`duplicate scaffold operation: ${operation.path}`);
+    operationPaths.add(operation.path);
+  }
 }
 
-async function validatePlanAgainstCatalog(root, plan, resolveOwner) {
+export async function validatePlanAgainstCatalog(root, plan, resolveOwner) {
   if (!isRecord(plan) || !isRecord(plan.target) || !Array.isArray(plan.operations)) {
     throw new Error("scaffold plan has an invalid shape");
   }
   assertScaffoldPlanDigest(plan);
-  const [catalog, allowedRoles] = await Promise.all([
-    readFile(join(root, CATALOG_PATH), "utf8").then(JSON.parse),
-    loadAllowedPackageRoles(root),
-  ]);
-  if (!isRecord(catalog) || !Array.isArray(catalog.packages)) {
-    throw new Error("package catalog is invalid");
-  }
-  const matches = catalog.packages.filter(entry => entry?.id === plan.target.id);
-  if (matches.length !== 1) throw new Error("scaffold target must resolve to exactly one catalog entry");
-  const entry = matches[0];
-  if (!isRecord(entry)
-    || !PACKAGE_PATH.test(entry.path)
-    || !allowedRoles.has(entry.role)
+  const policy = await requireValidPackagePolicy(root);
+  const entry = policy.entriesById.get(plan.target.id);
+  if (entry === undefined
     || plan.target.path !== entry.path
     || plan.target.packageName !== entry.package_name
     || plan.target.role !== entry.role
     || plan.target.ownerDocument?.id !== entry.owner_document) {
     throw new Error("scaffold target differs from the repository-owned package policy");
   }
-  if (catalog.packages.some(candidate => (
-    candidate !== entry
-    && typeof candidate?.path === "string"
-    && pathsOverlap(entry.path, candidate.path)
-  ))) {
-    throw new Error("scaffold target overlaps another cataloged package root");
-  }
   if (packageOwnerFeatures(entry, await resolveOwner(entry.owner_document)) === undefined) {
     throw new Error("scaffold owner must be one effective accepted ADR bound to the exact package and features");
   }
   if (plan.operations.length === 0) throw new Error("scaffold plan must contain materialization operations");
-  const operationPaths = new Set();
-  for (const operation of plan.operations) {
-    if (!isRecord(operation)
-      || typeof operation.path !== "string"
-      || posix.normalize(operation.path) !== operation.path
-      || !operation.path.startsWith(`${entry.path}/`)) {
-      throw new Error("every scaffold operation must stay inside the cataloged package root");
-    }
-    if (operationPaths.has(operation.path)) throw new Error(`duplicate scaffold operation: ${operation.path}`);
-    operationPaths.add(operation.path);
-  }
+  assertScaffoldOperationPaths(root, entry.path, plan.operations);
   return plan;
 }
 

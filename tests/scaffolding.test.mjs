@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 import test from "node:test";
 
 import {
@@ -11,10 +14,22 @@ import {
 } from "@agent-teams/engineering-foundation/scaffolding";
 import {
   applyScaffoldPlan,
+  assertScaffoldOperationPaths,
   publishScaffoldPlan,
   runScaffoldCli,
 } from "../architecture/checks/scaffold.mjs";
-import { validatePackageTopology } from "../architecture/checks/package-topology.mjs";
+import { validateBuiltPackageArtifacts } from "../architecture/checks/package-artifacts.mjs";
+import { validatePackageTopology as validateRepositoryPackageTopology } from "../architecture/checks/package-topology.mjs";
+
+const execFileAsync = promisify(execFile);
+const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
+const foundationScaffoldingUrl = import.meta.resolve("@agent-teams/engineering-foundation/scaffolding");
+const foundationScaffoldingInternalUrl = new URL(
+  "./adapters/node/filesystem-authority-workspace.js",
+  foundationScaffoldingUrl,
+).href;
+const foundationCli = fileURLToPath(new URL("./cli.js", import.meta.resolve("@agent-teams/engineering-foundation")));
+const typescriptCli = fileURLToPath(new URL("./bin/tsc", import.meta.resolve("typescript/package.json")));
 
 const acceptedOwner = async id => ({
   id,
@@ -28,6 +43,14 @@ const acceptedOwner = async id => ({
     features: ["example"],
   }],
 });
+const noTrackedPackagePaths = async () => [];
+
+function validatePackageTopology(options) {
+  return validateRepositoryPackageTopology({
+    ...options,
+    readTrackedPackagePaths: options.readTrackedPackagePaths ?? noTrackedPackagePaths,
+  });
+}
 
 async function writeFixture(root, path, contents) {
   const target = join(root, path);
@@ -73,19 +96,23 @@ compositions:
           allowedStatuses:
             - accepted
           documentRoots:
-            - docs
+            - docs/decisions
     policies: []
 `);
   await writeFixture(root, "architecture/scaffolding-intents/example.yaml", `schemaVersion: 1
 compositionId: extension-foundation-library-boundary
 targetRef: module.example
 `);
+  await writeFixture(root, "package.json", '{"name":"fixture","private":true,"type":"module"}\n');
+  await writeFixture(root, "pnpm-workspace.yaml", 'packages:\n  - "packages/**"\n');
   await writeFixture(root, "docs/decisions/0099-example-package.md", `---
 id: ADR-0099
 type: adr
 status: accepted
 owner: architecture
 summary: Owns the disposable package used by scaffolding qualification.
+approved_by: product-owner
+accepted_at: 2026-08-23
 package_ownership:
   - package_id: module.example
     package_name: "@agent-teams/example"
@@ -95,6 +122,17 @@ package_ownership:
 
 # Example Package
 `);
+  for (const path of [
+    "architecture/foundation/docs-protocol.yaml",
+    "architecture/foundation/document-authoring.yaml",
+    "docs/metadata.schema.json",
+    "docs/owners.yaml",
+    "docs/templates/adr.md",
+    "docs/templates/open-decision.md",
+    ".agents/skills/docs-authoring/SKILL.md",
+  ]) {
+    await writeFixture(root, path, await readFile(join(repositoryRoot, path), "utf8"));
+  }
   await writeFixture(root, "node_modules/@agent-teams/engineering-foundation/presets/typescript/node.json", '{"compilerOptions":{"module":"nodenext","moduleResolution":"nodenext","target":"es2024","strict":true}}\n');
   await writeFixture(root, "tsconfig.json", '{"extends":"@agent-teams/engineering-foundation/presets/typescript/node.json","compilerOptions":{"composite":true,"noEmit":true},"files":[]}\n');
   return root;
@@ -236,19 +274,55 @@ test("scaffold output reaches a valid package only after the owner adds its real
       resolveOwner: acceptedOwner,
     })).outcome, "applied");
     await writeFixture(root, "packages/example/src/features/example/capability.ts", "export const capability = true;\n");
-    await writeFixture(root, "packages/example/src/features/example/capability.test.ts", 'import test from "node:test";\nimport { capability } from "./capability.js";\ntest("capability", () => { void capability; });\n');
+    await writeFixture(root, "packages/example/src/features/example/index.ts", 'export { capability } from "./capability.js";\n');
+    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", 'import test from "node:test";\nimport { capability } from "../../../src/features/example/index.ts";\ntest("capability", () => { void capability; });\n');
     await writeFixture(root, "architecture/foundation/source-dependencies.yaml", `schemaVersion: 1
 workspace: {kind: pnpm, manifest: pnpm-workspace.yaml}
-governedRoots: [packages/example/src]
+governedRoots: [packages/example/src, packages/example/test]
 boundaries:
   - id: package.module.example
     dependencyMode: runtime
     roots: [packages/example/src]
     entrypoints: [packages/example/src/index.ts]
+    allow: {boundaries: [package.module.example.feature.example], packages: [], builtins: [], runtimeReferences: []}
+  - id: package.module.example.feature.example
+    dependencyMode: runtime
+    roots: [packages/example/src/features/example]
+    entrypoints: [packages/example/src/features/example/index.ts]
     allow: {boundaries: [], packages: [], builtins: [], runtimeReferences: []}
+  - id: package.module.example.feature.example.test
+    dependencyMode: development
+    roots: [packages/example/test/features/example]
+    entrypoints: []
+    allow: {boundaries: [package.module.example.feature.example], packages: [], builtins: [node:test], runtimeReferences: []}
 `);
     assert.equal(plan.target.ownerDocument.id, "ADR-0099");
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), []);
+    await writeFixture(root, "foundation.config.yaml", `schemaVersion: 1
+project: {id: extension-scaffolding-fixture}
+capabilities:
+  architecture.source-dependencies:
+    configPath: architecture/foundation/source-dependencies.yaml
+`);
+    const testPath = "packages/example/test/features/example/capability.test.ts";
+    await writeFixture(root, testPath, 'import test from "node:test";\nimport { capability } from "../../../src/features/example/capability.ts";\ntest("capability", () => { void capability; });\n');
+    await assert.rejects(
+      execFileAsync(process.execPath, [foundationCli, "check", "architecture.source-dependencies"], {
+        cwd: root,
+      }),
+      error => `${error?.stdout ?? ""}\n${error?.stderr ?? ""}`.includes("not a declared entrypoint"),
+    );
+    await writeFixture(root, testPath, 'import test from "node:test";\nimport { capability } from "../../../src/features/example/index.ts";\ntest("capability", () => { void capability; });\n');
+    await execFileAsync(process.execPath, [foundationCli, "check", "architecture.source-dependencies"], {
+      cwd: root,
+    });
+    await execFileAsync(process.execPath, [typescriptCli, "--project", "tsconfig.json", "--pretty", "false"], {
+      cwd: join(root, "packages/example"),
+    });
+    await execFileAsync(process.execPath, ["--test", "--test-concurrency=1"], {
+      cwd: join(root, "packages/example"),
+    });
+    assert.deepEqual(await validateBuiltPackageArtifacts({ root }), []);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -344,6 +418,50 @@ test("CLI returns nonzero for rejected apply and unresolved recovery", async () 
       recover: async () => ({ outcome: "recovery-required" }),
       write: () => undefined,
     }), 2);
+    assert.equal(await runScaffoldCli({
+      root,
+      args: ["recover"],
+      recover: async () => ({ outcome: "failed-recovered" }),
+      write: () => undefined,
+    }), 2);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("operation paths reject Windows separator escapes before apply", async () => {
+  const root = await createConsumer();
+  try {
+    assert.throws(() => assertScaffoldOperationPaths(root, "packages/example", [{
+      path: "packages/example/..\\other/file.ts",
+    }]), /inside the cataloged package root/u);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("CLI uses the real Docs owner resolver and rejects changed authority", async () => {
+  const root = await createConsumer();
+  try {
+    const output = [];
+    assert.equal(await runScaffoldCli({
+      root,
+      args: [
+        "plan",
+        "architecture/scaffolding-intents/example.yaml",
+        "architecture/scaffolding-plans/example.json",
+      ],
+      write: value => output.push(value),
+    }), 0);
+    const { planDigest } = JSON.parse(output.at(-1));
+    const ownerPath = join(root, "docs/decisions/0099-example-package.md");
+    const owner = await readFile(ownerPath, "utf8");
+    await writeFile(ownerPath, owner.replace("disposable package", "changed disposable package"));
+    assert.equal(await runScaffoldCli({
+      root,
+      args: ["apply", "architecture/scaffolding-plans/example.json", planDigest],
+      write: () => undefined,
+    }), 2);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -367,36 +485,41 @@ test("scaffold rejects nested catalog roots before any operation", async () => {
       intentPath: "architecture/scaffolding-intents/example.yaml",
       planPath: "architecture/scaffolding-plans/example.json",
       resolveOwner: acceptedOwner,
-    }), /overlaps another cataloged package root/u);
+    }), /package path overlaps/u);
     assert.equal(await exists(join(root, "packages/example")), false);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
 });
 
-test("recovery resumes a durable prepared journal left by an interrupted process", async () => {
+test("recovery resumes a synced prepared journal left by a prior process", async () => {
   const root = await createConsumer();
   try {
-    const plan = await planScaffoldFromFile({
-      consumerRoot: root,
-      intentPath: "architecture/scaffolding-intents/example.yaml",
-    });
-    const journal = {
-      schemaVersion: 1,
-      state: "PREPARED",
-      plan,
-      operations: plan.operations.map(operation => ({
-        operationId: operation.id,
-        path: operation.path,
-        state: "pending",
-      })),
-    };
-    await writeFixture(
-      root,
-      ".agent-teams-local/scaffolding-transaction.json",
-      `${JSON.stringify(journal, null, 2)}\n`,
+    const writer = `
+      import { planScaffoldFromFile } from ${JSON.stringify(foundationScaffoldingUrl)};
+      import { applyAuthorityFilesystemScaffoldWithFaultInjection } from ${JSON.stringify(foundationScaffoldingInternalUrl)};
+      const root = process.argv[1];
+      const plan = await planScaffoldFromFile({
+        consumerRoot: root,
+        intentPath: "architecture/scaffolding-intents/example.yaml",
+      });
+      await applyAuthorityFilesystemScaffoldWithFaultInjection(root, plan, async point => {
+        if (point.phase === "after-journal-prepared") process.exit(73);
+      });
+    `;
+    await assert.rejects(
+      execFileAsync(process.execPath, ["--input-type=module", "--eval", writer, root]),
+      error => error?.code === 73,
     );
-    const receipt = await recoverFilesystemScaffold(root);
+    const recoverer = `
+      import { recoverFilesystemScaffold } from ${JSON.stringify(foundationScaffoldingUrl)};
+      console.log(JSON.stringify(await recoverFilesystemScaffold(process.argv[1])));
+    `;
+    const { stdout } = await execFileAsync(
+      process.execPath,
+      ["--input-type=module", "--eval", recoverer, root],
+    );
+    const receipt = JSON.parse(stdout);
     assert.ok(["applied", "failed-recovered"].includes(receipt.outcome));
     assert.equal(await exists(join(root, "packages/example/src/index.ts")), true);
     assert.equal(await recoverFilesystemScaffold(root), undefined);

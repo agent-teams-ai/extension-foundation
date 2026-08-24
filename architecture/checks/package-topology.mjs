@@ -7,12 +7,10 @@ import { promisify } from "node:util";
 import { parse as parseYaml } from "yaml";
 
 import {
-  CATALOG_PATH,
-  PACKAGE_NAME,
-  PACKAGE_PATH,
   createDocsOwnerResolver,
   isRecord,
-  loadAllowedPackageRoles,
+  loadPackagePolicy,
+  packageExportTargets,
   packageOwnerFeatures,
 } from "./package-policy.mjs";
 import { analyzeSource } from "./source-safety.mjs";
@@ -20,9 +18,8 @@ import { analyzeSource } from "./source-safety.mjs";
 export { createDocsOwnerResolver } from "./package-policy.mjs";
 
 const SOURCE_DEPENDENCIES_PATH = "architecture/foundation/source-dependencies.yaml";
-const CATALOG_ROOT_KEYS = ["packages", "version"];
-const CATALOG_KEYS = ["id", "owner_document", "package_name", "path", "role"];
 const FEATURE_SOURCE = /^src\/features\/([a-z0-9][a-z0-9-]*)\/(.+)$/;
+const FEATURE_TEST_SOURCE = /^test\/features\/([a-z0-9][a-z0-9-]*)\/(.+\.(?:spec|test)\.(?:ts|tsx|mts|cts))$/;
 const SOURCE_CODE = /\.(?:ts|tsx|mts|cts)$/;
 const FEATURE_TEST = /\.(?:spec|test)\.(?:ts|tsx|mts|cts)$/;
 const IGNORED_PACKAGE_DIRECTORIES = new Set([".cache", "coverage", "dist", "node_modules"]);
@@ -35,8 +32,28 @@ const ALLOWED_PACKAGE_ENVELOPE_FILES = new Set([
   "tsconfig.json",
 ]);
 const EXPECTED_PACKAGE_CHECK = "pnpm run clean && pnpm run typecheck && pnpm run build && pnpm run test";
+const EXPECTED_PACKAGE_BUILD = "tsc --project tsconfig.json --pretty false";
+const EXPECTED_PACKAGE_CLEAN = "node -e \"const fs=require('node:fs'); for (const path of ['dist','.cache']) fs.rmSync(path, { recursive: true, force: true })\"";
+const EXPECTED_PACKAGE_PREPACK = "pnpm run clean && pnpm run build";
 const EXPECTED_PACKAGE_TYPECHECK = "tsc --project tsconfig.json --noEmit --pretty false";
 const EXPECTED_PACKAGE_TEST = "node --test --test-concurrency=1";
+const EXPECTED_PACKAGE_SCRIPT_KEYS = Object.freeze([
+  "build",
+  "check",
+  "clean",
+  "prepack",
+  "test",
+  "typecheck",
+]);
+const EXPECTED_PACKAGE_COMPILER_OPTION_KEYS = Object.freeze([
+  "composite",
+  "declaration",
+  "declarationMap",
+  "noEmit",
+  "outDir",
+  "rootDir",
+  "tsBuildInfoFile",
+]);
 const EXPECTED_PACKAGE_INCLUDE = [
   "src/**/*.ts",
   "src/**/*.tsx",
@@ -82,26 +99,15 @@ async function readJson(path) {
   return JSON.parse(await readFile(path, "utf8"));
 }
 
-function hasExactCatalogShape(entry) {
-  return isRecord(entry)
-    && Object.keys(entry).sort(compareBinary).join("|") === CATALOG_KEYS.join("|")
-    && CATALOG_KEYS.every(key => typeof entry[key] === "string" && entry[key].length > 0);
-}
-
-function hasExactCatalogRootShape(catalog) {
-  return isRecord(catalog)
-    && Object.keys(catalog).sort(compareBinary).join("|") === CATALOG_ROOT_KEYS.join("|")
-    && catalog.version === 1
-    && Array.isArray(catalog.packages);
-}
-
 function isAllowedSourcePath(path) {
   return SOURCE_CODE.test(path) && (
     path === "src/index.ts"
-    || path.startsWith("src/composition/")
-    || path.startsWith("src/generated/")
-    || FEATURE_SOURCE.test(path)
+    || (FEATURE_SOURCE.test(path) && !FEATURE_TEST.test(path))
   );
+}
+
+function isAllowedTestPath(path) {
+  return FEATURE_TEST_SOURCE.test(path);
 }
 
 function isPathInside(path, parent) {
@@ -120,20 +126,12 @@ function packageForFile(entriesByPath, filePath) {
     .sort((left, right) => right.path.length - left.path.length || compareBinary(left.path, right.path))[0];
 }
 
-function exportedTargets(value) {
-  if (typeof value === "string") return [value];
-  if (Array.isArray(value)) {
-    const nested = value.map(exportedTargets);
-    return nested.some(entry => entry === undefined) ? undefined : nested.flat();
-  }
-  if (!isRecord(value)) return undefined;
-  const nested = Object.values(value).map(exportedTargets);
-  return nested.some(entry => entry === undefined) ? undefined : nested.flat();
-}
-
 function hasSafeCuratedExports(manifest) {
   if (!isRecord(manifest.exports) || Object.keys(manifest.exports).length === 0) return false;
-  const targets = exportedTargets(manifest.exports);
+  if (Object.keys(manifest.exports).some(key => (
+    key !== "." && !/^\.\/[a-z0-9][a-z0-9./-]*$/u.test(key)
+  ))) return false;
+  const targets = packageExportTargets(manifest.exports);
   return targets !== undefined && targets.length > 0 && targets.every(target => (
     target.startsWith("./dist/")
     && !target.includes("\\")
@@ -153,7 +151,8 @@ function unsupportedTsconfigDependencyFeature(config) {
 }
 
 async function effectiveTsconfig(path) {
-  const { stdout } = await execFileAsync(TSC_PATH, [
+  const { stdout } = await execFileAsync(process.execPath, [
+    TSC_PATH,
     "--project",
     path,
     "--showConfig",
@@ -169,28 +168,118 @@ function exactStringArray(value, expected) {
     && value.every((entry, index) => entry === expected[index]);
 }
 
+function exactKeys(value, expected) {
+  return isRecord(value)
+    && exactStringArray(Object.keys(value).sort(compareBinary), [...expected].sort(compareBinary));
+}
+
+function hasBoundaryEnvelope(boundary, {
+  dependencyMode,
+  roots,
+  entrypoints,
+}) {
+  return isRecord(boundary)
+    && boundary.dependencyMode === dependencyMode
+    && exactStringArray(boundary.roots, roots)
+    && exactStringArray(boundary.entrypoints, entrypoints)
+    && isRecord(boundary.allow)
+    && ["boundaries", "packages", "builtins", "runtimeReferences"]
+      .every(key => Array.isArray(boundary.allow[key]));
+}
+
 function ignoredDirectoryInTrackedPath(path) {
   return path.split("/").slice(1).some(isIgnoredPackageDirectory);
 }
 
 export function createGitTrackedPackagePathReader(root) {
   return async () => {
-    try {
-      const { stdout } = await execFileAsync("git", ["-C", root, "ls-files", "-z", "--", "packages"], {
-        encoding: "utf8",
-        maxBuffer: 16 * 1024 * 1024,
-      });
-      return stdout.split("\0").filter(Boolean);
-    } catch (error) {
-      if (error?.code === "ENOENT" || error?.code === 128) return [];
-      throw error;
-    }
+    const { stdout } = await execFileAsync(
+      "git",
+      ["-C", root, "ls-files", "--stage", "-z", "--", "packages"],
+      { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
+    );
+    return stdout.split("\0").filter(Boolean).map(record => {
+      const separator = record.indexOf("\t");
+      const metadata = record.slice(0, separator).split(" ");
+      if (separator < 0 || metadata.length !== 3 || !/^[0-7]{6}$/u.test(metadata[0])) {
+        throw new Error("git returned an invalid tracked package record");
+      }
+      return { mode: metadata[0], path: record.slice(separator + 1) };
+    });
   };
+}
+
+function normalizeTrackedPackageRecord(record) {
+  if (typeof record === "string") return { mode: "100644", path: record };
+  if (isRecord(record) && typeof record.mode === "string" && typeof record.path === "string") {
+    return record;
+  }
+  throw new Error("tracked package evidence must contain mode and path");
+}
+
+function trackedPackageRecordError(record) {
+  if (record.mode === "120000") {
+    return `${record.path}: tracked symbolic links are not allowed in governed packages`;
+  }
+  if (record.mode === "160000") {
+    return `${record.path}: gitlinks and submodules are not allowed in governed packages`;
+  }
+  if (ignoredDirectoryInTrackedPath(record.path)) {
+    return `${record.path}: tracked files cannot hide inside ignored package directories`;
+  }
+  return undefined;
+}
+
+function exactCompilerOutputPath(configPath, value, expected) {
+  if (typeof value !== "string") return false;
+  return resolve(dirname(configPath), value) === expected;
+}
+
+function hasNoCompilerInputs(config) {
+  return config.files === undefined || exactStringArray(config.files, []);
+}
+
+function rawRootTsconfigIsGoverned(config) {
+  return exactKeys(config, ["compilerOptions", "extends", "files"])
+    && config.extends === ROOT_TSCONFIG_PRESET
+    && exactStringArray(config.files, [])
+    && exactKeys(config.compilerOptions, ["composite", "noEmit"])
+    && config.compilerOptions.composite === true
+    && config.compilerOptions.noEmit === true;
+}
+
+function rawPackageTsconfigIsGoverned(config, expectedExtends) {
+  return exactKeys(config, ["compilerOptions", "extends", "include"])
+    && config.extends === expectedExtends
+    && exactStringArray(config.include, EXPECTED_PACKAGE_INCLUDE)
+    && exactKeys(config.compilerOptions, EXPECTED_PACKAGE_COMPILER_OPTION_KEYS)
+    && config.compilerOptions.composite === true
+    && config.compilerOptions.declaration === true
+    && config.compilerOptions.declarationMap === true
+    && config.compilerOptions.noEmit === false
+    && config.compilerOptions.outDir === "dist"
+    && config.compilerOptions.rootDir === "src"
+    && config.compilerOptions.tsBuildInfoFile === ".cache/tsconfig.tsbuildinfo";
+}
+
+function effectivePackageOutputsAreGoverned(configPath, config, packageRoot) {
+  const options = config.compilerOptions;
+  return isRecord(options)
+    && !Object.hasOwn(options, "declarationDir")
+    && exactCompilerOutputPath(configPath, options.outDir, join(packageRoot, "dist"))
+    && exactCompilerOutputPath(configPath, options.rootDir, join(packageRoot, "src"))
+    && exactCompilerOutputPath(
+      configPath,
+      options.tsBuildInfoFile,
+      join(packageRoot, ".cache/tsconfig.tsbuildinfo"),
+    );
 }
 
 function packageEnvelopeError(packagePath, repositoryFilePath) {
   const localPath = repositoryFilePath.slice(`${packagePath}/`.length);
-  if (localPath.startsWith("src/") || ALLOWED_PACKAGE_ENVELOPE_FILES.has(localPath)) return undefined;
+  if (localPath.startsWith("src/")
+    || localPath.startsWith("test/")
+    || ALLOWED_PACKAGE_ENVELOPE_FILES.has(localPath)) return undefined;
   return `${repositoryFilePath}: file is outside the package source and approved envelope`;
 }
 
@@ -200,20 +289,13 @@ export async function validatePackageTopology({
   readTrackedPackagePaths = createGitTrackedPackagePathReader(root),
 }) {
   const errors = [];
-  let catalog;
-  let allowedRoles;
+  let packagePolicy;
   try {
-    [catalog, allowedRoles] = await Promise.all([
-      readJson(join(root, CATALOG_PATH)),
-      loadAllowedPackageRoles(root),
-    ]);
+    packagePolicy = await loadPackagePolicy(root);
   } catch (error) {
     return [`package policy: ${error instanceof Error ? error.message : String(error)}`];
   }
-
-  if (!hasExactCatalogRootShape(catalog)) {
-    return [`${CATALOG_PATH} must contain exactly version 1 and a packages array`];
-  }
+  if (packagePolicy.errors.length !== 0) return packagePolicy.errors;
 
   let sourcePolicy;
   try {
@@ -228,54 +310,9 @@ export async function validatePackageTopology({
     errors.push("repository.packages-closed is obsolete; cataloged package source roots must be governed explicitly");
   }
 
-  const entriesByPath = new Map();
-  const entriesById = new Map();
+  const { entriesByPath } = packagePolicy;
   const featuresByEntryId = new Map();
-  const seen = { id: new Set(), path: new Set(), package_name: new Set() };
-  for (const entry of catalog.packages) {
-    if (!hasExactCatalogShape(entry)) {
-      errors.push(`${CATALOG_PATH}: every entry must contain exactly ${CATALOG_KEYS.join(", ")}`);
-      continue;
-    }
-    if (!allowedRoles.has(entry.role)) errors.push(`${entry.id}: unknown role ${entry.role}`);
-    if (!PACKAGE_PATH.test(entry.path) || posix.normalize(entry.path) !== entry.path) {
-      errors.push(`${entry.id}: path must be a normalized directory under packages/`);
-    }
-    if (!PACKAGE_NAME.test(entry.package_name)) {
-      errors.push(`${entry.id}: package_name must use the @agent-teams scope`);
-    }
-    for (const field of Object.keys(seen)) {
-      if (seen[field].has(entry[field])) errors.push(`${entry.id}: duplicate ${field} ${entry[field]}`);
-      seen[field].add(entry[field]);
-    }
-    for (const existing of entriesByPath.values()) {
-      if (isPathInside(entry.path, existing.path) || isPathInside(existing.path, entry.path)) {
-        errors.push(`${entry.id}: package path overlaps ${existing.id}`);
-      }
-    }
-    entriesByPath.set(entry.path, entry);
-    entriesById.set(entry.id, entry);
-
-    const sourceBoundary = sourcePolicy.boundaries.find(
-      boundary => boundary?.id === `package.${entry.id}`,
-    );
-    const expectedRoot = `${entry.path}/src`;
-    const expectedEntrypoint = `${expectedRoot}/index.ts`;
-    if (!isRecord(sourceBoundary)
-      || sourceBoundary.dependencyMode !== "runtime"
-      || !Array.isArray(sourceBoundary.roots)
-      || sourceBoundary.roots.length !== 1
-      || sourceBoundary.roots[0] !== expectedRoot
-      || !Array.isArray(sourceBoundary.entrypoints)
-      || sourceBoundary.entrypoints.length !== 1
-      || sourceBoundary.entrypoints[0] !== expectedEntrypoint) {
-      errors.push(`${entry.id}: requires runtime source boundary package.${entry.id} rooted at ${expectedRoot}`);
-    }
-    if (!Array.isArray(sourcePolicy.governedRoots)
-      || !sourcePolicy.governedRoots.includes(expectedRoot)) {
-      errors.push(`${entry.id}: ${expectedRoot} must be an explicit governed source root`);
-    }
-
+  for (const entry of packagePolicy.entries) {
     const features = packageOwnerFeatures(entry, await resolveOwner(entry.owner_document));
     if (features === undefined) {
       errors.push(`${entry.id}: owner_document must be one effective accepted ADR bound to this exact package and its features`);
@@ -284,18 +321,78 @@ export async function validatePackageTopology({
     }
   }
 
-  const packageBoundaries = sourcePolicy.boundaries.filter(
-    boundary => typeof boundary?.id === "string" && boundary.id.startsWith("package."),
-  );
-  for (const boundary of packageBoundaries) {
-    const entryId = boundary.id.slice("package.".length);
-    if (!entriesById.has(entryId)) {
-      errors.push(`${boundary.id}: package boundary has no matching catalog entry`);
+  const expectedPackageBoundaryIds = new Set();
+  for (const entry of packagePolicy.entries) {
+    const ownedFeatures = featuresByEntryId.get(entry.id);
+    if (ownedFeatures === undefined) continue;
+    const features = [...ownedFeatures].sort(compareBinary);
+    const runtimeRoot = `${entry.path}/src`;
+    const testRoot = `${entry.path}/test`;
+    const publicBoundaryId = `package.${entry.id}`;
+    const featureBoundaryIds = features.map(feature => `package.${entry.id}.feature.${feature}`);
+    const publicBoundary = sourcePolicy.boundaries.find(boundary => boundary?.id === publicBoundaryId);
+    expectedPackageBoundaryIds.add(publicBoundaryId);
+    if (!hasBoundaryEnvelope(publicBoundary, {
+      dependencyMode: "runtime",
+      roots: [runtimeRoot],
+      entrypoints: [`${runtimeRoot}/index.ts`],
+    }) || !exactStringArray(publicBoundary.allow.boundaries, featureBoundaryIds)
+      || !exactStringArray(publicBoundary.allow.packages, [])
+      || !exactStringArray(publicBoundary.allow.builtins, [])
+      || !exactStringArray(publicBoundary.allow.runtimeReferences, [])) {
+      errors.push(`${entry.id}: requires a closed public boundary ${publicBoundaryId} over ${runtimeRoot}`);
+    }
+    for (const [index, feature] of features.entries()) {
+      const featureBoundaryId = featureBoundaryIds[index];
+      const featureRoot = `${runtimeRoot}/features/${feature}`;
+      const testBoundaryId = `${featureBoundaryId}.test`;
+      const featureBoundary = sourcePolicy.boundaries.find(boundary => boundary?.id === featureBoundaryId);
+      const testBoundary = sourcePolicy.boundaries.find(boundary => boundary?.id === testBoundaryId);
+      expectedPackageBoundaryIds.add(featureBoundaryId);
+      expectedPackageBoundaryIds.add(testBoundaryId);
+      if (!hasBoundaryEnvelope(featureBoundary, {
+        dependencyMode: "runtime",
+        roots: [featureRoot],
+        entrypoints: [`${featureRoot}/index.ts`],
+      }) || featureBoundary.allow.boundaries.some(target => !featureBoundaryIds.includes(target))) {
+        errors.push(`${entry.id}: feature ${feature} requires runtime boundary ${featureBoundaryId}`);
+      }
+      if (!hasBoundaryEnvelope(testBoundary, {
+        dependencyMode: "development",
+        roots: [`${testRoot}/features/${feature}`],
+        entrypoints: [],
+      }) || !exactStringArray(testBoundary.allow.boundaries, [featureBoundaryId])
+        || !testBoundary.allow.builtins.includes("node:test")) {
+        errors.push(`${entry.id}: feature ${feature} requires development boundary ${testBoundaryId}`);
+      }
+    }
+    if (!Array.isArray(sourcePolicy.governedRoots)
+      || !sourcePolicy.governedRoots.includes(runtimeRoot)
+      || !sourcePolicy.governedRoots.includes(testRoot)) {
+      errors.push(`${entry.id}: ${runtimeRoot} and ${testRoot} must be explicit governed roots`);
+    }
+  }
+
+  for (const boundary of sourcePolicy.boundaries.filter(
+    candidate => typeof candidate?.id === "string" && candidate.id.startsWith("package."),
+  )) {
+    const belongsToValidCatalogEntry = packagePolicy.entries.some(entry => (
+      featuresByEntryId.has(entry.id)
+      && (boundary.id === `package.${entry.id}` || boundary.id.startsWith(`package.${entry.id}.`))
+    ));
+    if (!expectedPackageBoundaryIds.has(boundary.id)
+      && (belongsToValidCatalogEntry || !packagePolicy.entries.some(entry => (
+        boundary.id === `package.${entry.id}` || boundary.id.startsWith(`package.${entry.id}.`)
+      )))) {
+      errors.push(`${boundary.id}: package boundary has no matching catalog feature role`);
     }
   }
   if (Array.isArray(sourcePolicy.governedRoots)) {
+    const expectedPackageRoots = new Set(
+      packagePolicy.entries.flatMap(entry => [`${entry.path}/src`, `${entry.path}/test`]),
+    );
     for (const governedRoot of sourcePolicy.governedRoots.filter(rootPath => rootPath.startsWith("packages/"))) {
-      if (![...entriesByPath.keys()].some(packagePath => governedRoot === `${packagePath}/src`)) {
+      if (!expectedPackageRoots.has(governedRoot)) {
         errors.push(`${governedRoot}: governed package root has no matching catalog entry`);
       }
     }
@@ -311,8 +408,10 @@ export async function validatePackageTopology({
   } catch (error) {
     return [...errors, `packages: ${error instanceof Error ? error.message : String(error)}`];
   }
-  for (const path of trackedPackagePaths.filter(ignoredDirectoryInTrackedPath)) {
-    errors.push(`${path}: tracked files and links cannot hide inside ignored package directories`);
+  for (const rawRecord of trackedPackagePaths) {
+    const record = normalizeTrackedPackageRecord(rawRecord);
+    const error = trackedPackageRecordError(record);
+    if (error !== undefined) errors.push(error);
   }
 
   const manifestPaths = files.filter(path => path.endsWith("package.json"));
@@ -353,13 +452,19 @@ export async function validatePackageTopology({
       continue;
     }
     if (manifest.name !== entry.package_name) errors.push(`${packagePath}: package name differs from catalog`);
+    if (manifest.version !== "0.0.0") errors.push(`${packagePath}: initial private package version must remain 0.0.0`);
     if (manifest.private !== true) errors.push(`${packagePath}: package must remain private until public SPI evidence exists`);
     if (manifest.type !== "module") errors.push(`${packagePath}: package must use ESM`);
-    if (manifest.scripts?.check !== EXPECTED_PACKAGE_CHECK
+    if (!exactKeys(manifest.scripts, EXPECTED_PACKAGE_SCRIPT_KEYS)
+      || manifest.scripts.build !== EXPECTED_PACKAGE_BUILD
+      || manifest.scripts?.check !== EXPECTED_PACKAGE_CHECK
+      || manifest.scripts?.clean !== EXPECTED_PACKAGE_CLEAN
+      || manifest.scripts?.prepack !== EXPECTED_PACKAGE_PREPACK
       || manifest.scripts?.typecheck !== EXPECTED_PACKAGE_TYPECHECK
       || manifest.scripts?.test !== EXPECTED_PACKAGE_TEST) {
-      errors.push(`${packagePath}: package must retain the governed check, typecheck, and test scripts`);
+      errors.push(`${packagePath}: package must retain the governed clean, typecheck, build, test, check, and prepack scripts`);
     }
+    if (!exactStringArray(manifest.files, ["dist"])) errors.push(`${packagePath}: package files must contain only dist`);
     if (!hasSafeCuratedExports(manifest)) {
       errors.push(`${packagePath}: package exports must be explicit and target only dist/`);
     }
@@ -371,16 +476,22 @@ export async function validatePackageTopology({
     }
 
     const prefix = `${packagePath.slice("packages/".length)}/`;
-    const sourceFiles = files
-      .filter(path => path.startsWith(`${prefix}src/`))
+    const packageCodeFiles = files
+      .filter(path => path.startsWith(`${prefix}src/`) || path.startsWith(`${prefix}test/`))
       .map(path => path.slice(prefix.length));
     const declaredFeatures = featuresByEntryId.get(entry.id);
     const evidenceByFeature = new Map(
-      [...(declaredFeatures ?? [])].map(feature => [feature, { implementation: false, test: false }]),
+      [...(declaredFeatures ?? [])].map(feature => [feature, {
+        entrypoint: false,
+        implementation: false,
+        test: false,
+      }]),
     );
-    for (const path of sourceFiles) {
-      if (!isAllowedSourcePath(path)) {
-        errors.push(`${packagePath}/${path}: source must be TypeScript inside an approved feature, composition, or generated path`);
+    for (const path of packageCodeFiles) {
+      const isRuntimeSource = path.startsWith("src/");
+      if ((isRuntimeSource && !isAllowedSourcePath(path))
+        || (!isRuntimeSource && !isAllowedTestPath(path))) {
+        errors.push(`${packagePath}/${path}: code must be runtime TypeScript under src/features or test evidence under test/features`);
         continue;
       }
       const source = await readFile(join(root, packagePath, path), "utf8");
@@ -388,7 +499,7 @@ export async function validatePackageTopology({
       for (const label of analysis.errors) {
         errors.push(`${packagePath}/${path}: ${label} is prohibited until the shared source graph models it`);
       }
-      const featureMatch = path.match(FEATURE_SOURCE);
+      const featureMatch = path.match(isRuntimeSource ? FEATURE_SOURCE : FEATURE_TEST_SOURCE);
       if (featureMatch === null || declaredFeatures === undefined) continue;
       const feature = featureMatch[1];
       if (!declaredFeatures.has(feature)) {
@@ -396,13 +507,18 @@ export async function validatePackageTopology({
         continue;
       }
       const evidence = evidenceByFeature.get(feature);
-      if (FEATURE_TEST.test(path)) {
+      if (!isRuntimeSource) {
         evidence.test ||= analysis.hasTestRegistration;
-      } else if (!path.endsWith(".d.ts") && !/\/index\.(?:ts|tsx|mts|cts)$/u.test(path)) {
+      } else if (path === `src/features/${feature}/index.ts`) {
+        evidence.entrypoint = true;
+      } else if (!path.endsWith(".d.ts")) {
         evidence.implementation ||= analysis.hasRuntimeImplementation;
       }
     }
     for (const [feature, evidence] of evidenceByFeature) {
+      if (!evidence.entrypoint) {
+        errors.push(`${packagePath}: feature ${feature} requires an explicit index.ts entrypoint`);
+      }
       if (!evidence.implementation) {
         errors.push(`${packagePath}: feature ${feature} requires a value-level runtime implementation`);
       }
@@ -418,17 +534,21 @@ export async function validatePackageTopology({
         effectiveTsconfig(tsconfigPath),
       ]);
       const expectedExtends = posix.relative(entry.path, "tsconfig.json");
-      if (rawTsconfig.extends !== expectedExtends) {
-        errors.push(`${packagePath}/tsconfig.json: extends must target the repository root tsconfig`);
-      }
-      if (!exactStringArray(rawTsconfig.include, EXPECTED_PACKAGE_INCLUDE) || Object.hasOwn(rawTsconfig, "files")) {
-        errors.push(`${packagePath}/tsconfig.json: compiler inputs must use the governed src-only include set`);
+      if (!rawPackageTsconfigIsGoverned(rawTsconfig, expectedExtends)) {
+        errors.push(`${packagePath}/tsconfig.json: inputs and emit settings must exactly match the governed private-library build`);
       }
       const feature = unsupportedTsconfigDependencyFeature(effective);
       if (feature !== undefined) {
         errors.push(`${packagePath}/tsconfig.json: ${feature} is prohibited until the shared source graph models it`);
       }
       const sourceRoot = resolve(root, packagePath, "src");
+      if (!effectivePackageOutputsAreGoverned(
+        tsconfigPath,
+        effective,
+        resolve(root, packagePath),
+      )) {
+        errors.push(`${packagePath}/tsconfig.json: effective compiler outputs must stay in governed package directories`);
+      }
       for (const file of effective.files ?? []) {
         if (!isFilesystemPathInside(resolve(dirname(tsconfigPath), file), sourceRoot)) {
           errors.push(`${packagePath}/tsconfig.json: effective compiler input escapes the governed package source root`);
@@ -446,12 +566,15 @@ export async function validatePackageTopology({
       readJson(rootTsconfigPath),
       effectiveTsconfig(rootTsconfigPath),
     ]);
-    if (rawRootTsconfig.extends !== ROOT_TSCONFIG_PRESET || !exactStringArray(rawRootTsconfig.files, [])) {
-      errors.push(`tsconfig.json: root config must extend the pinned Foundation preset with an empty files list`);
+    if (!rawRootTsconfigIsGoverned(rawRootTsconfig)) {
+      errors.push(`tsconfig.json: root config must exactly extend the pinned Foundation preset without compiler inputs`);
     }
     const feature = unsupportedTsconfigDependencyFeature(effectiveRootTsconfig);
     if (feature !== undefined) {
       errors.push(`tsconfig.json: ${feature} is prohibited until the shared source graph models it`);
+    }
+    if (!hasNoCompilerInputs(effectiveRootTsconfig)) {
+      errors.push("tsconfig.json: effective root compiler inputs must remain empty");
     }
   } catch (error) {
     errors.push(`tsconfig.json: ${error instanceof Error ? error.message : String(error)}`);
