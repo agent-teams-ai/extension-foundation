@@ -2,14 +2,16 @@ import { execFile } from "node:child_process";
 import { readFile, readdir } from "node:fs/promises";
 import { dirname, join, posix, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { promisify } from "node:util";
+import { isDeepStrictEqual, promisify } from "node:util";
 
+import { readScaffoldPlanFile } from "@agent-teams/engineering-foundation/scaffolding";
 import { parse as parseYaml } from "yaml";
 
 import {
-  createDocsOwnerResolver,
+  createDocsOwnerCatalog,
   isRecord,
   loadPackagePolicy,
+  materializationPlanPath,
   packageExportTargets,
   packageOwnerFeatures,
 } from "./package-policy.mjs";
@@ -31,35 +33,6 @@ const ALLOWED_PACKAGE_ENVELOPE_FILES = new Set([
   "package.json",
   "tsconfig.json",
 ]);
-const EXPECTED_PACKAGE_CHECK = "pnpm run clean && pnpm run typecheck && pnpm run build && pnpm run test";
-const EXPECTED_PACKAGE_BUILD = "tsc --project tsconfig.json --pretty false";
-const EXPECTED_PACKAGE_CLEAN = "node -e \"const fs=require('node:fs'); for (const path of ['dist','.cache']) fs.rmSync(path, { recursive: true, force: true })\"";
-const EXPECTED_PACKAGE_PREPACK = "pnpm run clean && pnpm run build";
-const EXPECTED_PACKAGE_TYPECHECK = "tsc --project tsconfig.json --noEmit --pretty false";
-const EXPECTED_PACKAGE_TEST = "node --test --test-concurrency=1";
-const EXPECTED_PACKAGE_SCRIPT_KEYS = Object.freeze([
-  "build",
-  "check",
-  "clean",
-  "prepack",
-  "test",
-  "typecheck",
-]);
-const EXPECTED_PACKAGE_COMPILER_OPTION_KEYS = Object.freeze([
-  "composite",
-  "declaration",
-  "declarationMap",
-  "noEmit",
-  "outDir",
-  "rootDir",
-  "tsBuildInfoFile",
-]);
-const EXPECTED_PACKAGE_INCLUDE = [
-  "src/**/*.ts",
-  "src/**/*.tsx",
-  "src/**/*.mts",
-  "src/**/*.cts",
-];
 const ROOT_TSCONFIG_PRESET = "@agent-teams/engineering-foundation/presets/typescript/node.json";
 const TYPESCRIPT_ROOT = dirname(fileURLToPath(import.meta.resolve("typescript/package.json")));
 const TSC_PATH = join(TYPESCRIPT_ROOT, "bin", "tsc");
@@ -248,20 +221,6 @@ function rawRootTsconfigIsGoverned(config) {
     && config.compilerOptions.noEmit === true;
 }
 
-function rawPackageTsconfigIsGoverned(config, expectedExtends) {
-  return exactKeys(config, ["compilerOptions", "extends", "include"])
-    && config.extends === expectedExtends
-    && exactStringArray(config.include, EXPECTED_PACKAGE_INCLUDE)
-    && exactKeys(config.compilerOptions, EXPECTED_PACKAGE_COMPILER_OPTION_KEYS)
-    && config.compilerOptions.composite === true
-    && config.compilerOptions.declaration === true
-    && config.compilerOptions.declarationMap === true
-    && config.compilerOptions.noEmit === false
-    && config.compilerOptions.outDir === "dist"
-    && config.compilerOptions.rootDir === "src"
-    && config.compilerOptions.tsBuildInfoFile === ".cache/tsconfig.tsbuildinfo";
-}
-
 function effectivePackageOutputsAreGoverned(configPath, config, packageRoot) {
   const options = config.compilerOptions;
   return isRecord(options)
@@ -283,12 +242,92 @@ function packageEnvelopeError(packagePath, repositoryFilePath) {
   return `${repositoryFilePath}: file is outside the package source and approved envelope`;
 }
 
+async function readFoundationMaterializationPlan(root, entry) {
+  return readScaffoldPlanFile(root, materializationPlanPath(entry));
+}
+
+function plannedJson(plan, path) {
+  const operations = plan.operations.filter(operation => operation.path === path);
+  if (operations.length !== 1 || operations[0].kind !== "materialize-file") {
+    throw new Error(`materialization plan must create exactly one ${path}`);
+  }
+  return JSON.parse(Buffer.from(operations[0].after.contentBase64, "base64").toString("utf8"));
+}
+
+function materializationEnvelope(plan, entry) {
+  if (plan.compiler?.id !== "@agent-teams/engineering-foundation"
+    || plan.target?.id !== entry.id
+    || plan.target?.path !== entry.path
+    || plan.target?.packageName !== entry.package_name
+    || plan.target?.role !== entry.role
+    || plan.target?.ownerDocument?.id !== entry.owner_document) {
+    throw new Error("materialization plan target differs from the package catalog");
+  }
+  return {
+    manifest: plannedJson(plan, `${entry.path}/package.json`),
+    tsconfig: plannedJson(plan, `${entry.path}/tsconfig.json`),
+  };
+}
+
+function sourceDependencyCandidates(fromPath, specifier) {
+  if (!specifier.startsWith(".")) return [];
+  const normalized = posix.normalize(posix.join(posix.dirname(fromPath), specifier));
+  if (normalized === ".." || normalized.startsWith("../") || normalized.startsWith("/")) return [];
+  const extension = posix.extname(normalized);
+  if (extension === ".js") return [`${normalized.slice(0, -3)}.ts`, `${normalized.slice(0, -3)}.tsx`];
+  if (extension === ".mjs") return [`${normalized.slice(0, -4)}.mts`];
+  if (extension === ".cjs") return [`${normalized.slice(0, -4)}.cts`];
+  if (SOURCE_CODE.test(normalized)) return [normalized];
+  return [
+    `${normalized}.ts`,
+    `${normalized}.tsx`,
+    `${normalized}.mts`,
+    `${normalized}.cts`,
+    `${normalized}/index.ts`,
+    `${normalized}/index.tsx`,
+    `${normalized}/index.mts`,
+    `${normalized}/index.cts`,
+  ];
+}
+
+function resolveSourceDependency(fromPath, specifier, sourcePaths) {
+  const matches = sourceDependencyCandidates(fromPath, specifier)
+    .filter(candidate => sourcePaths.has(candidate));
+  return matches.length === 1 ? matches[0] : undefined;
+}
+
+function exportReachable(fromPath, targetPath, analyses, sourcePaths) {
+  const pending = [fromPath];
+  const visited = new Set();
+  while (pending.length > 0) {
+    const current = pending.shift();
+    if (current === targetPath) return true;
+    if (visited.has(current)) continue;
+    visited.add(current);
+    const analysis = analyses.get(current);
+    if (analysis === undefined) continue;
+    for (const dependency of analysis.staticModuleDependencies) {
+      if (dependency.kind !== "export") continue;
+      const resolved = resolveSourceDependency(current, dependency.specifier, sourcePaths);
+      if (resolved !== undefined && !visited.has(resolved)) pending.push(resolved);
+    }
+  }
+  return false;
+}
+
 export async function validatePackageTopology({
   root,
-  resolveOwner = createDocsOwnerResolver(root),
+  resolveOwner,
+  listEffectiveOwners,
+  loadMaterializationPlan = readFoundationMaterializationPlan,
   readTrackedPackagePaths = createGitTrackedPackagePathReader(root),
 }) {
   const errors = [];
+  if (resolveOwner === undefined || listEffectiveOwners === undefined) {
+    const ownerCatalog = createDocsOwnerCatalog(root);
+    resolveOwner ??= ownerCatalog.resolve;
+    listEffectiveOwners ??= ownerCatalog.listEffective;
+  }
   let packagePolicy;
   try {
     packagePolicy = await loadPackagePolicy(root);
@@ -319,6 +358,31 @@ export async function validatePackageTopology({
     } else {
       featuresByEntryId.set(entry.id, new Set(features));
     }
+  }
+  try {
+    const ownershipIdentities = new Set();
+    for (const owner of await listEffectiveOwners()) {
+      for (const issue of owner.packageOwnershipErrors ?? []) {
+        errors.push(`${owner.id}: ${issue}`);
+      }
+      for (const ownership of owner.packageOwnership ?? []) {
+        const identity = `${owner.id}\0${ownership.packageId}\0${ownership.packageName}\0${ownership.packagePath}`;
+        if (ownershipIdentities.has(identity)) {
+          errors.push(`${owner.id}: duplicate package ownership declaration for ${ownership.packageId}`);
+          continue;
+        }
+        ownershipIdentities.add(identity);
+        const entry = packagePolicy.entriesById.get(ownership.packageId);
+        if (entry === undefined
+          || entry.owner_document !== owner.id
+          || entry.package_name !== ownership.packageName
+          || entry.path !== ownership.packagePath) {
+          errors.push(`${owner.id}: package ownership ${ownership.packageId} requires one exact package catalog entry`);
+        }
+      }
+    }
+  } catch (error) {
+    errors.push(`package ownership documents: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   const expectedPackageBoundaryIds = new Set();
@@ -444,6 +508,16 @@ export async function validatePackageTopology({
       continue;
     }
 
+    let plannedEnvelope;
+    try {
+      plannedEnvelope = materializationEnvelope(
+        await loadMaterializationPlan(root, entry),
+        entry,
+      );
+    } catch (error) {
+      errors.push(`${packagePath}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
     let manifest;
     try {
       manifest = await readJson(join(root, packagePath, "package.json"));
@@ -455,14 +529,9 @@ export async function validatePackageTopology({
     if (manifest.version !== "0.0.0") errors.push(`${packagePath}: initial private package version must remain 0.0.0`);
     if (manifest.private !== true) errors.push(`${packagePath}: package must remain private until public SPI evidence exists`);
     if (manifest.type !== "module") errors.push(`${packagePath}: package must use ESM`);
-    if (!exactKeys(manifest.scripts, EXPECTED_PACKAGE_SCRIPT_KEYS)
-      || manifest.scripts.build !== EXPECTED_PACKAGE_BUILD
-      || manifest.scripts?.check !== EXPECTED_PACKAGE_CHECK
-      || manifest.scripts?.clean !== EXPECTED_PACKAGE_CLEAN
-      || manifest.scripts?.prepack !== EXPECTED_PACKAGE_PREPACK
-      || manifest.scripts?.typecheck !== EXPECTED_PACKAGE_TYPECHECK
-      || manifest.scripts?.test !== EXPECTED_PACKAGE_TEST) {
-      errors.push(`${packagePath}: package must retain the governed clean, typecheck, build, test, check, and prepack scripts`);
+    if (plannedEnvelope !== undefined
+      && !isDeepStrictEqual(manifest.scripts, plannedEnvelope.manifest.scripts)) {
+      errors.push(`${packagePath}: package scripts differ from the reviewed Foundation materialization plan`);
     }
     if (!exactStringArray(manifest.files, ["dist"])) errors.push(`${packagePath}: package files must contain only dist`);
     if (!hasSafeCuratedExports(manifest)) {
@@ -487,6 +556,8 @@ export async function validatePackageTopology({
         test: false,
       }]),
     );
+    const analysesByPath = new Map();
+    const sourcePaths = new Set(packageCodeFiles.filter(path => path.startsWith("src/")));
     for (const path of packageCodeFiles) {
       const isRuntimeSource = path.startsWith("src/");
       if ((isRuntimeSource && !isAllowedSourcePath(path))
@@ -496,6 +567,7 @@ export async function validatePackageTopology({
       }
       const source = await readFile(join(root, packagePath, path), "utf8");
       const analysis = analyzeSource(path, source);
+      analysesByPath.set(path, analysis);
       for (const label of analysis.errors) {
         errors.push(`${packagePath}/${path}: ${label} is prohibited until the shared source graph models it`);
       }
@@ -507,23 +579,43 @@ export async function validatePackageTopology({
         continue;
       }
       const evidence = evidenceByFeature.get(feature);
-      if (!isRuntimeSource) {
-        evidence.test ||= analysis.hasTestRegistration;
-      } else if (path === `src/features/${feature}/index.ts`) {
+      if (isRuntimeSource && path === `src/features/${feature}/index.ts`) {
         evidence.entrypoint = true;
-      } else if (!path.endsWith(".d.ts")) {
-        evidence.implementation ||= analysis.hasRuntimeImplementation;
       }
     }
     for (const [feature, evidence] of evidenceByFeature) {
+      const packageEntrypoint = "src/index.ts";
+      const featureEntrypoint = `src/features/${feature}/index.ts`;
+      const featureRoot = `src/features/${feature}/`;
+      evidence.entrypoint &&= exportReachable(
+        packageEntrypoint,
+        featureEntrypoint,
+        analysesByPath,
+        sourcePaths,
+      );
+      evidence.implementation = [...analysesByPath].some(([path, analysis]) => (
+        path.startsWith(featureRoot)
+        && path !== featureEntrypoint
+        && !path.endsWith(".d.ts")
+        && analysis.hasRuntimeImplementation
+        && exportReachable(featureEntrypoint, path, analysesByPath, sourcePaths)
+      ));
+      evidence.test = [...analysesByPath].some(([path, analysis]) => (
+        path.startsWith(`test/features/${feature}/`)
+        && analysis.hasTestRegistration
+        && analysis.staticModuleDependencies.some(dependency => (
+          dependency.kind === "import"
+          && resolveSourceDependency(path, dependency.specifier, sourcePaths) === featureEntrypoint
+        ))
+      ));
       if (!evidence.entrypoint) {
-        errors.push(`${packagePath}: feature ${feature} requires an explicit index.ts entrypoint`);
+        errors.push(`${packagePath}: public package export must reach feature ${feature} through its index.ts entrypoint`);
       }
       if (!evidence.implementation) {
-        errors.push(`${packagePath}: feature ${feature} requires a value-level runtime implementation`);
+        errors.push(`${packagePath}: feature ${feature} entrypoint must publicly reach a value-level runtime implementation`);
       }
       if (!evidence.test) {
-        errors.push(`${packagePath}: feature ${feature} requires executable package-specific test evidence`);
+        errors.push(`${packagePath}: feature ${feature} requires an executable test importing its feature entrypoint`);
       }
     }
 
@@ -533,9 +625,9 @@ export async function validatePackageTopology({
         readJson(tsconfigPath),
         effectiveTsconfig(tsconfigPath),
       ]);
-      const expectedExtends = posix.relative(entry.path, "tsconfig.json");
-      if (!rawPackageTsconfigIsGoverned(rawTsconfig, expectedExtends)) {
-        errors.push(`${packagePath}/tsconfig.json: inputs and emit settings must exactly match the governed private-library build`);
+      if (plannedEnvelope !== undefined
+        && !isDeepStrictEqual(rawTsconfig, plannedEnvelope.tsconfig)) {
+        errors.push(`${packagePath}/tsconfig.json: config differs from the reviewed Foundation materialization plan`);
       }
       const feature = unsupportedTsconfigDependencyFeature(effective);
       if (feature !== undefined) {

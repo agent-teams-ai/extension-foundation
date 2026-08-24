@@ -3,6 +3,7 @@ import { parseSync } from "oxc-parser";
 const FORBIDDEN_RUNTIME_IDENTIFIERS = new Map([
   ["eval", "eval-based module loading"],
   ["Function", "Function-constructor module loading"],
+  ["Reflect", "reflective runtime access"],
   ["createRequire", "createRequire-based module loading"],
   ["getBuiltinModule", "process.getBuiltinModule"],
   ["globalThis", "ambient globalThis runtime access"],
@@ -17,6 +18,7 @@ const SOURCE_DIRECTIVES = Object.freeze([
 
 const REFLECTIVE_RUNTIME_PROPERTIES = new Map([
   ["constructor", "reflective Function-constructor access"],
+  ["getOwnPropertyDescriptor", "reflective property-descriptor access"],
 ]);
 
 function walk(value, visit, seen = new Set()) {
@@ -64,6 +66,27 @@ function testBindings(program) {
   return bindings;
 }
 
+function staticModuleDependencies(program) {
+  const dependencies = [];
+  for (const node of program.body) {
+    const typeOnlySpecifiers = node.specifiers?.length > 0
+      && node.specifiers.every(specifier => specifier.importKind === "type" || specifier.exportKind === "type");
+    if (node.type === "ImportDeclaration"
+      && node.importKind !== "type"
+      && !typeOnlySpecifiers
+      && typeof node.source?.value === "string") {
+      dependencies.push({ kind: "import", specifier: node.source.value });
+    }
+    if ((node.type === "ExportAllDeclaration" || node.type === "ExportNamedDeclaration")
+      && node.exportKind !== "type"
+      && !typeOnlySpecifiers
+      && typeof node.source?.value === "string") {
+      dependencies.push({ kind: "export", specifier: node.source.value });
+    }
+  }
+  return dependencies;
+}
+
 export function analyzeSource(filename, source) {
   const errors = new Set();
   for (const [pattern, label] of SOURCE_DIRECTIVES) {
@@ -79,12 +102,14 @@ export function analyzeSource(filename, source) {
       hasExecutableCode: false,
       hasRuntimeImplementation: false,
       hasTestRegistration: false,
+      staticModuleDependencies: [],
     };
   }
   for (const error of result.errors.filter(error => error.severity === "Error")) {
     errors.add(`source cannot be parsed by Oxc: ${error.message}`);
   }
   const importedTestBindings = testBindings(result.program);
+  const staticDependencies = staticModuleDependencies(result.program);
   walk(result.program, node => {
     if (node.type === "Identifier") {
       const label = FORBIDDEN_RUNTIME_IDENTIFIERS.get(node.name);
@@ -113,5 +138,6 @@ export function analyzeSource(filename, source) {
     )),
     hasRuntimeImplementation: result.program.body.some(runtimeDeclaration),
     hasTestRegistration,
+    staticModuleDependencies: staticDependencies,
   };
 }

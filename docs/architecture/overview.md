@@ -67,7 +67,7 @@ aggregates.
 The package catalog is closed and intentionally empty until an effective
 accepted ADR binds the exact package ID, name, path, and feature names. A
 package is admitted in one reviewed change that adds its catalog entry,
-deterministic scaffold output, value-level `src/features/<feature>/`
+deterministic scaffold plan and output, value-level `src/features/<feature>/`
 implementation, explicit feature entrypoint, and executable structural evidence
 under `test/features/<feature>/`. These checks prove topology and execution, not
 business completeness; the admitting ADR and review evidence establish that the
@@ -85,11 +85,17 @@ the plan create-only and rejects traversal, symbolic-link ancestry, stale catalo
 identity, or operations outside the cataloged package root:
 
 ```bash
-pnpm architecture:scaffold:plan -- <intent-path> architecture/scaffolding-plans/<name>.json
-pnpm architecture:scaffold:apply -- architecture/scaffolding-plans/<name>.json <printed-plan-digest>
+pnpm architecture:scaffold:plan -- <intent-path> architecture/scaffolding-plans/<encoded-package-id>.json
+pnpm architecture:scaffold:apply -- architecture/scaffolding-plans/<encoded-package-id>.json <printed-plan-digest>
 pnpm architecture:scaffold:recover
 pnpm architecture:check
 ```
+
+The plan path is derived reversibly from the catalog package ID: dots become
+`-dot-` and hyphens become `-dash-`. The reviewed plan remains committed as
+immutable materialization evidence. Package scripts and `tsconfig` are
+validated against its generated operations, so the shared Foundation recipe
+remains the source of truth.
 
 The generic scaffold creates a private internal package boundary, `tsconfig`,
 and curated package entrypoint. This is not publication of a public extension
@@ -99,7 +105,15 @@ boundaries, and its test evidence in the same change. The package public
 boundary may reach only declared feature entrypoints. Each feature has its own
 runtime boundary, and its tests live outside the production build in a
 development boundary. Cross-feature dependencies are explicit and deep imports
-fail closed.
+fail closed. The root export must reach each feature entrypoint, each feature
+entrypoint must reach a real implementation, and executable tests must import
+the owning feature entrypoint. Unreachable files and no-op tests are not
+admission evidence.
+
+Package ownership is a bijection: every catalog entry requires one effective
+accepted ADR declaration, and every package declaration in an effective
+accepted ADR requires one exact catalog entry. Either side drifting alone fails
+CI.
 
 Each package keeps the governed clean, typecheck, build, test, check, and
 prepack scripts and cannot add implicit lifecycle hooks. Its source-only
@@ -114,9 +128,10 @@ the stable product owner, real product slice, independent implementations,
 compatibility fixtures, negative tests, and conformance evidence defined by the
 extension safety ADR. Internal package exports do not satisfy that gate.
 
-The current filesystem adapter proves journaled process-crash recovery in a
-trusted single-writer workspace. Plan apply additionally requires the digest
-printed during review. This
+The current filesystem adapter tests every exposed scaffold fault point in a
+trusted single-writer workspace. A crash either converges automatically or
+returns stable, fail-closed manual-recovery evidence without overwriting files.
+Plan apply additionally requires the digest printed during review. This
 repository does not claim power-loss durability on every operating system until
 the shared Foundation publishes that qualification evidence.
 

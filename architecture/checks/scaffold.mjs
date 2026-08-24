@@ -13,6 +13,7 @@ import {
 import {
   createDocsOwnerResolver,
   isRecord,
+  materializationPlanPath,
   packageOwnerFeatures,
   requireValidPackagePolicy,
 } from "./package-policy.mjs";
@@ -126,12 +127,17 @@ export async function publishScaffoldPlan({
   planPath,
   resolveOwner = createDocsOwnerResolver(root),
 }) {
-  const destination = safePlanPath(root, planPath);
-  await ensurePlanDirectory(root);
   const plan = await validatePlanAgainstCatalog(root, await planScaffoldFromFile({
     consumerRoot: root,
     intentPath,
   }), resolveOwner);
+  const policy = await requireValidPackagePolicy(root);
+  const entry = policy.entriesById.get(plan.target.id);
+  if (entry === undefined || planPath !== materializationPlanPath(entry)) {
+    throw new Error(`plan path must be ${entry === undefined ? "the catalog-owned materialization path" : materializationPlanPath(entry)}`);
+  }
+  const destination = safePlanPath(root, planPath);
+  await ensurePlanDirectory(root);
   const handle = await open(destination, "wx", 0o644);
   let complete = false;
   let primaryError;
@@ -175,10 +181,13 @@ export async function applyScaffoldPlan({
   if (plan.planDigest !== expectedPlanDigest) {
     throw new Error("scaffold plan differs from the reviewed plan digest");
   }
-  return applyFilesystemScaffold(
-    root,
-    await validatePlanAgainstCatalog(root, plan, resolveOwner),
-  );
+  const validated = await validatePlanAgainstCatalog(root, plan, resolveOwner);
+  const policy = await requireValidPackagePolicy(root);
+  const entry = policy.entriesById.get(validated.target.id);
+  if (entry === undefined || planPath !== materializationPlanPath(entry)) {
+    throw new Error(`plan path must be ${entry === undefined ? "the catalog-owned materialization path" : materializationPlanPath(entry)}`);
+  }
+  return applyFilesystemScaffold(root, validated);
 }
 
 function receiptExitCode(receipt) {

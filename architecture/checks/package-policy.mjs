@@ -7,6 +7,7 @@ import { parse as parseYaml } from "yaml";
 export const CATALOG_PATH = "architecture/package-catalog.json";
 export const DOCS_PROFILE_PATH = "architecture/foundation/docs-protocol.yaml";
 export const SCAFFOLDING_POLICY_PATH = "architecture/foundation/scaffolding.yaml";
+export const MATERIALIZATION_PLAN_DIRECTORY = "architecture/scaffolding-plans";
 export const CATALOG_ROOT_KEYS = Object.freeze(["packages", "version"]);
 export const CATALOG_ENTRY_KEYS = Object.freeze([
   "id",
@@ -56,6 +57,15 @@ function hasExactKeys(value, expected) {
 
 export function pathsOverlap(left, right) {
   return left === right || left.startsWith(`${right}/`) || right.startsWith(`${left}/`);
+}
+
+export function materializationPlanPath(entry) {
+  const encodedId = [...entry.id].map(character => {
+    if (character === ".") return "-dot-";
+    if (character === "-") return "-dash-";
+    return character;
+  }).join("");
+  return `${MATERIALIZATION_PLAN_DIRECTORY}/${encodedId}.json`;
 }
 
 export async function loadPackagePolicy(root) {
@@ -143,64 +153,111 @@ export function packageExportTargets(value) {
 }
 
 function normalizePackageOwnership(value) {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap(entry => {
+  if (value === undefined) return { entries: [], errors: [] };
+  if (!Array.isArray(value)) return { entries: [], errors: ["package_ownership must be an array"] };
+  const entries = [];
+  const errors = [];
+  for (const [index, entry] of value.entries()) {
     if (!isRecord(entry)
       || typeof entry.package_id !== "string"
       || typeof entry.package_name !== "string"
       || typeof entry.package_path !== "string"
       || !Array.isArray(entry.features)
       || entry.features.some(feature => typeof feature !== "string")) {
-      return [];
+      errors.push(`package_ownership[${index}] has an invalid shape`);
+      continue;
     }
-    return [{
+    const features = [...entry.features].sort(compareBinary);
+    if (!PACKAGE_ID.test(entry.package_id)
+      || !PACKAGE_NAME.test(entry.package_name)
+      || !PACKAGE_PATH.test(entry.package_path)
+      || features.length === 0
+      || features.some(feature => !FEATURE_NAME.test(feature))
+      || new Set(features).size !== features.length) {
+      errors.push(`package_ownership[${index}] has an invalid identity or feature set`);
+      continue;
+    }
+    entries.push({
       packageId: entry.package_id,
       packageName: entry.package_name,
       packagePath: entry.package_path,
-      features: [...new Set(entry.features)].sort(),
-    }];
-  });
+      features,
+    });
+  }
+  return { entries, errors };
 }
 
-export function createDocsOwnerResolver(root) {
+function supersededBy(documents, document) {
+  const successors = new Set(
+    Array.isArray(document.metadata.superseded_by) ? document.metadata.superseded_by : [],
+  );
+  for (const candidate of documents) {
+    if (["accepted", "superseded"].includes(String(candidate.metadata.status))
+      && Array.isArray(candidate.metadata.supersedes)
+      && candidate.metadata.supersedes.includes(document.id)) {
+      successors.add(candidate.id);
+    }
+  }
+  return [...successors].sort(compareBinary);
+}
+
+function normalizeOwnerDocument(documents, document) {
+  const ownership = normalizePackageOwnership(document.metadata.package_ownership);
+  return {
+    id: document.id,
+    type: String(document.metadata.type ?? ""),
+    status: String(document.metadata.status ?? ""),
+    supersededBy: supersededBy(documents, document),
+    packageOwnership: ownership.entries,
+    packageOwnershipErrors: ownership.errors,
+  };
+}
+
+export function createDocsOwnerCatalog(root) {
   let documentsExecution;
-  return async ownerDocumentId => {
+  const documents = async () => {
     documentsExecution ??= docsFind({
       consumerRoot: root,
       profilePath: DOCS_PROFILE_PATH,
       query: {},
     });
     const execution = await documentsExecution;
-    if (execution.envelope.outcome !== "success") return undefined;
-    const documents = execution.envelope.result.documents;
-    const matches = documents.filter(document => document.id === ownerDocumentId);
-    if (matches.length !== 1) return undefined;
-    const document = matches[0];
-    const supersededBy = new Set(
-      Array.isArray(document.metadata.superseded_by) ? document.metadata.superseded_by : [],
-    );
-    for (const candidate of documents) {
-      if (["accepted", "superseded"].includes(String(candidate.metadata.status))
-        && Array.isArray(candidate.metadata.supersedes)
-        && candidate.metadata.supersedes.includes(ownerDocumentId)) {
-        supersededBy.add(candidate.id);
-      }
+    if (execution.envelope.outcome !== "success") {
+      throw new Error("Docs Protocol could not enumerate package ownership documents");
     }
-    return {
-      id: document.id,
-      type: String(document.metadata.type ?? ""),
-      status: String(document.metadata.status ?? ""),
-      supersededBy: [...supersededBy].sort(),
-      packageOwnership: normalizePackageOwnership(document.metadata.package_ownership),
-    };
+    return execution.envelope.result.documents;
   };
+  return {
+    resolve: async ownerDocumentId => {
+      const allDocuments = await documents();
+      const matches = allDocuments.filter(document => document.id === ownerDocumentId);
+      if (matches.length !== 1) return undefined;
+      return normalizeOwnerDocument(allDocuments, matches[0]);
+    },
+    listEffective: async () => {
+      const allDocuments = await documents();
+      return allDocuments
+        .map(document => normalizeOwnerDocument(allDocuments, document))
+        .filter(document => (
+          document.type === "adr"
+          && document.status === "accepted"
+          && document.supersededBy.length === 0
+        ));
+    },
+  };
+}
+
+export function createDocsOwnerResolver(root) {
+  const catalog = createDocsOwnerCatalog(root);
+  return catalog.resolve;
 }
 
 export function packageOwnerFeatures(entry, owner) {
   if (owner?.id !== entry.owner_document
     || owner.type !== "adr"
     || owner.status !== "accepted"
-    || owner.supersededBy?.length !== 0) {
+    || owner.supersededBy?.length !== 0
+    || (owner.packageOwnershipErrors?.length ?? 0) !== 0) {
     return undefined;
   }
   const matches = owner.packageOwnership?.filter(ownership => (
