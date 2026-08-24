@@ -87,14 +87,17 @@ the atomic publication or terminal transition. A missing, newly introduced, or
 revision-changed member aborts the operation and requires candidate
 recompilation.
 
-Creating or changing any reference to an activation source follows the same
-ordering even when it does not change route eligibility. This includes state
-attach or rebind, schema migration, retention changes, runtime-generation
-creation, dependency-edge creation, and any ownership transition that preserves
-a source reference. The operation validates and commits under the scope,
-parent-artifact, and source lifecycle fences. Retirement's terminal attachment
-check is performed under those same fences, so a concurrent custody operation
-cannot introduce a reference after the check.
+Creating or changing any reference or custody attachment to an activation source
+or artifact installation follows the same ordering even when it does not change
+route eligibility. This includes state attach or rebind, schema migration,
+retention changes, runtime-generation creation, dependency-edge creation, and
+any ownership transition that preserves a source or installation reference. The
+operation validates and commits under the scope, affected parent-artifact, and
+affected source lifecycle fences. Artifact-extension state always acquires its
+`ArtifactRetirementFence`, even though an artifact installation is not an
+`ActivationSource`. Retirement's terminal attachment check is performed under
+those same fences, so a concurrent custody operation cannot introduce a
+reference after the check.
 
 The fence hierarchy serializes:
 
@@ -202,11 +205,12 @@ module supplies built-in schema and migration intent. Neither authority grants
 state custody. Every custody authorization and migration effect binds the exact
 schema-authority variant, lineage, revision, current schema, and proposed schema.
 
-`StateCustodyAuthorization` binds exact current and proposed custody subjects,
+`StateCustodyAuthorization` binds immutable decision identity, authority owner,
+authority revision and fence, exact current and proposed custody subjects,
 immutable custody-owner identity, tenant or product identity, ownership
-revision, authorizing-principal relation, state and schema transition, and the
-single permitted operation. Sharing a deployment scope does not imply
-cross-tenant authority.
+revision, authorizing-principal relation, state and schema transition, the
+single permitted operation, and expiry or explicit non-expiring status. Sharing
+a deployment scope does not imply cross-tenant authority.
 
 Ownership transfer is a durable separate operation bound to exact old and new
 owner identities and revisions. It first fences the old ownership revision,
@@ -216,16 +220,28 @@ effect can still occur. Only then may one atomic transition attach the new owner
 and advance the ownership revision. The new owner cannot attach, mutate,
 export, or delete state before that transition commits.
 
+The transfer requires a current `CustodyOwnershipTransferAuthorization` issued
+by the current custody authority. It binds immutable decision identity,
+authority owner, authority revision and fence, state-space identity, complete
+custody subject, exact old and new custody-owner identities and revisions, the
+transfer operation, and expiry or explicit non-expiring status. The terminal
+ownership transition performs a linearizable comparison of this complete tuple
+with the current authority projection and clock in the same serialized
+transaction that advances the owner revision. Expiry, revocation, stale
+authority, or any tuple mismatch aborts the transition. A product principal
+cannot substitute for the current tenant authority over tenant-owned state.
+
 An irreversible custody operation uses a durable `CustodyEffectLease` bound to
-the authorization revision, complete custody subject, state-space identity,
-schema transition, operation, expiry, fence, and idempotency key. Authority is
-checked when intent commits. Immediately before dispatch, the authority owner
-performs one linearizable compare-and-reserve transition over the decision
-revision, fence, expiry, subject, operation, and idempotency key. Its durable
-receipt is the effect's acceptance point. A local authority records that receipt
-in its serialized authority transaction; a remote authority must expose an
-equivalent CAS reservation and verifiable receipt. An adapter that can only
-check and then dispatch cannot perform irreversible custody effects.
+the authorization decision identity, authority owner, authority revision and
+fence, custody-owner identity and ownership revision, exact current and proposed
+custody subjects, state-space identity, schema transition, operation, expiry,
+and idempotency key. Authority is checked when intent commits. Immediately
+before dispatch, the authority owner performs one linearizable
+compare-and-reserve transition over this complete tuple. Its durable receipt is
+the effect's acceptance point. A local authority records that receipt in its
+serialized authority transaction; a remote authority must expose an equivalent
+CAS reservation and verifiable receipt. An adapter that can only check and then
+dispatch cannot perform irreversible custody effects.
 
 Revocation or expiry before this acceptance point rejects the reservation and
 cancels dispatch. Once reserved, revocation fences new effects while this exact
@@ -253,10 +269,14 @@ include positive and fail-closed cases for:
 - accepted-pending, rejected, failed, uncertain, confirmed-success, and
   confirmed-already-absent termination or custody effects at every checkpoint;
 - same-deployment cross-tenant substitution and explicit ownership transfer;
+- ownership transfer expiry or revocation during drain, wrong authority owner,
+  stale old or new owner revision, and product-for-tenant substitution;
 - built-in, artifact-extension, and artifact-contribution state attach, migrate,
   export, detach, retention change, deletion, and interrupted retirement;
 - source-reference creation and custody attach or rebind racing source and
   parent-artifact retirement, including a terminal attachment recheck;
+- artifact-extension attachment racing artifact retirement without an
+  activation source;
 - product-owned and tenant-owned retained state, wrong-authority retention, and
   the discriminated artifact versus built-in schema-authority lineage;
 - effect-specific terminal proof, including rejection of `already absent` for
