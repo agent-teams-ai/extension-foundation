@@ -64,6 +64,32 @@ Cordis is a candidate, not a dependency decision. Replaceability requires two
 host adapters passing the same applicable lifecycle traces; source-level type
 isolation alone is not conformance evidence.
 
+### Candidate dependency watchlist
+
+This table is non-normative research evidence, observed on 2026-08-24. An entry
+does not admit a package, select a runtime, or authorize its types in a public
+contract. Recheck the stable version, license, provenance, and conformance
+evidence immediately before adding any dependency.
+
+| Candidate | Observed version | Possible role | Required boundary |
+| --- | --- | --- | --- |
+| [`@deepseek-ai/cordis`](https://github.com/deepseek-ai/deepseek-harness) | `4.0.1` | Experimental trusted in-process module-host adapter with scoped services, fibers, and reverse effect cleanup | Pin exactly; keep `Context`, `Fiber`, loader, and configuration types inside the adapter; do not delegate product readiness, routing, fencing, or recovery. |
+| [`awilix`](https://github.com/jeffijoe/awilix) | `13.0.5` | Consumer-owned bounded-context composition | Not a Foundation module runtime. Keep it under product `composition/**`; no cradle, container, registration, or resolver types may cross into features or contracts. |
+| [`@dagrejs/graphlib`](https://github.com/dagrejs/graphlib) | `4.0.5` | Private graph-algorithm implementation or differential test oracle | The owned compiler still defines canonical identity, stable tie-breaking, provider selection, diagnostics, serialization, and digest semantics. No mutable graph object or library error crosses the boundary. |
+| [`fast-check`](https://github.com/dubzzz/fast-check) | `4.9.0` | Property-based graph and lifecycle conformance tests | Development dependency only; generated cases must assert product-owned invariants and retain deterministic seeds for failures. |
+| [`xstate`](https://github.com/statelyai/xstate) and [`@xstate/graph`](https://github.com/statelyai/xstate/tree/main/packages/xstate-graph) | `5.32.5` and `3.0.4` | Deferred model-based lifecycle test oracle when the accepted transition matrix becomes non-trivial | Do not make actors, machines, snapshots, or XState persistence the default product runtime or public protocol. |
+| Node.js [`AsyncDisposableStack`](https://nodejs.org/api/globals.html#class-asyncdisposablestack) | Node `24.18.0` baseline | Native LIFO cleanup primitive for trusted runtime resources | Cleanup is cooperative and does not prove process termination, product rollback, drain completion, or external-effect reversal. |
+| [`@lumino/application`](https://github.com/jupyterlab/lumino) | `2.4.10` | Reference implementation and possible adapter spike for typed plugin dependencies and activation | Frontend-oriented lifecycle semantics remain private; it does not own product health, publication fencing, durable recovery, or hard termination. |
+| [`avvio`](https://github.com/fastify/avvio) | `9.3.0` | Reference for deterministic boot, readiness, timeout, and reverse close ordering | Treat as boot/close machinery, not a dynamic module graph, hot-update protocol, or product authority layer. |
+| [`@backstage/backend-plugin-api`](https://github.com/backstage/backstage) | `1.10.0` | Reference for explicit plugin initialization and shutdown hooks | Do not import Backstage's product framework or treat process-shutdown hooks as runtime plugin unload. |
+| [`effect`](https://github.com/Effect-TS/effect) | `3.22.1` | Scoped resource and layer reference for an intentionally Effect-native consumer | Do not introduce Effect types as a hidden adapter vocabulary in otherwise plain product ports and factories. |
+| [Extism](https://github.com/extism/extism) | `v1.30.0` | Deferred post-MVP WASM host for language-neutral isolated extensions | Separate trust-tier adapter and conformance suite; no WASM ABI, host function, or Extism type enters product SPI. |
+
+The first qualification slice should prefer native typed factories and standard
+resource-management primitives. A candidate library is introduced only when a
+measured reduction in lifecycle or composition complexity outweighs its adapter,
+upgrade, and negative-conformance cost.
+
 ### Ordering and handover
 
 - Explicit ordered collections with stable product-owned priority and conflict
