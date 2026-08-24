@@ -15,6 +15,12 @@ changedChecks:
     passPaths: false
 fullScanPaths:
   - .github/workflows
+  - architecture/checks
   - architecture/foundation
+  - architecture/package-catalog.json
+  - package.json
+  - packages
+  - tests
   - pnpm-lock.yaml
   - pnpm-workspace.yaml
+  - tsconfig.json

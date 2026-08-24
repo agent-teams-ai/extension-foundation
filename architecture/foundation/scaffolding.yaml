@@ -1,0 +1,28 @@
+schemaVersion: 1
+projectId: extension-foundation
+targetCatalogPath: architecture/package-catalog.json
+compositions:
+  - id: extension-foundation-library-boundary
+    scaffoldProfile:
+      ref:
+        id: foundation.node-typescript-pnpm-esm
+        contractVersion: 1
+      parameters:
+        tsconfigBase: tsconfig.json
+    recipe:
+      ref:
+        id: foundation.node-typescript-library-boundary
+        contractVersion: 1
+    targetRoles:
+      - foundation-component
+      - integration-adapter
+      - testing-support
+    authorityVerifiers:
+      - id: foundation.markdown-yaml-owner
+        contractVersion: 1
+        parameters:
+          allowedStatuses:
+            - accepted
+          documentRoots:
+            - docs/decisions
+    policies: []

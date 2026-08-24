@@ -7,6 +7,7 @@ Cosign
 digest-pinned
 Extism
 GHCR
+journaled
 Lumino
 Modulith
 OpenCode
