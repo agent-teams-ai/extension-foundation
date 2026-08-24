@@ -26,6 +26,31 @@
       "id": "ADR-0005",
       "path": "docs/decisions/0005-catalog-trust-and-moderation-boundaries.md",
       "immutableDigest": "sha256:9aa601d6a7d4697d2ed7b3b1b9a8d5d290698ec4eaa317828c3471c7fbe64819"
+    },
+    {
+      "id": "ADR-0006",
+      "path": "docs/decisions/0006-extension-module-safety-boundaries.md",
+      "immutableDigest": "sha256:43ee1789a1ae3951fd2360dafd9e9c36904562bdd9efed1c0b57dab6f1790a06"
+    },
+    {
+      "id": "ADR-0007",
+      "path": "docs/decisions/0007-extension-module-safety-boundary-clarifications.md",
+      "immutableDigest": "sha256:b8beac11915c923196d094b1bd8bb4691e02bfcdc25d7b49980bc20138ea6771"
+    },
+    {
+      "id": "ADR-0008",
+      "path": "docs/decisions/0008-extension-authority-and-lifecycle-corrections.md",
+      "immutableDigest": "sha256:88647400caa04b41b81a867843f05f63b5b338090d4bd8b5497bb8a7239880db"
+    },
+    {
+      "id": "ADR-0009",
+      "path": "docs/decisions/0009-extension-activation-and-retirement-corrections.md",
+      "immutableDigest": "sha256:32ef623b73827c0873bdc0fcabeff4ae49006de55c05d6bfb1219303ab0d9fcf"
+    },
+    {
+      "id": "ADR-0010",
+      "path": "docs/decisions/0010-extension-safety-floor-and-retirement-closure.md",
+      "immutableDigest": "sha256:a77916a5dc514d471840860a028875f4d30f220b5742661368593d8471fe894a"
     }
   ]
 }
