@@ -33,6 +33,16 @@ const REFLECTIVE_RUNTIME_PROPERTIES = new Map([
 ]);
 
 const COMPUTED_RUNTIME_PROPERTY_ACCESS = "computed runtime property access";
+const ASSERTION_NAMESPACE_ESCAPE = "assertion namespace escape or mutation";
+
+function hasRuntimeFunctionBody(body) {
+  return body?.type === "BlockStatement" && body.body?.some(statement => (
+    statement.type !== "EmptyStatement"
+    && !(statement.type === "ExpressionStatement"
+      && statement.expression?.type === "Literal"
+      && typeof statement.expression.value === "string")
+  )) === true;
+}
 
 function walk(value, visit, seen = new Set(), parent) {
   if (typeof value !== "object" || value === null || seen.has(value)) return;
@@ -57,7 +67,7 @@ function runtimeInitializer(node) {
     "TSTypeAssertion",
   ].includes(node.type)) return runtimeInitializer(node.expression);
   if (!["ArrowFunctionExpression", "FunctionExpression"].includes(node.type)) return true;
-  return node.body?.type !== "BlockStatement" || node.body.body?.length > 0;
+  return node.body?.type !== "BlockStatement" || hasRuntimeFunctionBody(node.body);
 }
 
 function runtimeDeclaration(node) {
@@ -74,7 +84,7 @@ function runtimeDeclaration(node) {
   }
   if (node.type === "ClassExpression") return node.body?.body?.length > 0;
   if (node.type === "ClassDeclaration") return node.body?.body?.length > 0;
-  if (node.type === "FunctionDeclaration") return node.body?.body?.length > 0;
+  if (node.type === "FunctionDeclaration") return hasRuntimeFunctionBody(node.body);
   return node.type === "TSEnumDeclaration" && node.body?.members?.length > 0;
 }
 
@@ -344,6 +354,9 @@ function addPatternBindings(pattern, bindings) {
 
 function callbackLocalBindings(callback) {
   const bindings = new Set();
+  if (callback.type === "FunctionExpression" && callback.id?.name !== undefined) {
+    bindings.add(callback.id.name);
+  }
   for (const parameter of callback.params ?? []) addPatternBindings(parameter, bindings);
   walk(callback.body, node => {
     if (node.type === "VariableDeclarator") addPatternBindings(node.id, bindings);
@@ -375,6 +388,46 @@ function directAssertionCalls(callback, assertions) {
     calls.push({ call: statement.expression, method });
   }
   return calls;
+}
+
+function unsafeAssertionNamespaces(program, testCallbacks, assertions) {
+  const allowedReferences = new Set();
+  for (const callback of testCallbacks) {
+    const locals = callbackLocalBindings(callback);
+    const visibleAssertions = {
+      functions: new Map([...assertions.functions].filter(([name]) => !locals.has(name))),
+      namespaces: new Set([...assertions.namespaces].filter(name => !locals.has(name))),
+    };
+    for (const { call } of directAssertionCalls(callback, visibleAssertions)) {
+      if (call.callee?.type === "Identifier"
+        && visibleAssertions.namespaces.has(call.callee.name)) {
+        allowedReferences.add(call.callee);
+      }
+      if (call.callee?.type === "MemberExpression"
+        && call.callee.computed === false
+        && call.callee.object?.type === "Identifier"
+        && visibleAssertions.namespaces.has(call.callee.object.name)) {
+        allowedReferences.add(call.callee.object);
+      }
+    }
+  }
+
+  const unsafe = new Set();
+  walk(program, (node, parent) => {
+    if (node.type !== "Identifier"
+      || !assertions.namespaces.has(node.name)
+      || allowedReferences.has(node)) return;
+    if (["ImportDefaultSpecifier", "ImportNamespaceSpecifier", "ImportSpecifier"].includes(parent?.type)) return;
+    if (["MemberExpression", "OptionalMemberExpression"].includes(parent?.type)
+      && parent.computed === false
+      && parent.property === node) return;
+    if (["MethodDefinition", "Property", "PropertyDefinition"].includes(parent?.type)
+      && parent.computed === false
+      && parent.key === node
+      && parent.shorthand !== true) return;
+    unsafe.add(node.name);
+  });
+  return unsafe;
 }
 
 function walkEagerChain(value, visit, seen) {
@@ -457,15 +510,23 @@ function walkEagerExpression(value, visit, seen = new Set()) {
   }
 }
 
-function observedRuntimeImportSources(program, testCallbacks) {
-  const importedAssertions = assertionBindings(program);
+function observedRuntimeImportSources(
+  program,
+  testCallbacks,
+  importedAssertions,
+  unsafeNamespaces,
+) {
   const importedRuntime = importedRuntimeBindings(program);
   const sources = new Set();
   for (const callback of testCallbacks) {
     const locals = callbackLocalBindings(callback);
     const assertions = {
-      functions: new Map([...importedAssertions.functions].filter(([name]) => !locals.has(name))),
-      namespaces: new Set([...importedAssertions.namespaces].filter(name => !locals.has(name))),
+      functions: new Map([...importedAssertions.functions].filter(([name]) => (
+        !locals.has(name) && !unsafeNamespaces.has(name)
+      ))),
+      namespaces: new Set([...importedAssertions.namespaces].filter(name => (
+        !locals.has(name) && !unsafeNamespaces.has(name)
+      ))),
     };
     const runtimeBindings = new Map(
       [...importedRuntime].filter(([name]) => !locals.has(name)),
@@ -619,6 +680,13 @@ export function analyzeSource(filename, source) {
   }
   const importedTestBindings = testBindings(result.program);
   const testCallbacks = registeredTestCallbacks(result.program, importedTestBindings);
+  const importedAssertions = assertionBindings(result.program);
+  const unsafeNamespaces = unsafeAssertionNamespaces(
+    result.program,
+    testCallbacks,
+    importedAssertions,
+  );
+  if (unsafeNamespaces.size > 0) errors.add(ASSERTION_NAMESPACE_ESCAPE);
   const staticDependencies = staticModuleDependencies(result.program);
   const runtimeImplementationNames = exportedRuntimeImplementationNames(result.program);
   const runtimeExportBindings = localRuntimeExportBindings(result.program);
@@ -665,6 +733,8 @@ export function analyzeSource(filename, source) {
     observedRuntimeImportSources: observedRuntimeImportSources(
       result.program,
       testCallbacks,
+      importedAssertions,
+      unsafeNamespaces,
     ),
     staticModuleDependencies: staticDependencies,
   };

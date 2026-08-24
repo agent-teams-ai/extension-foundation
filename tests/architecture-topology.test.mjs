@@ -947,6 +947,13 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
   assert.deepEqual(
     analyzeSource(
       "example.test.ts",
+      'import { strict } from "node:assert";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("strict namespace", () => { strict.equal(capability, true); });\n',
+    ).observedRuntimeImportSources,
+    ["./index.js"],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
       'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("property names", () => { assert.deepEqual({ capability: 1 }, { capability: 1 }); });\n',
     ).observedRuntimeImportSources,
     [],
@@ -1052,6 +1059,25 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
   assert.deepEqual(
     analyzeSource(
       "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("named callback shadow", function capability() { assert.equal(capability, capability); });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
+  const mutatedAssertion = analyzeSource(
+    "example.test.ts",
+    'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\nObject.assign(assert, { equal() {} });\ntest("mutated assertion", () => { assert.equal(capability, true); });\n',
+  );
+  assert.deepEqual(mutatedAssertion.observedRuntimeImportSources, []);
+  assert.ok(mutatedAssertion.errors.includes("assertion namespace escape or mutation"));
+  const escapedAssertion = analyzeSource(
+    "example.test.ts",
+    'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\nconst escaped = assert;\nescaped.equal = () => {};\ntest("escaped assertion", () => { assert.equal(capability, true); });\n',
+  );
+  assert.deepEqual(escapedAssertion.observedRuntimeImportSources, []);
+  assert.ok(escapedAssertion.errors.includes("assertion namespace escape or mutation"));
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
       'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("capability", () => { assert.equal(capability, true); });\n',
     ).observedRuntimeImportSources,
     ["./index.js"],
@@ -1089,6 +1115,8 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
   assert.equal(generatorEvidence.hasTestRegistration, false);
   assert.deepEqual(generatorEvidence.observedRuntimeImportSources, []);
   assert.equal(analyzeSource("example.ts", "export function placeholder() {}\n").hasRuntimeImplementation, false);
+  assert.equal(analyzeSource("example.ts", "export function placeholder() { ; }\n").hasRuntimeImplementation, false);
+  assert.equal(analyzeSource("example.ts", 'export function placeholder() { "use strict"; }\n').hasRuntimeImplementation, false);
   assert.equal(analyzeSource("example.ts", "export const placeholder = () => {};\n").hasRuntimeImplementation, false);
   assert.equal(analyzeSource("example.ts", "const placeholder = function () {};\nexport default placeholder;\n").hasRuntimeImplementation, false);
   assert.equal(analyzeSource("example.ts", "export const placeholder = (() => {}) satisfies () => void;\n").hasRuntimeImplementation, false);
