@@ -376,6 +376,14 @@ function walkEagerExpression(value, visit, seen = new Set()) {
   if (typeof value !== "object" || value === null || seen.has(value)) return;
   seen.add(value);
   if (visit(value) === false) return;
+  if (value.type === "ChainExpression") {
+    let base = value.expression;
+    while (["CallExpression", "MemberExpression"].includes(base?.type)) {
+      base = base.type === "CallExpression" ? base.callee : base.object;
+    }
+    walkEagerExpression(base, visit, seen);
+    return;
+  }
   if (value.type === "ConditionalExpression") {
     walkEagerExpression(value.test, visit, seen);
     return;
