@@ -298,7 +298,202 @@ test("topology requires public reachability and tests through the feature entryp
       "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
     ));
 
+    await writeFixture(
+      root,
+      "packages/example/src/index.ts",
+      'export * from "./features/example/index.js";\nexport * from "./features/example/capability.js";\n',
+    );
+    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+    ));
+    await writeFixture(root, "packages/example/src/index.ts", 'export * from "./features/example/index.js";\n');
+
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/index.ts",
+      'export * from "./barrel.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      "const implementation = true;\nexport default implementation;\n",
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/barrel.ts",
+      'export { default } from "./capability.js";\n',
+    );
+    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+    ));
+
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/index.ts",
+      'export * as default from "./capability.js";\n',
+    );
+    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+    ));
+
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/index.ts",
+      'export { placeholder } from "./capability.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      "export const hidden = true;\nexport function placeholder() {}\n",
+    );
+    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+    ));
+
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/index.ts",
+      'export * from "./capability.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      "const implementation = true;\nexport default implementation;\n",
+    );
+    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+    ));
+
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/index.ts",
+      'import { capability as implementation } from "./capability.js";\nexport { implementation as capability };\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      "export const capability = true;\n",
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), []);
+
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/index.ts",
+      'export { placeholder as capability } from "./placeholder.js";\nexport * from "./capability.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/placeholder.ts",
+      "export function placeholder() {}\n",
+    );
+    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+    ));
+
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/index.ts",
+      'export * from "./capability.js";\nexport * from "./other.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/other.ts",
+      "export const capability = true;\n",
+    );
+    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+    ));
+
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/index.ts",
+      'export * from "./ambiguous.js";\nexport * from "./good.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/ambiguous.ts",
+      'export * from "./capability.js";\nexport * from "./other.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/good.ts",
+      'export { capability } from "./capability.js";\n',
+    );
+    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+    ));
+
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/index.ts",
+      'export * from "./capability.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      "export default function capability() { return true; }\nexport { capability };\n",
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), []);
+
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/index.ts",
+      'export * from "./barrel-a.js";\nexport * from "./barrel-b.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/barrel-a.ts",
+      'export { default as capability } from "./capability.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/barrel-b.ts",
+      'export { capability } from "./capability.js";\n',
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), []);
+
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      "export let capability = false;\nexport default capability;\ncapability = true;\n",
+    );
+    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+    ));
+
+    await writeFixture(
+      root,
+      "packages/example/src/index.ts",
+      'export * from "./features/example/index.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/index.ts",
+      'export * as example from "./capability.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      "export const capability = true;\n",
+    );
+    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+    ));
+
+    await writeFixture(
+      root,
+      "packages/example/src/index.ts",
+      'export { default as example } from "./features/example/index.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/index.ts",
+      'import { capability as implementation } from "./capability.js";\nexport default implementation;\n',
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), []);
+
     await writeFeatureEntrypoint(root);
+    await writeFixture(root, "packages/example/src/features/example/capability.ts", "export const example = true;\n");
     await writeFixture(root, "packages/example/test/features/example/capability.test.ts", assertionWithoutFeatureImport());
     assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
       "packages/example: feature example requires an executable assertion over a value imported from its feature entrypoint",
@@ -712,6 +907,13 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
     [],
   );
   assert.deepEqual(
+    analyzeSource(
+      "example.ts",
+      "Object.getOwnPropertyDescriptors(Object.getPrototypeOf(() => undefined));\n",
+    ).errors,
+    ["reflective property-descriptor access", "reflective prototype access"],
+  );
+  assert.deepEqual(
     analyzeSource("example.ts", 'import type { X } from "./x.js";\nexport { type X } from "./x.js";\n')
       .staticModuleDependencies,
     [],
@@ -738,9 +940,199 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
   assert.deepEqual(
     analyzeSource(
       "example.test.ts",
+      'import { strict as verify } from "node:assert";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("strict namespace alias", () => { verify.equal(capability, true); });\n',
+    ).observedRuntimeImportSources,
+    ["./index.js"],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import { strict } from "node:assert";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("strict namespace", () => { strict.equal(capability, true); });\n',
+    ).observedRuntimeImportSources,
+    ["./index.js"],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import { default as verify } from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("named default namespace", () => { verify.equal(capability, true); });\n',
+    ).observedRuntimeImportSources,
+    ["./index.js"],
+  );
+  for (const [assertionImport, assertionCall] of [
+    ['import type verify from "node:assert/strict";', "verify.equal(capability, true)"],
+    ['import type * as verify from "node:assert/strict";', "verify.equal(capability, true)"],
+    ['import type { default as verify } from "node:assert/strict";', "verify.equal(capability, true)"],
+    ['import type { strict as verify } from "node:assert";', "verify.equal(capability, true)"],
+    ['import type { equal as verify } from "node:assert";', "verify(capability, true)"],
+  ]) {
+    assert.deepEqual(
+      analyzeSource(
+        "example.test.ts",
+        `${assertionImport}\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("type-only assertion", () => { ${assertionCall}; });\n`,
+      ).observedRuntimeImportSources,
+      [],
+    );
+  }
+  const typeOnlyTest = analyzeSource(
+    "example.test.ts",
+    'import assert from "node:assert/strict";\nimport type test from "node:test";\nimport { capability } from "./index.js";\ntest("type-only test", () => { assert.equal(capability, true); });\n',
+  );
+  assert.equal(typeOnlyTest.hasTestRegistration, false);
+  assert.deepEqual(typeOnlyTest.observedRuntimeImportSources, []);
+  const specifierTypeOnlyTest = analyzeSource(
+    "example.test.ts",
+    'import assert from "node:assert/strict";\nimport { type test as register } from "node:test";\nimport { capability } from "./index.js";\nregister("type-only test", () => { assert.equal(capability, true); });\n',
+  );
+  assert.equal(specifierTypeOnlyTest.hasTestRegistration, false);
+  assert.deepEqual(specifierTypeOnlyTest.observedRuntimeImportSources, []);
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("property names", () => { assert.deepEqual({ capability: 1 }, { capability: 1 }); });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("message only", () => { assert.equal(true, true, capability); });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { meta } from "./index.js";\ntest("meta property", () => { assert.ok(import.meta); });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("assignment target", () => { assert.ok(capability = true); });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("logical assignment", () => { assert.ok(({ ready: true }.ready ||= capability())); });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("spread message", () => { assert.ok(...[true, capability]); });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("shorthand reads", () => { assert.deepEqual({ capability }, { capability }); });\n',
+    ).observedRuntimeImportSources,
+    ["./index.js"],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("computed reads", () => { assert.deepEqual({ [capability]: 1 }, { [capability]: 1 }); });\n',
+    ).observedRuntimeImportSources,
+    ["./index.js"],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("short-circuited optional call", () => { assert.equal(undefined?.(capability), undefined); });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("optional call base", () => { assert.equal(capability?.(), true); });\n',
+    ).observedRuntimeImportSources,
+    ["./index.js"],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("pre-chain call argument", () => { assert.equal(Boolean(Object(capability)?.valueOf()), true); });\n',
+    ).observedRuntimeImportSources,
+    ["./index.js"],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
       'import assert from "node:assert/strict";\nimport test from "node:test";\nimport * as feature from "./index.js";\ntest("capability", () => { assert.ok(() => feature.capability); });\n',
     ).observedRuntimeImportSources,
     [],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("capability", () => { if (false) assert.equal(capability, true); });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("capability", () => { assert.ok(false ? capability : true); });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("capability", () => { const assert = { equal() {} }; const capability = true; assert.equal(capability, true); });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("named callback shadow", function capability() { assert.equal(capability, capability); });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
+  const mutatedAssertion = analyzeSource(
+    "example.test.ts",
+    'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\nObject.assign(assert, { equal() {} });\ntest("mutated assertion", () => { assert.equal(capability, true); });\n',
+  );
+  assert.deepEqual(mutatedAssertion.observedRuntimeImportSources, []);
+  assert.ok(mutatedAssertion.errors.includes("assertion namespace escape or mutation"));
+  const escapedAssertion = analyzeSource(
+    "example.test.ts",
+    'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\nconst escaped = assert;\nescaped.equal = () => {};\ntest("escaped assertion", () => { assert.equal(capability, true); });\n',
+  );
+  assert.deepEqual(escapedAssertion.observedRuntimeImportSources, []);
+  assert.ok(escapedAssertion.errors.includes("assertion namespace escape or mutation"));
+  const namedDefaultMutation = analyzeSource(
+    "example.test.ts",
+    'import assert from "node:assert/strict";\nimport { default as poison } from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\npoison.equal = () => {};\ntest("named default mutation", () => { assert.equal(capability, true); });\n',
+  );
+  assert.deepEqual(namedDefaultMutation.observedRuntimeImportSources, []);
+  assert.ok(namedDefaultMutation.errors.includes("assertion namespace escape or mutation"));
+  assert.ok(analyzeSource(
+    "assert-helper.ts",
+    'export { default as poison } from "node:assert/strict";\n',
+  ).errors.includes("assertion namespace re-export"));
+  assert.ok(analyzeSource(
+    "assert-helper.ts",
+    'export { strict as poison } from "node:assert";\n',
+  ).errors.includes("assertion namespace re-export"));
+  assert.ok(analyzeSource(
+    "assert-helper.ts",
+    'export * from "node:assert/strict";\n',
+  ).errors.includes("assertion namespace re-export"));
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("capability", () => { assert.equal(capability, true); });\n',
+    ).observedRuntimeImportSources,
+    ["./index.js"],
   );
   assert.deepEqual(
     analyzeSource(
@@ -762,14 +1154,50 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
   );
   assert.equal(skippedEvidence.hasTestRegistration, false);
   assert.deepEqual(skippedEvidence.observedRuntimeImportSources, []);
+  const trailingSkippedEvidence = analyzeSource(
+    "example.test.ts",
+    'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest(() => { assert.equal(capability, true); }, { skip: true });\n',
+  );
+  assert.equal(trailingSkippedEvidence.hasTestRegistration, false);
+  assert.deepEqual(trailingSkippedEvidence.observedRuntimeImportSources, []);
+  const generatorEvidence = analyzeSource(
+    "example.test.ts",
+    'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("capability", function* () { assert.equal(capability, true); });\n',
+  );
+  assert.equal(generatorEvidence.hasTestRegistration, false);
+  assert.deepEqual(generatorEvidence.observedRuntimeImportSources, []);
   assert.equal(analyzeSource("example.ts", "export function placeholder() {}\n").hasRuntimeImplementation, false);
+  assert.equal(analyzeSource("example.ts", "export function placeholder() { ; }\n").hasRuntimeImplementation, false);
+  assert.equal(analyzeSource("example.ts", 'export function placeholder() { "use strict"; }\n').hasRuntimeImplementation, false);
   assert.equal(analyzeSource("example.ts", "export const placeholder = () => {};\n").hasRuntimeImplementation, false);
   assert.equal(analyzeSource("example.ts", "const placeholder = function () {};\nexport default placeholder;\n").hasRuntimeImplementation, false);
   assert.equal(analyzeSource("example.ts", "export const placeholder = (() => {}) satisfies () => void;\n").hasRuntimeImplementation, false);
   assert.equal(analyzeSource("example.ts", "export const capability = () => true;\n").hasRuntimeImplementation, true);
+  assert.deepEqual(
+    analyzeSource("example.ts", "export default () => true;\n").exportedRuntimeImplementationNames,
+    ["default"],
+  );
+  assert.equal(
+    analyzeSource("example.ts", "export const [placeholder] = [() => {}];\n").hasRuntimeImplementation,
+    false,
+  );
   assert.equal(analyzeSource("example.ts", "const capability = function () { return true; };\nexport default capability;\n").hasRuntimeImplementation, true);
   assert.equal(analyzeSource("example.ts", "const hidden = true;\nexport {};\n").hasRuntimeImplementation, false);
   assert.equal(analyzeSource("example.ts", "const capability = true;\nexport default capability;\n").hasRuntimeImplementation, true);
+  assert.deepEqual(
+    analyzeSource(
+      "example.ts",
+      "export default function capability() { return true; }\nexport { capability };\n",
+    ).exportedRuntimeImplementationNames.sort(),
+    ["capability", "default"],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.ts",
+      "export default class Capability { run() { return true; } }\nexport { Capability };\n",
+    ).exportedRuntimeImplementationNames.sort(),
+    ["Capability", "default"],
+  );
   assert.deepEqual(
     analyzeSource(
       "example.ts",
@@ -799,7 +1227,13 @@ test("built export evidence requires regular artifacts after the governed build"
     await writeFixture(root, "packages/example/package.json", `${JSON.stringify(traversingManifest)}\n`);
     await writeFixture(root, "packages/example/src/index.ts", "export const capability = true;\n");
     assert.ok((await validateBuiltPackageArtifacts({ root })).includes(
-      "packages/example: export target is outside dist: ./dist/../src/index.ts",
+      "packages/example: package exports must be the canonical root import and types targets",
+    ));
+    const stringExportManifest = JSON.parse(packageManifest());
+    stringExportManifest.exports = { ".": "./dist/index.js" };
+    await writeFixture(root, "packages/example/package.json", `${JSON.stringify(stringExportManifest)}\n`);
+    assert.ok((await validateBuiltPackageArtifacts({ root })).includes(
+      "packages/example: package exports must be the canonical root import and types targets",
     ));
   } finally {
     await rm(root, { recursive: true, force: true });

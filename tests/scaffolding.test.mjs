@@ -269,6 +269,31 @@ test("plan publication converges after process loss before and after create-only
   }
 });
 
+test("plan publication removes process-loss temporaries from superseded digests", async () => {
+  const root = await createConsumer();
+  const orphan = join(
+    root,
+    "architecture/scaffolding-plans/.module-dot-example.json.publication-deadbeef.abandoned.tmp",
+  );
+  try {
+    await writeFixture(
+      root,
+      "architecture/scaffolding-plans/.module-dot-example.json.publication-deadbeef.abandoned.tmp",
+      "abandoned publication bytes\n",
+    );
+    assert.equal(await exists(orphan), true);
+    await publishScaffoldPlan({
+      root,
+      intentPath: "architecture/scaffolding-intents/example.yaml",
+      planPath: "architecture/scaffolding-plans/module-dot-example.json",
+      resolveOwner: acceptedOwner,
+    });
+    assert.equal(await exists(orphan), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("scaffolding plans, applies, proves idempotency, and never overwrites drift", async () => {
   const root = await createConsumer();
   try {
