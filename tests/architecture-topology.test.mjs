@@ -301,6 +301,34 @@ test("topology requires public reachability and tests through the feature entryp
     await writeFixture(
       root,
       "packages/example/src/features/example/index.ts",
+      'export * from "./barrel.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      "const implementation = true;\nexport default implementation;\n",
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/barrel.ts",
+      'export { default } from "./capability.js";\n',
+    );
+    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+    ));
+
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/index.ts",
+      'export * as default from "./capability.js";\n',
+    );
+    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+    ));
+
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/index.ts",
       'export { placeholder } from "./capability.js";\n',
     );
     await writeFixture(
@@ -335,6 +363,18 @@ test("topology requires public reachability and tests through the feature entryp
       root,
       "packages/example/src/features/example/capability.ts",
       "export const capability = true;\n",
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), []);
+
+    await writeFixture(
+      root,
+      "packages/example/src/index.ts",
+      'export { default as example } from "./features/example/index.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/index.ts",
+      'import { capability as implementation } from "./capability.js";\nexport default implementation;\n',
     );
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), []);
 

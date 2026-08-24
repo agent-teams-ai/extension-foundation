@@ -417,6 +417,19 @@ function staticModuleDependencies(program) {
         });
       }
     }
+    if (node.type === "ExportDefaultDeclaration"
+      && node.declaration?.type === "Identifier") {
+      const imported = importedBindings.get(node.declaration.name);
+      if (imported !== undefined) {
+        dependencies.push({
+          kind: "export",
+          specifier: imported.specifier,
+          exportAll: imported.importedName === "*",
+          importedName: imported.importedName === "*" ? undefined : imported.importedName,
+          exportedName: "default",
+        });
+      }
+    }
   }
   return dependencies;
 }

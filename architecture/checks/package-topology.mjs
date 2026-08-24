@@ -337,6 +337,8 @@ function exportedImplementationReachable(fromPath, analyses, sourcePaths, isImpl
       const resolved = resolveSourceDependency(current.path, dependency.specifier, sourcePaths);
       if (resolved === undefined) continue;
       if (dependency.exportAll === true) {
+        if (current.requestedName === anyNonDefaultExport
+          && dependency.exportedName === "default") continue;
         if (dependency.exportedName !== undefined
           && ![anyPublicExport, anyNonDefaultExport].includes(current.requestedName)
           && current.requestedName !== dependency.exportedName) continue;
@@ -351,6 +353,8 @@ function exportedImplementationReachable(fromPath, analyses, sourcePaths, isImpl
         });
         continue;
       }
+      if (current.requestedName === anyNonDefaultExport
+        && dependency.exportedName === "default") continue;
       if ([anyPublicExport, anyNonDefaultExport].includes(current.requestedName)
         || current.requestedName === dependency.exportedName) {
         pending.push({ path: resolved, requestedName: dependency.importedName });
@@ -643,7 +647,7 @@ export async function validatePackageTopology({
         sourcePaths,
       );
       evidence.implementation = exportedImplementationReachable(
-        featureEntrypoint,
+        packageEntrypoint,
         analysesByPath,
         sourcePaths,
         path => (
