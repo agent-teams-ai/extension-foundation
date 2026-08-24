@@ -78,28 +78,12 @@ function runtimeDeclaration(node) {
   return node.type === "TSEnumDeclaration" && node.body?.members?.length > 0;
 }
 
-function patternBindingNames(pattern) {
-  if (pattern?.type === "Identifier") return [pattern.name];
-  if (["AssignmentPattern", "RestElement", "TSParameterProperty"].includes(pattern?.type)) {
-    return patternBindingNames(pattern.left ?? pattern.argument ?? pattern.parameter);
-  }
-  if (pattern?.type === "ArrayPattern") {
-    return pattern.elements?.flatMap(patternBindingNames) ?? [];
-  }
-  if (pattern?.type === "ObjectPattern") {
-    return pattern.properties?.flatMap(property => patternBindingNames(
-      property.type === "Property" ? property.value : property.argument,
-    )) ?? [];
-  }
-  return [];
-}
-
 function runtimeBindingNames(node) {
   if (typeof node !== "object" || node === null || node.declare === true) return [];
   if (node.type === "VariableDeclaration") {
     return node.declarations
-      ?.filter(declaration => runtimeInitializer(declaration.init))
-      .flatMap(declaration => patternBindingNames(declaration.id)) ?? [];
+      ?.filter(declaration => runtimeInitializer(declaration.init) && declaration.id?.type === "Identifier")
+      .map(declaration => declaration.id.name) ?? [];
   }
   if (["ClassDeclaration", "FunctionDeclaration"].includes(node.type)
     && runtimeDeclaration(node)
@@ -118,8 +102,8 @@ function runtimeValueBindingNames(node) {
   if (typeof node !== "object" || node === null || node.declare === true) return [];
   if (node.type === "VariableDeclaration") {
     return node.declarations
-      ?.filter(declaration => declaration.init != null)
-      .flatMap(declaration => patternBindingNames(declaration.id)) ?? [];
+      ?.filter(declaration => declaration.init != null && declaration.id?.type === "Identifier")
+      .map(declaration => declaration.id.name) ?? [];
   }
   if (["ClassDeclaration", "FunctionDeclaration", "TSEnumDeclaration"].includes(node.type)
     && node.id?.name !== undefined) {

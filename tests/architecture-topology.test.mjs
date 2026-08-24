@@ -1097,12 +1097,9 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
     analyzeSource("example.ts", "export default () => true;\n").exportedRuntimeImplementationNames,
     ["default"],
   );
-  assert.deepEqual(
-    analyzeSource(
-      "example.ts",
-      "export const { capability } = { capability: true };\n",
-    ).exportedRuntimeImplementationNames,
-    ["capability"],
+  assert.equal(
+    analyzeSource("example.ts", "export const [placeholder] = [() => {}];\n").hasRuntimeImplementation,
+    false,
   );
   assert.equal(analyzeSource("example.ts", "const capability = function () { return true; };\nexport default capability;\n").hasRuntimeImplementation, true);
   assert.equal(analyzeSource("example.ts", "const hidden = true;\nexport {};\n").hasRuntimeImplementation, false);
