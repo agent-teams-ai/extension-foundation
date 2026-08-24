@@ -51,6 +51,11 @@
       "id": "ADR-0010",
       "path": "docs/decisions/0010-extension-safety-floor-and-retirement-closure.md",
       "immutableDigest": "sha256:a77916a5dc514d471840860a028875f4d30f220b5742661368593d8471fe894a"
+    },
+    {
+      "id": "ADR-0012",
+      "path": "docs/decisions/0012-reusable-library-module-and-plugin-boundaries.md",
+      "immutableDigest": "sha256:e7ccb534d6deea3da4546807e1e26902aaabaae2a7a384128e97a6a46aff9f36"
     }
   ]
 }

@@ -1,12 +1,16 @@
 AgentTeams
 air-gapped
 Awilix
+Avvio
 backpressure
 Cordis
 Cosign
+dagrejs
+DeepSeek
 digest-pinned
 Extism
 GHCR
+Graphlib
 journaled
 linearizable
 Lumino
@@ -17,3 +21,4 @@ product-neutral
 replaceability
 self-hosted
 SemVer
+watchlist
