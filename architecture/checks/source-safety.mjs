@@ -215,7 +215,8 @@ function activeTestCallback(call) {
       if (property.value?.type !== "Literal" || property.value.value !== false) return undefined;
     }
   }
-  return call.arguments[callbackIndex];
+  const callback = call.arguments[callbackIndex];
+  return callback.generator === true ? undefined : callback;
 }
 
 function registeredTestCallbacks(program, importedTestBindings) {
@@ -339,6 +340,26 @@ function observedRuntimeImportSources(program, testCallbacks) {
 
 function staticModuleDependencies(program) {
   const dependencies = [];
+  const importedBindings = new Map();
+  for (const node of program.body) {
+    if (node.type !== "ImportDeclaration"
+      || node.importKind === "type"
+      || typeof node.source?.value !== "string") continue;
+    for (const specifier of node.specifiers ?? []) {
+      if (specifier.importKind === "type" || specifier.local?.name === undefined) continue;
+      const importedName = specifier.type === "ImportDefaultSpecifier"
+        ? "default"
+        : specifier.type === "ImportNamespaceSpecifier"
+          ? "*"
+          : syntaxName(specifier.imported);
+      if (importedName !== undefined) {
+        importedBindings.set(specifier.local.name, {
+          importedName,
+          specifier: node.source.value,
+        });
+      }
+    }
+  }
   for (const node of program.body) {
     const typeOnlySpecifiers = node.specifiers?.length > 0
       && node.specifiers.every(specifier => specifier.importKind === "type" || specifier.exportKind === "type");
@@ -376,6 +397,24 @@ function staticModuleDependencies(program) {
             exportedName,
           });
         }
+      }
+    }
+    if (node.type === "ExportNamedDeclaration"
+      && node.source === null
+      && node.exportKind !== "type") {
+      for (const specifier of node.specifiers ?? []) {
+        const imported = importedBindings.get(syntaxName(specifier.local));
+        const exportedName = syntaxName(specifier.exported);
+        if (specifier.exportKind === "type"
+          || imported === undefined
+          || exportedName === undefined) continue;
+        dependencies.push({
+          kind: "export",
+          specifier: imported.specifier,
+          exportAll: imported.importedName === "*",
+          importedName: imported.importedName === "*" ? undefined : imported.importedName,
+          exportedName,
+        });
       }
     }
   }

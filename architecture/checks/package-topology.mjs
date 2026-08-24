@@ -308,23 +308,28 @@ function exportReachable(fromPath, targetPath, analyses, sourcePaths) {
 
 function exportedImplementationReachable(fromPath, analyses, sourcePaths, isImplementationPath) {
   const anyPublicExport = Symbol("any-public-export");
+  const anyNonDefaultExport = Symbol("any-non-default-export");
   const pending = [{ path: fromPath, requestedName: anyPublicExport }];
   const visited = new Set();
   while (pending.length > 0) {
     const current = pending.shift();
     const requestedKey = current.requestedName === anyPublicExport
       ? "*"
-      : current.requestedName;
+      : current.requestedName === anyNonDefaultExport
+        ? "*-without-default"
+        : current.requestedName;
     const visitKey = `${current.path}\0${requestedKey}`;
     if (visited.has(visitKey)) continue;
     visited.add(visitKey);
     const analysis = analyses.get(current.path);
     if (analysis === undefined) continue;
     const implementations = new Set(analysis.exportedRuntimeImplementationNames ?? []);
-    if (isImplementationPath(current.path)
-      && (current.requestedName === anyPublicExport
-        ? implementations.size > 0
-        : implementations.has(current.requestedName))) {
+    const implementationMatches = current.requestedName === anyPublicExport
+      ? implementations.size > 0
+      : current.requestedName === anyNonDefaultExport
+        ? [...implementations].some(name => name !== "default")
+        : implementations.has(current.requestedName);
+    if (isImplementationPath(current.path) && implementationMatches) {
       return true;
     }
     for (const dependency of analysis.staticModuleDependencies) {
@@ -333,18 +338,20 @@ function exportedImplementationReachable(fromPath, analyses, sourcePaths, isImpl
       if (resolved === undefined) continue;
       if (dependency.exportAll === true) {
         if (dependency.exportedName !== undefined
-          && current.requestedName !== anyPublicExport
+          && ![anyPublicExport, anyNonDefaultExport].includes(current.requestedName)
           && current.requestedName !== dependency.exportedName) continue;
         if (dependency.exportedName === undefined && current.requestedName === "default") continue;
         pending.push({
           path: resolved,
           requestedName: dependency.exportedName === undefined
-            ? current.requestedName
+            ? [anyPublicExport, anyNonDefaultExport].includes(current.requestedName)
+              ? anyNonDefaultExport
+              : current.requestedName
             : anyPublicExport,
         });
         continue;
       }
-      if (current.requestedName === anyPublicExport
+      if ([anyPublicExport, anyNonDefaultExport].includes(current.requestedName)
         || current.requestedName === dependency.exportedName) {
         pending.push({ path: resolved, requestedName: dependency.importedName });
       }

@@ -312,6 +312,32 @@ test("topology requires public reachability and tests through the feature entryp
       "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
     ));
 
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/index.ts",
+      'export * from "./capability.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      "const implementation = true;\nexport default implementation;\n",
+    );
+    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+    ));
+
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/index.ts",
+      'import { capability as implementation } from "./capability.js";\nexport { implementation as capability };\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      "export const capability = true;\n",
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), []);
+
     await writeFeatureEntrypoint(root);
     await writeFixture(root, "packages/example/src/features/example/capability.ts", "export const example = true;\n");
     await writeFixture(root, "packages/example/test/features/example/capability.test.ts", assertionWithoutFeatureImport());
@@ -812,6 +838,12 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
   );
   assert.equal(skippedEvidence.hasTestRegistration, false);
   assert.deepEqual(skippedEvidence.observedRuntimeImportSources, []);
+  const generatorEvidence = analyzeSource(
+    "example.test.ts",
+    'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("capability", function* () { assert.equal(capability, true); });\n',
+  );
+  assert.equal(generatorEvidence.hasTestRegistration, false);
+  assert.deepEqual(generatorEvidence.observedRuntimeImportSources, []);
   assert.equal(analyzeSource("example.ts", "export function placeholder() {}\n").hasRuntimeImplementation, false);
   assert.equal(analyzeSource("example.ts", "export const placeholder = () => {};\n").hasRuntimeImplementation, false);
   assert.equal(analyzeSource("example.ts", "const placeholder = function () {};\nexport default placeholder;\n").hasRuntimeImplementation, false);
