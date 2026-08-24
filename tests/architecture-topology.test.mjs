@@ -407,6 +407,25 @@ test("topology requires public reachability and tests through the feature entryp
     await writeFixture(
       root,
       "packages/example/src/features/example/index.ts",
+      'export * from "./ambiguous.js";\nexport * from "./good.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/ambiguous.ts",
+      'export * from "./capability.js";\nexport * from "./other.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/good.ts",
+      'export { capability } from "./capability.js";\n',
+    );
+    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+    ));
+
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/index.ts",
       'export * from "./capability.js";\n',
     );
     await writeFixture(
@@ -921,6 +940,13 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
   assert.deepEqual(
     analyzeSource(
       "example.test.ts",
+      'import { strict as verify } from "node:assert";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("strict namespace alias", () => { verify.equal(capability, true); });\n',
+    ).observedRuntimeImportSources,
+    ["./index.js"],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
       'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("property names", () => { assert.deepEqual({ capability: 1 }, { capability: 1 }); });\n',
     ).observedRuntimeImportSources,
     [],
@@ -943,6 +969,13 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
     analyzeSource(
       "example.test.ts",
       'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("assignment target", () => { assert.ok(capability = true); });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("logical assignment", () => { assert.ok(({ ready: true }.ready ||= capability())); });\n',
     ).observedRuntimeImportSources,
     [],
   );
@@ -1060,6 +1093,17 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
   assert.equal(analyzeSource("example.ts", "const placeholder = function () {};\nexport default placeholder;\n").hasRuntimeImplementation, false);
   assert.equal(analyzeSource("example.ts", "export const placeholder = (() => {}) satisfies () => void;\n").hasRuntimeImplementation, false);
   assert.equal(analyzeSource("example.ts", "export const capability = () => true;\n").hasRuntimeImplementation, true);
+  assert.deepEqual(
+    analyzeSource("example.ts", "export default () => true;\n").exportedRuntimeImplementationNames,
+    ["default"],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.ts",
+      "export const { capability } = { capability: true };\n",
+    ).exportedRuntimeImplementationNames,
+    ["capability"],
+  );
   assert.equal(analyzeSource("example.ts", "const capability = function () { return true; };\nexport default capability;\n").hasRuntimeImplementation, true);
   assert.equal(analyzeSource("example.ts", "const hidden = true;\nexport {};\n").hasRuntimeImplementation, false);
   assert.equal(analyzeSource("example.ts", "const capability = true;\nexport default capability;\n").hasRuntimeImplementation, true);

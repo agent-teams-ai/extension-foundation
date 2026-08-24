@@ -69,17 +69,37 @@ function runtimeDeclaration(node) {
   if (node.type === "VariableDeclaration") {
     return node.declarations?.some(declaration => runtimeInitializer(declaration.init)) === true;
   }
+  if (["ArrowFunctionExpression", "FunctionExpression"].includes(node.type)) {
+    return runtimeInitializer(node);
+  }
+  if (node.type === "ClassExpression") return node.body?.body?.length > 0;
   if (node.type === "ClassDeclaration") return node.body?.body?.length > 0;
   if (node.type === "FunctionDeclaration") return node.body?.body?.length > 0;
   return node.type === "TSEnumDeclaration" && node.body?.members?.length > 0;
+}
+
+function patternBindingNames(pattern) {
+  if (pattern?.type === "Identifier") return [pattern.name];
+  if (["AssignmentPattern", "RestElement", "TSParameterProperty"].includes(pattern?.type)) {
+    return patternBindingNames(pattern.left ?? pattern.argument ?? pattern.parameter);
+  }
+  if (pattern?.type === "ArrayPattern") {
+    return pattern.elements?.flatMap(patternBindingNames) ?? [];
+  }
+  if (pattern?.type === "ObjectPattern") {
+    return pattern.properties?.flatMap(property => patternBindingNames(
+      property.type === "Property" ? property.value : property.argument,
+    )) ?? [];
+  }
+  return [];
 }
 
 function runtimeBindingNames(node) {
   if (typeof node !== "object" || node === null || node.declare === true) return [];
   if (node.type === "VariableDeclaration") {
     return node.declarations
-      ?.filter(declaration => runtimeInitializer(declaration.init) && declaration.id?.type === "Identifier")
-      .map(declaration => declaration.id.name) ?? [];
+      ?.filter(declaration => runtimeInitializer(declaration.init))
+      .flatMap(declaration => patternBindingNames(declaration.id)) ?? [];
   }
   if (["ClassDeclaration", "FunctionDeclaration"].includes(node.type)
     && runtimeDeclaration(node)
@@ -98,8 +118,8 @@ function runtimeValueBindingNames(node) {
   if (typeof node !== "object" || node === null || node.declare === true) return [];
   if (node.type === "VariableDeclaration") {
     return node.declarations
-      ?.filter(declaration => declaration.init != null && declaration.id?.type === "Identifier")
-      .map(declaration => declaration.id.name) ?? [];
+      ?.filter(declaration => declaration.init != null)
+      .flatMap(declaration => patternBindingNames(declaration.id)) ?? [];
   }
   if (["ClassDeclaration", "FunctionDeclaration", "TSEnumDeclaration"].includes(node.type)
     && node.id?.name !== undefined) {
@@ -232,6 +252,7 @@ function assertionBindings(program) {
         && specifier.imported?.name !== undefined
         && specifier.local?.name !== undefined) {
         functions.set(specifier.local.name, specifier.imported.name);
+        if (specifier.imported.name === "strict") namespaces.add(specifier.local.name);
       }
     }
   }
@@ -429,7 +450,9 @@ function walkEagerExpression(value, visit, seen = new Set()) {
     return;
   }
   if (value.type === "AssignmentExpression") {
-    walkEagerExpression(value.right, visit, seen);
+    if (!["&&=", "||=", "??="].includes(value.operator)) {
+      walkEagerExpression(value.right, visit, seen);
+    }
     return;
   }
   if (["MetaProperty", "UpdateExpression"].includes(value.type)) return;

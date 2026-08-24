@@ -418,7 +418,7 @@ function exportedImplementationReachable(
           implementation: candidates.some(candidate => candidate.implementation),
         };
       } else {
-        result = { present: false, implementation: false, binding: undefined };
+        result = { present: true, implementation: false, binding: undefined };
       }
     }
 
