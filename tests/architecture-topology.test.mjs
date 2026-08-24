@@ -958,17 +958,17 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
     ).observedRuntimeImportSources,
     ["./index.js"],
   );
-  for (const assertionImport of [
-    'import type verify from "node:assert/strict";',
-    'import type * as verify from "node:assert/strict";',
-    'import type { default as verify } from "node:assert/strict";',
-    'import type { strict as verify } from "node:assert";',
-    'import type { equal as verify } from "node:assert";',
+  for (const [assertionImport, assertionCall] of [
+    ['import type verify from "node:assert/strict";', "verify.equal(capability, true)"],
+    ['import type * as verify from "node:assert/strict";', "verify.equal(capability, true)"],
+    ['import type { default as verify } from "node:assert/strict";', "verify.equal(capability, true)"],
+    ['import type { strict as verify } from "node:assert";', "verify.equal(capability, true)"],
+    ['import type { equal as verify } from "node:assert";', "verify(capability, true)"],
   ]) {
     assert.deepEqual(
       analyzeSource(
         "example.test.ts",
-        `${assertionImport}\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("type-only assertion", () => { verify(capability, true); });\n`,
+        `${assertionImport}\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("type-only assertion", () => { ${assertionCall}; });\n`,
       ).observedRuntimeImportSources,
       [],
     );
@@ -979,6 +979,12 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
   );
   assert.equal(typeOnlyTest.hasTestRegistration, false);
   assert.deepEqual(typeOnlyTest.observedRuntimeImportSources, []);
+  const specifierTypeOnlyTest = analyzeSource(
+    "example.test.ts",
+    'import assert from "node:assert/strict";\nimport { type test as register } from "node:test";\nimport { capability } from "./index.js";\nregister("type-only test", () => { assert.equal(capability, true); });\n',
+  );
+  assert.equal(specifierTypeOnlyTest.hasTestRegistration, false);
+  assert.deepEqual(specifierTypeOnlyTest.observedRuntimeImportSources, []);
   assert.deepEqual(
     analyzeSource(
       "example.test.ts",

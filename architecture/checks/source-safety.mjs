@@ -222,6 +222,7 @@ function testBindings(program) {
         bindings.add(specifier.local.name);
       }
       if (specifier.type === "ImportSpecifier"
+        && specifier.importKind !== "type"
         && ["it", "test"].includes(specifier.imported?.name)
         && specifier.local?.name !== undefined) {
         bindings.add(specifier.local.name);
