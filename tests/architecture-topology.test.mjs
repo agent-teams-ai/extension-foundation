@@ -418,6 +418,23 @@ test("topology requires public reachability and tests through the feature entryp
 
     await writeFixture(
       root,
+      "packages/example/src/features/example/index.ts",
+      'export * from "./barrel-a.js";\nexport * from "./barrel-b.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/barrel-a.ts",
+      'export { default as capability } from "./capability.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/barrel-b.ts",
+      'export { capability } from "./capability.js";\n',
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), []);
+
+    await writeFixture(
+      root,
       "packages/example/src/index.ts",
       'export { default as example } from "./features/example/index.js";\n',
     );
@@ -870,6 +887,34 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
     analyzeSource(
       "example.test.ts",
       'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("capability", () => { assert.equal(capability, true); });\n',
+    ).observedRuntimeImportSources,
+    ["./index.js"],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("property names", () => { assert.deepEqual({ capability: 1 }, { capability: 1 }); });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("message only", () => { assert.equal(true, true, capability); });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("shorthand reads", () => { assert.deepEqual({ capability }, { capability }); });\n',
+    ).observedRuntimeImportSources,
+    ["./index.js"],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("computed reads", () => { assert.deepEqual({ [capability]: 1 }, { [capability]: 1 }); });\n',
     ).observedRuntimeImportSources,
     ["./index.js"],
   );

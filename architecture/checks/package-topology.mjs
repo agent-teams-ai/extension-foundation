@@ -359,23 +359,24 @@ function exportedImplementationReachable(
       resolving.delete(key);
       return absent;
     }
-    const localNames = new Set(analysis.localRuntimeExportNames ?? []);
+    const localBindings = (analysis.localRuntimeExportBindings ?? [])
+      .filter(binding => binding.exportedName === name);
     const implementations = new Set(analysis.exportedRuntimeImplementationNames ?? []);
     const explicit = analysis.staticModuleDependencies.filter(dependency => (
       dependency.kind === "export" && dependency.exportedName === name
     ));
 
     let result;
-    if (localNames.has(name) || explicit.length > 0) {
-      if ((localNames.has(name) ? 1 : 0) + explicit.length !== 1) {
+    if (localBindings.length > 0 || explicit.length > 0) {
+      if (localBindings.length + explicit.length !== 1) {
         result = { present: true, implementation: false, binding: undefined };
-      } else if (localNames.has(name)) {
+      } else if (localBindings.length === 1) {
         result = {
           present: true,
           implementation: reachesRequired
             && isImplementationPath(path)
             && implementations.has(name),
-          binding: `${path}\0${name}`,
+          binding: `${path}\0${localBindings[0].localName}`,
         };
       } else {
         const dependency = explicit[0];
