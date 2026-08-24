@@ -87,6 +87,15 @@ the atomic publication or terminal transition. A missing, newly introduced, or
 revision-changed member aborts the operation and requires candidate
 recompilation.
 
+Creating or changing any reference to an activation source follows the same
+ordering even when it does not change route eligibility. This includes state
+attach or rebind, schema migration, retention changes, runtime-generation
+creation, dependency-edge creation, and any ownership transition that preserves
+a source reference. The operation validates and commits under the scope,
+parent-artifact, and source lifecycle fences. Retirement's terminal attachment
+check is performed under those same fences, so a concurrent custody operation
+cannot introduce a reference after the check.
+
 The fence hierarchy serializes:
 
 - child source creation with parent artifact retirement;
@@ -100,9 +109,13 @@ pin, live routing reference, accepted invocation lease, runtime generation,
 startup or external effect, or exact state attachment that references the
 source or its affected reverse dependency closure remains unresolved. The
 closure is fenced against new routes and leases, then drained, cancelled,
-reconciled, or explicitly retained under a product-owned policy before target
-terminal completion. Artifact retirement additionally waits for every child
-contribution installation under the same parent fence.
+reconciled, or explicitly retained before target terminal completion. Routing,
+work, or runtime retention requires the owning product policy. Exact private
+state retention additionally requires a current `StateCustodyAuthorization`
+owned by the matching product or tenant authority and bound to that attachment,
+retention operation, owner revision, and retained source generation. Product
+policy alone cannot retain tenant-owned state. Artifact retirement additionally
+waits for every child contribution installation under the same parent fence.
 
 Retiring one contribution keeps unrelated sibling installations and shared
 artifact bytes installed. Dependent siblings in the durable reverse dependency
@@ -115,11 +128,14 @@ facts.
 Every external lifecycle or custody effect records intent before dispatch and
 records accepted-pending, confirmed-success, confirmed-already-absent,
 rejected, failed, or uncertain outcome afterwards. Only effect-specific
-confirmed success or an authoritative proof that the exact target and
-generation are already absent may advance dependent phases. Accepted-pending,
-rejected, failed, and uncertain termination, revocation, detach, export,
-deletion, or artifact-removal outcomes block all dependent phases, terminal
-success, and destructive cleanup.
+confirmed success may advance dependent phases. `ConfirmedAlreadyAbsent` is a
+successful terminal proof only for an operation whose required postcondition is
+absence, such as termination, detach, deletion, revocation, or removal, and only
+when authoritative reconciliation proves the exact target and generation are
+absent. It is invalid for attach, rebind, export, migration, or retention change,
+which require proof of their own positive postcondition. Accepted-pending,
+rejected, failed, uncertain, or effect-inapplicable outcomes block all dependent
+phases, terminal success, and destructive cleanup.
 
 Acknowledging an idempotency key proves request identity, not effect success.
 An uncertain outcome is resolved only by authoritative effect-specific state
@@ -162,6 +178,30 @@ contribution-owned state only to its contribution installation, and built-in
 state only to its built-in module installation. No fictional publisher,
 extension, contribution, or artifact identity is created for a built-in module.
 
+Schema and migration authority is also discriminated rather than inferred from
+the custody subject:
+
+```text
+SchemaAuthority =
+  | ArtifactSchemaAuthority {
+      publisherIdentity,
+      extensionIdentity,
+      schemaLineage,
+      authorityRevision
+    }
+  | BuiltInSchemaAuthority {
+      productIdentity,
+      moduleIdentity,
+      schemaLineage,
+      authorityRevision
+    }
+```
+
+The publisher supplies artifact schema and migration intent. The owning product
+module supplies built-in schema and migration intent. Neither authority grants
+state custody. Every custody authorization and migration effect binds the exact
+schema-authority variant, lineage, revision, current schema, and proposed schema.
+
 `StateCustodyAuthorization` binds exact current and proposed custody subjects,
 immutable custody-owner identity, tenant or product identity, ownership
 revision, authorizing-principal relation, state and schema transition, and the
@@ -179,10 +219,20 @@ export, or delete state before that transition commits.
 An irreversible custody operation uses a durable `CustodyEffectLease` bound to
 the authorization revision, complete custody subject, state-space identity,
 schema transition, operation, expiry, fence, and idempotency key. Authority is
-checked when intent commits and again immediately before external acceptance of
-the irreversible effect. Revocation or expiry before acceptance cancels the
-dispatch. Revocation after an accepted or ambiguous outcome enters
-reconciliation; it does not cause a blind retry or rewrite history.
+checked when intent commits. Immediately before dispatch, the authority owner
+performs one linearizable compare-and-reserve transition over the decision
+revision, fence, expiry, subject, operation, and idempotency key. Its durable
+receipt is the effect's acceptance point. A local authority records that receipt
+in its serialized authority transaction; a remote authority must expose an
+equivalent CAS reservation and verifiable receipt. An adapter that can only
+check and then dispatch cannot perform irreversible custody effects.
+
+Revocation or expiry before this acceptance point rejects the reservation and
+cancels dispatch. Once reserved, revocation fences new effects while this exact
+bounded effect is reconciled to its effect-specific postcondition; it cannot
+retroactively cancel or duplicate it. Provider acknowledgement is not the
+authority acceptance point and losing it produces an ambiguous outcome, never a
+new reservation or blind retry.
 
 Provider and extension calls remain outside the product Unit of Work. The Unit
 of Work records state, fenced effect intent, and outbox evidence atomically.
@@ -205,6 +255,12 @@ include positive and fail-closed cases for:
 - same-deployment cross-tenant substitution and explicit ownership transfer;
 - built-in, artifact-extension, and artifact-contribution state attach, migrate,
   export, detach, retention change, deletion, and interrupted retirement;
+- source-reference creation and custody attach or rebind racing source and
+  parent-artifact retirement, including a terminal attachment recheck;
+- product-owned and tenant-owned retained state, wrong-authority retention, and
+  the discriminated artifact versus built-in schema-authority lineage;
+- effect-specific terminal proof, including rejection of `already absent` for
+  attach, export, migration, and retention changes;
 - authority revocation before dispatch, after external acceptance, and after an
   acknowledgement is lost.
 
