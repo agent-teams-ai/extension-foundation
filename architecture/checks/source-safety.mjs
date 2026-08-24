@@ -77,6 +77,10 @@ function hasExportedRuntimeImplementation(program) {
     if (node.type === "ExportDefaultDeclaration" && runtimeDeclaration(node.declaration)) {
       return true;
     }
+    if (node.type === "ExportDefaultDeclaration"
+      && node.declaration?.type === "Identifier") {
+      exportedBindings.add(node.declaration.name);
+    }
     const declaration = node.type === "ExportNamedDeclaration" ? node.declaration : node;
     const bindings = runtimeBindingNames(declaration);
     for (const binding of bindings) runtimeBindings.add(binding);
@@ -158,19 +162,43 @@ function isAssertionCall(node, assertions) {
     && assertions.namespaces.has(node.callee.object.name);
 }
 
-function observedRuntimeImportSources(program, importedTestBindings) {
-  const assertions = assertionBindings(program);
-  const runtimeBindings = importedRuntimeBindings(program);
-  const sources = new Set();
+function activeTestCallback(call) {
+  const callbackIndex = call.arguments?.findIndex(argument => (
+    argument?.type === "ArrowFunctionExpression" || argument?.type === "FunctionExpression"
+  )) ?? -1;
+  if (callbackIndex < 0) return undefined;
+  for (const argument of call.arguments.slice(0, callbackIndex)) {
+    if (argument?.type === "Literal" && typeof argument.value === "string") continue;
+    if (argument?.type === "TemplateLiteral" && argument.expressions?.length === 0) continue;
+    if (argument?.type !== "ObjectExpression") return undefined;
+    for (const property of argument.properties ?? []) {
+      if (property.type !== "Property" || property.computed === true) return undefined;
+      const name = property.key?.name ?? property.key?.value;
+      if (!["skip", "todo"].includes(name)) continue;
+      if (property.value?.type !== "Literal" || property.value.value !== false) return undefined;
+    }
+  }
+  return call.arguments[callbackIndex];
+}
+
+function registeredTestCallbacks(program, importedTestBindings) {
+  const callbacks = [];
   for (const node of program.body) {
     if (node.type !== "ExpressionStatement"
       || node.expression?.type !== "CallExpression"
       || node.expression.callee?.type !== "Identifier"
       || !importedTestBindings.has(node.expression.callee.name)) continue;
-    const callback = node.expression.arguments?.find(argument => (
-      argument?.type === "ArrowFunctionExpression" || argument?.type === "FunctionExpression"
-    ));
-    if (callback === undefined) continue;
+    const callback = activeTestCallback(node.expression);
+    if (callback !== undefined) callbacks.push(callback);
+  }
+  return callbacks;
+}
+
+function observedRuntimeImportSources(program, testCallbacks) {
+  const assertions = assertionBindings(program);
+  const runtimeBindings = importedRuntimeBindings(program);
+  const sources = new Set();
+  for (const callback of testCallbacks) {
     walk(callback.body, candidate => {
       if (!isAssertionCall(candidate, assertions)) return;
       for (const argument of candidate.arguments ?? []) {
@@ -196,7 +224,10 @@ function staticModuleDependencies(program) {
       && typeof node.source?.value === "string") {
       dependencies.push({ kind: "import", specifier: node.source.value });
     }
-    if ((node.type === "ExportAllDeclaration" || node.type === "ExportNamedDeclaration")
+    const hasRuntimeExport = node.type === "ExportAllDeclaration"
+      || (node.type === "ExportNamedDeclaration"
+        && node.specifiers?.some(specifier => specifier.exportKind !== "type"));
+    if (hasRuntimeExport
       && node.exportKind !== "type"
       && !typeOnlySpecifiers
       && typeof node.source?.value === "string") {
@@ -229,6 +260,7 @@ export function analyzeSource(filename, source) {
     errors.add(`source cannot be parsed by Oxc: ${error.message}`);
   }
   const importedTestBindings = testBindings(result.program);
+  const testCallbacks = registeredTestCallbacks(result.program, importedTestBindings);
   const staticDependencies = staticModuleDependencies(result.program);
   walk(result.program, node => {
     if (node.type === "Identifier") {
@@ -242,17 +274,12 @@ export function analyzeSource(filename, source) {
         ?? REFLECTIVE_RUNTIME_PROPERTIES.get(property);
       if (label !== undefined) errors.add(label);
     }
-    if (node.type === "MemberExpression" && node.computed === true) {
+    if (node.computed === true) {
       errors.add(COMPUTED_RUNTIME_PROPERTY_ACCESS);
     }
   });
 
-  const hasTestRegistration = result.program.body.some(node => (
-    node.type === "ExpressionStatement"
-    && node.expression?.type === "CallExpression"
-    && node.expression.callee?.type === "Identifier"
-    && importedTestBindings.has(node.expression.callee.name)
-  ));
+  const hasTestRegistration = testCallbacks.length > 0;
 
   return {
     errors: [...errors],
@@ -263,7 +290,7 @@ export function analyzeSource(filename, source) {
     hasTestRegistration,
     observedRuntimeImportSources: observedRuntimeImportSources(
       result.program,
-      importedTestBindings,
+      testCallbacks,
     ),
     staticModuleDependencies: staticDependencies,
   };

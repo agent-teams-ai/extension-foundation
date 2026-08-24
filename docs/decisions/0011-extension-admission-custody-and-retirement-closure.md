@@ -51,80 +51,130 @@ decide:
 - capability grants;
 - state custody authorization when state is attached or changed.
 
-Candidate publication, staged-pin promotion, routing snapshot installation, and
-grant activation occur under the owning activation-source lifecycle fence. The
-transaction atomically revalidates every evidence revision and freshness
-condition. A stale, revoked, expired, wrong-owner, wrong-scope, or wrong-target
-decision aborts publication and releases or reconciles candidate work; it can
-never be treated as a successful prior check.
+Every independently owned authority decision supplies an enforcement lease
+with its decision identity, revision, monotonic authority fence, validity
+interval, and target tuple. The host maintains the canonical monotonic
+enforcement projection for that authority. Candidate publication, staged-pin
+promotion, routing snapshot installation, and grant activation occur in one
+publication transaction that compares every lease with that projection and the
+current clock. A remote authority may report revocation as enforced only after
+the host has durably advanced the corresponding projection and fenced affected
+routes. An adapter that cannot provide this linearizable lease-and-fence
+contract cannot participate in admission.
 
-Post-publication revocation durably fences affected routes and new invocation
-leases before the revocation is reported as enforced. Already accepted bounded
-invocations follow their explicit lease and reconciliation policy. Revocation
-never relies on eventually refreshing an in-memory cache.
+A stale, revoked, expired, wrong-owner, wrong-scope, or wrong-target decision
+aborts publication and releases or reconciles candidate work; it can never be
+treated as a successful prior check. At every invocation-lease acceptance the
+host repeats the revision, fence, target, and freshness checks. Reaching expiry
+rejects new invocation leases and durably fences the affected route and grant.
+Already accepted bounded invocations follow their explicit lease and
+reconciliation policy. Enforcement never relies on eventually refreshing an
+in-memory cache.
 
-### One lifecycle fence per activation source
+### Publication and lifecycle fence hierarchy
 
-Built-in module installations, artifact contribution installations, and
-artifact installations each have an owning activation-source lifecycle fence.
-The fence serializes:
+`ActivationSource` retains the exhaustive ADR-0009 union of artifact
+contribution installation or built-in module installation. An artifact
+installation is a parent lifecycle target, not a fabricated activation source.
 
+Every product authority scope has a `GraphPublicationFence`. Every activation
+source has a `SourceLifecycleFence`, and every artifact installation has an
+`ArtifactRetirementFence`. Any operation that can change route eligibility
+acquires the scope fence first, then all affected artifact and source fences in
+canonical kind-and-identity order. The complete affected set is derived from a
+durable candidate or retirement dependency-closure snapshot and revalidated at
+the atomic publication or terminal transition. A missing, newly introduced, or
+revision-changed member aborts the operation and requires candidate
+recompilation.
+
+The fence hierarchy serializes:
+
+- child source creation with parent artifact retirement;
 - staged reference-pin acquisition and promotion;
-- routing snapshot publication;
+- multi-source routing snapshot publication;
 - capability-grant issuance and revocation;
 - retirement intent, drain, reconciliation, and terminal closure.
 
 Contribution and built-in retirement cannot become terminal while any staged
-pin, live routing reference, accepted invocation lease, runtime generation, or
-exact state attachment owned by that source remains unresolved. Artifact
-retirement additionally waits for every child contribution installation.
+pin, live routing reference, accepted invocation lease, runtime generation,
+startup or external effect, or exact state attachment that references the
+source or its affected reverse dependency closure remains unresolved. The
+closure is fenced against new routes and leases, then drained, cancelled,
+reconciled, or explicitly retained under a product-owned policy before target
+terminal completion. Artifact retirement additionally waits for every child
+contribution installation under the same parent fence.
 
 Retiring one contribution keeps unrelated sibling installations and shared
-artifact bytes installed. It still fences routes and grants across the complete
-affected dependency closure when another contribution depends on the retiring
-source. Dependency closure and installation ownership are separate facts.
+artifact bytes installed. Dependent siblings in the durable reverse dependency
+closure are fenced and drained; siblings outside that closure remain live.
+Dependency closure, installation ownership, and byte ownership are separate
+facts.
 
-### Uncertain effects are terminal barriers
+### Only proved external effects advance lifecycle
 
 Every external lifecycle or custody effect records intent before dispatch and
-records accepted, rejected, failed, or uncertain outcome afterwards. Failed or
-uncertain termination, revocation, detach, export, deletion, or artifact-removal
-effects block all dependent phases, terminal success, and destructive cleanup.
+records accepted-pending, confirmed-success, confirmed-already-absent,
+rejected, failed, or uncertain outcome afterwards. Only effect-specific
+confirmed success or an authoritative proof that the exact target and
+generation are already absent may advance dependent phases. Accepted-pending,
+rejected, failed, and uncertain termination, revocation, detach, export,
+deletion, or artifact-removal outcomes block all dependent phases, terminal
+success, and destructive cleanup.
 
-An uncertain outcome is resolved only by an idempotency key acknowledged by the
-external system, authoritative state reconciliation bound to the same target
-generation, or controlled manual recovery. Blind retry is forbidden. State is
-not detached and bytes are not removed while an earlier process or external
-effect may still be live.
+Acknowledging an idempotency key proves request identity, not effect success.
+An uncertain outcome is resolved only by authoritative effect-specific state
+reconciliation bound to the same target generation, a provider receipt that
+proves the terminal effect, or controlled manual recovery. Blind retry is
+forbidden. State is not detached and bytes are not removed while an earlier
+process or external effect may still be live.
 
 ### Fenced custody effects and tenant ownership
 
-Every private state space has a discriminated custody subject:
+ADR-0010's common publisher-and-extension lineage requirement and ADR-0008's
+private-state owner union are replaced by this exhaustive discriminated custody
+subject:
 
 ```text
 StateCustodySubject =
+  | ArtifactExtensionState {
+      publisherIdentity,
+      extensionIdentity,
+      artifactDigest,
+      artifactInstallationIdentity
+    }
   | ArtifactContributionState {
       publisherIdentity,
       extensionIdentity,
       contributionIdentity,
       artifactDigest,
-      installationIdentity
+      contributionInstallationIdentity
     }
   | BuiltInModuleState {
       productIdentity,
       moduleIdentity,
       implementationDigest,
-      installationIdentity
+      builtInModuleInstallationIdentity
     }
 ```
 
-No fictional publisher or artifact identity is created for a built-in module.
+Extension-owned state attaches only to its artifact installation,
+contribution-owned state only to its contribution installation, and built-in
+state only to its built-in module installation. No fictional publisher,
+extension, contribution, or artifact identity is created for a built-in module.
 
-`StateCustodyAuthorization` additionally binds immutable custody-owner identity,
-tenant or product identity, ownership revision, authorizing-principal relation,
-and any permitted ownership transfer. Sharing a deployment scope does not imply
-cross-tenant authority. A transfer is a separate explicit operation that fences
-the old owner before the new owner can attach or mutate state.
+`StateCustodyAuthorization` binds exact current and proposed custody subjects,
+immutable custody-owner identity, tenant or product identity, ownership
+revision, authorizing-principal relation, state and schema transition, and the
+single permitted operation. Sharing a deployment scope does not imply
+cross-tenant authority.
+
+Ownership transfer is a durable separate operation bound to exact old and new
+owner identities and revisions. It first fences the old ownership revision,
+then waits until every old-revision custody lease and every accepted or
+ambiguous effect has effect-specific proof of completion or proof that no old
+effect can still occur. Only then may one atomic transition attach the new owner
+and advance the ownership revision. The new owner cannot attach, mutate,
+export, or delete state before that transition commits.
 
 An irreversible custody operation uses a durable `CustodyEffectLease` bound to
 the authorization revision, complete custody subject, state-space identity,
@@ -144,13 +194,17 @@ include positive and fail-closed cases for:
 
 - decision expiry or revocation before staging, during startup, at publication,
   after publication, and immediately before invocation;
-- pin acquisition, graph publication, grant issuance, and each retirement target
-  racing under the same lifecycle fence;
-- retirement of a dependency with unrelated and dependent siblings;
-- uncertain termination or custody effects at every checkpoint;
+- authority revocation racing the host enforcement projection and publication
+  transaction;
+- ordered scope, parent-artifact, and multi-source fence acquisition racing pin
+  acquisition, graph publication, grant issuance, and every retirement target;
+- retirement of a dependency with unrelated and dependent siblings, including
+  closure-wide accepted leases, runtimes, startup effects, and reconciliation;
+- accepted-pending, rejected, failed, uncertain, confirmed-success, and
+  confirmed-already-absent termination or custody effects at every checkpoint;
 - same-deployment cross-tenant substitution and explicit ownership transfer;
-- built-in and artifact-contribution state attach, migrate, export, detach,
-  retention change, deletion, and interrupted retirement;
+- built-in, artifact-extension, and artifact-contribution state attach, migrate,
+  export, detach, retention change, deletion, and interrupted retirement;
 - authority revocation before dispatch, after external acceptance, and after an
   acknowledgement is lost.
 

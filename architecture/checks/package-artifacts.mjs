@@ -65,7 +65,10 @@ export async function validateBuiltPackageArtifacts({ root }) {
         if (resolved !== expected) {
           throw new Error(\`resolved export differs: \${resolved}\`);
         }
-        await import(specifier);
+        const namespace = await import(specifier);
+        if (Object.keys(namespace).length === 0) {
+          throw new Error("root runtime export is empty");
+        }
       `;
       try {
         await execFileAsync(process.execPath, [

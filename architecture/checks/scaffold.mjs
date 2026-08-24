@@ -111,11 +111,19 @@ async function cleanupPublicationTemporaries(destination, planDigest) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     if (!entry.name.startsWith(prefix) || !entry.name.endsWith(".tmp")) continue;
     const path = join(directory, entry.name);
-    const metadata = await lstat(path);
+    let metadata;
+    try {
+      metadata = await lstat(path);
+    } catch (error) {
+      if (error?.code === "ENOENT") continue;
+      throw error;
+    }
     if (metadata.isSymbolicLink() || !metadata.isFile()) {
       throw new Error("scaffold plan publication temporary must remain one regular file");
     }
-    await rm(path);
+    await rm(path).catch(error => {
+      if (error?.code !== "ENOENT") throw error;
+    });
   }
 }
 

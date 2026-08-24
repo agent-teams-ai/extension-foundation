@@ -681,6 +681,10 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
       .staticModuleDependencies,
     [],
   );
+  assert.deepEqual(
+    analyzeSource("example.ts", 'export {} from "./hidden.js";\n').staticModuleDependencies,
+    [],
+  );
   assert.equal(
     analyzeSource("example.test.ts", 'import { before } from "node:test";\nbefore(() => {});\n').hasTestRegistration,
     false,
@@ -703,8 +707,22 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
     ).observedRuntimeImportSources,
     [],
   );
+  const skippedEvidence = analyzeSource(
+    "example.test.ts",
+    'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("capability", { skip: true }, () => { assert.equal(capability, true); });\n',
+  );
+  assert.equal(skippedEvidence.hasTestRegistration, false);
+  assert.deepEqual(skippedEvidence.observedRuntimeImportSources, []);
   assert.equal(analyzeSource("example.ts", "export function placeholder() {}\n").hasRuntimeImplementation, false);
   assert.equal(analyzeSource("example.ts", "const hidden = true;\nexport {};\n").hasRuntimeImplementation, false);
+  assert.equal(analyzeSource("example.ts", "const capability = true;\nexport default capability;\n").hasRuntimeImplementation, true);
+  assert.deepEqual(
+    analyzeSource(
+      "example.ts",
+      'const { ["constructor"]: Constructor } = (() => undefined);\nexport const escape = Constructor("return 1")();\n',
+    ).errors,
+    ["computed runtime property access"],
+  );
 });
 
 test("built export evidence requires regular artifacts after the governed build", async () => {
@@ -718,6 +736,9 @@ test("built export evidence requires regular artifacts after the governed build"
     ]);
     await writeFixture(root, "packages/example/dist/index.d.ts", "export {};\n");
     await writeFixture(root, "packages/example/dist/index.js", "export {};\n");
+    assert.ok((await validateBuiltPackageArtifacts({ root }))[0].includes("root runtime export is empty"));
+    await writeFixture(root, "packages/example/dist/index.d.ts", "export declare const capability: boolean;\n");
+    await writeFixture(root, "packages/example/dist/index.js", "export const capability = true;\n");
     assert.deepEqual(await validateBuiltPackageArtifacts({ root }), []);
   } finally {
     await rm(root, { recursive: true, force: true });

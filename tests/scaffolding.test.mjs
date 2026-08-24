@@ -241,12 +241,14 @@ test("plan publication converges after process loss before and after create-only
         );
 
         const planPath = "architecture/scaffolding-plans/module-dot-example.json";
-        const { planDigest } = await publishScaffoldPlan({
+        const retries = await Promise.all(Array.from({ length: 8 }, () => publishScaffoldPlan({
           root,
           intentPath: "architecture/scaffolding-intents/example.yaml",
           planPath,
           resolveOwner: acceptedOwner,
-        });
+        })));
+        const { planDigest } = retries[0];
+        assert.equal(retries.every(retry => retry.planDigest === planDigest), true);
         const publishedBytes = await readFile(join(root, planPath), "utf8");
         assert.doesNotThrow(() => JSON.parse(publishedBytes));
         assert.equal(
