@@ -298,7 +298,22 @@ test("topology requires public reachability and tests through the feature entryp
       "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
     ));
 
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/index.ts",
+      'export { placeholder } from "./capability.js";\n',
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      "export const hidden = true;\nexport function placeholder() {}\n",
+    );
+    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+    ));
+
     await writeFeatureEntrypoint(root);
+    await writeFixture(root, "packages/example/src/features/example/capability.ts", "export const example = true;\n");
     await writeFixture(root, "packages/example/test/features/example/capability.test.ts", assertionWithoutFeatureImport());
     assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
       "packages/example: feature example requires an executable assertion over a value imported from its feature entrypoint",
@@ -712,6 +727,13 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
     [],
   );
   assert.deepEqual(
+    analyzeSource(
+      "example.ts",
+      "Object.getOwnPropertyDescriptors(Object.getPrototypeOf(() => undefined));\n",
+    ).errors,
+    ["reflective property-descriptor access", "reflective prototype access"],
+  );
+  assert.deepEqual(
     analyzeSource("example.ts", 'import type { X } from "./x.js";\nexport { type X } from "./x.js";\n')
       .staticModuleDependencies,
     [],
@@ -741,6 +763,34 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
       'import assert from "node:assert/strict";\nimport test from "node:test";\nimport * as feature from "./index.js";\ntest("capability", () => { assert.ok(() => feature.capability); });\n',
     ).observedRuntimeImportSources,
     [],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("capability", () => { if (false) assert.equal(capability, true); });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("capability", () => { assert.ok(false ? capability : true); });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("capability", () => { const assert = { equal() {} }; const capability = true; assert.equal(capability, true); });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("capability", () => { assert.equal(capability, true); });\n',
+    ).observedRuntimeImportSources,
+    ["./index.js"],
   );
   assert.deepEqual(
     analyzeSource(
@@ -799,7 +849,13 @@ test("built export evidence requires regular artifacts after the governed build"
     await writeFixture(root, "packages/example/package.json", `${JSON.stringify(traversingManifest)}\n`);
     await writeFixture(root, "packages/example/src/index.ts", "export const capability = true;\n");
     assert.ok((await validateBuiltPackageArtifacts({ root })).includes(
-      "packages/example: export target is outside dist: ./dist/../src/index.ts",
+      "packages/example: package exports must be the canonical root import and types targets",
+    ));
+    const stringExportManifest = JSON.parse(packageManifest());
+    stringExportManifest.exports = { ".": "./dist/index.js" };
+    await writeFixture(root, "packages/example/package.json", `${JSON.stringify(stringExportManifest)}\n`);
+    assert.ok((await validateBuiltPackageArtifacts({ root })).includes(
+      "packages/example: package exports must be the canonical root import and types targets",
     ));
   } finally {
     await rm(root, { recursive: true, force: true });

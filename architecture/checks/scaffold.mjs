@@ -105,9 +105,9 @@ function publicationTemporaryPrefix(destination, planDigest) {
   return `.${basename(destination)}.publication-${planDigest.replace(/^sha256:/u, "")}.`;
 }
 
-async function cleanupPublicationTemporaries(destination, planDigest) {
+async function cleanupPublicationTemporaries(destination) {
   const directory = dirname(destination);
-  const prefix = publicationTemporaryPrefix(destination, planDigest);
+  const prefix = `.${basename(destination)}.publication-`;
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     if (!entry.name.startsWith(prefix) || !entry.name.endsWith(".tmp")) continue;
     const path = join(directory, entry.name);
@@ -122,7 +122,7 @@ async function cleanupPublicationTemporaries(destination, planDigest) {
       throw new Error("scaffold plan publication temporary must remain one regular file");
     }
     await rm(path).catch(error => {
-      if (error?.code !== "ENOENT") throw error;
+      if (!["EACCES", "EBUSY", "ENOENT", "EPERM"].includes(error?.code)) throw error;
     });
   }
 }
@@ -202,7 +202,7 @@ export async function publishScaffoldPlan({
   await ensurePlanDirectory(root);
   const existing = await matchingExistingPlan(root, destination, plan, resolveOwner);
   if (existing !== undefined) {
-    await cleanupPublicationTemporaries(destination, plan.planDigest);
+    await cleanupPublicationTemporaries(destination);
     return { plan: existing, planDigest: existing.planDigest };
   }
 
@@ -268,7 +268,7 @@ export async function publishScaffoldPlan({
   }
   if (primaryError !== undefined) throw primaryError;
   if (cleanupError !== undefined) throw cleanupError;
-  await cleanupPublicationTemporaries(destination, plan.planDigest);
+  await cleanupPublicationTemporaries(destination);
   return { plan: publishedPlan, planDigest: publishedPlan.planDigest };
 }
 

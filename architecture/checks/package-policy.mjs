@@ -55,6 +55,14 @@ function hasExactKeys(value, expected) {
     && Object.keys(value).sort(compareBinary).join("|") === [...expected].sort(compareBinary).join("|");
 }
 
+export function hasCanonicalPackageRootExports(manifest) {
+  const rootExport = manifest?.exports?.["."];
+  return hasExactKeys(manifest?.exports, ["."])
+    && hasExactKeys(rootExport, ["import", "types"])
+    && rootExport.import === "./dist/index.js"
+    && rootExport.types === "./dist/index.d.ts";
+}
+
 export function pathsOverlap(left, right) {
   return left === right || left.startsWith(`${right}/`) || right.startsWith(`${left}/`);
 }

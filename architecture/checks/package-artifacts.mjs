@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 
 import {
+  hasCanonicalPackageRootExports,
   loadPackagePolicy,
   packageExportTargets,
 } from "./package-policy.mjs";
@@ -27,6 +28,10 @@ export async function validateBuiltPackageArtifacts({ root }) {
       manifest = JSON.parse(await readFile(join(root, entry.path, "package.json"), "utf8"));
     } catch (error) {
       errors.push(`${entry.path}/package.json: ${error instanceof Error ? error.message : String(error)}`);
+      continue;
+    }
+    if (!hasCanonicalPackageRootExports(manifest)) {
+      errors.push(`${entry.path}: package exports must be the canonical root import and types targets`);
       continue;
     }
     const targets = packageExportTargets(manifest.exports);

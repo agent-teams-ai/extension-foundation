@@ -19,8 +19,17 @@ const SOURCE_DIRECTIVES = Object.freeze([
 const REFLECTIVE_RUNTIME_PROPERTIES = new Map([
   ["constructor", "reflective Function-constructor access"],
   ["getOwnPropertyDescriptor", "reflective property-descriptor access"],
+  ["getOwnPropertyDescriptors", "reflective property-descriptor access"],
+  ["getOwnPropertyNames", "reflective property-name access"],
+  ["getOwnPropertySymbols", "reflective property-symbol access"],
+  ["getPrototypeOf", "reflective prototype access"],
+  ["setPrototypeOf", "reflective prototype access"],
   ["prototype", "reflective prototype access"],
   ["__proto__", "reflective prototype access"],
+  ["__defineGetter__", "reflective accessor access"],
+  ["__defineSetter__", "reflective accessor access"],
+  ["__lookupGetter__", "reflective accessor access"],
+  ["__lookupSetter__", "reflective accessor access"],
 ]);
 
 const COMPUTED_RUNTIME_PROPERTY_ACCESS = "computed runtime property access";
@@ -85,32 +94,45 @@ function runtimeBindingNames(node) {
   return [];
 }
 
-function hasExportedRuntimeImplementation(program) {
+function syntaxName(node) {
+  if (typeof node?.name === "string") return node.name;
+  if (typeof node?.value === "string") return node.value;
+  return undefined;
+}
+
+function exportedRuntimeImplementationNames(program) {
   const runtimeBindings = new Set();
   const exportedBindings = new Set();
   for (const node of program.body) {
+    const declaration = node.type === "ExportNamedDeclaration" ? node.declaration : node;
+    for (const binding of runtimeBindingNames(declaration)) runtimeBindings.add(binding);
+  }
+  for (const node of program.body) {
     if (node.type === "ExportDefaultDeclaration" && runtimeDeclaration(node.declaration)) {
-      return true;
+      exportedBindings.add("default");
     }
     if (node.type === "ExportDefaultDeclaration"
-      && node.declaration?.type === "Identifier") {
-      exportedBindings.add(node.declaration.name);
+      && node.declaration?.type === "Identifier"
+      && runtimeBindings.has(node.declaration.name)) {
+      exportedBindings.add("default");
     }
-    const declaration = node.type === "ExportNamedDeclaration" ? node.declaration : node;
-    const bindings = runtimeBindingNames(declaration);
-    for (const binding of bindings) runtimeBindings.add(binding);
     if (node.type === "ExportNamedDeclaration") {
-      for (const binding of bindings) exportedBindings.add(binding);
+      for (const binding of runtimeBindingNames(node.declaration)) exportedBindings.add(binding);
       if (node.source === null && node.exportKind !== "type") {
         for (const specifier of node.specifiers ?? []) {
-          if (specifier.exportKind !== "type" && specifier.local?.name !== undefined) {
-            exportedBindings.add(specifier.local.name);
+          const localName = syntaxName(specifier.local);
+          const exportedName = syntaxName(specifier.exported);
+          if (specifier.exportKind !== "type"
+            && localName !== undefined
+            && exportedName !== undefined
+            && runtimeBindings.has(localName)) {
+            exportedBindings.add(exportedName);
           }
         }
       }
     }
   }
-  return [...runtimeBindings].some(binding => exportedBindings.has(binding));
+  return [...exportedBindings];
 }
 
 function testBindings(program) {
@@ -209,15 +231,94 @@ function registeredTestCallbacks(program, importedTestBindings) {
   return callbacks;
 }
 
+function addPatternBindings(pattern, bindings) {
+  if (pattern?.type === "Identifier") {
+    bindings.add(pattern.name);
+    return;
+  }
+  if (["AssignmentPattern", "RestElement", "TSParameterProperty"].includes(pattern?.type)) {
+    addPatternBindings(pattern.left ?? pattern.argument ?? pattern.parameter, bindings);
+    return;
+  }
+  if (pattern?.type === "ArrayPattern") {
+    for (const element of pattern.elements ?? []) addPatternBindings(element, bindings);
+    return;
+  }
+  if (pattern?.type === "ObjectPattern") {
+    for (const property of pattern.properties ?? []) {
+      addPatternBindings(property.type === "Property" ? property.value : property.argument, bindings);
+    }
+  }
+}
+
+function callbackLocalBindings(callback) {
+  const bindings = new Set();
+  for (const parameter of callback.params ?? []) addPatternBindings(parameter, bindings);
+  walk(callback.body, node => {
+    if (node.type === "VariableDeclarator") addPatternBindings(node.id, bindings);
+    if (["ClassDeclaration", "FunctionDeclaration"].includes(node.type)) {
+      if (node.id?.name !== undefined) bindings.add(node.id.name);
+      return false;
+    }
+    if (["ArrowFunctionExpression", "ClassExpression", "FunctionExpression"].includes(node.type)) {
+      return false;
+    }
+    if (node.type === "CatchClause") addPatternBindings(node.param, bindings);
+    return undefined;
+  });
+  return bindings;
+}
+
+function directAssertionCalls(callback, assertions) {
+  if (callback.body?.type !== "BlockStatement") {
+    return isAssertionCall(callback.body, assertions) ? [callback.body] : [];
+  }
+  const statements = callback.body.body.filter(statement => statement.type !== "EmptyStatement");
+  if (statements.length === 0
+    || statements.some(statement => (
+      statement.type !== "ExpressionStatement"
+      || !isAssertionCall(statement.expression, assertions)
+    ))) return [];
+  return statements.map(statement => statement.expression);
+}
+
+function walkEagerExpression(value, visit, seen = new Set()) {
+  if (typeof value !== "object" || value === null || seen.has(value)) return;
+  seen.add(value);
+  if (visit(value) === false) return;
+  if (value.type === "ConditionalExpression") {
+    walkEagerExpression(value.test, visit, seen);
+    return;
+  }
+  if (value.type === "LogicalExpression") {
+    walkEagerExpression(value.left, visit, seen);
+    return;
+  }
+  for (const child of Object.values(value)) {
+    if (Array.isArray(child)) {
+      for (const entry of child) walkEagerExpression(entry, visit, seen);
+    } else {
+      walkEagerExpression(child, visit, seen);
+    }
+  }
+}
+
 function observedRuntimeImportSources(program, testCallbacks) {
-  const assertions = assertionBindings(program);
-  const runtimeBindings = importedRuntimeBindings(program);
+  const importedAssertions = assertionBindings(program);
+  const importedRuntime = importedRuntimeBindings(program);
   const sources = new Set();
   for (const callback of testCallbacks) {
-    walk(callback.body, candidate => {
-      if (!isAssertionCall(candidate, assertions)) return;
+    const locals = callbackLocalBindings(callback);
+    const assertions = {
+      functions: new Set([...importedAssertions.functions].filter(name => !locals.has(name))),
+      namespaces: new Set([...importedAssertions.namespaces].filter(name => !locals.has(name))),
+    };
+    const runtimeBindings = new Map(
+      [...importedRuntime].filter(([name]) => !locals.has(name)),
+    );
+    for (const candidate of directAssertionCalls(callback, assertions)) {
       for (const argument of candidate.arguments ?? []) {
-        walk(argument, value => {
+        walkEagerExpression(argument, value => {
           if ([
             "ArrowFunctionExpression",
             "ClassDeclaration",
@@ -231,7 +332,7 @@ function observedRuntimeImportSources(program, testCallbacks) {
           return undefined;
         });
       }
-    });
+    }
   }
   return [...sources];
 }
@@ -247,14 +348,35 @@ function staticModuleDependencies(program) {
       && typeof node.source?.value === "string") {
       dependencies.push({ kind: "import", specifier: node.source.value });
     }
-    const hasRuntimeExport = node.type === "ExportAllDeclaration"
-      || (node.type === "ExportNamedDeclaration"
-        && node.specifiers?.some(specifier => specifier.exportKind !== "type"));
-    if (hasRuntimeExport
+    if (node.type === "ExportAllDeclaration"
+      && node.exportKind !== "type"
+      && typeof node.source?.value === "string") {
+      dependencies.push({
+        kind: "export",
+        specifier: node.source.value,
+        exportAll: true,
+        exportedName: syntaxName(node.exported),
+      });
+    }
+    if (node.type === "ExportNamedDeclaration"
       && node.exportKind !== "type"
       && !typeOnlySpecifiers
       && typeof node.source?.value === "string") {
-      dependencies.push({ kind: "export", specifier: node.source.value });
+      for (const specifier of node.specifiers ?? []) {
+        const importedName = syntaxName(specifier.local);
+        const exportedName = syntaxName(specifier.exported);
+        if (specifier.exportKind !== "type"
+          && importedName !== undefined
+          && exportedName !== undefined) {
+          dependencies.push({
+            kind: "export",
+            specifier: node.source.value,
+            exportAll: false,
+            importedName,
+            exportedName,
+          });
+        }
+      }
     }
   }
   return dependencies;
@@ -274,6 +396,7 @@ export function analyzeSource(filename, source) {
       errors: [`source cannot be parsed by Oxc: ${error instanceof Error ? error.message : String(error)}`],
       hasExecutableCode: false,
       hasRuntimeImplementation: false,
+      exportedRuntimeImplementationNames: [],
       hasTestRegistration: false,
       observedRuntimeImportSources: [],
       staticModuleDependencies: [],
@@ -285,6 +408,7 @@ export function analyzeSource(filename, source) {
   const importedTestBindings = testBindings(result.program);
   const testCallbacks = registeredTestCallbacks(result.program, importedTestBindings);
   const staticDependencies = staticModuleDependencies(result.program);
+  const runtimeImplementationNames = exportedRuntimeImplementationNames(result.program);
   walk(result.program, (node, parent) => {
     if (node.type === "Identifier") {
       const label = FORBIDDEN_RUNTIME_IDENTIFIERS.get(node.name);
@@ -317,7 +441,8 @@ export function analyzeSource(filename, source) {
     hasExecutableCode: result.program.body.some(node => (
       runtimeDeclaration(node) || node.type === "ExpressionStatement"
     )),
-    hasRuntimeImplementation: hasExportedRuntimeImplementation(result.program),
+    hasRuntimeImplementation: runtimeImplementationNames.length > 0,
+    exportedRuntimeImplementationNames: runtimeImplementationNames,
     hasTestRegistration,
     observedRuntimeImportSources: observedRuntimeImportSources(
       result.program,

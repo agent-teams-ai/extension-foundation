@@ -9,6 +9,7 @@ import { parse as parseYaml } from "yaml";
 
 import {
   createDocsOwnerCatalog,
+  hasCanonicalPackageRootExports,
   isRecord,
   loadPackagePolicy,
   materializationPlanPath,
@@ -100,14 +101,6 @@ function packageForFile(entriesByPath, filePath) {
   return [...entriesByPath.values()]
     .filter(entry => isPathInside(repositoryPath, entry.path))
     .sort((left, right) => right.path.length - left.path.length || compareBinary(left.path, right.path))[0];
-}
-
-function hasSafeCuratedExports(manifest) {
-  const rootExport = manifest.exports?.["."];
-  return exactKeys(manifest.exports, ["."])
-    && exactKeys(rootExport, ["import", "types"])
-    && rootExport.import === "./dist/index.js"
-    && rootExport.types === "./dist/index.d.ts";
 }
 
 function unsupportedTsconfigDependencyFeature(config) {
@@ -308,6 +301,53 @@ function exportReachable(fromPath, targetPath, analyses, sourcePaths) {
       if (dependency.kind !== "export") continue;
       const resolved = resolveSourceDependency(current, dependency.specifier, sourcePaths);
       if (resolved !== undefined && !visited.has(resolved)) pending.push(resolved);
+    }
+  }
+  return false;
+}
+
+function exportedImplementationReachable(fromPath, analyses, sourcePaths, isImplementationPath) {
+  const anyPublicExport = Symbol("any-public-export");
+  const pending = [{ path: fromPath, requestedName: anyPublicExport }];
+  const visited = new Set();
+  while (pending.length > 0) {
+    const current = pending.shift();
+    const requestedKey = current.requestedName === anyPublicExport
+      ? "*"
+      : current.requestedName;
+    const visitKey = `${current.path}\0${requestedKey}`;
+    if (visited.has(visitKey)) continue;
+    visited.add(visitKey);
+    const analysis = analyses.get(current.path);
+    if (analysis === undefined) continue;
+    const implementations = new Set(analysis.exportedRuntimeImplementationNames ?? []);
+    if (isImplementationPath(current.path)
+      && (current.requestedName === anyPublicExport
+        ? implementations.size > 0
+        : implementations.has(current.requestedName))) {
+      return true;
+    }
+    for (const dependency of analysis.staticModuleDependencies) {
+      if (dependency.kind !== "export") continue;
+      const resolved = resolveSourceDependency(current.path, dependency.specifier, sourcePaths);
+      if (resolved === undefined) continue;
+      if (dependency.exportAll === true) {
+        if (dependency.exportedName !== undefined
+          && current.requestedName !== anyPublicExport
+          && current.requestedName !== dependency.exportedName) continue;
+        if (dependency.exportedName === undefined && current.requestedName === "default") continue;
+        pending.push({
+          path: resolved,
+          requestedName: dependency.exportedName === undefined
+            ? current.requestedName
+            : anyPublicExport,
+        });
+        continue;
+      }
+      if (current.requestedName === anyPublicExport
+        || current.requestedName === dependency.exportedName) {
+        pending.push({ path: resolved, requestedName: dependency.importedName });
+      }
     }
   }
   return false;
@@ -536,7 +576,7 @@ export async function validatePackageTopology({
       errors.push(`${packagePath}: package exports differ from the reviewed Foundation materialization plan`);
     }
     if (!exactStringArray(manifest.files, ["dist"])) errors.push(`${packagePath}: package files must contain only dist`);
-    if (!hasSafeCuratedExports(manifest)) {
+    if (!hasCanonicalPackageRootExports(manifest)) {
       errors.push(`${packagePath}: package exports must be explicit and target only dist/`);
     }
     if (manifest.agentTeamsArchitecture?.role !== entry.role) {
@@ -595,13 +635,16 @@ export async function validatePackageTopology({
         analysesByPath,
         sourcePaths,
       );
-      evidence.implementation = [...analysesByPath].some(([path, analysis]) => (
-        path.startsWith(featureRoot)
-        && path !== featureEntrypoint
-        && !path.endsWith(".d.ts")
-        && analysis.hasRuntimeImplementation
-        && exportReachable(featureEntrypoint, path, analysesByPath, sourcePaths)
-      ));
+      evidence.implementation = exportedImplementationReachable(
+        featureEntrypoint,
+        analysesByPath,
+        sourcePaths,
+        path => (
+          path.startsWith(featureRoot)
+          && path !== featureEntrypoint
+          && !path.endsWith(".d.ts")
+        ),
+      );
       evidence.test = [...analysesByPath].some(([path, analysis]) => (
         path.startsWith(`test/features/${feature}/`)
         && analysis.hasTestRegistration
