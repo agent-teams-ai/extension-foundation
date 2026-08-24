@@ -1,8 +1,14 @@
 AgentTeams
 air-gapped
+Awilix
+backpressure
+Cordis
 Cosign
 digest-pinned
+Extism
 GHCR
+Lumino
+Modulith
 OpenCode
 ORAS
 product-neutral

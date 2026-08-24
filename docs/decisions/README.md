@@ -19,9 +19,13 @@ No proposed decisions.
 - [ADR-0003: PostgreSQL canonical catalog state and signed snapshots](0003-postgresql-canonical-catalog-state-and-signed-snapshots.md)
 - [ADR-0004: Deterministic catalog federation and namespace authority](0004-deterministic-catalog-federation-and-namespace-authority.md)
 - [ADR-0005: Catalog trust and moderation boundaries](0005-catalog-trust-and-moderation-boundaries.md)
+- [ADR-0010: Extension safety floor and retirement closure](0010-extension-safety-floor-and-retirement-closure.md)
 
 ## Superseded decisions
 
-No superseded decisions.
+- [ADR-0006: Extension module safety boundaries](0006-extension-module-safety-boundaries.md)
+- [ADR-0007: Extension module safety boundary clarifications](0007-extension-module-safety-boundary-clarifications.md)
+- [ADR-0008: Extension authority and lifecycle corrections](0008-extension-authority-and-lifecycle-corrections.md)
+- [ADR-0009: Extension activation and retirement corrections](0009-extension-activation-and-retirement-corrections.md)
 
 Accepted ADRs are immutable. A changed decision requires a new superseding ADR.
