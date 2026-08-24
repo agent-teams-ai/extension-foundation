@@ -1,13 +1,16 @@
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import { validateBuiltPackageArtifacts } from "../architecture/checks/package-artifacts.mjs";
 import { materializationPlanPath } from "../architecture/checks/package-policy.mjs";
-import { validatePackageTopology as validateRepositoryPackageTopology } from "../architecture/checks/package-topology.mjs";
+import {
+  isFilesystemPathInside,
+  validatePackageTopology as validateRepositoryPackageTopology,
+} from "../architecture/checks/package-topology.mjs";
 import { analyzeSource } from "../architecture/checks/source-safety.mjs";
 
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
@@ -613,6 +616,19 @@ test("topology resolves tsconfig inheritance and rejects compiler input escapes"
   }
 });
 
+test("compiler input containment fails closed across Windows volumes", () => {
+  assert.equal(isFilesystemPathInside(
+    "C:\\package\\src\\feature.ts",
+    "C:\\package\\src",
+    win32,
+  ), true);
+  assert.equal(isFilesystemPathInside(
+    "D:\\outside\\feature.ts",
+    "C:\\package\\src",
+    win32,
+  ), false);
+});
+
 test("topology rejects nested package roots", async () => {
   const root = await mkdtemp(join(tmpdir(), "extension-topology-overlap-"));
   try {
@@ -677,6 +693,25 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
     ["reflective property-descriptor access"],
   );
   assert.deepEqual(
+    analyzeSource("example.ts", "const { constructor: Constructor } = (() => {});\n").errors,
+    ["reflective Function-constructor access"],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.ts",
+      "const { prototype, __proto__: inherited, getOwnPropertyDescriptor: descriptor } = value;\n",
+    ).errors,
+    ["reflective prototype access", "reflective property-descriptor access"],
+  );
+  assert.deepEqual(
+    analyzeSource("example.ts", "value.prototype;\nvalue.__proto__;\n").errors,
+    ["reflective prototype access"],
+  );
+  assert.deepEqual(
+    analyzeSource("example.ts", "const { capability } = value;\n").errors,
+    [],
+  );
+  assert.deepEqual(
     analyzeSource("example.ts", 'import type { X } from "./x.js";\nexport { type X } from "./x.js";\n')
       .staticModuleDependencies,
     [],
@@ -703,6 +738,20 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
   assert.deepEqual(
     analyzeSource(
       "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport * as feature from "./index.js";\ntest("capability", () => { assert.ok(() => feature.capability); });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport * as feature from "./index.js";\ntest("capability", () => { assert.ok(class { method() { return feature.capability; } }); });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
       'import test from "node:test";\nimport { capability } from "./index.js";\ntest("capability", () => { void capability; });\n',
     ).observedRuntimeImportSources,
     [],
@@ -714,6 +763,11 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
   assert.equal(skippedEvidence.hasTestRegistration, false);
   assert.deepEqual(skippedEvidence.observedRuntimeImportSources, []);
   assert.equal(analyzeSource("example.ts", "export function placeholder() {}\n").hasRuntimeImplementation, false);
+  assert.equal(analyzeSource("example.ts", "export const placeholder = () => {};\n").hasRuntimeImplementation, false);
+  assert.equal(analyzeSource("example.ts", "const placeholder = function () {};\nexport default placeholder;\n").hasRuntimeImplementation, false);
+  assert.equal(analyzeSource("example.ts", "export const placeholder = (() => {}) satisfies () => void;\n").hasRuntimeImplementation, false);
+  assert.equal(analyzeSource("example.ts", "export const capability = () => true;\n").hasRuntimeImplementation, true);
+  assert.equal(analyzeSource("example.ts", "const capability = function () { return true; };\nexport default capability;\n").hasRuntimeImplementation, true);
   assert.equal(analyzeSource("example.ts", "const hidden = true;\nexport {};\n").hasRuntimeImplementation, false);
   assert.equal(analyzeSource("example.ts", "const capability = true;\nexport default capability;\n").hasRuntimeImplementation, true);
   assert.deepEqual(
@@ -721,7 +775,7 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
       "example.ts",
       'const { ["constructor"]: Constructor } = (() => undefined);\nexport const escape = Constructor("return 1")();\n',
     ).errors,
-    ["computed runtime property access"],
+    ["reflective Function-constructor access", "computed runtime property access"],
   );
 });
 
@@ -740,6 +794,13 @@ test("built export evidence requires regular artifacts after the governed build"
     await writeFixture(root, "packages/example/dist/index.d.ts", "export declare const capability: boolean;\n");
     await writeFixture(root, "packages/example/dist/index.js", "export const capability = true;\n");
     assert.deepEqual(await validateBuiltPackageArtifacts({ root }), []);
+    const traversingManifest = JSON.parse(packageManifest());
+    traversingManifest.exports["."].import = "./dist/../src/index.ts";
+    await writeFixture(root, "packages/example/package.json", `${JSON.stringify(traversingManifest)}\n`);
+    await writeFixture(root, "packages/example/src/index.ts", "export const capability = true;\n");
+    assert.ok((await validateBuiltPackageArtifacts({ root })).includes(
+      "packages/example: export target is outside dist: ./dist/../src/index.ts",
+    ));
   } finally {
     await rm(root, { recursive: true, force: true });
   }

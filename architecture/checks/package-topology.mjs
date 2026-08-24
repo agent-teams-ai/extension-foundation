@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { readFile, readdir } from "node:fs/promises";
-import { dirname, join, posix, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join, posix, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { isDeepStrictEqual, promisify } from "node:util";
 
@@ -86,9 +86,13 @@ function isPathInside(path, parent) {
   return path === parent || path.startsWith(`${parent}/`);
 }
 
-function isFilesystemPathInside(path, parent) {
-  const relation = relative(parent, path);
-  return relation === "" || (relation !== ".." && !relation.startsWith(`..${sep}`));
+export function isFilesystemPathInside(path, parent, pathApi = { isAbsolute, relative, sep }) {
+  const relation = pathApi.relative(parent, path);
+  return relation === "" || (
+    !pathApi.isAbsolute(relation)
+    && relation !== ".."
+    && !relation.startsWith(`..${pathApi.sep}`)
+  );
 }
 
 function packageForFile(entriesByPath, filePath) {

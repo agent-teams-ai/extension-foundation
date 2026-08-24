@@ -19,21 +19,36 @@ const SOURCE_DIRECTIVES = Object.freeze([
 const REFLECTIVE_RUNTIME_PROPERTIES = new Map([
   ["constructor", "reflective Function-constructor access"],
   ["getOwnPropertyDescriptor", "reflective property-descriptor access"],
+  ["prototype", "reflective prototype access"],
+  ["__proto__", "reflective prototype access"],
 ]);
 
 const COMPUTED_RUNTIME_PROPERTY_ACCESS = "computed runtime property access";
 
-function walk(value, visit, seen = new Set()) {
+function walk(value, visit, seen = new Set(), parent) {
   if (typeof value !== "object" || value === null || seen.has(value)) return;
   seen.add(value);
-  visit(value);
+  if (visit(value, parent) === false) return;
   for (const child of Object.values(value)) {
     if (Array.isArray(child)) {
-      for (const entry of child) walk(entry, visit, seen);
+      for (const entry of child) walk(entry, visit, seen, value);
     } else {
-      walk(child, visit, seen);
+      walk(child, visit, seen, value);
     }
   }
+}
+
+function runtimeInitializer(node) {
+  if (node === null || node === undefined) return false;
+  if ([
+    "ParenthesizedExpression",
+    "TSAsExpression",
+    "TSNonNullExpression",
+    "TSSatisfiesExpression",
+    "TSTypeAssertion",
+  ].includes(node.type)) return runtimeInitializer(node.expression);
+  if (!["ArrowFunctionExpression", "FunctionExpression"].includes(node.type)) return true;
+  return node.body?.type !== "BlockStatement" || node.body.body?.length > 0;
 }
 
 function runtimeDeclaration(node) {
@@ -43,7 +58,7 @@ function runtimeDeclaration(node) {
   }
   if (node.declare === true) return false;
   if (node.type === "VariableDeclaration") {
-    return node.declarations?.some(declaration => declaration.init !== null) === true;
+    return node.declarations?.some(declaration => runtimeInitializer(declaration.init)) === true;
   }
   if (node.type === "ClassDeclaration") return node.body?.body?.length > 0;
   if (node.type === "FunctionDeclaration") return node.body?.body?.length > 0;
@@ -54,7 +69,7 @@ function runtimeBindingNames(node) {
   if (typeof node !== "object" || node === null || node.declare === true) return [];
   if (node.type === "VariableDeclaration") {
     return node.declarations
-      ?.filter(declaration => declaration.init !== null && declaration.id?.type === "Identifier")
+      ?.filter(declaration => runtimeInitializer(declaration.init) && declaration.id?.type === "Identifier")
       .map(declaration => declaration.id.name) ?? [];
   }
   if (["ClassDeclaration", "FunctionDeclaration"].includes(node.type)
@@ -203,9 +218,17 @@ function observedRuntimeImportSources(program, testCallbacks) {
       if (!isAssertionCall(candidate, assertions)) return;
       for (const argument of candidate.arguments ?? []) {
         walk(argument, value => {
+          if ([
+            "ArrowFunctionExpression",
+            "ClassDeclaration",
+            "ClassExpression",
+            "FunctionDeclaration",
+            "FunctionExpression",
+          ].includes(value.type)) return false;
           if (value.type === "Identifier" && runtimeBindings.has(value.name)) {
             sources.add(runtimeBindings.get(value.name));
           }
+          return undefined;
         });
       }
     });
@@ -262,7 +285,7 @@ export function analyzeSource(filename, source) {
   const importedTestBindings = testBindings(result.program);
   const testCallbacks = registeredTestCallbacks(result.program, importedTestBindings);
   const staticDependencies = staticModuleDependencies(result.program);
-  walk(result.program, node => {
+  walk(result.program, (node, parent) => {
     if (node.type === "Identifier") {
       const label = FORBIDDEN_RUNTIME_IDENTIFIERS.get(node.name);
       if (label !== undefined) errors.add(label);
@@ -270,6 +293,14 @@ export function analyzeSource(filename, source) {
     if (node.type === "MemberExpression"
       && (typeof node.property?.value === "string" || typeof node.property?.name === "string")) {
       const property = node.property.value ?? node.property.name;
+      const label = FORBIDDEN_RUNTIME_IDENTIFIERS.get(property)
+        ?? REFLECTIVE_RUNTIME_PROPERTIES.get(property);
+      if (label !== undefined) errors.add(label);
+    }
+    if (node.type === "Property"
+      && parent?.type === "ObjectPattern"
+      && (typeof node.key?.value === "string" || typeof node.key?.name === "string")) {
+      const property = node.key.value ?? node.key.name;
       const label = FORBIDDEN_RUNTIME_IDENTIFIERS.get(property)
         ?? REFLECTIVE_RUNTIME_PROPERTIES.get(property);
       if (label !== undefined) errors.add(label);

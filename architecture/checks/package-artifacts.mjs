@@ -35,20 +35,21 @@ export async function validateBuiltPackageArtifacts({ root }) {
       continue;
     }
     const packageRoot = await realpath(resolve(root, entry.path));
+    const distRoot = resolve(packageRoot, "dist");
     for (const target of new Set(targets)) {
       if (!target.startsWith("./dist/") || target.includes("\\")) {
         errors.push(`${entry.path}: export target is outside dist: ${target}`);
         continue;
       }
       const artifactPath = resolve(packageRoot, target);
-      if (!contained(packageRoot, artifactPath)) {
-        errors.push(`${entry.path}: export target escapes the package: ${target}`);
+      if (!contained(distRoot, artifactPath)) {
+        errors.push(`${entry.path}: export target is outside dist: ${target}`);
         continue;
       }
       try {
         const metadata = await lstat(artifactPath);
         const canonicalArtifact = await realpath(artifactPath);
-        if (metadata.isSymbolicLink() || !metadata.isFile() || !contained(packageRoot, canonicalArtifact)) {
+        if (metadata.isSymbolicLink() || !metadata.isFile() || !contained(distRoot, canonicalArtifact)) {
           errors.push(`${entry.path}: export target is not one regular package artifact: ${target}`);
         }
       } catch (error) {
