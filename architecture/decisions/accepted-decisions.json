@@ -46,6 +46,11 @@
       "id": "ADR-0009",
       "path": "docs/decisions/0009-extension-activation-and-retirement-corrections.md",
       "immutableDigest": "sha256:32ef623b73827c0873bdc0fcabeff4ae49006de55c05d6bfb1219303ab0d9fcf"
+    },
+    {
+      "id": "ADR-0010",
+      "path": "docs/decisions/0010-extension-safety-floor-and-retirement-closure.md",
+      "immutableDigest": "sha256:a77916a5dc514d471840860a028875f4d30f220b5742661368593d8471fe894a"
     }
   ]
 }

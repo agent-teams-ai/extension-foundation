@@ -1,11 +1,13 @@
 ---
 id: ADR-0009
 type: adr
-status: accepted
+status: superseded
 owner: architecture
 summary: Defines built-in activation identity, shared-runtime retirement, contribution cardinality, and fail-closed uninstall.
 approved_by: product-owner
 accepted_at: 2026-08-23
+superseded_by:
+  - ADR-0010
 supersedes:
   - ADR-0008
 related:

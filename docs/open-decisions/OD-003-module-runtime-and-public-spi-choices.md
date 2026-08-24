@@ -10,6 +10,7 @@ related:
   - ADR-0007
   - ADR-0008
   - ADR-0009
+  - ADR-0010
 ---
 
 # OD-003: Module Runtime And Public SPI Choices
@@ -22,7 +23,7 @@ for trusted and isolated implementations.
 
 ## Constraints
 
-- ADR-0009 ownership, authority, identity, transaction, trust-tier, graph, and
+- ADR-0010 cumulative ownership, authority, identity, transaction, trust-tier, graph, and
   state boundaries are fixed.
 - Product-specific SPIs remain in Orchestrator, Agent Runtime, Frontend, or
   another consuming product.
@@ -77,8 +78,10 @@ when their combined ordering is acyclic and preserves every required dependency;
 an incompatible mixed-policy chain is rejected before staging. The old grant is
 fenced before its runtime enters drain, so no new invocation can enter it.
 Candidate cleanup owns only newly staged runtimes. Referenced existing runtimes
-remain pinned until no live graph or accepted bounded invocation references
-them; retirement rechecks reachability under its fence.
+acquire durable staged pins under the runtime retirement fence. Publication
+promotes those pins; abandonment releases them. A runtime remains pinned until
+no staged candidate, live graph, or accepted bounded invocation references it;
+retirement rechecks reachability under the same fence.
 
 The final contract must still decide health gates, bounded completion versus
 cancellation of already accepted in-flight work, and when recovery may activate
@@ -95,7 +98,7 @@ Foundation.
 
 ### Public API evidence
 
-ADR-0009 already fixes the minimum publication floor: one real product slice, a
+ADR-0010 already fixes the minimum publication floor: one real product slice, a
 stable owner, two independently authored conforming implementations,
 compatibility fixtures, negative tests, and an executable conformance suite.
 This decision chooses the evidence format, independence proof, compatibility
@@ -106,7 +109,7 @@ not weaken that floor.
 
 The following layout preserves the current research without reserving packages
 or accepting their public APIs. Create a package only when a real product slice
-and the ADR-0009 evidence justify it.
+and the ADR-0010 evidence justify it.
 
 ```text
 packages/
@@ -167,14 +170,21 @@ packages/
 - Prove closure-wide handover planning, pre-drain fencing, and rejection of an
   incompatible mixed route/drain policy chain.
 - Prove failed-candidate and successful-handover reuse of an existing runtime,
-  including graph and in-flight reachability pins before retirement.
+  including staged, graph, and in-flight reachability pins before retirement,
+  crash recovery, atomic promotion, abandonment release, and a retirement race.
 - Prove exact artifact-versus-contribution private-state attachment, compatible
   schema lineage, and sibling-contribution isolation.
 - Prove catalog and direct-digest trust routes with applicable and explicitly
   not-applicable entitlement, independent product authorization, and mismatched
   graph-to-runtime-to-source-to-grant relationships.
-- Prove interruption, retry, uncertain termination, state detachment, and
-  artifact removal at every ordered uninstall checkpoint.
+- Prove fail-closed negative provenance, trust-route, compatibility,
+  entitlement, product authorization, and capability-grant outcomes.
+- Prove explicit state custody authorization for every operation, including
+  missing, stale, expired, wrong-scope, wrong-lineage, wrong-installation,
+  wrong-schema, and wrong-operation rejection.
+- Prove interruption, retry, uncertain termination, exact state detachment, and
+  target-specific contribution, built-in, and artifact retirement at every
+  checkpoint, including sibling contributions and attachments.
 - Prove N/N-1 request and response fixtures for every direction selected by the
   final compatibility decision.
 - Prove that Cordis or any other composition library can be replaced without

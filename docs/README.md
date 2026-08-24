@@ -17,7 +17,7 @@ Read by responsibility:
 | --- | --- |
 | Product boundary and topology | [Architecture overview](architecture/overview.md) |
 | Extension terminology and ownership | [Extension model](architecture/extension-model.md) |
-| Module and plugin safety rules | [ADR-0009](decisions/0009-extension-activation-and-retirement-corrections.md), which supersedes [ADR-0008](decisions/0008-extension-authority-and-lifecycle-corrections.md), [ADR-0007](decisions/0007-extension-module-safety-boundary-clarifications.md), and [ADR-0006](decisions/0006-extension-module-safety-boundaries.md) |
+| Module and plugin safety rules | [ADR-0010](decisions/0010-extension-safety-floor-and-retirement-closure.md), which preserves and supersedes [ADR-0009](decisions/0009-extension-activation-and-retirement-corrections.md), [ADR-0008](decisions/0008-extension-authority-and-lifecycle-corrections.md), [ADR-0007](decisions/0007-extension-module-safety-boundary-clarifications.md), and [ADR-0006](decisions/0006-extension-module-safety-boundaries.md) |
 | Unresolved module runtime and SPI choices | [OD-003](open-decisions/OD-003-module-runtime-and-public-spi-choices.md) |
 | Catalog state, federation, and trust | [ADR-0003](decisions/0003-postgresql-canonical-catalog-state-and-signed-snapshots.md), [ADR-0004](decisions/0004-deterministic-catalog-federation-and-namespace-authority.md), and [ADR-0005](decisions/0005-catalog-trust-and-moderation-boundaries.md) |
 | Accepted decisions | [ADR index](decisions/README.md) |
