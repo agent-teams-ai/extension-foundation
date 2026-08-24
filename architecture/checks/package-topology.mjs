@@ -306,62 +306,128 @@ function exportReachable(fromPath, targetPath, analyses, sourcePaths) {
   return false;
 }
 
-function exportedImplementationReachable(fromPath, analyses, sourcePaths, isImplementationPath) {
-  const anyPublicExport = Symbol("any-public-export");
-  const anyNonDefaultExport = Symbol("any-non-default-export");
-  const pending = [{ path: fromPath, requestedName: anyPublicExport }];
-  const visited = new Set();
-  while (pending.length > 0) {
-    const current = pending.shift();
-    const requestedKey = current.requestedName === anyPublicExport
-      ? "*"
-      : current.requestedName === anyNonDefaultExport
-        ? "*-without-default"
-        : current.requestedName;
-    const visitKey = `${current.path}\0${requestedKey}`;
-    if (visited.has(visitKey)) continue;
-    visited.add(visitKey);
-    const analysis = analyses.get(current.path);
-    if (analysis === undefined) continue;
-    const implementations = new Set(analysis.exportedRuntimeImplementationNames ?? []);
-    const implementationMatches = current.requestedName === anyPublicExport
-      ? implementations.size > 0
-      : current.requestedName === anyNonDefaultExport
-        ? [...implementations].some(name => name !== "default")
-        : implementations.has(current.requestedName);
-    if (isImplementationPath(current.path) && implementationMatches) {
-      return true;
-    }
+function exportedImplementationReachable(
+  fromPath,
+  requiredPath,
+  analyses,
+  sourcePaths,
+  isImplementationPath,
+) {
+  const namesByPath = new Map();
+  for (const [path, analysis] of analyses) {
+    const names = new Set(analysis.localRuntimeExportNames ?? []);
     for (const dependency of analysis.staticModuleDependencies) {
-      if (dependency.kind !== "export") continue;
-      const resolved = resolveSourceDependency(current.path, dependency.specifier, sourcePaths);
-      if (resolved === undefined) continue;
-      if (dependency.exportAll === true) {
-        if (current.requestedName === anyNonDefaultExport
-          && dependency.exportedName === "default") continue;
-        if (dependency.exportedName !== undefined
-          && ![anyPublicExport, anyNonDefaultExport].includes(current.requestedName)
-          && current.requestedName !== dependency.exportedName) continue;
-        if (dependency.exportedName === undefined && current.requestedName === "default") continue;
-        pending.push({
-          path: resolved,
-          requestedName: dependency.exportedName === undefined
-            ? [anyPublicExport, anyNonDefaultExport].includes(current.requestedName)
-              ? anyNonDefaultExport
-              : current.requestedName
-            : anyPublicExport,
-        });
-        continue;
+      if (dependency.kind === "export" && dependency.exportedName !== undefined) {
+        names.add(dependency.exportedName);
       }
-      if (current.requestedName === anyNonDefaultExport
-        && dependency.exportedName === "default") continue;
-      if ([anyPublicExport, anyNonDefaultExport].includes(current.requestedName)
-        || current.requestedName === dependency.exportedName) {
-        pending.push({ path: resolved, requestedName: dependency.importedName });
+    }
+    namesByPath.set(path, names);
+  }
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [path, analysis] of analyses) {
+      const names = namesByPath.get(path);
+      for (const dependency of analysis.staticModuleDependencies) {
+        if (dependency.kind !== "export"
+          || dependency.exportAll !== true
+          || dependency.exportedName !== undefined) continue;
+        const resolved = resolveSourceDependency(path, dependency.specifier, sourcePaths);
+        if (resolved === undefined) continue;
+        for (const name of namesByPath.get(resolved) ?? []) {
+          if (name === "default" || names.has(name)) continue;
+          names.add(name);
+          changed = true;
+        }
       }
     }
   }
-  return false;
+
+  const memo = new Map();
+  const resolving = new Set();
+  const absent = { present: false, implementation: false, binding: undefined };
+  const resolveExport = (path, name, throughRequired) => {
+    const reachesRequired = throughRequired || path === requiredPath;
+    const key = `${path}\0${name}\0${reachesRequired ? "through" : "outside"}`;
+    if (memo.has(key)) return memo.get(key);
+    if (resolving.has(key)) return absent;
+    resolving.add(key);
+
+    const analysis = analyses.get(path);
+    if (analysis === undefined) {
+      resolving.delete(key);
+      return absent;
+    }
+    const localNames = new Set(analysis.localRuntimeExportNames ?? []);
+    const implementations = new Set(analysis.exportedRuntimeImplementationNames ?? []);
+    const explicit = analysis.staticModuleDependencies.filter(dependency => (
+      dependency.kind === "export" && dependency.exportedName === name
+    ));
+
+    let result;
+    if (localNames.has(name) || explicit.length > 0) {
+      if ((localNames.has(name) ? 1 : 0) + explicit.length !== 1) {
+        result = { present: true, implementation: false, binding: undefined };
+      } else if (localNames.has(name)) {
+        result = {
+          present: true,
+          implementation: reachesRequired
+            && isImplementationPath(path)
+            && implementations.has(name),
+          binding: `${path}\0${name}`,
+        };
+      } else {
+        const dependency = explicit[0];
+        const resolved = resolveSourceDependency(path, dependency.specifier, sourcePaths);
+        if (resolved === undefined) {
+          result = absent;
+        } else if (dependency.exportAll === true) {
+          const candidates = [...(namesByPath.get(resolved) ?? [])]
+            .map(candidate => resolveExport(resolved, candidate, reachesRequired))
+            .filter(candidate => candidate.implementation);
+          result = {
+            present: true,
+            implementation: candidates.length > 0,
+            binding: `namespace\0${resolved}`,
+          };
+        } else {
+          result = resolveExport(resolved, dependency.importedName, reachesRequired);
+        }
+      }
+    } else if (name === "default") {
+      result = absent;
+    } else {
+      const candidates = [];
+      for (const dependency of analysis.staticModuleDependencies) {
+        if (dependency.kind !== "export"
+          || dependency.exportAll !== true
+          || dependency.exportedName !== undefined) continue;
+        const resolved = resolveSourceDependency(path, dependency.specifier, sourcePaths);
+        if (resolved === undefined) continue;
+        const candidate = resolveExport(resolved, name, reachesRequired);
+        if (candidate.present) candidates.push(candidate);
+      }
+      const bindings = new Set(candidates.map(candidate => candidate.binding));
+      if (candidates.length === 0) {
+        result = absent;
+      } else if (bindings.size === 1 && !bindings.has(undefined)) {
+        result = {
+          ...candidates[0],
+          implementation: candidates.some(candidate => candidate.implementation),
+        };
+      } else {
+        result = { present: false, implementation: false, binding: undefined };
+      }
+    }
+
+    resolving.delete(key);
+    memo.set(key, result);
+    return result;
+  };
+
+  return [...(namesByPath.get(fromPath) ?? [])]
+    .some(name => resolveExport(fromPath, name, false).implementation);
 }
 
 export async function validatePackageTopology({
@@ -648,6 +714,7 @@ export async function validatePackageTopology({
       );
       evidence.implementation = exportedImplementationReachable(
         packageEntrypoint,
+        featureEntrypoint,
         analysesByPath,
         sourcePaths,
         path => (

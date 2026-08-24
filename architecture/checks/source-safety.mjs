@@ -94,6 +94,20 @@ function runtimeBindingNames(node) {
   return [];
 }
 
+function runtimeValueBindingNames(node) {
+  if (typeof node !== "object" || node === null || node.declare === true) return [];
+  if (node.type === "VariableDeclaration") {
+    return node.declarations
+      ?.filter(declaration => declaration.init != null && declaration.id?.type === "Identifier")
+      .map(declaration => declaration.id.name) ?? [];
+  }
+  if (["ClassDeclaration", "FunctionDeclaration", "TSEnumDeclaration"].includes(node.type)
+    && node.id?.name !== undefined) {
+    return [node.id.name];
+  }
+  return [];
+}
+
 function syntaxName(node) {
   if (typeof node?.name === "string") return node.name;
   if (typeof node?.value === "string") return node.value;
@@ -104,7 +118,9 @@ function exportedRuntimeImplementationNames(program) {
   const runtimeBindings = new Set();
   const exportedBindings = new Set();
   for (const node of program.body) {
-    const declaration = node.type === "ExportNamedDeclaration" ? node.declaration : node;
+    const declaration = ["ExportNamedDeclaration", "ExportDefaultDeclaration"].includes(node.type)
+      ? node.declaration
+      : node;
     for (const binding of runtimeBindingNames(declaration)) runtimeBindings.add(binding);
   }
   for (const node of program.body) {
@@ -133,6 +149,42 @@ function exportedRuntimeImplementationNames(program) {
     }
   }
   return [...exportedBindings];
+}
+
+function localRuntimeExportNames(program) {
+  const importedBindings = new Set();
+  for (const node of program.body) {
+    if (node.type !== "ImportDeclaration" || node.importKind === "type") continue;
+    for (const specifier of node.specifiers ?? []) {
+      if (specifier.importKind !== "type" && specifier.local?.name !== undefined) {
+        importedBindings.add(specifier.local.name);
+      }
+    }
+  }
+
+  const exportedNames = new Set();
+  for (const node of program.body) {
+    if (node.type === "ExportDefaultDeclaration") {
+      const importedIdentifier = node.declaration?.type === "Identifier"
+        && importedBindings.has(node.declaration.name);
+      if (!importedIdentifier) exportedNames.add("default");
+      continue;
+    }
+    if (node.type !== "ExportNamedDeclaration" || node.exportKind === "type") continue;
+    for (const name of runtimeValueBindingNames(node.declaration)) exportedNames.add(name);
+    if (node.source !== null) continue;
+    for (const specifier of node.specifiers ?? []) {
+      const localName = syntaxName(specifier.local);
+      const exportedName = syntaxName(specifier.exported);
+      if (specifier.exportKind !== "type"
+        && localName !== undefined
+        && exportedName !== undefined
+        && !importedBindings.has(localName)) {
+        exportedNames.add(exportedName);
+      }
+    }
+  }
+  return [...exportedNames];
 }
 
 function testBindings(program) {
@@ -204,7 +256,8 @@ function activeTestCallback(call) {
     argument?.type === "ArrowFunctionExpression" || argument?.type === "FunctionExpression"
   )) ?? -1;
   if (callbackIndex < 0) return undefined;
-  for (const argument of call.arguments.slice(0, callbackIndex)) {
+  for (const [index, argument] of call.arguments.entries()) {
+    if (index === callbackIndex) continue;
     if (argument?.type === "Literal" && typeof argument.value === "string") continue;
     if (argument?.type === "TemplateLiteral" && argument.expressions?.length === 0) continue;
     if (argument?.type !== "ObjectExpression") return undefined;
@@ -449,6 +502,7 @@ export function analyzeSource(filename, source) {
       hasExecutableCode: false,
       hasRuntimeImplementation: false,
       exportedRuntimeImplementationNames: [],
+      localRuntimeExportNames: [],
       hasTestRegistration: false,
       observedRuntimeImportSources: [],
       staticModuleDependencies: [],
@@ -461,6 +515,7 @@ export function analyzeSource(filename, source) {
   const testCallbacks = registeredTestCallbacks(result.program, importedTestBindings);
   const staticDependencies = staticModuleDependencies(result.program);
   const runtimeImplementationNames = exportedRuntimeImplementationNames(result.program);
+  const runtimeExportNames = localRuntimeExportNames(result.program);
   walk(result.program, (node, parent) => {
     if (node.type === "Identifier") {
       const label = FORBIDDEN_RUNTIME_IDENTIFIERS.get(node.name);
@@ -495,6 +550,7 @@ export function analyzeSource(filename, source) {
     )),
     hasRuntimeImplementation: runtimeImplementationNames.length > 0,
     exportedRuntimeImplementationNames: runtimeImplementationNames,
+    localRuntimeExportNames: runtimeExportNames,
     hasTestRegistration,
     observedRuntimeImportSources: observedRuntimeImportSources(
       result.program,
