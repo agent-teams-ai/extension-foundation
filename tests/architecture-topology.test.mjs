@@ -958,6 +958,27 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
     ).observedRuntimeImportSources,
     ["./index.js"],
   );
+  for (const assertionImport of [
+    'import type verify from "node:assert/strict";',
+    'import type * as verify from "node:assert/strict";',
+    'import type { default as verify } from "node:assert/strict";',
+    'import type { strict as verify } from "node:assert";',
+    'import type { equal as verify } from "node:assert";',
+  ]) {
+    assert.deepEqual(
+      analyzeSource(
+        "example.test.ts",
+        `${assertionImport}\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("type-only assertion", () => { verify(capability, true); });\n`,
+      ).observedRuntimeImportSources,
+      [],
+    );
+  }
+  const typeOnlyTest = analyzeSource(
+    "example.test.ts",
+    'import assert from "node:assert/strict";\nimport type test from "node:test";\nimport { capability } from "./index.js";\ntest("type-only test", () => { assert.equal(capability, true); });\n',
+  );
+  assert.equal(typeOnlyTest.hasTestRegistration, false);
+  assert.deepEqual(typeOnlyTest.observedRuntimeImportSources, []);
   assert.deepEqual(
     analyzeSource(
       "example.test.ts",

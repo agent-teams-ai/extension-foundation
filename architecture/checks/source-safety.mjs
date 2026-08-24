@@ -214,7 +214,9 @@ function localRuntimeExportBindings(program) {
 function testBindings(program) {
   const bindings = new Set();
   for (const node of program.body) {
-    if (node.type !== "ImportDeclaration" || node.source?.value !== "node:test") continue;
+    if (node.type !== "ImportDeclaration"
+      || node.importKind === "type"
+      || node.source?.value !== "node:test") continue;
     for (const specifier of node.specifiers) {
       if (specifier.type === "ImportDefaultSpecifier" && specifier.local?.name !== undefined) {
         bindings.add(specifier.local.name);
@@ -234,6 +236,7 @@ function assertionBindings(program) {
   const namespaces = new Set();
   for (const node of program.body) {
     if (node.type !== "ImportDeclaration"
+      || node.importKind === "type"
       || !ASSERTION_MODULES.has(node.source?.value)) continue;
     for (const specifier of node.specifiers) {
       if (["ImportDefaultSpecifier", "ImportNamespaceSpecifier"].includes(specifier.type)
