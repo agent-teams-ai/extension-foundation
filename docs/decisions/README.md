@@ -10,7 +10,7 @@ summary: Canonical index of proposed, accepted, and superseded Extension Foundat
 
 ## Proposed decisions
 
-No proposed decisions.
+- [ADR-0011: Extension admission, custody, and retirement closure](0011-extension-admission-custody-and-retirement-closure.md)
 
 ## Accepted decisions
 

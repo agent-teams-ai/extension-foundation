@@ -1,6 +1,6 @@
 import { constants } from "node:fs";
-import { lstat, mkdir, open, realpath, rm } from "node:fs/promises";
-import { dirname, isAbsolute, join, posix, relative, resolve, sep } from "node:path";
+import { link, lstat, mkdir, open, readdir, realpath, rm } from "node:fs/promises";
+import { basename, dirname, isAbsolute, join, posix, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
@@ -22,6 +22,12 @@ const PLAN_DIRECTORY = "architecture/scaffolding-plans";
 const PLAN_PATH = /^architecture\/scaffolding-plans\/[a-z0-9][a-z0-9-]*\.json$/;
 const MAX_PLAN_BYTES = 4 * 1024 * 1024;
 const SUCCESS_RECEIPT_OUTCOMES = new Set(["already-applied", "applied"]);
+let publicationSequence = 0;
+
+function publicationNonce() {
+  publicationSequence += 1;
+  return `${process.pid}-${process.hrtime.bigint()}-${publicationSequence}`;
+}
 
 function contained(root, candidate) {
   const relation = relative(root, candidate);
@@ -58,6 +64,19 @@ async function ensurePlanDirectory(root) {
   }
 }
 
+async function syncDirectory(path) {
+  let handle;
+  try {
+    handle = await open(path, constants.O_RDONLY);
+    await handle.sync();
+  } catch (error) {
+    if (process.platform !== "win32"
+      || !["EACCES", "EINVAL", "EISDIR", "EPERM"].includes(error?.code)) throw error;
+  } finally {
+    await handle?.close().catch(() => undefined);
+  }
+}
+
 async function readBoundedJson(root, path) {
   await ensurePlanDirectory(root);
   const metadataBeforeOpen = await lstat(path);
@@ -80,6 +99,48 @@ async function readBoundedJson(root, path) {
   } finally {
     await handle.close();
   }
+}
+
+function publicationTemporaryPrefix(destination, planDigest) {
+  return `.${basename(destination)}.publication-${planDigest.replace(/^sha256:/u, "")}.`;
+}
+
+async function cleanupPublicationTemporaries(destination, planDigest) {
+  const directory = dirname(destination);
+  const prefix = publicationTemporaryPrefix(destination, planDigest);
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    if (!entry.name.startsWith(prefix) || !entry.name.endsWith(".tmp")) continue;
+    const path = join(directory, entry.name);
+    let metadata;
+    try {
+      metadata = await lstat(path);
+    } catch (error) {
+      if (error?.code === "ENOENT") continue;
+      throw error;
+    }
+    if (metadata.isSymbolicLink() || !metadata.isFile()) {
+      throw new Error("scaffold plan publication temporary must remain one regular file");
+    }
+    await rm(path).catch(error => {
+      if (error?.code !== "ENOENT") throw error;
+    });
+  }
+}
+
+async function matchingExistingPlan(root, destination, plan, resolveOwner) {
+  let existing;
+  try {
+    existing = await readBoundedJson(root, destination);
+  } catch (error) {
+    if (error?.code === "ENOENT") return undefined;
+    throw error;
+  }
+  assertScaffoldPlanDigest(existing);
+  if (existing.planDigest !== plan.planDigest) {
+    throw new Error("scaffold plan destination already contains different reviewed evidence");
+  }
+  await validatePlanAgainstCatalog(root, existing, resolveOwner);
+  return existing;
 }
 
 export function assertScaffoldOperationPaths(root, packagePath, operations) {
@@ -126,6 +187,7 @@ export async function publishScaffoldPlan({
   intentPath,
   planPath,
   resolveOwner = createDocsOwnerResolver(root),
+  onPublicationFault = async () => undefined,
 }) {
   const plan = await validatePlanAgainstCatalog(root, await planScaffoldFromFile({
     consumerRoot: root,
@@ -138,33 +200,76 @@ export async function publishScaffoldPlan({
   }
   const destination = safePlanPath(root, planPath);
   await ensurePlanDirectory(root);
-  const handle = await open(destination, "wx", 0o644);
-  let complete = false;
+  const existing = await matchingExistingPlan(root, destination, plan, resolveOwner);
+  if (existing !== undefined) {
+    await cleanupPublicationTemporaries(destination, plan.planDigest);
+    return { plan: existing, planDigest: existing.planDigest };
+  }
+
+  const planBytes = Buffer.from(`${JSON.stringify(plan, null, 2)}\n`, "utf8");
+  const temporaryPrefix = publicationTemporaryPrefix(destination, plan.planDigest);
+  const temporary = join(
+    dirname(destination),
+    `${temporaryPrefix}${publicationNonce()}.tmp`,
+  );
+  const handle = await open(temporary, "wx", 0o644);
+  let destinationLinked = false;
+  let publishedPlan = plan;
   let primaryError;
   let cleanupError;
   try {
-    await handle.writeFile(`${JSON.stringify(plan, null, 2)}\n`, "utf8");
+    await handle.writeFile(planBytes);
     await handle.sync();
-    await handle.close();
-    complete = true;
+    await onPublicationFault({ phase: "after-plan-temporary-synced", path: temporary });
+    try {
+      await link(temporary, destination);
+      destinationLinked = true;
+    } catch (error) {
+      if (!["EEXIST", "ENOENT"].includes(error?.code)) throw error;
+      const racedPlan = await matchingExistingPlan(root, destination, plan, resolveOwner);
+      if (racedPlan === undefined) throw error;
+      publishedPlan = racedPlan;
+    }
+    if (destinationLinked) {
+      await onPublicationFault({ phase: "after-plan-hard-link", path: destination });
+      const [temporaryMetadata, destinationMetadata] = await Promise.all([
+        handle.stat(),
+        lstat(destination),
+      ]);
+      if (!destinationMetadata.isFile()
+        || destinationMetadata.isSymbolicLink()
+        || destinationMetadata.dev !== temporaryMetadata.dev
+        || destinationMetadata.ino !== temporaryMetadata.ino
+        || destinationMetadata.size !== planBytes.length) {
+        throw new Error("published scaffold plan is not the synced create-only temporary");
+      }
+      await syncDirectory(dirname(destination));
+    }
   } catch (error) {
     primaryError = error;
-    await handle.close().catch(() => undefined);
   } finally {
-    if (!complete) {
-      try {
-        await rm(destination, { force: true });
-      } catch (error) {
-        cleanupError = error;
-      }
+    await handle.close().catch(error => {
+      cleanupError ??= error;
+    });
+    try {
+      await rm(temporary, { force: true });
+    } catch (error) {
+      cleanupError ??= error;
     }
+  }
+  if (primaryError !== undefined && destinationLinked) {
+    primaryError = new AggregateError(
+      [primaryError],
+      "scaffold plan publication reached a complete create-only destination but final verification failed",
+    );
   }
   if (primaryError !== undefined && cleanupError !== undefined) {
     throw new AggregateError([primaryError, cleanupError], "plan publication and cleanup both failed");
   }
   if (primaryError !== undefined) throw primaryError;
   if (cleanupError !== undefined) throw cleanupError;
-  return { plan, planDigest: plan.planDigest };
+  await cleanupPublicationTemporaries(destination, plan.planDigest);
+  return { plan: publishedPlan, planDigest: publishedPlan.planDigest };
 }
 
 export async function applyScaffoldPlan({

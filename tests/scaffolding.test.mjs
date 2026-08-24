@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { cp, mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -24,6 +24,7 @@ import { validatePackageTopology as validateRepositoryPackageTopology } from "..
 const execFileAsync = promisify(execFile);
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 const foundationScaffoldingUrl = import.meta.resolve("@agent-teams/engineering-foundation/scaffolding");
+const scaffoldAdapterUrl = new URL("../architecture/checks/scaffold.mjs", import.meta.url).href;
 const foundationScaffoldingInternalUrl = new URL(
   "./adapters/node/filesystem-authority-workspace.js",
   foundationScaffoldingUrl,
@@ -190,9 +191,10 @@ test("plan publication cannot overwrite, traverse, or follow a plan-directory sy
       intentPath: "architecture/scaffolding-intents/example.yaml",
       planPath: "architecture/scaffolding-plans/module-dot-example.json",
     };
-    await publishScaffoldPlan({ ...input, resolveOwner: acceptedOwner });
+    const first = await publishScaffoldPlan({ ...input, resolveOwner: acceptedOwner });
     const original = await readFile(join(root, input.planPath), "utf8");
-    await assert.rejects(publishScaffoldPlan({ ...input, resolveOwner: acceptedOwner }), /EEXIST/u);
+    const repeated = await publishScaffoldPlan({ ...input, resolveOwner: acceptedOwner });
+    assert.equal(repeated.planDigest, first.planDigest);
     assert.equal(await readFile(join(root, input.planPath), "utf8"), original);
     await assert.rejects(publishScaffoldPlan({
       ...input,
@@ -214,6 +216,56 @@ test("plan publication cannot overwrite, traverse, or follow a plan-directory sy
     }
   } finally {
     await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("plan publication converges after process loss before and after create-only linking", async t => {
+  for (const phase of ["after-plan-temporary-synced", "after-plan-hard-link"]) {
+    await t.test(phase, async () => {
+      const root = await createConsumer();
+      try {
+        const publisher = `
+          import { publishScaffoldPlan } from ${JSON.stringify(scaffoldAdapterUrl)};
+          await publishScaffoldPlan({
+            root: process.argv[1],
+            intentPath: "architecture/scaffolding-intents/example.yaml",
+            planPath: "architecture/scaffolding-plans/module-dot-example.json",
+            onPublicationFault: async point => {
+              if (point.phase === process.argv[2]) process.exit(73);
+            },
+          });
+        `;
+        await assert.rejects(
+          execFileAsync(process.execPath, ["--input-type=module", "--eval", publisher, root, phase]),
+          error => error?.code === 73,
+        );
+
+        const planPath = "architecture/scaffolding-plans/module-dot-example.json";
+        const retries = await Promise.all(Array.from({ length: 8 }, () => publishScaffoldPlan({
+          root,
+          intentPath: "architecture/scaffolding-intents/example.yaml",
+          planPath,
+          resolveOwner: acceptedOwner,
+        })));
+        const { planDigest } = retries[0];
+        assert.equal(retries.every(retry => retry.planDigest === planDigest), true);
+        const publishedBytes = await readFile(join(root, planPath), "utf8");
+        assert.doesNotThrow(() => JSON.parse(publishedBytes));
+        assert.equal(
+          (await readdir(join(root, "architecture/scaffolding-plans")))
+            .some(name => name.includes(".publication-") && name.endsWith(".tmp")),
+          false,
+        );
+        assert.equal((await applyScaffoldPlan({
+          root,
+          planPath,
+          expectedPlanDigest: planDigest,
+          resolveOwner: acceptedOwner,
+        })).outcome, "applied");
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    });
   }
 });
 
@@ -282,7 +334,7 @@ test("scaffold output reaches a valid package only after the owner adds its real
     await writeFixture(root, "packages/example/src/index.ts", 'export { capability } from "./features/example/index.js";\n');
     await writeFixture(root, "packages/example/src/features/example/capability.ts", "export const capability = true;\n");
     await writeFixture(root, "packages/example/src/features/example/index.ts", 'export { capability } from "./capability.js";\n');
-    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", 'import test from "node:test";\nimport { capability } from "../../../src/features/example/index.ts";\ntest("capability", () => { void capability; });\n');
+    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", 'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "../../../src/features/example/index.ts";\ntest("capability", () => { assert.equal(capability, true); });\n');
     await writeFixture(root, "architecture/foundation/source-dependencies.yaml", `schemaVersion: 1
 workspace: {kind: pnpm, manifest: pnpm-workspace.yaml}
 governedRoots: [packages/example/src, packages/example/test]
@@ -301,7 +353,7 @@ boundaries:
     dependencyMode: development
     roots: [packages/example/test/features/example]
     entrypoints: []
-    allow: {boundaries: [package.module.example.feature.example], packages: [], builtins: [node:test], runtimeReferences: []}
+    allow: {boundaries: [package.module.example.feature.example], packages: [], builtins: [node:assert/strict, node:test], runtimeReferences: []}
 `);
     assert.equal(plan.target.ownerDocument.id, "ADR-0099");
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), []);
@@ -319,7 +371,7 @@ capabilities:
       }),
       error => `${error?.stdout ?? ""}\n${error?.stderr ?? ""}`.includes("not a declared entrypoint"),
     );
-    await writeFixture(root, testPath, 'import test from "node:test";\nimport { capability } from "../../../src/features/example/index.ts";\ntest("capability", () => { void capability; });\n');
+    await writeFixture(root, testPath, 'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "../../../src/features/example/index.ts";\ntest("capability", () => { assert.equal(capability, true); });\n');
     await execFileAsync(process.execPath, [foundationCli, "check", "architecture.source-dependencies"], {
       cwd: root,
     });
