@@ -171,9 +171,9 @@ function localRuntimeExportBindings(program) {
       const importedIdentifier = node.declaration?.type === "Identifier"
         && importedBindings.has(node.declaration.name);
       if (!importedIdentifier) {
-        const localName = node.declaration?.type === "Identifier"
-          ? node.declaration.name
-          : node.declaration?.id?.name ?? "#default";
+        const localName = ["ClassDeclaration", "FunctionDeclaration"].includes(node.declaration?.type)
+          ? node.declaration.id?.name ?? "#default"
+          : "#default";
         addExport("default", localName);
       }
       continue;
@@ -372,16 +372,48 @@ function directAssertionCalls(callback, assertions) {
   return calls;
 }
 
+function walkEagerChain(value, visit, seen) {
+  if (typeof value !== "object" || value === null || seen.has(value)) return false;
+  if (["ParenthesizedExpression", "TSAsExpression", "TSNonNullExpression", "TSSatisfiesExpression", "TSTypeAssertion"].includes(value.type)) {
+    seen.add(value);
+    if (visit(value) === false) return false;
+    return walkEagerChain(value.expression, visit, seen);
+  }
+  if (value.type === "ChainExpression") {
+    seen.add(value);
+    if (visit(value) === false) return false;
+    return walkEagerChain(value.expression, visit, seen);
+  }
+  if (value.type === "CallExpression") {
+    seen.add(value);
+    if (visit(value) === false) return false;
+    const calleeMayShortCircuit = walkEagerChain(value.callee, visit, seen);
+    if (!calleeMayShortCircuit && value.optional !== true) {
+      for (const argument of value.arguments ?? []) {
+        walkEagerExpression(argument, visit, seen);
+      }
+    }
+    return calleeMayShortCircuit || value.optional === true;
+  }
+  if (["MemberExpression", "OptionalMemberExpression"].includes(value.type)) {
+    seen.add(value);
+    if (visit(value) === false) return false;
+    const objectMayShortCircuit = walkEagerChain(value.object, visit, seen);
+    if (!objectMayShortCircuit && value.optional !== true && value.computed === true) {
+      walkEagerExpression(value.property, visit, seen);
+    }
+    return objectMayShortCircuit || value.optional === true;
+  }
+  walkEagerExpression(value, visit, seen);
+  return false;
+}
+
 function walkEagerExpression(value, visit, seen = new Set()) {
   if (typeof value !== "object" || value === null || seen.has(value)) return;
   seen.add(value);
   if (visit(value) === false) return;
   if (value.type === "ChainExpression") {
-    let base = value.expression;
-    while (["CallExpression", "MemberExpression"].includes(base?.type)) {
-      base = base.type === "CallExpression" ? base.callee : base.object;
-    }
-    walkEagerExpression(base, visit, seen);
+    walkEagerChain(value.expression, visit, seen);
     return;
   }
   if (value.type === "ConditionalExpression") {
@@ -392,10 +424,15 @@ function walkEagerExpression(value, visit, seen = new Set()) {
     walkEagerExpression(value.left, visit, seen);
     return;
   }
-  if (["TSAsExpression", "TSNonNullExpression", "TSSatisfiesExpression"].includes(value.type)) {
+  if (["TSAsExpression", "TSNonNullExpression", "TSSatisfiesExpression", "TSTypeAssertion"].includes(value.type)) {
     walkEagerExpression(value.expression, visit, seen);
     return;
   }
+  if (value.type === "AssignmentExpression") {
+    walkEagerExpression(value.right, visit, seen);
+    return;
+  }
+  if (["MetaProperty", "UpdateExpression"].includes(value.type)) return;
   if (value.type?.startsWith("TS")) return;
   for (const [field, child] of Object.entries(value)) {
     const staticPropertyKey = field === "key"
@@ -427,6 +464,7 @@ function observedRuntimeImportSources(program, testCallbacks) {
       [...importedRuntime].filter(([name]) => !locals.has(name)),
     );
     for (const candidate of directAssertionCalls(callback, assertions)) {
+      if (candidate.call.arguments?.some(argument => argument?.type === "SpreadElement")) continue;
       const evidenceArguments = ASSERTION_VALUE_ARGUMENTS.get(candidate.method) ?? [];
       for (const index of evidenceArguments) {
         const argument = candidate.call.arguments?.[index];
@@ -539,6 +577,7 @@ function staticModuleDependencies(program) {
           exportAll: imported.importedName === "*",
           importedName: imported.importedName === "*" ? undefined : imported.importedName,
           exportedName: "default",
+          syntheticBinding: true,
         });
       }
     }

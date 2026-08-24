@@ -384,16 +384,16 @@ function exportedImplementationReachable(
         if (resolved === undefined) {
           result = absent;
         } else if (dependency.exportAll === true) {
-          const candidates = [...(namesByPath.get(resolved) ?? [])]
-            .map(candidate => resolveExport(resolved, candidate, reachesRequired))
-            .filter(candidate => candidate.implementation);
           result = {
             present: true,
-            implementation: candidates.length > 0,
+            implementation: false,
             binding: `namespace\0${resolved}`,
           };
         } else {
           result = resolveExport(resolved, dependency.importedName, reachesRequired);
+          if (dependency.syntheticBinding === true && result.present) {
+            result = { ...result, binding: `${path}\0#default` };
+          }
         }
       }
     } else if (name === "default") {
