@@ -954,6 +954,13 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
   assert.deepEqual(
     analyzeSource(
       "example.test.ts",
+      'import { default as verify } from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("named default namespace", () => { verify.equal(capability, true); });\n',
+    ).observedRuntimeImportSources,
+    ["./index.js"],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
       'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("property names", () => { assert.deepEqual({ capability: 1 }, { capability: 1 }); });\n',
     ).observedRuntimeImportSources,
     [],
@@ -1075,6 +1082,24 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
   );
   assert.deepEqual(escapedAssertion.observedRuntimeImportSources, []);
   assert.ok(escapedAssertion.errors.includes("assertion namespace escape or mutation"));
+  const namedDefaultMutation = analyzeSource(
+    "example.test.ts",
+    'import assert from "node:assert/strict";\nimport { default as poison } from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\npoison.equal = () => {};\ntest("named default mutation", () => { assert.equal(capability, true); });\n',
+  );
+  assert.deepEqual(namedDefaultMutation.observedRuntimeImportSources, []);
+  assert.ok(namedDefaultMutation.errors.includes("assertion namespace escape or mutation"));
+  assert.ok(analyzeSource(
+    "assert-helper.ts",
+    'export { default as poison } from "node:assert/strict";\n',
+  ).errors.includes("assertion namespace re-export"));
+  assert.ok(analyzeSource(
+    "assert-helper.ts",
+    'export { strict as poison } from "node:assert";\n',
+  ).errors.includes("assertion namespace re-export"));
+  assert.ok(analyzeSource(
+    "assert-helper.ts",
+    'export * from "node:assert/strict";\n',
+  ).errors.includes("assertion namespace re-export"));
   assert.deepEqual(
     analyzeSource(
       "example.test.ts",

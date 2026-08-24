@@ -34,6 +34,8 @@ const REFLECTIVE_RUNTIME_PROPERTIES = new Map([
 
 const COMPUTED_RUNTIME_PROPERTY_ACCESS = "computed runtime property access";
 const ASSERTION_NAMESPACE_ESCAPE = "assertion namespace escape or mutation";
+const ASSERTION_NAMESPACE_REEXPORT = "assertion namespace re-export";
+const ASSERTION_MODULES = new Set(["node:assert", "node:assert/strict"]);
 
 function hasRuntimeFunctionBody(body) {
   return body?.type === "BlockStatement" && body.body?.some(statement => (
@@ -232,7 +234,7 @@ function assertionBindings(program) {
   const namespaces = new Set();
   for (const node of program.body) {
     if (node.type !== "ImportDeclaration"
-      || !["node:assert", "node:assert/strict"].includes(node.source?.value)) continue;
+      || !ASSERTION_MODULES.has(node.source?.value)) continue;
     for (const specifier of node.specifiers) {
       if (["ImportDefaultSpecifier", "ImportNamespaceSpecifier"].includes(specifier.type)
         && specifier.local?.name !== undefined) {
@@ -245,8 +247,13 @@ function assertionBindings(program) {
         && specifier.importKind !== "type"
         && specifier.imported?.name !== undefined
         && specifier.local?.name !== undefined) {
-        functions.set(specifier.local.name, specifier.imported.name);
-        if (specifier.imported.name === "strict") namespaces.add(specifier.local.name);
+        const method = specifier.imported.name === "default"
+          ? "ok"
+          : specifier.imported.name;
+        functions.set(specifier.local.name, method);
+        if (["default", "strict"].includes(specifier.imported.name)) {
+          namespaces.add(specifier.local.name);
+        }
       }
     }
   }
@@ -427,6 +434,10 @@ function unsafeAssertionNamespaces(program, testCallbacks, assertions) {
       && parent.shorthand !== true) return;
     unsafe.add(node.name);
   });
+  // Node exposes the same mutable strict assertion object through multiple import forms.
+  if (unsafe.size > 0) {
+    for (const name of assertions.namespaces) unsafe.add(name);
+  }
   return unsafe;
 }
 
@@ -653,6 +664,16 @@ function staticModuleDependencies(program) {
   return dependencies;
 }
 
+function hasRuntimeAssertionReexport(program) {
+  return program.body.some(node => {
+    if (!["ExportAllDeclaration", "ExportNamedDeclaration"].includes(node.type)
+      || !ASSERTION_MODULES.has(node.source?.value)
+      || node.exportKind === "type") return false;
+    if (node.type === "ExportAllDeclaration") return true;
+    return node.specifiers?.some(specifier => specifier.exportKind !== "type") === true;
+  });
+}
+
 export function analyzeSource(filename, source) {
   const errors = new Set();
   for (const [pattern, label] of SOURCE_DIRECTIVES) {
@@ -680,6 +701,7 @@ export function analyzeSource(filename, source) {
   }
   const importedTestBindings = testBindings(result.program);
   const testCallbacks = registeredTestCallbacks(result.program, importedTestBindings);
+  if (hasRuntimeAssertionReexport(result.program)) errors.add(ASSERTION_NAMESPACE_REEXPORT);
   const importedAssertions = assertionBindings(result.program);
   const unsafeNamespaces = unsafeAssertionNamespaces(
     result.program,
