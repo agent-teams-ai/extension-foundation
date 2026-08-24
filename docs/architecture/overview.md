@@ -80,9 +80,12 @@ Only product-neutral contracts with an independent release lifecycle may
 become package boundaries. Technology adapters become separate packages only
 when they are independently replaced, released, or deployed.
 
-Use the reviewable scaffolding sequence. The repository-owned adapter publishes
-the plan create-only and rejects traversal, symbolic-link ancestry, stale catalog
-identity, or operations outside the cataloged package root:
+Use the reviewable scaffolding sequence. The repository-owned adapter syncs a
+private temporary and publishes it through a create-only hard link, so process
+loss cannot leave a partial destination. Repeating the same digest is
+idempotent; a different destination is never overwritten. The adapter rejects
+traversal, symbolic-link ancestry, stale catalog identity, or operations outside
+the cataloged package root:
 
 ```bash
 pnpm architecture:scaffold:plan -- <intent-path> architecture/scaffolding-plans/<encoded-package-id>.json
@@ -93,9 +96,9 @@ pnpm architecture:check
 
 The plan path is derived reversibly from the catalog package ID: dots become
 `-dot-` and hyphens become `-dash-`. The reviewed plan remains committed as
-immutable materialization evidence. Package scripts and `tsconfig` are
-validated against its generated operations, so the shared Foundation recipe
-remains the source of truth.
+immutable materialization evidence. Package scripts, root export map, and
+`tsconfig` are validated against its generated operations, so the shared
+Foundation recipe remains the source of truth.
 
 The generic scaffold creates a private internal package boundary, `tsconfig`,
 and curated package entrypoint. This is not publication of a public extension
@@ -106,9 +109,10 @@ boundary may reach only declared feature entrypoints. Each feature has its own
 runtime boundary, and its tests live outside the production build in a
 development boundary. Cross-feature dependencies are explicit and deep imports
 fail closed. The root export must reach each feature entrypoint, each feature
-entrypoint must reach a real implementation, and executable tests must import
-the owning feature entrypoint. Unreachable files and no-op tests are not
-admission evidence.
+entrypoint must reach an exported value-level implementation, and executable
+tests must make an assertion over a runtime value imported from the owning
+feature entrypoint. Unreachable files, private placeholder declarations, and
+no-op tests are not admission evidence.
 
 Package ownership is a bijection: every catalog entry requires one effective
 accepted ADR declaration, and every package declaration in an effective
@@ -118,28 +122,32 @@ CI.
 Each package keeps the governed clean, typecheck, build, test, check, and
 prepack scripts and cannot add implicit lifecycle hooks. Its source-only
 TypeScript inputs, cache, declarations, and build output remain package-local.
-CI never skips package checks with `--if-present`, and after every build it
-verifies that each curated export resolves to a regular artifact under that
-package's `dist` directory. Tracked symbolic links, Git submodules, generated
-directory escapes, and Git-discovery failure are rejected fail-closed.
+CI never skips package checks with `--if-present`. The initial private package
+surface exposes only the reviewed root `types` and `import` entrypoint. After
+every build CI verifies regular artifacts under `dist`, resolves the package
+self-reference to that exact root artifact, and imports it in a separate Node
+process. Tracked symbolic links, Git submodules, generated directory escapes,
+and Git-discovery failure are rejected fail-closed.
 
 Publishing an external extension SPI remains a separate decision and requires
 the stable product owner, real product slice, independent implementations,
 compatibility fixtures, negative tests, and conformance evidence defined by the
 extension safety ADR. Internal package exports do not satisfy that gate.
 
-The current filesystem adapter tests every exposed scaffold fault point in a
-trusted single-writer workspace. A crash either converges automatically or
-returns stable, fail-closed manual-recovery evidence without overwriting files.
-Plan apply additionally requires the digest printed during review. This
-repository does not claim power-loss durability on every operating system until
-the shared Foundation publishes that qualification evidence.
+The current filesystem adapter tests plan publication loss before and after its
+create-only link plus every exposed apply fault point in a trusted single-writer
+workspace. A crash either converges automatically or returns stable,
+fail-closed manual-recovery evidence without overwriting files. Plan apply
+additionally requires the digest printed during review. This repository does
+not claim power-loss durability on every operating system until the shared
+Foundation publishes that qualification evidence.
 
 Until the shared source graph models JSX import-source directives, triple-slash
-references, CommonJS loading, `createRequire`, runtime code generation, ambient
-`globalThis` or `process` access, `process.getBuiltinModule`, and TypeScript path
-or project-reference edges, package admission rejects those constructs
-fail-closed rather than silently omitting them.
+references, CommonJS loading, `createRequire`, runtime code generation,
+computed property access, ambient `globalThis` or `process` access,
+`process.getBuiltinModule`, and TypeScript path or project-reference edges,
+package admission rejects those constructs fail-closed rather than silently
+omitting them.
 
 The Engineering Foundation owns the source-graph and scaffolding protocols.
 This repository owns its package roles, catalog entries, allowed dependency

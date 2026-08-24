@@ -131,6 +131,14 @@ function packageTsconfig(compilerOptions = {}) {
   });
 }
 
+function featureAssertionTest() {
+  return 'import assert from "node:assert/strict";\nimport test from "node:test";\nimport * as feature from "../../../src/features/example/index.ts";\ntest("feature exports runtime capability", () => { assert.ok(Object.keys(feature).length > 0); });\n';
+}
+
+function assertionWithoutFeatureImport() {
+  return 'import assert from "node:assert/strict";\nimport test from "node:test";\ntest("unrelated assertion", () => { assert.equal(1, 1); });\n';
+}
+
 function sourcePolicy({ packageBoundary = false } = {}) {
   const boundaries = [];
   if (packageBoundary) {
@@ -232,14 +240,14 @@ test("topology requires feature ownership and rejects root-level layer leakage",
     await writeFeatureEntrypoint(root);
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
       "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
-      "packages/example: feature example requires an executable test importing its feature entrypoint",
+      "packages/example: feature example requires an executable assertion over a value imported from its feature entrypoint",
     ]);
 
     await writeFixture(root, "packages/example/src/features/example/capability.ts", "export const example = true;\n");
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
-      "packages/example: feature example requires an executable test importing its feature entrypoint",
+      "packages/example: feature example requires an executable assertion over a value imported from its feature entrypoint",
     ]);
-    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", 'import test from "node:test";\nimport "../../../src/features/example/index.ts";\ntest("example", () => {});\n');
+    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", featureAssertionTest());
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), []);
 
     await writeFixture(root, "packages/example/src/adapters/cordis.ts", "export {};\n");
@@ -259,8 +267,17 @@ test("topology requires public reachability and tests through the feature entryp
     await writeFixture(root, "packages/example/tsconfig.json", `${packageTsconfig()}\n`);
     await writeFeatureEntrypoint(root);
     await writeFixture(root, "packages/example/src/features/example/capability.ts", "export const example = true;\n");
-    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", 'import test from "node:test";\nimport "../../../src/features/example/index.ts";\ntest("example", () => {});\n');
+    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", featureAssertionTest());
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), []);
+    await writeFixture(
+      root,
+      "packages/example/test/features/example/capability.test.ts",
+      'import test from "node:test";\nimport * as feature from "../../../src/features/example/index.ts";\ntest("no observation", () => { void feature; });\n',
+    );
+    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+      "packages/example: feature example requires an executable assertion over a value imported from its feature entrypoint",
+    ));
+    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", featureAssertionTest());
     assert.ok((await validatePackageTopology({
       root,
       resolveOwner: acceptedOwner,
@@ -279,9 +296,9 @@ test("topology requires public reachability and tests through the feature entryp
     ));
 
     await writeFeatureEntrypoint(root);
-    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", 'import test from "node:test";\ntest("example", () => {});\n');
+    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", assertionWithoutFeatureImport());
     assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example: feature example requires an executable test importing its feature entrypoint",
+      "packages/example: feature example requires an executable assertion over a value imported from its feature entrypoint",
     ));
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -297,7 +314,7 @@ test("topology rejects packages without an explicit runtime source boundary", as
     await writeFixture(root, "packages/example/src/index.ts", "export {};\n");
     await writeFeatureEntrypoint(root);
     await writeFixture(root, "packages/example/src/features/example/capability.ts", "export const example = true;\n");
-    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", 'import test from "node:test";\nimport "../../../src/features/example/index.ts";\ntest("example", () => {});\n');
+    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", featureAssertionTest());
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
       "module.example: requires a closed public boundary package.module.example over packages/example/src",
       "module.example: feature example requires runtime boundary package.module.example.feature.example",
@@ -317,7 +334,7 @@ test("topology rejects missing or unapproved package ownership", async () => {
     await writeFixture(root, "packages/example/tsconfig.json", `${packageTsconfig()}\n`);
     await writeFeatureEntrypoint(root);
     await writeFixture(root, "packages/example/src/features/example/capability.ts", "export const example = true;\n");
-    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", 'import test from "node:test";\nimport "../../../src/features/example/index.ts";\ntest("example", () => {});\n');
+    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", featureAssertionTest());
     const proposedOwner = async id => ({
       id,
       type: "adr",
@@ -396,7 +413,7 @@ test("topology fails closed on dependency forms the shared source graph does not
     await writeFixture(root, "packages/example/tsconfig.json", `${packageTsconfig({ paths: { "#/*": ["src/*"] } })}\n`);
     await writeFeatureEntrypoint(root);
     await writeFixture(root, "packages/example/src/features/example/capability.ts", "export const capability = true;\nconst load = eval;\nload('import(\"hidden\")');\n");
-    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", 'import test from "node:test";\nimport "../../../src/features/example/index.ts";\ntest("example", () => {});\n');
+    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", featureAssertionTest());
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
       "packages/example/src/features/example/capability.ts: eval-based module loading is prohibited until the shared source graph models it",
       "packages/example/tsconfig.json: config differs from the reviewed Foundation materialization plan",
@@ -471,7 +488,7 @@ test("topology rejects code outside src and unsafe export fallback arrays", asyn
     await writeFixture(root, "packages/example/tsconfig.json", `${packageTsconfig()}\n`);
     await writeFeatureEntrypoint(root);
     await writeFixture(root, "packages/example/src/features/example/capability.ts", "export const capability = true;\n");
-    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", 'import test from "node:test";\nimport "../../../src/features/example/index.ts";\ntest("example", () => {});\n');
+    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", featureAssertionTest());
     await writeFixture(root, "packages/example/scripts/escape.mjs", 'import "node:child_process";\n');
     assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
       "packages/example/scripts/escape.mjs: file is outside the package source and approved envelope",
@@ -488,6 +505,31 @@ test("topology rejects code outside src and unsafe export fallback arrays", asyn
     await writeFixture(root, "packages/example/package.json", `${JSON.stringify(manifest)}\n`);
     assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
       "packages/example: package exports must be explicit and target only dist/",
+    ));
+
+    manifest.exports = { ".": { types: "./dist/index.d.ts" } };
+    await writeFixture(root, "packages/example/package.json", `${JSON.stringify(manifest)}\n`);
+    const typesOnlyErrors = await validatePackageTopology({ root, resolveOwner: acceptedOwner });
+    assert.ok(typesOnlyErrors.includes(
+      "packages/example: package exports must be explicit and target only dist/",
+    ));
+    assert.ok(typesOnlyErrors.includes(
+      "packages/example: package exports differ from the reviewed Foundation materialization plan",
+    ));
+
+    manifest.exports = {
+      ".": {
+        types: "./dist/features/example/capability.d.ts",
+        import: "./dist/features/example/capability.js",
+      },
+    };
+    await writeFixture(root, "packages/example/package.json", `${JSON.stringify(manifest)}\n`);
+    const internalExportErrors = await validatePackageTopology({ root, resolveOwner: acceptedOwner });
+    assert.ok(internalExportErrors.includes(
+      "packages/example: package exports must be explicit and target only dist/",
+    ));
+    assert.ok(internalExportErrors.includes(
+      "packages/example: package exports differ from the reviewed Foundation materialization plan",
     ));
 
     manifest.exports = { ".": { types: "./dist/index.d.ts", import: "./dist/index.js" } };
@@ -514,8 +556,8 @@ test("topology rejects placeholder implementations and undeclared feature identi
     await writeFixture(root, "packages/example/package.json", `${packageManifest()}\n`);
     await writeFixture(root, "packages/example/tsconfig.json", `${packageTsconfig()}\n`);
     await writeFeatureEntrypoint(root);
-    await writeFixture(root, "packages/example/src/features/example/capability.ts", "export {};\n");
-    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", 'import test from "node:test";\nimport "../../../src/features/example/index.ts";\ntest("example", () => {});\n');
+    await writeFixture(root, "packages/example/src/features/example/capability.ts", "const hidden = true;\nexport {};\n");
+    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", featureAssertionTest());
     assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
       "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
     ));
@@ -604,10 +646,12 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
   ]);
   assert.deepEqual(analyzeSource("example.ts", 'globalThis["eval"]("1");\n').errors, [
     "eval-based module loading",
+    "computed runtime property access",
     "ambient globalThis runtime access",
   ]);
   assert.deepEqual(analyzeSource("example.ts", 'process["getBuiltinModule"]("node:fs");\n').errors, [
     "process.getBuiltinModule",
+    "computed runtime property access",
     "ambient process runtime access",
   ]);
   assert.deepEqual(analyzeSource("example.ts", 'import { createRequire as load } from "node:module";\n').errors, [
@@ -615,7 +659,15 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
   ]);
   assert.deepEqual(analyzeSource("example.ts", '(() => {})["constructor"]("return 1")();\n').errors, [
     "reflective Function-constructor access",
+    "computed runtime property access",
   ]);
+  assert.deepEqual(
+    analyzeSource(
+      "example.ts",
+      'const key = ["con", "structor"].join("");\nexport const load = (() => {})[key]("return 1");\n',
+    ).errors,
+    ["computed runtime property access"],
+  );
   assert.deepEqual(
     analyzeSource("example.ts", 'Reflect.get(() => {}, "constructor")("return 1")();\n').errors,
     ["reflective runtime access"],
@@ -637,7 +689,22 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
     analyzeSource("example.test.ts", 'import test from "node:test";\nfunction register() { test("hidden", () => {}); }\n').hasTestRegistration,
     false,
   );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import assert from "node:assert/strict";\nimport test from "node:test";\nimport { capability } from "./index.js";\ntest("capability", () => { assert.equal(capability, true); });\n',
+    ).observedRuntimeImportSources,
+    ["./index.js"],
+  );
+  assert.deepEqual(
+    analyzeSource(
+      "example.test.ts",
+      'import test from "node:test";\nimport { capability } from "./index.js";\ntest("capability", () => { void capability; });\n',
+    ).observedRuntimeImportSources,
+    [],
+  );
   assert.equal(analyzeSource("example.ts", "export function placeholder() {}\n").hasRuntimeImplementation, false);
+  assert.equal(analyzeSource("example.ts", "const hidden = true;\nexport {};\n").hasRuntimeImplementation, false);
 });
 
 test("built export evidence requires regular artifacts after the governed build", async () => {

@@ -12,7 +12,6 @@ import {
   isRecord,
   loadPackagePolicy,
   materializationPlanPath,
-  packageExportTargets,
   packageOwnerFeatures,
 } from "./package-policy.mjs";
 import { analyzeSource } from "./source-safety.mjs";
@@ -100,16 +99,11 @@ function packageForFile(entriesByPath, filePath) {
 }
 
 function hasSafeCuratedExports(manifest) {
-  if (!isRecord(manifest.exports) || Object.keys(manifest.exports).length === 0) return false;
-  if (Object.keys(manifest.exports).some(key => (
-    key !== "." && !/^\.\/[a-z0-9][a-z0-9./-]*$/u.test(key)
-  ))) return false;
-  const targets = packageExportTargets(manifest.exports);
-  return targets !== undefined && targets.length > 0 && targets.every(target => (
-    target.startsWith("./dist/")
-    && !target.includes("\\")
-    && !target.split("/").includes("..")
-  ));
+  const rootExport = manifest.exports?.["."];
+  return exactKeys(manifest.exports, ["."])
+    && exactKeys(rootExport, ["import", "types"])
+    && rootExport.import === "./dist/index.js"
+    && rootExport.types === "./dist/index.d.ts";
 }
 
 function unsupportedTsconfigDependencyFeature(config) {
@@ -533,6 +527,10 @@ export async function validatePackageTopology({
       && !isDeepStrictEqual(manifest.scripts, plannedEnvelope.manifest.scripts)) {
       errors.push(`${packagePath}: package scripts differ from the reviewed Foundation materialization plan`);
     }
+    if (plannedEnvelope !== undefined
+      && !isDeepStrictEqual(manifest.exports, plannedEnvelope.manifest.exports)) {
+      errors.push(`${packagePath}: package exports differ from the reviewed Foundation materialization plan`);
+    }
     if (!exactStringArray(manifest.files, ["dist"])) errors.push(`${packagePath}: package files must contain only dist`);
     if (!hasSafeCuratedExports(manifest)) {
       errors.push(`${packagePath}: package exports must be explicit and target only dist/`);
@@ -603,9 +601,8 @@ export async function validatePackageTopology({
       evidence.test = [...analysesByPath].some(([path, analysis]) => (
         path.startsWith(`test/features/${feature}/`)
         && analysis.hasTestRegistration
-        && analysis.staticModuleDependencies.some(dependency => (
-          dependency.kind === "import"
-          && resolveSourceDependency(path, dependency.specifier, sourcePaths) === featureEntrypoint
+        && analysis.observedRuntimeImportSources.some(specifier => (
+          resolveSourceDependency(path, specifier, sourcePaths) === featureEntrypoint
         ))
       ));
       if (!evidence.entrypoint) {
@@ -615,7 +612,7 @@ export async function validatePackageTopology({
         errors.push(`${packagePath}: feature ${feature} entrypoint must publicly reach a value-level runtime implementation`);
       }
       if (!evidence.test) {
-        errors.push(`${packagePath}: feature ${feature} requires an executable test importing its feature entrypoint`);
+        errors.push(`${packagePath}: feature ${feature} requires an executable assertion over a value imported from its feature entrypoint`);
       }
     }
 

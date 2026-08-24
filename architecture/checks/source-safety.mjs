@@ -21,6 +21,8 @@ const REFLECTIVE_RUNTIME_PROPERTIES = new Map([
   ["getOwnPropertyDescriptor", "reflective property-descriptor access"],
 ]);
 
+const COMPUTED_RUNTIME_PROPERTY_ACCESS = "computed runtime property access";
+
 function walk(value, visit, seen = new Set()) {
   if (typeof value !== "object" || value === null || seen.has(value)) return;
   seen.add(value);
@@ -48,6 +50,50 @@ function runtimeDeclaration(node) {
   return node.type === "TSEnumDeclaration" && node.body?.members?.length > 0;
 }
 
+function runtimeBindingNames(node) {
+  if (typeof node !== "object" || node === null || node.declare === true) return [];
+  if (node.type === "VariableDeclaration") {
+    return node.declarations
+      ?.filter(declaration => declaration.init !== null && declaration.id?.type === "Identifier")
+      .map(declaration => declaration.id.name) ?? [];
+  }
+  if (["ClassDeclaration", "FunctionDeclaration"].includes(node.type)
+    && runtimeDeclaration(node)
+    && node.id?.name !== undefined) {
+    return [node.id.name];
+  }
+  if (node.type === "TSEnumDeclaration"
+    && runtimeDeclaration(node)
+    && node.id?.name !== undefined) {
+    return [node.id.name];
+  }
+  return [];
+}
+
+function hasExportedRuntimeImplementation(program) {
+  const runtimeBindings = new Set();
+  const exportedBindings = new Set();
+  for (const node of program.body) {
+    if (node.type === "ExportDefaultDeclaration" && runtimeDeclaration(node.declaration)) {
+      return true;
+    }
+    const declaration = node.type === "ExportNamedDeclaration" ? node.declaration : node;
+    const bindings = runtimeBindingNames(declaration);
+    for (const binding of bindings) runtimeBindings.add(binding);
+    if (node.type === "ExportNamedDeclaration") {
+      for (const binding of bindings) exportedBindings.add(binding);
+      if (node.source === null && node.exportKind !== "type") {
+        for (const specifier of node.specifiers ?? []) {
+          if (specifier.exportKind !== "type" && specifier.local?.name !== undefined) {
+            exportedBindings.add(specifier.local.name);
+          }
+        }
+      }
+    }
+  }
+  return [...runtimeBindings].some(binding => exportedBindings.has(binding));
+}
+
 function testBindings(program) {
   const bindings = new Set();
   for (const node of program.body) {
@@ -64,6 +110,79 @@ function testBindings(program) {
     }
   }
   return bindings;
+}
+
+function assertionBindings(program) {
+  const functions = new Set();
+  const namespaces = new Set();
+  for (const node of program.body) {
+    if (node.type !== "ImportDeclaration"
+      || !["node:assert", "node:assert/strict"].includes(node.source?.value)) continue;
+    for (const specifier of node.specifiers) {
+      if (["ImportDefaultSpecifier", "ImportNamespaceSpecifier"].includes(specifier.type)
+        && specifier.local?.name !== undefined) {
+        namespaces.add(specifier.local.name);
+      }
+      if (specifier.type === "ImportSpecifier"
+        && specifier.importKind !== "type"
+        && specifier.local?.name !== undefined) {
+        functions.add(specifier.local.name);
+      }
+    }
+  }
+  return { functions, namespaces };
+}
+
+function importedRuntimeBindings(program) {
+  const bindings = new Map();
+  for (const node of program.body) {
+    if (node.type !== "ImportDeclaration"
+      || node.importKind === "type"
+      || typeof node.source?.value !== "string"
+      || ["node:assert", "node:assert/strict", "node:test"].includes(node.source.value)) continue;
+    for (const specifier of node.specifiers) {
+      if (specifier.importKind !== "type" && specifier.local?.name !== undefined) {
+        bindings.set(specifier.local.name, node.source.value);
+      }
+    }
+  }
+  return bindings;
+}
+
+function isAssertionCall(node, assertions) {
+  if (node.type !== "CallExpression") return false;
+  if (node.callee?.type === "Identifier") return assertions.functions.has(node.callee.name);
+  return node.callee?.type === "MemberExpression"
+    && node.callee.computed === false
+    && node.callee.object?.type === "Identifier"
+    && assertions.namespaces.has(node.callee.object.name);
+}
+
+function observedRuntimeImportSources(program, importedTestBindings) {
+  const assertions = assertionBindings(program);
+  const runtimeBindings = importedRuntimeBindings(program);
+  const sources = new Set();
+  for (const node of program.body) {
+    if (node.type !== "ExpressionStatement"
+      || node.expression?.type !== "CallExpression"
+      || node.expression.callee?.type !== "Identifier"
+      || !importedTestBindings.has(node.expression.callee.name)) continue;
+    const callback = node.expression.arguments?.find(argument => (
+      argument?.type === "ArrowFunctionExpression" || argument?.type === "FunctionExpression"
+    ));
+    if (callback === undefined) continue;
+    walk(callback.body, candidate => {
+      if (!isAssertionCall(candidate, assertions)) return;
+      for (const argument of candidate.arguments ?? []) {
+        walk(argument, value => {
+          if (value.type === "Identifier" && runtimeBindings.has(value.name)) {
+            sources.add(runtimeBindings.get(value.name));
+          }
+        });
+      }
+    });
+  }
+  return [...sources];
 }
 
 function staticModuleDependencies(program) {
@@ -102,6 +221,7 @@ export function analyzeSource(filename, source) {
       hasExecutableCode: false,
       hasRuntimeImplementation: false,
       hasTestRegistration: false,
+      observedRuntimeImportSources: [],
       staticModuleDependencies: [],
     };
   }
@@ -122,6 +242,9 @@ export function analyzeSource(filename, source) {
         ?? REFLECTIVE_RUNTIME_PROPERTIES.get(property);
       if (label !== undefined) errors.add(label);
     }
+    if (node.type === "MemberExpression" && node.computed === true) {
+      errors.add(COMPUTED_RUNTIME_PROPERTY_ACCESS);
+    }
   });
 
   const hasTestRegistration = result.program.body.some(node => (
@@ -136,8 +259,12 @@ export function analyzeSource(filename, source) {
     hasExecutableCode: result.program.body.some(node => (
       runtimeDeclaration(node) || node.type === "ExpressionStatement"
     )),
-    hasRuntimeImplementation: result.program.body.some(runtimeDeclaration),
+    hasRuntimeImplementation: hasExportedRuntimeImplementation(result.program),
     hasTestRegistration,
+    observedRuntimeImportSources: observedRuntimeImportSources(
+      result.program,
+      importedTestBindings,
+    ),
     staticModuleDependencies: staticDependencies,
   };
 }

@@ -1,11 +1,15 @@
+import { execFile } from "node:child_process";
 import { lstat, readFile, realpath } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { promisify } from "node:util";
 
 import {
   loadPackagePolicy,
   packageExportTargets,
 } from "./package-policy.mjs";
+
+const execFileAsync = promisify(execFile);
 
 function contained(root, candidate) {
   const relation = relative(root, candidate);
@@ -17,6 +21,7 @@ export async function validateBuiltPackageArtifacts({ root }) {
   if (policy.errors.length !== 0) return policy.errors;
   const errors = [];
   for (const entry of policy.entries) {
+    const errorCountBeforeEntry = errors.length;
     let manifest;
     try {
       manifest = JSON.parse(await readFile(join(root, entry.path, "package.json"), "utf8"));
@@ -48,6 +53,34 @@ export async function validateBuiltPackageArtifacts({ root }) {
         }
       } catch (error) {
         errors.push(`${entry.path}: built export target is missing: ${target} (${error?.code ?? "unknown"})`);
+      }
+    }
+    const runtimeTarget = manifest.exports?.["."]?.import;
+    if (errors.length === errorCountBeforeEntry && typeof runtimeTarget === "string") {
+      const expectedUrl = pathToFileURL(resolve(packageRoot, runtimeTarget)).href;
+      const verification = `
+        const specifier = process.argv[1];
+        const expected = process.argv[2];
+        const resolved = import.meta.resolve(specifier);
+        if (resolved !== expected) {
+          throw new Error(\`resolved export differs: \${resolved}\`);
+        }
+        await import(specifier);
+      `;
+      try {
+        await execFileAsync(process.execPath, [
+          "--input-type=module",
+          "--eval",
+          verification,
+          entry.package_name,
+          expectedUrl,
+        ], {
+          cwd: packageRoot,
+          encoding: "utf8",
+          maxBuffer: 4 * 1024 * 1024,
+        });
+      } catch (error) {
+        errors.push(`${entry.path}: built package root cannot be consumed through declared exports (${error?.stderr?.trim() || error?.message || "unknown"})`);
       }
     }
   }
