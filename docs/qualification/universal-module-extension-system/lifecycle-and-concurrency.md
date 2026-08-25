@@ -124,6 +124,9 @@ implementation through an activation-source digest, plus plan, authority scope,
 profile/configuration/grant/host-policy revisions, deadline, and cleanup policy.
 Functions are never serialized to invent identity. Resolution creates the
 digest before lifecycle admission and snapshots the corresponding hook bindings.
+The complete caller-owned activation identity is copied and frozen at the same
+boundary. Later caller mutation cannot change idempotency, compare-and-set, or
+publication authority for an admitted flight.
 
 An in-process invocation handle is an object-identity capability issued by one
 lifecycle instance. Its private membership, exact authority scope, generation,
@@ -145,7 +148,16 @@ handle issued by another scope is rejected.
 | Reentrant `A -> B -> A` | Fail synchronously with a causal-cycle diagnostic |
 
 Relative timeout refresh is forbidden. One absolute deadline follows every hop,
-retry, joiner, and adapter. Authority time determines expiry.
+retry, joiner, and adapter. Authority time determines expiry. An in-process host
+also carries one independent monotonic wall-time bound for correctness: a stalled,
+throwing, or non-finite injected clock fails closed and cannot refresh activation,
+drain, or cleanup budgets between phases.
+
+A correctness deadline remains a referenced event-loop obligation while its
+result is awaited. Its timer must stay referenced: a standalone host must stay
+alive long enough to record timeout or `termination_unproven` evidence before
+orderly exit. Process custody may use stronger external supervision, but never
+weaker in-process deadline semantics.
 
 The disposable spike proves waiter detachment and publication CAS. Reentrant
 causal-path detection remains a required Phase 2 fixture; it is not implemented

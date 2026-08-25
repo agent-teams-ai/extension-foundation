@@ -9,6 +9,7 @@ const envelopeKeys = new Set([
 ]);
 const kinds = new Set(["hello", "prepare", "ready", "drain", "stop", "result"]);
 const forbiddenKeys = new Set(["__proto__", "constructor", "prototype"]);
+const identifierPattern = /^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$/;
 
 function normalizeJson(value, depth, budget) {
   if (depth > maxJsonDepth || budget.count++ >= maxJsonNodes) throw new Error("JSON_LIMIT_EXCEEDED");
@@ -112,7 +113,7 @@ function assertNoDuplicateObjectKeys(text) {
 
 function requireIdentifier(frame, key) {
   const value = frame[key];
-  if (typeof value !== "string" || value.length === 0 || value.length > 128) {
+  if (typeof value !== "string" || value.length > 128 || !identifierPattern.test(value)) {
     throw new Error(`INVALID_${key.toUpperCase()}`);
   }
 }

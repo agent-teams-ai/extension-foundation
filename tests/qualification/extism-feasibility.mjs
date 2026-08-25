@@ -6,6 +6,22 @@ const artifactUrl = "https://github.com/extism/plugins/releases/download/v1.1.1/
 const expectedDigest = "72dfe2c69d8e5ac50886b7961664af6cccbbdcabeb45ce48270db2242778ce25";
 const allowedHosts = new Set(["github.com", "objects.githubusercontent.com", "release-assets.githubusercontent.com"]);
 const maxArtifactBytes = 2 * 1024 * 1024;
+
+function bounded(promise, milliseconds, errorCode) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(errorCode)), milliseconds);
+    Promise.resolve(promise).then(
+      value => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      error => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
 let resolvedUrl = new URL(artifactUrl);
 let response;
 for (let redirect = 0; redirect <= 3; redirect += 1) {
@@ -41,12 +57,16 @@ for (const chunk of chunks) {
 const digest = hash.digest("hex");
 if (digest !== expectedDigest) throw new Error("EXTISM_ARTIFACT_DIGEST_MISMATCH");
 
-const plugin = await createPlugin(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), { useWasi: true });
+const plugin = await bounded(
+  createPlugin(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), { useWasi: true }),
+  30_000,
+  "EXTISM_PLUGIN_CREATE_TIMEOUT",
+);
 try {
-  const output = await plugin.call("count_vowels", "Agent Teams");
+  const output = await bounded(plugin.call("count_vowels", "Agent Teams"), 10_000, "EXTISM_PLUGIN_CALL_TIMEOUT");
   const result = output.json();
   if (result.count !== 4) throw new Error("EXTISM_UNEXPECTED_RESULT");
   process.stdout.write(`${JSON.stringify({ artifactUrl, digest, result })}\n`);
 } finally {
-  await plugin.close();
+  await bounded(plugin.close(), 10_000, "EXTISM_PLUGIN_CLOSE_TIMEOUT");
 }

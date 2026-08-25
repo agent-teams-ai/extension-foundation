@@ -76,7 +76,9 @@ authored consumer repositories to exact commits, conformance results, and
 digest-bearing evidence references. Repository identities are canonical
 lowercase `owner/repository` values and reject transport/path aliases such as
 `.git` or trailing dots. Local evidence paths must remain under `docs/` and use
-exactly one digest fragment.
+exactly one digest fragment. External HTTPS locations are compared by their
+canonical URL, and independent evidence records must have distinct SHA-256
+digests; aliases or mirrors of the same bytes cannot satisfy the gate twice.
 
 These checks prove topology and claimed execution evidence, not business
 completeness or the referenced evidence bytes. A promotion verifier must

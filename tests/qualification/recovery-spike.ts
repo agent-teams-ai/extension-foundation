@@ -120,7 +120,7 @@ function hasValidRuntimeShape(state: DurableLifecycleState, observed: ObservedHo
     ));
 }
 
-export function reconcileLifecycle(
+function reconcileLifecycleUnsafe(
   state: DurableLifecycleState,
   observed: ObservedHostState,
 ): RecoveryAction {
@@ -204,4 +204,15 @@ export function reconcileLifecycle(
   if (state.phase === "ready" && observed.candidate.state === "ready") return "PUBLISH_CANDIDATE";
   if (observed.candidate.state === "absent" && state.phase === "prepared") return "RETRY_IDEMPOTENT_PREPARE";
   return "INSPECT_CANDIDATE";
+}
+
+export function reconcileLifecycle(
+  state: DurableLifecycleState,
+  observed: ObservedHostState,
+): RecoveryAction {
+  try {
+    return reconcileLifecycleUnsafe(state, observed);
+  } catch {
+    return "CONTROLLED_RECOVERY";
+  }
 }

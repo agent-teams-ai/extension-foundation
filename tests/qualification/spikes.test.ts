@@ -26,6 +26,7 @@ import {
   decodeLengthPrefixedFrame,
   encodeLengthPrefixedFrame,
   handlePortableWorkerFrame,
+  maxFrameBytes,
   type ProtocolEnvelope,
   validateAuthorizedEnvelope,
   validateEnvelope,
@@ -409,6 +410,36 @@ test("different candidates race through expected-active CAS and only one publish
   assert.equal(lifecycle.cutovers, 1);
 });
 
+test("activation snapshots caller-owned identity before publication races", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([{ id: "candidate", requires: [] }]);
+  let releaseStart!: () => void;
+  let reportStarted!: () => void;
+  const startGate = new Promise<void>(resolve => { releaseStart = resolve; });
+  const started = new Promise<void>(resolve => { reportStarted = resolve; });
+  const mutableRequest = activationRequest(
+    lifecycle,
+    "mutable-candidate",
+    plan,
+    new Map([["candidate", inertHooks({ start: async () => { reportStarted(); await startGate; } })]]),
+  );
+  const first = lifecycle.activate(mutableRequest);
+  await started;
+  const winner = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "race-winner",
+    plan,
+    new Map([["candidate", inertHooks()]]),
+  ));
+  (mutableRequest.identity as { expectedActiveGeneration: number }).expectedActiveGeneration = winner.generation;
+  releaseStart();
+  const stale = await first;
+  assert.equal(stale.ok, false);
+  assert.ok(stale.errors.some(error => error.message === "STALE_ACTIVE_GENERATION"));
+  assert.equal(lifecycle.activeGeneration, winner.generation);
+  assert.equal(lifecycle.cutovers, 1);
+});
+
 test("readiness blocks dependents and failed candidate leaves routing unchanged", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const base = requirePlan([{ id: "base", requires: [] }]);
@@ -590,6 +621,78 @@ test("multi-level rollback keeps reverse levels, aggregates failures, and shares
   assert.ok(Date.now() - startedAt < 250);
 });
 
+test("wall time preserves one absolute activation budget when an injected clock stalls", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope, {
+    now: () => 0,
+    sleep: milliseconds => delay(milliseconds),
+  });
+  const plan = requirePlan([
+    { id: "a", requires: [] },
+    { id: "b", requires: ["a"] },
+    { id: "c", requires: ["b"] },
+    { id: "d", requires: ["c"] },
+  ]);
+  const started: string[] = [];
+  const hooks = new Map(plan.nodes.map(node => [node.id, inertHooks({
+    start: async () => { started.push(node.id); await delay(30); },
+  })]));
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "stalled-clock-activation",
+    plan,
+    hooks,
+    { deadlineMs: 50, cleanupTimeoutMs: 20 },
+  ));
+  assert.equal(result.ok, false);
+  assert.equal(lifecycle.activeGeneration, 0);
+  assert.ok(started.length < plan.nodes.length);
+  assert.ok(result.errors.some(error => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
+});
+
+test("wall time preserves one cleanup budget across reverse batches when an injected clock stalls", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope, {
+    now: () => 0,
+    sleep: milliseconds => delay(milliseconds),
+  });
+  const plan = requirePlan([
+    { id: "a", requires: [] },
+    { id: "b", requires: ["a"] },
+    { id: "c", requires: ["b"] },
+    { id: "d", requires: ["c"] },
+  ]);
+  const stopped: string[] = [];
+  const hooks = new Map(plan.nodes.map(node => {
+    const stop = async (): Promise<void> => { stopped.push(node.id); await delay(30); };
+    const moduleHooks = node.id === "d"
+      ? inertHooks({ start: () => { throw new Error("START_FAILED"); }, stop })
+      : inertHooks({ stop });
+    return [node.id, moduleHooks] as const;
+  }));
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "stalled-clock-cleanup",
+    plan,
+    hooks,
+    { cleanupTimeoutMs: 50 },
+  ));
+  assert.equal(result.ok, false);
+  assert.equal(result.termination, "termination_unproven");
+  assert.ok(stopped.length < plan.nodes.length);
+  assert.ok(result.errors.some(error => error.message.startsWith("CLEANUP_TIMEOUT:")));
+});
+
+test("invalid lifecycle deadlines fail before generation allocation or publication", () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([{ id: "candidate", requires: [] }]);
+  const request = activationRequest(lifecycle, "invalid-deadline", plan, new Map([["candidate", inertHooks()]]));
+  assert.throws(() => lifecycle.activate({ ...request, absoluteDeadline: Number.NaN }), /INVALID_ABSOLUTE_DEADLINE/);
+  for (const cleanupTimeoutMs of [Number.NaN, Number.POSITIVE_INFINITY, -1]) {
+    assert.throws(() => lifecycle.activate({ ...request, cleanupTimeoutMs }), /INVALID_CLEANUP_TIMEOUT/);
+  }
+  assert.equal(lifecycle.activeGeneration, 0);
+  assert.equal(lifecycle.cutovers, 0);
+});
+
 test("bounded drain emits in-memory debt evidence before fencing an old generation", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const first = requirePlan([{ id: "first", requires: [] }]);
@@ -726,6 +829,30 @@ test("hostile error objects become bounded cleanup debt rather than escaping aft
   assert.ok(result.errors.some(error => error.message === "UNREADABLE_ERROR"));
   assert.equal(lifecycle.activeGeneration, result.generation);
   oldLease.release();
+});
+
+test("standalone lifecycle deadlines keep Node alive long enough to record hung-hook evidence", async () => {
+  for (const phase of ["prepare", "start", "stop"] as const) {
+    const child = spawn(process.execPath, [join(fixtureRoot, "standalone-lifecycle-deadline.mjs"), phase], {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", chunk => { stdout += chunk; });
+    child.stderr.on("data", chunk => { stderr += chunk; });
+    const [code] = await once(child, "exit", { signal: AbortSignal.timeout(2_000) });
+    assert.equal(code, 0, `${phase}:${stderr}`);
+    const result = JSON.parse(stdout) as {
+      readonly ok: boolean;
+      readonly termination: string;
+      readonly errors: readonly { readonly message: string }[];
+    };
+    assert.equal(result.ok, phase === "stop", phase);
+    assert.equal(result.termination, "termination_unproven", phase);
+    assert.ok(result.errors.some(error => /(?:ABSOLUTE|CLEANUP)_TIMEOUT|DEADLINE_EXCEEDED/.test(error.message)), phase);
+  }
 });
 
 test("future generations cannot be externally pre-sealed", async () => {
@@ -909,6 +1036,14 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
       oldCleanupEvidence: "confirmed",
     }),
   ), "CONTROLLED_RECOVERY");
+  const throwingObservation = Object.defineProperty({}, "candidate", {
+    enumerable: true,
+    get: () => { throw new Error("OBSERVATION_GETTER_FAILED"); },
+  });
+  assert.equal(reconcileLifecycle(
+    baseline,
+    throwingObservation as unknown as ObservedHostState,
+  ), "CONTROLLED_RECOVERY");
 });
 
 test("portable protocol rejects stale, expired, malformed, and oversized frames", () => {
@@ -927,6 +1062,9 @@ test("portable protocol rejects stale, expired, malformed, and oversized frames"
   assert.throws(() => handlePortableWorkerFrame(frame({ audience: "different-host" }), authority), /AUDIENCE_MISMATCH/);
   assert.throws(() => handlePortableWorkerFrame(frame({ absoluteDeadline: authority.now - 1 }), authority), /DEADLINE_EXCEEDED/);
   assert.throws(() => handlePortableWorkerFrame(frame(), { ...authority, now: Number.NaN }), /INVALID_AUTHORITY_NOW/);
+  for (const invalidId of ["\0", "request\nforged", " padded", "padded "]) {
+    assert.throws(() => validateEnvelope(frame({ requestId: invalidId })), /INVALID_REQUESTID/);
+  }
   assert.throws(() => validateEnvelope({}), /UNKNOWN_OR_MISSING_FIELD/);
   assert.throws(() => validateEnvelope({ ...frame(), extra: true }), /UNKNOWN_OR_MISSING_FIELD/);
   const cyclicPayload: Record<string, unknown> = {};
@@ -1008,6 +1146,11 @@ test("process-host smoke acknowledges hello and readiness over bounded length-pr
     for (;;) {
       if (buffer.byteLength < 4) break;
       const length = buffer.readUInt32BE(0);
+      if (length > maxFrameBytes) {
+        childFailure = new Error("PROCESS_FRAME_TOO_LARGE");
+        child.kill("SIGKILL");
+        break;
+      }
       if (buffer.byteLength < length + 4) break;
       responses.push(decodeLengthPrefixedFrame(buffer.subarray(0, length + 4)));
       buffer = buffer.subarray(length + 4);
@@ -1046,6 +1189,37 @@ test("process-host smoke acknowledges hello and readiness over bounded length-pr
   assert.equal(exitCode, 0);
 });
 
+test("process-host stop is a terminal receive barrier for already-buffered frames", async t => {
+  const child = spawn(process.execPath, [join(fixtureRoot, "process-child.mjs")], { stdio: ["pipe", "pipe", "pipe"] });
+  t.after(() => child.kill("SIGKILL"));
+  const responses: ProtocolEnvelope[] = [];
+  let buffer = Buffer.alloc(0);
+  child.stdout.on("data", chunk => {
+    buffer = Buffer.concat([buffer, chunk]);
+    while (buffer.byteLength >= 4) {
+      const length = buffer.readUInt32BE(0);
+      if (length > maxFrameBytes || buffer.byteLength < length + 4) return;
+      responses.push(decodeLengthPrefixedFrame(buffer.subarray(0, length + 4)));
+      buffer = buffer.subarray(length + 4);
+    }
+  });
+  const stopRequest = frame({ requestId: "terminal-stop", kind: "stop" });
+  const prepareAfterStop = frame({ requestId: "after-stop", kind: "prepare" });
+  child.stdin.write(Buffer.concat([
+    encodeLengthPrefixedFrame(stopRequest),
+    encodeLengthPrefixedFrame(prepareAfterStop),
+  ]));
+  const [exitCode] = await once(child, "exit", { signal: AbortSignal.timeout(2_000) });
+  assert.equal(exitCode, 0);
+  assert.equal(responses.length, 1);
+  assert.equal(validateResponseEnvelope(
+    responses[0],
+    { ...responseAuthority, now: Date.now() },
+    stopRequest,
+    "result",
+  ).payload.stopped, true);
+});
+
 test("process-host fixture enforces deadline and authority before handling", async t => {
   const child = spawn(process.execPath, [join(fixtureRoot, "process-child.mjs")], { stdio: ["pipe", "pipe", "pipe"] });
   t.after(() => child.kill("SIGKILL"));
@@ -1058,7 +1232,12 @@ test("Worker structured-clone boundary preserves validation and stale rejection"
   const worker = new Worker(new URL("./fixtures/portable-worker.mjs", import.meta.url), {
     workerData: protocolAuthority,
   });
-  t.after(() => worker.terminate());
+  t.after(async () => {
+    await Promise.race([
+      worker.terminate(),
+      rejectAfter(2_000, () => new Error("WORKER_TERMINATION_TIMEOUT")),
+    ]);
+  });
   const responses: unknown[] = [];
   let workerFailure: Error | undefined;
   worker.on("message", message => responses.push(message));

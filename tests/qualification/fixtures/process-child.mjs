@@ -18,7 +18,9 @@ const authority = Object.freeze({
 });
 
 let buffer = Buffer.alloc(0);
+let stopped = false;
 process.stdin.on("data", chunk => {
+  if (stopped) return;
   buffer = Buffer.concat([buffer, chunk]);
   for (;;) {
     if (buffer.byteLength < 4) return;
@@ -27,7 +29,10 @@ process.stdin.on("data", chunk => {
     if (buffer.byteLength < length + 4) return;
     const packet = buffer.subarray(0, length + 4);
     buffer = buffer.subarray(length + 4);
-    handleFrame(decodeLengthPrefixedFrame(packet));
+    if (!handleFrame(decodeLengthPrefixedFrame(packet))) {
+      buffer = Buffer.alloc(0);
+      return;
+    }
   }
 });
 
@@ -43,7 +48,11 @@ function handleFrame(frame) {
     send({ ...response, kind: "ready", payload: { ready: true } });
   } else if (frame.kind === "stop") {
     send({ ...response, kind: "result", payload: { stopped: true } });
+    stopped = true;
     process.exitCode = 0;
+    process.stdin.pause();
     process.stdin.destroy();
+    return false;
   }
+  return true;
 }

@@ -781,6 +781,30 @@ test("package admission fails closed without versioned independent evidence", as
       "module.example: consumer_evidence[1].consumer_repository must be a canonical lowercase owner/repository identity",
     ]);
 
+    const externalAlias = packageAdmission();
+    externalAlias.consumer_evidence[0].evidence_reference = `https://example.com/evidence/alpha.json#sha256=${"a".repeat(64)}`;
+    externalAlias.consumer_evidence[1].evidence_reference = `https://EXAMPLE.com:443/evidence/./alpha.json#sha256=${"a".repeat(64)}`;
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(externalAlias)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: consumer evidence must use distinct identities, repositories, and immutable references",
+    ]);
+
+    const mirroredEvidence = packageAdmission();
+    mirroredEvidence.consumer_evidence[0].evidence_reference = `https://one.example/evidence.json#sha256=${"a".repeat(64)}`;
+    mirroredEvidence.consumer_evidence[1].evidence_reference = `https://two.example/evidence.json#sha256=${"a".repeat(64)}`;
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(mirroredEvidence)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: consumer evidence must use distinct identities, repositories, and immutable references",
+    ]);
+
     for (const reference of [
       `docs/../../outside-alpha.json#sha256=${"a".repeat(64)}`,
       `docs/../outside-alpha.json#sha256=${"a".repeat(64)}`,

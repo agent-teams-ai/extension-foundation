@@ -115,25 +115,29 @@ function isCanonicalRepositoryId(value) {
   return value.split("/").every(segment => !segment.endsWith(".") && !segment.endsWith(".git"));
 }
 
-function isImmutableEvidenceReference(value) {
+function canonicalEvidenceReference(value) {
+  if (typeof value !== "string") return undefined;
   const fragmentIndex = value.indexOf("#");
-  if (fragmentIndex !== value.lastIndexOf("#")) return false;
-  if (fragmentIndex <= 0 || !EVIDENCE_DIGEST.test(value.slice(fragmentIndex + 1))) return false;
+  if (fragmentIndex !== value.lastIndexOf("#")) return undefined;
+  const digest = value.slice(fragmentIndex + 1);
+  if (fragmentIndex <= 0 || !EVIDENCE_DIGEST.test(digest)) return undefined;
   const location = value.slice(0, fragmentIndex);
-  if (/[\u0000-\u001f\u007f]/u.test(location)) return false;
+  if (/[\u0000-\u001f\u007f]/u.test(location)) return undefined;
   if (location.startsWith("docs/")) {
     const segments = location.split("/");
-    return segments.length > 1
+    const valid = segments.length > 1
       && segments.every(segment => segment.length > 0 && segment !== "." && segment !== "..")
       && !location.includes("\\")
       && !location.includes("%")
       && !location.includes("?");
+    return valid ? { reference: value, digest } : undefined;
   }
   try {
     const url = new URL(location);
-    return url.protocol === "https:" && url.username === "" && url.password === "" && url.hash === "";
+    if (url.protocol !== "https:" || url.username !== "" || url.password !== "" || url.hash !== "") return undefined;
+    return { reference: `${url.href}#${digest}`, digest };
   } catch {
-    return false;
+    return undefined;
   }
 }
 
@@ -171,6 +175,7 @@ function validateAdmission(entry, admission, errors) {
   const consumerIds = new Set();
   const consumerRepositories = new Set();
   const evidenceReferences = new Set();
+  const evidenceDigests = new Set();
   for (const [index, evidence] of admission.consumer_evidence.entries()) {
     if (!hasExactKeys(evidence, CONSUMER_EVIDENCE_KEYS)) {
       errors.push(`${entry.id}: consumer_evidence[${index}] must contain exactly ${CONSUMER_EVIDENCE_KEYS.join(", ")}`);
@@ -192,16 +197,22 @@ function validateAdmission(entry, admission, errors) {
     if (evidence.conformance_result !== "passed") {
       errors.push(`${entry.id}: consumer_evidence[${index}].conformance_result must be passed`);
     }
-    if (!isImmutableEvidenceReference(evidence.evidence_reference)) {
+    const canonicalEvidence = canonicalEvidenceReference(evidence.evidence_reference);
+    if (!canonicalEvidence) {
       errors.push(`${entry.id}: consumer_evidence[${index}].evidence_reference must use a contained docs path or HTTPS URL with a sha256 fragment`);
+      evidenceReferences.add(`invalid-reference:${index}`);
+      evidenceDigests.add(`invalid-digest:${index}`);
+    } else {
+      evidenceReferences.add(canonicalEvidence.reference);
+      evidenceDigests.add(canonicalEvidence.digest);
     }
     consumerIds.add(evidence.consumer_id);
     consumerRepositories.add(canonicalRepositoryId(evidence.consumer_repository));
-    evidenceReferences.add(evidence.evidence_reference);
   }
   if (consumerIds.size !== admission.consumer_evidence.length
     || consumerRepositories.size !== admission.consumer_evidence.length
-    || evidenceReferences.size !== admission.consumer_evidence.length) {
+    || evidenceReferences.size !== admission.consumer_evidence.length
+    || evidenceDigests.size !== admission.consumer_evidence.length) {
     errors.push(`${entry.id}: consumer evidence must use distinct identities, repositories, and immutable references`);
   }
   if (consumerRepositories.has(canonicalRepositoryId(admission.owner_repository))) {

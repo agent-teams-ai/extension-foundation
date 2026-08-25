@@ -167,6 +167,10 @@ becomes `sender`, and the authenticated requester becomes `audience`. Shape-only
 validation is insufficient; each direction validates its own peer/audience
 tuple before accepting a frame.
 
+Portable protocol identifiers use one bounded printable ASCII grammar. Control
+characters, surrounding whitespace and log-delimiter injection are rejected
+before dispatch or durable audit recording.
+
 Control and data lanes are separate. Stop, abort, inspect and credit messages
 retain reserved capacity when output is backpressured. Canonical output cannot
 be silently dropped; explicitly diagnostic streams may declare bounded
