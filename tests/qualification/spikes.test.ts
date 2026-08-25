@@ -89,6 +89,14 @@ function rejectAfter(milliseconds: number, errorFactory: () => Error): Promise<n
   });
 }
 
+async function waitUntil(predicate: () => boolean, milliseconds: number, errorCode: string): Promise<void> {
+  const deadline = Date.now() + milliseconds;
+  while (!predicate()) {
+    if (Date.now() >= deadline) throw new Error(errorCode);
+    await delay(1);
+  }
+}
+
 function activationRequest(
   lifecycle: GenerationLifecycle,
   operationId: string,
@@ -663,6 +671,63 @@ test("post-publication drain failure becomes cleanup debt without aborting the a
   currentLease.release();
 });
 
+test("post-publication drain remains bounded when the injected clock sleep never settles", async () => {
+  const clock = {
+    now: () => 0,
+    sleep: () => new Promise<void>(() => undefined),
+  };
+  const lifecycle = new GenerationLifecycle(testAuthorityScope, clock);
+  const first = requirePlan([{ id: "first", requires: [] }]);
+  await lifecycle.activate(activationRequest(
+    lifecycle,
+    "hung-drain-first",
+    first,
+    new Map([["first", inertHooks()]]),
+  ));
+  const oldLease = lifecycle.acquireInvocation();
+  const second = requirePlan([{ id: "second", requires: [] }]);
+  const startedAt = Date.now();
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "hung-drain-second",
+    second,
+    new Map([["second", inertHooks()]]),
+    { cleanupTimeoutMs: 10 },
+  ));
+  assert.ok(Date.now() - startedAt < 250);
+  assert.equal(result.ok, true);
+  assert.equal(result.termination, "termination_unproven");
+  assert.ok(result.errors.some(error => error.message === `DRAIN_TIMEOUT:${oldLease.generation}`));
+  assert.equal(lifecycle.activeGeneration, result.generation);
+  assert.throws(() => lifecycle.assertInMemoryFence(oldLease), /STALE_GENERATION/);
+  oldLease.release();
+});
+
+test("hostile error objects become bounded cleanup debt rather than escaping after publication", async () => {
+  const hostile = new Error("hidden");
+  Object.defineProperty(hostile, "message", { get: () => { throw new Error("MESSAGE_GETTER_FAILED"); } });
+  const lifecycle = new GenerationLifecycle(testAuthorityScope, {
+    now: () => 0,
+    sleep: async () => { throw hostile; },
+  });
+  const first = requirePlan([{ id: "first", requires: [] }]);
+  await lifecycle.activate(activationRequest(lifecycle, "hostile-error-first", first, new Map([["first", inertHooks()]])));
+  const oldLease = lifecycle.acquireInvocation();
+  const second = requirePlan([{ id: "second", requires: [] }]);
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "hostile-error-second",
+    second,
+    new Map([["second", inertHooks()]]),
+    { cleanupTimeoutMs: 10 },
+  ));
+  assert.equal(result.ok, true);
+  assert.equal(result.termination, "termination_unproven");
+  assert.ok(result.errors.some(error => error.message === "UNREADABLE_ERROR"));
+  assert.equal(lifecycle.activeGeneration, result.generation);
+  oldLease.release();
+});
+
 test("future generations cannot be externally pre-sealed", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   assert.equal("drain" in lifecycle, false);
@@ -824,6 +889,26 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
       oldGeneration: { ...observed("absent", false).oldGeneration, sinkFence: 1.5 },
     },
   ), "CONTROLLED_RECOVERY");
+  for (const malformed of [null, {}, { candidate: null }, { oldGeneration: null }]) {
+    assert.equal(reconcileLifecycle(
+      baseline,
+      malformed as unknown as ObservedHostState,
+    ), "CONTROLLED_RECOVERY");
+  }
+  assert.equal(reconcileLifecycle(
+    published,
+    observed("ready", true, {
+      oldTerminationEvidence: "stopped",
+      oldCleanupEvidence: "confirmed",
+    }),
+  ), "CONTROLLED_RECOVERY");
+  assert.equal(reconcileLifecycle(
+    published,
+    observed("ready", false, {
+      oldTerminationEvidence: "running",
+      oldCleanupEvidence: "confirmed",
+    }),
+  ), "CONTROLLED_RECOVERY");
 });
 
 test("portable protocol rejects stale, expired, malformed, and oversized frames", () => {
@@ -841,6 +926,7 @@ test("portable protocol rejects stale, expired, malformed, and oversized frames"
   assert.throws(() => handlePortableWorkerFrame(frame({ senderId: "unauthenticated-peer" }), authority), /AUTHENTICATED_PEER_MISMATCH/);
   assert.throws(() => handlePortableWorkerFrame(frame({ audience: "different-host" }), authority), /AUDIENCE_MISMATCH/);
   assert.throws(() => handlePortableWorkerFrame(frame({ absoluteDeadline: authority.now - 1 }), authority), /DEADLINE_EXCEEDED/);
+  assert.throws(() => handlePortableWorkerFrame(frame(), { ...authority, now: Number.NaN }), /INVALID_AUTHORITY_NOW/);
   assert.throws(() => validateEnvelope({}), /UNKNOWN_OR_MISSING_FIELD/);
   assert.throws(() => validateEnvelope({ ...frame(), extra: true }), /UNKNOWN_OR_MISSING_FIELD/);
   const cyclicPayload: Record<string, unknown> = {};
@@ -914,6 +1000,8 @@ test("process-host smoke acknowledges hello and readiness over bounded length-pr
   const child = spawn(process.execPath, [join(fixtureRoot, "process-child.mjs")], { stdio: ["pipe", "pipe", "pipe"] });
   t.after(() => child.kill("SIGKILL"));
   const responses: ProtocolEnvelope[] = [];
+  let childFailure: Error | undefined;
+  child.once("error", error => { childFailure = error; });
   let buffer = Buffer.alloc(0);
   child.stdout.on("data", chunk => {
     buffer = Buffer.concat([buffer, chunk]);
@@ -929,12 +1017,8 @@ test("process-host smoke acknowledges hello and readiness over bounded length-pr
   const prepareRequest = frame({ requestId: "request-2", kind: "prepare" });
   child.stdin.write(encodeLengthPrefixedFrame(helloRequest));
   child.stdin.write(encodeLengthPrefixedFrame(prepareRequest));
-  await Promise.race([
-    (async () => { while (responses.length < 2) await delay(1); })(),
-    once(child, "error").then(([error]) => { throw error; }),
-    once(child, "exit").then(([code]) => { throw new Error(`PROCESS_EXITED_EARLY:${String(code)}`); }),
-    delay(2_000).then(() => { throw new Error("PROCESS_RESPONSE_TIMEOUT"); }),
-  ]);
+  await waitUntil(() => responses.length >= 2 || childFailure !== undefined, 2_000, "PROCESS_RESPONSE_TIMEOUT");
+  if (childFailure) throw childFailure;
   assert.equal(validateResponseEnvelope(
     responses[0],
     { ...responseAuthority, now: Date.now() },
@@ -947,8 +1031,19 @@ test("process-host smoke acknowledges hello and readiness over bounded length-pr
     prepareRequest,
     "ready",
   ).kind, "ready");
-  child.stdin.write(encodeLengthPrefixedFrame(frame({ requestId: "request-3", kind: "stop" })));
-  await once(child, "exit");
+  const stopRequest = frame({ requestId: "request-3", kind: "stop" });
+  const exit = once(child, "exit", { signal: AbortSignal.timeout(2_000) });
+  child.stdin.write(encodeLengthPrefixedFrame(stopRequest));
+  await waitUntil(() => responses.length >= 3 || childFailure !== undefined, 2_000, "PROCESS_STOP_RESPONSE_TIMEOUT");
+  if (childFailure) throw childFailure;
+  assert.equal(validateResponseEnvelope(
+    responses[2],
+    { ...responseAuthority, now: Date.now() },
+    stopRequest,
+    "result",
+  ).payload.stopped, true);
+  const [exitCode] = await exit;
+  assert.equal(exitCode, 0);
 });
 
 test("process-host fixture enforces deadline and authority before handling", async t => {
@@ -964,10 +1059,18 @@ test("Worker structured-clone boundary preserves validation and stale rejection"
     workerData: protocolAuthority,
   });
   t.after(() => worker.terminate());
-  const response = new Promise<unknown>(resolve => worker.once("message", resolve));
+  const responses: unknown[] = [];
+  let workerFailure: Error | undefined;
+  worker.on("message", message => responses.push(message));
+  worker.once("error", error => { workerFailure = error; });
+  worker.once("exit", code => {
+    if (code !== 0) workerFailure = new Error(`WORKER_EXITED:${code}`);
+  });
   const request = frame({ kind: "prepare" });
   worker.postMessage(structuredClone(request));
-  const workerResponse = await response as { readonly ok?: unknown; readonly frame?: unknown };
+  await waitUntil(() => responses.length >= 1 || workerFailure !== undefined, 2_000, "WORKER_RESPONSE_TIMEOUT");
+  if (workerFailure) throw workerFailure;
+  const workerResponse = responses[0] as { readonly ok?: unknown; readonly frame?: unknown };
   assert.equal(workerResponse.ok, true);
   const validatedResponse = validateResponseEnvelope(
     workerResponse.frame,
@@ -982,12 +1085,13 @@ test("Worker structured-clone boundary preserves validation and stale rejection"
     kind: "result",
     payload: { acceptedKind: "prepare" },
   });
-  const stale = new Promise<unknown>(resolve => worker.once("message", resolve));
   worker.postMessage(frame({ moduleActivationGeneration: 6 }));
-  assert.deepEqual(await stale, { ok: false, error: "STALE_MODULE_ACTIVATION_GENERATION" });
+  await waitUntil(() => responses.length >= 2 || workerFailure !== undefined, 2_000, "WORKER_STALE_RESPONSE_TIMEOUT");
+  if (workerFailure) throw workerFailure;
+  assert.deepEqual(responses[1], { ok: false, error: "STALE_MODULE_ACTIVATION_GENERATION" });
 });
 
-test("browser Worker carries a portable generation-bound frame", async t => {
+test("browser Worker carries a portable generation-bound frame", { timeout: 20_000 }, async t => {
   const candidates = process.platform === "darwin"
     ? [
         "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
@@ -1027,7 +1131,13 @@ test("browser Worker carries a portable generation-bound frame", async t => {
   });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
-  t.after(() => server.close());
+  t.after(async () => {
+    server.closeAllConnections();
+    if (!server.listening) return;
+    await new Promise<void>((resolve, reject) => {
+      server.close(error => error ? reject(error) : resolve());
+    });
+  });
   const address = server.address() as AddressInfo;
   const page = `http://127.0.0.1:${address.port}/fixtures/browser-worker.html`;
   const profile = await mkdtemp(join(tmpdir(), "extension-browser-worker-"));
@@ -1041,8 +1151,13 @@ test("browser Worker carries a portable generation-bound frame", async t => {
     `--user-data-dir=${profile}`,
     page,
   ], { stdio: ["ignore", "ignore", "pipe"] });
+  const childExit = new Promise<void>(resolve => child.once("exit", () => resolve()));
   t.after(async () => {
-    child.kill("SIGKILL");
+    if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
+    await Promise.race([
+      childExit,
+      rejectAfter(2_000, () => new Error("BROWSER_PROCESS_TERMINATION_TIMEOUT")),
+    ]);
     await rm(profile, { recursive: true, force: true });
   });
   child.stderr.setEncoding("utf8");
@@ -1067,7 +1182,7 @@ test("browser Worker carries a portable generation-bound frame", async t => {
   debuggerHttp.hash = "";
   let pageTarget: { readonly url?: string; readonly webSocketDebuggerUrl?: string } | undefined;
   for (let attempt = 0; attempt < 100; attempt += 1) {
-    const targets = await fetch(debuggerHttp).then(response => response.json()) as readonly {
+    const targets = await fetch(debuggerHttp, { signal: AbortSignal.timeout(1_000) }).then(response => response.json()) as readonly {
       readonly type?: string;
       readonly url?: string;
       readonly webSocketDebuggerUrl?: string;
@@ -1085,12 +1200,33 @@ test("browser Worker carries a portable generation-bound frame", async t => {
     }),
     rejectAfter(5_000, () => new Error("BROWSER_CDP_SOCKET_TIMEOUT")),
   ]);
-  t.after(() => socket.close());
+  t.after(async () => {
+    if (socket.readyState === WebSocket.CLOSED) return;
+    const closed = new Promise<void>((resolve, reject) => {
+      socket.addEventListener("close", () => resolve(), { once: true });
+      socket.addEventListener("error", () => reject(new Error("BROWSER_CDP_SOCKET_CLOSE_FAILED")), { once: true });
+    });
+    socket.close();
+    await Promise.race([
+      closed,
+      rejectAfter(2_000, () => new Error("BROWSER_CDP_SOCKET_CLOSE_TIMEOUT")),
+    ]);
+  });
   let nextCommandId = 1;
   const pendingCommands = new Map<number, {
     readonly resolve: (value: Record<string, unknown>) => void;
     readonly reject: (error: Error) => void;
+    readonly timer: ReturnType<typeof setTimeout>;
   }>();
+  const rejectPendingCommands = (error: Error): void => {
+    for (const [id, pending] of pendingCommands) {
+      clearTimeout(pending.timer);
+      pending.reject(error);
+      pendingCommands.delete(id);
+    }
+  };
+  socket.addEventListener("close", () => rejectPendingCommands(new Error("BROWSER_CDP_SOCKET_CLOSED")));
+  socket.addEventListener("error", () => rejectPendingCommands(new Error("BROWSER_CDP_SOCKET_ERROR")));
   socket.addEventListener("message", event => {
     const message = JSON.parse(String(event.data)) as {
       readonly id?: number;
@@ -1101,13 +1237,25 @@ test("browser Worker carries a portable generation-bound frame", async t => {
     const pending = pendingCommands.get(message.id);
     if (!pending) return;
     pendingCommands.delete(message.id);
+    clearTimeout(pending.timer);
     if (message.error) pending.reject(new Error(message.error.message ?? "BROWSER_CDP_ERROR"));
     else pending.resolve(message.result ?? {});
   });
   const evaluate = (expression: string): Promise<Record<string, unknown>> => new Promise((resolve, reject) => {
     const id = nextCommandId++;
-    pendingCommands.set(id, { resolve, reject });
-    socket.send(JSON.stringify({ id, method: "Runtime.evaluate", params: { expression, returnByValue: true } }));
+    const timer = setTimeout(() => {
+      pendingCommands.delete(id);
+      reject(new Error("BROWSER_CDP_COMMAND_TIMEOUT"));
+    }, 2_000);
+    timer.unref();
+    pendingCommands.set(id, { resolve, reject, timer });
+    try {
+      socket.send(JSON.stringify({ id, method: "Runtime.evaluate", params: { expression, returnByValue: true } }));
+    } catch (error) {
+      clearTimeout(timer);
+      pendingCommands.delete(id);
+      reject(error);
+    }
   });
   let output = "pending";
   for (let attempt = 0; attempt < 200; attempt += 1) {

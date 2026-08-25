@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import { validateBuiltPackageArtifacts } from "../architecture/checks/package-artifacts.mjs";
-import { materializationPlanPath } from "../architecture/checks/package-policy.mjs";
+import { CONFORMANCE_VERSION, materializationPlanPath } from "../architecture/checks/package-policy.mjs";
 import {
   isFilesystemPathInside,
   validatePackageTopology as validateRepositoryPackageTopology,
@@ -754,10 +754,39 @@ test("package admission fails closed without versioned independent evidence", as
       "module.example: consumer evidence must be independent from the Foundation owner repository",
     ]);
 
+    for (const repository of [
+      "agent-teams-ai/extension-foundation.git",
+      "agent-teams-ai/extension-foundation.",
+    ]) {
+      const transportAlias = packageAdmission();
+      transportAlias.consumer_evidence[0].consumer_repository = repository;
+      await writeFixture(
+        root,
+        "architecture/package-admissions/module-dot-example.json",
+        `${JSON.stringify(transportAlias)}\n`,
+      );
+      assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+        "module.example: consumer_evidence[0].consumer_repository must be a canonical lowercase owner/repository identity",
+      ]);
+    }
+
+    const duplicateTransportAlias = packageAdmission();
+    duplicateTransportAlias.consumer_evidence[1].consumer_repository = "agent-teams-ai/consumer-alpha.git";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(duplicateTransportAlias)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: consumer_evidence[1].consumer_repository must be a canonical lowercase owner/repository identity",
+    ]);
+
     for (const reference of [
       `docs/../../outside-alpha.json#sha256=${"a".repeat(64)}`,
       `docs/../outside-alpha.json#sha256=${"a".repeat(64)}`,
       `docs/evidence\\outside-alpha.json#sha256=${"a".repeat(64)}`,
+      `docs/evidence/consumer-alpha.json#alias#sha256=${"a".repeat(64)}`,
+      `docs/evidence/consumer-alpha.json\u0000#sha256=${"a".repeat(64)}`,
     ]) {
       const traversal = packageAdmission();
       traversal.consumer_evidence[0].evidence_reference = reference;
@@ -781,6 +810,23 @@ test("package admission fails closed without versioned independent evidence", as
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
       "module.example: admission.extraction_decision must equal the accepted owner_document",
     ]);
+
+    for (const version of ["01.0.0", "1.0.0-01", "1.0.0-..", "1.0", "1.0.0\n", "1.0.0\r"]) {
+      const invalidVersion = packageAdmission();
+      invalidVersion.conformance_version = version;
+      await writeFixture(
+        root,
+        "architecture/package-admissions/module-dot-example.json",
+        `${JSON.stringify(invalidVersion)}\n`,
+      );
+      assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+        "module.example: admission.conformance_version must be an exact SemVer",
+      ]);
+    }
+
+    for (const version of ["0.0.0", "1.2.3-alpha.1", "1.2.3+build.7", "1.2.3-rc.1+build.7"]) {
+      assert.equal(CONFORMANCE_VERSION.test(version), true, version);
+    }
   } finally {
     await rm(root, { recursive: true, force: true });
   }

@@ -6,7 +6,8 @@ feature-owned implementation slice admit a package through
 `architecture/package-admissions/<encoded-package-id>.json` record with two
 independent consumer repositories, exact source commits, passed conformance,
 and distinct digest-bearing evidence references. Publication additionally
-verifies the referenced evidence bytes.
+resolves stable provider repository IDs and verifies the referenced evidence
+bytes; a repository slug alone cannot prove consumer independence.
 
 Do not add placeholder packages or empty DDD layers. Use the deterministic
 scaffolding plan, review, apply, and recovery workflow documented in the

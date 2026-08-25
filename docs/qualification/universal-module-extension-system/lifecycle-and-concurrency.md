@@ -112,6 +112,13 @@ generation, activation fingerprint)`. One hundred concurrent same-fingerprint
 starts join one attempt and observe the same durable result. A waiter's timeout
 or cancellation detaches that waiter; it does not cancel shared startup.
 
+The disposable in-memory spike retains completed operation results and sealed
+generations for its process lifetime so qualification can prove replay and stale
+rejection. It is not a production retention design. A product coordinator must
+persist idempotency outcomes for an explicit bounded policy, compact them only
+after the retry and reconciliation horizon, and preserve a tombstone sufficient
+to reject stale generations.
+
 The activation fingerprint binds the exact resolved hook bundle and host-adapter
 implementation through an activation-source digest, plus plan, authority scope,
 profile/configuration/grant/host-policy revisions, deadline, and cleanup policy.

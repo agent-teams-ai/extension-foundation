@@ -111,8 +111,10 @@ extraction ADR, owner repository, neutrality claim, release policy, exact
 conformance version, and at least two distinct consumer repositories with exact
 source commits, passed results, and digest-bound evidence references. A missing
 or malformed manifest fails closed. This validates admission evidence shape and
-identity; a release promotion gate must additionally retrieve and verify the
-referenced bytes before publication.
+identity; a release promotion gate must additionally resolve every slug to a
+stable source-provider repository ID, reject aliases/renames/transfers that do
+not prove independent ownership, and retrieve and verify the referenced bytes
+before publication.
 
 ## Dependency Rules
 

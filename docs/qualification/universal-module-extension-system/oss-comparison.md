@@ -68,10 +68,11 @@ The machine-readable record is [oss-comparison.yaml](oss-comparison.yaml).
 ## Cordis Decision Gate
 
 Cordis is the strongest private adapter candidate, not the public model. The
-verified tarball matches DeepSeek Harness revision
-`b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`. It qualifies only if a bounded
-adapter passes the neutral conformance suite and deletes at least 25% of
-equivalent owned runtime code.
+lockfile verifies the exact `4.0.1` npm tarball, while DeepSeek Harness revision
+`b150a551b8d465e31e418e1b2eaf5e79bbb7d28e` is a separately pinned source
+reference. This qualification does not claim byte equivalence between them.
+Cordis qualifies only if a bounded adapter passes the neutral conformance suite
+and deletes at least 25% of equivalent owned runtime code.
 
 Kill Cordis adoption if:
 

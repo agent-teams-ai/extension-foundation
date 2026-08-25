@@ -42,7 +42,7 @@ export const FEATURE_NAME = /^[a-z0-9][a-z0-9-]*$/;
 export const OWNER_DOCUMENT = /^ADR-[0-9]{4}$/;
 export const REPOSITORY_ID = /^[a-z0-9][a-z0-9_.-]*\/[a-z0-9][a-z0-9_.-]*$/;
 export const SOURCE_REVISION = /^[0-9a-f]{40}$/;
-export const CONFORMANCE_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
+export const CONFORMANCE_VERSION = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$(?![\s\S])/;
 export const EVIDENCE_DIGEST = /^sha256=[0-9a-f]{64}$/;
 
 export function isRecord(value) {
@@ -110,10 +110,17 @@ function canonicalRepositoryId(value) {
   return typeof value === "string" ? value.toLowerCase() : "";
 }
 
+function isCanonicalRepositoryId(value) {
+  if (typeof value !== "string" || /[\u0000-\u001f\u007f]/u.test(value) || !REPOSITORY_ID.test(value)) return false;
+  return value.split("/").every(segment => !segment.endsWith(".") && !segment.endsWith(".git"));
+}
+
 function isImmutableEvidenceReference(value) {
-  const fragmentIndex = value.lastIndexOf("#");
+  const fragmentIndex = value.indexOf("#");
+  if (fragmentIndex !== value.lastIndexOf("#")) return false;
   if (fragmentIndex <= 0 || !EVIDENCE_DIGEST.test(value.slice(fragmentIndex + 1))) return false;
   const location = value.slice(0, fragmentIndex);
+  if (/[\u0000-\u001f\u007f]/u.test(location)) return false;
   if (location.startsWith("docs/")) {
     const segments = location.split("/");
     return segments.length > 1
@@ -143,7 +150,7 @@ function validateAdmission(entry, admission, errors) {
       errors.push(`${entry.id}: admission.${key} must be a non-empty string`);
     }
   }
-  if (!REPOSITORY_ID.test(admission.owner_repository ?? "")) {
+  if (!isCanonicalRepositoryId(admission.owner_repository)) {
     errors.push(`${entry.id}: admission.owner_repository must be a canonical lowercase owner/repository identity`);
   } else if (admission.owner_repository !== FOUNDATION_REPOSITORY) {
     errors.push(`${entry.id}: admission.owner_repository must identify ${FOUNDATION_REPOSITORY}`);
@@ -176,7 +183,7 @@ function validateAdmission(entry, admission, errors) {
     if (!PACKAGE_ID.test(evidence.consumer_id)) {
       errors.push(`${entry.id}: consumer_evidence[${index}].consumer_id is invalid`);
     }
-    if (!REPOSITORY_ID.test(evidence.consumer_repository)) {
+    if (!isCanonicalRepositoryId(evidence.consumer_repository)) {
       errors.push(`${entry.id}: consumer_evidence[${index}].consumer_repository must be a canonical lowercase owner/repository identity`);
     }
     if (!SOURCE_REVISION.test(evidence.source_revision)) {

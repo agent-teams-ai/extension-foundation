@@ -101,8 +101,30 @@ const defaultClock: MonotonicClock = {
   sleep: milliseconds => delay(milliseconds),
 };
 
+function errorMessage(error: unknown): string {
+  try {
+    if (error instanceof Error && typeof error.message === "string") return error.message;
+  } catch {
+    return "UNREADABLE_ERROR";
+  }
+  try {
+    return String(error);
+  } catch {
+    return "UNREADABLE_ERROR";
+  }
+}
+
 function asError(error: unknown): Error {
-  return error instanceof Error ? error : new Error(String(error));
+  return new Error(errorMessage(error));
+}
+
+function aggregateErrors(error: unknown): readonly Error[] {
+  if (!(error instanceof AggregateError)) return [asError(error)];
+  try {
+    return Array.from(error.errors as Iterable<unknown>, asError);
+  } catch {
+    return [asError(error)];
+  }
 }
 
 function fingerprint(request: ActivationRequest): string {
@@ -141,7 +163,7 @@ function freezeResult(
     generation,
     termination,
     traces: Object.freeze(traces.map(trace => Object.freeze({ ...trace }))),
-    errors: Object.freeze(errors.map(error => Object.freeze({ message: error.message }))),
+    errors: Object.freeze(errors.map(error => Object.freeze({ message: errorMessage(error) }))),
   });
 }
 
@@ -295,12 +317,19 @@ export class GenerationLifecycle {
 
   async #drainGeneration(generation: number, absoluteDeadline: number): Promise<boolean> {
     this.#sealedGenerations.add(generation);
-    while ([...this.#leases].some(lease => lease.generation === generation)) {
-      if (this.#clock.now() >= absoluteDeadline) break;
-      await this.#clock.sleep(1);
+    const timeoutCode = `DRAIN_TIMEOUT:${generation}`;
+    try {
+      return await runBeforeDeadline(async () => {
+        while ([...this.#leases].some(lease => lease.generation === generation)) {
+          if (this.#clock.now() >= absoluteDeadline) return false;
+          await this.#clock.sleep(1);
+        }
+        return true;
+      }, absoluteDeadline, this.#clock, () => undefined, timeoutCode);
+    } catch (error) {
+      if (errorMessage(error) === timeoutCode) return false;
+      throw error;
     }
-    const drained = ![...this.#leases].some(lease => lease.generation === generation);
-    return drained;
   }
 
   async #waitForFlight(
@@ -411,7 +440,7 @@ export class GenerationLifecycle {
         for (const outcome of outcomes) traces.push(...outcome.localTraces);
         const failures = outcomes.flatMap(outcome => outcome.error === undefined ? [] : [outcome.error]);
         if (failures.length > 0) {
-          throw new AggregateError(failures, `START_BATCH_FAILED:${failures.map(error => error.message).join("|")}`);
+          throw new AggregateError(failures, `START_BATCH_FAILED:${failures.map(errorMessage).join("|")}`);
         }
       }
 
@@ -428,9 +457,7 @@ export class GenerationLifecycle {
     } catch (error) {
       activationController.abort(error);
       const failure = asError(error);
-      const failures = error instanceof AggregateError
-        ? error.errors.map(asError)
-        : [failure];
+      const failures = aggregateErrors(error);
       errors.push(...failures);
       const cleanupDeadline = this.#clock.now() + cleanupTimeoutMs;
       const cleanupController = new AbortController();

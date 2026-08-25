@@ -153,6 +153,7 @@ export function validateEnvelope(value) {
 
 export function validateAuthorizedEnvelope(value, authority) {
   const request = validateEnvelope(value);
+  if (!Number.isSafeInteger(authority.now) || authority.now < 0) throw new Error("INVALID_AUTHORITY_NOW");
   if (request.authorityScope !== authority.authorityScope) throw new Error("AUTHORITY_SCOPE_MISMATCH");
   if (request.extensionInstanceId !== authority.extensionInstanceId) throw new Error("EXTENSION_INSTANCE_MISMATCH");
   if (request.graphGeneration !== authority.graphGeneration) throw new Error("STALE_GRAPH_GENERATION");

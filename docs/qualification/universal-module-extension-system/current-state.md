@@ -73,6 +73,12 @@ The effective accepted direction is:
   ownership, two independent implementations, compatibility fixtures, negative
   tests, and conformance evidence.
 
+The accepted-decision ledger uses Engineering Foundation's canonical semantic
+payload, not raw Markdown bytes: LF-normalized body without frontmatter plus
+key-sorted immutable metadata excluding `status` and `superseded_by`, serialized
+as JSON and hashed with SHA-256. Exact Git blob comparison remains separate
+evidence that this research branch did not edit accepted ADR files.
+
 ## Current Implementation State
 
 Extension Foundation remains an architecture and qualification repository. The

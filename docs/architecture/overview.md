@@ -74,14 +74,17 @@ under `test/features/<feature>/`. The same change must include a versioned
 the accepted extraction decision and at least two distinct, independently
 authored consumer repositories to exact commits, conformance results, and
 digest-bearing evidence references. Repository identities are canonical
-lowercase values and local evidence paths must remain under `docs/`.
+lowercase `owner/repository` values and reject transport/path aliases such as
+`.git` or trailing dots. Local evidence paths must remain under `docs/` and use
+exactly one digest fragment.
 
 These checks prove topology and claimed execution evidence, not business
-completeness or the referenced evidence bytes. A promotion verifier must resolve
-and hash those bytes before publication. The admitting ADR and review evidence
-establish that the slice is semantically real. Reserving empty packages or
-root-level `domain`, `application`, `contracts`, or `adapters` directories is
-not allowed.
+completeness or the referenced evidence bytes. A promotion verifier must
+resolve each slug through its provider to a stable repository ID, prove both
+consumer IDs differ from each other and from Foundation, and hash the evidence
+bytes before publication. The admitting ADR and review evidence establish that
+the slice is semantically real. Reserving empty packages or root-level
+`domain`, `application`, `contracts`, or `adapters` directories is not allowed.
 
 Feature-specific contracts and adapters stay inside their owning feature.
 Only product-neutral contracts with an independent release lifecycle may
