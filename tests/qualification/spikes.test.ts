@@ -1360,17 +1360,26 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 20_0
   debuggerHttp.search = "";
   debuggerHttp.hash = "";
   let pageTarget: { readonly url?: string; readonly webSocketDebuggerUrl?: string } | undefined;
-  for (let attempt = 0; attempt < 100; attempt += 1) {
-    const targets = await fetch(debuggerHttp, { signal: AbortSignal.timeout(1_000) }).then(response => response.json()) as readonly {
-      readonly type?: string;
-      readonly url?: string;
-      readonly webSocketDebuggerUrl?: string;
-    }[];
-    pageTarget = targets.find(target => target.type === "page" && target.url === page);
-    if (pageTarget?.webSocketDebuggerUrl) break;
-    await delay(25);
+  let discoveryError: unknown;
+  const discoveryDeadline = performance.now() + 8_000;
+  while (performance.now() < discoveryDeadline) {
+    try {
+      const targets = await fetch(debuggerHttp, { signal: AbortSignal.timeout(500) }).then(response => response.json()) as readonly {
+        readonly type?: string;
+        readonly url?: string;
+        readonly webSocketDebuggerUrl?: string;
+      }[];
+      pageTarget = targets.find(target => target.type === "page" && target.url === page);
+      if (pageTarget?.webSocketDebuggerUrl) break;
+    } catch (error) {
+      discoveryError = error;
+    }
+    await delay(50);
   }
-  assert.ok(pageTarget?.webSocketDebuggerUrl, `BROWSER_PAGE_TARGET_MISSING:${stderr}`);
+  assert.ok(
+    pageTarget?.webSocketDebuggerUrl,
+    `BROWSER_PAGE_TARGET_MISSING:${discoveryError instanceof Error ? discoveryError.message : String(discoveryError)}:${stderr}`,
+  );
   const socket = new WebSocket(pageTarget.webSocketDebuggerUrl);
   await Promise.race([
     new Promise<void>((resolve, reject) => {
