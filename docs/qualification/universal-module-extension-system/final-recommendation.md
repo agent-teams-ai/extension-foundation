@@ -216,9 +216,15 @@ Estimated change: 3,000-6,000 LOC including product tests, 1-3 weeks.
 ### Phase 3: Reusable Internal Contracts And Conformance
 
 After a second independent consumer exists, extract only repeated semantics:
-structural IDs/envelopes,
-graph fixtures, lifecycle outcomes and packed conformance runner. Product
-contracts and adapters stay local. Add exact package exports and API reports.
+structural IDs/envelopes, graph fixtures, lifecycle outcomes and the packed
+conformance runner. A second consumer is evidence, not extraction authority.
+The `phase-3-reusable-contract-extraction` ledger gate must select one path:
+either ADR-0013 is accepted and a separate Foundation extraction decision binds
+two-consumer conformance evidence, or the existing ADR-0012 Foundation-owned
+path has its runtime decisions resolved and a package admission decision. Both
+paths require the contract-source decision `UMEQ-012`. Product contracts and
+adapters stay local. Add exact package exports and API reports only after the
+selected gate passes.
 
 Estimated change: 4,000-8,000 LOC including fixtures, 2-4 weeks.
 

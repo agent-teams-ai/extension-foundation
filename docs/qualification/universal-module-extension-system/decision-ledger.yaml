@@ -54,6 +54,35 @@ implementationGates:
             requiredStatus: resolved
           - decision: UMEQ-013
             requiredStatus: resolved
+  - id: phase-3-reusable-contract-extraction
+    appliesTo:
+      - phase-3-reusable-internal-contracts
+    mode: exactly-one-path
+    paths:
+      - id: product-local-extraction
+        allOf:
+          - decision: ADR-0013
+            requiredStatus: accepted
+          - decision: second-independent-consumer
+            requiredStatus: proven
+          - decision: cross-implementation-conformance
+            requiredStatus: passed
+          - decision: UMEQ-012
+            requiredStatus: resolved
+          - decision: foundation-extraction-decision
+            requiredStatus: accepted
+      - id: foundation-owned-admission
+        allOf:
+          - decision: ADR-0012
+            requiredStatus: accepted
+          - decision: UMEQ-011
+            requiredStatus: resolved
+          - decision: UMEQ-012
+            requiredStatus: resolved
+          - decision: UMEQ-013
+            requiredStatus: resolved
+          - decision: foundation-package-admission-decision
+            requiredStatus: accepted
   - id: production-extension-host-safety
     appliesTo:
       - phase-4-process-host

@@ -655,51 +655,56 @@ export class GenerationLifecycle {
       }
       hooks = snapshotHooks(hooks);
 
-      for (const batch of plan.startBatches) {
-        const outcomes = await Promise.all(batch.map(async moduleId => {
+      const runBatchPhase = async (
+        batch: readonly string[],
+        phase: "prepare" | "start" | "ready",
+      ): Promise<void> => {
+        const outcomes = await Promise.all(batch.map(async (moduleId): Promise<{
+          localTraces: LifecycleTrace[];
+          error?: Error;
+        }> => {
           const localTraces: LifecycleTrace[] = [];
-          let phase: LifecyclePhase = "prepare";
           try {
             checkDeadline();
             if (activationController.signal.aborted) return { localTraces };
             const module = hooks.get(moduleId);
             if (!module) throw new Error(`MISSING_HOOKS:${moduleId}`);
-            cleanupCandidates.add(moduleId);
-            localTraces.push({ phase: "prepare", moduleId, generation, outcome: "started" });
-            await runBeforeDeadline(
-              () => module.prepare?.(activationContext),
-              activationDeadline,
-              this.#clock,
-              markActivationTimeout,
-            );
-            checkDeadline();
-            if (activationController.signal.aborted) return { localTraces };
-            phase = "start";
-            localTraces.push({ phase: "start", moduleId, generation, outcome: "started" });
-            await runBeforeDeadline(
-              () => module.start?.(activationContext),
-              activationDeadline,
-              this.#clock,
-              markActivationTimeout,
-            );
-            checkDeadline();
-            if (activationController.signal.aborted) return { localTraces };
-            phase = "ready";
-            if (module.readiness !== "inert" && module.readiness !== "probe") {
-              throw new Error(`INVALID_READINESS:${moduleId}`);
-            }
-            if (module.readiness === "probe") {
-              const ready = await runBeforeDeadline(
-                () => module.ready(activationContext),
+            if (phase === "prepare") {
+              cleanupCandidates.add(moduleId);
+              localTraces.push({ phase, moduleId, generation, outcome: "started" });
+              await runBeforeDeadline(
+                () => module.prepare?.(activationContext),
                 activationDeadline,
                 this.#clock,
                 markActivationTimeout,
               );
-              if (ready !== true) throw new Error(`NOT_READY:${moduleId}`);
+            } else if (phase === "start") {
+              localTraces.push({ phase, moduleId, generation, outcome: "started" });
+              await runBeforeDeadline(
+                () => module.start?.(activationContext),
+                activationDeadline,
+                this.#clock,
+                markActivationTimeout,
+              );
+            } else {
+              if (module.readiness !== "inert" && module.readiness !== "probe") {
+                throw new Error(`INVALID_READINESS:${moduleId}`);
+              }
+              if (module.readiness === "probe") {
+                const ready = await runBeforeDeadline(
+                  () => module.ready(activationContext),
+                  activationDeadline,
+                  this.#clock,
+                  markActivationTimeout,
+                );
+                if (ready !== true) throw new Error(`NOT_READY:${moduleId}`);
+              }
             }
             checkDeadline();
             if (activationController.signal.aborted) return { localTraces };
-            localTraces.push({ phase: "ready", moduleId, generation, outcome: "confirmed" });
+            if (phase === "ready") {
+              localTraces.push({ phase, moduleId, generation, outcome: "confirmed" });
+            }
             return { localTraces };
           } catch (error) {
             activationController.abort(error);
@@ -711,6 +716,12 @@ export class GenerationLifecycle {
         if (failures.length > 0) {
           throw new AggregateError(failures, `START_BATCH_FAILED:${failures.map(errorMessage).join("|")}`);
         }
+      };
+
+      for (const batch of plan.startBatches) {
+        await runBatchPhase(batch, "prepare");
+        await runBatchPhase(batch, "start");
+        await runBatchPhase(batch, "ready");
       }
 
       checkDeadline();

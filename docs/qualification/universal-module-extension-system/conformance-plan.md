@@ -114,10 +114,14 @@ owning feature provides:
 - contract fixtures consumable from a packed artifact;
 - one adversarial fixture proving the extension cannot bypass the owning use case.
 
-## CI Shape
+## Target CI Shape
 
-Fast PR checks run deterministic graph, package boundary and focused lifecycle
-fixtures. Affected host/profile suites run from the machine-readable manifest.
+This is the target shape after the first production package exists. The current
+research branch intentionally runs the complete `pnpm check` gate in CI;
+`check:fast` does not claim qualification coverage.
+
+Future fast PR checks run deterministic graph, package boundary and focused
+lifecycle fixtures. Affected host/profile suites run from the machine-readable manifest.
 Cross-platform isolation, crash, OCI/Harbor and N/N-1 matrices run as scheduled
 or release gates. Evidence is keyed by exact commit, dependency lock digest,
 platform and conformance version so unchanged heavy evidence can be reused.

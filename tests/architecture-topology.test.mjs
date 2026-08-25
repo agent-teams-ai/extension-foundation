@@ -799,16 +799,36 @@ test("package admission fails closed without versioned independent evidence", as
       "module.example: admission.owner_repository must be a canonical lowercase owner/repository identity",
     ]);
 
-    const duplicateConsumer = packageAdmission();
-    duplicateConsumer.consumer_evidence[1].consumer_repository = duplicateConsumer.consumer_evidence[0].consumer_repository;
-    duplicateConsumer.consumer_evidence[1].consumer_id = duplicateConsumer.consumer_evidence[0].consumer_id;
+    const sameConsumerImplementations = packageAdmission();
+    sameConsumerImplementations.consumer_evidence[1].consumer_repository = sameConsumerImplementations.consumer_evidence[0].consumer_repository;
+    sameConsumerImplementations.consumer_evidence[1].consumer_id = sameConsumerImplementations.consumer_evidence[0].consumer_id;
     await writeFixture(
       root,
       "architecture/package-admissions/module-dot-example.json",
-      `${JSON.stringify(duplicateConsumer)}\n`,
+      `${JSON.stringify(sameConsumerImplementations)}\n`,
+    );
+    assert.deepEqual((await loadPackagePolicy(root)).errors, []);
+
+    const duplicateSecondConsumer = structuredClone(sameConsumerImplementations);
+    duplicateSecondConsumer.admission_basis = "second-real-consumer";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(duplicateSecondConsumer)}\n`,
     );
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
-      "module.example: evidence must use distinct consumer identities and immutable references",
+      "module.example: second-real-consumer admission requires two distinct consumer identities",
+    ]);
+
+    const duplicateImplementation = structuredClone(sameConsumerImplementations);
+    duplicateImplementation.consumer_evidence[1].implementation_id = duplicateImplementation.consumer_evidence[0].implementation_id;
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(duplicateImplementation)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: public-spi admission requires two independently authored implementation identities",
     ]);
 
     const caseAliasedConsumer = packageAdmission();
@@ -869,7 +889,7 @@ test("package admission fails closed without versioned independent evidence", as
       `${JSON.stringify(externalAlias)}\n`,
     );
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
-      "module.example: evidence must use distinct consumer identities and immutable references",
+      "module.example: evidence must use distinct immutable references",
     ]);
 
     for (const location of ["docs/evidence/shared.json", "https://example.com/evidence/shared.json"]) {
@@ -882,7 +902,7 @@ test("package admission fails closed without versioned independent evidence", as
         `${JSON.stringify(oneLocationDifferentDigests)}\n`,
       );
       assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
-        "module.example: evidence must use distinct consumer identities and immutable references",
+        "module.example: evidence must use distinct immutable references",
       ]);
     }
 
@@ -895,7 +915,7 @@ test("package admission fails closed without versioned independent evidence", as
       `${JSON.stringify(mirroredEvidence)}\n`,
     );
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
-      "module.example: evidence must use distinct consumer identities and immutable references",
+      "module.example: evidence must use distinct immutable references",
     ]);
 
     for (const reference of [

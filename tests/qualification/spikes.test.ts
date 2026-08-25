@@ -1091,29 +1091,33 @@ test("a fast sibling failure promptly aborts cooperative siblings before cleanup
   assert.deepEqual(result.errors.map(error => error.message), ["FAST_FAILURE"]);
 });
 
-test("a failed prepare prevents siblings from entering later activation phases", async () => {
+test("a failed prepare prevents siblings from entering later activation phases", { timeout: 2_000 }, async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([
     { id: "fails", requires: [] },
     { id: "sibling", requires: [] },
   ]);
+  const failingPrepareEntered = Promise.withResolvers<void>();
+  const siblingPrepareFinished = Promise.withResolvers<void>();
+  const releaseFailure = Promise.withResolvers<void>();
   let siblingStarts = 0;
   let siblingReadinessChecks = 0;
-  const result = await lifecycle.activate(activationRequest(
+  const activation = lifecycle.activate(activationRequest(
     lifecycle,
     "prepare-sibling-abort",
     plan,
     new Map<string, ModuleHooks>([
       ["fails", inertHooks({
         prepare: async () => {
-          await delay(5);
+          failingPrepareEntered.resolve();
+          await releaseFailure.promise;
           throw new Error("PREPARE_FAILURE");
         },
         stop: () => undefined,
       })],
       ["sibling", {
         readiness: "probe",
-        prepare: async () => { await delay(15); },
+        prepare: () => { siblingPrepareFinished.resolve(); },
         start: () => { siblingStarts += 1; },
         ready: () => { siblingReadinessChecks += 1; return true; },
         stop: () => undefined,
@@ -1121,6 +1125,9 @@ test("a failed prepare prevents siblings from entering later activation phases",
     ]),
     { deadlineMs: 200, cleanupTimeoutMs: 80 },
   ));
+  await Promise.all([failingPrepareEntered.promise, siblingPrepareFinished.promise]);
+  releaseFailure.resolve();
+  const result = await activation;
   assert.equal(result.ok, false);
   assert.equal(siblingStarts, 0);
   assert.equal(siblingReadinessChecks, 0);
@@ -1129,29 +1136,80 @@ test("a failed prepare prevents siblings from entering later activation phases",
   assert.equal(result.traces.some(trace => trace.moduleId === "sibling" && trace.phase === "ready"), false);
 });
 
-test("ignored activation cancellation is bounded without refreshing cleanup time", async () => {
+test("a failed start prevents siblings from entering readiness", { timeout: 2_000 }, async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([
+    { id: "fails", requires: [] },
+    { id: "sibling", requires: [] },
+  ]);
+  const failingStartEntered = Promise.withResolvers<void>();
+  const siblingStartFinished = Promise.withResolvers<void>();
+  const releaseFailure = Promise.withResolvers<void>();
+  let siblingReadinessChecks = 0;
+  const activation = lifecycle.activate(activationRequest(
+    lifecycle,
+    "start-sibling-abort",
+    plan,
+    new Map<string, ModuleHooks>([
+      ["fails", inertHooks({
+        start: async () => {
+          failingStartEntered.resolve();
+          await releaseFailure.promise;
+          throw new Error("START_FAILURE");
+        },
+        stop: () => undefined,
+      })],
+      ["sibling", {
+        readiness: "probe",
+        start: () => { siblingStartFinished.resolve(); },
+        ready: () => { siblingReadinessChecks += 1; return true; },
+        stop: () => undefined,
+      }],
+    ]),
+    { deadlineMs: 200, cleanupTimeoutMs: 80 },
+  ));
+  await Promise.all([failingStartEntered.promise, siblingStartFinished.promise]);
+  releaseFailure.resolve();
+  const result = await activation;
+  assert.equal(result.ok, false);
+  assert.equal(siblingReadinessChecks, 0);
+  assert.deepEqual(result.errors.map(error => error.message), ["START_FAILURE"]);
+  assert.equal(result.traces.some(trace => trace.moduleId === "sibling" && trace.phase === "start"), true);
+  assert.equal(result.traces.some(trace => trace.moduleId === "sibling" && trace.phase === "ready"), false);
+});
+
+test("ignored activation cancellation is bounded without refreshing cleanup time", { timeout: 2_000 }, async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "slow", requires: [] }]);
+  const entered = Promise.withResolvers<void>();
+  const release = Promise.withResolvers<void>();
+  const finished = Promise.withResolvers<void>();
   let startRunning = false;
   let cleanupOverlapped = false;
-  const result = await lifecycle.activate(activationRequest(
+  const activation = lifecycle.activate(activationRequest(
     lifecycle,
     "ignored-start-cancellation",
     plan,
     new Map([["slow", inertHooks({
       start: async () => {
         startRunning = true;
-        await delay(500);
+        entered.resolve();
+        await release.promise;
         startRunning = false;
+        finished.resolve();
       },
       stop: () => { cleanupOverlapped = startRunning; },
     })]]),
-    { deadlineMs: 250, cleanupTimeoutMs: 20 },
+    { deadlineMs: 100, cleanupTimeoutMs: 20 },
   ));
+  await entered.promise;
+  const result = await activation;
   assert.equal(result.ok, false);
   assert.equal(result.termination, "termination_unproven");
+  assert.equal(startRunning, true);
   assert.equal(cleanupOverlapped, false);
-  await delay(300);
+  release.resolve();
+  await finished.promise;
   assert.equal(startRunning, false);
 });
 

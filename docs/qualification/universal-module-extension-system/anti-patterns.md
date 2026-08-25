@@ -134,6 +134,8 @@ framework makes the unsafe behavior convenient.
 | AP-081 | Self-reported repository, commit, digest, or conformance treated as admission evidence | Fabricated records pass a shape-only gate | Require an independently executable verifier before any non-empty catalog admission |
 | AP-082 | Event-loop timer described as a hard bound for synchronous in-process code | CPU blocking prevents timeout and cleanup callbacks | Treat `T0` deadlines as cooperative and move hard-bounded work to a host with forced termination |
 | AP-083 | Arbitrary JSON number accepted in authority or audit data | Unsafe integers alias distinct wire values | Use a safe-integer numeric domain or an explicit lossless decimal/string encoding |
+| AP-084 | Multiple canonical writers for one catalog source | Conflicting histories make governance, audit and recovery ambiguous | Give each writable source one PostgreSQL canonical state owner and derive snapshots/search projections from it |
+| AP-085 | Merge or fallback after catalog authority selection | Outage, revocation or not-found changes extension identity or downgrades trust | Route to one explicit authority and fail closed; mirrors may serve only that authority's immutable content |
 
 ## Enforcement Plan
 

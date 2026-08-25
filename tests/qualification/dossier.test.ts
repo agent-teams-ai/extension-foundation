@@ -158,6 +158,33 @@ test("decision ledger has one semantic owner and ten unique approval forks", asy
       ],
     },
     {
+      id: "phase-3-reusable-contract-extraction",
+      appliesTo: ["phase-3-reusable-internal-contracts"],
+      mode: "exactly-one-path",
+      paths: [
+        {
+          id: "product-local-extraction",
+          allOf: [
+            { decision: "ADR-0013", requiredStatus: "accepted" },
+            { decision: "second-independent-consumer", requiredStatus: "proven" },
+            { decision: "cross-implementation-conformance", requiredStatus: "passed" },
+            { decision: "UMEQ-012", requiredStatus: "resolved" },
+            { decision: "foundation-extraction-decision", requiredStatus: "accepted" },
+          ],
+        },
+        {
+          id: "foundation-owned-admission",
+          allOf: [
+            { decision: "ADR-0012", requiredStatus: "accepted" },
+            { decision: "UMEQ-011", requiredStatus: "resolved" },
+            { decision: "UMEQ-012", requiredStatus: "resolved" },
+            { decision: "UMEQ-013", requiredStatus: "resolved" },
+            { decision: "foundation-package-admission-decision", requiredStatus: "accepted" },
+          ],
+        },
+      ],
+    },
+    {
       id: "production-extension-host-safety",
       appliesTo: [
         "phase-4-process-host",
@@ -232,11 +259,29 @@ test("qualified identity and extraction rules preserve accepted ADR authority", 
 
   assert.deepEqual(
     antiPatternIds,
-    Array.from({ length: 83 }, (_, index) => `AP-${String(index + 1).padStart(3, "0")}`),
+    Array.from({ length: 85 }, (_, index) => `AP-${String(index + 1).padStart(3, "0")}`),
     "anti-pattern identifiers must remain unique, contiguous, and ordered",
   );
   assert.match(antiPatterns, /AP-080 \| Extract a neutral package without satisfying an accepted ADR-0012 admission basis/);
   assert.doesNotMatch(antiPatterns, /AP-080 \| Extract a neutral package before a second consumer/);
+  const catalogControls = [
+    {
+      decision: "../../decisions/0003-postgresql-canonical-catalog-state-and-signed-snapshots.md",
+      decisionInvariant: /one PostgreSQL database as its only\s+canonical state/,
+      control: /AP-084 \| Multiple canonical writers for one catalog source/,
+    },
+    {
+      decision: "../../decisions/0004-deterministic-catalog-federation-and-namespace-authority.md",
+      decisionInvariant: /never triggers implicit fallback to another\s+catalog/,
+      control: /AP-085 \| Merge or fallback after catalog authority selection/,
+    },
+  ];
+  for (const catalogControl of catalogControls) {
+    const decision = await readFile(resolve(dossier, catalogControl.decision), "utf8");
+    assert.match(decision, /^status: accepted$/m);
+    assert.match(decision, catalogControl.decisionInvariant);
+    assert.match(antiPatterns, catalogControl.control);
+  }
   assert.match(moduleGraph, /`BuiltInModuleInstallation` activation-source identity/);
   assert.match(moduleGraph, /product authority scope, stable module identity, and immutable implementation\s+digest/);
   assert.doesNotMatch(moduleGraph, /built-in module has an immutable\s+implementation identity but no artifact or installation identity/);

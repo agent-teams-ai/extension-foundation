@@ -230,16 +230,17 @@ function validateAdmission(entry, admission, errors) {
     consumerIdentities.add(`${repository}\0${evidence.consumer_id}`);
     implementationIdentities.add(`${repository}\0${evidence.implementation_id}`);
   }
-  if (consumerIdentities.size !== admission.consumer_evidence.length
-    || evidenceReferences.size !== admission.consumer_evidence.length
+  if (evidenceReferences.size !== admission.consumer_evidence.length
     || evidenceLocations.size !== admission.consumer_evidence.length
     || evidenceDigests.size !== admission.consumer_evidence.length) {
-    errors.push(`${entry.id}: evidence must use distinct consumer identities and immutable references`);
+    errors.push(`${entry.id}: evidence must use distinct immutable references`);
   }
-  if (admission.admission_basis === "second-real-consumer" && consumerIdentities.size < 2) {
+  if (admission.admission_basis === "second-real-consumer"
+    && (consumerIdentities.size < 2 || consumerIdentities.size !== admission.consumer_evidence.length)) {
     errors.push(`${entry.id}: second-real-consumer admission requires two distinct consumer identities`);
   }
-  if (admission.admission_basis === "public-spi" && implementationIdentities.size < 2) {
+  if (admission.admission_basis === "public-spi"
+    && (implementationIdentities.size < 2 || implementationIdentities.size !== admission.consumer_evidence.length)) {
     errors.push(`${entry.id}: public-spi admission requires two independently authored implementation identities`);
   }
 }
