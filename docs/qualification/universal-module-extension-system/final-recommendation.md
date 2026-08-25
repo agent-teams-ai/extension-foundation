@@ -178,8 +178,8 @@ Estimated change: 300-700 documentation/tooling LOC, 1-3 days.
 
 This phase begins only through one of two mutually exclusive approval paths:
 
-1. accept ADR-0013, or an equivalent superseding decision, and the owning
-   product's feature decision for a product-local graph-only compiler; or
+1. accept ADR-0013 and the owning product's feature decision for a product-local
+   graph-only compiler; or
 2. retain ADR-0012 and resolve `UMEQ-011` plus `UMEQ-013` through `OD-003` for a
    Foundation-owned graph-only compiler.
 
@@ -188,6 +188,10 @@ promote the proven ID-DAG primitive, then add only explicit bindings,
 cardinality, compatibility, scope and source validation. Do not create
 installation, container, process, catalog, public SPI, runtime reuse or
 distributed behavior in this phase.
+
+The ledger currently recognizes ADR-0013 literally. A future accepted successor
+does not silently satisfy this gate: that decision must explicitly amend the
+ledger before implementation begins.
 
 Exit criteria: two fixed `T0` built-ins, one independent graph oracle,
 10,000-node budget, invalid-input loader sentinel and framework-free local
@@ -221,23 +225,31 @@ and the packed conformance runner. The
 `phase-3-reusable-contract-extraction` ledger gate must select one path. The
 product-local ADR-0013 path requires a second independent consumer plus a
 separate Foundation extraction decision. The existing ADR-0012
-Foundation-owned path instead requires one of ADR-0012's accepted admission
-bases, resolved runtime decisions and a package admission decision; it is not
-silently narrowed to the second-consumer basis. Both paths require the
-contract-source decision `UMEQ-012`. Product contracts and adapters stay local.
-Internal extraction may proceed after the selected gate passes; package
-publication additionally requires the separate `phase-3-package-publication`
-ledger gate: resolved `UMEQ-015`, an accepted Foundation publication decision,
-exact package exports and API reports.
+Foundation-owned path instead requires immutable evidence naming one of
+ADR-0012's accepted admission bases, a schema-valid package admission record,
+independent conformance, resolved runtime decisions and an artifact-specific
+package admission decision; it is not silently narrowed to the second-consumer
+basis. Both paths require the contract-source decision `UMEQ-012`. Product
+contracts and adapters stay local. Internal extraction may proceed after the
+selected gate passes.
+
+Public package publication additionally requires the cumulative
+`phase-3-package-publication` gate: the reusable-extraction gate is satisfied;
+`UMEQ-014`, `UMEQ-015` and `UMEQ-016` are resolved; `PACKAGE-1` packed-package
+conformance and the public API report pass; and the Foundation owner accepts an
+artifact-specific publication decision. `UMEQ-015` is one of the ten strategic
+UMEQ forks. The artifact-specific publication decision is separate release
+authority and is not an eleventh strategic fork.
 
 Estimated change: 4,000-8,000 LOC including fixtures, 2-4 weeks.
 
 ### Phase 4: Process Host
 
-Do not begin this production-oriented host phase until ADR-0011 is accepted,
-superseded, or replaced by another accepted decision that closes custody,
-revision-bound publication, revocation, retirement and crash-recovery gaps, and
+Do not begin this production-oriented host phase until ADR-0011 is accepted and
 `UMEQ-009` is resolved through `OD-003` for the selected process wire format.
+The ledger currently recognizes ADR-0011 literally. A future accepted successor
+must explicitly amend the ledger before it can authorize this phase; prose alone
+cannot substitute another decision.
 
 Implement mandatory handshake, N/N-1 codecs, absolute monotonic deadlines,
 request journal, readiness proof, byte-credit streams, drain watermark,

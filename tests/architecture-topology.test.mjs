@@ -768,7 +768,7 @@ test("package admission fails closed without versioned independent evidence", as
       `${JSON.stringify(oneConsumer)}\n`,
     );
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
-      "module.example: admission requires product-consumer evidence and an independent conformance implementation",
+      "module.example: public-spi admission requires at least two evidence records",
     ]);
 
     const duplicateEvidenceRole = packageAdmission();
@@ -784,12 +784,31 @@ test("package admission fails closed without versioned independent evidence", as
 
     const independentLifecycle = packageAdmission();
     independentLifecycle.admission_basis = "independent-replacement-or-release-lifecycle";
-    independentLifecycle.consumer_evidence[1].consumer_id = independentLifecycle.consumer_evidence[0].consumer_id;
-    independentLifecycle.consumer_evidence[1].consumer_repository = independentLifecycle.consumer_evidence[0].consumer_repository;
+    independentLifecycle.consumer_evidence.splice(1);
     await writeFixture(
       root,
       "architecture/package-admissions/module-dot-example.json",
       `${JSON.stringify(independentLifecycle)}\n`,
+    );
+    assert.deepEqual((await loadPackagePolicy(root)).errors, []);
+
+    const independentIsolation = structuredClone(independentLifecycle);
+    independentIsolation.admission_basis = "independent-deployment-or-isolation";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(independentIsolation)}\n`,
+    );
+    assert.deepEqual((await loadPackagePolicy(root)).errors, []);
+
+    const secondConsumer = packageAdmission();
+    secondConsumer.admission_basis = "second-real-consumer";
+    secondConsumer.consumer_evidence[1].evidence_kind = "product-slice";
+    secondConsumer.consumer_evidence[1].implementation_id = secondConsumer.consumer_evidence[0].implementation_id;
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(secondConsumer)}\n`,
     );
     assert.deepEqual((await loadPackagePolicy(root)).errors, []);
 
@@ -997,6 +1016,26 @@ test("package admission rejects orphan manifests outside the catalog", async () 
     ));
   } finally {
     await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("package admission rejects symbolic-link directories before reading evidence", async () => {
+  const root = await mkdtemp(join(tmpdir(), "extension-topology-admission-directory-link-"));
+  const outside = await mkdtemp(join(tmpdir(), "extension-topology-admission-directory-outside-"));
+  try {
+    await writeArchitecture(root);
+    await writeFixture(outside, "orphan.json", `${JSON.stringify(packageAdmission())}\n`);
+    await symlink(
+      outside,
+      join(root, "architecture/package-admissions"),
+      process.platform === "win32" ? "junction" : "dir",
+    );
+    assert.deepEqual((await loadPackagePolicy(root)).errors, [
+      "architecture/package-admissions: admission evidence directory must be a real directory, not a symbolic link",
+    ]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+    await rm(outside, { recursive: true, force: true });
   }
 });
 

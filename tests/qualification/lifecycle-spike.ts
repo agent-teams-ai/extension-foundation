@@ -141,9 +141,22 @@ class AttributedLifecycleError extends Error {
 }
 
 function asError(error: unknown): Error {
-  return error instanceof AttributedLifecycleError
-    ? new AttributedLifecycleError(errorMessage(error), error.moduleId, error.phase)
-    : new Error(errorMessage(error));
+  try {
+    if (error instanceof AttributedLifecycleError) {
+      let moduleId: string | undefined;
+      let phase: LifecyclePhase | undefined;
+      try {
+        moduleId = error.moduleId;
+        phase = error.phase;
+      } catch {
+        // Hostile thrown values must not interrupt independent cleanup.
+      }
+      return new AttributedLifecycleError(errorMessage(error), moduleId, phase);
+    }
+  } catch {
+    // A Proxy can throw while instanceof reads its prototype.
+  }
+  return new Error(errorMessage(error));
 }
 
 function attributedError(error: unknown, moduleId: string, phase: LifecyclePhase): Error {
@@ -178,35 +191,83 @@ function fingerprint(request: ActivationRequest): string {
 }
 
 function snapshotPlan(plan: CompiledGraph): CompiledGraph {
-  let snapshot: unknown;
-  try {
-    snapshot = structuredClone(plan);
-  } catch {
-    throw new Error("INVALID_COMPILED_PLAN");
-  }
-  if (typeof snapshot !== "object" || snapshot === null) throw new Error("INVALID_COMPILED_PLAN");
-  const candidate = snapshot as Record<string, unknown>;
-  if (!Array.isArray(candidate.nodes)) throw new Error("INVALID_COMPILED_PLAN");
-  const descriptors: ModuleDescriptor[] = candidate.nodes.map(node => {
-    if (typeof node !== "object" || node === null) throw new Error("INVALID_COMPILED_PLAN");
-    const record = node as Record<string, unknown>;
-    if (typeof record.id !== "string"
-      || record.id.length === 0
-      || !Array.isArray(record.requires)
-      || !record.requires.every(requirement => typeof requirement === "string" && requirement.length > 0)) {
+  const exactDataRecord = (value: unknown, expectedKeys: readonly string[]): Readonly<Record<string, PropertyDescriptor>> => {
+    if (typeof value !== "object" || value === null || Array.isArray(value) || nodeTypes.isProxy(value)) {
       throw new Error("INVALID_COMPILED_PLAN");
     }
-    return { id: record.id, requires: [...record.requires] as string[] };
-  });
-  const compiled = compileGraph(descriptors);
-  if (!compiled.ok) throw new Error("INVALID_COMPILED_PLAN");
-  const canonical = compiled.plan;
-  const derivedFields = ["nodes", "startBatches", "startOrder", "stopBatches", "stopOrder"] as const;
-  if (candidate.digest !== canonical.digest
-    || derivedFields.some(field => JSON.stringify(candidate[field]) !== JSON.stringify(canonical[field]))) {
-    throw new Error("NON_CANONICAL_COMPILED_PLAN");
+    const prototype = Object.getPrototypeOf(value);
+    if (prototype !== Object.prototype && prototype !== null) throw new Error("INVALID_COMPILED_PLAN");
+    const descriptors = Object.getOwnPropertyDescriptors(value);
+    const keys = Reflect.ownKeys(descriptors);
+    if (keys.some(key => typeof key !== "string")
+      || (keys as string[]).sort().join("|") !== [...expectedKeys].sort().join("|")) {
+      throw new Error("NON_CANONICAL_COMPILED_PLAN");
+    }
+    for (const descriptor of Object.values(descriptors)) {
+      if (!("value" in descriptor) || descriptor.get !== undefined || descriptor.set !== undefined) {
+        throw new Error("INVALID_COMPILED_PLAN");
+      }
+    }
+    return descriptors;
+  };
+  const dataArray = (value: unknown): readonly unknown[] => {
+    if (!Array.isArray(value) || nodeTypes.isProxy(value)) throw new Error("INVALID_COMPILED_PLAN");
+    const descriptors = Object.getOwnPropertyDescriptors(value);
+    const expectedKeys = [...Array.from({ length: value.length }, (_, index) => String(index)), "length"];
+    const keys = Reflect.ownKeys(descriptors);
+    if (keys.some(key => typeof key !== "string")
+      || (keys as string[]).sort().join("|") !== expectedKeys.sort().join("|")) {
+      throw new Error("NON_CANONICAL_COMPILED_PLAN");
+    }
+    return Array.from({ length: value.length }, (_, index) => {
+      const descriptor = descriptors[index];
+      if (!descriptor || !("value" in descriptor) || descriptor.get !== undefined || descriptor.set !== undefined) {
+        throw new Error("INVALID_COMPILED_PLAN");
+      }
+      return descriptor.value;
+    });
+  };
+  const stringArray = (value: unknown): readonly string[] => {
+    const values = dataArray(value);
+    if (!values.every(item => typeof item === "string" && item.length > 0)) {
+      throw new Error("INVALID_COMPILED_PLAN");
+    }
+    return values as readonly string[];
+  };
+
+  try {
+    const root = exactDataRecord(plan, ["digest", "nodes", "startBatches", "startOrder", "stopBatches", "stopOrder"]);
+    const digest = root.digest!.value;
+    if (typeof digest !== "string") throw new Error("INVALID_COMPILED_PLAN");
+    const descriptors: ModuleDescriptor[] = dataArray(root.nodes!.value).map(node => {
+      const record = exactDataRecord(node, ["id", "requires"]);
+      const id = record.id!.value;
+      if (typeof id !== "string" || id.length === 0) throw new Error("INVALID_COMPILED_PLAN");
+      return { id, requires: stringArray(record.requires!.value) };
+    });
+    const snapshot = {
+      nodes: descriptors,
+      startBatches: dataArray(root.startBatches!.value).map(stringArray),
+      startOrder: stringArray(root.startOrder!.value),
+      stopBatches: dataArray(root.stopBatches!.value).map(stringArray),
+      stopOrder: stringArray(root.stopOrder!.value),
+    };
+    const compiled = compileGraph(descriptors);
+    if (!compiled.ok) throw new Error("INVALID_COMPILED_PLAN");
+    const canonical = compiled.plan;
+    const derivedFields = ["nodes", "startBatches", "startOrder", "stopBatches", "stopOrder"] as const;
+    if (digest !== canonical.digest
+      || derivedFields.some(field => JSON.stringify(snapshot[field]) !== JSON.stringify(canonical[field]))) {
+      throw new Error("NON_CANONICAL_COMPILED_PLAN");
+    }
+    return canonical;
+  } catch (error) {
+    if (error instanceof Error
+      && (error.message === "INVALID_COMPILED_PLAN" || error.message === "NON_CANONICAL_COMPILED_PLAN")) {
+      throw error;
+    }
+    throw new Error("INVALID_COMPILED_PLAN");
   }
-  return canonical;
 }
 
 function snapshotHooks(hooks: ReadonlyMap<string, ModuleHooks>): ReadonlyMap<string, ModuleHooks> {
@@ -524,17 +585,26 @@ export class GenerationLifecycle {
       return Promise.resolve(completed);
     }
 
-    const activationDeadline = absoluteDeadlineBudget(absoluteDeadline, this.#clock);
-    const generation = this.#nextGeneration++;
-    const result = this.#activate(generation, normalizedRequest, activationDeadline)
-      .then(value => {
-        this.#operationResults.set(operationId, value);
-        return value;
-      })
-      .finally(() => this.#flights.delete(operationId));
-    this.#flights.set(operationId, { result });
+    const deferred = Promise.withResolvers<ActivationResult>();
+    const flight = { result: deferred.promise };
+    this.#flights.set(operationId, flight);
+    try {
+      const activationDeadline = absoluteDeadlineBudget(absoluteDeadline, this.#clock);
+      const generation = this.#nextGeneration++;
+      void this.#activate(generation, normalizedRequest, activationDeadline)
+        .then(value => {
+          this.#operationResults.set(operationId, value);
+          deferred.resolve(value);
+        }, error => deferred.reject(error))
+        .finally(() => {
+          if (this.#flights.get(operationId) === flight) this.#flights.delete(operationId);
+        });
+    } catch (error) {
+      if (this.#flights.get(operationId) === flight) this.#flights.delete(operationId);
+      deferred.reject(error);
+    }
     return this.#waitForFlight(
-      result,
+      deferred.promise,
       explicitWaiterDeadline ?? absoluteDeadline + 100,
       waiterOptions.signal,
     );

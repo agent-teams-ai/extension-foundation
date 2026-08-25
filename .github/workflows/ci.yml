@@ -53,9 +53,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm architecture:check
-      - run: pnpm qualification:typecheck
-      - run: pnpm qualification:browser-worker:check
-      - run: pnpm qualification:packed-consumer:check
+      - run: pnpm qualification:check
+      - run: pnpm packages:artifacts:check
 
   architecture-macos:
     name: architecture-macos
@@ -75,5 +74,6 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      - run: pnpm qualification:typecheck
-      - run: pnpm qualification:browser-worker:check
+      - run: pnpm architecture:check
+      - run: pnpm qualification:check
+      - run: pnpm packages:artifacts:check

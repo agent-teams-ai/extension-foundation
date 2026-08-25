@@ -1,4 +1,4 @@
-schemaVersion: 1
+schemaVersion: 2
 qualification: universal-module-extension-system
 sourceRepository: agent-teams-ai/extension-foundation
 sourceRevision: 78850cbc57a1a688913a3694ca6f0efde34ab192
@@ -34,6 +34,67 @@ externalDecisionGates:
     detail: ../../decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
     effectWhileProposed: product-local-phase-1-blocked
     approvalTrackedBy: adr-lifecycle
+requirementDefinitions:
+  - id: ADR-0012
+    kind: decision
+    authority: accepted-adr
+    detail: ../../decisions/0012-reusable-library-module-and-plugin-boundaries.md
+    purpose: accepted Foundation package-admission policy
+  - id: owning-product-feature-decision
+    kind: decision
+    authority: owning-product
+    detail: final-recommendation.md
+    purpose: product-specific ownership approval for a concrete graph slice
+  - id: second-independent-consumer
+    kind: evidence
+    authority: qualification-evidence
+    detail: conformance-plan.md
+    purpose: immutable proof of a second real consumer
+  - id: cross-implementation-conformance
+    kind: evidence
+    authority: qualification-evidence
+    detail: conformance-plan.md
+    purpose: independently authored implementation passes the shared contract
+  - id: foundation-extraction-decision
+    kind: decision
+    authority: foundation-owner
+    detail: final-recommendation.md
+    purpose: artifact-specific approval to extract proved repeated semantics
+  - id: adr-0012-admission-basis
+    kind: evidence
+    authority: qualification-evidence
+    detail: ../../decisions/0012-reusable-library-module-and-plugin-boundaries.md
+    purpose: immutable proof naming the accepted ADR-0012 admission basis
+  - id: immutable-package-admission-record
+    kind: evidence
+    authority: foundation-package-policy
+    detail: ../../../architecture/checks/package-policy.mjs
+    purpose: schema-valid admission record bound to exact source revisions and evidence digests
+  - id: independent-conformance
+    kind: evidence
+    authority: qualification-evidence
+    detail: conformance-plan.md
+    purpose: independent implementation evidence for the admitted package boundary
+  - id: foundation-package-admission-decision
+    kind: decision
+    authority: foundation-owner
+    detail: final-recommendation.md
+    purpose: artifact-specific approval to admit one package after evidence verification
+  - id: PACKAGE-1
+    kind: evidence
+    authority: qualification-evidence
+    detail: conformance-plan.md
+    purpose: packed package, exports, runtime conditions and compatibility conformance
+  - id: public-api-report
+    kind: evidence
+    authority: qualification-evidence
+    detail: conformance-plan.md
+    purpose: exact public API and framework-leak report for the publication candidate
+  - id: foundation-package-publication-decision
+    kind: decision
+    authority: foundation-owner
+    detail: final-recommendation.md
+    purpose: artifact-specific release approval after topology and evidence gates pass
 implementationGates:
   - id: phase-1-graph-kernel
     appliesTo:
@@ -63,9 +124,9 @@ implementationGates:
         allOf:
           - decision: ADR-0013
             requiredStatus: accepted
-          - decision: second-independent-consumer
+          - evidence: second-independent-consumer
             requiredStatus: proven
-          - decision: cross-implementation-conformance
+          - evidence: cross-implementation-conformance
             requiredStatus: passed
           - decision: UMEQ-012
             requiredStatus: resolved
@@ -81,6 +142,12 @@ implementationGates:
             requiredStatus: resolved
           - decision: UMEQ-013
             requiredStatus: resolved
+          - evidence: adr-0012-admission-basis
+            requiredStatus: proven
+          - evidence: immutable-package-admission-record
+            requiredStatus: verified
+          - evidence: independent-conformance
+            requiredStatus: passed
           - decision: foundation-package-admission-decision
             requiredStatus: accepted
   - id: phase-3-package-publication
@@ -88,8 +155,18 @@ implementationGates:
       - phase-3-public-package-publication
     mode: all
     allOf:
+      - gate: phase-3-reusable-contract-extraction
+        requiredStatus: satisfied
+      - decision: UMEQ-014
+        requiredStatus: resolved
       - decision: UMEQ-015
         requiredStatus: resolved
+      - decision: UMEQ-016
+        requiredStatus: resolved
+      - evidence: PACKAGE-1
+        requiredStatus: passed
+      - evidence: public-api-report
+        requiredStatus: passed
       - decision: foundation-package-publication-decision
         requiredStatus: accepted
   - id: production-extension-host-safety

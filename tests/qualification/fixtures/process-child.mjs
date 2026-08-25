@@ -36,8 +36,8 @@ process.stdin.on("data", chunk => {
   }
 });
 process.stdin.on("end", () => {
-  if (!stopped && buffer.byteLength > 0) {
-    process.stderr.write("TRUNCATED_FRAME_AT_EOF\n");
+  if (!stopped) {
+    process.stderr.write(buffer.byteLength > 0 ? "TRUNCATED_FRAME_AT_EOF\n" : "STOP_NOT_ACKNOWLEDGED_AT_EOF\n");
     process.exitCode = 1;
   }
 });
