@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -1889,6 +1889,15 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 40_0
       : ["/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"];
   let browser: string | undefined;
   for (const candidate of candidates) {
+    if (process.platform === "win32") {
+      try {
+        await access(candidate);
+        browser = candidate;
+        break;
+      } catch {
+        continue;
+      }
+    }
     const probe = spawn(candidate, ["--version"], { stdio: "ignore" });
     try {
       const [code] = await once(probe, "exit", { signal: AbortSignal.timeout(2_000) });
