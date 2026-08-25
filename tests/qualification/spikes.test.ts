@@ -1860,7 +1860,7 @@ test("Worker structured-clone boundary preserves validation and stale rejection"
   assert.deepEqual(responses[1], { ok: false, error: "STALE_MODULE_ACTIVATION_GENERATION" });
 });
 
-test("browser Worker carries a portable generation-bound frame", { timeout: 20_000 }, async t => {
+test("browser Worker carries a portable generation-bound frame", { timeout: 40_000 }, async t => {
   const isCi = process.env.CI?.trim().toLowerCase() === "true";
   const candidates = process.platform === "darwin"
     ? [
@@ -1920,6 +1920,7 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 20_0
     "--headless=new",
     "--disable-gpu",
     "--disable-background-timer-throttling",
+    ...(isCi ? ["--disable-dev-shm-usage"] : []),
     "--no-first-run",
     "--no-default-browser-check",
     ...(isCi ? ["--no-sandbox"] : []),
@@ -1927,7 +1928,14 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 20_0
     `--user-data-dir=${profile}`,
     page,
   ], { stdio: ["ignore", "ignore", "pipe"] });
-  const childExit = new Promise<void>(resolve => child.once("exit", () => resolve()));
+  let childFailure: Error | undefined;
+  const childExit = new Promise<void>(resolve => {
+    child.once("error", error => {
+      childFailure = error;
+      resolve();
+    });
+    child.once("exit", () => resolve());
+  });
   t.after(async () => {
     if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
     try {
@@ -1941,19 +1949,32 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 20_0
   });
   child.stderr.setEncoding("utf8");
   let stderr = "";
-  const debuggerUrl = await Promise.race([
-    new Promise<string>((resolve, reject) => {
-      child.stderr.on("data", chunk => {
-        stderr += chunk;
-        const match = /DevTools listening on (ws:\/\/[^\s]+)/.exec(stderr);
-        const endpoint = match?.[1];
-        if (endpoint) resolve(endpoint);
-      });
-      child.once("error", reject);
-      child.once("exit", code => reject(new Error(`BROWSER_EXITED_EARLY:${String(code)}:${stderr}`)));
-    }),
-    rejectAfter(10_000, () => new Error(`BROWSER_DEBUGGER_TIMEOUT:${stderr}`)),
-  ]);
+  child.stderr.on("data", chunk => { stderr += chunk; });
+  let debuggerUrl: string | undefined;
+  const debuggerDeadline = performance.now() + 15_000;
+  while (performance.now() < debuggerDeadline) {
+    const stderrEndpoint = /DevTools listening on (ws:\/\/[^\s]+)/.exec(stderr)?.[1];
+    if (stderrEndpoint) {
+      debuggerUrl = stderrEndpoint;
+      break;
+    }
+    try {
+      const [portLine, pathLine] = (await readFile(join(profile, "DevToolsActivePort"), "utf8")).trim().split(/\r?\n/, 2);
+      const port = Number(portLine);
+      if (Number.isInteger(port) && port > 0 && port <= 65_535 && pathLine?.startsWith("/devtools/browser/")) {
+        debuggerUrl = `ws://127.0.0.1:${port}${pathLine}`;
+        break;
+      }
+    } catch {
+      // Chromium publishes DevToolsActivePort atomically after its debugger is ready.
+    }
+    if (childFailure) throw new Error(`BROWSER_START_FAILED:${childFailure.message}:${stderr}`);
+    if (child.exitCode !== null || child.signalCode !== null) {
+      throw new Error(`BROWSER_EXITED_EARLY:${String(child.exitCode ?? child.signalCode)}:${stderr}`);
+    }
+    await delay(25);
+  }
+  if (!debuggerUrl) throw new Error(`BROWSER_DEBUGGER_TIMEOUT:${stderr}`);
   const debuggerHttp = new URL(debuggerUrl);
   debuggerHttp.protocol = "http:";
   debuggerHttp.pathname = "/json/list";
