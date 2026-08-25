@@ -185,6 +185,15 @@ test("decision ledger has one semantic owner and ten unique approval forks", asy
       ],
     },
     {
+      id: "phase-3-package-publication",
+      appliesTo: ["phase-3-public-package-publication"],
+      mode: "all",
+      allOf: [
+        { decision: "UMEQ-015", requiredStatus: "resolved" },
+        { decision: "foundation-package-publication-decision", requiredStatus: "accepted" },
+      ],
+    },
+    {
       id: "production-extension-host-safety",
       appliesTo: [
         "phase-4-process-host",
@@ -363,7 +372,7 @@ test("accepted publication gates remain authoritative while proposed ADR-0013 is
   assert.match(files[2]!, /a second consumer is not imposed on the other\s+accepted bases/);
   assert.match(files[3]!, /ADR-0012's accepted admission\s+bases/);
   assert.match(files[3]!, /not\s+silently narrowed to the second-consumer basis/);
-  assert.match(files[3]!, /Internal extraction may proceed after the selected gate passes; package\s+publication additionally requires the `UMEQ-015`/);
+  assert.match(files[3]!, /Internal extraction may proceed after the selected gate passes; package\s+publication additionally requires the separate `phase-3-package-publication`/);
   assert.match(files[5]!, /`UMEQ-012` is\s+needed before reusable contract extraction; `UMEQ-015` is additionally required\s+before package publication/);
   assert.match(files[6]!, /status: proposed/);
   assert.match(files[6]!, /ADR-0012\s+remains the effective admission policy/);

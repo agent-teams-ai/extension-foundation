@@ -226,7 +226,8 @@ bases, resolved runtime decisions and a package admission decision; it is not
 silently narrowed to the second-consumer basis. Both paths require the
 contract-source decision `UMEQ-012`. Product contracts and adapters stay local.
 Internal extraction may proceed after the selected gate passes; package
-publication additionally requires the `UMEQ-015` publication-topology decision,
+publication additionally requires the separate `phase-3-package-publication`
+ledger gate: resolved `UMEQ-015`, an accepted Foundation publication decision,
 exact package exports and API reports.
 
 Estimated change: 4,000-8,000 LOC including fixtures, 2-4 weeks.

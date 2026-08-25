@@ -125,7 +125,7 @@ function packageCatalog() {
 
 function packageAdmission() {
   return {
-    schema_version: 2,
+    schema_version: 3,
     admission_basis: "public-spi",
     package_id: "module.example",
     owner_repository: "agent-teams-ai/extension-foundation",
@@ -138,6 +138,7 @@ function packageAdmission() {
         consumer_id: "consumer.alpha",
         implementation_id: "implementation.alpha",
         consumer_repository: "agent-teams-ai/consumer-alpha",
+        evidence_kind: "product-slice",
         source_revision: "1111111111111111111111111111111111111111",
         conformance_result: "passed",
         evidence_reference: `docs/evidence/consumer-alpha.json#sha256=${"a".repeat(64)}`,
@@ -146,6 +147,7 @@ function packageAdmission() {
         consumer_id: "consumer.beta",
         implementation_id: "implementation.beta",
         consumer_repository: "agent-teams-ai/consumer-beta",
+        evidence_kind: "independent-conformance",
         source_revision: "2222222222222222222222222222222222222222",
         conformance_result: "passed",
         evidence_reference: `docs/evidence/consumer-beta.json#sha256=${"b".repeat(64)}`,
@@ -719,7 +721,10 @@ test("invalid package identities fail before admission evidence is read", async 
     await writeFixture(root, packageAdmissionPath(invalidEntry), '{"broken":true,"broken":false}\n');
 
     const policy = await loadPackagePolicy(root);
-    assert.deepEqual(policy.errors, ["../probe: package id is invalid"]);
+    assert.deepEqual(policy.errors, [
+      "../probe: package id is invalid",
+      "architecture/package-admissions/-dot--dot-: orphan admission evidence is not declared by architecture/package-catalog.json",
+    ]);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -763,12 +768,24 @@ test("package admission fails closed without versioned independent evidence", as
       `${JSON.stringify(oneConsumer)}\n`,
     );
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
-      "module.example: public-spi admission requires two independently authored implementation identities",
+      "module.example: admission requires product-consumer evidence and an independent conformance implementation",
+    ]);
+
+    const duplicateEvidenceRole = packageAdmission();
+    duplicateEvidenceRole.consumer_evidence[1].evidence_kind = "product-slice";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(duplicateEvidenceRole)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: admission requires product-slice and independent-conformance evidence roles",
     ]);
 
     const independentLifecycle = packageAdmission();
     independentLifecycle.admission_basis = "independent-replacement-or-release-lifecycle";
-    independentLifecycle.consumer_evidence.pop();
+    independentLifecycle.consumer_evidence[1].consumer_id = independentLifecycle.consumer_evidence[0].consumer_id;
+    independentLifecycle.consumer_evidence[1].consumer_repository = independentLifecycle.consumer_evidence[0].consumer_repository;
     await writeFixture(
       root,
       "architecture/package-admissions/module-dot-example.json",
@@ -964,6 +981,20 @@ test("package admission fails closed without versioned independent evidence", as
     for (const version of ["0.0.0", "1.2.3-alpha.1", "1.2.3+build.7", "1.2.3-rc.1+build.7"]) {
       assert.equal(CONFORMANCE_VERSION.test(version), true, version);
     }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("package admission rejects orphan manifests outside the catalog", async () => {
+  const root = await mkdtemp(join(tmpdir(), "extension-topology-orphan-admission-"));
+  try {
+    await writeArchitecture(root, { catalog: packageCatalog(), packageBoundary: true });
+    await writeFixture(root, "architecture/package-admissions/orphan.json", `${JSON.stringify(packageAdmission())}\n`);
+    const policy = await loadPackagePolicy(root);
+    assert.ok(policy.errors.includes(
+      "architecture/package-admissions/orphan.json: orphan admission evidence is not declared by architecture/package-catalog.json",
+    ));
   } finally {
     await rm(root, { recursive: true, force: true });
   }

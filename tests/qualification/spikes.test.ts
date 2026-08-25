@@ -517,6 +517,50 @@ test("activation snapshots caller-owned identity before publication races", asyn
   assert.equal(lifecycle.cutovers, 1);
 });
 
+test("activation snapshots and canonically revalidates the compiled plan before effects", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const mutablePlan = structuredClone(requirePlan([
+    { id: "provider", requires: [] },
+    { id: "consumer", requires: ["provider"] },
+  ]));
+  let releasePrepare!: () => void;
+  const prepareReleased = new Promise<void>(resolve => { releasePrepare = resolve; });
+  let providerPreparing!: () => void;
+  const providerStartedPreparing = new Promise<void>(resolve => { providerPreparing = resolve; });
+  const starts: string[] = [];
+  const activation = lifecycle.activate(activationRequest(
+    lifecycle,
+    "plan-snapshot",
+    mutablePlan,
+    new Map<string, ModuleHooks>([
+      ["provider", inertHooks({
+        prepare: async () => {
+          providerPreparing();
+          await prepareReleased;
+        },
+        start: () => { starts.push("provider"); },
+      })],
+      ["consumer", inertHooks({ start: () => { starts.push("consumer"); } })],
+    ]),
+  ));
+  await providerStartedPreparing;
+  (mutablePlan.startBatches as string[][]).splice(1);
+  (mutablePlan.stopBatches as string[][]).splice(0, 1);
+  releasePrepare();
+  const result = await activation;
+  assert.equal(result.ok, true);
+  assert.deepEqual(starts, ["provider", "consumer"]);
+
+  const nonCanonical = structuredClone(requirePlan([{ id: "only", requires: [] }]));
+  (nonCanonical.startOrder as string[]).push("shadow");
+  assert.throws(() => lifecycle.activate(activationRequest(
+    lifecycle,
+    "non-canonical-plan",
+    nonCanonical,
+    new Map([["only", inertHooks()]]),
+  )), /NON_CANONICAL_COMPILED_PLAN/);
+});
+
 test("activation snapshots identity accessors once before validating them", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "candidate", requires: [] }]);
@@ -799,6 +843,77 @@ test("a queued sibling cannot begin its hook after another hook blocks past the 
   assert.equal(result.ok, false);
   assert.equal(lifecycle.activeGeneration, 0);
   assert.equal(lateStarts, 0);
+  assert.ok(result.errors.some(error => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
+});
+
+test("a prepare hook rejected at admission emits no started trace or cleanup effect", { timeout: 2_000 }, async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([
+    { id: "a-blocking", requires: [] },
+    { id: "b-rejected", requires: [] },
+  ]);
+  let rejectedPrepares = 0;
+  let rejectedStops = 0;
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "prepare-admission-deadline",
+    plan,
+    new Map<string, ModuleHooks>([
+      ["a-blocking", inertHooks({
+        prepare: () => {
+          const blockedUntil = performance.now() + 50;
+          while (performance.now() < blockedUntil) {
+            // Delay the sibling until its pre-invocation authority check rejects it.
+          }
+        },
+        stop: () => undefined,
+      })],
+      ["b-rejected", inertHooks({
+        prepare: () => { rejectedPrepares += 1; },
+        stop: () => { rejectedStops += 1; },
+      })],
+    ]),
+    { deadlineMs: 5, cleanupTimeoutMs: 20 },
+  ));
+  assert.equal(result.ok, false);
+  assert.equal(rejectedPrepares, 0);
+  assert.equal(rejectedStops, 0);
+  assert.equal(result.traces.some(trace => trace.moduleId === "b-rejected"), false);
+});
+
+test("a latched activation failure prevents later queued hooks after a transient clock error", async () => {
+  let failNextClockRead = false;
+  const lifecycle = new GenerationLifecycle(testAuthorityScope, {
+    now: () => {
+      if (failNextClockRead) {
+        failNextClockRead = false;
+        throw new Error("TRANSIENT_CLOCK_FAILURE");
+      }
+      return 0;
+    },
+    sleep: async (milliseconds: number) => delay(milliseconds),
+  });
+  const plan = requirePlan([
+    { id: "a-arm-clock", requires: [] },
+    { id: "b-timeout", requires: [] },
+    { id: "c-rejected", requires: [] },
+  ]);
+  const invoked: string[] = [];
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "transient-clock-queued-hooks",
+    plan,
+    new Map<string, ModuleHooks>([
+      ["a-arm-clock", inertHooks({ prepare: () => {
+        invoked.push("a-arm-clock");
+        failNextClockRead = true;
+      } })],
+      ["b-timeout", inertHooks({ prepare: () => { invoked.push("b-timeout"); } })],
+      ["c-rejected", inertHooks({ prepare: () => { invoked.push("c-rejected"); } })],
+    ]),
+  ));
+  assert.equal(result.ok, false);
+  assert.deepEqual(invoked, ["a-arm-clock"]);
   assert.ok(result.errors.some(error => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
 });
 
@@ -1405,6 +1520,56 @@ test("drain cutoff rejects an admitted write even while the event loop delays fe
   assert.ok(result.errors.some(error => error.message === `DRAIN_TIMEOUT:${oldGeneration}`));
 });
 
+test("transient drain clock failure fences the old generation before queued commits", async () => {
+  let lifecycle: GenerationLifecycle;
+  let oldGeneration = 0;
+  let postCutoverReads = 0;
+  let commitAccepted = false;
+  let commitError: unknown;
+  let oldLease: ReturnType<GenerationLifecycle["acquireInvocation"]> | undefined;
+  const clock = {
+    now: () => {
+      if (oldGeneration !== 0 && lifecycle.activeGeneration !== oldGeneration) {
+        postCutoverReads += 1;
+        if (postCutoverReads === 2) {
+          queueMicrotask(() => {
+            try {
+              lifecycle.assertInMemoryFence(oldLease!);
+              commitAccepted = true;
+            } catch (error) {
+              commitError = error;
+            }
+          });
+          throw new Error("TRANSIENT_DRAIN_CLOCK_FAILURE");
+        }
+      }
+      return 0;
+    },
+    sleep: async (milliseconds: number) => delay(milliseconds),
+  };
+  lifecycle = new GenerationLifecycle(testAuthorityScope, clock);
+  const first = requirePlan([{ id: "first", requires: [] }]);
+  await lifecycle.activate(activationRequest(lifecycle, "transient-drain-first", first, new Map([[
+    "first",
+    inertHooks(),
+  ]])));
+  oldGeneration = lifecycle.activeGeneration;
+  oldLease = lifecycle.acquireInvocation();
+  const second = requirePlan([{ id: "second", requires: [] }]);
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "transient-drain-second",
+    second,
+    new Map([["second", inertHooks()]]),
+  ));
+  await Promise.resolve();
+  assert.equal(result.ok, true);
+  assert.equal(result.termination, "termination_unproven");
+  assert.equal(commitAccepted, false);
+  assert.match(String(commitError), /STALE_GENERATION/);
+  assert.ok(result.errors.some(error => error.message === `DRAIN_TIMEOUT:${oldGeneration}`));
+});
+
 test("successful cutover reports old-generation cleanup timeout as termination unproven", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const first = requirePlan([{ id: "first", requires: [] }]);
@@ -1993,6 +2158,20 @@ test("process-host fixture enforces deadline and authority before handling", asy
   assert.notEqual(code, 0);
 });
 
+test("process-host fixture rejects a truncated frame at EOF", async t => {
+  const child = spawn(process.execPath, [join(fixtureRoot, "process-child.mjs")], { stdio: ["pipe", "pipe", "pipe"] });
+  t.after(() => child.kill("SIGKILL"));
+  let stderr = "";
+  child.stderr.setEncoding("utf8");
+  child.stderr.on("data", chunk => { stderr += chunk; });
+  const packet = encodeLengthPrefixedFrame(frame());
+  const close = once(child, "close", { signal: AbortSignal.timeout(2_000) });
+  child.stdin.end(packet.subarray(0, packet.byteLength - 1));
+  const [code] = await close;
+  assert.notEqual(code, 0);
+  assert.match(stderr, /TRUNCATED_FRAME_AT_EOF/);
+});
+
 test("Worker structured-clone boundary preserves validation and stale rejection", async t => {
   const worker = new Worker(new URL("./fixtures/portable-worker.mjs", import.meta.url), {
     workerData: protocolAuthority,
@@ -2035,7 +2214,7 @@ test("Worker structured-clone boundary preserves validation and stale rejection"
   assert.deepEqual(responses[1], { ok: false, error: "STALE_MODULE_ACTIVATION_GENERATION" });
 });
 
-test("browser Worker carries a portable generation-bound frame", { timeout: 40_000 }, async t => {
+test("browser Worker carries a portable generation-bound frame", { timeout: 70_000 }, async t => {
   const isCi = process.env.CI?.trim().toLowerCase() === "true";
   const candidates = process.platform === "darwin"
     ? [
@@ -2050,17 +2229,16 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 40_0
           join(process.env["PROGRAMFILES(X86)"] ?? "C:\\Program Files (x86)", "Microsoft", "Edge", "Application", "msedge.exe"),
         ]
       : ["/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"];
-  let browser: string | undefined;
+  const availableBrowsers: string[] = [];
   for (const candidate of candidates) {
     try {
       await access(candidate);
-      browser = candidate;
-      break;
+      availableBrowsers.push(candidate);
     } catch {
       continue;
     }
   }
-  if (!browser) {
+  if (availableBrowsers.length === 0) {
     if (isCi) assert.fail("CI_BROWSER_NOT_AVAILABLE");
     t.skip("no supported Chromium browser is installed");
     return;
@@ -2092,61 +2270,84 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 40_0
   });
   const address = server.address() as AddressInfo;
   const page = `http://127.0.0.1:${address.port}/fixtures/browser-worker.html`;
-  const profile = await mkdtemp(join(tmpdir(), "extension-browser-worker-"));
-  const child = spawn(browser, [
-    "--headless=new",
-    "--disable-gpu",
-    "--disable-background-timer-throttling",
-    ...(isCi && process.platform === "linux" ? ["--disable-dev-shm-usage"] : []),
-    "--no-first-run",
-    "--no-default-browser-check",
-    ...(isCi && process.platform === "linux" ? ["--no-sandbox"] : []),
-    "--remote-debugging-port=0",
-    `--user-data-dir=${profile}`,
-    page,
-  ], { stdio: ["ignore", "ignore", "pipe"] });
-  let childFailure: Error | undefined;
-  const childExit = new Promise<void>(resolve => {
-    child.once("error", error => {
-      childFailure = error;
-      resolve();
+  let child: ReturnType<typeof spawn> | undefined;
+  let childExit: Promise<void> | undefined;
+  let profile: string | undefined;
+  let debuggerUrl: string | undefined;
+  let readBrowserStderr = (): string => "";
+  const startupErrors: string[] = [];
+  for (const browser of availableBrowsers) {
+    const candidateProfile = await mkdtemp(join(tmpdir(), "extension-browser-worker-"));
+    const candidateChild = spawn(browser, [
+      "--headless=new",
+      "--disable-gpu",
+      "--disable-background-timer-throttling",
+      ...(isCi && process.platform === "linux" ? ["--disable-dev-shm-usage"] : []),
+      "--no-first-run",
+      "--no-default-browser-check",
+      ...(isCi && process.platform === "linux" ? ["--no-sandbox"] : []),
+      "--remote-debugging-port=0",
+      `--user-data-dir=${candidateProfile}`,
+      page,
+    ], { stdio: ["ignore", "ignore", "pipe"] });
+    let candidateFailure: Error | undefined;
+    let candidateStderr = "";
+    candidateChild.stderr.setEncoding("utf8");
+    candidateChild.stderr.on("data", chunk => { candidateStderr += chunk; });
+    const candidateExit = new Promise<void>(resolve => {
+      candidateChild.once("error", error => {
+        candidateFailure = error;
+        resolve();
+      });
+      candidateChild.once("close", () => resolve());
     });
-    child.once("exit", () => resolve());
-  });
+    const debuggerDeadline = performance.now() + 10_000;
+    while (performance.now() < debuggerDeadline) {
+      try {
+        const [portLine, pathLine] = (await readFile(join(candidateProfile, "DevToolsActivePort"), "utf8")).trim().split(/\r?\n/, 2);
+        const port = Number(portLine);
+        if (Number.isInteger(port) && port > 0 && port <= 65_535 && pathLine?.startsWith("/devtools/browser/")) {
+          debuggerUrl = `ws://127.0.0.1:${port}${pathLine}`;
+          break;
+        }
+      } catch {
+        // Chromium publishes DevToolsActivePort atomically after its debugger is ready.
+      }
+      if (candidateFailure || candidateChild.exitCode !== null || candidateChild.signalCode !== null) break;
+      await delay(25);
+    }
+    if (debuggerUrl) {
+      child = candidateChild;
+      childExit = candidateExit;
+      profile = candidateProfile;
+      readBrowserStderr = () => candidateStderr;
+      break;
+    }
+    startupErrors.push(`${browser}:${candidateFailure?.message ?? String(candidateChild.exitCode ?? candidateChild.signalCode ?? "debugger-timeout")}:${candidateStderr}`);
+    if (candidateChild.exitCode === null && candidateChild.signalCode === null) candidateChild.kill("SIGKILL");
+    await Promise.race([
+      candidateExit,
+      rejectAfter(2_000, () => new Error("BROWSER_CANDIDATE_TERMINATION_TIMEOUT")),
+    ]).catch(() => undefined);
+    await rm(candidateProfile, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+  }
+  if (!child || !childExit || !profile || !debuggerUrl) {
+    throw new Error(`CI_BROWSER_START_FAILED:${startupErrors.join("|")}`);
+  }
+  const activeChild = child;
+  const activeChildExit = childExit;
+  const activeProfile = profile;
   t.after(async () => {
-    if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
+    if (activeChild.exitCode === null && activeChild.signalCode === null) activeChild.kill("SIGKILL");
     try {
       await Promise.race([
-        childExit,
+        activeChildExit,
         rejectAfter(2_000, () => new Error("BROWSER_PROCESS_TERMINATION_TIMEOUT")),
       ]);
     } finally {
-      await rm(profile, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+      await rm(activeProfile, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
     }
   });
-  child.stderr.setEncoding("utf8");
-  let stderr = "";
-  child.stderr.on("data", chunk => { stderr += chunk; });
-  let debuggerUrl: string | undefined;
-  const debuggerDeadline = performance.now() + 15_000;
-  while (performance.now() < debuggerDeadline) {
-    try {
-      const [portLine, pathLine] = (await readFile(join(profile, "DevToolsActivePort"), "utf8")).trim().split(/\r?\n/, 2);
-      const port = Number(portLine);
-      if (Number.isInteger(port) && port > 0 && port <= 65_535 && pathLine?.startsWith("/devtools/browser/")) {
-        debuggerUrl = `ws://127.0.0.1:${port}${pathLine}`;
-        break;
-      }
-    } catch {
-      // Chromium publishes DevToolsActivePort atomically after its debugger is ready.
-    }
-    if (childFailure) throw new Error(`BROWSER_START_FAILED:${childFailure.message}:${stderr}`);
-    if (child.exitCode !== null || child.signalCode !== null) {
-      throw new Error(`BROWSER_EXITED_EARLY:${String(child.exitCode ?? child.signalCode)}:${stderr}`);
-    }
-    await delay(25);
-  }
-  if (!debuggerUrl) throw new Error(`BROWSER_DEBUGGER_TIMEOUT:${stderr}`);
   const debuggerHttp = new URL(debuggerUrl);
   debuggerHttp.protocol = "http:";
   debuggerHttp.pathname = "/json/list";
@@ -2171,7 +2372,7 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 40_0
   }
   assert.ok(
     pageTarget?.webSocketDebuggerUrl,
-    `BROWSER_PAGE_TARGET_MISSING:${discoveryError instanceof Error ? discoveryError.message : String(discoveryError)}:${stderr}`,
+    `BROWSER_PAGE_TARGET_MISSING:${discoveryError instanceof Error ? discoveryError.message : String(discoveryError)}:${readBrowserStderr()}`,
   );
   const socket = new WebSocket(pageTarget.webSocketDebuggerUrl);
   await Promise.race([
@@ -2246,7 +2447,7 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 40_0
     if (output !== "pending") break;
     await delay(25);
   }
-  assert.notEqual(output, "pending", `BROWSER_WORKER_RESULT_TIMEOUT:${stderr}`);
+  assert.notEqual(output, "pending", `BROWSER_WORKER_RESULT_TIMEOUT:${readBrowserStderr()}`);
   const parsed = JSON.parse(output) as { readonly ok?: unknown; readonly frame?: ProtocolEnvelope; readonly error?: unknown };
   assert.equal(parsed.ok, true, String(parsed.error ?? output));
   assert.equal(parsed.frame?.moduleActivationGeneration, 7);
@@ -2258,6 +2459,8 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 40_0
 test("packed toy package exercises an isolated consumer without Foundation, Cordis, or plugin dependencies", async t => {
   const root = await mkdtemp(join(tmpdir(), "extension-packed-consumer-"));
   const children = new Set<ReturnType<typeof spawn>>();
+  const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
+  const npmOptions = { shell: process.platform === "win32" } as const;
   t.after(async () => {
     await Promise.all([...children].map(async child => {
       if (child.exitCode !== null || child.signalCode !== null) return;
@@ -2270,12 +2473,15 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
     readonly private?: unknown;
   };
   assert.equal(fixtureManifest.private, true, "qualification fixture must not be publishable");
-  const pack = spawn("npm", ["pack", join(fixtureRoot, "toy-package"), "--json", "--pack-destination", root], { stdio: ["ignore", "pipe", "pipe"] });
+  const pack = spawn(npmCommand, ["pack", join(fixtureRoot, "toy-package"), "--json", "--pack-destination", root], {
+    ...npmOptions,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
   children.add(pack);
   let stdout = "";
   pack.stdout.setEncoding("utf8");
   pack.stdout.on("data", chunk => { stdout += chunk; });
-  const [packCode] = await once(pack, "exit", { signal: AbortSignal.timeout(30_000) });
+  const [packCode] = await once(pack, "close", { signal: AbortSignal.timeout(30_000) });
   children.delete(pack);
   assert.equal(packCode, 0);
   const packed = JSON.parse(stdout) as Array<{ filename: string; files: Array<{ path: string }> }>;
@@ -2284,12 +2490,20 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
   const consumer = join(root, "consumer");
   await mkdir(consumer);
   await writeFile(join(consumer, "package.json"), JSON.stringify({ private: true, type: "module" }));
-  const install = spawn("npm", ["install", "--ignore-scripts", "--package-lock=false", join(root, packed[0]!.filename)], { cwd: consumer, stdio: "ignore" });
+  const install = spawn(npmCommand, ["install", "--ignore-scripts", "--package-lock=false", join(root, packed[0]!.filename)], {
+    ...npmOptions,
+    cwd: consumer,
+    stdio: "ignore",
+  });
   children.add(install);
-  const [installCode] = await once(install, "exit", { signal: AbortSignal.timeout(30_000) });
+  const [installCode] = await once(install, "close", { signal: AbortSignal.timeout(30_000) });
   children.delete(install);
   assert.equal(installCode, 0);
-  const list = spawn("npm", ["ls", "--all", "--json"], { cwd: consumer, stdio: ["ignore", "pipe", "pipe"] });
+  const list = spawn(npmCommand, ["ls", "--all", "--json"], {
+    ...npmOptions,
+    cwd: consumer,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
   children.add(list);
   let listOutput = "";
   let listError = "";
@@ -2297,7 +2511,7 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
   list.stderr.setEncoding("utf8");
   list.stdout.on("data", chunk => { listOutput += chunk; });
   list.stderr.on("data", chunk => { listError += chunk; });
-  const [listCode] = await once(list, "exit", { signal: AbortSignal.timeout(30_000) });
+  const [listCode] = await once(list, "close", { signal: AbortSignal.timeout(30_000) });
   children.delete(list);
   assert.equal(listCode, 0, listError);
   const dependencyNames = new Set<string>();
@@ -2320,7 +2534,7 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
   let result = "";
   execute.stdout.setEncoding("utf8");
   execute.stdout.on("data", chunk => { result += chunk; });
-  const [executeCode] = await once(execute, "exit", { signal: AbortSignal.timeout(10_000) });
+  const [executeCode] = await once(execute, "close", { signal: AbortSignal.timeout(10_000) });
   children.delete(execute);
   assert.equal(executeCode, 0);
   assert.equal(result, "4");

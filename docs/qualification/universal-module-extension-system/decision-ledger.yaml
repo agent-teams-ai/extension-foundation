@@ -83,6 +83,15 @@ implementationGates:
             requiredStatus: resolved
           - decision: foundation-package-admission-decision
             requiredStatus: accepted
+  - id: phase-3-package-publication
+    appliesTo:
+      - phase-3-public-package-publication
+    mode: all
+    allOf:
+      - decision: UMEQ-015
+        requiredStatus: resolved
+      - decision: foundation-package-publication-decision
+        requiredStatus: accepted
   - id: production-extension-host-safety
     appliesTo:
       - phase-4-process-host

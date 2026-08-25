@@ -35,33 +35,42 @@ if (phase === "stop") {
   const oldPlan = compile("old");
   await lifecycle.activate(request("old", oldPlan, new Map([["old", inertHooks({ stop: never })]])));
   const candidatePlan = compile("candidate");
-  result = await lifecycle.activate(request(
-    "candidate",
-    candidatePlan,
-    new Map([["candidate", inertHooks()]]),
-  ));
+  result = await lifecycle.activate(
+    request(
+      "candidate",
+      candidatePlan,
+      new Map([["candidate", inertHooks()]]),
+    ),
+    { absoluteDeadline: lifecycle.deadlineAfter(1_000) },
+  );
 } else if (phase === "blocking-start") {
   const plan = compile("candidate");
-  result = await lifecycle.activate(request(
-    phase,
-    plan,
-    new Map([["candidate", inertHooks({
-      start: () => {
-        const deadline = Date.now() + 100;
-        while (Date.now() < deadline) {
-          // Deliberately block the event loop to qualify cooperative T0 deadlines.
-        }
-      },
-      stop: () => undefined,
-    })]]),
-  ));
+  result = await lifecycle.activate(
+    request(
+      phase,
+      plan,
+      new Map([["candidate", inertHooks({
+        start: () => {
+          const deadline = Date.now() + 100;
+          while (Date.now() < deadline) {
+            // Deliberately block the event loop to qualify cooperative T0 deadlines.
+          }
+        },
+        stop: () => undefined,
+      })]]),
+    ),
+    { absoluteDeadline: lifecycle.deadlineAfter(1_000) },
+  );
 } else {
   const plan = compile("candidate");
-  result = await lifecycle.activate(request(
-    `hung-${phase}`,
-    plan,
-    new Map([["candidate", inertHooks({ [phase]: never })]]),
-  ));
+  result = await lifecycle.activate(
+    request(
+      `hung-${phase}`,
+      plan,
+      new Map([["candidate", inertHooks({ [phase]: never })]]),
+    ),
+    { absoluteDeadline: lifecycle.deadlineAfter(1_000) },
+  );
 }
 
 process.stdout.write(`${JSON.stringify(result)}\n`);

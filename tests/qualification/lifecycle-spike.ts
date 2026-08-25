@@ -2,7 +2,7 @@ import { performance } from "node:perf_hooks";
 import { setTimeout as delay } from "node:timers/promises";
 import { types as nodeTypes } from "node:util";
 
-import type { CompiledGraph } from "./graph-spike.ts";
+import { compileGraph, type CompiledGraph, type ModuleDescriptor } from "./graph-spike.ts";
 
 export type LifecyclePhase = "preflight" | "prepare" | "start" | "ready" | "publish" | "drain" | "stop" | "abort";
 export type LifecycleOutcome = "started" | "confirmed" | "failed" | "timed-out" | "stale" | "termination_unproven";
@@ -175,6 +175,38 @@ function fingerprint(request: ActivationRequest): string {
     absoluteDeadline,
     cleanupTimeoutMs ?? 50,
   ]);
+}
+
+function snapshotPlan(plan: CompiledGraph): CompiledGraph {
+  let snapshot: unknown;
+  try {
+    snapshot = structuredClone(plan);
+  } catch {
+    throw new Error("INVALID_COMPILED_PLAN");
+  }
+  if (typeof snapshot !== "object" || snapshot === null) throw new Error("INVALID_COMPILED_PLAN");
+  const candidate = snapshot as Record<string, unknown>;
+  if (!Array.isArray(candidate.nodes)) throw new Error("INVALID_COMPILED_PLAN");
+  const descriptors: ModuleDescriptor[] = candidate.nodes.map(node => {
+    if (typeof node !== "object" || node === null) throw new Error("INVALID_COMPILED_PLAN");
+    const record = node as Record<string, unknown>;
+    if (typeof record.id !== "string"
+      || record.id.length === 0
+      || !Array.isArray(record.requires)
+      || !record.requires.every(requirement => typeof requirement === "string" && requirement.length > 0)) {
+      throw new Error("INVALID_COMPILED_PLAN");
+    }
+    return { id: record.id, requires: [...record.requires] as string[] };
+  });
+  const compiled = compileGraph(descriptors);
+  if (!compiled.ok) throw new Error("INVALID_COMPILED_PLAN");
+  const canonical = compiled.plan;
+  const derivedFields = ["nodes", "startBatches", "startOrder", "stopBatches", "stopOrder"] as const;
+  if (candidate.digest !== canonical.digest
+    || derivedFields.some(field => JSON.stringify(candidate[field]) !== JSON.stringify(canonical[field]))) {
+    throw new Error("NON_CANONICAL_COMPILED_PLAN");
+  }
+  return canonical;
 }
 
 function snapshotHooks(hooks: ReadonlyMap<string, ModuleHooks>): ReadonlyMap<string, ModuleHooks> {
@@ -452,9 +484,10 @@ export class GenerationLifecycle {
       if (typeof value !== "string" || value.length === 0) throw new Error(`INVALID_ACTIVATION_IDENTITY:${field}`);
     }
     if (identity.authorityScope !== this.#authorityScope) throw new Error("AUTHORITY_SCOPE_MISMATCH");
+    const plan = snapshotPlan(request.plan);
     const normalizedRequest: ActivationRequest = Object.freeze({
       identity,
-      plan: request.plan,
+      plan,
       hooks: request.hooks,
       absoluteDeadline,
       cleanupTimeoutMs,
@@ -553,15 +586,20 @@ export class GenerationLifecycle {
     this.#drainDeadlines.set(generation, deadline);
     this.#sealedGenerations.add(generation);
     const timeoutCode = `DRAIN_TIMEOUT:${generation}`;
+    const markDrainTimeout = (): void => this.#fenceGeneration(generation);
     try {
       return await runBeforeDeadline(async () => {
         while ([...this.#leases].some(lease => lease.generation === generation)) {
-          if (deadlineExpired(deadline, this.#clock)) return false;
+          if (deadlineExpired(deadline, this.#clock)) {
+            markDrainTimeout();
+            return false;
+          }
           await this.#clock.sleep(1);
         }
         return true;
-      }, deadline, this.#clock, () => undefined, timeoutCode);
+      }, deadline, this.#clock, markDrainTimeout, timeoutCode);
     } catch (error) {
+      markDrainTimeout();
       if (errorMessage(error) === timeoutCode) return false;
       throw error;
     }
@@ -645,6 +683,12 @@ export class GenerationLifecycle {
     const markActivationTimeout = (): void => {
       activationController.abort("ABSOLUTE_DEADLINE_EXCEEDED");
     };
+    const assertActivationAdmitted = (): void => {
+      if (!activationController.signal.aborted) return;
+      const reason = activationController.signal.reason;
+      if (reason instanceof Error) throw reason;
+      throw new Error(typeof reason === "string" ? reason : "ACTIVATION_ABORTED");
+    };
     const checkDeadline = (): void => {
       if (deadlineExpired(activationDeadline, this.#clock)) {
         markActivationTimeout();
@@ -685,18 +729,24 @@ export class GenerationLifecycle {
             const module = hooks.get(moduleId);
             if (!module) throw new Error(`MISSING_HOOKS:${moduleId}`);
             if (phase === "prepare") {
-              cleanupCandidates.add(moduleId);
-              localTraces.push({ phase, moduleId, generation, outcome: "started" });
               await runBeforeDeadline(
-                () => module.prepare?.(activationContext),
+                () => {
+                  assertActivationAdmitted();
+                  cleanupCandidates.add(moduleId);
+                  localTraces.push({ phase, moduleId, generation, outcome: "started" });
+                  return module.prepare?.(activationContext);
+                },
                 activationDeadline,
                 this.#clock,
                 markActivationTimeout,
               );
             } else if (phase === "start") {
-              localTraces.push({ phase, moduleId, generation, outcome: "started" });
               await runBeforeDeadline(
-                () => module.start?.(activationContext),
+                () => {
+                  assertActivationAdmitted();
+                  localTraces.push({ phase, moduleId, generation, outcome: "started" });
+                  return module.start?.(activationContext);
+                },
                 activationDeadline,
                 this.#clock,
                 markActivationTimeout,
@@ -707,7 +757,10 @@ export class GenerationLifecycle {
               }
               if (module.readiness === "probe") {
                 const ready = await runBeforeDeadline(
-                  () => module.ready(activationContext),
+                  () => {
+                    assertActivationAdmitted();
+                    return module.ready(activationContext);
+                  },
                   activationDeadline,
                   this.#clock,
                   markActivationTimeout,

@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 
 import { docsFind } from "@agent-teams/docs-protocol";
@@ -36,9 +36,14 @@ export const CONSUMER_EVIDENCE_KEYS = Object.freeze([
   "conformance_result",
   "consumer_id",
   "consumer_repository",
+  "evidence_kind",
   "evidence_reference",
   "implementation_id",
   "source_revision",
+]);
+export const REQUIRED_EVIDENCE_KINDS = Object.freeze([
+  "product-slice",
+  "independent-conformance",
 ]);
 export const ADMISSION_BASES = Object.freeze([
   "independent-deployment-or-isolation",
@@ -157,8 +162,8 @@ function validateAdmission(entry, admission, errors) {
     errors.push(`${entry.id}: admission must contain exactly ${ADMISSION_KEYS.join(", ")}`);
     return;
   }
-  if (admission.schema_version !== 2) {
-    errors.push(`${entry.id}: admission.schema_version must equal 2`);
+  if (admission.schema_version !== 3) {
+    errors.push(`${entry.id}: admission.schema_version must equal 3`);
   }
   for (const key of ADMISSION_KEYS.filter(key => !["consumer_evidence", "schema_version"].includes(key))) {
     if (typeof admission[key] !== "string" || admission[key].length === 0) {
@@ -182,12 +187,13 @@ function validateAdmission(entry, admission, errors) {
   if (!ADMISSION_BASES.includes(admission.admission_basis)) {
     errors.push(`${entry.id}: admission.admission_basis must identify one ADR-0012 extraction gate`);
   }
-  if (!Array.isArray(admission.consumer_evidence) || admission.consumer_evidence.length < 1) {
-    errors.push(`${entry.id}: admission requires at least one immutable evidence record`);
+  if (!Array.isArray(admission.consumer_evidence) || admission.consumer_evidence.length < 2) {
+    errors.push(`${entry.id}: admission requires product-consumer evidence and an independent conformance implementation`);
     return;
   }
   const consumerIdentities = new Set();
   const implementationIdentities = new Set();
+  const evidenceKinds = new Set();
   const evidenceReferences = new Set();
   const evidenceLocations = new Set();
   const evidenceDigests = new Set();
@@ -215,6 +221,11 @@ function validateAdmission(entry, admission, errors) {
     if (evidence.conformance_result !== "passed") {
       errors.push(`${entry.id}: consumer_evidence[${index}].conformance_result must be passed`);
     }
+    if (!REQUIRED_EVIDENCE_KINDS.includes(evidence.evidence_kind)) {
+      errors.push(`${entry.id}: consumer_evidence[${index}].evidence_kind must identify product-slice or independent-conformance`);
+    } else {
+      evidenceKinds.add(evidence.evidence_kind);
+    }
     const canonicalEvidence = canonicalEvidenceReference(evidence.evidence_reference);
     if (!canonicalEvidence) {
       errors.push(`${entry.id}: consumer_evidence[${index}].evidence_reference must use a contained docs path or HTTPS URL with a sha256 fragment`);
@@ -234,6 +245,13 @@ function validateAdmission(entry, admission, errors) {
     || evidenceLocations.size !== admission.consumer_evidence.length
     || evidenceDigests.size !== admission.consumer_evidence.length) {
     errors.push(`${entry.id}: evidence must use distinct immutable references`);
+  }
+  if (REQUIRED_EVIDENCE_KINDS.some(kind => !evidenceKinds.has(kind))) {
+    errors.push(`${entry.id}: admission requires product-slice and independent-conformance evidence roles`);
+  }
+  if (admission.admission_basis !== "public-spi"
+    && (implementationIdentities.size < 2 || implementationIdentities.size !== admission.consumer_evidence.length)) {
+    errors.push(`${entry.id}: admission requires independently authored implementation evidence`);
   }
   if (admission.admission_basis === "second-real-consumer"
     && (consumerIdentities.size < 2 || consumerIdentities.size !== admission.consumer_evidence.length)) {
@@ -269,6 +287,7 @@ export async function loadPackagePolicy(root) {
   }
 
   const seen = { id: new Set(), path: new Set(), package_name: new Set() };
+  const expectedAdmissionFiles = new Set();
   for (const entry of catalog.packages) {
     if (!hasExactKeys(entry, CATALOG_ENTRY_KEYS)
       || CATALOG_ENTRY_KEYS.some(key => typeof entry[key] !== "string" || entry[key].length === 0)) {
@@ -288,6 +307,7 @@ export async function loadPackagePolicy(root) {
       errors.push(`${entry.id}: owner_document must be an ADR identity`);
     }
     if (packageIdIsValid) {
+      expectedAdmissionFiles.add(packageAdmissionPath(entry).slice(PACKAGE_ADMISSION_DIRECTORY.length + 1));
       try {
         const admission = parseStrictJson(await readFile(join(root, packageAdmissionPath(entry)), "utf8"));
         validateAdmission(entry, admission, errors);
@@ -307,6 +327,17 @@ export async function loadPackagePolicy(root) {
     entries.push(entry);
     entriesById.set(entry.id, entry);
     entriesByPath.set(entry.path, entry);
+  }
+
+  try {
+    const admissionEntries = await readdir(join(root, PACKAGE_ADMISSION_DIRECTORY), { withFileTypes: true });
+    for (const admissionEntry of admissionEntries) {
+      if (!admissionEntry.isFile() || !expectedAdmissionFiles.has(admissionEntry.name)) {
+        errors.push(`${PACKAGE_ADMISSION_DIRECTORY}/${admissionEntry.name}: orphan admission evidence is not declared by ${CATALOG_PATH}`);
+      }
+    }
+  } catch (error) {
+    if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) throw error;
   }
 
   return {

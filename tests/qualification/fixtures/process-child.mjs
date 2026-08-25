@@ -35,6 +35,12 @@ process.stdin.on("data", chunk => {
     }
   }
 });
+process.stdin.on("end", () => {
+  if (!stopped && buffer.byteLength > 0) {
+    process.stderr.write("TRUNCATED_FRAME_AT_EOF\n");
+    process.exitCode = 1;
+  }
+});
 
 function send(frame) {
   process.stdout.write(encodeLengthPrefixedFrame(frame));
