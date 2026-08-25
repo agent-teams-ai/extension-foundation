@@ -85,8 +85,9 @@ any canonical mutation.
   reverse cleanup. A hook that ignores cancellation may still overlap cleanup,
   so the result is explicitly `termination_unproven`.
 - Generation replacement can drain admitted work and reject stale leases in an
-  in-memory fence model; durable sink fencing and debt ordering remain product
-  adapter obligations.
+  in-memory fence model. Publication is a commit point: later cleanup failure
+  leaves the candidate active and old-generation termination unproven. Durable
+  sink fencing, stop evidence and debt ordering remain product adapter obligations.
 - Identity-bound crash/recovery choices can be represented as a deterministic
   reducer rather than process-memory continuation; crash injection and durable
   recovery are not yet proved.

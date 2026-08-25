@@ -659,6 +659,17 @@ test("topology fails closed on dependency forms the shared source graph does not
       "packages/example/tsconfig.json: config differs from the reviewed Foundation materialization plan",
       "packages/example/tsconfig.json: compilerOptions.paths is prohibited until the shared source graph models it",
     ]);
+
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      'export async function loadCapability() { return import("node:fs"); }\n',
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "packages/example/src/features/example/capability.ts: dynamic module loading is prohibited until the shared source graph models it",
+      "packages/example/tsconfig.json: config differs from the reviewed Foundation materialization plan",
+      "packages/example/tsconfig.json: compilerOptions.paths is prohibited until the shared source graph models it",
+    ]);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -696,6 +707,18 @@ test("package admission fails closed without versioned independent evidence", as
       "module.example: admission requires at least two independent consumer evidence records",
     ]);
 
+    const malformedOwner = packageAdmission();
+    malformedOwner.owner_repository = null;
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(malformedOwner)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: admission.owner_repository must be a non-empty string",
+      "module.example: admission.owner_repository must be a canonical lowercase owner/repository identity",
+    ]);
+
     const duplicateConsumer = packageAdmission();
     duplicateConsumer.consumer_evidence[1].consumer_repository = duplicateConsumer.consumer_evidence[0].consumer_repository;
     await writeFixture(
@@ -706,6 +729,47 @@ test("package admission fails closed without versioned independent evidence", as
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
       "module.example: consumer evidence must use distinct identities, repositories, and immutable references",
     ]);
+
+    const caseAliasedConsumer = packageAdmission();
+    caseAliasedConsumer.consumer_evidence[1].consumer_repository = "AGENT-TEAMS-AI/CONSUMER-ALPHA";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(caseAliasedConsumer)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: consumer_evidence[1].consumer_repository must be a canonical lowercase owner/repository identity",
+      "module.example: consumer evidence must use distinct identities, repositories, and immutable references",
+    ]);
+
+    const aliasedFoundation = packageAdmission();
+    aliasedFoundation.consumer_evidence[0].consumer_repository = "Agent-Teams-AI/Extension-Foundation";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(aliasedFoundation)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: consumer_evidence[0].consumer_repository must be a canonical lowercase owner/repository identity",
+      "module.example: consumer evidence must be independent from the Foundation owner repository",
+    ]);
+
+    for (const reference of [
+      `docs/../../outside-alpha.json#sha256=${"a".repeat(64)}`,
+      `docs/../outside-alpha.json#sha256=${"a".repeat(64)}`,
+      `docs/evidence\\outside-alpha.json#sha256=${"a".repeat(64)}`,
+    ]) {
+      const traversal = packageAdmission();
+      traversal.consumer_evidence[0].evidence_reference = reference;
+      await writeFixture(
+        root,
+        "architecture/package-admissions/module-dot-example.json",
+        `${JSON.stringify(traversal)}\n`,
+      );
+      assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+        "module.example: consumer_evidence[0].evidence_reference must use a contained docs path or HTTPS URL with a sha256 fragment",
+      ]);
+    }
 
     const wrongDecision = packageAdmission();
     wrongDecision.extraction_decision = "ADR-0100";

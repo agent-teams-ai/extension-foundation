@@ -2,7 +2,11 @@
 
 This directory is closed until an accepted package-specific ADR and a real
 feature-owned implementation slice admit a package through
-`architecture/package-catalog.json`.
+`architecture/package-catalog.json`. Admission also requires a versioned
+`architecture/package-admissions/<encoded-package-id>.json` record with two
+independent consumer repositories, exact source commits, passed conformance,
+and distinct digest-bearing evidence references. Publication additionally
+verifies the referenced evidence bytes.
 
 Do not add placeholder packages or empty DDD layers. Use the deterministic
 scaffolding plan, review, apply, and recovery workflow documented in the

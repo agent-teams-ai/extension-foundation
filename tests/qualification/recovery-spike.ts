@@ -36,6 +36,8 @@ export interface ObservedOldGeneration {
   readonly authorityScope: string;
   readonly sinkFence: number;
   readonly inFlight: boolean;
+  readonly terminationEvidence: "running" | "stopped" | "unknown";
+  readonly cleanupEvidence: "pending" | "confirmed" | "uncertain";
 }
 
 export interface ObservedHostState {
@@ -50,21 +52,72 @@ export type RecoveryAction =
   | "INSPECT_CANDIDATE"
   | "ABORT_CANDIDATE"
   | "PUBLISH_CANDIDATE"
-  | "RETURN_PUBLISHED_RESULT"
   | "RESUME_DRAIN"
+  | "STOP_OLD_GENERATION"
+  | "RECONCILE_OLD_CLEANUP"
+  | "RECORD_RETIREMENT"
   | "RETURN_RETIRED_RESULT"
   | "CONTROLLED_RECOVERY";
+
+const lifecyclePhases = new Set<unknown>(["prepared", "started", "ready", "published", "draining", "retired"]);
+const publicationEvidenceStates = new Set<unknown>(["none", "committed", "uncertain"]);
+const externalOutcomeStates = new Set<unknown>(["none", "confirmed", "uncertain"]);
+const candidateStates = new Set<unknown>(["absent", "running", "ready", "terminated", "unknown"]);
+const terminationEvidenceStates = new Set<unknown>(["running", "stopped", "unknown"]);
+const cleanupEvidenceStates = new Set<unknown>(["pending", "confirmed", "uncertain"]);
+
+function nonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0;
+}
+
+function nonNegativeInteger(value: unknown): value is number {
+  return Number.isSafeInteger(value) && Number(value) >= 0;
+}
+
+function hasValidRuntimeShape(state: DurableLifecycleState, observed: ObservedHostState): boolean {
+  const candidate = observed.candidate;
+  return nonEmptyString(state.operationId)
+    && nonEmptyString(state.intentDigest)
+    && nonEmptyString(state.authorityScope)
+    && nonEmptyString(state.graphDigest)
+    && nonEmptyString(state.candidateHostIncarnation)
+    && [
+      state.candidateGeneration,
+      state.expectedActiveGeneration,
+      state.activeGeneration,
+      state.routeHeadGeneration,
+      state.expectedSinkFence,
+      state.candidateSinkFence,
+      state.sinkFence,
+      observed.oldGeneration.generation,
+      observed.oldGeneration.sinkFence,
+    ].every(nonNegativeInteger)
+    && typeof state.operationDeadlineExpired === "boolean"
+    && typeof state.drainDeadlineExpired === "boolean"
+    && typeof observed.oldGeneration.inFlight === "boolean"
+    && lifecyclePhases.has(state.phase)
+    && publicationEvidenceStates.has(state.publicationEvidence)
+    && externalOutcomeStates.has(state.externalOutcome)
+    && candidateStates.has(candidate.state)
+    && terminationEvidenceStates.has(observed.oldGeneration.terminationEvidence)
+    && cleanupEvidenceStates.has(observed.oldGeneration.cleanupEvidence)
+    && nonEmptyString(observed.queryAuthorityScope)
+    && nonEmptyString(observed.queryGraphDigest)
+    && nonEmptyString(observed.oldGeneration.authorityScope)
+    && (candidate.state === "absent" || (
+      nonNegativeInteger(candidate.generation)
+      && nonEmptyString(candidate.hostIncarnation)
+      && nonEmptyString(candidate.authorityScope)
+      && nonEmptyString(candidate.graphDigest)
+    ));
+}
 
 export function reconcileLifecycle(
   state: DurableLifecycleState,
   observed: ObservedHostState,
 ): RecoveryAction {
   if (
-    state.operationId.length === 0
-    || state.intentDigest.length === 0
-    || state.authorityScope.length === 0
-    || state.graphDigest.length === 0
-    || state.candidateHostIncarnation.length === 0
+    !hasValidRuntimeShape(state, observed)
     || state.candidateGeneration <= state.expectedActiveGeneration
     || state.candidateSinkFence <= state.expectedSinkFence
     || state.externalOutcome === "uncertain"
@@ -106,6 +159,8 @@ export function reconcileLifecycle(
 
   if (state.phase === "retired") {
     if (observed.oldGeneration.inFlight
+      || observed.oldGeneration.terminationEvidence !== "stopped"
+      || observed.oldGeneration.cleanupEvidence !== "confirmed"
       || observed.candidate.state === "absent"
       || observed.candidate.state === "terminated") {
       return "CONTROLLED_RECOVERY";
@@ -116,9 +171,13 @@ export function reconcileLifecycle(
     if (observed.candidate.state !== "ready" && observed.candidate.state !== "running") {
       return "CONTROLLED_RECOVERY";
     }
+    if (observed.oldGeneration.terminationEvidence === "unknown"
+      || observed.oldGeneration.cleanupEvidence === "uncertain") return "CONTROLLED_RECOVERY";
     if (observed.oldGeneration.inFlight && state.drainDeadlineExpired) return "CONTROLLED_RECOVERY";
     if (observed.oldGeneration.inFlight) return "RESUME_DRAIN";
-    return state.phase === "published" ? "RETURN_PUBLISHED_RESULT" : "RETURN_RETIRED_RESULT";
+    if (observed.oldGeneration.terminationEvidence === "running") return "STOP_OLD_GENERATION";
+    if (observed.oldGeneration.cleanupEvidence === "pending") return "RECONCILE_OLD_CLEANUP";
+    return "RECORD_RETIREMENT";
   }
   if (state.operationDeadlineExpired) {
     return observed.candidate.state === "absent" || observed.candidate.state === "terminated"

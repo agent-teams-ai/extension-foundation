@@ -44,7 +44,7 @@ the dossier has status `qualified`.
 | Profile | Mandatory proof |
 | --- | --- |
 | `GRAPH-1` | Closed-world closure; duplicate, missing, cycle and ambiguous provider rejection; deterministic plan/digest; exact dependency object; zero effects before admission |
-| `LIFECYCLE-1` | Single activation per fingerprint; explicit readiness; one publication; reverse rollback; idempotent stop; absolute deadlines; cleanup debt |
+| `LIFECYCLE-1` | Single activation per fingerprint; complete hook preflight before effects; explicit readiness; one publication commit point; aggregate sibling failures; reverse rollback only before publication; idempotent stop; bounded waiter resources; absolute deadlines; cleanup debt |
 | `GENERATION-1` | Immutable generation identity; monotonic fence; stale request/write rejection; bounded drain; rollback as a forward generation |
 | `PROTOCOL-1` | Version negotiation; bounded frames; identity/deadline validation; duplicate/reordered messages; cancellation; malformed peer failure |
 | `PACKAGE-1` | Exact exports; no framework leakage; packed consumer E2E; browser/Node condition checks; API report and compatibility fixtures |
@@ -88,8 +88,8 @@ a distributed claim requires a linearizable store and sink-enforced fences.
 ## Required Negative Families
 
 1. Graph ambiguity, duplicate IDs, missing providers, hard/soft cycles, descriptor bombs and canonicalization collisions.
-2. Concurrent start/stop/update, late readiness, stale candidate, deadline expiry, hung cleanup and double publication.
-3. Crash before/after intent, readiness, route commit, outbox publish, effect acknowledgement and drain completion.
+2. Concurrent start/stop/update, late readiness, stale candidate, incomplete hook binding, deadline expiry, cancelled waiter cleanup, hung cleanup, post-publication cleanup failure and double publication.
+3. Crash before/after intent, readiness, route commit, outbox publish, effect acknowledgement, drain completion, old-generation stop, cleanup reconciliation and retirement recording.
 4. Stale generation, stale replica incarnation, lost acknowledgement, duplicate operation and ambiguous remote effect.
 5. Malformed, oversized, deeply nested, reordered, replayed and unauthenticated protocol frames.
 6. Tag movement, digest corruption, wrong publisher, stale metadata, revoked signer, dependency confusion and incomplete mirror/snapshot.

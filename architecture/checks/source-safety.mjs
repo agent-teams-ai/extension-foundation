@@ -33,6 +33,7 @@ const REFLECTIVE_RUNTIME_PROPERTIES = new Map([
 ]);
 
 const COMPUTED_RUNTIME_PROPERTY_ACCESS = "computed runtime property access";
+const DYNAMIC_MODULE_LOADING = "dynamic module loading";
 const ASSERTION_NAMESPACE_ESCAPE = "assertion namespace escape or mutation";
 const ASSERTION_NAMESPACE_REEXPORT = "assertion namespace re-export";
 const ASSERTION_MODULES = new Set(["node:assert", "node:assert/strict"]);
@@ -720,6 +721,7 @@ export function analyzeSource(filename, source) {
     runtimeExportBindings.map(binding => binding.exportedName),
   )];
   walk(result.program, (node, parent) => {
+    if (node.type === "ImportExpression") errors.add(DYNAMIC_MODULE_LOADING);
     if (node.type === "Identifier") {
       const label = FORBIDDEN_RUNTIME_IDENTIFIERS.get(node.name);
       if (label !== undefined) errors.add(label);

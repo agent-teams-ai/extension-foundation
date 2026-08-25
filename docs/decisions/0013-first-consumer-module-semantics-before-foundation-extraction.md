@@ -59,6 +59,9 @@ not define the extracted public model.
 - The first consumer may need a mechanical extraction later; one-way library
   and module dependencies keep that move bounded.
 - ADR-0012 remains effective until this proposal receives explicit approval.
+- The approval transition must add machine-readable `supersedes: ADR-0012` in
+  the same reviewed change. Proposed decisions intentionally cannot claim an
+  effective supersession in current governance tooling.
 
 ## Rejected Alternatives
 

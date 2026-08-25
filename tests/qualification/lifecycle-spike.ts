@@ -293,7 +293,7 @@ export class GenerationLifecycle {
     }
   }
 
-  async drain(generation: number, absoluteDeadline: number): Promise<boolean> {
+  async #drainGeneration(generation: number, absoluteDeadline: number): Promise<boolean> {
     this.#sealedGenerations.add(generation);
     while ([...this.#leases].some(lease => lease.generation === generation)) {
       if (this.#clock.now() >= absoluteDeadline) break;
@@ -308,27 +308,28 @@ export class GenerationLifecycle {
     waiterDeadline: number,
     signal?: AbortSignal,
   ): Promise<ActivationResult> {
-    const boundedWait = runBeforeDeadline(
-      () => result,
-      waiterDeadline,
-      this.#clock,
-      () => undefined,
-      "WAITER_DEADLINE_EXCEEDED",
-    );
-    if (!signal) return boundedWait;
-    if (signal.aborted) throw new Error("WAITER_CANCELLED");
+    if (signal?.aborted) throw new Error("WAITER_CANCELLED");
+    const remaining = waiterDeadline - this.#clock.now();
+    if (remaining <= 0) throw new Error("WAITER_DEADLINE_EXCEEDED");
     return new Promise<ActivationResult>((resolve, reject) => {
-      const onAbort = (): void => reject(new Error("WAITER_CANCELLED"));
-      signal.addEventListener("abort", onAbort, { once: true });
-      boundedWait.then(
-        value => {
-          signal.removeEventListener("abort", onAbort);
-          resolve(value);
-        },
-        error => {
-          signal.removeEventListener("abort", onAbort);
-          reject(error);
-        },
+      let settled = false;
+      const finish = (callback: () => void): void => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        signal?.removeEventListener("abort", onAbort);
+        callback();
+      };
+      const onAbort = (): void => finish(() => reject(new Error("WAITER_CANCELLED")));
+      const timer = setTimeout(
+        () => finish(() => reject(new Error("WAITER_DEADLINE_EXCEEDED"))),
+        remaining,
+      );
+      timer.unref();
+      signal?.addEventListener("abort", onAbort, { once: true });
+      result.then(
+        value => finish(() => resolve(value)),
+        error => finish(() => reject(error)),
       );
     });
   }
@@ -342,6 +343,7 @@ export class GenerationLifecycle {
     const activationController = new AbortController();
     let activationTimedOut = false;
     const activationContext: ActivationContext = { generation, phase: "activation", signal: activationController.signal };
+    let previous: ActiveGraph | undefined;
     const markActivationTimeout = (): void => {
       activationTimedOut = true;
       activationController.abort("ABSOLUTE_DEADLINE_EXCEEDED");
@@ -354,6 +356,13 @@ export class GenerationLifecycle {
     };
 
     try {
+      const planModuleIds = new Set(plan.nodes.map(node => node.id));
+      for (const moduleId of planModuleIds) {
+        if (!hooks.has(moduleId)) throw new Error(`MISSING_HOOKS:${moduleId}`);
+      }
+      for (const moduleId of hooks.keys()) {
+        if (!planModuleIds.has(moduleId)) throw new Error(`UNPLANNED_HOOKS:${moduleId}`);
+      }
       if (this.#activeGeneration !== identity.expectedActiveGeneration) {
         traces.push({ phase: "publish", generation, outcome: "stale" });
         throw new Error("STALE_ACTIVE_GENERATION");
@@ -400,8 +409,10 @@ export class GenerationLifecycle {
           }
         }));
         for (const outcome of outcomes) traces.push(...outcome.localTraces);
-        const failed = outcomes.find(outcome => outcome.error !== undefined);
-        if (failed?.error) throw failed.error;
+        const failures = outcomes.flatMap(outcome => outcome.error === undefined ? [] : [outcome.error]);
+        if (failures.length > 0) {
+          throw new AggregateError(failures, `START_BATCH_FAILED:${failures.map(error => error.message).join("|")}`);
+        }
       }
 
       checkDeadline();
@@ -409,49 +420,18 @@ export class GenerationLifecycle {
         traces.push({ phase: "publish", generation, outcome: "stale" });
         throw new Error("STALE_ACTIVE_GENERATION");
       }
-      const previous = this.#active;
+      previous = this.#active;
       this.#activeGeneration = generation;
       this.#active = { generation, plan, hooks };
       this.#cutovers += 1;
       traces.push({ phase: "publish", generation, outcome: "confirmed" });
-
-      let terminationProven = true;
-      if (previous) {
-        const cleanupDeadline = this.#clock.now() + cleanupTimeoutMs;
-        const cleanupController = new AbortController();
-        const cleanupContext: ActivationContext = {
-          generation: previous.generation,
-          phase: "cleanup",
-          signal: cleanupController.signal,
-        };
-        const drained = await this.drain(previous.generation, cleanupDeadline);
-        traces.push({ phase: "drain", generation: previous.generation, outcome: drained ? "confirmed" : "timed-out" });
-        if (!drained) errors.push(new Error(`DRAIN_TIMEOUT:${previous.generation}`));
-        if (!drained) terminationProven = false;
-        this.#fenceGeneration(previous.generation);
-        const cleanupProven = await this.#stopBatches(
-          previous.plan,
-          previous.hooks,
-          cleanupContext,
-          cleanupDeadline,
-          traces,
-          errors,
-          "stop",
-          cleanupController,
-        );
-        terminationProven &&= cleanupProven;
-      }
-      return freezeResult(
-        true,
-        generation,
-        terminationProven ? "proven" : "termination_unproven",
-        traces,
-        errors,
-      );
     } catch (error) {
       activationController.abort(error);
       const failure = asError(error);
-      errors.push(failure);
+      const failures = error instanceof AggregateError
+        ? error.errors.map(asError)
+        : [failure];
+      errors.push(...failures);
       const cleanupDeadline = this.#clock.now() + cleanupTimeoutMs;
       const cleanupController = new AbortController();
       const cleanupContext: ActivationContext = { generation, phase: "cleanup", signal: cleanupController.signal };
@@ -473,6 +453,55 @@ export class GenerationLifecycle {
       traces.push({ phase: "abort", generation, outcome });
       return freezeResult(false, generation, termination, traces, errors);
     }
+
+    let terminationProven = true;
+    if (previous) {
+      try {
+        const cleanupDeadline = this.#clock.now() + cleanupTimeoutMs;
+        const cleanupController = new AbortController();
+        const cleanupContext: ActivationContext = {
+          generation: previous.generation,
+          phase: "cleanup",
+          signal: cleanupController.signal,
+        };
+        try {
+          const drained = await this.#drainGeneration(previous.generation, cleanupDeadline);
+          traces.push({ phase: "drain", generation: previous.generation, outcome: drained ? "confirmed" : "timed-out" });
+          if (!drained) {
+            errors.push(new Error(`DRAIN_TIMEOUT:${previous.generation}`));
+            terminationProven = false;
+          }
+        } catch (drainError) {
+          errors.push(asError(drainError));
+          traces.push({ phase: "drain", generation: previous.generation, outcome: "termination_unproven" });
+          terminationProven = false;
+        }
+        this.#fenceGeneration(previous.generation);
+        const cleanupProven = await this.#stopBatches(
+          previous.plan,
+          previous.hooks,
+          cleanupContext,
+          cleanupDeadline,
+          traces,
+          errors,
+          "stop",
+          cleanupController,
+        );
+        terminationProven &&= cleanupProven;
+      } catch (cleanupError) {
+        errors.push(asError(cleanupError));
+        traces.push({ phase: "stop", generation: previous.generation, outcome: "termination_unproven" });
+        this.#fenceGeneration(previous.generation);
+        terminationProven = false;
+      }
+    }
+    return freezeResult(
+      true,
+      generation,
+      terminationProven ? "proven" : "termination_unproven",
+      traces,
+      errors,
+    );
   }
 
   async #stopBatches(

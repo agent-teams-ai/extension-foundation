@@ -166,6 +166,15 @@ export function validateAuthorizedEnvelope(value, authority) {
   return request;
 }
 
+export function validateResponseEnvelope(value, authority, request, expectedKind) {
+  const response = validateAuthorizedEnvelope(value, authority);
+  if (response.requestId !== request.requestId) throw new Error("RESPONSE_REQUEST_MISMATCH");
+  if (response.operationId !== request.operationId) throw new Error("RESPONSE_OPERATION_MISMATCH");
+  if (response.absoluteDeadline !== request.absoluteDeadline) throw new Error("RESPONSE_DEADLINE_MISMATCH");
+  if (response.kind !== expectedKind) throw new Error("UNEXPECTED_RESPONSE_KIND");
+  return response;
+}
+
 export function handlePortableWorkerFrame(value, authority) {
   const request = validateAuthorizedEnvelope(value, authority);
   if (typeof authority.localSenderId !== "string" || authority.localSenderId.length === 0) {

@@ -40,10 +40,10 @@ export const PACKAGE_PATH = /^packages\/[a-z0-9][a-z0-9-]*(?:\/[a-z0-9][a-z0-9-]
 export const PACKAGE_NAME = /^@agent-teams\/[a-z0-9][a-z0-9._-]*$/;
 export const FEATURE_NAME = /^[a-z0-9][a-z0-9-]*$/;
 export const OWNER_DOCUMENT = /^ADR-[0-9]{4}$/;
-export const REPOSITORY_ID = /^[a-z0-9][a-z0-9_.-]*\/[a-z0-9][a-z0-9_.-]*$/i;
+export const REPOSITORY_ID = /^[a-z0-9][a-z0-9_.-]*\/[a-z0-9][a-z0-9_.-]*$/;
 export const SOURCE_REVISION = /^[0-9a-f]{40}$/;
 export const CONFORMANCE_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
-export const IMMUTABLE_EVIDENCE_REFERENCE = /^(?:https:\/\/|docs\/).+#sha256=[0-9a-f]{64}$/;
+export const EVIDENCE_DIGEST = /^sha256=[0-9a-f]{64}$/;
 
 export function isRecord(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -106,6 +106,30 @@ export function packageAdmissionPath(entry) {
   return `${PACKAGE_ADMISSION_DIRECTORY}/${encodedPackageId(entry)}.json`;
 }
 
+function canonicalRepositoryId(value) {
+  return typeof value === "string" ? value.toLowerCase() : "";
+}
+
+function isImmutableEvidenceReference(value) {
+  const fragmentIndex = value.lastIndexOf("#");
+  if (fragmentIndex <= 0 || !EVIDENCE_DIGEST.test(value.slice(fragmentIndex + 1))) return false;
+  const location = value.slice(0, fragmentIndex);
+  if (location.startsWith("docs/")) {
+    const segments = location.split("/");
+    return segments.length > 1
+      && segments.every(segment => segment.length > 0 && segment !== "." && segment !== "..")
+      && !location.includes("\\")
+      && !location.includes("%")
+      && !location.includes("?");
+  }
+  try {
+    const url = new URL(location);
+    return url.protocol === "https:" && url.username === "" && url.password === "" && url.hash === "";
+  } catch {
+    return false;
+  }
+}
+
 function validateAdmission(entry, admission, errors) {
   if (!hasExactKeys(admission, ADMISSION_KEYS)) {
     errors.push(`${entry.id}: admission must contain exactly ${ADMISSION_KEYS.join(", ")}`);
@@ -120,7 +144,7 @@ function validateAdmission(entry, admission, errors) {
     }
   }
   if (!REPOSITORY_ID.test(admission.owner_repository ?? "")) {
-    errors.push(`${entry.id}: admission.owner_repository must be an owner/repository identity`);
+    errors.push(`${entry.id}: admission.owner_repository must be a canonical lowercase owner/repository identity`);
   } else if (admission.owner_repository !== FOUNDATION_REPOSITORY) {
     errors.push(`${entry.id}: admission.owner_repository must identify ${FOUNDATION_REPOSITORY}`);
   }
@@ -153,7 +177,7 @@ function validateAdmission(entry, admission, errors) {
       errors.push(`${entry.id}: consumer_evidence[${index}].consumer_id is invalid`);
     }
     if (!REPOSITORY_ID.test(evidence.consumer_repository)) {
-      errors.push(`${entry.id}: consumer_evidence[${index}].consumer_repository is invalid`);
+      errors.push(`${entry.id}: consumer_evidence[${index}].consumer_repository must be a canonical lowercase owner/repository identity`);
     }
     if (!SOURCE_REVISION.test(evidence.source_revision)) {
       errors.push(`${entry.id}: consumer_evidence[${index}].source_revision must be an exact commit`);
@@ -161,11 +185,11 @@ function validateAdmission(entry, admission, errors) {
     if (evidence.conformance_result !== "passed") {
       errors.push(`${entry.id}: consumer_evidence[${index}].conformance_result must be passed`);
     }
-    if (!IMMUTABLE_EVIDENCE_REFERENCE.test(evidence.evidence_reference)) {
-      errors.push(`${entry.id}: consumer_evidence[${index}].evidence_reference must carry a sha256 fragment`);
+    if (!isImmutableEvidenceReference(evidence.evidence_reference)) {
+      errors.push(`${entry.id}: consumer_evidence[${index}].evidence_reference must use a contained docs path or HTTPS URL with a sha256 fragment`);
     }
     consumerIds.add(evidence.consumer_id);
-    consumerRepositories.add(evidence.consumer_repository);
+    consumerRepositories.add(canonicalRepositoryId(evidence.consumer_repository));
     evidenceReferences.add(evidence.evidence_reference);
   }
   if (consumerIds.size !== admission.consumer_evidence.length
@@ -173,7 +197,7 @@ function validateAdmission(entry, admission, errors) {
     || evidenceReferences.size !== admission.consumer_evidence.length) {
     errors.push(`${entry.id}: consumer evidence must use distinct identities, repositories, and immutable references`);
   }
-  if (consumerRepositories.has(admission.owner_repository)) {
+  if (consumerRepositories.has(canonicalRepositoryId(admission.owner_repository))) {
     errors.push(`${entry.id}: consumer evidence must be independent from the Foundation owner repository`);
   }
 }

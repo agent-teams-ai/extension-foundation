@@ -208,6 +208,13 @@ flowchart LR
     Drain --> Stop["Stop and retire N"]
 ```
 
+Publication is the commit point. Any drain, stop, clock, or cleanup failure after
+that point leaves the new generation active and records `termination_unproven`
+cleanup debt for the old generation. It must never enter candidate rollback or
+silently restore the old route. Recovery may record retirement only after host
+observation proves the old generation stopped and cleanup reconciliation is
+confirmed; absence of in-flight work alone is not termination evidence.
+
 An in-process trusted module may implement a proven reversible reload hook, but
 the baseline still allows the host to restart the affected graph or process.
 Third-party plugin updates default to side-by-side candidate preparation and

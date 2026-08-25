@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { access, mkdtemp, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { access, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -29,6 +29,7 @@ import {
   type ProtocolEnvelope,
   validateAuthorizedEnvelope,
   validateEnvelope,
+  validateResponseEnvelope,
 } from "./protocol-spike.ts";
 import {
   reconcileLifecycle,
@@ -79,6 +80,13 @@ function frame(overrides: Partial<ProtocolEnvelope> = {}): ProtocolEnvelope {
     payload: {},
     ...overrides,
   };
+}
+
+function rejectAfter(milliseconds: number, errorFactory: () => Error): Promise<never> {
+  return new Promise((_, reject) => {
+    const timer = setTimeout(() => reject(errorFactory()), milliseconds);
+    timer.unref();
+  });
 }
 
 function activationRequest(
@@ -475,6 +483,43 @@ test("failed parallel batch settles siblings before reverse cleanup", async () =
   assert.equal(lifecycle.activeGeneration, 0);
 });
 
+test("parallel activation reports every sibling failure", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([
+    { id: "fails-a", requires: [] },
+    { id: "fails-b", requires: [] },
+  ]);
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "parallel-multiple-failures",
+    plan,
+    new Map<string, ModuleHooks>([
+      ["fails-a", inertHooks({ start: () => { throw new Error("A_FAILED"); } })],
+      ["fails-b", inertHooks({ start: () => { throw new Error("B_FAILED"); } })],
+    ]),
+  ));
+  assert.equal(result.ok, false);
+  assert.deepEqual(new Set(result.errors.map(error => error.message)), new Set(["A_FAILED", "B_FAILED"]));
+});
+
+test("hook bindings are complete before any module effect starts", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([
+    { id: "provider", requires: [] },
+    { id: "consumer", requires: ["provider"] },
+  ]);
+  let effects = 0;
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "missing-hook-preflight",
+    plan,
+    new Map([["provider", inertHooks({ prepare: () => { effects += 1; } })]]),
+  ));
+  assert.equal(result.ok, false);
+  assert.equal(effects, 0);
+  assert.deepEqual(result.errors.map(error => error.message), ["MISSING_HOOKS:consumer"]);
+});
+
 test("ignored activation cancellation is fenced and reported as termination unproven", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "slow", requires: [] }]);
@@ -582,6 +627,58 @@ test("successful cutover reports old-generation cleanup timeout as termination u
   assert.ok(result.errors.some(error => error.message === "CLEANUP_TIMEOUT:first"));
 });
 
+test("post-publication drain failure becomes cleanup debt without aborting the active candidate", async () => {
+  const clock = {
+    now: () => 0,
+    sleep: async () => { throw new Error("DRAIN_CLOCK_FAILED"); },
+  };
+  const lifecycle = new GenerationLifecycle(testAuthorityScope, clock);
+  const first = requirePlan([{ id: "first", requires: [] }]);
+  let firstStops = 0;
+  await lifecycle.activate(activationRequest(
+    lifecycle,
+    "post-publication-first",
+    first,
+    new Map([["first", inertHooks({ stop: () => { firstStops += 1; } })]]),
+  ));
+  const oldLease = lifecycle.acquireInvocation();
+  const second = requirePlan([{ id: "second", requires: [] }]);
+  let secondStops = 0;
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "post-publication-second",
+    second,
+    new Map([["second", inertHooks({ stop: () => { secondStops += 1; } })]]),
+  ));
+  assert.equal(result.ok, true);
+  assert.equal(result.termination, "termination_unproven");
+  assert.equal(lifecycle.activeGeneration, result.generation);
+  assert.equal(firstStops, 1);
+  assert.equal(secondStops, 0);
+  assert.ok(result.errors.some(error => error.message === "DRAIN_CLOCK_FAILED"));
+  assert.ok(result.traces.some(trace => trace.phase === "drain" && trace.outcome === "termination_unproven"));
+  assert.throws(() => lifecycle.assertInMemoryFence(oldLease), /STALE_GENERATION/);
+  const currentLease = lifecycle.acquireInvocation();
+  assert.equal(currentLease.generation, result.generation);
+  currentLease.release();
+});
+
+test("future generations cannot be externally pre-sealed", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  assert.equal("drain" in lifecycle, false);
+  const plan = requirePlan([{ id: "candidate", requires: [] }]);
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "not-pre-sealed",
+    plan,
+    new Map([["candidate", inertHooks()]]),
+  ));
+  assert.equal(result.ok, true);
+  const lease = lifecycle.acquireInvocation();
+  assert.equal(lease.generation, result.generation);
+  lease.release();
+});
+
 test("replacement drains admitted work, cuts over once, and fences stale writes", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const first = requirePlan([{ id: "first", requires: [] }]);
@@ -658,6 +755,8 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
       oldGeneration: number;
       oldAuthorityScope: string;
       oldSinkFence: number;
+      oldTerminationEvidence: "running" | "stopped" | "unknown";
+      oldCleanupEvidence: "pending" | "confirmed" | "uncertain";
     }> = {},
   ): ObservedHostState => ({
     queryAuthorityScope: overrides.queryAuthorityScope ?? testAuthorityScope,
@@ -674,6 +773,8 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
       authorityScope: overrides.oldAuthorityScope ?? testAuthorityScope,
       sinkFence: overrides.oldSinkFence ?? 41,
       inFlight: oldGenerationInFlight,
+      terminationEvidence: overrides.oldTerminationEvidence ?? "running",
+      cleanupEvidence: overrides.oldCleanupEvidence ?? "pending",
     },
   });
   const cases = [
@@ -682,6 +783,16 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
     [{ ...baseline, phase: "ready" }, observed("ready", false), "PUBLISH_CANDIDATE"],
     [published, observed("ready", true), "RESUME_DRAIN"],
     [{ ...published, phase: "draining" }, observed("ready", true), "RESUME_DRAIN"],
+    [published, observed("ready", false), "STOP_OLD_GENERATION"],
+    [published, observed("ready", false, { oldTerminationEvidence: "stopped" }), "RECONCILE_OLD_CLEANUP"],
+    [published, observed("ready", false, {
+      oldTerminationEvidence: "stopped",
+      oldCleanupEvidence: "confirmed",
+    }), "RECORD_RETIREMENT"],
+    [{ ...published, phase: "retired" }, observed("ready", false, {
+      oldTerminationEvidence: "stopped",
+      oldCleanupEvidence: "confirmed",
+    }), "RETURN_RETIRED_RESULT"],
     [{ ...baseline, externalOutcome: "uncertain" }, observed("running", false), "CONTROLLED_RECOVERY"],
     [{ ...published, routeHeadGeneration: 1 }, observed("ready", false), "CONTROLLED_RECOVERY"],
     [{ ...published, phase: "draining", drainDeadlineExpired: true }, observed("ready", true), "CONTROLLED_RECOVERY"],
@@ -691,11 +802,28 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
     [baseline, observed("absent", false, { queryGraphDigest: "sha256:wrong-graph" }), "CONTROLLED_RECOVERY"],
     [baseline, observed("absent", false, { oldGeneration: 9 }), "CONTROLLED_RECOVERY"],
     [baseline, observed("absent", false, { oldSinkFence: 2 }), "CONTROLLED_RECOVERY"],
+    [published, observed("ready", false, { oldTerminationEvidence: "unknown" }), "CONTROLLED_RECOVERY"],
+    [published, observed("ready", false, { oldCleanupEvidence: "uncertain" }), "CONTROLLED_RECOVERY"],
   ] as const;
   for (const [state, observed, expected] of cases) {
     assert.equal(reconcileLifecycle(state, observed), expected);
     assert.equal(reconcileLifecycle(structuredClone(state), structuredClone(observed)), expected);
   }
+  assert.equal(reconcileLifecycle(
+    { ...baseline, candidateGeneration: Number.POSITIVE_INFINITY },
+    observed("absent", false),
+  ), "CONTROLLED_RECOVERY");
+  assert.equal(reconcileLifecycle(
+    { ...baseline, phase: "invalid" } as unknown as DurableLifecycleState,
+    observed("absent", false),
+  ), "CONTROLLED_RECOVERY");
+  assert.equal(reconcileLifecycle(
+    baseline,
+    {
+      ...observed("absent", false),
+      oldGeneration: { ...observed("absent", false).oldGeneration, sinkFence: 1.5 },
+    },
+  ), "CONTROLLED_RECOVERY");
 });
 
 test("portable protocol rejects stale, expired, malformed, and oversized frames", () => {
@@ -759,6 +887,27 @@ test("portable protocol rejects stale, expired, malformed, and oversized frames"
   assert.throws(() => decodeLengthPrefixedFrame(rawFrame(duplicateOperation)), /INVALID_JSON_FRAME/);
   const invalidUtf8 = Uint8Array.from([0, 0, 0, 2, 0xc3, 0x28]);
   assert.throws(() => decodeLengthPrefixedFrame(invalidUtf8), /INVALID_JSON_FRAME/);
+
+  const request = frame({ kind: "prepare" });
+  const response = handlePortableWorkerFrame(request, { ...protocolAuthority, now: Date.now() });
+  assert.equal(validateResponseEnvelope(
+    response,
+    { ...responseAuthority, now: Date.now() },
+    request,
+    "result",
+  ).payload.acceptedKind, "prepare");
+  assert.throws(() => validateResponseEnvelope(
+    { ...response, requestId: "wrong-request" },
+    { ...responseAuthority, now: Date.now() },
+    request,
+    "result",
+  ), /RESPONSE_REQUEST_MISMATCH/);
+  assert.throws(() => validateResponseEnvelope(
+    { ...response, absoluteDeadline: response.absoluteDeadline + 1 },
+    { ...responseAuthority, now: Date.now() },
+    request,
+    "result",
+  ), /RESPONSE_DEADLINE_MISMATCH/);
 });
 
 test("process-host smoke acknowledges hello and readiness over bounded length-prefixed JSON", async t => {
@@ -776,18 +925,28 @@ test("process-host smoke acknowledges hello and readiness over bounded length-pr
       buffer = buffer.subarray(length + 4);
     }
   });
-  child.stdin.write(encodeLengthPrefixedFrame(frame()));
-  child.stdin.write(encodeLengthPrefixedFrame(frame({ requestId: "request-2", kind: "prepare" })));
+  const helloRequest = frame();
+  const prepareRequest = frame({ requestId: "request-2", kind: "prepare" });
+  child.stdin.write(encodeLengthPrefixedFrame(helloRequest));
+  child.stdin.write(encodeLengthPrefixedFrame(prepareRequest));
   await Promise.race([
     (async () => { while (responses.length < 2) await delay(1); })(),
     once(child, "error").then(([error]) => { throw error; }),
     once(child, "exit").then(([code]) => { throw new Error(`PROCESS_EXITED_EARLY:${String(code)}`); }),
     delay(2_000).then(() => { throw new Error("PROCESS_RESPONSE_TIMEOUT"); }),
   ]);
-  assert.deepEqual(responses.map(value => validateAuthorizedEnvelope(
-    value,
+  assert.equal(validateResponseEnvelope(
+    responses[0],
     { ...responseAuthority, now: Date.now() },
-  ).kind), ["result", "ready"]);
+    helloRequest,
+    "result",
+  ).kind, "result");
+  assert.equal(validateResponseEnvelope(
+    responses[1],
+    { ...responseAuthority, now: Date.now() },
+    prepareRequest,
+    "ready",
+  ).kind, "ready");
   child.stdin.write(encodeLengthPrefixedFrame(frame({ requestId: "request-3", kind: "stop" })));
   await once(child, "exit");
 });
@@ -808,15 +967,20 @@ test("Worker structured-clone boundary preserves validation and stale rejection"
   const response = new Promise<unknown>(resolve => worker.once("message", resolve));
   const request = frame({ kind: "prepare" });
   worker.postMessage(structuredClone(request));
-  assert.deepEqual(await response, {
-    ok: true,
-    frame: {
-      ...request,
-      senderId: "extension-host",
-      audience: "product-host",
-      kind: "result",
-      payload: { acceptedKind: "prepare" },
-    },
+  const workerResponse = await response as { readonly ok?: unknown; readonly frame?: unknown };
+  assert.equal(workerResponse.ok, true);
+  const validatedResponse = validateResponseEnvelope(
+    workerResponse.frame,
+    { ...responseAuthority, now: Date.now() },
+    request,
+    "result",
+  );
+  assert.deepEqual(validatedResponse, {
+    ...request,
+    senderId: "extension-host",
+    audience: "product-host",
+    kind: "result",
+    payload: { acceptedKind: "prepare" },
   });
   const stale = new Promise<unknown>(resolve => worker.once("message", resolve));
   worker.postMessage(frame({ moduleActivationGeneration: 6 }));
@@ -841,6 +1005,7 @@ test("browser Worker carries a portable generation-bound frame", async t => {
     }
   }
   if (!browser) {
+    if (process.env.CI) assert.fail("CI_BROWSER_NOT_AVAILABLE");
     t.skip("no supported Chromium browser is installed");
     return;
   }
@@ -865,32 +1030,100 @@ test("browser Worker carries a portable generation-bound frame", async t => {
   t.after(() => server.close());
   const address = server.address() as AddressInfo;
   const page = `http://127.0.0.1:${address.port}/fixtures/browser-worker.html`;
-  let output = "";
-  let code: number | null = null;
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    output = "";
-    const child = spawn(browser, [
-      "--headless=new",
-      "--disable-gpu",
-      "--disable-background-timer-throttling",
-      "--no-first-run",
-      "--no-default-browser-check",
-      "--virtual-time-budget=5000",
-      "--dump-dom",
-      page,
-    ], { stdio: ["ignore", "pipe", "pipe"], signal: AbortSignal.timeout(15_000) });
-    child.stdout.setEncoding("utf8");
-    child.stdout.on("data", chunk => { output += chunk; });
-    [code] = await once(child, "exit");
-    if (code === 0 && /"ok":true/.test(output)) break;
+  const profile = await mkdtemp(join(tmpdir(), "extension-browser-worker-"));
+  const child = spawn(browser, [
+    "--headless=new",
+    "--disable-gpu",
+    "--disable-background-timer-throttling",
+    "--no-first-run",
+    "--no-default-browser-check",
+    "--remote-debugging-port=0",
+    `--user-data-dir=${profile}`,
+    page,
+  ], { stdio: ["ignore", "ignore", "pipe"] });
+  t.after(async () => {
+    child.kill("SIGKILL");
+    await rm(profile, { recursive: true, force: true });
+  });
+  child.stderr.setEncoding("utf8");
+  let stderr = "";
+  const debuggerUrl = await Promise.race([
+    new Promise<string>((resolve, reject) => {
+      child.stderr.on("data", chunk => {
+        stderr += chunk;
+        const match = /DevTools listening on (ws:\/\/[^\s]+)/.exec(stderr);
+        const endpoint = match?.[1];
+        if (endpoint) resolve(endpoint);
+      });
+      child.once("error", reject);
+      child.once("exit", code => reject(new Error(`BROWSER_EXITED_EARLY:${String(code)}:${stderr}`)));
+    }),
+    rejectAfter(10_000, () => new Error(`BROWSER_DEBUGGER_TIMEOUT:${stderr}`)),
+  ]);
+  const debuggerHttp = new URL(debuggerUrl);
+  debuggerHttp.protocol = "http:";
+  debuggerHttp.pathname = "/json/list";
+  debuggerHttp.search = "";
+  debuggerHttp.hash = "";
+  let pageTarget: { readonly url?: string; readonly webSocketDebuggerUrl?: string } | undefined;
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const targets = await fetch(debuggerHttp).then(response => response.json()) as readonly {
+      readonly type?: string;
+      readonly url?: string;
+      readonly webSocketDebuggerUrl?: string;
+    }[];
+    pageTarget = targets.find(target => target.type === "page" && target.url === page);
+    if (pageTarget?.webSocketDebuggerUrl) break;
     await delay(25);
   }
-  assert.equal(code, 0);
-  assert.match(output, /"ok":true/);
-  assert.match(output, /"moduleActivationGeneration":7/);
-  assert.match(output, /"senderId":"extension-host"/);
-  assert.match(output, /"audience":"product-host"/);
-  assert.match(output, /"kind":"result"/);
+  assert.ok(pageTarget?.webSocketDebuggerUrl, `BROWSER_PAGE_TARGET_MISSING:${stderr}`);
+  const socket = new WebSocket(pageTarget.webSocketDebuggerUrl);
+  await Promise.race([
+    new Promise<void>((resolve, reject) => {
+      socket.addEventListener("open", () => resolve(), { once: true });
+      socket.addEventListener("error", () => reject(new Error("BROWSER_CDP_SOCKET_ERROR")), { once: true });
+    }),
+    rejectAfter(5_000, () => new Error("BROWSER_CDP_SOCKET_TIMEOUT")),
+  ]);
+  t.after(() => socket.close());
+  let nextCommandId = 1;
+  const pendingCommands = new Map<number, {
+    readonly resolve: (value: Record<string, unknown>) => void;
+    readonly reject: (error: Error) => void;
+  }>();
+  socket.addEventListener("message", event => {
+    const message = JSON.parse(String(event.data)) as {
+      readonly id?: number;
+      readonly result?: Record<string, unknown>;
+      readonly error?: { readonly message?: string };
+    };
+    if (message.id === undefined) return;
+    const pending = pendingCommands.get(message.id);
+    if (!pending) return;
+    pendingCommands.delete(message.id);
+    if (message.error) pending.reject(new Error(message.error.message ?? "BROWSER_CDP_ERROR"));
+    else pending.resolve(message.result ?? {});
+  });
+  const evaluate = (expression: string): Promise<Record<string, unknown>> => new Promise((resolve, reject) => {
+    const id = nextCommandId++;
+    pendingCommands.set(id, { resolve, reject });
+    socket.send(JSON.stringify({ id, method: "Runtime.evaluate", params: { expression, returnByValue: true } }));
+  });
+  let output = "pending";
+  for (let attempt = 0; attempt < 200; attempt += 1) {
+    const evaluation = await evaluate('document.querySelector("#result")?.textContent');
+    const result = evaluation.result as { readonly value?: unknown } | undefined;
+    if (typeof result?.value === "string") output = result.value;
+    if (output !== "pending") break;
+    await delay(25);
+  }
+  assert.notEqual(output, "pending", `BROWSER_WORKER_RESULT_TIMEOUT:${stderr}`);
+  const parsed = JSON.parse(output) as { readonly ok?: unknown; readonly frame?: ProtocolEnvelope; readonly error?: unknown };
+  assert.equal(parsed.ok, true, String(parsed.error ?? output));
+  assert.equal(parsed.frame?.moduleActivationGeneration, 7);
+  assert.equal(parsed.frame?.senderId, "extension-host");
+  assert.equal(parsed.frame?.audience, "product-host");
+  assert.equal(parsed.frame?.kind, "result");
 });
 
 test("packed toy package exercises an isolated consumer without Foundation, Cordis, or plugin dependencies", async () => {

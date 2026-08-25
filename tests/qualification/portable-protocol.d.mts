@@ -30,6 +30,21 @@ export declare function validateAuthorizedEnvelope(
     now: number;
   }>,
 ): ProtocolEnvelope;
+export declare function validateResponseEnvelope(
+  value: unknown,
+  authority: Readonly<{
+    authorityScope: string;
+    extensionInstanceId: string;
+    graphGeneration: number;
+    moduleActivationGeneration: number;
+    hostIncarnation: string;
+    authenticatedPeerId: string;
+    audience: string;
+    now: number;
+  }>,
+  request: ProtocolEnvelope,
+  expectedKind: ProtocolEnvelope["kind"],
+): ProtocolEnvelope;
 export declare function handlePortableWorkerFrame(
   value: unknown,
   authority: Readonly<{
