@@ -149,27 +149,18 @@ or accepting their public APIs. Create a package only when a real product slice
 and the ADR-0010 evidence justify it.
 
 ```text
-packages/
-  module-kit/
-    src/features/
-      module-definition/
-      graph-compilation/
-      activation-lifecycle/
-  plugin-protocol/
-    src/features/
-      artifact-manifest/
-      compatibility-negotiation/
-      contribution-invocation/
-      generation-transition/
-  integrations/
-    cordis-module-host/
-    process-plugin-host/
-    oras-distribution/
-    cosign-verification/
-    extism-plugin-host/       # deferred
-  testing/
-    extension-conformance/
+packages/<admitted-capability>/
+  core/                  # optional product-neutral or product-scoped library
+  module-adapter/        # optional integration with the module runtime
+  test-kit/              # optional reusable conformance fixtures
+  adapters/<technology>/ # only independently released integrations
 ```
+
+This is an illustrative role layout aligned with ADR-0012, not a reserved
+horizontal package topology. Before cross-product admission, the first graph and
+lifecycle implementation stays inside its owning product feature. No
+`module-kit`, `plugin-protocol`, integration or testing package is created by
+this open decision.
 
 - A module is a runtime composition and lifecycle unit. A plugin artifact is a
   signed distribution, trust, installation, and update envelope.

@@ -39,7 +39,8 @@ models. A library consumer never needs the module or plugin stack.
 | --- | --- | --- |
 | Aggregate transitions and business invariants | Owning product bounded context | Source graph, use-case tests, repository/UoW boundaries |
 | Product extension contract | Owning product feature | Feature entrypoint, compatibility fixtures, conformance suite |
-| Module identity, graph semantics, lifecycle outcomes | Extension Foundation | Serializable descriptors and cross-host traces |
+| First-consumer private module identity, graph semantics and lifecycle outcomes | Owning product feature | Product-local descriptors, diagnostics and traces |
+| Admitted cross-product module identity, graph semantics and lifecycle outcomes | Extension Foundation after extraction approval | Serializable descriptors and cross-host traces from two independent consumers |
 | Artifact identity and immutable digest | Extension Foundation protocol | OCI digest and signature/provenance verification |
 | Catalog governance records | Selected catalog authority | PostgreSQL revision and signed snapshot evidence |
 | Product authorization | Product Access Control or owning policy | Revision/fence-bound decision evidence |

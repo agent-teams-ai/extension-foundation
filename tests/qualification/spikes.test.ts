@@ -29,10 +29,24 @@ import {
   type ProtocolEnvelope,
   validateEnvelope,
 } from "./protocol-spike.ts";
-import { reconcileLifecycle, type DurableLifecycleState } from "./recovery-spike.ts";
+import {
+  reconcileLifecycle,
+  type DurableLifecycleState,
+  type ObservedHostState,
+} from "./recovery-spike.ts";
 
 const fixtureRoot = fileURLToPath(new URL("./fixtures", import.meta.url));
 const qualificationRoot = fileURLToPath(new URL("./", import.meta.url));
+const testAuthorityScope = "tenant:test/project:test";
+const protocolAuthority = Object.freeze({
+  authorityScope: testAuthorityScope,
+  extensionInstanceId: "extension-instance-1",
+  graphGeneration: 1,
+  moduleActivationGeneration: 7,
+  hostIncarnation: "host-incarnation-1",
+  authenticatedPeerId: "product-host",
+  audience: "extension-host",
+});
 
 function requirePlan(descriptors: readonly ModuleDescriptor[]) {
   const result = compileGraph(descriptors);
@@ -45,8 +59,13 @@ function frame(overrides: Partial<ProtocolEnvelope> = {}): ProtocolEnvelope {
     protocol: "agent-teams.extension-host/v1",
     requestId: "request-1",
     operationId: "operation-1",
+    authorityScope: testAuthorityScope,
+    extensionInstanceId: "extension-instance-1",
     graphGeneration: 1,
-    runtimeGeneration: 7,
+    moduleActivationGeneration: 7,
+    hostIncarnation: "host-incarnation-1",
+    senderId: "product-host",
+    audience: "extension-host",
     absoluteDeadline: Date.now() + 5_000,
     kind: "hello",
     payload: {},
@@ -64,13 +83,16 @@ function activationRequest(
     readonly deadlineMs?: number;
     readonly cleanupTimeoutMs?: number;
     readonly profileLockDigest?: string;
+    readonly activationSourceDigest?: string;
+    readonly authorityScope?: string;
   } = {},
 ): ActivationRequest {
   return {
     identity: {
       operationId,
+      activationSourceDigest: options.activationSourceDigest ?? "sha256:activation-source-1",
       expectedActiveGeneration: options.expectedActiveGeneration ?? lifecycle.activeGeneration,
-      authorityScope: "tenant:test/project:test",
+      authorityScope: options.authorityScope ?? testAuthorityScope,
       profileLockDigest: options.profileLockDigest ?? "sha256:profile-lock-1",
       configurationFingerprint: "sha256:configuration-1",
       grantRevision: "grant-revision-1",
@@ -188,7 +210,7 @@ test("graph compiler remains stack-safe for ten thousand modules", () => {
 
 test("one hundred concurrent starts share one activation and one cutover", async () => {
   const plan = requirePlan([{ id: "module", requires: [] }]);
-  const lifecycle = new GenerationLifecycle();
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
   let starts = 0;
   const hooks = new Map<string, ModuleHooks>([["module", inertHooks({
     async start() {
@@ -205,7 +227,7 @@ test("one hundred concurrent starts share one activation and one cutover", async
 });
 
 test("a waiter deadline detaches without cancelling the shared activation", async () => {
-  const lifecycle = new GenerationLifecycle();
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "module", requires: [] }]);
   let starts = 0;
   const request = activationRequest(
@@ -221,8 +243,27 @@ test("a waiter deadline detaches without cancelling the shared activation", asyn
   assert.equal(starts, 1);
 });
 
+test("a cancelled waiter detaches without cancelling the shared activation", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([{ id: "module", requires: [] }]);
+  let starts = 0;
+  const request = activationRequest(
+    lifecycle,
+    "waiter-cancel",
+    plan,
+    new Map([["module", inertHooks({ start: async () => { starts += 1; await delay(20); } })]]),
+  );
+  const controller = new AbortController();
+  const cancelled = lifecycle.activate(request, { signal: controller.signal });
+  const patient = lifecycle.activate(request);
+  controller.abort();
+  await assert.rejects(cancelled, /WAITER_CANCELLED/);
+  assert.equal((await patient).ok, true);
+  assert.equal(starts, 1);
+});
+
 test("same operation with changed authority inputs is an idempotency conflict", async () => {
-  const lifecycle = new GenerationLifecycle();
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "module", requires: [] }]);
   const hooks = new Map<string, ModuleHooks>([["module", inertHooks()]]);
   const first = activationRequest(lifecycle, "activation-conflict", plan, hooks);
@@ -231,10 +272,47 @@ test("same operation with changed authority inputs is an idempotency conflict", 
     profileLockDigest: "sha256:different-profile-lock",
   });
   assert.throws(() => lifecycle.activate(changed), /ACTIVATION_IDEMPOTENCY_CONFLICT/);
+
+  const changedSource = activationRequest(lifecycle, "activation-conflict", plan, hooks, {
+    activationSourceDigest: "sha256:different-activation-source",
+  });
+  assert.throws(() => lifecycle.activate(changedSource), /ACTIVATION_IDEMPOTENCY_CONFLICT/);
+
+  const changedCleanupPolicy = activationRequest(lifecycle, "activation-conflict", plan, hooks, {
+    cleanupTimeoutMs: 250,
+  });
+  assert.throws(() => lifecycle.activate(changedCleanupPolicy), /ACTIVATION_IDEMPOTENCY_CONFLICT/);
+});
+
+test("lifecycle is bound to one authority scope and snapshots hook bindings", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const firstPlan = requirePlan([{ id: "first", requires: [] }]);
+  const stopped: string[] = [];
+  const mutableHooks = new Map<string, ModuleHooks>([[
+    "first",
+    inertHooks({ stop: () => { stopped.push("original"); } }),
+  ]]);
+  const first = activationRequest(lifecycle, "scope-first", firstPlan, mutableHooks);
+  await lifecycle.activate(first);
+  mutableHooks.set("first", inertHooks({ stop: () => { stopped.push("mutated"); } }));
+
+  const wrongScope = activationRequest(lifecycle, "wrong-scope", firstPlan, mutableHooks, {
+    authorityScope: "tenant:other/project:other",
+  });
+  assert.throws(() => lifecycle.activate(wrongScope), /AUTHORITY_SCOPE_MISMATCH/);
+
+  const secondPlan = requirePlan([{ id: "second", requires: [] }]);
+  await lifecycle.activate(activationRequest(
+    lifecycle,
+    "scope-second",
+    secondPlan,
+    new Map([["second", inertHooks()]]),
+  ));
+  assert.deepEqual(stopped, ["original"]);
 });
 
 test("same completed operation returns its retained result without a second start", async () => {
-  const lifecycle = new GenerationLifecycle();
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "module", requires: [] }]);
   let starts = 0;
   const request = activationRequest(
@@ -247,10 +325,15 @@ test("same completed operation returns its retained result without a second star
   const replay = await lifecycle.activate(request);
   assert.equal(replay.generation, first.generation);
   assert.equal(starts, 1);
+  assert.equal(Object.isFrozen(replay), true);
+  assert.equal(Object.isFrozen(replay.traces), true);
+  assert.equal(Object.isFrozen(replay.traces[0]), true);
+  assert.throws(() => (replay.traces as Array<unknown>).push({}), TypeError);
+  assert.deepEqual(await lifecycle.activate(request), first);
 });
 
 test("different candidates race through expected-active CAS and only one publishes", async () => {
-  const lifecycle = new GenerationLifecycle();
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const firstPlan = requirePlan([{ id: "first", requires: [] }]);
   const secondPlan = requirePlan([{ id: "second", requires: [] }]);
   const expectedActiveGeneration = lifecycle.activeGeneration;
@@ -275,7 +358,7 @@ test("different candidates race through expected-active CAS and only one publish
 });
 
 test("readiness blocks dependents and failed candidate leaves routing unchanged", async () => {
-  const lifecycle = new GenerationLifecycle();
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const base = requirePlan([{ id: "base", requires: [] }]);
   const baseResult = await lifecycle.activate(activationRequest(
     lifecycle,
@@ -306,7 +389,7 @@ test("readiness blocks dependents and failed candidate leaves routing unchanged"
 });
 
 test("absolute deadline prevents late publication and cleanup is bounded", async () => {
-  const lifecycle = new GenerationLifecycle();
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "slow", requires: [] }]);
   const startedAt = Date.now();
   const result = await lifecycle.activate(activationRequest(
@@ -320,7 +403,7 @@ test("absolute deadline prevents late publication and cleanup is bounded", async
     { deadlineMs: 5, cleanupTimeoutMs: 20 },
   ));
   assert.equal(result.ok, false);
-  assert.equal(result.termination, "unproven");
+  assert.equal(result.termination, "termination_unproven");
   assert.equal(lifecycle.activeGeneration, 0);
   assert.ok(Date.now() - startedAt < 250);
   assert.ok(result.errors.some(error => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
@@ -328,7 +411,7 @@ test("absolute deadline prevents late publication and cleanup is bounded", async
 });
 
 test("failed parallel batch settles siblings before reverse cleanup", async () => {
-  const lifecycle = new GenerationLifecycle();
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([
     { id: "fails", requires: [] },
     { id: "slow-sibling", requires: [] },
@@ -356,8 +439,34 @@ test("failed parallel batch settles siblings before reverse cleanup", async () =
   assert.equal(lifecycle.activeGeneration, 0);
 });
 
+test("ignored activation cancellation is fenced and reported as termination unproven", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([{ id: "slow", requires: [] }]);
+  let startRunning = false;
+  let cleanupOverlapped = false;
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "ignored-start-cancellation",
+    plan,
+    new Map([["slow", inertHooks({
+      start: async () => {
+        startRunning = true;
+        await delay(30);
+        startRunning = false;
+      },
+      stop: () => { cleanupOverlapped = startRunning; },
+    })]]),
+    { deadlineMs: 5, cleanupTimeoutMs: 20 },
+  ));
+  assert.equal(result.ok, false);
+  assert.equal(result.termination, "termination_unproven");
+  assert.equal(cleanupOverlapped, true);
+  await delay(35);
+  assert.equal(startRunning, false);
+});
+
 test("multi-level rollback keeps reverse levels, aggregates failures, and shares one cleanup deadline", async () => {
-  const lifecycle = new GenerationLifecycle();
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([
     { id: "provider-a", requires: [] },
     { id: "provider-b", requires: [] },
@@ -388,11 +497,12 @@ test("multi-level rollback keeps reverse levels, aggregates failures, and shares
   assert.deepEqual(new Set(stopped.slice(2)), new Set(["provider-a", "provider-b"]));
   assert.ok(result.errors.some(error => error.message === "STOP_A_FAILED"));
   assert.ok(result.errors.some(error => error.message === "CLEANUP_TIMEOUT:provider-b"));
+  assert.equal(result.termination, "termination_unproven");
   assert.ok(Date.now() - startedAt < 250);
 });
 
 test("bounded drain emits in-memory debt evidence before fencing an old generation", async () => {
-  const lifecycle = new GenerationLifecycle();
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const first = requirePlan([{ id: "first", requires: [] }]);
   await lifecycle.activate(activationRequest(lifecycle, "drain-first", first, new Map([["first", inertHooks()]])));
   const oldGeneration = lifecycle.activeGeneration;
@@ -407,14 +517,37 @@ test("bounded drain emits in-memory debt evidence before fencing an old generati
     { cleanupTimeoutMs: 5 },
   ));
   assert.equal(result.ok, true);
+  assert.equal(result.termination, "termination_unproven");
   assert.ok(result.errors.some(error => error.message === `DRAIN_TIMEOUT:${oldGeneration}`));
   assert.ok(result.traces.some(trace => trace.phase === "drain" && trace.outcome === "timed-out"));
   assert.throws(() => lifecycle.assertInMemoryFence(lease), /STALE_GENERATION/);
   lease.release();
 });
 
+test("successful cutover reports old-generation cleanup timeout as termination unproven", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const first = requirePlan([{ id: "first", requires: [] }]);
+  await lifecycle.activate(activationRequest(
+    lifecycle,
+    "cleanup-timeout-first",
+    first,
+    new Map([["first", inertHooks({ stop: async () => new Promise(() => undefined) })]]),
+  ));
+  const second = requirePlan([{ id: "second", requires: [] }]);
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "cleanup-timeout-second",
+    second,
+    new Map([["second", inertHooks()]]),
+    { cleanupTimeoutMs: 5 },
+  ));
+  assert.equal(result.ok, true);
+  assert.equal(result.termination, "termination_unproven");
+  assert.ok(result.errors.some(error => error.message === "CLEANUP_TIMEOUT:first"));
+});
+
 test("replacement drains admitted work, cuts over once, and fences stale writes", async () => {
-  const lifecycle = new GenerationLifecycle();
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const first = requirePlan([{ id: "first", requires: [] }]);
   await lifecycle.activate(activationRequest(lifecycle, "replacement-first", first, new Map([["first", inertHooks()]])));
   const oldGeneration = lifecycle.activeGeneration;
@@ -459,7 +592,9 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
     expectedActiveGeneration: 1,
     activeGeneration: 1,
     routeHeadGeneration: 1,
-    sinkFenceGeneration: 1,
+    expectedSinkFence: 41,
+    candidateSinkFence: 42,
+    sinkFence: 41,
     phase: "prepared",
     operationDeadlineExpired: false,
     drainDeadlineExpired: false,
@@ -471,26 +606,39 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
     phase: "published" as const,
     activeGeneration: 2,
     routeHeadGeneration: 2,
-    sinkFenceGeneration: 2,
+    sinkFence: 42,
     publicationEvidence: "committed" as const,
   };
   const observed = (
-    candidate: "absent" | "running" | "ready" | "terminated" | "unknown",
+    candidateState: "absent" | "running" | "ready" | "terminated" | "unknown",
     oldGenerationInFlight: boolean,
     overrides: Partial<{
       candidateGeneration: number;
       candidateHostIncarnation: string;
-      authorityScope: string;
-      graphDigest: string;
+      candidateAuthorityScope: string;
+      candidateGraphDigest: string;
+      queryAuthorityScope: string;
+      queryGraphDigest: string;
+      oldGeneration: number;
+      oldAuthorityScope: string;
+      oldSinkFence: number;
     }> = {},
-  ) => ({
-    candidate,
-    candidateGeneration: 2,
-    candidateHostIncarnation: "host-incarnation-1",
-    authorityScope: "tenant:test/project:test",
-    graphDigest: "sha256:graph-1",
-    oldGenerationInFlight,
-    ...overrides,
+  ): ObservedHostState => ({
+    queryAuthorityScope: overrides.queryAuthorityScope ?? testAuthorityScope,
+    queryGraphDigest: overrides.queryGraphDigest ?? "sha256:graph-1",
+    candidate: candidateState === "absent" ? { state: "absent" } : {
+      state: candidateState,
+      generation: overrides.candidateGeneration ?? 2,
+      hostIncarnation: overrides.candidateHostIncarnation ?? "host-incarnation-1",
+      authorityScope: overrides.candidateAuthorityScope ?? testAuthorityScope,
+      graphDigest: overrides.candidateGraphDigest ?? "sha256:graph-1",
+    },
+    oldGeneration: {
+      generation: overrides.oldGeneration ?? 1,
+      authorityScope: overrides.oldAuthorityScope ?? testAuthorityScope,
+      sinkFence: overrides.oldSinkFence ?? 41,
+      inFlight: oldGenerationInFlight,
+    },
   });
   const cases = [
     [baseline, observed("absent", false), "RETRY_IDEMPOTENT_PREPARE"],
@@ -501,7 +649,12 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
     [{ ...baseline, externalOutcome: "uncertain" }, observed("running", false), "CONTROLLED_RECOVERY"],
     [{ ...published, routeHeadGeneration: 1 }, observed("ready", false), "CONTROLLED_RECOVERY"],
     [{ ...published, phase: "draining", drainDeadlineExpired: true }, observed("ready", true), "CONTROLLED_RECOVERY"],
+    [{ ...published, drainDeadlineExpired: true }, observed("ready", true), "CONTROLLED_RECOVERY"],
     [baseline, observed("ready", false, { candidateHostIncarnation: "stale-host" }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("absent", false, { queryAuthorityScope: "tenant:other/project:other" }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("absent", false, { queryGraphDigest: "sha256:wrong-graph" }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("absent", false, { oldGeneration: 9 }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("absent", false, { oldSinkFence: 2 }), "CONTROLLED_RECOVERY"],
   ] as const;
   for (const [state, observed, expected] of cases) {
     assert.equal(reconcileLifecycle(state, observed), expected);
@@ -510,10 +663,15 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
 });
 
 test("portable protocol rejects stale, expired, malformed, and oversized frames", () => {
-  const authority = { graphGeneration: 1, runtimeGeneration: 7, now: Date.now() };
+  const authority = { ...protocolAuthority, now: Date.now() };
   assert.equal(handlePortableWorkerFrame(frame(), authority).kind, "result");
+  assert.throws(() => handlePortableWorkerFrame(frame({ authorityScope: "tenant:other/project:other" }), authority), /AUTHORITY_SCOPE_MISMATCH/);
+  assert.throws(() => handlePortableWorkerFrame(frame({ extensionInstanceId: "extension-instance-2" }), authority), /EXTENSION_INSTANCE_MISMATCH/);
   assert.throws(() => handlePortableWorkerFrame(frame({ graphGeneration: 2 }), authority), /STALE_GRAPH_GENERATION/);
-  assert.throws(() => handlePortableWorkerFrame(frame({ runtimeGeneration: 6 }), authority), /STALE_RUNTIME_GENERATION/);
+  assert.throws(() => handlePortableWorkerFrame(frame({ moduleActivationGeneration: 6 }), authority), /STALE_MODULE_ACTIVATION_GENERATION/);
+  assert.throws(() => handlePortableWorkerFrame(frame({ hostIncarnation: "stale-host" }), authority), /STALE_HOST_INCARNATION/);
+  assert.throws(() => handlePortableWorkerFrame(frame({ senderId: "unauthenticated-peer" }), authority), /AUTHENTICATED_PEER_MISMATCH/);
+  assert.throws(() => handlePortableWorkerFrame(frame({ audience: "different-host" }), authority), /AUDIENCE_MISMATCH/);
   assert.throws(() => handlePortableWorkerFrame(frame({ absoluteDeadline: Date.now() - 1 }), authority), /DEADLINE_EXCEEDED/);
   assert.throws(() => validateEnvelope({}), /UNKNOWN_OR_MISSING_FIELD/);
   assert.throws(() => validateEnvelope({ ...frame(), extra: true }), /UNKNOWN_OR_MISSING_FIELD/);
@@ -522,14 +680,42 @@ test("portable protocol rejects stale, expired, malformed, and oversized frames"
   assert.throws(() => validateEnvelope(frame({ payload: cyclicPayload })), /JSON_LIMIT_EXCEEDED/);
   assert.throws(() => validateEnvelope(frame({ payload: { text: "x".repeat(70_000) } })), /FRAME_TOO_LARGE/);
   assert.throws(() => validateEnvelope(frame({ payload: { value: Number.NaN } })), /INVALID_JSON_NUMBER/);
+  assert.throws(() => validateEnvelope(frame({ payload: { value: -0 } })), /INVALID_JSON_NUMBER/);
+  assert.throws(() => validateEnvelope(frame({ payload: { value: "\ud800" } })), /INVALID_UNICODE_STRING/);
   assert.throws(() => validateEnvelope(frame({ payload: { value: undefined } })), /INVALID_JSON_VALUE/);
   assert.throws(() => validateEnvelope(frame({ payload: new Map() as unknown as Record<string, unknown> })), /INVALID_JSON_OBJECT/);
   const accessor = {} as Record<string, unknown>;
   Object.defineProperty(accessor, "value", { enumerable: true, get: () => "must-not-run" });
   assert.throws(() => validateEnvelope(frame({ payload: accessor })), /INVALID_JSON_OBJECT/);
+  const sparse: unknown[] = [];
+  sparse.length = 1;
+  assert.throws(() => validateEnvelope(frame({ payload: { sparse } })), /INVALID_JSON_ARRAY/);
+  const arrayAccessor: unknown[] = [];
+  Object.defineProperty(arrayAccessor, "0", { enumerable: true, get: () => "must-not-run" });
+  arrayAccessor.length = 1;
+  assert.throws(() => validateEnvelope(frame({ payload: { arrayAccessor } })), /INVALID_JSON_ARRAY/);
+  const extraArrayProperty: unknown[] & { extra?: string } = [];
+  extraArrayProperty.extra = "unexpected";
+  assert.throws(() => validateEnvelope(frame({ payload: { extraArrayProperty } })), /INVALID_JSON_ARRAY/);
   const normalized = validateEnvelope(frame({ payload: { nested: { value: 1 } } }));
   assert.equal(Object.isFrozen(normalized.payload), true);
   assert.equal(Object.isFrozen(normalized.payload.nested), true);
+  assert.deepEqual(decodeLengthPrefixedFrame(encodeLengthPrefixedFrame(normalized)), normalized);
+
+  const rawFrame = (text: string): Uint8Array => {
+    const payload = Buffer.from(text, "utf8");
+    const packet = Buffer.alloc(payload.byteLength + 4);
+    packet.writeUInt32BE(payload.byteLength, 0);
+    payload.copy(packet, 4);
+    return packet;
+  };
+  const duplicateOperation = JSON.stringify(frame()).replace(
+    '"operationId":"operation-1"',
+    '"operationId":"operation-1","operationId":"operation-2"',
+  );
+  assert.throws(() => decodeLengthPrefixedFrame(rawFrame(duplicateOperation)), /INVALID_JSON_FRAME/);
+  const invalidUtf8 = Uint8Array.from([0, 0, 0, 2, 0xc3, 0x28]);
+  assert.throws(() => decodeLengthPrefixedFrame(invalidUtf8), /INVALID_JSON_FRAME/);
 });
 
 test("process-host smoke acknowledges hello and readiness over bounded length-prefixed JSON", async t => {
@@ -549,15 +735,28 @@ test("process-host smoke acknowledges hello and readiness over bounded length-pr
   });
   child.stdin.write(encodeLengthPrefixedFrame(frame()));
   child.stdin.write(encodeLengthPrefixedFrame(frame({ requestId: "request-2", kind: "prepare" })));
-  while (responses.length < 2) await delay(1);
+  await Promise.race([
+    (async () => { while (responses.length < 2) await delay(1); })(),
+    once(child, "error").then(([error]) => { throw error; }),
+    once(child, "exit").then(([code]) => { throw new Error(`PROCESS_EXITED_EARLY:${String(code)}`); }),
+    delay(2_000).then(() => { throw new Error("PROCESS_RESPONSE_TIMEOUT"); }),
+  ]);
   assert.deepEqual(responses.map(value => validateEnvelope(value).kind), ["result", "ready"]);
   child.stdin.write(encodeLengthPrefixedFrame(frame({ requestId: "request-3", kind: "stop" })));
   await once(child, "exit");
 });
 
+test("process-host fixture enforces deadline and authority before handling", async t => {
+  const child = spawn(process.execPath, [join(fixtureRoot, "process-child.mjs")], { stdio: ["pipe", "pipe", "pipe"] });
+  t.after(() => child.kill("SIGKILL"));
+  child.stdin.write(encodeLengthPrefixedFrame(frame({ absoluteDeadline: Date.now() - 1 })));
+  const [code] = await once(child, "exit", { signal: AbortSignal.timeout(2_000) });
+  assert.notEqual(code, 0);
+});
+
 test("Worker structured-clone boundary preserves validation and stale rejection", async t => {
   const worker = new Worker(new URL("./fixtures/portable-worker.mjs", import.meta.url), {
-    workerData: { graphGeneration: 1, runtimeGeneration: 7 },
+    workerData: protocolAuthority,
   });
   t.after(() => worker.terminate());
   const response = new Promise<unknown>(resolve => worker.once("message", resolve));
@@ -565,8 +764,8 @@ test("Worker structured-clone boundary preserves validation and stale rejection"
   worker.postMessage(structuredClone(request));
   assert.deepEqual(await response, { ok: true, frame: { ...request, kind: "result", payload: { acceptedKind: "prepare" } } });
   const stale = new Promise<unknown>(resolve => worker.once("message", resolve));
-  worker.postMessage(frame({ runtimeGeneration: 6 }));
-  assert.deepEqual(await stale, { ok: false, error: "STALE_RUNTIME_GENERATION" });
+  worker.postMessage(frame({ moduleActivationGeneration: 6 }));
+  assert.deepEqual(await stale, { ok: false, error: "STALE_MODULE_ACTIVATION_GENERATION" });
 });
 
 test("browser Worker carries a portable generation-bound frame", async t => {
@@ -633,13 +832,13 @@ test("browser Worker carries a portable generation-bound frame", async t => {
   }
   assert.equal(code, 0);
   assert.match(output, /"ok":true/);
-  assert.match(output, /"runtimeGeneration":7/);
+  assert.match(output, /"moduleActivationGeneration":7/);
   assert.match(output, /"kind":"result"/);
 });
 
-test("packed reusable core works without Foundation, Cordis, or plugin dependencies", async () => {
+test("packed toy package exercises an isolated consumer without Foundation, Cordis, or plugin dependencies", async () => {
   const root = await mkdtemp(join(tmpdir(), "extension-packed-consumer-"));
-  const pack = spawn("npm", ["pack", join(fixtureRoot, "reusable-core"), "--json", "--pack-destination", root], { stdio: ["ignore", "pipe", "pipe"] });
+  const pack = spawn("npm", ["pack", join(fixtureRoot, "toy-package"), "--json", "--pack-destination", root], { stdio: ["ignore", "pipe", "pipe"] });
   let stdout = "";
   pack.stdout.setEncoding("utf8");
   pack.stdout.on("data", chunk => { stdout += chunk; });
@@ -654,12 +853,12 @@ test("packed reusable core works without Foundation, Cordis, or plugin dependenc
   const install = spawn("npm", ["install", "--ignore-scripts", "--package-lock=false", join(root, packed[0]!.filename)], { cwd: consumer, stdio: "ignore" });
   const [installCode] = await once(install, "exit");
   assert.equal(installCode, 0);
-  const packageEntries = await readdir(join(consumer, "node_modules", "@agent-teams", "qualification-reusable-core"));
+  const packageEntries = await readdir(join(consumer, "node_modules", "@agent-teams", "qualification-toy-package"));
   assert.ok(!packageEntries.some(entry => entry.includes("module") || entry.includes("plugin")));
   const execute = spawn(process.execPath, [
     "--input-type=module",
     "--eval",
-    'import { createCounter } from "@agent-teams/qualification-reusable-core"; process.stdout.write(String(createCounter(3).next()));',
+    'import { createCounter } from "@agent-teams/qualification-toy-package"; process.stdout.write(String(createCounter(3).next()));',
   ], { cwd: consumer, stdio: ["ignore", "pipe", "pipe"] });
   let result = "";
   execute.stdout.setEncoding("utf8");
@@ -691,7 +890,7 @@ test("native and Cordis-backed hooks emit the same applicable lifecycle trace", 
     { id: "consumer", requires: ["provider"] },
   ]);
   const second = requirePlan([{ id: "replacement", requires: [] }]);
-  const native = new GenerationLifecycle();
+  const native = new GenerationLifecycle(testAuthorityScope);
   await native.activate(activationRequest(native, "native-first", first, new Map([
     ["provider", inertHooks()],
     ["consumer", inertHooks()],
@@ -715,7 +914,7 @@ test("native and Cordis-backed hooks emit the same applicable lifecycle trace", 
       disposers.delete(moduleId);
     },
   });
-  const cordis = new GenerationLifecycle();
+  const cordis = new GenerationLifecycle(testAuthorityScope);
   await cordis.activate(activationRequest(cordis, "cordis-first", first, new Map([
     ["provider", cordisHooks("provider")],
     ["consumer", cordisHooks("consumer")],

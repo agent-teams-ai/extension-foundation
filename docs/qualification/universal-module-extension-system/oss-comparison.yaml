@@ -6,6 +6,17 @@ candidates:
     evidenceStatus: pinned
     category: in-process-composition
     versionOrRevision: "@deepseek-ai/cordis@4.0.1 / deepseek-harness@b150a551b8d465e31e418e1b2eaf5e79bbb7d28e"
+    evidence:
+      - kind: npm-release
+        package: "@deepseek-ai/cordis"
+        version: 4.0.1
+        url: "https://registry.npmjs.org/@deepseek-ai/cordis/-/cordis-4.0.1.tgz"
+        integrity: "sha512-YBdskTU2Po1kru3GgcUWUbkTsPMA9LkSQDAY8rBkFJeajdgcQad3QPJZE26JyK99Xb6HaASvoXg2DSUTeN/0Nw=="
+        locked: true
+      - kind: git-commit
+        repository: "https://github.com/deepseek-ai/deepseek-harness"
+        revision: b150a551b8d465e31e418e1b2eaf5e79bbb7d28e
+        url: "https://github.com/deepseek-ai/deepseek-harness/commit/b150a551b8d465e31e418e1b2eaf5e79bbb7d28e"
     adopt: private-adapter-candidate
     usefulFor: scoped resource ownership and effect cleanup
     missing: closed-world compile, readiness, generations, atomic cutover, bounded drain, durable recovery, hostile-code isolation
@@ -13,6 +24,11 @@ candidates:
     evidenceStatus: pinned
     category: product-extension-host
     versionOrRevision: "62e4ec989dc0bb317b431d9d23a36019ef3c0d5b"
+    evidence:
+      - kind: git-commit
+        repository: "https://github.com/microsoft/vscode"
+        revision: 62e4ec989dc0bb317b431d9d23a36019ef3c0d5b
+        url: "https://github.com/microsoft/vscode/commit/62e4ec989dc0bb317b431d9d23a36019ef3c0d5b"
     adopt: patterns-only
     usefulFor: extension-host placement, contribution points, activation, remote hosts
     missing: product-neutral DDD authority and durable lifecycle semantics
@@ -27,6 +43,11 @@ candidates:
     evidenceStatus: pinned
     category: application-modularity
     versionOrRevision: "de92faeb4a375af5bd4f7a84311e702736e98964"
+    evidence:
+      - kind: git-commit
+        repository: "https://github.com/backstage/backstage"
+        revision: de92faeb4a375af5bd4f7a84311e702736e98964
+        url: "https://github.com/backstage/backstage/commit/de92faeb4a375af5bd4f7a84311e702736e98964"
     adopt: patterns-only
     usefulFor: product-owned extension points, composable frontend surfaces, package ownership
     missing: untrusted isolation and generation lifecycle
@@ -34,6 +55,11 @@ candidates:
     evidenceStatus: pinned
     category: frontend-modularity
     versionOrRevision: "d9b39db2c6d609af334729eeba2ab9376a11c0a7"
+    evidence:
+      - kind: git-commit
+        repository: "https://github.com/jupyterlab/jupyterlab"
+        revision: d9b39db2c6d609af334729eeba2ab9376a11c0a7
+        url: "https://github.com/jupyterlab/jupyterlab/commit/d9b39db2c6d609af334729eeba2ab9376a11c0a7"
     adopt: patterns-only
     usefulFor: tokens, commands, widgets, activation and disposal ownership
     missing: durable recovery and security boundary
@@ -41,6 +67,12 @@ candidates:
     evidenceStatus: pinned
     category: startup-graph
     versionOrRevision: "avvio@9.3.0"
+    evidence:
+      - kind: npm-release
+        package: avvio
+        version: 9.3.0
+        url: "https://registry.npmjs.org/avvio/-/avvio-9.3.0.tgz"
+        integrity: "sha512-g2tQ7LE7oOSqDfwEm3M+ZCMTJc7KiZCdJ4UwyZJb5ckTKyYu50OYmvv0mCFXPuYXoM4zkSt8zM9XQ9KCvxA74A=="
     adopt: patterns-and-test-oracle
     usefulFor: encapsulation, deterministic boot, ready and close ordering
     missing: generations, replaceable graph, durable intents, hostile isolation
@@ -76,6 +108,12 @@ candidates:
     evidenceStatus: pinned
     category: typed-runtime
     versionOrRevision: "effect@3.22.1"
+    evidence:
+      - kind: npm-release
+        package: effect
+        version: 3.22.1
+        url: "https://registry.npmjs.org/effect/-/effect-3.22.1.tgz"
+        integrity: "sha512-TNoXushmPOBAjJlthF5d2QwnX2xBPEtcNJr5XKNKbRLbDvBcOYkXlYDfvGfSA0zriwLFuCll5MDtNMAdZL17PQ=="
     adopt: no-baseline-dependency
     usefulFor: scoped resources, layers and interruption vocabulary
     missing: closed-world plugin trust and durable product-owned lifecycle; high model adoption cost
@@ -83,6 +121,22 @@ candidates:
     evidenceStatus: pinned
     category: dependency-injection
     versionOrRevision: "awilix@13.0.5 / inversify@8.2.3 / @nestjs/core@11.2.1"
+    evidence:
+      - kind: npm-release
+        package: awilix
+        version: 13.0.5
+        url: "https://registry.npmjs.org/awilix/-/awilix-13.0.5.tgz"
+        integrity: "sha512-ORtca6suBdYA1FyTzqHEZDvEuUwo3lPDDBRm7GrzHgi6STESzJKdBtpqfTzObdMj1NGQUWX6k26E3EbQaGJX5Q=="
+      - kind: npm-release
+        package: inversify
+        version: 8.2.3
+        url: "https://registry.npmjs.org/inversify/-/inversify-8.2.3.tgz"
+        integrity: "sha512-OmTj/HB/lEV6WFaeHXBDXdUYWwtadF8QTbyEKT7LUZMzOkw5xF+Nrm1GTjIhBOrAUN4K65vtqKgxRWlSHzQH7w=="
+      - kind: npm-release
+        package: "@nestjs/core"
+        version: 11.2.1
+        url: "https://registry.npmjs.org/@nestjs/core/-/core-11.2.1.tgz"
+        integrity: "sha512-M5PWFU8NdRTgX9Po49d7TQKg7f5t8GAVUa/Esy4tmaMWcKugTzg3ZzpJfD3LEPMuRHjfs6+8pQYgtuP2uz3rDw=="
     adopt: composition-root-only-candidates
     usefulFor: object construction and scoped registrations
     missing: graph authority, lifecycle authority, isolation and stable public protocol
@@ -97,6 +151,17 @@ candidates:
     evidenceStatus: qualified-experiment
     category: wasm-host
     versionOrRevision: "@extism/extism@1.0.3"
+    evidence:
+      - kind: npm-release
+        package: "@extism/extism"
+        version: 1.0.3
+        url: "https://registry.npmjs.org/@extism/extism/-/extism-1.0.3.tgz"
+        integrity: "sha512-kHwJwNP19c2q6tN2VYez/Bvv/mvx5J+UEyVbHJKAQ8+l9Z+MJ7TTjBw/GwDQcieXlLtPDNphugeH8ChKKfVtQg=="
+        locked: true
+      - kind: artifact-digest
+        url: "https://github.com/extism/plugins/releases/download/v1.1.1/count_vowels.wasm"
+        digest: "sha256:72dfe2c69d8e5ac50886b7961664af6cccbbdcabeb45ce48270db2242778ce25"
+        command: "pnpm qualification:extism:experiment"
     observedLatest: "extism-runtime@1.30.0 / @extism/extism@2.0.0-rc13"
     experimentArtifact: "extism/plugins@v1.1.1/count_vowels.wasm"
     experimentIntegrity: "sha256:72dfe2c69d8e5ac50886b7961664af6cccbbdcabeb45ce48270db2242778ce25"
@@ -114,6 +179,11 @@ candidates:
     evidenceStatus: pinned
     category: module-topology
     versionOrRevision: "cherrypick-agency/modularity_dart@be9a2674f3a8ce7f0807d7b46e74dd6e8f283fe5; 777genius/modularity unavailable"
+    evidence:
+      - kind: git-commit
+        repository: "https://github.com/cherrypick-agency/modularity_dart"
+        revision: be9a2674f3a8ce7f0807d7b46e74dd6e8f283fe5
+        url: "https://github.com/cherrypick-agency/modularity_dart/commit/be9a2674f3a8ce7f0807d7b46e74dd6e8f283fe5"
     adopt: patterns-only
     usefulFor: explicit identities, declarative imports/exports, non-transitive visibility, startup coalescing and graph visualization
     missing: TypeScript evidence, closed-world provider ambiguity checks, secure isolation and durable recovery

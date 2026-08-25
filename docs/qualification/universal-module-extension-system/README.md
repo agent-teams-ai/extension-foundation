@@ -51,8 +51,10 @@ post-MVP hypotheses.
 
 The frontmatter status `qualified` means the document has completed this
 research pass. It does not mean every requirement inside it is implemented or
-passed. [Conformance Plan](conformance-plan.md#current-evidence-status) is the
-machine-audited distinction between planned, implemented and passed evidence.
+passed. [Conformance Plan](conformance-plan.md#current-evidence-status) contains
+the explicit human-reviewed status table for planned, implemented and passed
+evidence. Machine-produced evidence manifests remain a promotion requirement,
+not a property claimed by this research branch.
 
 The [decision ledger](decision-ledger.yaml) is the machine-readable navigation
 source. It links to full rationale and never duplicates normative decisions.

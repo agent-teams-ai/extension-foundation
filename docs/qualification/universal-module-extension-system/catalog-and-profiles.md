@@ -94,8 +94,9 @@ runtime service instances. Re-resolution is explicit and creates a reviewable
 diff. Normal verification performs no dependency solving and no catalog or
 registry lookup; it verifies the exact authenticated closure already recorded.
 
-MVP resolution uses exact source mappings, explicit or unique capability
-bindings and deterministic closed-world constraints. A general SAT/PubGrub
+MVP resolution uses exact source mappings, explicit capability bindings and
+deterministic closed-world constraints. Unique-provider auto-binding remains
+open under `UMEQ-011` and is not enabled by the Phase 1 recommendation. A general SAT/PubGrub
 solver remains deferred until real product profiles demonstrate version or
 capability constraints that the small resolver cannot express safely.
 

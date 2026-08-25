@@ -80,6 +80,12 @@ Not every feature needs every directory. Empty DDD layers are forbidden.
 An imagined future consumer is not evidence. Security isolation may justify an
 earlier process boundary, but it must be explicit.
 
+There are two distinct extractions. A product may first extract a product-scoped
+library or adapter inside its own repository when that boundary has independent
+value. Admission into Extension Foundation is a later cross-product decision and
+requires two independent consumers proving the same product-neutral semantics.
+Product-local extraction is not Foundation admission.
+
 When extraction is justified, related packages remain discoverable:
 
 ```text
@@ -93,6 +99,11 @@ packages/<capability>/
 These are roles, not mandatory folders. A package is moved back or combined
 when its independent lifecycle disappears and the compatibility surface costs
 more than it protects.
+
+Before the first Foundation package is admitted, the machine-readable package
+catalog must record its neutrality claim, canonical owner repository, consumer
+evidence, release policy and conformance profile. The current empty catalog
+cannot reserve or admit packages on the strength of this qualification alone.
 
 ## Dependency Rules
 

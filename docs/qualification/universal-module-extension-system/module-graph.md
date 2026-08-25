@@ -60,8 +60,11 @@ module activation generation are never aliases. A built-in module has an immutab
 implementation identity but no artifact or installation identity.
 
 Capability identity is a stable URI-like string owned by the product feature,
-for example `agent-teams.orchestrator/work-placement-proposal`. Foundation owns
-the grammar and comparison rules, not the product vocabulary.
+for example `agent-teams.orchestrator/work-placement-proposal`. During the first
+product-local slice, the owning product also owns its private grammar and
+comparison rules. Foundation may own only a product-neutral grammar proven by a
+second independent consumer and admitted through a separate extraction decision;
+it never owns product vocabulary.
 
 ## Descriptor Boundary
 

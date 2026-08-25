@@ -35,9 +35,9 @@ flowchart TB
     Compiler --> Plan["Immutable plan and diagnostics"]
     Plan --> Lifecycle["Product-owned generation coordinator"]
 
-    Lifecycle --> Trusted["Trusted in-process host"]
-    Lifecycle --> Process["Isolated process host"]
-    Lifecycle --> Browser["Browser Worker or iframe host"]
+    Lifecycle --> Trusted["T0 trusted in-process host"]
+    Lifecycle --> Process["T1 process fault boundary"]
+    Lifecycle --> Browser["Browser Worker T1 or sandboxed iframe T2 candidate"]
     Lifecycle -. post-MVP .-> Wasm["Extism/WASI host"]
 
     Product["Owning use case: authorization, invariants, transaction"] --> SPI["Narrow product SPI"]
@@ -77,26 +77,29 @@ any canonical mutation.
   batches/digest, reject duplicate/missing/cyclic IDs before hook resolution
   and remain stack-safe at 10,000 modules.
 - One hundred concurrent starts can share one activation; waiter cancellation
-  detaches; changed idempotency payload conflicts; different candidates admit
-  one expected-active compare-and-set winner.
+  detaches; changed source, scope, policy, cleanup or graph identity conflicts;
+  different candidates admit one expected-active compare-and-set winner.
 - Failed readiness preserves the active generation; deadlines prevent late
   publication; hung cleanup is bounded and visible.
-- Parallel startup failure waits for every bounded sibling outcome before
-  reverse cleanup, preventing cleanup from racing a still-starting peer.
+- Parallel startup failure waits for every bounded sibling wrapper before
+  reverse cleanup. A hook that ignores cancellation may still overlap cleanup,
+  so the result is explicitly `termination_unproven`.
 - Generation replacement can drain admitted work and reject stale leases in an
   in-memory fence model; durable sink fencing and debt ordering remain product
   adapter obligations.
 - Identity-bound crash/recovery choices can be represented as a deterministic
   reducer rather than process-memory continuation; crash injection and durable
   recovery are not yet proved.
-- Node process, Node Worker and real browser Worker use one strict portable,
-  generation-bound codec; negotiation/authentication remain open.
+- Node process, Node Worker and real browser Worker use one strict portable codec
+  bound to authority scope, extension instance, graph/module generations, host
+  incarnation, peer, audience and deadline; authenticated negotiation remains open.
 - Native and Cordis-backed resource hooks can emit the same applicable neutral
   lifecycle trace.
 - A packed toy fixture validates the isolated-consumer harness shape; it is not
   evidence for a production package or declaration surface.
-- Extism 1.0.3 can execute a digest-verified official Wasm plugin, but Node
-  reports experimental WASI and npm `latest` is a 2.0 release candidate.
+- Extism 1.0.3 can execute release-hosted Wasm bytes matching a pinned digest,
+  but publisher provenance was not established, Node reports experimental WASI,
+  and npm `latest` is a 2.0 release candidate.
 
 ### Recommended
 
@@ -156,11 +159,12 @@ the measured deletion threshold.
 
 ### Phase 0: Approvals And Baseline
 
-Approve `UMEQ-011` and the narrow native graph choice in `UMEQ-013` in
-[Unresolved Decisions](unresolved-decisions.md). Contract source and publication
-decisions remain open because Phase 1 creates no Foundation package or public
-SPI. Process, Frontend, update, distributed cutover and managed-update decisions
-remain deferred.
+The owning product must first accept a feature decision naming the graph owner,
+two fixed `T0` built-ins, explicit bindings and the authority that remains outside
+the graph. Foundation approval forks `UMEQ-011` and `UMEQ-013` remain open because
+Phase 1 creates no Foundation package or public SPI. Contract source, process,
+Frontend, update, distributed cutover and managed-update decisions also remain
+deferred.
 
 Estimated change: 300-700 documentation/tooling LOC, 1-3 days.
 
@@ -186,9 +190,9 @@ single-flight, reverse cleanup, generation fences and structured diagnostics.
 Do not load artifacts, install plugins, expose public SPI, share private state
 across scopes, call external effects or generalize a reusable runtime.
 
-Exit criteria: feature authority remains product-owned; one native and one
-bounded reference adapter produce matching applicable traces; no lifecycle
-framework leakage.
+Exit criteria: feature authority remains product-owned; two independently
+authored implementations produce matching applicable positive and negative
+traces; no lifecycle framework leakage.
 
 Estimated change: 3,000-6,000 LOC including product tests, 1-3 weeks.
 
@@ -248,9 +252,11 @@ roughly 40,000-75,000 LOC before product-specific plugin behavior.
 
 ## Decision
 
-The architecture is implementation-ready for **Phase 1 only after the two
-priority approvals**. It is not ready for a stable public SPI, Cordis adoption,
-untrusted plugin claim or production package publication.
+The architecture guides Phase 1 only after the identified owning product has an
+accepted feature decision that fixes the two `T0` built-ins and authority boundary.
+Foundation approval forks remain open until cross-product admission. The result
+is not ready for a stable public SPI, Cordis adoption, untrusted plugin claim or
+production package publication.
 
 The recommended design is intentionally smaller than “Everything is a Plugin”:
 

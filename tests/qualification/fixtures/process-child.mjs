@@ -1,9 +1,20 @@
 import {
   decodeLengthPrefixedFrame,
   encodeLengthPrefixedFrame,
+  handlePortableWorkerFrame,
   maxFrameBytes,
   protocolName,
 } from "../portable-protocol.mjs";
+
+const authority = Object.freeze({
+  authorityScope: "tenant:test/project:test",
+  extensionInstanceId: "extension-instance-1",
+  graphGeneration: 1,
+  moduleActivationGeneration: 7,
+  hostIncarnation: "host-incarnation-1",
+  authenticatedPeerId: "product-host",
+  audience: "extension-host",
+});
 
 let buffer = Buffer.alloc(0);
 process.stdin.on("data", chunk => {
@@ -24,6 +35,7 @@ function send(frame) {
 }
 
 function handleFrame(frame) {
+  handlePortableWorkerFrame(frame, { ...authority, now: Date.now() });
   if (frame.kind === "hello") {
     send({ ...frame, kind: "result", payload: { negotiatedProtocol: protocolName } });
   } else if (frame.kind === "prepare") {

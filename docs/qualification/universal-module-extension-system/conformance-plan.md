@@ -29,10 +29,12 @@ flowchart TB
     Host --> Product
 ```
 
-Foundation owns neutral schemas, fixture generators, diagnostic meanings and
-minimum traces. Products own authorization, data invariants, persistence,
-placement and stronger security claims. Passing Foundation conformance never
-grants a plugin permission to execute.
+Before cross-product admission, the first product owns its private schemas,
+fixtures, diagnostics and minimum traces. After two independent consumers prove
+the same semantics and extraction is approved, Foundation may own the admitted
+neutral subset. Products always own authorization, data invariants, persistence,
+placement and stronger security claims. Passing conformance never grants a
+plugin permission to execute.
 
 ## Core Profiles
 
@@ -60,8 +62,8 @@ the dossier has status `qualified`.
 | --- | --- | --- |
 | ID-DAG scheduling primitive | implemented/passed locally | Narrow graph algorithm only, not `GRAPH-1` |
 | In-memory lifecycle/CAS model | implemented/passed locally | No durable coordinator or sink fence |
-| Portable strict JSON codec | implemented/passed locally | No N/N-1 negotiation, auth or operation journal |
-| Process, Node Worker, browser Worker | smoke/passed locally | Placement transport, not isolation conformance |
+| Portable strict JSON codec | implemented/passed locally | Canonical JSON subset, fatal UTF-8, duplicate-key rejection, authority tuple and deadline checks; no N/N-1 negotiation, authenticated channel or operation journal |
+| Process, Node Worker, browser Worker | smoke/passed locally | Placement transport and authority-envelope checks, not isolation conformance |
 | Packed toy consumer | harness/passed locally | Validates the harness shape, not `PACKAGE-1` |
 | Recovery reducer examples | implemented/passed locally | No crash-injected persistent recovery |
 | Supply chain and `HOST-T2/T3` negatives | planned | Required before their corresponding claims |
@@ -99,8 +101,8 @@ a distributed claim requires a linearizable store and sink-enforced fences.
 Before an Orchestrator, AR or Frontend contribution point is published, its
 owning feature provides:
 
-- two independent implementations, or one real implementation plus a bounded
-  reference adapter and explicit approval;
+- two independently authored implementations that pass the same applicable
+  positive and negative conformance fixtures;
 - a product authority statement and prohibited mutations;
 - host placement and trust tier;
 - capability request mapped to a separate grant decision;

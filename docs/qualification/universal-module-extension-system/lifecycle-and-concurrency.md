@@ -178,7 +178,9 @@ Cleanup requirements:
 A hung disposer is fenced or force-stopped only when its host provides that
 authority. A trusted in-process hook that ignores cancellation is reported as
 `termination_unproven`; late canonical effects remain fenced, but JavaScript
-termination is not claimed. The coordinator never waits forever.
+termination is not claimed. The coordinator waits only for bounded wrappers;
+ignored hook work may overlap cleanup and remains cleanup debt until a stronger
+host proves termination. The coordinator itself never waits forever.
 
 ## Replacement And Update
 
@@ -250,7 +252,7 @@ LifecycleIntent
   operationId
   authorityScope
   graphGeneration
-  runtimeGeneration
+  moduleActivationGeneration
   activationFingerprint
   phase
   absoluteDeadline
@@ -322,14 +324,16 @@ Implement now in a disposable qualification spike:
 - active and candidate generations;
 - one atomic in-memory compare-and-set seam;
 - bounded drain and an in-memory fence simulation;
-- deterministic traces and injected crash points.
+- deterministic traces and reducer-level crash/recovery examples.
 
-Specify but defer production implementation of:
+Specify but defer production implementation and executable fault injection of:
 
 - distributed consensus authority and multi-router deployment;
 - arbitrary hot unload;
 - public process wire protocol;
 - durable database schema and migration;
+- crash points around durable intent, dispatch, readiness, publication, drain
+  and cleanup;
 - Extism/WASM host;
 - automatic retry policy for product-specific effects.
 

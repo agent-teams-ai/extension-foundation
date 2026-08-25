@@ -7,8 +7,13 @@ parentPort.on("message", frame => {
     parentPort.postMessage({
       ok: true,
       frame: handlePortableWorkerFrame(frame, {
+        authorityScope: workerData.authorityScope,
+        extensionInstanceId: workerData.extensionInstanceId,
         graphGeneration: workerData.graphGeneration,
-        runtimeGeneration: workerData.runtimeGeneration,
+        moduleActivationGeneration: workerData.moduleActivationGeneration,
+        hostIncarnation: workerData.hostIncarnation,
+        authenticatedPeerId: workerData.authenticatedPeerId,
+        audience: workerData.audience,
         now: Date.now(),
       }),
     });

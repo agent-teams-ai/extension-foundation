@@ -19,13 +19,28 @@ interface DecisionEntry {
 
 interface DecisionLedger {
   readonly schemaVersion: number;
+  readonly sourceRevision: string;
   readonly entries: readonly DecisionEntry[];
+}
+
+interface OssEvidence {
+  readonly kind: "git-commit" | "npm-release" | "artifact-digest";
+  readonly repository?: string;
+  readonly revision?: string;
+  readonly url?: string;
+  readonly package?: string;
+  readonly version?: string;
+  readonly integrity?: string;
+  readonly locked?: boolean;
+  readonly command?: string;
+  readonly digest?: string;
 }
 
 interface OssCandidate {
   readonly id: string;
   readonly versionOrRevision: string;
   readonly evidenceStatus: "pinned" | "orientation" | "qualified-experiment";
+  readonly evidence?: readonly OssEvidence[];
 }
 
 function markdownAnchor(title: string): string {
@@ -41,6 +56,7 @@ test("decision ledger has one semantic owner and ten unique approval forks", asy
   const ledgerPath = resolve(dossier, "decision-ledger.yaml");
   const ledger = parse(await readFile(ledgerPath, "utf8")) as DecisionLedger;
   assert.equal(ledger.schemaVersion, 1);
+  assert.match(ledger.sourceRevision, /^[0-9a-f]{40}$/);
   const ids = ledger.entries.map(entry => entry.id);
   const topics = ledger.entries.map(entry => entry.topic);
   assert.equal(new Set(ids).size, ids.length);
@@ -66,6 +82,10 @@ test("decision ledger has one semantic owner and ten unique approval forks", asy
 });
 
 test("OSS comparison distinguishes immutable evidence from orientation research", async () => {
+  const repositoryRoot = resolve(dossier, "../../..");
+  const lock = parse(await readFile(resolve(repositoryRoot, "pnpm-lock.yaml"), "utf8")) as {
+    readonly packages: Readonly<Record<string, { readonly resolution?: { readonly integrity?: string } }>>;
+  };
   const record = parse(await readFile(resolve(dossier, "oss-comparison.yaml"), "utf8")) as {
     readonly schemaVersion: number;
     readonly candidates: readonly OssCandidate[];
@@ -75,6 +95,48 @@ test("OSS comparison distinguishes immutable evidence from orientation research"
   for (const candidate of record.candidates) {
     assert.ok(["pinned", "orientation", "qualified-experiment"].includes(candidate.evidenceStatus));
     if (candidate.evidenceStatus === "orientation") assert.match(candidate.versionOrRevision, /^reviewed-/);
-    if (candidate.evidenceStatus === "pinned") assert.doesNotMatch(candidate.versionOrRevision, /^reviewed-/);
+    if (candidate.evidenceStatus === "pinned") {
+      assert.doesNotMatch(candidate.versionOrRevision, /^(?:reviewed-|latest$)/);
+      assert.ok((candidate.evidence?.length ?? 0) > 0, `${candidate.id} requires immutable evidence`);
+    }
+    if (candidate.evidenceStatus === "qualified-experiment") {
+      assert.ok(candidate.evidence?.some(evidence => evidence.kind === "artifact-digest"));
+    }
+    for (const evidence of candidate.evidence ?? []) {
+      if (evidence.kind === "git-commit") {
+        assert.match(evidence.repository ?? "", /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/);
+        assert.match(evidence.revision ?? "", /^[0-9a-f]{40}$/);
+        assert.equal(evidence.url, `${evidence.repository}/commit/${evidence.revision}`);
+      } else if (evidence.kind === "npm-release") {
+        assert.match(evidence.package ?? "", /^(?:@[a-z0-9_.-]+\/)?[a-z0-9_.-]+$/);
+        assert.match(evidence.version ?? "", /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/);
+        assert.match(evidence.url ?? "", /^https:\/\/registry\.npmjs\.org\//);
+        assert.match(evidence.integrity ?? "", /^sha512-[A-Za-z0-9+/]+={0,2}$/);
+        if (evidence.locked) {
+          const entry = lock.packages[`${evidence.package}@${evidence.version}`];
+          assert.equal(entry?.resolution?.integrity, evidence.integrity);
+        }
+      } else {
+        assert.match(evidence.url ?? "", /^https:\/\//);
+        assert.match(evidence.digest ?? "", /^sha256:[0-9a-f]{64}$/);
+        assert.ok((evidence.command?.length ?? 0) > 0);
+      }
+    }
   }
+});
+
+test("publication and first-slice gates cannot be weakened by qualification prose", async () => {
+  const repositoryRoot = resolve(dossier, "../../..");
+  const files = await Promise.all([
+    readFile(resolve(repositoryRoot, "docs/decisions/0001-product-neutral-extension-foundation-boundary.md"), "utf8"),
+    readFile(resolve(dossier, "invariant-map.md"), "utf8"),
+    readFile(resolve(dossier, "conformance-plan.md"), "utf8"),
+    readFile(resolve(dossier, "final-recommendation.md"), "utf8"),
+    readFile(resolve(dossier, "product-adoption.md"), "utf8"),
+  ]);
+  assert.match(files[0]!, /Public SPI requires independent implementations/);
+  for (const markdown of files.slice(1, 4)) assert.match(markdown, /two independently authored/);
+  assert.doesNotMatch(files[2]!, /one real implementation plus a bounded reference adapter/);
+  assert.match(files[3]!, /owning product.*accepted feature decision/is);
+  assert.doesNotMatch(files[4]!, /independently packaged reference implementation/);
 });

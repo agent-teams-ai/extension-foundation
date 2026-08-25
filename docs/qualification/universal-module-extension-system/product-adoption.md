@@ -61,9 +61,10 @@ business recovery.
 The leading first-pilot candidate is Work Coordination completion evidence. A
 private provider may return evidence, pending, unknown/reconciliation, or
 unsupported; it never returns a bare completion Boolean and cannot complete
-Work. The pilot uses one built-in and one independently packaged reference
-implementation, post-commit dispatch, stable operation identity, explicit
-provider binding, and no dual mutation authority during migration.
+Work. The pilot starts with two fixed built-ins, including one independently
+authored, feature-local reference implementation. It uses post-commit dispatch,
+stable operation identity, explicit provider binding, and no dual mutation
+authority during migration. Packaging remains a later evidence-backed decision.
 
 This pilot starts only after its owning feature has an accepted internal model.
 Publishing the contract remains a separate decision after compatibility and
@@ -135,12 +136,12 @@ framework-specific contribution helpers. Browser and Electron hosts must share
 semantic fixtures while keeping different containment and authority.
 
 Web Workers do not automatically remove origin network/storage authority.
-Iframes need explicit sandbox/CSP/origin policy. Electron renderers keep
-`contextIsolation` and sandboxing; privileged calls cross request/check handlers
-in a narrow preload or utility-process broker. The product validates sender
-frame and origin, denies unexpected navigation, new windows and permissions,
-restricts external protocols, and uses an isolated session appropriate to the
-placement.
+Iframes need explicit sandbox/CSP/origin policy. Electron extension renderers
+use `nodeIntegration: false`, `contextIsolation: true`, `sandbox: true`,
+`webSecurity: true`, response-delivered CSP, isolated sessions, and a narrow
+preload or utility-process broker. The product validates sender frame, extension
+instance and origin on every privileged request; denies unexpected navigation,
+new windows and permissions; and restricts external protocols.
 
 The safest first Frontend slice is additive and trusted: describe the four
 existing Extension Store tabs in one immutable compiled catalog, while the

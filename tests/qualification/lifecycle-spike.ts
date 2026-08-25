@@ -4,7 +4,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import type { CompiledGraph } from "./graph-spike.ts";
 
 export type LifecyclePhase = "prepare" | "start" | "ready" | "publish" | "drain" | "stop" | "abort";
-export type LifecycleOutcome = "started" | "confirmed" | "failed" | "timed-out" | "stale" | "termination-unproven";
+export type LifecycleOutcome = "started" | "confirmed" | "failed" | "timed-out" | "stale" | "termination_unproven";
 
 export interface LifecycleTrace {
   readonly phase: LifecyclePhase;
@@ -32,6 +32,7 @@ export type ModuleHooks = CommonModuleHooks & (
 
 export interface ActivationIdentity {
   readonly operationId: string;
+  readonly activationSourceDigest: string;
   readonly expectedActiveGeneration: number;
   readonly authorityScope: string;
   readonly profileLockDigest: string;
@@ -51,9 +52,18 @@ export interface ActivationRequest {
 export interface ActivationResult {
   readonly ok: boolean;
   readonly generation: number;
-  readonly termination: "proven" | "unproven";
+  readonly termination: "proven" | "termination_unproven";
   readonly traces: readonly LifecycleTrace[];
-  readonly errors: readonly Error[];
+  readonly errors: readonly LifecycleError[];
+}
+
+export interface LifecycleError {
+  readonly message: string;
+}
+
+export interface WaiterOptions {
+  readonly absoluteDeadline?: number;
+  readonly signal?: AbortSignal;
 }
 
 export interface MonotonicClock {
@@ -87,9 +97,10 @@ function asError(error: unknown): Error {
 }
 
 function fingerprint(request: ActivationRequest): string {
-  const { identity, plan, absoluteDeadline } = request;
+  const { identity, plan, absoluteDeadline, cleanupTimeoutMs } = request;
   return JSON.stringify([
     identity.operationId,
+    identity.activationSourceDigest,
     plan.digest,
     identity.expectedActiveGeneration,
     identity.authorityScope,
@@ -98,7 +109,31 @@ function fingerprint(request: ActivationRequest): string {
     identity.grantRevision,
     identity.hostPolicyRevision,
     absoluteDeadline,
+    cleanupTimeoutMs ?? 50,
   ]);
+}
+
+function snapshotHooks(hooks: ReadonlyMap<string, ModuleHooks>): ReadonlyMap<string, ModuleHooks> {
+  return new Map([...hooks].map(([moduleId, moduleHooks]) => [
+    moduleId,
+    Object.freeze({ ...moduleHooks }) as ModuleHooks,
+  ]));
+}
+
+function freezeResult(
+  ok: boolean,
+  generation: number,
+  termination: ActivationResult["termination"],
+  traces: readonly LifecycleTrace[],
+  errors: readonly Error[],
+): ActivationResult {
+  return Object.freeze({
+    ok,
+    generation,
+    termination,
+    traces: Object.freeze(traces.map(trace => Object.freeze({ ...trace }))),
+    errors: Object.freeze(errors.map(error => Object.freeze({ message: error.message }))),
+  });
 }
 
 function runBeforeDeadline<T>(
@@ -140,6 +175,7 @@ export function inertHooks(hooks: CommonModuleHooks = {}): ModuleHooks {
 }
 
 export class GenerationLifecycle {
+  readonly #authorityScope: string;
   readonly #clock: MonotonicClock;
   readonly #flights = new Map<string, Flight>();
   readonly #operationFingerprints = new Map<string, string>();
@@ -152,7 +188,9 @@ export class GenerationLifecycle {
   #active: ActiveGraph | undefined;
   #cutovers = 0;
 
-  constructor(clock: MonotonicClock = defaultClock) {
+  constructor(authorityScope: string, clock: MonotonicClock = defaultClock) {
+    if (authorityScope.length === 0) throw new Error("INVALID_AUTHORITY_SCOPE");
+    this.#authorityScope = authorityScope;
     this.#clock = clock;
   }
 
@@ -170,28 +208,38 @@ export class GenerationLifecycle {
 
   activate(
     request: ActivationRequest,
-    waiterDeadline = request.absoluteDeadline + (request.cleanupTimeoutMs ?? 50) + 100,
+    waiter: WaiterOptions | number = {},
   ): Promise<ActivationResult> {
     if (request.identity.operationId.length === 0) throw new Error("INVALID_OPERATION_ID");
-    const key = fingerprint(request);
+    if (request.identity.authorityScope !== this.#authorityScope) throw new Error("AUTHORITY_SCOPE_MISMATCH");
+    if (request.identity.activationSourceDigest.length === 0) throw new Error("INVALID_ACTIVATION_SOURCE_DIGEST");
+    const normalizedRequest: ActivationRequest = Object.freeze({
+      ...request,
+      hooks: snapshotHooks(request.hooks),
+      cleanupTimeoutMs: request.cleanupTimeoutMs ?? 50,
+    });
+    const waiterOptions = typeof waiter === "number" ? { absoluteDeadline: waiter } : waiter;
+    const waiterDeadline = waiterOptions.absoluteDeadline
+      ?? request.absoluteDeadline + (request.cleanupTimeoutMs ?? 50) + 100;
+    const key = fingerprint(normalizedRequest);
     const previousKey = this.#operationFingerprints.get(request.identity.operationId);
     if (previousKey !== undefined && previousKey !== key) throw new Error("ACTIVATION_IDEMPOTENCY_CONFLICT");
     this.#operationFingerprints.set(request.identity.operationId, key);
 
     const existing = this.#flights.get(request.identity.operationId);
-    if (existing) return this.#waitForFlight(existing.result, waiterDeadline);
+    if (existing) return this.#waitForFlight(existing.result, waiterDeadline, waiterOptions.signal);
     const completed = this.#operationResults.get(request.identity.operationId);
     if (completed) return Promise.resolve(completed);
 
     const generation = this.#nextGeneration++;
-    const result = this.#activate(generation, request)
+    const result = this.#activate(generation, normalizedRequest)
       .then(value => {
         this.#operationResults.set(request.identity.operationId, value);
         return value;
       })
       .finally(() => this.#flights.delete(request.identity.operationId));
     this.#flights.set(request.identity.operationId, { result });
-    return this.#waitForFlight(result, waiterDeadline);
+    return this.#waitForFlight(result, waiterDeadline, waiterOptions.signal);
   }
 
   acquireInvocation(): { readonly generation: number; readonly id: number; release(): void } {
@@ -228,14 +276,34 @@ export class GenerationLifecycle {
     return drained;
   }
 
-  async #waitForFlight(result: Promise<ActivationResult>, waiterDeadline: number): Promise<ActivationResult> {
-    return runBeforeDeadline(
+  async #waitForFlight(
+    result: Promise<ActivationResult>,
+    waiterDeadline: number,
+    signal?: AbortSignal,
+  ): Promise<ActivationResult> {
+    const boundedWait = runBeforeDeadline(
       () => result,
       waiterDeadline,
       this.#clock,
       () => undefined,
       "WAITER_DEADLINE_EXCEEDED",
     );
+    if (!signal) return boundedWait;
+    if (signal.aborted) throw new Error("WAITER_CANCELLED");
+    return new Promise<ActivationResult>((resolve, reject) => {
+      const onAbort = (): void => reject(new Error("WAITER_CANCELLED"));
+      signal.addEventListener("abort", onAbort, { once: true });
+      boundedWait.then(
+        value => {
+          signal.removeEventListener("abort", onAbort);
+          resolve(value);
+        },
+        error => {
+          signal.removeEventListener("abort", onAbort);
+          reject(error);
+        },
+      );
+    });
   }
 
   async #activate(generation: number, request: ActivationRequest): Promise<ActivationResult> {
@@ -245,8 +313,10 @@ export class GenerationLifecycle {
     const errors: Error[] = [];
     const cleanupCandidates = new Set<string>();
     const activationController = new AbortController();
+    let activationTimedOut = false;
     const activationContext: ActivationContext = { generation, phase: "activation", signal: activationController.signal };
     const markActivationTimeout = (): void => {
+      activationTimedOut = true;
       activationController.abort("ABSOLUTE_DEADLINE_EXCEEDED");
     };
     const checkDeadline = (): void => {
@@ -318,6 +388,7 @@ export class GenerationLifecycle {
       this.#cutovers += 1;
       traces.push({ phase: "publish", generation, outcome: "confirmed" });
 
+      let terminationProven = true;
       if (previous) {
         const cleanupDeadline = this.#clock.now() + cleanupTimeoutMs;
         const cleanupController = new AbortController();
@@ -329,10 +400,27 @@ export class GenerationLifecycle {
         const drained = await this.drain(previous.generation, cleanupDeadline);
         traces.push({ phase: "drain", generation: previous.generation, outcome: drained ? "confirmed" : "timed-out" });
         if (!drained) errors.push(new Error(`DRAIN_TIMEOUT:${previous.generation}`));
+        if (!drained) terminationProven = false;
         this.#fenceGeneration(previous.generation);
-        await this.#stopBatches(previous.plan, previous.hooks, cleanupContext, cleanupDeadline, traces, errors, "stop", cleanupController);
+        const cleanupProven = await this.#stopBatches(
+          previous.plan,
+          previous.hooks,
+          cleanupContext,
+          cleanupDeadline,
+          traces,
+          errors,
+          "stop",
+          cleanupController,
+        );
+        terminationProven &&= cleanupProven;
       }
-      return { ok: true, generation, termination: "proven", traces: Object.freeze(traces), errors: Object.freeze(errors) };
+      return freezeResult(
+        true,
+        generation,
+        terminationProven ? "proven" : "termination_unproven",
+        traces,
+        errors,
+      );
     } catch (error) {
       activationController.abort(error);
       const failure = asError(error);
@@ -340,7 +428,7 @@ export class GenerationLifecycle {
       const cleanupDeadline = this.#clock.now() + cleanupTimeoutMs;
       const cleanupController = new AbortController();
       const cleanupContext: ActivationContext = { generation, phase: "cleanup", signal: cleanupController.signal };
-      await this.#stopBatches(
+      const cleanupProven = await this.#stopBatches(
         plan,
         hooks,
         cleanupContext,
@@ -351,12 +439,12 @@ export class GenerationLifecycle {
         cleanupController,
         cleanupCandidates,
       );
-      const termination = activationController.signal.reason === "ABSOLUTE_DEADLINE_EXCEEDED" ? "unproven" : "proven";
-      const outcome: LifecycleOutcome = termination === "unproven"
-        ? "termination-unproven"
+      const termination = activationTimedOut || !cleanupProven ? "termination_unproven" : "proven";
+      const outcome: LifecycleOutcome = termination === "termination_unproven"
+        ? "termination_unproven"
         : failure.message === "STALE_ACTIVE_GENERATION" ? "stale" : "failed";
       traces.push({ phase: "abort", generation, outcome });
-      return { ok: false, generation, termination, traces: Object.freeze(traces), errors: Object.freeze(errors) };
+      return freezeResult(false, generation, termination, traces, errors);
     }
   }
 
@@ -370,7 +458,8 @@ export class GenerationLifecycle {
     phase: "stop" | "abort",
     controller: AbortController,
     candidates?: ReadonlySet<string>,
-  ): Promise<void> {
+  ): Promise<boolean> {
+    let terminationProven = true;
     for (const batch of plan.stopBatches) {
       const outcomes = await Promise.all(batch.filter(id => candidates?.has(id) ?? true).map(async moduleId => {
         try {
@@ -383,14 +472,25 @@ export class GenerationLifecycle {
           );
           return { moduleId, outcome: "confirmed" as const };
         } catch (cleanupError) {
-          return { moduleId, outcome: "failed" as const, error: asError(cleanupError) };
+          const error = asError(cleanupError);
+          return {
+            moduleId,
+            outcome: error.message.startsWith("CLEANUP_TIMEOUT:")
+              ? "termination_unproven" as const
+              : "failed" as const,
+            error,
+          };
         }
       }));
       for (const outcome of outcomes) {
-        if (outcome.error) errors.push(outcome.error);
+        if (outcome.error) {
+          errors.push(outcome.error);
+          terminationProven = false;
+        }
         traces.push({ phase, moduleId: outcome.moduleId, generation: context.generation, outcome: outcome.outcome });
       }
     }
+    return terminationProven;
   }
 
   #fenceGeneration(generation: number): void {

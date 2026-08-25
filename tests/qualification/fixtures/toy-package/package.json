@@ -1,5 +1,5 @@
 {
-  "name": "@agent-teams/qualification-reusable-core",
+  "name": "@agent-teams/qualification-toy-package",
   "version": "0.0.0-qualification",
   "private": false,
   "type": "module",
