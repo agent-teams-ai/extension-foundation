@@ -57,9 +57,9 @@ candidates:
     versionOrRevision: "d9b39db2c6d609af334729eeba2ab9376a11c0a7"
     evidence:
       - kind: git-commit
-        repository: "https://github.com/jupyterlab/jupyterlab"
+        repository: "https://github.com/jupyterlab/lumino"
         revision: d9b39db2c6d609af334729eeba2ab9376a11c0a7
-        url: "https://github.com/jupyterlab/jupyterlab/commit/d9b39db2c6d609af334729eeba2ab9376a11c0a7"
+        url: "https://github.com/jupyterlab/lumino/commit/d9b39db2c6d609af334729eeba2ab9376a11c0a7"
     adopt: patterns-only
     usefulFor: tokens, commands, widgets, activation and disposal ownership
     missing: durable recovery and security boundary

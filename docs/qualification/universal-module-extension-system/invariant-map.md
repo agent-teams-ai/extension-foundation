@@ -70,7 +70,8 @@ models. A library consumer never needs the module or plugin stack.
 2. Candidate resources are isolated from active routing until readiness passes.
 3. Startup is single-flight per source and candidate generation; caller
    cancellation does not silently cancel shared startup.
-4. Every phase uses one absolute deadline. Relative timeout refresh is forbidden.
+4. Every phase uses one absolute operation deadline. A cleanup cap may shorten
+   the remaining budget but never refresh or extend it.
 5. Publication has one linearization point and atomically selects one active
    graph generation for the authority scope.
 6. Invocation admission binds graph generation, module activation generation, activation

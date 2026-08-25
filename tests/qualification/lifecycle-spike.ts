@@ -101,6 +101,8 @@ interface DeadlineBudget {
   readonly wallDeadline: number;
 }
 
+const maxTimerMilliseconds = 2_147_483_647;
+
 const defaultClock: MonotonicClock = {
   now: () => performance.now(),
   sleep: milliseconds => delay(milliseconds),
@@ -195,6 +197,37 @@ function relativeDeadlineBudget(milliseconds: number, clock: MonotonicClock): De
   });
 }
 
+function boundedDeadlineBudget(
+  parent: DeadlineBudget,
+  milliseconds: number,
+  clock: MonotonicClock,
+): DeadlineBudget {
+  const relative = relativeDeadlineBudget(milliseconds, clock);
+  const clockDeadline = parent.clockDeadline === undefined
+    ? relative.clockDeadline
+    : relative.clockDeadline === undefined
+      ? parent.clockDeadline
+      : Math.min(parent.clockDeadline, relative.clockDeadline);
+  return Object.freeze({
+    ...(clockDeadline === undefined ? {} : { clockDeadline }),
+    wallDeadline: Math.min(parent.wallDeadline, relative.wallDeadline),
+  });
+}
+
+function remainingBeforeDeadline(deadline: DeadlineBudget, clock: MonotonicClock): number {
+  let remaining = deadline.wallDeadline - performance.now();
+  if (deadline.clockDeadline !== undefined) {
+    try {
+      const now = clock.now();
+      if (!Number.isFinite(now)) return 0;
+      remaining = Math.min(remaining, deadline.clockDeadline - now);
+    } catch {
+      return 0;
+    }
+  }
+  return Math.max(0, remaining);
+}
+
 function deadlineExpired(deadline: DeadlineBudget, clock: MonotonicClock): boolean {
   if (performance.now() >= deadline.wallDeadline) return true;
   if (deadline.clockDeadline === undefined) return false;
@@ -213,35 +246,41 @@ function runBeforeDeadline<T>(
   onTimeout: () => void,
   timeoutCode = "ABSOLUTE_DEADLINE_EXCEEDED",
 ): Promise<T> {
-  let remaining = deadline.wallDeadline - performance.now();
-  if (deadline.clockDeadline !== undefined) {
-    try {
-      const now = clock.now();
-      if (!Number.isFinite(now)) remaining = 0;
-      else remaining = Math.min(remaining, deadline.clockDeadline - now);
-    } catch {
-      remaining = 0;
-    }
-  }
+  const remaining = remainingBeforeDeadline(deadline, clock);
   if (remaining <= 0) {
     onTimeout();
     return Promise.reject(new Error(timeoutCode));
   }
 
   return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => {
-      onTimeout();
-      reject(new Error(timeoutCode));
-    }, remaining);
+    let timer: NodeJS.Timeout | undefined;
+    let expired = false;
+    const armTimeout = (): void => {
+      const currentRemaining = remainingBeforeDeadline(deadline, clock);
+      if (currentRemaining <= 0) {
+        expired = true;
+        onTimeout();
+        reject(new Error(timeoutCode));
+        return;
+      }
+      timer = setTimeout(armTimeout, Math.min(currentRemaining, maxTimerMilliseconds));
+    };
+    armTimeout();
+    if (expired) return;
     Promise.resolve()
       .then(operation)
       .then(
         value => {
-          clearTimeout(timer);
+          if (timer) clearTimeout(timer);
+          if (deadlineExpired(deadline, clock)) {
+            onTimeout();
+            reject(new Error(timeoutCode));
+            return;
+          }
           resolve(value);
         },
         error => {
-          clearTimeout(timer);
+          if (timer) clearTimeout(timer);
           reject(error);
         },
       );
@@ -293,27 +332,38 @@ export class GenerationLifecycle {
     request: ActivationRequest,
     waiter: WaiterOptions | number = {},
   ): Promise<ActivationResult> {
+    const absoluteDeadline = request.absoluteDeadline;
     const cleanupTimeoutMs = request.cleanupTimeoutMs ?? 50;
-    if (!Number.isFinite(request.absoluteDeadline)) throw new Error("INVALID_ABSOLUTE_DEADLINE");
+    const requestIdentity = request.identity;
+    const identity: ActivationIdentity = Object.freeze({
+      operationId: requestIdentity.operationId,
+      activationSourceDigest: requestIdentity.activationSourceDigest,
+      expectedActiveGeneration: requestIdentity.expectedActiveGeneration,
+      authorityScope: requestIdentity.authorityScope,
+      profileLockDigest: requestIdentity.profileLockDigest,
+      configurationFingerprint: requestIdentity.configurationFingerprint,
+      grantRevision: requestIdentity.grantRevision,
+      hostPolicyRevision: requestIdentity.hostPolicyRevision,
+    });
+    if (!Number.isFinite(absoluteDeadline)) throw new Error("INVALID_ABSOLUTE_DEADLINE");
     if (!Number.isFinite(cleanupTimeoutMs) || cleanupTimeoutMs < 0) throw new Error("INVALID_CLEANUP_TIMEOUT");
-    if (!Number.isSafeInteger(request.identity.expectedActiveGeneration)
-      || request.identity.expectedActiveGeneration < 0) throw new Error("INVALID_EXPECTED_ACTIVE_GENERATION");
-    for (const [field, value] of Object.entries(request.identity)) {
+    if (!Number.isSafeInteger(identity.expectedActiveGeneration)
+      || identity.expectedActiveGeneration < 0) throw new Error("INVALID_EXPECTED_ACTIVE_GENERATION");
+    for (const [field, value] of Object.entries(identity)) {
       if (field === "expectedActiveGeneration") continue;
       if (typeof value !== "string" || value.length === 0) throw new Error(`INVALID_ACTIVATION_IDENTITY:${field}`);
     }
-    if (request.identity.authorityScope !== this.#authorityScope) throw new Error("AUTHORITY_SCOPE_MISMATCH");
-    const activationDeadline = absoluteDeadlineBudget(request.absoluteDeadline, this.#clock);
-    const identity = Object.freeze({ ...request.identity });
+    if (identity.authorityScope !== this.#authorityScope) throw new Error("AUTHORITY_SCOPE_MISMATCH");
     const normalizedRequest: ActivationRequest = Object.freeze({
-      ...request,
       identity,
+      plan: request.plan,
       hooks: snapshotHooks(request.hooks),
+      absoluteDeadline,
       cleanupTimeoutMs,
     });
     const waiterOptions = typeof waiter === "number" ? { absoluteDeadline: waiter } : waiter;
     const waiterDeadline = waiterOptions.absoluteDeadline
-      ?? request.absoluteDeadline + cleanupTimeoutMs + 100;
+      ?? absoluteDeadline + 100;
     if (!Number.isFinite(waiterDeadline)) throw new Error("INVALID_WAITER_DEADLINE");
     const operationId = identity.operationId;
     const key = fingerprint(normalizedRequest);
@@ -326,6 +376,7 @@ export class GenerationLifecycle {
     const completed = this.#operationResults.get(operationId);
     if (completed) return Promise.resolve(completed);
 
+    const activationDeadline = absoluteDeadlineBudget(absoluteDeadline, this.#clock);
     const generation = this.#nextGeneration++;
     const result = this.#activate(generation, normalizedRequest, activationDeadline)
       .then(value => {
@@ -400,22 +451,34 @@ export class GenerationLifecycle {
     signal?: AbortSignal,
   ): Promise<ActivationResult> {
     if (signal?.aborted) throw new Error("WAITER_CANCELLED");
-    const remaining = waiterDeadline - this.#clock.now();
+    let waiterBudget: DeadlineBudget;
+    try {
+      waiterBudget = absoluteDeadlineBudget(waiterDeadline, this.#clock);
+    } catch {
+      throw new Error("WAITER_DEADLINE_EXCEEDED");
+    }
+    const remaining = remainingBeforeDeadline(waiterBudget, this.#clock);
     if (remaining <= 0) throw new Error("WAITER_DEADLINE_EXCEEDED");
     return new Promise<ActivationResult>((resolve, reject) => {
       let settled = false;
+      let timer: NodeJS.Timeout | undefined;
       const finish = (callback: () => void): void => {
         if (settled) return;
         settled = true;
-        clearTimeout(timer);
+        if (timer) clearTimeout(timer);
         signal?.removeEventListener("abort", onAbort);
         callback();
       };
       const onAbort = (): void => finish(() => reject(new Error("WAITER_CANCELLED")));
-      const timer = setTimeout(
-        () => finish(() => reject(new Error("WAITER_DEADLINE_EXCEEDED"))),
-        remaining,
-      );
+      const armTimeout = (): void => {
+        const currentRemaining = remainingBeforeDeadline(waiterBudget, this.#clock);
+        if (currentRemaining <= 0) {
+          finish(() => reject(new Error("WAITER_DEADLINE_EXCEEDED")));
+          return;
+        }
+        timer = setTimeout(armTimeout, Math.min(currentRemaining, maxTimerMilliseconds));
+      };
+      armTimeout();
       signal?.addEventListener("abort", onAbort, { once: true });
       result.then(
         value => finish(() => resolve(value)),
@@ -435,11 +498,13 @@ export class GenerationLifecycle {
     const errors: Error[] = [];
     const cleanupCandidates = new Set<string>();
     const activationController = new AbortController();
-    let activationTimedOut = false;
-    const activationContext: ActivationContext = { generation, phase: "activation", signal: activationController.signal };
+    const activationContext: ActivationContext = Object.freeze({
+      generation,
+      phase: "activation",
+      signal: activationController.signal,
+    });
     let previous: ActiveGraph | undefined;
     const markActivationTimeout = (): void => {
-      activationTimedOut = true;
       activationController.abort("ABSOLUTE_DEADLINE_EXCEEDED");
     };
     const checkDeadline = (): void => {
@@ -486,6 +551,9 @@ export class GenerationLifecycle {
               markActivationTimeout,
             );
             checkDeadline();
+            if (module.readiness !== "inert" && module.readiness !== "probe") {
+              throw new Error(`INVALID_READINESS:${moduleId}`);
+            }
             if (module.readiness === "probe") {
               const ready = await runBeforeDeadline(
                 () => module.ready(activationContext),
@@ -493,7 +561,7 @@ export class GenerationLifecycle {
                 this.#clock,
                 markActivationTimeout,
               );
-              if (!ready) throw new Error(`NOT_READY:${moduleId}`);
+              if (ready !== true) throw new Error(`NOT_READY:${moduleId}`);
             }
             checkDeadline();
             localTraces.push({ phase: "ready", moduleId, generation, outcome: "confirmed" });
@@ -524,9 +592,13 @@ export class GenerationLifecycle {
       const failure = asError(error);
       const failures = aggregateErrors(error);
       errors.push(...failures);
-      const cleanupDeadline = relativeDeadlineBudget(cleanupTimeoutMs, this.#clock);
+      const cleanupDeadline = boundedDeadlineBudget(activationDeadline, cleanupTimeoutMs, this.#clock);
       const cleanupController = new AbortController();
-      const cleanupContext: ActivationContext = { generation, phase: "cleanup", signal: cleanupController.signal };
+      const cleanupContext: ActivationContext = Object.freeze({
+        generation,
+        phase: "cleanup",
+        signal: cleanupController.signal,
+      });
       const cleanupProven = await this.#stopBatches(
         plan,
         hooks,
@@ -538,7 +610,7 @@ export class GenerationLifecycle {
         cleanupController,
         cleanupCandidates,
       );
-      const termination = activationTimedOut || !cleanupProven ? "termination_unproven" : "proven";
+      const termination = !cleanupProven ? "termination_unproven" : "proven";
       const outcome: LifecycleOutcome = termination === "termination_unproven"
         ? "termination_unproven"
         : failure.message === "STALE_ACTIVE_GENERATION" ? "stale" : "failed";
@@ -549,13 +621,13 @@ export class GenerationLifecycle {
     let terminationProven = true;
     if (previous) {
       try {
-        const cleanupDeadline = relativeDeadlineBudget(cleanupTimeoutMs, this.#clock);
+        const cleanupDeadline = boundedDeadlineBudget(activationDeadline, cleanupTimeoutMs, this.#clock);
         const cleanupController = new AbortController();
-        const cleanupContext: ActivationContext = {
+        const cleanupContext: ActivationContext = Object.freeze({
           generation: previous.generation,
           phase: "cleanup",
           signal: cleanupController.signal,
-        };
+        });
         try {
           const drained = await this.#drainGeneration(previous.generation, cleanupDeadline);
           traces.push({ phase: "drain", generation: previous.generation, outcome: drained ? "confirmed" : "timed-out" });
@@ -611,8 +683,14 @@ export class GenerationLifecycle {
     for (const batch of plan.stopBatches) {
       const outcomes = await Promise.all(batch.filter(id => candidates?.has(id) ?? true).map(async moduleId => {
         try {
+          const moduleHooks = hooks.get(moduleId);
+          if (!moduleHooks) throw new Error(`MISSING_HOOKS:${moduleId}`);
+          if (moduleHooks.stop === undefined
+            && (moduleHooks.prepare !== undefined || moduleHooks.start !== undefined)) {
+            throw new Error(`MISSING_STOP_EVIDENCE:${moduleId}`);
+          }
           await runBeforeDeadline(
-            () => hooks.get(moduleId)?.stop?.(context),
+            () => moduleHooks.stop?.(context),
             cleanupDeadline,
             this.#clock,
             () => controller.abort(`CLEANUP_TIMEOUT:${moduleId}`),
@@ -624,6 +702,7 @@ export class GenerationLifecycle {
           return {
             moduleId,
             outcome: error.message.startsWith("CLEANUP_TIMEOUT:")
+              || error.message.startsWith("MISSING_STOP_EVIDENCE:")
               ? "termination_unproven" as const
               : "failed" as const,
             error,

@@ -151,7 +151,8 @@ Relative timeout refresh is forbidden. One absolute deadline follows every hop,
 retry, joiner, and adapter. Authority time determines expiry. An in-process host
 also carries one independent monotonic wall-time bound for correctness: a stalled,
 throwing, or non-finite injected clock fails closed and cannot refresh activation,
-drain, or cleanup budgets between phases.
+drain, or cleanup budgets between phases. `cleanupTimeoutMs` is only a tighter
+cap inside that operation deadline; it never extends the lifecycle operation.
 
 A correctness deadline remains a referenced event-loop obligation while its
 result is awaited. Its timer must stay referenced: a standalone host must stay
@@ -211,7 +212,11 @@ authority. A trusted in-process hook that ignores cancellation is reported as
 `termination_unproven`; late canonical effects remain fenced, but JavaScript
 termination is not claimed. The coordinator waits only for bounded wrappers;
 ignored hook work may overlap cleanup and remains cleanup debt until a stronger
-host proves termination. The coordinator itself never waits forever.
+host proves termination. A synchronous CPU-blocking `T0` hook can also block the
+event loop and therefore cannot receive a hard in-process time bound. The
+wrapper detects elapsed deadline after a finite blocking call and refuses to
+confirm it, but code requiring a hard bound must run in a Worker, process, WASM
+host, or another externally supervised boundary with forced termination.
 
 ## Replacement And Update
 
@@ -350,7 +355,7 @@ compare-and-set and sink-enforced fences. After failover, a controller rebuilds
 its decision from durable intent, route head, readiness attestations, outbox
 state and absolute deadlines; process memory is never recovery authority.
 
-## MVP Boundary
+## Qualification Rehearsal Boundary
 
 Implement now in a disposable qualification spike:
 

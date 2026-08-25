@@ -257,9 +257,9 @@ The compiler must enforce explicit profile limits before allocation:
 - maximum ordered-many providers per slot;
 - bounded diagnostic path count.
 
-## Approval Forks
+## Recorded Approval Forks
 
-### UMEQ-GRAPH-001: unique-provider auto-binding
+### UMEQ-011: Provider Binding Policy
 
 - **Recommended:** allow only product-declared binding profiles in V1. It gives
   stable review evidence and prevents a newly installed provider from silently
@@ -270,7 +270,7 @@ The compiler must enforce explicit profile limits before allocation:
 - **Estimated implementation:** 80-160 LOC beyond basic resolution.
 - **Approval required:** yes, through OD-003.
 
-### UMEQ-GRAPH-002: compatibility grammar
+### UMEQ-012: Contract Compatibility Grammar
 
 - **Recommended:** Foundation-owned constrained compatibility families and
   half-open ranges, not arbitrary npm SemVer expressions in runtime manifests.
@@ -278,7 +278,8 @@ The compiler must enforce explicit profile limits before allocation:
   fixtures exist.
 - **Confidence:** 7/10. **Reliability:** 8/10. **Complexity:** 6/10.
 - **Estimated implementation:** 150-350 LOC plus fixtures.
-- **Approval required:** yes, through OD-003.
+- **Approval required:** yes, through OD-003 together with the canonical
+  contract-source decision.
 
 ## Conformance Minimum
 

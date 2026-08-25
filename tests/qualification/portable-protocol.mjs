@@ -8,6 +8,7 @@ const envelopeKeys = new Set([
   "audience", "absoluteDeadline", "kind", "payload",
 ]);
 const kinds = new Set(["hello", "prepare", "ready", "drain", "stop", "result"]);
+const requestKinds = new Set(["hello", "prepare", "ready", "drain", "stop"]);
 const forbiddenKeys = new Set(["__proto__", "constructor", "prototype"]);
 const identifierPattern = /^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$/;
 
@@ -19,7 +20,11 @@ function normalizeJson(value, depth, budget) {
     return value;
   }
   if (typeof value === "number") {
-    if (!Number.isFinite(value) || Object.is(value, -0)) throw new Error("INVALID_JSON_NUMBER");
+    if (!Number.isFinite(value)
+      || Object.is(value, -0)
+      || (Number.isInteger(value) && !Number.isSafeInteger(value))) {
+      throw new Error("INVALID_JSON_NUMBER");
+    }
     return value;
   }
   if (Array.isArray(value)) {
@@ -179,6 +184,7 @@ export function validateResponseEnvelope(value, authority, request, expectedKind
 
 export function handlePortableWorkerFrame(value, authority) {
   const request = validateAuthorizedEnvelope(value, authority);
+  if (!requestKinds.has(request.kind)) throw new Error("INVALID_REQUEST_KIND");
   if (typeof authority.localSenderId !== "string" || authority.localSenderId.length === 0) {
     throw new Error("INVALID_LOCAL_SENDER_ID");
   }

@@ -46,12 +46,12 @@ evidence.
 | Deadline and cleanup | Late startup cannot publish; hung in-process hook is bounded and reported `termination_unproven`; one cleanup deadline is shared; an independent wall bound preserves budgets when an injected clock stalls; standalone subprocess fixtures prove hung prepare, start and stop keep Node alive until evidence is emitted | OS process-tree kill, durable debt and resource-specific release guarantees |
 | Generation replacement | New generation publishes once; admitted old work drains or emits in-memory timeout evidence before the spike fence; a post-publication drain failure remains cleanup debt and cannot roll back or stop the active candidate | Atomic database/broker sink fencing and durable debt ordering |
 | Crash/recovery reducer | Identity-bound reducer examples produce deterministic retry, inspect, publish, drain, explicit stop, cleanup reconciliation, retirement recording, terminal or controlled-recovery actions; retirement requires observed stop and confirmed cleanup | Crash/fault harness, durable schema, host inspection and product recovery policy |
-| Portable codec | One strict portable implementation rejects malformed UTF-8, duplicate keys, non-canonical JSON values and arrays, control-bearing identifiers, wrong authority/instance/generation/peer/audience tuples, expired deadlines, shape, depth and byte violations; responses reverse authenticated sender/audience direction | Authenticated channel establishment, operation journal, feature negotiation and N/N-1 compatibility |
+| Portable codec | One strict portable implementation rejects malformed UTF-8, duplicate keys, unsafe integer values, non-canonical JSON values and arrays, control-bearing identifiers, response kinds on request dispatch, wrong authority/instance/generation/peer/audience tuples, expired deadlines, shape, depth and byte violations; responses reverse authenticated sender/audience direction | Authenticated channel establishment, method-specific schemas, receiver deadline horizons, operation journal, feature negotiation and N/N-1 compatibility |
 | Node process smoke | Real child process validates bounded length-prefixed frames plus the connection-bound authority tuple and deadline, acknowledges hello, prepares, reports ready and stops | Actual authenticated negotiation, sandbox, crash reattach, stdout corruption and hostile child |
 | Node Worker host | Structured clone preserves frame validation and stale-generation rejection | Worker as a malicious-code boundary; it is only fault containment |
 | Browser Worker host | Real Chromium Worker carries the same generation-bound serializable frame | Dedicated-origin CSP, capability broker and hostile-code isolation |
 | Packed harness fixture | A toy package survives actual `npm pack`, isolated install and import without Foundation, Cordis or plugin dependencies | Any production package, declaration leak checks, API report, host conditions and SemVer policy |
-| Cordis 4.0.1 | A private Fiber owns resource cleanup and matches the native adapter's applicable two-generation semantic trace | Closed-world compile, product readiness, publication authority, recovery or isolation |
+| Cordis 4.0.1 | A private Fiber owns resource cleanup and its hooks preserve the coordinator-owned two-generation trace shape | An independent lifecycle implementation, semantic equivalence, closed-world compile, product readiness, publication authority, recovery or isolation |
 | Core Wasm | Inert module runs with zero host imports | Quotas, host functions or OS defense-in-depth |
 | Extism 1.0.3 | Release-hosted v1.1.1 Wasm bytes matching the pinned digest run and close through the stable JS SDK | Publisher provenance, dependency acceptance, API stability, sandbox tier or MVP adoption |
 
@@ -62,7 +62,9 @@ diagnostics avoid JavaScript call-stack dependence, and residual-node discovery
 uses set membership rather than quadratic scans.
 
 Cordis is useful only below the neutral contract. Its `Fiber` lifecycle is a
-resource mechanism, not the Agent Teams generation lifecycle. The current
+resource mechanism, not the Agent Teams generation lifecycle. The applicability
+fixture exercises Cordis hooks through the same `GenerationLifecycle`; it is not
+a differential lifecycle implementation or equivalence proof. The current
 trivial adapter does not demonstrate the required code deletion; the 25%
 threshold remains a future real-consumer measurement, not a completed result.
 

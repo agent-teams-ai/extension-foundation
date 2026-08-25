@@ -130,12 +130,12 @@ function canonicalEvidenceReference(value) {
       && !location.includes("\\")
       && !location.includes("%")
       && !location.includes("?");
-    return valid ? { reference: value, digest } : undefined;
+    return valid ? { reference: value, location, digest } : undefined;
   }
   try {
     const url = new URL(location);
     if (url.protocol !== "https:" || url.username !== "" || url.password !== "" || url.hash !== "") return undefined;
-    return { reference: `${url.href}#${digest}`, digest };
+    return { reference: `${url.href}#${digest}`, location: url.href, digest };
   } catch {
     return undefined;
   }
@@ -175,6 +175,7 @@ function validateAdmission(entry, admission, errors) {
   const consumerIds = new Set();
   const consumerRepositories = new Set();
   const evidenceReferences = new Set();
+  const evidenceLocations = new Set();
   const evidenceDigests = new Set();
   for (const [index, evidence] of admission.consumer_evidence.entries()) {
     if (!hasExactKeys(evidence, CONSUMER_EVIDENCE_KEYS)) {
@@ -201,9 +202,11 @@ function validateAdmission(entry, admission, errors) {
     if (!canonicalEvidence) {
       errors.push(`${entry.id}: consumer_evidence[${index}].evidence_reference must use a contained docs path or HTTPS URL with a sha256 fragment`);
       evidenceReferences.add(`invalid-reference:${index}`);
+      evidenceLocations.add(`invalid-location:${index}`);
       evidenceDigests.add(`invalid-digest:${index}`);
     } else {
       evidenceReferences.add(canonicalEvidence.reference);
+      evidenceLocations.add(canonicalEvidence.location);
       evidenceDigests.add(canonicalEvidence.digest);
     }
     consumerIds.add(evidence.consumer_id);
@@ -212,6 +215,7 @@ function validateAdmission(entry, admission, errors) {
   if (consumerIds.size !== admission.consumer_evidence.length
     || consumerRepositories.size !== admission.consumer_evidence.length
     || evidenceReferences.size !== admission.consumer_evidence.length
+    || evidenceLocations.size !== admission.consumer_evidence.length
     || evidenceDigests.size !== admission.consumer_evidence.length) {
     errors.push(`${entry.id}: consumer evidence must use distinct identities, repositories, and immutable references`);
   }

@@ -124,13 +124,16 @@ framework makes the unsafe behavior convenient.
 | --- | --- | --- | --- |
 | AP-072 | Freeze an object that exposes a mutable `Map`, `Set`, buffer, or nested record | Recorded digest and observable plan can diverge | Publish deeply immutable serializable data only |
 | AP-073 | Single-flight keyed only by graph digest | Different scope, configuration, grant, host policy, or source joins the wrong attempt | Bind idempotency to the complete activation fingerprint and reject conflicts |
-| AP-074 | Omitted readiness hook interpreted as ready | Serving authority is granted without evidence | Require explicit probe or explicit inert-module policy |
-| AP-075 | Refresh cleanup timeout for every disposer or batch | Total cleanup is unbounded by graph size | Carry one monotonic absolute cleanup deadline |
+| AP-074 | Omitted, unknown, or truthy non-boolean readiness interpreted as ready | Serving authority is granted without evidence | Require literal `true` from an explicit probe or an explicit inert-module policy |
+| AP-075 | Refresh cleanup timeout for every disposer or batch | Total cleanup is unbounded by graph size | Carry one absolute operation deadline; cleanup may only shorten its remaining budget |
 | AP-076 | In-process cancellation described as termination | Ignored abort continues effects after the coordinator returns | Report `termination_unproven`; use host kill for stronger claims and fence late effects |
 | AP-077 | Reducer enum cases described as crash-recovery proof | Persistence, ambiguous writes and replay seams remain untested | Label reducer evidence narrowly and require a persistent fault-injection harness |
 | AP-078 | Signature described as trusted code | Authenticated malicious code passes policy | Validate signer authorization, provenance subject, builder/source and dependency closure, then sandbox separately |
 | AP-079 | Duplicate approval entries for one semantic fork | Agents count one decision twice or accept contradictory states | Keep one machine-readable topic/ID and validate links/counts in CI |
 | AP-080 | Extract a neutral package before a second consumer | Product assumptions freeze into Foundation | Rehearse product-locally and extract only demonstrated repetition |
+| AP-081 | Self-reported repository, commit, digest, or conformance treated as admission evidence | Fabricated records pass a shape-only gate | Require an independently executable verifier before any non-empty catalog admission |
+| AP-082 | Event-loop timer described as a hard bound for synchronous in-process code | CPU blocking prevents timeout and cleanup callbacks | Treat `T0` deadlines as cooperative and move hard-bounded work to a host with forced termination |
+| AP-083 | Arbitrary JSON number accepted in authority or audit data | Unsafe integers alias distinct wire values | Use a safe-integer numeric domain or an explicit lossless decimal/string encoding |
 
 ## Enforcement Plan
 

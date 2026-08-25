@@ -440,6 +440,53 @@ test("activation snapshots caller-owned identity before publication races", asyn
   assert.equal(lifecycle.cutovers, 1);
 });
 
+test("activation snapshots identity accessors once before validating them", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([{ id: "candidate", requires: [] }]);
+  const request = activationRequest(lifecycle, "identity-accessor", plan, new Map([["candidate", inertHooks()]]));
+  let authorityReads = 0;
+  Object.defineProperty(request.identity, "authorityScope", {
+    enumerable: true,
+    configurable: true,
+    get: () => ++authorityReads === 1 ? testAuthorityScope : "tenant:other/project:other",
+  });
+  const result = await lifecycle.activate(request);
+  assert.equal(result.ok, true);
+  assert.equal(authorityReads, 1);
+});
+
+test("hook contexts are runtime-immutable across activation and cleanup", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const first = requirePlan([{ id: "first", requires: [] }]);
+  const observed: Array<readonly [string, number, string]> = [];
+  const assertFrozenContext = (phase: string) => (context: Parameters<NonNullable<ModuleHooks["start"]>>[0]): void => {
+    observed.push([phase, context.generation, context.phase]);
+    assert.equal(Object.isFrozen(context), true);
+    assert.throws(() => {
+      (context as { generation: number }).generation = 999;
+    }, TypeError);
+  };
+  await lifecycle.activate(activationRequest(
+    lifecycle,
+    "immutable-context-first",
+    first,
+    new Map([["first", inertHooks({
+      start: assertFrozenContext("start"),
+      stop: assertFrozenContext("stop"),
+    })]]),
+  ));
+  const second = requirePlan([{ id: "second", requires: [] }]);
+  await lifecycle.activate(activationRequest(
+    lifecycle,
+    "immutable-context-second",
+    second,
+    new Map([["second", inertHooks()]]),
+  ));
+  assert.deepEqual(observed.map(item => item[0]), ["start", "stop"]);
+  assert.equal(observed[0]?.[1], observed[1]?.[1]);
+  assert.deepEqual(observed.map(item => item[2]), ["activation", "cleanup"]);
+});
+
 test("readiness blocks dependents and failed candidate leaves routing unchanged", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const base = requirePlan([{ id: "base", requires: [] }]);
@@ -471,6 +518,46 @@ test("readiness blocks dependents and failed candidate leaves routing unchanged"
   assert.equal(lifecycle.activeGeneration, previous);
 });
 
+test("readiness is fail-closed for unknown discriminators and non-boolean probe results", async () => {
+  for (const [operationId, hooks] of [
+    ["unknown-readiness", { readiness: "unknown" }],
+    ["truthy-readiness", { readiness: "probe", ready: () => ({ notABoolean: true }) }],
+  ] as const) {
+    const lifecycle = new GenerationLifecycle(testAuthorityScope);
+    const plan = requirePlan([{ id: "candidate", requires: [] }]);
+    const result = await lifecycle.activate(activationRequest(
+      lifecycle,
+      operationId,
+      plan,
+      new Map([["candidate", hooks as unknown as ModuleHooks]]),
+    ));
+    assert.equal(result.ok, false);
+    assert.equal(lifecycle.activeGeneration, 0);
+    assert.ok(result.errors.some(error => /INVALID_READINESS|NOT_READY/.test(error.message)));
+  }
+});
+
+test("effectful module without stop evidence cannot claim proven termination", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([{ id: "candidate", requires: [] }]);
+  let lateEffects = 0;
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "missing-stop-evidence",
+    plan,
+    new Map([["candidate", {
+      readiness: "probe",
+      start: () => { setTimeout(() => { lateEffects += 1; }, 25); },
+      ready: () => false,
+    }]]),
+  ));
+  assert.equal(result.ok, false);
+  assert.equal(result.termination, "termination_unproven");
+  assert.ok(result.errors.some(error => error.message === "MISSING_STOP_EVIDENCE:candidate"));
+  await delay(35);
+  assert.equal(lateEffects, 1);
+});
+
 test("absolute deadline prevents late publication and cleanup is bounded", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "slow", requires: [] }]);
@@ -491,6 +578,60 @@ test("absolute deadline prevents late publication and cleanup is bounded", async
   assert.ok(Date.now() - startedAt < 250);
   assert.ok(result.errors.some(error => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
   assert.ok(result.errors.some(error => error.message === "CLEANUP_TIMEOUT:slow"));
+});
+
+test("cleanup cap cannot refresh the operation absolute deadline", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([{ id: "slow", requires: [] }]);
+  const startedAt = performance.now();
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "no-cleanup-refresh",
+    plan,
+    new Map([["slow", inertHooks({
+      start: () => new Promise(() => undefined),
+      stop: () => new Promise(() => undefined),
+    })]]),
+    { deadlineMs: 10, cleanupTimeoutMs: 80 },
+  ));
+  assert.equal(result.ok, false);
+  assert.equal(result.termination, "termination_unproven");
+  assert.ok(performance.now() - startedAt < 60);
+});
+
+test("deadlines beyond the Node timer limit are re-armed rather than clamped to one millisecond", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([{ id: "candidate", requires: [] }]);
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "long-deadline",
+    plan,
+    new Map([["candidate", inertHooks({ start: async () => delay(5) })]]),
+    { deadlineMs: 2_147_483_647 + 1_000 },
+  ));
+  assert.equal(result.ok, true);
+});
+
+test("waiter clock failure produces a structured waiter deadline error", async () => {
+  let reads = 0;
+  const lifecycle = new GenerationLifecycle(testAuthorityScope, {
+    now: () => {
+      reads += 1;
+      if (reads >= 4) throw new Error("CLOCK_FAILED");
+      return performance.now();
+    },
+    sleep: milliseconds => delay(milliseconds),
+  });
+  const plan = requirePlan([{ id: "candidate", requires: [] }]);
+  const request = activationRequest(
+    lifecycle,
+    "waiter-clock-failure",
+    plan,
+    new Map([["candidate", inertHooks({ start: async () => delay(5) })]]),
+  );
+  await assert.rejects(lifecycle.activate(request), /WAITER_DEADLINE_EXCEEDED/);
+  await delay(20);
+  await assert.doesNotReject(lifecycle.activate(request));
 });
 
 test("failed parallel batch settles siblings before reverse cleanup", async () => {
@@ -533,8 +674,8 @@ test("parallel activation reports every sibling failure", async () => {
     "parallel-multiple-failures",
     plan,
     new Map<string, ModuleHooks>([
-      ["fails-a", inertHooks({ start: () => { throw new Error("A_FAILED"); } })],
-      ["fails-b", inertHooks({ start: () => { throw new Error("B_FAILED"); } })],
+      ["fails-a", inertHooks({ start: () => { throw new Error("A_FAILED"); }, stop: () => undefined })],
+      ["fails-b", inertHooks({ start: () => { throw new Error("B_FAILED"); }, stop: () => undefined })],
     ]),
   ));
   assert.equal(result.ok, false);
@@ -559,7 +700,7 @@ test("hook bindings are complete before any module effect starts", async () => {
   assert.deepEqual(result.errors.map(error => error.message), ["MISSING_HOOKS:consumer"]);
 });
 
-test("ignored activation cancellation is fenced and reported as termination unproven", async () => {
+test("ignored activation cancellation is bounded without refreshing cleanup time", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "slow", requires: [] }]);
   let startRunning = false;
@@ -580,7 +721,7 @@ test("ignored activation cancellation is fenced and reported as termination unpr
   ));
   assert.equal(result.ok, false);
   assert.equal(result.termination, "termination_unproven");
-  assert.equal(cleanupOverlapped, true);
+  assert.equal(cleanupOverlapped, false);
   await delay(35);
   assert.equal(startRunning, false);
 });
@@ -831,11 +972,20 @@ test("hostile error objects become bounded cleanup debt rather than escaping aft
   oldLease.release();
 });
 
-test("standalone lifecycle deadlines keep Node alive long enough to record hung-hook evidence", async () => {
-  for (const phase of ["prepare", "start", "stop"] as const) {
+test("standalone lifecycle deadlines record async hangs and finite event-loop blocking", async t => {
+  const children = new Set<ReturnType<typeof spawn>>();
+  t.after(async () => {
+    await Promise.all([...children].map(async child => {
+      if (child.exitCode !== null || child.signalCode !== null) return;
+      child.kill("SIGKILL");
+      await once(child, "exit", { signal: AbortSignal.timeout(2_000) }).catch(() => undefined);
+    }));
+  });
+  for (const phase of ["prepare", "start", "blocking-start", "stop"] as const) {
     const child = spawn(process.execPath, [join(fixtureRoot, "standalone-lifecycle-deadline.mjs"), phase], {
       stdio: ["ignore", "pipe", "pipe"],
     });
+    children.add(child);
     let stdout = "";
     let stderr = "";
     child.stdout.setEncoding("utf8");
@@ -843,6 +993,7 @@ test("standalone lifecycle deadlines keep Node alive long enough to record hung-
     child.stdout.on("data", chunk => { stdout += chunk; });
     child.stderr.on("data", chunk => { stderr += chunk; });
     const [code] = await once(child, "exit", { signal: AbortSignal.timeout(2_000) });
+    children.delete(child);
     assert.equal(code, 0, `${phase}:${stderr}`);
     const result = JSON.parse(stdout) as {
       readonly ok: boolean;
@@ -914,6 +1065,7 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
     graphDigest: "sha256:graph-1",
     candidateGeneration: 2,
     candidateHostIncarnation: "host-incarnation-1",
+    expectedActiveHostIncarnation: "host-incarnation-old",
     expectedActiveGeneration: 1,
     activeGeneration: 1,
     routeHeadGeneration: 1,
@@ -938,30 +1090,48 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
     candidateState: "absent" | "running" | "ready" | "terminated" | "unknown",
     oldGenerationInFlight: boolean,
     overrides: Partial<{
+      queryOperationId: string;
+      queryIntentDigest: string;
       candidateGeneration: number;
+      candidateOperationId: string;
+      candidateIntentDigest: string;
       candidateHostIncarnation: string;
       candidateAuthorityScope: string;
       candidateGraphDigest: string;
+      candidateSinkFence: number;
       queryAuthorityScope: string;
       queryGraphDigest: string;
+      queryHostIncarnation: string;
+      oldOperationId: string;
+      oldIntentDigest: string;
       oldGeneration: number;
+      oldHostIncarnation: string;
       oldAuthorityScope: string;
       oldSinkFence: number;
       oldTerminationEvidence: "running" | "stopped" | "unknown";
       oldCleanupEvidence: "pending" | "confirmed" | "uncertain";
     }> = {},
   ): ObservedHostState => ({
+    queryOperationId: overrides.queryOperationId ?? "activation-1",
+    queryIntentDigest: overrides.queryIntentDigest ?? "sha256:intent-1",
     queryAuthorityScope: overrides.queryAuthorityScope ?? testAuthorityScope,
     queryGraphDigest: overrides.queryGraphDigest ?? "sha256:graph-1",
+    queryHostIncarnation: overrides.queryHostIncarnation ?? "host-incarnation-1",
     candidate: candidateState === "absent" ? { state: "absent" } : {
       state: candidateState,
+      operationId: overrides.candidateOperationId ?? "activation-1",
+      intentDigest: overrides.candidateIntentDigest ?? "sha256:intent-1",
       generation: overrides.candidateGeneration ?? 2,
       hostIncarnation: overrides.candidateHostIncarnation ?? "host-incarnation-1",
       authorityScope: overrides.candidateAuthorityScope ?? testAuthorityScope,
       graphDigest: overrides.candidateGraphDigest ?? "sha256:graph-1",
+      sinkFence: overrides.candidateSinkFence ?? 42,
     },
     oldGeneration: {
+      operationId: overrides.oldOperationId ?? "activation-1",
+      intentDigest: overrides.oldIntentDigest ?? "sha256:intent-1",
       generation: overrides.oldGeneration ?? 1,
+      hostIncarnation: overrides.oldHostIncarnation ?? "host-incarnation-old",
       authorityScope: overrides.oldAuthorityScope ?? testAuthorityScope,
       sinkFence: overrides.oldSinkFence ?? 41,
       inFlight: oldGenerationInFlight,
@@ -990,9 +1160,18 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
     [{ ...published, phase: "draining", drainDeadlineExpired: true }, observed("ready", true), "CONTROLLED_RECOVERY"],
     [{ ...published, drainDeadlineExpired: true }, observed("ready", true), "CONTROLLED_RECOVERY"],
     [baseline, observed("ready", false, { candidateHostIncarnation: "stale-host" }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("ready", false, { candidateOperationId: "activation-other" }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("ready", false, { candidateIntentDigest: "sha256:intent-other" }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("ready", false, { candidateSinkFence: 43 }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("absent", false, { queryOperationId: "activation-other" }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("absent", false, { queryIntentDigest: "sha256:intent-other" }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("absent", false, { queryHostIncarnation: "stale-host" }), "CONTROLLED_RECOVERY"],
     [baseline, observed("absent", false, { queryAuthorityScope: "tenant:other/project:other" }), "CONTROLLED_RECOVERY"],
     [baseline, observed("absent", false, { queryGraphDigest: "sha256:wrong-graph" }), "CONTROLLED_RECOVERY"],
     [baseline, observed("absent", false, { oldGeneration: 9 }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("absent", false, { oldOperationId: "activation-other" }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("absent", false, { oldIntentDigest: "sha256:intent-other" }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("absent", false, { oldHostIncarnation: "host-incarnation-replayed" }), "CONTROLLED_RECOVERY"],
     [baseline, observed("absent", false, { oldSinkFence: 2 }), "CONTROLLED_RECOVERY"],
     [published, observed("ready", false, { oldTerminationEvidence: "unknown" }), "CONTROLLED_RECOVERY"],
     [published, observed("ready", false, { oldCleanupEvidence: "uncertain" }), "CONTROLLED_RECOVERY"],
@@ -1044,11 +1223,22 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
     baseline,
     throwingObservation as unknown as ObservedHostState,
   ), "CONTROLLED_RECOVERY");
+
+  const candidateStates = ["ready", "absent", "ready", "absent", "ready"];
+  const hostileCandidate = Object.defineProperty({}, "state", {
+    enumerable: true,
+    get: () => candidateStates.shift(),
+  });
+  assert.equal(reconcileLifecycle(
+    { ...baseline, phase: "ready" },
+    { ...observed("ready", false), candidate: hostileCandidate } as unknown as ObservedHostState,
+  ), "CONTROLLED_RECOVERY");
 });
 
 test("portable protocol rejects stale, expired, malformed, and oversized frames", () => {
   const authority = { ...protocolAuthority, now: Date.now() };
   const accepted = handlePortableWorkerFrame(frame(), authority);
+  assert.throws(() => handlePortableWorkerFrame(frame({ kind: "result" }), authority), /INVALID_REQUEST_KIND/);
   assert.equal(accepted.kind, "result");
   assert.equal(accepted.senderId, "extension-host");
   assert.equal(accepted.audience, "product-host");
@@ -1073,6 +1263,7 @@ test("portable protocol rejects stale, expired, malformed, and oversized frames"
   assert.throws(() => validateEnvelope(frame({ payload: { text: "x".repeat(70_000) } })), /FRAME_TOO_LARGE/);
   assert.throws(() => validateEnvelope(frame({ payload: { value: Number.NaN } })), /INVALID_JSON_NUMBER/);
   assert.throws(() => validateEnvelope(frame({ payload: { value: -0 } })), /INVALID_JSON_NUMBER/);
+  assert.throws(() => validateEnvelope(frame({ payload: { value: Number.MAX_SAFE_INTEGER + 1 } })), /INVALID_JSON_NUMBER/);
   assert.throws(() => validateEnvelope(frame({ payload: { value: "\ud800" } })), /INVALID_UNICODE_STRING/);
   assert.throws(() => validateEnvelope(frame({ payload: { ["\ud800"]: true } })), /INVALID_UNICODE_STRING/);
   assert.throws(() => validateEnvelope(frame({ payload: { value: undefined } })), /INVALID_JSON_VALUE/);
@@ -1109,6 +1300,11 @@ test("portable protocol rejects stale, expired, malformed, and oversized frames"
     '"operationId":"operation-1","operationId":"operation-2"',
   );
   assert.throws(() => decodeLengthPrefixedFrame(rawFrame(duplicateOperation)), /INVALID_JSON_FRAME/);
+  const unsafeInteger = JSON.stringify(frame()).replace(
+    '"payload":{}',
+    '"payload":{"value":9007199254740993}',
+  );
+  assert.throws(() => decodeLengthPrefixedFrame(rawFrame(unsafeInteger)), /INVALID_JSON_NUMBER/);
   const invalidUtf8 = Uint8Array.from([0, 0, 0, 2, 0xc3, 0x28]);
   assert.throws(() => decodeLengthPrefixedFrame(invalidUtf8), /INVALID_JSON_FRAME/);
 
@@ -1333,11 +1529,14 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 20_0
   const childExit = new Promise<void>(resolve => child.once("exit", () => resolve()));
   t.after(async () => {
     if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
-    await Promise.race([
-      childExit,
-      rejectAfter(2_000, () => new Error("BROWSER_PROCESS_TERMINATION_TIMEOUT")),
-    ]);
-    await rm(profile, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    try {
+      await Promise.race([
+        childExit,
+        rejectAfter(2_000, () => new Error("BROWSER_PROCESS_TERMINATION_TIMEOUT")),
+      ]);
+    } finally {
+      await rm(profile, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    }
   });
   child.stderr.setEncoding("utf8");
   let stderr = "";
@@ -1462,13 +1661,24 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 20_0
   assert.equal(parsed.frame?.kind, "result");
 });
 
-test("packed toy package exercises an isolated consumer without Foundation, Cordis, or plugin dependencies", async () => {
+test("packed toy package exercises an isolated consumer without Foundation, Cordis, or plugin dependencies", async t => {
   const root = await mkdtemp(join(tmpdir(), "extension-packed-consumer-"));
+  const children = new Set<ReturnType<typeof spawn>>();
+  t.after(async () => {
+    await Promise.all([...children].map(async child => {
+      if (child.exitCode !== null || child.signalCode !== null) return;
+      child.kill("SIGKILL");
+      await once(child, "exit", { signal: AbortSignal.timeout(2_000) }).catch(() => undefined);
+    }));
+    await rm(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+  });
   const pack = spawn("npm", ["pack", join(fixtureRoot, "toy-package"), "--json", "--pack-destination", root], { stdio: ["ignore", "pipe", "pipe"] });
+  children.add(pack);
   let stdout = "";
   pack.stdout.setEncoding("utf8");
   pack.stdout.on("data", chunk => { stdout += chunk; });
-  const [packCode] = await once(pack, "exit");
+  const [packCode] = await once(pack, "exit", { signal: AbortSignal.timeout(30_000) });
+  children.delete(pack);
   assert.equal(packCode, 0);
   const packed = JSON.parse(stdout) as Array<{ filename: string; files: Array<{ path: string }> }>;
   assert.deepEqual(packed[0]?.files.map(file => file.path).sort(), ["index.d.ts", "index.js", "package.json"]);
@@ -1477,7 +1687,9 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
   await mkdir(consumer);
   await writeFile(join(consumer, "package.json"), JSON.stringify({ private: true, type: "module" }));
   const install = spawn("npm", ["install", "--ignore-scripts", "--package-lock=false", join(root, packed[0]!.filename)], { cwd: consumer, stdio: "ignore" });
-  const [installCode] = await once(install, "exit");
+  children.add(install);
+  const [installCode] = await once(install, "exit", { signal: AbortSignal.timeout(30_000) });
+  children.delete(install);
   assert.equal(installCode, 0);
   const packageEntries = await readdir(join(consumer, "node_modules", "@agent-teams", "qualification-toy-package"));
   assert.ok(!packageEntries.some(entry => entry.includes("module") || entry.includes("plugin")));
@@ -1486,10 +1698,12 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
     "--eval",
     'import { createCounter } from "@agent-teams/qualification-toy-package"; process.stdout.write(String(createCounter(3).next()));',
   ], { cwd: consumer, stdio: ["ignore", "pipe", "pipe"] });
+  children.add(execute);
   let result = "";
   execute.stdout.setEncoding("utf8");
   execute.stdout.on("data", chunk => { result += chunk; });
-  const [executeCode] = await once(execute, "exit");
+  const [executeCode] = await once(execute, "exit", { signal: AbortSignal.timeout(10_000) });
+  children.delete(execute);
   assert.equal(executeCode, 0);
   assert.equal(result, "4");
 });
@@ -1510,7 +1724,7 @@ test("Cordis qualifies only as a private scoped-resource candidate", async () =>
   assert.deepEqual(events, ["start", "stop"]);
 });
 
-test("native and Cordis-backed hooks emit the same applicable lifecycle trace", async () => {
+test("Cordis hooks preserve the coordinator-owned trace shape in an applicability check", async () => {
   const first = requirePlan([
     { id: "provider", requires: [] },
     { id: "consumer", requires: ["provider"] },

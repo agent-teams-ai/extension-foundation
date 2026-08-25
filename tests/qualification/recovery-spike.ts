@@ -7,6 +7,7 @@ export interface DurableLifecycleState {
   readonly graphDigest: string;
   readonly candidateGeneration: number;
   readonly candidateHostIncarnation: string;
+  readonly expectedActiveHostIncarnation: string;
   readonly expectedActiveGeneration: number;
   readonly activeGeneration: number;
   readonly routeHeadGeneration: number;
@@ -21,10 +22,13 @@ export interface DurableLifecycleState {
 }
 
 interface ObservedCandidateIdentity {
+  readonly operationId: string;
+  readonly intentDigest: string;
   readonly generation: number;
   readonly hostIncarnation: string;
   readonly authorityScope: string;
   readonly graphDigest: string;
+  readonly sinkFence: number;
 }
 
 export type ObservedCandidate =
@@ -32,7 +36,10 @@ export type ObservedCandidate =
   | ({ readonly state: "running" | "ready" | "terminated" | "unknown" } & ObservedCandidateIdentity);
 
 export interface ObservedOldGeneration {
+  readonly operationId: string;
+  readonly intentDigest: string;
   readonly generation: number;
+  readonly hostIncarnation: string;
   readonly authorityScope: string;
   readonly sinkFence: number;
   readonly inFlight: boolean;
@@ -41,8 +48,11 @@ export interface ObservedOldGeneration {
 }
 
 export interface ObservedHostState {
+  readonly queryOperationId: string;
+  readonly queryIntentDigest: string;
   readonly queryAuthorityScope: string;
   readonly queryGraphDigest: string;
+  readonly queryHostIncarnation: string;
   readonly candidate: ObservedCandidate;
   readonly oldGeneration: ObservedOldGeneration;
 }
@@ -78,6 +88,66 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+function snapshotState(state: DurableLifecycleState): DurableLifecycleState {
+  return Object.freeze({
+    operationId: state.operationId,
+    intentDigest: state.intentDigest,
+    authorityScope: state.authorityScope,
+    graphDigest: state.graphDigest,
+    candidateGeneration: state.candidateGeneration,
+    candidateHostIncarnation: state.candidateHostIncarnation,
+    expectedActiveHostIncarnation: state.expectedActiveHostIncarnation,
+    expectedActiveGeneration: state.expectedActiveGeneration,
+    activeGeneration: state.activeGeneration,
+    routeHeadGeneration: state.routeHeadGeneration,
+    expectedSinkFence: state.expectedSinkFence,
+    candidateSinkFence: state.candidateSinkFence,
+    sinkFence: state.sinkFence,
+    phase: state.phase,
+    operationDeadlineExpired: state.operationDeadlineExpired,
+    drainDeadlineExpired: state.drainDeadlineExpired,
+    publicationEvidence: state.publicationEvidence,
+    externalOutcome: state.externalOutcome,
+  });
+}
+
+function snapshotObserved(observed: ObservedHostState): ObservedHostState {
+  const sourceCandidate = observed.candidate;
+  const candidateState = sourceCandidate.state;
+  const candidate: ObservedCandidate = candidateState === "absent"
+    ? Object.freeze({ state: "absent" })
+    : Object.freeze({
+      state: candidateState,
+      operationId: sourceCandidate.operationId,
+      intentDigest: sourceCandidate.intentDigest,
+      generation: sourceCandidate.generation,
+      hostIncarnation: sourceCandidate.hostIncarnation,
+      authorityScope: sourceCandidate.authorityScope,
+      graphDigest: sourceCandidate.graphDigest,
+      sinkFence: sourceCandidate.sinkFence,
+    });
+  const sourceOld = observed.oldGeneration;
+  return Object.freeze({
+    queryOperationId: observed.queryOperationId,
+    queryIntentDigest: observed.queryIntentDigest,
+    queryAuthorityScope: observed.queryAuthorityScope,
+    queryGraphDigest: observed.queryGraphDigest,
+    queryHostIncarnation: observed.queryHostIncarnation,
+    candidate,
+    oldGeneration: Object.freeze({
+      operationId: sourceOld.operationId,
+      intentDigest: sourceOld.intentDigest,
+      generation: sourceOld.generation,
+      hostIncarnation: sourceOld.hostIncarnation,
+      authorityScope: sourceOld.authorityScope,
+      sinkFence: sourceOld.sinkFence,
+      inFlight: sourceOld.inFlight,
+      terminationEvidence: sourceOld.terminationEvidence,
+      cleanupEvidence: sourceOld.cleanupEvidence,
+    }),
+  });
+}
+
 function hasValidRuntimeShape(state: DurableLifecycleState, observed: ObservedHostState): boolean {
   if (!isRecord(state) || !isRecord(observed) || !isRecord(observed.candidate) || !isRecord(observed.oldGeneration)) {
     return false;
@@ -89,6 +159,7 @@ function hasValidRuntimeShape(state: DurableLifecycleState, observed: ObservedHo
     && nonEmptyString(state.authorityScope)
     && nonEmptyString(state.graphDigest)
     && nonEmptyString(state.candidateHostIncarnation)
+    && nonEmptyString(state.expectedActiveHostIncarnation)
     && [
       state.candidateGeneration,
       state.expectedActiveGeneration,
@@ -109,14 +180,23 @@ function hasValidRuntimeShape(state: DurableLifecycleState, observed: ObservedHo
     && candidateStates.has(candidate.state)
     && terminationEvidenceStates.has(observed.oldGeneration.terminationEvidence)
     && cleanupEvidenceStates.has(observed.oldGeneration.cleanupEvidence)
+    && nonEmptyString(observed.queryOperationId)
+    && nonEmptyString(observed.queryIntentDigest)
     && nonEmptyString(observed.queryAuthorityScope)
     && nonEmptyString(observed.queryGraphDigest)
+    && nonEmptyString(observed.queryHostIncarnation)
+    && nonEmptyString(observed.oldGeneration.operationId)
+    && nonEmptyString(observed.oldGeneration.intentDigest)
+    && nonEmptyString(observed.oldGeneration.hostIncarnation)
     && nonEmptyString(observed.oldGeneration.authorityScope)
     && (candidate.state === "absent" || (
-      nonNegativeInteger(identifiedCandidate.generation)
+      nonEmptyString(identifiedCandidate.operationId)
+      && nonEmptyString(identifiedCandidate.intentDigest)
+      && nonNegativeInteger(identifiedCandidate.generation)
       && nonEmptyString(identifiedCandidate.hostIncarnation)
       && nonEmptyString(identifiedCandidate.authorityScope)
       && nonEmptyString(identifiedCandidate.graphDigest)
+      && nonNegativeInteger(identifiedCandidate.sinkFence)
     ));
 }
 
@@ -132,9 +212,15 @@ function reconcileLifecycleUnsafe(
     || state.externalOutcome === "uncertain"
     || state.publicationEvidence === "uncertain"
     || observed.candidate.state === "unknown"
+    || observed.queryOperationId !== state.operationId
+    || observed.queryIntentDigest !== state.intentDigest
     || observed.queryAuthorityScope !== state.authorityScope
     || observed.queryGraphDigest !== state.graphDigest
+    || observed.queryHostIncarnation !== state.candidateHostIncarnation
+    || observed.oldGeneration.operationId !== state.operationId
+    || observed.oldGeneration.intentDigest !== state.intentDigest
     || observed.oldGeneration.generation !== state.expectedActiveGeneration
+    || observed.oldGeneration.hostIncarnation !== state.expectedActiveHostIncarnation
     || observed.oldGeneration.authorityScope !== state.authorityScope
     || observed.oldGeneration.sinkFence !== state.expectedSinkFence
   ) {
@@ -152,10 +238,13 @@ function reconcileLifecycleUnsafe(
   if (
     observed.candidate.state !== "absent"
     && (
-      observed.candidate.generation !== state.candidateGeneration
+      observed.candidate.operationId !== state.operationId
+      || observed.candidate.intentDigest !== state.intentDigest
+      || observed.candidate.generation !== state.candidateGeneration
       || observed.candidate.hostIncarnation !== state.candidateHostIncarnation
       || observed.candidate.authorityScope !== state.authorityScope
       || observed.candidate.graphDigest !== state.graphDigest
+      || observed.candidate.sinkFence !== state.candidateSinkFence
     )
   ) {
     return "CONTROLLED_RECOVERY";
@@ -211,7 +300,7 @@ export function reconcileLifecycle(
   observed: ObservedHostState,
 ): RecoveryAction {
   try {
-    return reconcileLifecycleUnsafe(state, observed);
+    return reconcileLifecycleUnsafe(snapshotState(state), snapshotObserved(observed));
   } catch {
     return "CONTROLLED_RECOVERY";
   }

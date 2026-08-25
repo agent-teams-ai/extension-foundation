@@ -57,6 +57,7 @@ function validatePackageTopology(options) {
     loadMaterializationPlan: options.loadMaterializationPlan ?? fixtureMaterializationPlan,
     listEffectiveOwners: options.listEffectiveOwners ?? (async () => []),
     readTrackedPackagePaths: options.readTrackedPackagePaths ?? noTrackedPackagePaths,
+    verifyAdmissionEvidence: options.verifyAdmissionEvidence ?? (async () => true),
   });
 }
 
@@ -691,6 +692,14 @@ test("package admission fails closed without versioned independent evidence", as
   const root = await mkdtemp(join(tmpdir(), "extension-topology-admission-"));
   try {
     await writeArchitecture(root, { catalog: packageCatalog(), packageBoundary: true });
+    const noVerifierErrors = await validateRepositoryPackageTopology({
+      root,
+      resolveOwner: acceptedOwner,
+      listEffectiveOwners: async () => [],
+      loadMaterializationPlan: fixtureMaterializationPlan,
+      readTrackedPackagePaths: noTrackedPackagePaths,
+    });
+    assert.ok(noVerifierErrors.includes("module.example: package admission requires an executable evidence verifier"));
     await rm(join(root, "architecture/package-admissions/module-dot-example.json"));
     const missingErrors = await validatePackageTopology({ root, resolveOwner: acceptedOwner });
     assert.equal(missingErrors.length, 1);
@@ -792,6 +801,20 @@ test("package admission fails closed without versioned independent evidence", as
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
       "module.example: consumer evidence must use distinct identities, repositories, and immutable references",
     ]);
+
+    for (const location of ["docs/evidence/shared.json", "https://example.com/evidence/shared.json"]) {
+      const oneLocationDifferentDigests = packageAdmission();
+      oneLocationDifferentDigests.consumer_evidence[0].evidence_reference = `${location}#sha256=${"a".repeat(64)}`;
+      oneLocationDifferentDigests.consumer_evidence[1].evidence_reference = `${location}#sha256=${"b".repeat(64)}`;
+      await writeFixture(
+        root,
+        "architecture/package-admissions/module-dot-example.json",
+        `${JSON.stringify(oneLocationDifferentDigests)}\n`,
+      );
+      assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+        "module.example: consumer evidence must use distinct identities, repositories, and immutable references",
+      ]);
+    }
 
     const mirroredEvidence = packageAdmission();
     mirroredEvidence.consumer_evidence[0].evidence_reference = `https://one.example/evidence.json#sha256=${"a".repeat(64)}`;

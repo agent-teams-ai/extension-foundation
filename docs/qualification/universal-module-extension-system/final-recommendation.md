@@ -94,8 +94,9 @@ any canonical mutation.
 - Node process, Node Worker and real browser Worker use one strict portable codec
   bound to authority scope, extension instance, graph/module generations, host
   incarnation, peer, audience and deadline; authenticated negotiation remains open.
-- Native and Cordis-backed resource hooks can emit the same applicable neutral
-  lifecycle trace.
+- Cordis-backed resource hooks preserve the trace shape owned by the same
+  neutral coordinator in the applicability fixture; this is not an independent
+  lifecycle-equivalence proof.
 - A packed toy fixture validates the isolated-consumer harness shape; it is not
   evidence for a production package or declaration surface.
 - Extism 1.0.3 can execute release-hosted Wasm bytes matching a pinned digest,
@@ -115,8 +116,9 @@ any canonical mutation.
   export condition.
 - JSON Schema for serialized wire data and handwritten TypeScript for
   executable ports, pending approval.
-- ESM-only internal/reusable packages first; public fixed-version train only
-  after ADR-0010 evidence.
+- The repository-local packed rehearsal is ESM-only. Reusable/public package
+  format remains open under `UMEQ-014`; a fixed-version train also requires
+  ADR-0010 evidence.
 - OCI/ORAS plus Cosign/Sigstore for digest-pinned artifacts, with TUF required
   before mutable managed channels or delegated publisher updates.
 

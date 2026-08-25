@@ -42,9 +42,9 @@ entries:
     approvalRequired: true
   - id: UMEQ-012
     status: open
-    topic: contract-source-model
+    topic: contract-source-and-compatibility-model
     authority: OD-003
-    detail: unresolved-decisions.md#umeq-012-contract-source-model
+    detail: unresolved-decisions.md#umeq-012-contract-source-and-compatibility-model
     approvalRequired: true
   - id: UMEQ-013
     status: open
@@ -79,6 +79,6 @@ entries:
   - id: UMEQ-018
     status: open
     topic: managed-update-metadata
-    authority: OD-001/OD-002
+    authority: OD-002
     detail: unresolved-decisions.md#umeq-018-managed-update-metadata
     approvalRequired: true

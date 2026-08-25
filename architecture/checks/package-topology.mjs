@@ -435,6 +435,7 @@ export async function validatePackageTopology({
   root,
   resolveOwner,
   listEffectiveOwners,
+  verifyAdmissionEvidence,
   loadMaterializationPlan = readFoundationMaterializationPlan,
   readTrackedPackagePaths = createGitTrackedPackagePathReader(root),
 }) {
@@ -451,6 +452,19 @@ export async function validatePackageTopology({
     return [`package policy: ${error instanceof Error ? error.message : String(error)}`];
   }
   if (packagePolicy.errors.length !== 0) return packagePolicy.errors;
+  for (const entry of packagePolicy.entries) {
+    if (verifyAdmissionEvidence === undefined) {
+      errors.push(`${entry.id}: package admission requires an executable evidence verifier`);
+      continue;
+    }
+    try {
+      if (await verifyAdmissionEvidence({ root, entry }) !== true) {
+        errors.push(`${entry.id}: executable evidence verifier rejected admission`);
+      }
+    } catch (error) {
+      errors.push(`${entry.id}: executable evidence verifier failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
 
   let sourcePolicy;
   try {

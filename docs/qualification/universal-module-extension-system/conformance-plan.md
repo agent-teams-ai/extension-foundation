@@ -62,7 +62,7 @@ the dossier has status `qualified`.
 | --- | --- | --- |
 | ID-DAG scheduling primitive | implemented/passed locally | Narrow graph algorithm only, not `GRAPH-1` |
 | In-memory lifecycle/CAS model | implemented/passed locally | No durable coordinator or sink fence |
-| Portable strict JSON codec | implemented/passed locally | Canonical JSON subset, fatal UTF-8, duplicate-key rejection, authority tuple and deadline checks; no N/N-1 negotiation, authenticated channel or operation journal |
+| Portable strict JSON codec | implemented/passed locally | Canonical JSON subset, safe-integer numeric domain, fatal UTF-8, duplicate-key and request-direction rejection, authority tuple and deadline checks; no method schemas, receiver deadline horizon, N/N-1 negotiation, authenticated channel or operation journal |
 | Process, Node Worker, browser Worker | smoke/passed locally | Placement transport and authority-envelope checks, not isolation conformance |
 | Packed toy consumer | harness/passed locally | Validates the harness shape, not `PACKAGE-1` |
 | Recovery reducer examples | implemented/passed locally | No crash-injected persistent recovery |

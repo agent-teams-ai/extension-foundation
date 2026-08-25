@@ -78,14 +78,16 @@ lowercase `owner/repository` values and reject transport/path aliases such as
 `.git` or trailing dots. Local evidence paths must remain under `docs/` and use
 exactly one digest fragment. External HTTPS locations are compared by their
 canonical URL, and independent evidence records must have distinct SHA-256
-digests; aliases or mirrors of the same bytes cannot satisfy the gate twice.
+locations and digests; aliases, one location with conflicting claimed digests,
+or mirrors of the same bytes cannot satisfy the gate twice.
 
-These checks prove topology and claimed execution evidence, not business
-completeness or the referenced evidence bytes. A promotion verifier must
-resolve each slug through its provider to a stable repository ID, prove both
-consumer IDs differ from each other and from Foundation, and hash the evidence
-bytes before publication. The admitting ADR and review evidence establish that
-the slice is semantically real. Reserving empty packages or root-level
+These checks prove topology and evidence syntax, not business completeness or
+the referenced evidence bytes. A non-empty catalog therefore fails closed until
+an executable admission verifier is supplied. That verifier must resolve each
+slug through its provider to a stable repository ID, prove both consumer IDs
+differ from each other and from Foundation, and hash the evidence bytes before
+admission. Publication re-verifies the immutable receipt. The admitting ADR and
+review evidence establish that the slice is semantically real. Reserving empty packages or root-level
 `domain`, `application`, `contracts`, or `adapters` directories is not allowed.
 
 Feature-specific contracts and adapters stay inside their owning feature.

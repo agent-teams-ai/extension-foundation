@@ -2,7 +2,7 @@ import { compileGraph } from "../graph-spike.ts";
 import { GenerationLifecycle, inertHooks } from "../lifecycle-spike.ts";
 
 const phase = process.argv[2];
-if (!["prepare", "start", "stop"].includes(phase)) throw new Error("UNKNOWN_PHASE");
+if (!["prepare", "start", "blocking-start", "stop"].includes(phase)) throw new Error("UNKNOWN_PHASE");
 
 const authorityScope = "tenant:test/project:test";
 const lifecycle = new GenerationLifecycle(authorityScope);
@@ -38,6 +38,21 @@ if (phase === "stop") {
     "candidate",
     candidatePlan,
     new Map([["candidate", inertHooks()]]),
+  ));
+} else if (phase === "blocking-start") {
+  const plan = compile("candidate");
+  result = await lifecycle.activate(request(
+    phase,
+    plan,
+    new Map([["candidate", inertHooks({
+      start: () => {
+        const deadline = Date.now() + 100;
+        while (Date.now() < deadline) {
+          // Deliberately block the event loop to qualify cooperative T0 deadlines.
+        }
+      },
+      stop: () => undefined,
+    })]]),
   ));
 } else {
   const plan = compile("candidate");

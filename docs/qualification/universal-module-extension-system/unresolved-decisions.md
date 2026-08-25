@@ -69,10 +69,11 @@ ambient catalog order from becoming semantics. **Reversibility:** high; an
 auto-binding resolver can be added later. **Impact:** profile ergonomics and
 determinism. **Approval:** required through `OD-003`.
 
-## UMEQ-012: Contract Source Model
+## UMEQ-012: Contract Source And Compatibility Model
 
 **Problem:** choose sources of truth for serialized protocol and executable
-TypeScript ports.
+TypeScript ports, plus the constrained compatibility grammar used by module
+slots.
 
 | Option | Assessment |
 | --- | --- |
@@ -184,7 +185,8 @@ SLOs and adapter conformance. **Approval:** required before distributed claims.
 protection or revocation distribution. TUF is mandatory once channels,
 delegated publishers, mirrors or automatic updates exist. **Reversibility:**
 medium; release records should already map cleanly to future TUF targets.
-**Impact:** catalog MVP schedule. **Approval:** required across `OD-001/OD-002`.
+**Impact:** catalog update schedule. **Approval:** required through `OD-002`;
+`OD-001` is already resolved and its accepted federation routing is not reopened.
 
 ## Recommended Approval Order
 

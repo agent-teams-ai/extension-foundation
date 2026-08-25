@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -79,6 +79,14 @@ test("decision ledger has one semantic owner and ten unique approval forks", asy
   assert.ok(approvals.every(entry => entry.status === "open"));
   assert.ok(ledger.entries.every(entry => entry.authority.length > 0));
 
+  const knownIds = new Set(ids);
+  const dossierFiles = (await readdir(dossier)).filter(name => /\.(?:md|ya?ml)$/.test(name));
+  for (const name of dossierFiles) {
+    const contents = await readFile(resolve(dossier, name), "utf8");
+    const referencedIds = contents.match(/\bUMEQ-[A-Z0-9-]+\b/g) ?? [];
+    for (const id of referencedIds) assert.ok(knownIds.has(id), `${name} references unledgered ${id}`);
+  }
+
   for (const entry of ledger.entries) {
     const [relativePath, fragment] = entry.detail.split("#", 2);
     const targetPath = resolve(dirname(ledgerPath), relativePath!);
@@ -154,4 +162,8 @@ test("publication and first-slice gates cannot be weakened by qualification pros
   assert.doesNotMatch(files[5]!, /Approve `UMEQ-011`.*before the\s+first product-local graph slice/is);
   assert.match(files[6]!, /status: proposed/);
   assert.match(files[6]!, /no Foundation runtime package or public SPI may be admitted/);
+  const packageCatalog = JSON.parse(await readFile(resolve(repositoryRoot, "architecture/package-catalog.json"), "utf8")) as {
+    readonly packages?: readonly unknown[];
+  };
+  assert.deepEqual(packageCatalog.packages, [], "proposed ADR-0013 keeps Foundation runtime admission closed");
 });

@@ -242,9 +242,9 @@ test must observe a denied external effect, not only an adapter return value.
 These are required gates, not claims that the current disposable spike has
 implemented every fixture.
 
-## MVP And Deferred Work
+## Plugin Platform Security Floor And Deferred Work
 
-MVP qualification includes canonical IDs, digest-pinned OCI artifacts, one
+The first plugin-platform security phase includes canonical IDs, digest-pinned OCI artifacts, one
 verified signer policy, installation receipts, revocation records, explicit
 `T0/T1` labels, strict IPC, secret broker contracts and negative fixtures.
 
