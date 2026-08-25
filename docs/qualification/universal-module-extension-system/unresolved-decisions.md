@@ -97,8 +97,9 @@ resource ownership.
 | Cordis 4.0.1 behind a private adapter | 🎯 6/10 · 🛡️ 7/10 · 🧠 7/10 · 1,700-2,300 LOC including conformance |
 | Native compiler plus Cordis lifecycle hybrid | 🎯 3/10 · 🛡️ 5/10 · 🧠 9/10 · 2,000-3,000 LOC |
 
-**Evidence:** Cordis reliably owns scoped effects but does not delete at least
-25% of equivalent owned code and would overlap lifecycle authority. **Reversibility:**
+**Evidence:** Cordis reliably owns scoped effects, but the trivial qualification
+adapter does not prove meaningful code deletion and would overlap lifecycle
+authority. The 25% threshold remains a real-consumer kill criterion. **Reversibility:**
 high because contracts exclude framework types. **Impact:** first implementation
 slice. **Approval:** required through `OD-003`; evidence currently favors native.
 
@@ -185,8 +186,9 @@ medium; release records should already map cleanly to future TUF targets.
 
 ## Recommended Approval Order
 
-Approve `UMEQ-013`, `UMEQ-011`, `UMEQ-012` and `UMEQ-015` before the first
-implementation slice. `UMEQ-009`, `UMEQ-014` and `UMEQ-016` are needed before a
+Approve `UMEQ-011` and the narrow native graph choice in `UMEQ-013` before the
+first product-local graph slice. `UMEQ-012` and `UMEQ-015` are needed only
+before reusable contract extraction/publication. `UMEQ-009`, `UMEQ-014` and `UMEQ-016` are needed before a
 process/package release. `UMEQ-017` is required before hosted distributed
 claims. `UMEQ-018` is needed before managed update channels. `UMEQ-010` remains
 a separate Frontend decision.

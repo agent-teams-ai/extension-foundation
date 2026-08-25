@@ -31,7 +31,7 @@ be recalibrated on reference CI and product hardware.
 | Memory per module | Retained heap/process RSS attributable to one active generation |
 | Protocol overhead | Serialized bytes and latency per host invocation |
 | Cleanup debt | Count and age of resources not confirmed released |
-| Duplicate durable effects | Must remain zero |
+| Duplicate durable effects | Zero only for sinks with atomic fencing or native idempotency; otherwise explicit uncertain outcome and reconciliation |
 
 ## Initial Qualification Budgets
 
@@ -50,8 +50,10 @@ be recalibrated on reference CI and product hardware.
 
 These are provisional. CI reports distributions and environment metadata;
 absolute blocking begins only after stable baselines exist. Determinism, memory
-bounds, no leaked resources, and zero duplicate durable effects block
-immediately.
+bounds and no leaked resources block immediately. Duplicate durable effects
+block only where the authoritative sink contract can enforce that guarantee;
+non-queryable external effects must surface uncertainty rather than claim
+exactly-once delivery.
 
 ## Synthetic Matrix
 

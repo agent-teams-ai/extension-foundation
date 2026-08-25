@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { access, mkdtemp, mkdir, readdir, writeFile } from "node:fs/promises";
+import { access, mkdtemp, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -14,11 +16,23 @@ import { Context } from "@deepseek-ai/cordis";
 import fc from "fast-check";
 
 import { compileGraph, type ModuleDescriptor } from "./graph-spike.ts";
-import { GenerationLifecycle, type ModuleHooks } from "./lifecycle-spike.ts";
-import { handlePortableWorkerFrame, type ProtocolEnvelope, validateEnvelope } from "./protocol-spike.ts";
+import {
+  GenerationLifecycle,
+  inertHooks,
+  type ActivationRequest,
+  type ModuleHooks,
+} from "./lifecycle-spike.ts";
+import {
+  decodeLengthPrefixedFrame,
+  encodeLengthPrefixedFrame,
+  handlePortableWorkerFrame,
+  type ProtocolEnvelope,
+  validateEnvelope,
+} from "./protocol-spike.ts";
 import { reconcileLifecycle, type DurableLifecycleState } from "./recovery-spike.ts";
 
 const fixtureRoot = fileURLToPath(new URL("./fixtures", import.meta.url));
+const qualificationRoot = fileURLToPath(new URL("./", import.meta.url));
 
 function requirePlan(descriptors: readonly ModuleDescriptor[]) {
   const result = compileGraph(descriptors);
@@ -40,8 +54,36 @@ function frame(overrides: Partial<ProtocolEnvelope> = {}): ProtocolEnvelope {
   };
 }
 
-test("invalid graph is deterministic and causes zero executable effects", () => {
-  let effects = 0;
+function activationRequest(
+  lifecycle: GenerationLifecycle,
+  operationId: string,
+  plan: ReturnType<typeof requirePlan>,
+  hooks: ReadonlyMap<string, ModuleHooks>,
+  options: {
+    readonly expectedActiveGeneration?: number;
+    readonly deadlineMs?: number;
+    readonly cleanupTimeoutMs?: number;
+    readonly profileLockDigest?: string;
+  } = {},
+): ActivationRequest {
+  return {
+    identity: {
+      operationId,
+      expectedActiveGeneration: options.expectedActiveGeneration ?? lifecycle.activeGeneration,
+      authorityScope: "tenant:test/project:test",
+      profileLockDigest: options.profileLockDigest ?? "sha256:profile-lock-1",
+      configurationFingerprint: "sha256:configuration-1",
+      grantRevision: "grant-revision-1",
+      hostPolicyRevision: "host-policy-revision-1",
+    },
+    plan,
+    hooks,
+    absoluteDeadline: lifecycle.deadlineAfter(options.deadlineMs ?? 1_000),
+    ...(options.cleanupTimeoutMs === undefined ? {} : { cleanupTimeoutMs: options.cleanupTimeoutMs }),
+  };
+}
+
+test("invalid ID-DAG input produces deterministic diagnostics without loading hooks", () => {
   const definitions = [
     { id: "consumer", requires: ["missing"] },
     { id: "consumer", requires: [] },
@@ -50,8 +92,6 @@ test("invalid graph is deterministic and causes zero executable effects", () => 
   const second = compileGraph([...definitions].reverse());
   assert.equal(first.ok, false);
   assert.deepEqual(first, second);
-  assert.equal(effects, 0);
-  effects += 0;
 });
 
 test("graph plan uses stable batches and reverse dependency cleanup", () => {
@@ -62,6 +102,19 @@ test("graph plan uses stable batches and reverse dependency cleanup", () => {
   ]);
   assert.deepEqual(plan.startBatches, [["database", "telemetry"], ["api"]]);
   assert.deepEqual(plan.stopBatches, [["api"], ["database", "telemetry"]]);
+});
+
+test("compiled ID-DAG plan is deeply immutable and serializable", () => {
+  const plan = requirePlan([
+    { id: "provider", requires: [] },
+    { id: "consumer", requires: ["provider"] },
+  ]);
+  assert.equal(Object.isFrozen(plan), true);
+  assert.equal(Object.isFrozen(plan.nodes), true);
+  assert.equal(Object.isFrozen(plan.nodes[1]?.requires), true);
+  assert.equal(Object.isFrozen(plan.startBatches[0]), true);
+  assert.throws(() => (plan.nodes as Array<unknown>).push({ id: "late", requires: [] }), TypeError);
+  assert.deepEqual(structuredClone(plan).nodes, plan.nodes);
 });
 
 test("permutations produce the same graph plan and digest", () => {
@@ -82,15 +135,15 @@ test("permutations produce the same graph plan and digest", () => {
   ), { numRuns: 200 });
 });
 
-test("native compiler agrees with Graphlib on generated DAG validity", () => {
-  const arbitraryDag = fc.array(fc.tuple(
+test("native compiler agrees with Graphlib on generated directed-graph validity", () => {
+  const arbitraryGraph = fc.array(fc.tuple(
     fc.integer({ min: 0, max: 7 }),
     fc.integer({ min: 0, max: 7 }),
   ), { maxLength: 40 });
 
-  fc.assert(fc.property(arbitraryDag, pairs => {
+  fc.assert(fc.property(arbitraryGraph, pairs => {
     const ids = Array.from({ length: 8 }, (_, index) => `n${index}`);
-    const edges = [...new Set(pairs.filter(([from, to]) => from < to).map(([from, to]) => `${from}:${to}`))]
+    const edges = [...new Set(pairs.map(([from, to]) => `${from}:${to}`))]
       .map(value => value.split(":").map(Number) as [number, number]);
     const dependencies = new Map(ids.map(id => [id, [] as string[]]));
     const oracle = new Graph({ directed: true });
@@ -99,7 +152,10 @@ test("native compiler agrees with Graphlib on generated DAG validity", () => {
       dependencies.get(ids[consumer]!)?.push(ids[provider]!);
       oracle.setEdge(ids[provider]!, ids[consumer]!);
     }
-    const plan = requirePlan(ids.map(id => ({ id, requires: dependencies.get(id) ?? [] })));
+    const result = compileGraph(ids.map(id => ({ id, requires: dependencies.get(id) ?? [] })));
+    assert.equal(result.ok, alg.isAcyclic(oracle));
+    if (!result.ok) return;
+    const plan = result.plan;
     const oracleOrder = alg.topsort(oracle);
     const nativePosition = new Map(plan.startOrder.map((id, index) => [id, index]));
     const oraclePosition = new Map((oracleOrder as string[]).map((id: string, index: number) => [id, index]));
@@ -134,23 +190,99 @@ test("one hundred concurrent starts share one activation and one cutover", async
   const plan = requirePlan([{ id: "module", requires: [] }]);
   const lifecycle = new GenerationLifecycle();
   let starts = 0;
-  const hooks = new Map<string, ModuleHooks>([["module", {
+  const hooks = new Map<string, ModuleHooks>([["module", inertHooks({
     async start() {
       starts += 1;
       await delay(5);
     },
-  }]]);
-  const calls = Array.from({ length: 100 }, () => lifecycle.activate(plan, hooks, Date.now() + 1_000));
+  })]]);
+  const request = activationRequest(lifecycle, "activation-single-flight", plan, hooks);
+  const calls = Array.from({ length: 100 }, () => lifecycle.activate(request));
   const results = await Promise.all(calls);
   assert.equal(starts, 1);
   assert.equal(lifecycle.cutovers, 1);
   assert.equal(new Set(results.map(result => result.generation)).size, 1);
 });
 
+test("a waiter deadline detaches without cancelling the shared activation", async () => {
+  const lifecycle = new GenerationLifecycle();
+  const plan = requirePlan([{ id: "module", requires: [] }]);
+  let starts = 0;
+  const request = activationRequest(
+    lifecycle,
+    "waiter-detach",
+    plan,
+    new Map([["module", inertHooks({ start: async () => { starts += 1; await delay(20); } })]]),
+  );
+  const impatient = lifecycle.activate(request, lifecycle.deadlineAfter(3));
+  const patient = lifecycle.activate(request, lifecycle.deadlineAfter(250));
+  await assert.rejects(impatient, /WAITER_DEADLINE_EXCEEDED/);
+  assert.equal((await patient).ok, true);
+  assert.equal(starts, 1);
+});
+
+test("same operation with changed authority inputs is an idempotency conflict", async () => {
+  const lifecycle = new GenerationLifecycle();
+  const plan = requirePlan([{ id: "module", requires: [] }]);
+  const hooks = new Map<string, ModuleHooks>([["module", inertHooks()]]);
+  const first = activationRequest(lifecycle, "activation-conflict", plan, hooks);
+  await lifecycle.activate(first);
+  const changed = activationRequest(lifecycle, "activation-conflict", plan, hooks, {
+    profileLockDigest: "sha256:different-profile-lock",
+  });
+  assert.throws(() => lifecycle.activate(changed), /ACTIVATION_IDEMPOTENCY_CONFLICT/);
+});
+
+test("same completed operation returns its retained result without a second start", async () => {
+  const lifecycle = new GenerationLifecycle();
+  const plan = requirePlan([{ id: "module", requires: [] }]);
+  let starts = 0;
+  const request = activationRequest(
+    lifecycle,
+    "activation-replay",
+    plan,
+    new Map([["module", inertHooks({ start: () => { starts += 1; } })]]),
+  );
+  const first = await lifecycle.activate(request);
+  const replay = await lifecycle.activate(request);
+  assert.equal(replay.generation, first.generation);
+  assert.equal(starts, 1);
+});
+
+test("different candidates race through expected-active CAS and only one publishes", async () => {
+  const lifecycle = new GenerationLifecycle();
+  const firstPlan = requirePlan([{ id: "first", requires: [] }]);
+  const secondPlan = requirePlan([{ id: "second", requires: [] }]);
+  const expectedActiveGeneration = lifecycle.activeGeneration;
+  const first = activationRequest(
+    lifecycle,
+    "candidate-first",
+    firstPlan,
+    new Map([["first", inertHooks({ start: async () => delay(10) })]]),
+    { expectedActiveGeneration },
+  );
+  const second = activationRequest(
+    lifecycle,
+    "candidate-second",
+    secondPlan,
+    new Map([["second", inertHooks()]]),
+    { expectedActiveGeneration },
+  );
+  const results = await Promise.all([lifecycle.activate(first), lifecycle.activate(second)]);
+  assert.equal(results.filter(result => result.ok).length, 1);
+  assert.equal(results.filter(result => result.errors.some(error => error.message === "STALE_ACTIVE_GENERATION")).length, 1);
+  assert.equal(lifecycle.cutovers, 1);
+});
+
 test("readiness blocks dependents and failed candidate leaves routing unchanged", async () => {
   const lifecycle = new GenerationLifecycle();
   const base = requirePlan([{ id: "base", requires: [] }]);
-  const baseResult = await lifecycle.activate(base, new Map([["base", {}]]), Date.now() + 1_000);
+  const baseResult = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "base-activation",
+    base,
+    new Map([["base", inertHooks()]]),
+  ));
   assert.equal(baseResult.ok, true);
   const previous = lifecycle.activeGeneration;
 
@@ -159,10 +291,15 @@ test("readiness blocks dependents and failed candidate leaves routing unchanged"
     { id: "consumer", requires: ["provider"] },
   ]);
   let consumerStarts = 0;
-  const result = await lifecycle.activate(candidate, new Map([
-    ["provider", { ready: () => false }],
-    ["consumer", { start: () => { consumerStarts += 1; } }],
-  ]), Date.now() + 1_000);
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "candidate-not-ready",
+    candidate,
+    new Map<string, ModuleHooks>([
+      ["provider", { readiness: "probe", ready: () => false }],
+      ["consumer", inertHooks({ start: () => { consumerStarts += 1; } })],
+    ]),
+  ));
   assert.equal(result.ok, false);
   assert.equal(consumerStarts, 0);
   assert.equal(lifecycle.activeGeneration, previous);
@@ -172,11 +309,18 @@ test("absolute deadline prevents late publication and cleanup is bounded", async
   const lifecycle = new GenerationLifecycle();
   const plan = requirePlan([{ id: "slow", requires: [] }]);
   const startedAt = Date.now();
-  const result = await lifecycle.activate(plan, new Map([["slow", {
-    start: async () => delay(20),
-    stop: async () => new Promise(() => undefined),
-  }]]), Date.now() + 5, 20);
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "slow-timeout",
+    plan,
+    new Map([["slow", inertHooks({
+      start: async () => delay(20),
+      stop: async () => new Promise(() => undefined),
+    })]]),
+    { deadlineMs: 5, cleanupTimeoutMs: 20 },
+  ));
   assert.equal(result.ok, false);
+  assert.equal(result.termination, "unproven");
   assert.equal(lifecycle.activeGeneration, 0);
   assert.ok(Date.now() - startedAt < 250);
   assert.ok(result.errors.some(error => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
@@ -191,82 +335,173 @@ test("failed parallel batch settles siblings before reverse cleanup", async () =
   ]);
   let siblingFinished = false;
   let siblingStops = 0;
-  const result = await lifecycle.activate(plan, new Map([
-    ["fails", { start: () => { throw new Error("START_FAILED"); } }],
-    ["slow-sibling", {
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "parallel-failure",
+    plan,
+    new Map<string, ModuleHooks>([
+    ["fails", inertHooks({ start: () => { throw new Error("START_FAILED"); } })],
+    ["slow-sibling", inertHooks({
       start: async () => {
         await delay(20);
         siblingFinished = true;
       },
       stop: () => { siblingStops += 1; },
-    }],
-  ]), Date.now() + 1_000);
+    })],
+    ]),
+  ));
   assert.equal(result.ok, false);
   assert.equal(siblingFinished, true);
   assert.equal(siblingStops, 1);
   assert.equal(lifecycle.activeGeneration, 0);
 });
 
-test("bounded drain records debt before fencing an old generation", async () => {
+test("multi-level rollback keeps reverse levels, aggregates failures, and shares one cleanup deadline", async () => {
+  const lifecycle = new GenerationLifecycle();
+  const plan = requirePlan([
+    { id: "provider-a", requires: [] },
+    { id: "provider-b", requires: [] },
+    { id: "consumer", requires: ["provider-a", "provider-b"] },
+    { id: "leaf", requires: ["consumer"] },
+  ]);
+  const stopped: string[] = [];
+  const hooks = new Map<string, ModuleHooks>([
+    ["provider-a", inertHooks({ stop: () => { stopped.push("provider-a"); throw new Error("STOP_A_FAILED"); } })],
+    ["provider-b", inertHooks({ stop: async () => { stopped.push("provider-b"); await new Promise(() => undefined); } })],
+    ["consumer", inertHooks({ stop: () => { stopped.push("consumer"); } })],
+    ["leaf", inertHooks({
+      start: () => { throw new Error("LEAF_START_FAILED"); },
+      stop: () => { stopped.push("leaf"); },
+    })],
+  ]);
+  const startedAt = Date.now();
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "multi-level-rollback",
+    plan,
+    hooks,
+    { cleanupTimeoutMs: 20 },
+  ));
+  assert.equal(result.ok, false);
+  assert.equal(result.errors[0]?.message, "LEAF_START_FAILED");
+  assert.deepEqual(stopped.slice(0, 2), ["leaf", "consumer"]);
+  assert.deepEqual(new Set(stopped.slice(2)), new Set(["provider-a", "provider-b"]));
+  assert.ok(result.errors.some(error => error.message === "STOP_A_FAILED"));
+  assert.ok(result.errors.some(error => error.message === "CLEANUP_TIMEOUT:provider-b"));
+  assert.ok(Date.now() - startedAt < 250);
+});
+
+test("bounded drain emits in-memory debt evidence before fencing an old generation", async () => {
   const lifecycle = new GenerationLifecycle();
   const first = requirePlan([{ id: "first", requires: [] }]);
-  await lifecycle.activate(first, new Map([["first", {}]]), Date.now() + 1_000);
+  await lifecycle.activate(activationRequest(lifecycle, "drain-first", first, new Map([["first", inertHooks()]])));
   const oldGeneration = lifecycle.activeGeneration;
   const lease = lifecycle.acquireInvocation();
 
   const second = requirePlan([{ id: "second", requires: [] }]);
-  const result = await lifecycle.activate(second, new Map([["second", {}]]), Date.now() + 1_000, 5);
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "drain-second",
+    second,
+    new Map([["second", inertHooks()]]),
+    { cleanupTimeoutMs: 5 },
+  ));
   assert.equal(result.ok, true);
   assert.ok(result.errors.some(error => error.message === `DRAIN_TIMEOUT:${oldGeneration}`));
   assert.ok(result.traces.some(trace => trace.phase === "drain" && trace.outcome === "timed-out"));
-  assert.throws(() => lifecycle.commitDurableWrite(oldGeneration, () => undefined, lease), /STALE_GENERATION/);
+  assert.throws(() => lifecycle.assertInMemoryFence(lease), /STALE_GENERATION/);
   lease.release();
 });
 
 test("replacement drains admitted work, cuts over once, and fences stale writes", async () => {
   const lifecycle = new GenerationLifecycle();
   const first = requirePlan([{ id: "first", requires: [] }]);
-  await lifecycle.activate(first, new Map([["first", {}]]), Date.now() + 1_000);
+  await lifecycle.activate(activationRequest(lifecycle, "replacement-first", first, new Map([["first", inertHooks()]])));
   const oldGeneration = lifecycle.activeGeneration;
   const lease = lifecycle.acquireInvocation();
   let oldWrite = 0;
-  lifecycle.commitDurableWrite(oldGeneration, () => { oldWrite += 1; }, lease);
+  lifecycle.assertInMemoryFence(lease);
+  oldWrite += 1;
 
   const second = requirePlan([{ id: "second", requires: [] }]);
-  const replacement = lifecycle.activate(second, new Map([["second", {}]]), Date.now() + 1_000, 100);
+  const replacement = lifecycle.activate(activationRequest(
+    lifecycle,
+    "replacement-second",
+    second,
+    new Map([["second", inertHooks()]]),
+    { cleanupTimeoutMs: 100 },
+  ));
   await delay(5);
   const newGeneration = lifecycle.activeGeneration;
   assert.notEqual(newGeneration, oldGeneration);
   const newLease = lifecycle.acquireInvocation();
   assert.equal(newLease.generation, newGeneration);
-  lifecycle.commitDurableWrite(oldGeneration, () => { oldWrite += 1; }, lease);
+  lifecycle.assertInMemoryFence(lease);
+  oldWrite += 1;
   newLease.release();
   lease.release();
   const result = await replacement;
   assert.equal(result.ok, true);
   assert.equal(lifecycle.cutovers, 2);
   assert.equal(oldWrite, 2);
-  assert.throws(() => lifecycle.commitDurableWrite(oldGeneration, () => { oldWrite += 1; }, lease), /STALE_GENERATION/);
+  assert.throws(() => lifecycle.assertInMemoryFence(lease), /STALE_GENERATION/);
   assert.equal(oldWrite, 2);
 });
 
 test("crash recovery decisions are deterministic at durable boundaries", () => {
   const baseline: DurableLifecycleState = {
     operationId: "activation-1",
+    intentDigest: "sha256:intent-1",
+    authorityScope: "tenant:test/project:test",
+    graphDigest: "sha256:graph-1",
     candidateGeneration: 2,
+    candidateHostIncarnation: "host-incarnation-1",
     expectedActiveGeneration: 1,
     activeGeneration: 1,
+    routeHeadGeneration: 1,
+    sinkFenceGeneration: 1,
     phase: "prepared",
-    deadlineExpired: false,
+    operationDeadlineExpired: false,
+    drainDeadlineExpired: false,
+    publicationEvidence: "none",
     externalOutcome: "none",
   };
+  const published = {
+    ...baseline,
+    phase: "published" as const,
+    activeGeneration: 2,
+    routeHeadGeneration: 2,
+    sinkFenceGeneration: 2,
+    publicationEvidence: "committed" as const,
+  };
+  const observed = (
+    candidate: "absent" | "running" | "ready" | "terminated" | "unknown",
+    oldGenerationInFlight: boolean,
+    overrides: Partial<{
+      candidateGeneration: number;
+      candidateHostIncarnation: string;
+      authorityScope: string;
+      graphDigest: string;
+    }> = {},
+  ) => ({
+    candidate,
+    candidateGeneration: 2,
+    candidateHostIncarnation: "host-incarnation-1",
+    authorityScope: "tenant:test/project:test",
+    graphDigest: "sha256:graph-1",
+    oldGenerationInFlight,
+    ...overrides,
+  });
   const cases = [
-    [baseline, { candidate: "absent", oldGenerationInFlight: false }, "RETRY_IDEMPOTENT_PREPARE"],
-    [{ ...baseline, phase: "started" }, { candidate: "running", oldGenerationInFlight: false }, "INSPECT_CANDIDATE"],
-    [{ ...baseline, phase: "ready" }, { candidate: "ready", oldGenerationInFlight: false }, "PUBLISH_CANDIDATE"],
-    [{ ...baseline, phase: "published", activeGeneration: 2 }, { candidate: "ready", oldGenerationInFlight: true }, "RETURN_PUBLISHED_RESULT"],
-    [{ ...baseline, phase: "draining", activeGeneration: 2 }, { candidate: "ready", oldGenerationInFlight: true }, "RESUME_DRAIN"],
-    [{ ...baseline, externalOutcome: "uncertain" }, { candidate: "running", oldGenerationInFlight: false }, "CONTROLLED_RECOVERY"],
+    [baseline, observed("absent", false), "RETRY_IDEMPOTENT_PREPARE"],
+    [{ ...baseline, phase: "started" }, observed("running", false), "INSPECT_CANDIDATE"],
+    [{ ...baseline, phase: "ready" }, observed("ready", false), "PUBLISH_CANDIDATE"],
+    [published, observed("ready", true), "RESUME_DRAIN"],
+    [{ ...published, phase: "draining" }, observed("ready", true), "RESUME_DRAIN"],
+    [{ ...baseline, externalOutcome: "uncertain" }, observed("running", false), "CONTROLLED_RECOVERY"],
+    [{ ...published, routeHeadGeneration: 1 }, observed("ready", false), "CONTROLLED_RECOVERY"],
+    [{ ...published, phase: "draining", drainDeadlineExpired: true }, observed("ready", true), "CONTROLLED_RECOVERY"],
+    [baseline, observed("ready", false, { candidateHostIncarnation: "stale-host" }), "CONTROLLED_RECOVERY"],
   ] as const;
   for (const [state, observed, expected] of cases) {
     assert.equal(reconcileLifecycle(state, observed), expected);
@@ -275,42 +510,55 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
 });
 
 test("portable protocol rejects stale, expired, malformed, and oversized frames", () => {
-  assert.equal(handlePortableWorkerFrame(frame(), 7, Date.now()).kind, "result");
-  assert.throws(() => handlePortableWorkerFrame(frame({ runtimeGeneration: 6 }), 7, Date.now()), /STALE_GENERATION/);
-  assert.throws(() => handlePortableWorkerFrame(frame({ absoluteDeadline: Date.now() - 1 }), 7, Date.now()), /DEADLINE_EXCEEDED/);
-  assert.throws(() => validateEnvelope({}), /UNSUPPORTED_PROTOCOL/);
-  assert.throws(() => validateEnvelope({ ...frame(), extra: true }), /UNKNOWN_FIELD/);
+  const authority = { graphGeneration: 1, runtimeGeneration: 7, now: Date.now() };
+  assert.equal(handlePortableWorkerFrame(frame(), authority).kind, "result");
+  assert.throws(() => handlePortableWorkerFrame(frame({ graphGeneration: 2 }), authority), /STALE_GRAPH_GENERATION/);
+  assert.throws(() => handlePortableWorkerFrame(frame({ runtimeGeneration: 6 }), authority), /STALE_RUNTIME_GENERATION/);
+  assert.throws(() => handlePortableWorkerFrame(frame({ absoluteDeadline: Date.now() - 1 }), authority), /DEADLINE_EXCEEDED/);
+  assert.throws(() => validateEnvelope({}), /UNKNOWN_OR_MISSING_FIELD/);
+  assert.throws(() => validateEnvelope({ ...frame(), extra: true }), /UNKNOWN_OR_MISSING_FIELD/);
   const cyclicPayload: Record<string, unknown> = {};
   cyclicPayload.self = cyclicPayload;
-  assert.throws(() => validateEnvelope(frame({ payload: cyclicPayload })), /INVALID_PAYLOAD/);
+  assert.throws(() => validateEnvelope(frame({ payload: cyclicPayload })), /JSON_LIMIT_EXCEEDED/);
   assert.throws(() => validateEnvelope(frame({ payload: { text: "x".repeat(70_000) } })), /FRAME_TOO_LARGE/);
+  assert.throws(() => validateEnvelope(frame({ payload: { value: Number.NaN } })), /INVALID_JSON_NUMBER/);
+  assert.throws(() => validateEnvelope(frame({ payload: { value: undefined } })), /INVALID_JSON_VALUE/);
+  assert.throws(() => validateEnvelope(frame({ payload: new Map() as unknown as Record<string, unknown> })), /INVALID_JSON_OBJECT/);
+  const accessor = {} as Record<string, unknown>;
+  Object.defineProperty(accessor, "value", { enumerable: true, get: () => "must-not-run" });
+  assert.throws(() => validateEnvelope(frame({ payload: accessor })), /INVALID_JSON_OBJECT/);
+  const normalized = validateEnvelope(frame({ payload: { nested: { value: 1 } } }));
+  assert.equal(Object.isFrozen(normalized.payload), true);
+  assert.equal(Object.isFrozen(normalized.payload.nested), true);
 });
 
-test("process-host skeleton negotiates and reports readiness over framed JSON", async t => {
+test("process-host smoke acknowledges hello and readiness over bounded length-prefixed JSON", async t => {
   const child = spawn(process.execPath, [join(fixtureRoot, "process-child.mjs")], { stdio: ["pipe", "pipe", "pipe"] });
   t.after(() => child.kill("SIGKILL"));
-  const responses: unknown[] = [];
-  let buffer = "";
-  child.stdout.setEncoding("utf8");
+  const responses: ProtocolEnvelope[] = [];
+  let buffer = Buffer.alloc(0);
   child.stdout.on("data", chunk => {
-    buffer += chunk;
+    buffer = Buffer.concat([buffer, chunk]);
     for (;;) {
-      const index = buffer.indexOf("\n");
-      if (index < 0) break;
-      responses.push(JSON.parse(buffer.slice(0, index)));
-      buffer = buffer.slice(index + 1);
+      if (buffer.byteLength < 4) break;
+      const length = buffer.readUInt32BE(0);
+      if (buffer.byteLength < length + 4) break;
+      responses.push(decodeLengthPrefixedFrame(buffer.subarray(0, length + 4)));
+      buffer = buffer.subarray(length + 4);
     }
   });
-  child.stdin.write(`${JSON.stringify(frame())}\n`);
-  child.stdin.write(`${JSON.stringify(frame({ requestId: "request-2", kind: "prepare" }))}\n`);
+  child.stdin.write(encodeLengthPrefixedFrame(frame()));
+  child.stdin.write(encodeLengthPrefixedFrame(frame({ requestId: "request-2", kind: "prepare" })));
   while (responses.length < 2) await delay(1);
   assert.deepEqual(responses.map(value => validateEnvelope(value).kind), ["result", "ready"]);
-  child.stdin.write(`${JSON.stringify(frame({ requestId: "request-3", kind: "stop" }))}\n`);
+  child.stdin.write(encodeLengthPrefixedFrame(frame({ requestId: "request-3", kind: "stop" })));
   await once(child, "exit");
 });
 
 test("Worker structured-clone boundary preserves validation and stale rejection", async t => {
-  const worker = new Worker(new URL("./fixtures/portable-worker.mjs", import.meta.url), { workerData: { generation: 7 } });
+  const worker = new Worker(new URL("./fixtures/portable-worker.mjs", import.meta.url), {
+    workerData: { graphGeneration: 1, runtimeGeneration: 7 },
+  });
   t.after(() => worker.terminate());
   const response = new Promise<unknown>(resolve => worker.once("message", resolve));
   const request = frame({ kind: "prepare" });
@@ -318,7 +566,7 @@ test("Worker structured-clone boundary preserves validation and stale rejection"
   assert.deepEqual(await response, { ok: true, frame: { ...request, kind: "result", payload: { acceptedKind: "prepare" } } });
   const stale = new Promise<unknown>(resolve => worker.once("message", resolve));
   worker.postMessage(frame({ runtimeGeneration: 6 }));
-  assert.deepEqual(await stale, { ok: false, error: "STALE_GENERATION" });
+  assert.deepEqual(await stale, { ok: false, error: "STALE_RUNTIME_GENERATION" });
 });
 
 test("browser Worker carries a portable generation-bound frame", async t => {
@@ -343,7 +591,26 @@ test("browser Worker carries a portable generation-bound frame", async t => {
     return;
   }
 
-  const page = new URL("./fixtures/browser-worker.html", import.meta.url).href;
+  const allowedFiles = new Map([
+    ["/fixtures/browser-worker.html", join(fixtureRoot, "browser-worker.html")],
+    ["/fixtures/portable-browser-worker.mjs", join(fixtureRoot, "portable-browser-worker.mjs")],
+    ["/portable-protocol.mjs", join(qualificationRoot, "portable-protocol.mjs")],
+  ]);
+  const server = createServer(async (request, response) => {
+    const pathname = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
+    const file = allowedFiles.get(pathname);
+    if (!file) {
+      response.writeHead(404).end();
+      return;
+    }
+    response.setHeader("Content-Type", pathname.endsWith(".html") ? "text/html" : "text/javascript");
+    response.end(await readFile(file));
+  });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  t.after(() => server.close());
+  const address = server.address() as AddressInfo;
+  const page = `http://127.0.0.1:${address.port}/fixtures/browser-worker.html`;
   let output = "";
   let code: number | null = null;
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -425,15 +692,20 @@ test("native and Cordis-backed hooks emit the same applicable lifecycle trace", 
   ]);
   const second = requirePlan([{ id: "replacement", requires: [] }]);
   const native = new GenerationLifecycle();
-  await native.activate(first, new Map([
-    ["provider", {}],
-    ["consumer", {}],
-  ]), Date.now() + 1_000);
-  const nativeResult = await native.activate(second, new Map([["replacement", {}]]), Date.now() + 1_000);
+  await native.activate(activationRequest(native, "native-first", first, new Map([
+    ["provider", inertHooks()],
+    ["consumer", inertHooks()],
+  ])));
+  const nativeResult = await native.activate(activationRequest(
+    native,
+    "native-replacement",
+    second,
+    new Map([["replacement", inertHooks()]]),
+  ));
 
   const root = new Context();
   const disposers = new Map<string, () => Promise<void>>();
-  const cordisHooks = (moduleId: string): ModuleHooks => ({
+  const cordisHooks = (moduleId: string): ModuleHooks => inertHooks({
     async start() {
       const fiber = await root.plugin((ctx: Context) => ctx.effect(() => () => undefined, moduleId));
       disposers.set(moduleId, () => fiber.dispose());
@@ -444,15 +716,16 @@ test("native and Cordis-backed hooks emit the same applicable lifecycle trace", 
     },
   });
   const cordis = new GenerationLifecycle();
-  await cordis.activate(first, new Map([
+  await cordis.activate(activationRequest(cordis, "cordis-first", first, new Map([
     ["provider", cordisHooks("provider")],
     ["consumer", cordisHooks("consumer")],
-  ]), Date.now() + 1_000);
-  const cordisResult = await cordis.activate(
+  ])));
+  const cordisResult = await cordis.activate(activationRequest(
+    cordis,
+    "cordis-replacement",
     second,
     new Map([["replacement", cordisHooks("replacement")]]),
-    Date.now() + 1_000,
-  );
+  ));
 
   const semanticTrace = (result: typeof nativeResult) => result.traces.map(trace => ({
     phase: trace.phase,

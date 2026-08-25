@@ -13,11 +13,14 @@ export interface GraphDiagnostic {
 
 export interface CompiledGraph {
   readonly digest: `sha256:${string}`;
+  readonly nodes: readonly Readonly<{
+    readonly id: string;
+    readonly requires: readonly string[];
+  }>[];
   readonly startBatches: readonly (readonly string[])[];
   readonly startOrder: readonly string[];
   readonly stopBatches: readonly (readonly string[])[];
   readonly stopOrder: readonly string[];
-  readonly dependencies: ReadonlyMap<string, readonly string[]>;
 }
 
 export type GraphResult =
@@ -141,23 +144,28 @@ export function compileGraph(input: readonly ModuleDescriptor[]): GraphResult {
     return { ok: false, diagnostics: [{ code: "HARD_CYCLE", moduleId: witness[0] ?? residual[0] ?? "unknown", dependencyPath: witness }] };
   }
 
+  const nodes = Object.freeze([...byId.keys()].sort(compareIds).map(id => Object.freeze({
+    id,
+    requires: dependencies.get(id) ?? Object.freeze([]),
+  })));
+  const immutableStartBatches = Object.freeze(startBatches.map(batch => Object.freeze([...batch])));
   const serializable = {
     schema: "qualification.module-graph/v1",
-    nodes: [...byId.keys()].sort(compareIds).map(id => ({ id, requires: dependencies.get(id) ?? [] })),
-    startBatches,
+    nodes,
+    startBatches: immutableStartBatches,
   };
   const digest = `sha256:${createHash("sha256").update(canonicalJson(serializable)).digest("hex")}` as const;
-  const stopBatches = [...startBatches].reverse().map(batch => Object.freeze([...batch]));
+  const stopBatches = Object.freeze([...immutableStartBatches].reverse().map(batch => Object.freeze([...batch])));
 
   return {
     ok: true,
     plan: Object.freeze({
       digest,
-      startBatches: Object.freeze(startBatches.map(batch => Object.freeze([...batch]))),
+      nodes,
+      startBatches: immutableStartBatches,
       startOrder: Object.freeze([...emitted]),
-      stopBatches: Object.freeze(stopBatches),
+      stopBatches,
       stopOrder: Object.freeze(stopBatches.flat()),
-      dependencies,
     }),
   };
 }

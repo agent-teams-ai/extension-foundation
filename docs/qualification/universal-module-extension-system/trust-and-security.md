@@ -25,14 +25,15 @@ flowchart LR
     Artifact["Artifact and provenance"] --> Verify["Foundation verification"]
     Product --> Intersect["Authority intersection"]
     Verify --> Intersect
-    AR["AR technical authorization"] --> Intersect
-    Admission["Capacity and host admission"] --> Intersect
+    AR["AR technical authorization when AR owns the capability"] --> Intersect
+    Admission["Product host and capacity decision"] --> Intersect
     Intersect --> Host["Qualified host containment"]
     Host --> Effect["Fenced product or runtime effect"]
 ```
 
-Effective authority is the intersection of product grant, Foundation admission,
-AR technical decision, current generation/fence and host containment. Any
+Effective authority is the intersection of product grant, Foundation-produced
+verification evidence accepted by the product, applicable AR technical
+authorization, current generation/fence and host containment. Any
 missing, stale, ambiguous, differently canonicalized or unknown input denies.
 
 ## Identity Chain
@@ -82,7 +83,7 @@ not become a Foundation-owned production secret service.
 | --- | --- | --- |
 | `T0` trusted | Same authority and crash radius as host application | audited built-in in-process module |
 | `T1` fault-contained | Ordinary failures separated; malicious code still has user/app authority | Node Worker, Electron utility process, same-user child process |
-| `T2` capability sandbox | Guest limited to explicit browser or Wasm imports, assuming runtime boundary | dedicated-origin sandboxed iframe/Worker, deny-by-default Wasm |
+| `T2` capability sandbox | Guest limited to explicit imports by an independently enforced boundary | dedicated cross-origin/opaque-origin document or deny-by-default Wasm; an ordinary Worker remains `T1` |
 | `T3` OS-enforced | Kernel policy constrains identity, files, network, IPC, descendants and resources | hardened Linux sandbox, macOS sandboxed helper, Windows AppContainer/Job |
 | `T4` workload-isolated | Separate kernel or machine behind a narrow broker | microVM, VM or remote disposable host |
 
@@ -91,18 +92,24 @@ containers, origins and Wasm labels do not upgrade a tier automatically. The
 weakest granted capability determines the effective claim. Unsupported required
 containment fails before activation.
 
-Frontend adoption remains a product decision. An untrusted UI needs a dedicated
-unprivileged origin, response-header CSP, iframe sandbox without dangerous
-same-origin combinations, a fresh `MessagePort`, and a broker that validates
-instance, origin/source, object ownership, schema, size, deadline and grant on
-every privileged request.
+Frontend adoption remains a product decision. An opaque-origin iframe is bound
+through exact `WindowProxy` source, nonce and a freshly transferred
+`MessagePort`; it cannot authenticate by origin. A dedicated cross-origin
+iframe uses an exact `targetOrigin`, partitioned storage and a distinct site.
+Both need response-header CSP, safe sandbox flags and a broker that validates
+instance, source/origin profile, object ownership, schema, size, deadline and
+grant on every privileged request. An ordinary Worker removes DOM access but
+normally retains origin network/storage authority.
 
 ## Artifact Supply Chain
 
 The recommended distribution stack remains conditional:
 
 - OCI/ORAS stores and transports immutable bytes;
-- Cosign/Sigstore proves signer, provenance and transparency evidence;
+- Cosign/Sigstore authenticates signature, attestation and transparency
+  evidence; acceptance policy must still validate builder, source, predicate,
+  subject digest and dependency closure, and never treats a signature as proof
+  that code is trustworthy;
 - TUF supplies freshness, rollback/freeze protection, revocation and namespace
   delegation when managed channels or automatic updates exist;
 - GHCR or Harbor is an untrusted byte source, never the final trust decision;
@@ -123,7 +130,8 @@ execute artifact =
   AND host policy
 ```
 
-V1 may remain strictly digest-pinned with a signed release/revocation record.
+V1 may remain strictly digest-pinned with a signed release/revocation record,
+but that profile makes no timely revocation or freeze-resistance guarantee.
 If it adds mutable channels, multiple delegated publishers, mirrors or automatic
 updates, TUF becomes part of that profile rather than an optional badge.
 
@@ -199,7 +207,7 @@ record of grants, admission, publication, cleanup debt or revocation.
 
 ## Mandatory Negative Evidence
 
-The conformance suite covers at least:
+The production conformance suite must cover at least:
 
 - cross-tenant and cross-product substitution without an existence oracle;
 - catalog rollback, tag movement, artifact/provenance mismatch and signer
@@ -221,6 +229,8 @@ The conformance suite covers at least:
 
 Applicable host-isolation fixtures run on Linux, macOS and Windows. A passing
 test must observe a denied external effect, not only an adapter return value.
+These are required gates, not claims that the current disposable spike has
+implemented every fixture.
 
 ## MVP And Deferred Work
 

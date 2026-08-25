@@ -118,6 +118,20 @@ framework makes the unsafe behavior convenient.
 | AP-070 | Offline snapshot accepted without freshness/rollback checks | A frozen snapshot re-enables vulnerable code | Verify signed inventory, expiry, monotonic sequence, and revocation state |
 | AP-071 | Display name or package-manager fallback resolves an extension dependency | Typosquatting or dependency confusion substitutes another publisher | Canonicalize namespace ownership and pin the approved artifact digest |
 
+## Qualification And Evidence Integrity
+
+| ID | Forbidden pattern | Failure mode | Required alternative |
+| --- | --- | --- | --- |
+| AP-072 | Freeze an object that exposes a mutable `Map`, `Set`, buffer, or nested record | Recorded digest and observable plan can diverge | Publish deeply immutable serializable data only |
+| AP-073 | Single-flight keyed only by graph digest | Different scope, configuration, grant, host policy, or source joins the wrong attempt | Bind idempotency to the complete activation fingerprint and reject conflicts |
+| AP-074 | Omitted readiness hook interpreted as ready | Serving authority is granted without evidence | Require explicit probe or explicit inert-module policy |
+| AP-075 | Refresh cleanup timeout for every disposer or batch | Total cleanup is unbounded by graph size | Carry one monotonic absolute cleanup deadline |
+| AP-076 | In-process cancellation described as termination | Ignored abort continues effects after the coordinator returns | Report `termination_unproven`; use host kill for stronger claims and fence late effects |
+| AP-077 | Reducer enum cases described as crash-recovery proof | Persistence, ambiguous writes and replay seams remain untested | Label reducer evidence narrowly and require a persistent fault-injection harness |
+| AP-078 | Signature described as trusted code | Authenticated malicious code passes policy | Validate signer authorization, provenance subject, builder/source and dependency closure, then sandbox separately |
+| AP-079 | Duplicate approval entries for one semantic fork | Agents count one decision twice or accept contradictory states | Keep one machine-readable topic/ID and validate links/counts in CI |
+| AP-080 | Extract a neutral package before a second consumer | Product assumptions freeze into Foundation | Rehearse product-locally and extract only demonstrated repetition |
+
 ## Enforcement Plan
 
 - Engineering Foundation source-dependency and dependency-declaration checks

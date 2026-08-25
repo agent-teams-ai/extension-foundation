@@ -39,7 +39,8 @@ they do not make products one bounded context.
 ## Orchestrator
 
 Strong candidate extension points are narrow proposal, evidence, or
-post-commit-effect seams:
+post-commit-effect seams. The owning-area labels below are capability-map
+candidates, not declarations that every named bounded context is accepted:
 
 | Owning area | Candidate contribution | Authority retained by Orchestrator |
 | --- | --- | --- |
@@ -135,8 +136,11 @@ semantic fixtures while keeping different containment and authority.
 
 Web Workers do not automatically remove origin network/storage authority.
 Iframes need explicit sandbox/CSP/origin policy. Electron renderers keep
-`contextIsolation` and sandboxing; privileged calls cross a validated narrow
-preload or utility-process broker.
+`contextIsolation` and sandboxing; privileged calls cross request/check handlers
+in a narrow preload or utility-process broker. The product validates sender
+frame and origin, denies unexpected navigation, new windows and permissions,
+restricts external protocols, and uses an isolated session appropriate to the
+placement.
 
 The safest first Frontend slice is additive and trusted: describe the four
 existing Extension Store tabs in one immutable compiled catalog, while the
@@ -144,6 +148,21 @@ React component map, Zustand state, existing APIs and mutations remain behind
 product adapters. Current Claude/Codex plugins, MCP servers, skills and API keys
 remain managed data, not application modules. Shadow parity covers ordering,
 visibility and Web capability absence before one tab migrates.
+
+The next read-only slice normalizes catalog, managed-installation, and observed
+native-provider entries without merging identities by display name. Catalog,
+installed state, discovery and health are independent sources: one unavailable
+source produces a provenance-labelled partial or stale view, never an empty
+success. Electron IPC and Web HTTP call the same product use case, but Web does
+not inherit local-machine capabilities or replay browser-stored mutations.
+
+Install and update remain deferred until the product can represent a durable
+`check -> review -> apply -> verify -> activate` operation with target-granular
+partial, rollback and degraded outcomes. Reload, provider restart, new-thread,
+app restart and administrator action are typed activation effects rather than a
+single success Boolean. The first profile is an implicit product-owned Default
+profile; profile CRUD, arbitrary UI code loading and offline mutation queues are
+not part of the first slice.
 
 Before any untrusted UI pilot, the product must independently harden sender,
 frame and origin validation, a narrow versioned broker, navigation/permission

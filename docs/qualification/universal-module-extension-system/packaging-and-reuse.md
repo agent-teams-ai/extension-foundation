@@ -44,8 +44,11 @@ pretend to be installed artifacts.
 
 Before extraction, keep contracts, core, module adapter, technology adapters,
 and tests in the owning feature slice. A module adapter belongs in that
-feature's composition boundary. A process or browser protocol translator is an
-inbound adapter. Product domain contracts do not move into Foundation.
+feature's composition boundary. Product-to-extension calls use an outbound
+host/proxy adapter; extension-to-product commands or events enter through a
+validated inbound broker adapter. A translator is classified by the direction
+of the product port it implements, not by transport. Product domain contracts
+do not move into Foundation.
 
 ```text
 features/<capability>/

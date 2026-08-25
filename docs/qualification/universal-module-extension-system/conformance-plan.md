@@ -36,6 +36,9 @@ grants a plugin permission to execute.
 
 ## Core Profiles
 
+These rows are promotion requirements. A row is not implemented merely because
+the dossier has status `qualified`.
+
 | Profile | Mandatory proof |
 | --- | --- |
 | `GRAPH-1` | Closed-world closure; duplicate, missing, cycle and ambiguous provider rejection; deterministic plan/digest; exact dependency object; zero effects before admission |
@@ -46,10 +49,22 @@ grants a plugin permission to execute.
 | `SUPPLY-1` | Digest-pinned artifact; namespace-authorized signature; provenance; dependency closure; install receipt; revocation and rollback evidence |
 | `HOST-T0` | Trusted in-process declaration; deterministic cleanup; no claim of hostile isolation |
 | `HOST-T1` | Worker/process fault containment; crash and tree-cleanup evidence; explicit same-user authority warning |
-| `HOST-T2` | Deny-by-default browser/Wasm capabilities, quotas, broker enforcement and negative escape fixtures |
+| `HOST-T2` | Deny-by-default dedicated-document or Wasm capabilities, quotas, broker enforcement and negative escape fixtures; an ordinary Worker remains `T1` |
 | `HOST-T3` | OS-enforced identity, filesystem, network, IPC, process-tree and resource isolation per platform |
 
 `HOST-T4` for VM or remote disposable execution is post-MVP.
+
+## Current Evidence Status
+
+| Evidence | Status | Meaning |
+| --- | --- | --- |
+| ID-DAG scheduling primitive | implemented/passed locally | Narrow graph algorithm only, not `GRAPH-1` |
+| In-memory lifecycle/CAS model | implemented/passed locally | No durable coordinator or sink fence |
+| Portable strict JSON codec | implemented/passed locally | No N/N-1 negotiation, auth or operation journal |
+| Process, Node Worker, browser Worker | smoke/passed locally | Placement transport, not isolation conformance |
+| Packed toy consumer | harness/passed locally | Validates the harness shape, not `PACKAGE-1` |
+| Recovery reducer examples | implemented/passed locally | No crash-injected persistent recovery |
+| Supply chain and `HOST-T2/T3` negatives | planned | Required before their corresponding claims |
 
 ## Adapter Matrix
 

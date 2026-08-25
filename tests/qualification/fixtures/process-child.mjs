@@ -1,24 +1,36 @@
-let buffer = "";
-process.stdin.setEncoding("utf8");
+import {
+  decodeLengthPrefixedFrame,
+  encodeLengthPrefixedFrame,
+  maxFrameBytes,
+  protocolName,
+} from "../portable-protocol.mjs";
+
+let buffer = Buffer.alloc(0);
 process.stdin.on("data", chunk => {
-  buffer += chunk;
+  buffer = Buffer.concat([buffer, chunk]);
   for (;;) {
-    const newline = buffer.indexOf("\n");
-    if (newline < 0) break;
-    const line = buffer.slice(0, newline);
-    buffer = buffer.slice(newline + 1);
-    handleLine(line);
+    if (buffer.byteLength < 4) return;
+    const length = buffer.readUInt32BE(0);
+    if (length > maxFrameBytes) throw new Error("FRAME_TOO_LARGE");
+    if (buffer.byteLength < length + 4) return;
+    const packet = buffer.subarray(0, length + 4);
+    buffer = buffer.subarray(length + 4);
+    handleFrame(decodeLengthPrefixedFrame(packet));
   }
 });
 
-function handleLine(line) {
-  const frame = JSON.parse(line);
+function send(frame) {
+  process.stdout.write(encodeLengthPrefixedFrame(frame));
+}
+
+function handleFrame(frame) {
   if (frame.kind === "hello") {
-    process.stdout.write(`${JSON.stringify({ ...frame, kind: "result", payload: { protocol: frame.protocol } })}\n`);
+    send({ ...frame, kind: "result", payload: { negotiatedProtocol: protocolName } });
   } else if (frame.kind === "prepare") {
-    process.stdout.write(`${JSON.stringify({ ...frame, kind: "ready", payload: { ready: true } })}\n`);
+    send({ ...frame, kind: "ready", payload: { ready: true } });
   } else if (frame.kind === "stop") {
-    process.stdout.write(`${JSON.stringify({ ...frame, kind: "result", payload: { stopped: true } })}\n`);
-    process.exit(0);
+    send({ ...frame, kind: "result", payload: { stopped: true } });
+    process.exitCode = 0;
+    process.stdin.destroy();
   }
 }

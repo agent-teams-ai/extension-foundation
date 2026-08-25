@@ -20,36 +20,6 @@ entries:
     authority: ADR-0012
     detail: ../../decisions/0012-reusable-library-module-and-plugin-boundaries.md
     approvalRequired: false
-  - id: UMEQ-004
-    status: recommended
-    topic: native-module-graph-kernel
-    authority: OD-003
-    detail: module-graph.md#runtime-implementation
-    approvalRequired: true
-  - id: UMEQ-005
-    status: recommended
-    topic: generation-lifecycle-coordinator
-    authority: OD-003
-    detail: lifecycle-and-concurrency.md#recommended-model
-    approvalRequired: true
-  - id: UMEQ-006
-    status: recommended
-    topic: trusted-and-isolated-host-tiers
-    authority: OD-003
-    detail: trust-and-security.md#host-tier-matrix
-    approvalRequired: true
-  - id: UMEQ-007
-    status: recommended
-    topic: restart-safe-update-baseline
-    authority: OD-003
-    detail: lifecycle-and-concurrency.md#replacement-and-update
-    approvalRequired: true
-  - id: UMEQ-008
-    status: deferred
-    topic: extism-wasm-host
-    authority: OD-003
-    detail: trust-and-security.md#post-mvp-wasm
-    approvalRequired: false
   - id: UMEQ-009
     status: open
     topic: public-process-protocol-wire-format

@@ -3,96 +3,115 @@ qualification: universal-module-extension-system
 reviewedAt: 2026-08-25
 candidates:
   - id: deepseek-cordis
+    evidenceStatus: pinned
     category: in-process-composition
     versionOrRevision: "@deepseek-ai/cordis@4.0.1 / deepseek-harness@b150a551b8d465e31e418e1b2eaf5e79bbb7d28e"
     adopt: private-adapter-candidate
     usefulFor: scoped resource ownership and effect cleanup
     missing: closed-world compile, readiness, generations, atomic cutover, bounded drain, durable recovery, hostile-code isolation
   - id: vscode
+    evidenceStatus: pinned
     category: product-extension-host
     versionOrRevision: "62e4ec989dc0bb317b431d9d23a36019ef3c0d5b"
     adopt: patterns-only
     usefulFor: extension-host placement, contribution points, activation, remote hosts
     missing: product-neutral DDD authority and durable lifecycle semantics
   - id: theia
+    evidenceStatus: orientation
     category: product-extension-host
     versionOrRevision: reviewed-2026-08-25
     adopt: patterns-only
     usefulFor: VS Code compatibility, frontend/backend placement, declarative contributions
     missing: our authority, fencing, and closed-world profile guarantees
   - id: backstage
+    evidenceStatus: pinned
     category: application-modularity
     versionOrRevision: "de92faeb4a375af5bd4f7a84311e702736e98964"
     adopt: patterns-only
     usefulFor: product-owned extension points, composable frontend surfaces, package ownership
     missing: untrusted isolation and generation lifecycle
   - id: lumino-jupyterlab
+    evidenceStatus: pinned
     category: frontend-modularity
     versionOrRevision: "d9b39db2c6d609af334729eeba2ab9376a11c0a7"
     adopt: patterns-only
     usefulFor: tokens, commands, widgets, activation and disposal ownership
     missing: durable recovery and security boundary
   - id: fastify-avvio
+    evidenceStatus: pinned
     category: startup-graph
     versionOrRevision: "avvio@9.3.0"
     adopt: patterns-and-test-oracle
     usefulFor: encapsulation, deterministic boot, ready and close ordering
     missing: generations, replaceable graph, durable intents, hostile isolation
   - id: osgi
+    evidenceStatus: orientation
     category: dynamic-module-system
     versionOrRevision: reviewed-2026-08-25
     adopt: lifecycle-lessons-only
     usefulFor: explicit wiring, service dynamics, bundle identity and lifecycle vocabulary
     missing: TypeScript fit; dynamic resolution complexity conflicts with closed-world baseline
   - id: intellij-platform
+    evidenceStatus: orientation
     category: desktop-plugin-platform
     versionOrRevision: reviewed-2026-08-25
     adopt: lifecycle-lessons-only
     usefulFor: extension points, compatibility ranges, unload constraints, restart-safe updates
     missing: product-neutral runtime and portable host model
   - id: terraform-go-plugin
+    evidenceStatus: orientation
     category: process-plugin-protocol
     versionOrRevision: reviewed-2026-08-25
     adopt: protocol-patterns-only
     usefulFor: handshake, version negotiation, process isolation and reattach lessons
     missing: browser support and product lifecycle authority
   - id: kubernetes
+    evidenceStatus: orientation
     category: distributed-control-plane
     versionOrRevision: reviewed-2026-08-25
     adopt: reconciliation-patterns-only
-    usefulFor: desired versus observed state, generations, finalizers, leases and fencing
+    usefulFor: desired versus observed state, generations, finalizers and liveness leases; sink fencing remains separate
     missing: lightweight local composition; not a library dependency candidate
   - id: effect
+    evidenceStatus: pinned
     category: typed-runtime
     versionOrRevision: "effect@3.22.1"
     adopt: no-baseline-dependency
     usefulFor: scoped resources, layers and interruption vocabulary
     missing: closed-world plugin trust and durable product-owned lifecycle; high model adoption cost
   - id: awilix-inversify-nest
+    evidenceStatus: pinned
     category: dependency-injection
     versionOrRevision: "awilix@13.0.5 / inversify@8.2.3 / @nestjs/core@11.2.1"
     adopt: composition-root-only-candidates
     usefulFor: object construction and scoped registrations
     missing: graph authority, lifecycle authority, isolation and stable public protocol
   - id: vite-rollup
+    evidenceStatus: orientation
     category: build-time-extension
     versionOrRevision: reviewed-2026-08-25
     adopt: build-tooling-only
     usefulFor: ordered hooks, plugin containers, virtual modules and build-time contributions
     missing: runtime trust, durable recovery and business authority
   - id: extism-wasi-wasmtime
+    evidenceStatus: qualified-experiment
     category: wasm-host
-    versionOrRevision: "extism-runtime@1.30.0 / @extism/extism@2.0.0-rc13"
+    versionOrRevision: "@extism/extism@1.0.3"
+    observedLatest: "extism-runtime@1.30.0 / @extism/extism@2.0.0-rc13"
+    experimentArtifact: "extism/plugins@v1.1.1/count_vowels.wasm"
+    experimentIntegrity: "sha256:72dfe2c69d8e5ac50886b7961664af6cccbbdcabeb45ce48270db2242778ce25"
     adopt: post-mvp-qualification
     usefulFor: language-neutral capability-constrained computation
     missing: first-slice maturity evidence, product SPI and OS defense-in-depth
   - id: browser-electron-hosts
+    evidenceStatus: orientation
     category: frontend-isolation
     versionOrRevision: reviewed-2026-08-25
     adopt: separate-host-adapters
     usefulFor: Worker, sandboxed iframe, Electron utility process and preload broker patterns
     missing: one portable hostile-code guarantee across all placements
   - id: modularity-dart-777genius
+    evidenceStatus: pinned
     category: module-topology
     versionOrRevision: "cherrypick-agency/modularity_dart@be9a2674f3a8ce7f0807d7b46e74dd6e8f283fe5; 777genius/modularity unavailable"
     adopt: patterns-only

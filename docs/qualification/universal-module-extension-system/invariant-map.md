@@ -72,7 +72,7 @@ models. A library consumer never needs the module or plugin stack.
 4. Every phase uses one absolute deadline. Relative timeout refresh is forbidden.
 5. Publication has one linearization point and atomically selects one active
    graph generation for the authority scope.
-6. Invocation admission binds graph generation, runtime generation, activation
+6. Invocation admission binds graph generation, module activation generation, activation
    source, and a current grant revision.
 7. A stale generation cannot publish routes or commit fenced durable writes.
 8. Rollback and stop follow the reverse successful-activation dependency DAG,
@@ -103,8 +103,10 @@ models. A library consumer never needs the module or plugin stack.
 
 - One validated model drives compiler output, diagnostics, tests, diagrams, and
   AI-readable navigation.
-- Every diagnostic has a stable code, source/manifest evidence, shortest useful
-  dependency path, owner, and remediation.
+- Every diagnostic has a stable code, source/manifest evidence, useful
+  deterministic dependency path, owner, and remediation. Shortest-path
+  optimality is a separate production requirement where it materially improves
+  diagnosis.
 - Runtime observations never overwrite intended architecture.
 - Public packages are tested as packed artifacts from empty consumers against
   oldest and newest supported combinations.

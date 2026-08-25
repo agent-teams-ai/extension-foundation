@@ -73,23 +73,28 @@ any canonical mutation.
 
 ### Verified By This Qualification
 
-- A small native compiler can produce deterministic batches/digest, reject
-  invalid graphs before effects and remain stack-safe at 10,000 modules.
-- One hundred concurrent starts can share one activation and publication.
+- A small native ID-DAG compiler can produce immutable deterministic
+  batches/digest, reject duplicate/missing/cyclic IDs before hook resolution
+  and remain stack-safe at 10,000 modules.
+- One hundred concurrent starts can share one activation; waiter cancellation
+  detaches; changed idempotency payload conflicts; different candidates admit
+  one expected-active compare-and-set winner.
 - Failed readiness preserves the active generation; deadlines prevent late
   publication; hung cleanup is bounded and visible.
 - Parallel startup failure waits for every bounded sibling outcome before
   reverse cleanup, preventing cleanup from racing a still-starting peer.
-- Generation replacement can drain admitted work and reject stale durable
-  writes at the commit seam; drain expiry becomes explicit debt before fencing.
-- Crash/recovery choices can be represented as a deterministic reducer rather
-  than process-memory continuation.
-- Node process, Node Worker and real browser Worker carry one serializable,
-  generation-bound envelope.
+- Generation replacement can drain admitted work and reject stale leases in an
+  in-memory fence model; durable sink fencing and debt ordering remain product
+  adapter obligations.
+- Identity-bound crash/recovery choices can be represented as a deterministic
+  reducer rather than process-memory continuation; crash injection and durable
+  recovery are not yet proved.
+- Node process, Node Worker and real browser Worker use one strict portable,
+  generation-bound codec; negotiation/authentication remain open.
 - Native and Cordis-backed resource hooks can emit the same applicable neutral
   lifecycle trace.
-- A packed reusable core installs and runs without Foundation, Cordis or plugin
-  dependencies.
+- A packed toy fixture validates the isolated-consumer harness shape; it is not
+  evidence for a production package or declaration surface.
 - Extism 1.0.3 can execute a digest-verified official Wasm plugin, but Node
   reports experimental WASI and npm `latest` is a 2.0 release candidate.
 
@@ -138,8 +143,9 @@ Do not adopt Cordis as the baseline module runtime.
 Its exact 4.0.1 implementation is useful for Fiber-owned scoped effects, but it
 does not provide closed-world compilation, product readiness, generation
 fencing, atomic publication, bounded drain, durable recovery or hostile-code
-isolation. The measured adapter would not delete the required 25% of equivalent
-owned code and risks a second lifecycle authority.
+isolation. The trivial adapter does not demonstrate meaningful owned-code
+deletion and risks a second lifecycle authority. The 25% threshold has not been
+measured on a real consumer.
 
 Keep Cordis pinned only as a development qualification dependency and design
 reference. Reopen adoption if a real product adapter stays private, passes the
@@ -150,32 +156,35 @@ the measured deletion threshold.
 
 ### Phase 0: Approvals And Baseline
 
-Approve `UMEQ-011`, `UMEQ-012`, `UMEQ-013`, and `UMEQ-015` in
-[Unresolved Decisions](unresolved-decisions.md): provider binding, contract
-source model, trusted module runtime, and publication timing. Keep all packages
-private and all SPI experimental. Process wire, Frontend, update, distributed
-cutover, and managed-update decisions may remain open during the local graph
-slice because Phase 1 does not publish or isolate executable modules.
+Approve `UMEQ-011` and the narrow native graph choice in `UMEQ-013` in
+[Unresolved Decisions](unresolved-decisions.md). Contract source and publication
+decisions remain open because Phase 1 creates no Foundation package or public
+SPI. Process, Frontend, update, distributed cutover and managed-update decisions
+remain deferred.
 
 Estimated change: 300-700 documentation/tooling LOC, 1-3 days.
 
-### Phase 1: Internal Graph Kernel
+### Phase 1: Product-Local Graph Kernel
 
-Promote only the proven descriptor validation, explicit binding, deterministic
-graph, diagnostics, canonical plan and property/differential fixtures into one
-internal package. No installation, container, process or distributed behavior.
+Implement the first graph-only compiler inside one accepted owning product
+feature. Promote the proven ID-DAG primitive, then add only that feature's
+explicit bindings, cardinality, compatibility, scope and source validation. No
+Foundation runtime package, installation, lifecycle, container, process,
+catalog, public schema, runtime reuse or distributed behavior.
 
-Exit criteria: one independent oracle, packed consumer, 10,000-node budgets,
-zero-effect invalid graphs and framework-free declarations.
+Exit criteria: two fixed `T0` built-ins, one independent graph oracle,
+10,000-node budget, invalid-input loader sentinel and framework-free local
+declarations.
 
-Estimated change: 2,500-4,500 LOC including tests, 1-2 weeks.
+Estimated change: 1,500-3,000 LOC including tests, 1-2 weeks.
 
 ### Phase 2: One Two-Module Product Rehearsal
 
 Use two fixed trusted built-ins in one owning product feature. Prove
 `prepare -> start -> ready -> publish -> drain -> stop`, absolute deadlines,
 single-flight, reverse cleanup, generation fences and structured diagnostics.
-Do not publish the contract.
+Do not load artifacts, install plugins, expose public SPI, share private state
+across scopes, call external effects or generalize a reusable runtime.
 
 Exit criteria: feature authority remains product-owned; one native and one
 bounded reference adapter produce matching applicable traces; no lifecycle
@@ -185,7 +194,8 @@ Estimated change: 3,000-6,000 LOC including product tests, 1-3 weeks.
 
 ### Phase 3: Reusable Internal Contracts And Conformance
 
-Extract only semantics proved by two consumers: structural IDs/envelopes,
+After a second independent consumer exists, extract only repeated semantics:
+structural IDs/envelopes,
 graph fixtures, lifecycle outcomes and packed conformance runner. Product
 contracts and adapters stay local. Add exact package exports and API reports.
 
@@ -238,7 +248,7 @@ roughly 40,000-75,000 LOC before product-specific plugin behavior.
 
 ## Decision
 
-The architecture is implementation-ready for **Phase 1 only after the four
+The architecture is implementation-ready for **Phase 1 only after the two
 priority approvals**. It is not ready for a stable public SPI, Cordis adoption,
 untrusted plugin claim or production package publication.
 

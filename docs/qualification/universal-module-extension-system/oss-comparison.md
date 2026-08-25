@@ -26,6 +26,22 @@ closed-world compiler plus product-owned lifecycle coordination. Existing OSS
 is used behind private adapters, as test oracles, and as operational patterns.
 This is a recommendation under `OD-003`, not an accepted dependency decision.
 
+The conclusion is layer-specific, not a claim that one custom platform must
+replace all OSS:
+
+| Layer | Primary comparator or reusable primitive |
+| --- | --- |
+| ID-DAG and ordering | native algorithm checked against Graphlib; Avvio as boot-lifecycle reference |
+| Scoped resources | Cordis and Effect as private adapter/reference candidates |
+| Frontend contributions | Backstage and Lumino patterns; VS Code/Theia placement lessons |
+| Process protocol | Terraform go-plugin handshake/versioning lessons |
+| Reconciliation | Kubernetes desired/observed/finalization patterns; leases only for liveness |
+| Language-neutral host | Extism/Wasmtime post-MVP qualification |
+
+`oss-comparison.yaml` marks each source as immutable `pinned`, dated
+`orientation`, or `qualified-experiment`; those evidence classes are not
+interchangeable.
+
 ## Comparison
 
 | System | What to reuse | Why it is not the kernel |

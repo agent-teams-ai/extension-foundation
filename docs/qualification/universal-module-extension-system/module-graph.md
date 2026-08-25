@@ -53,10 +53,10 @@ identities separate.
 | `ModuleIdentity` | Stable composition and lifecycle unit | Logical module is replaced |
 | `CapabilityIdentity` | Product-owned semantic contract | Owning contract changes identity |
 | `GraphGeneration` | One compiled and admitted plan in one authority scope | A new candidate is compiled |
-| `RuntimeGeneration` | One activation attempt for one module in a graph generation | Module is prepared again |
+| `ModuleActivationGeneration` | One activation attempt for one module in a graph generation | Module is prepared again |
 
 Publisher, artifact, installation, contribution, module, graph generation, and
-runtime generation are never aliases. A built-in module has an immutable
+module activation generation are never aliases. A built-in module has an immutable
 implementation identity but no artifact or installation identity.
 
 Capability identity is a stable URI-like string owned by the product feature,
@@ -149,8 +149,10 @@ resolved direct capabilities. It cannot access:
 ## Cycles And Ordering
 
 Hard required edges form a directed graph. The compiler rejects every strongly
-connected component with more than one node and every self-edge. Diagnostics
-include the shortest useful cycle path and the source locations of all edges.
+connected component with more than one node and every self-edge. Production
+diagnostics must include a minimal useful cycle path and source locations for
+all edges. The disposable ID-DAG spike currently proves a stable deterministic
+witness, not shortest-path optimality or source attribution.
 
 Optional and ordered-many edges become hard edges when bound. Observation
 hooks do not create graph edges unless invocation requires the target to be
@@ -230,6 +232,12 @@ binding resolution, scope/version checks, cycle detection, deterministic levels,
 canonical serialization, and diagnostics. It does not implement installation,
 security policy, DI reflection, hot reload, process management, or distributed
 coordination.
+
+The executable spike is narrower than this target: it proves only an
+`id + requires[]` scheduling DAG, deterministic batches/digest, mutation-safe
+plan data and cycle/missing/duplicate diagnostics. Capability slots, explicit
+bindings, cardinality, compatibility, scope and source validation remain Phase
+1 product-local work and must not be inferred from the spike result.
 
 ## Scale And Complexity
 

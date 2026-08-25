@@ -49,5 +49,10 @@ post-MVP hypotheses.
 - **Hypothesis** means a spike or a real consumer must still prove the claim.
 - **Deferred** means explicitly outside the first implementation slice.
 
+The frontmatter status `qualified` means the document has completed this
+research pass. It does not mean every requirement inside it is implemented or
+passed. [Conformance Plan](conformance-plan.md#current-evidence-status) is the
+machine-audited distinction between planned, implemented and passed evidence.
+
 The [decision ledger](decision-ledger.yaml) is the machine-readable navigation
 source. It links to full rationale and never duplicates normative decisions.

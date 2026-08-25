@@ -15,7 +15,7 @@ related:
 ## Recommended Model
 
 Use one monotonic `GraphGeneration` per product authority scope and one
-`RuntimeGeneration` per module activation within that graph. A host may map
+`ModuleActivationGeneration` per module activation within that graph. A host may map
 these values to database revisions, compare-and-set tokens, process epochs, or
 leases, but it must not expose competing generation models to module code.
 
@@ -128,6 +128,10 @@ or cancellation detaches that waiter; it does not cancel shared startup.
 Relative timeout refresh is forbidden. One absolute deadline follows every hop,
 retry, joiner, and adapter. Authority time determines expiry.
 
+The disposable spike proves waiter detachment and publication CAS. Reentrant
+causal-path detection remains a required Phase 2 fixture; it is not implemented
+by the current ID-DAG compiler.
+
 ## Readiness
 
 Process availability, transport connection, provider acceptance, and readiness
@@ -161,7 +165,7 @@ flowchart LR
 
 Cleanup requirements:
 
-- idempotency by operation and runtime generation;
+- idempotency by operation and module activation generation;
 - one bounded deadline;
 - continue independent cleanup after one failure;
 - aggregate all errors without losing the first cause;
@@ -171,8 +175,10 @@ Cleanup requirements:
 - detect leaked timers, listeners, streams, child processes, and unresolved
   promises in conformance tests.
 
-A hung disposer is fenced or force-stopped by its host after the deadline. The
-coordinator proceeds and records evidence; it never waits forever.
+A hung disposer is fenced or force-stopped only when its host provides that
+authority. A trusted in-process hook that ignores cancellation is reported as
+`termination_unproven`; late canonical effects remain fenced, but JavaScript
+termination is not claimed. The coordinator never waits forever.
 
 ## Replacement And Update
 
@@ -183,8 +189,7 @@ flowchart LR
     Old["Generation N active"] --> Candidate["Prepare N+1 in isolation"]
     Candidate --> Ready{"Ready and admitted?"}
     Ready -->|no| Abort["Abort N+1; N remains active"]
-    Ready -->|yes| Seal["Seal N admission"]
-    Seal --> Commit["Atomic cutover to N+1"]
+    Ready -->|yes| Commit["CAS route to N+1 and close N admission"]
     Commit --> Drain["Bounded drain N"]
     Drain --> Stop["Stop and retire N"]
 ```
@@ -203,7 +208,7 @@ detachment, and deletion are separate product-owned operations.
 
 Drain has two boundaries:
 
-1. **Admission cutoff:** no new work enters the old runtime generation.
+1. **Admission cutoff:** no new work enters the old module activation generation.
 2. **Commit cutoff:** after the absolute drain deadline or cutover barrier, old
    work cannot commit fenced durable effects.
 
@@ -255,9 +260,19 @@ LifecycleIntent
 
 LifecycleEvidence
   operationId
+  intentDigest
+  authorityScope
+  graphGeneration
+  moduleActivationGeneration
+  activationFingerprint
+  expectedActiveGeneration
+  routeRevision
+  sinkFence
+  replicaIncarnation
   phase
   outcome: confirmed | failed | pending | uncertain
   hostEvidenceRef
+  payloadDigest
   observedAt
 ```
 
@@ -267,9 +282,12 @@ steps. An uncertain process or provider effect is queried before retry. If the
 host cannot prove continuity, it fences the old generation and prepares a new
 one or enters controlled recovery.
 
-Crash fixtures cover every boundary before and after durable intent, dispatch,
-ready acknowledgement, publication compare-and-set, drain seal, and cleanup.
-Every fixture is replayed with duplicate and reordered messages.
+The current spike exercises deterministic reducer examples only. Before a
+production lifecycle claim, fault-injection fixtures must crash a fresh
+coordinator on both sides of durable intent, dispatch, ready acknowledgement,
+publication compare-and-set, drain cutoff, debt recording and cleanup. Those
+fixtures must replay duplicate and reordered messages and bind every observed
+host fact to the complete intent/generation/fence/incarnation tuple.
 
 ## Host Tiers
 
@@ -302,8 +320,8 @@ Implement now in a disposable qualification spike:
 - one absolute deadline;
 - reverse-DAG abort and stop;
 - active and candidate generations;
-- one atomic in-memory/persisted compare-and-set seam;
-- bounded drain and stale-generation commit rejection;
+- one atomic in-memory compare-and-set seam;
+- bounded drain and an in-memory fence simulation;
 - deterministic traces and injected crash points.
 
 Specify but defer production implementation of:
@@ -328,7 +346,8 @@ qualification rather than enlarging the kernel.
 - Successful candidate performs one cutover.
 - Rollback follows reverse successful-activation dependencies.
 - Timeout prevents late publication.
-- Stale generation cannot commit fenced durable writes.
+- A production sink rejects stale generation in the same atomic commit as its
+  durable mutation; the spike proves only the in-memory ordering model.
 - Hung cleanup remains bounded and observable.
 - Restart/replay reaches the same stable or terminal result.
 - Different host adapters produce the same applicable semantic trace.

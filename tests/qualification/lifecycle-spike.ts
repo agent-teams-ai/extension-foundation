@@ -1,33 +1,64 @@
+import { performance } from "node:perf_hooks";
 import { setTimeout as delay } from "node:timers/promises";
 
 import type { CompiledGraph } from "./graph-spike.ts";
 
 export type LifecyclePhase = "prepare" | "start" | "ready" | "publish" | "drain" | "stop" | "abort";
+export type LifecycleOutcome = "started" | "confirmed" | "failed" | "timed-out" | "stale" | "termination-unproven";
 
 export interface LifecycleTrace {
   readonly phase: LifecyclePhase;
   readonly moduleId?: string;
   readonly generation: number;
-  readonly outcome: "started" | "confirmed" | "failed" | "timed-out" | "stale";
+  readonly outcome: LifecycleOutcome;
 }
 
 export interface ActivationContext {
   readonly generation: number;
+  readonly phase: "activation" | "cleanup";
   readonly signal: AbortSignal;
 }
 
-export interface ModuleHooks {
+interface CommonModuleHooks {
   prepare?(context: ActivationContext): void | Promise<void>;
   start?(context: ActivationContext): void | Promise<void>;
-  ready?(context: ActivationContext): boolean | Promise<boolean>;
   stop?(context: ActivationContext): void | Promise<void>;
+}
+
+export type ModuleHooks = CommonModuleHooks & (
+  | { readonly readiness: "inert"; readonly ready?: never }
+  | { readonly readiness: "probe"; ready(context: ActivationContext): boolean | Promise<boolean> }
+);
+
+export interface ActivationIdentity {
+  readonly operationId: string;
+  readonly expectedActiveGeneration: number;
+  readonly authorityScope: string;
+  readonly profileLockDigest: string;
+  readonly configurationFingerprint: string;
+  readonly grantRevision: string;
+  readonly hostPolicyRevision: string;
+}
+
+export interface ActivationRequest {
+  readonly identity: ActivationIdentity;
+  readonly plan: CompiledGraph;
+  readonly hooks: ReadonlyMap<string, ModuleHooks>;
+  readonly absoluteDeadline: number;
+  readonly cleanupTimeoutMs?: number;
 }
 
 export interface ActivationResult {
   readonly ok: boolean;
   readonly generation: number;
+  readonly termination: "proven" | "unproven";
   readonly traces: readonly LifecycleTrace[];
   readonly errors: readonly Error[];
+}
+
+export interface MonotonicClock {
+  now(): number;
+  sleep(milliseconds: number): Promise<void>;
 }
 
 interface InvocationLease {
@@ -42,17 +73,42 @@ interface ActiveGraph {
   readonly hooks: ReadonlyMap<string, ModuleHooks>;
 }
 
+interface Flight {
+  readonly result: Promise<ActivationResult>;
+}
+
+const defaultClock: MonotonicClock = {
+  now: () => performance.now(),
+  sleep: milliseconds => delay(milliseconds),
+};
+
 function asError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
+}
+
+function fingerprint(request: ActivationRequest): string {
+  const { identity, plan, absoluteDeadline } = request;
+  return JSON.stringify([
+    identity.operationId,
+    plan.digest,
+    identity.expectedActiveGeneration,
+    identity.authorityScope,
+    identity.profileLockDigest,
+    identity.configurationFingerprint,
+    identity.grantRevision,
+    identity.hostPolicyRevision,
+    absoluteDeadline,
+  ]);
 }
 
 function runBeforeDeadline<T>(
   operation: () => T | Promise<T>,
   absoluteDeadline: number,
+  clock: MonotonicClock,
   onTimeout: () => void,
   timeoutCode = "ABSOLUTE_DEADLINE_EXCEEDED",
 ): Promise<T> {
-  const remaining = absoluteDeadline - Date.now();
+  const remaining = absoluteDeadline - clock.now();
   if (remaining <= 0) {
     onTimeout();
     return Promise.reject(new Error(timeoutCode));
@@ -79,8 +135,15 @@ function runBeforeDeadline<T>(
   });
 }
 
+export function inertHooks(hooks: CommonModuleHooks = {}): ModuleHooks {
+  return { readiness: "inert", ...hooks };
+}
+
 export class GenerationLifecycle {
-  readonly #flights = new Map<string, Promise<ActivationResult>>();
+  readonly #clock: MonotonicClock;
+  readonly #flights = new Map<string, Flight>();
+  readonly #operationFingerprints = new Map<string, string>();
+  readonly #operationResults = new Map<string, ActivationResult>();
   readonly #leases = new Set<InvocationLease>();
   readonly #sealedGenerations = new Set<number>();
   #nextLeaseId = 1;
@@ -88,6 +151,10 @@ export class GenerationLifecycle {
   #activeGeneration = 0;
   #active: ActiveGraph | undefined;
   #cutovers = 0;
+
+  constructor(clock: MonotonicClock = defaultClock) {
+    this.#clock = clock;
+  }
 
   get activeGeneration(): number {
     return this.#activeGeneration;
@@ -97,19 +164,34 @@ export class GenerationLifecycle {
     return this.#cutovers;
   }
 
+  deadlineAfter(milliseconds: number): number {
+    return this.#clock.now() + milliseconds;
+  }
+
   activate(
-    plan: CompiledGraph,
-    hooks: ReadonlyMap<string, ModuleHooks>,
-    absoluteDeadline: number,
-    cleanupTimeoutMs = 50,
+    request: ActivationRequest,
+    waiterDeadline = request.absoluteDeadline + (request.cleanupTimeoutMs ?? 50) + 100,
   ): Promise<ActivationResult> {
-    const existing = this.#flights.get(plan.digest);
-    if (existing) return existing;
+    if (request.identity.operationId.length === 0) throw new Error("INVALID_OPERATION_ID");
+    const key = fingerprint(request);
+    const previousKey = this.#operationFingerprints.get(request.identity.operationId);
+    if (previousKey !== undefined && previousKey !== key) throw new Error("ACTIVATION_IDEMPOTENCY_CONFLICT");
+    this.#operationFingerprints.set(request.identity.operationId, key);
+
+    const existing = this.#flights.get(request.identity.operationId);
+    if (existing) return this.#waitForFlight(existing.result, waiterDeadline);
+    const completed = this.#operationResults.get(request.identity.operationId);
+    if (completed) return Promise.resolve(completed);
+
     const generation = this.#nextGeneration++;
-    const flight = this.#activate(generation, plan, hooks, absoluteDeadline, cleanupTimeoutMs)
-      .finally(() => this.#flights.delete(plan.digest));
-    this.#flights.set(plan.digest, flight);
-    return flight;
+    const result = this.#activate(generation, request)
+      .then(value => {
+        this.#operationResults.set(request.identity.operationId, value);
+        return value;
+      })
+      .finally(() => this.#flights.delete(request.identity.operationId));
+    this.#flights.set(request.identity.operationId, { result });
+    return this.#waitForFlight(result, waiterDeadline);
   }
 
   acquireInvocation(): { readonly generation: number; readonly id: number; release(): void } {
@@ -129,70 +211,107 @@ export class GenerationLifecycle {
     };
   }
 
-  commitDurableWrite(generation: number, effect: () => void, lease?: { readonly generation: number; readonly id: number }): void {
-    const admittedBeforeSeal = lease?.generation === generation && [...this.#leases].some(candidate =>
-      candidate.generation === generation && candidate.id === lease.id && !candidate.released,
+  assertInMemoryFence(lease: { readonly generation: number; readonly id: number }): void {
+    const admitted = [...this.#leases].some(candidate =>
+      candidate.generation === lease.generation && candidate.id === lease.id && !candidate.released,
     );
-    if ((generation !== this.#activeGeneration && !admittedBeforeSeal)
-      || (this.#sealedGenerations.has(generation) && !admittedBeforeSeal)) {
-      throw new Error("STALE_GENERATION");
-    }
-    effect();
+    if (!admitted) throw new Error("STALE_GENERATION");
   }
 
   async drain(generation: number, absoluteDeadline: number): Promise<boolean> {
     this.#sealedGenerations.add(generation);
     while ([...this.#leases].some(lease => lease.generation === generation)) {
-      if (Date.now() >= absoluteDeadline) break;
-      await delay(1);
+      if (this.#clock.now() >= absoluteDeadline) break;
+      await this.#clock.sleep(1);
     }
     const drained = ![...this.#leases].some(lease => lease.generation === generation);
-    for (const lease of this.#leases) {
-      if (lease.generation === generation) this.#leases.delete(lease);
-    }
     return drained;
   }
 
-  async #activate(
-    generation: number,
-    plan: CompiledGraph,
-    hooks: ReadonlyMap<string, ModuleHooks>,
-    absoluteDeadline: number,
-    cleanupTimeoutMs: number,
-  ): Promise<ActivationResult> {
+  async #waitForFlight(result: Promise<ActivationResult>, waiterDeadline: number): Promise<ActivationResult> {
+    return runBeforeDeadline(
+      () => result,
+      waiterDeadline,
+      this.#clock,
+      () => undefined,
+      "WAITER_DEADLINE_EXCEEDED",
+    );
+  }
+
+  async #activate(generation: number, request: ActivationRequest): Promise<ActivationResult> {
+    const { identity, plan, hooks, absoluteDeadline } = request;
+    const cleanupTimeoutMs = request.cleanupTimeoutMs ?? 50;
     const traces: LifecycleTrace[] = [];
     const errors: Error[] = [];
     const cleanupCandidates = new Set<string>();
-    const controller = new AbortController();
-    const context = { generation, signal: controller.signal };
-
+    const activationController = new AbortController();
+    const activationContext: ActivationContext = { generation, phase: "activation", signal: activationController.signal };
+    const markActivationTimeout = (): void => {
+      activationController.abort("ABSOLUTE_DEADLINE_EXCEEDED");
+    };
     const checkDeadline = (): void => {
-      if (Date.now() >= absoluteDeadline) throw new Error("ABSOLUTE_DEADLINE_EXCEEDED");
+      if (this.#clock.now() >= absoluteDeadline) {
+        markActivationTimeout();
+        throw new Error("ABSOLUTE_DEADLINE_EXCEEDED");
+      }
     };
 
     try {
+      if (this.#activeGeneration !== identity.expectedActiveGeneration) {
+        traces.push({ phase: "publish", generation, outcome: "stale" });
+        throw new Error("STALE_ACTIVE_GENERATION");
+      }
+
       for (const batch of plan.startBatches) {
-        const outcomes = await Promise.allSettled(batch.map(async moduleId => {
-          checkDeadline();
-          const module = hooks.get(moduleId);
-          if (!module) throw new Error(`MISSING_HOOKS:${moduleId}`);
-          cleanupCandidates.add(moduleId);
-          traces.push({ phase: "prepare", moduleId, generation, outcome: "started" });
-          await runBeforeDeadline(() => module.prepare?.(context), absoluteDeadline, () => controller.abort("ABSOLUTE_DEADLINE_EXCEEDED"));
-          checkDeadline();
-          traces.push({ phase: "start", moduleId, generation, outcome: "started" });
-          await runBeforeDeadline(() => module.start?.(context), absoluteDeadline, () => controller.abort("ABSOLUTE_DEADLINE_EXCEEDED"));
-          checkDeadline();
-          const ready = await runBeforeDeadline(() => module.ready?.(context) ?? true, absoluteDeadline, () => controller.abort("ABSOLUTE_DEADLINE_EXCEEDED"));
-          if (!ready) throw new Error(`NOT_READY:${moduleId}`);
-          checkDeadline();
-          traces.push({ phase: "ready", moduleId, generation, outcome: "confirmed" });
+        const outcomes = await Promise.all(batch.map(async moduleId => {
+          const localTraces: LifecycleTrace[] = [];
+          try {
+            checkDeadline();
+            const module = hooks.get(moduleId);
+            if (!module) throw new Error(`MISSING_HOOKS:${moduleId}`);
+            cleanupCandidates.add(moduleId);
+            localTraces.push({ phase: "prepare", moduleId, generation, outcome: "started" });
+            await runBeforeDeadline(
+              () => module.prepare?.(activationContext),
+              absoluteDeadline,
+              this.#clock,
+              markActivationTimeout,
+            );
+            checkDeadline();
+            localTraces.push({ phase: "start", moduleId, generation, outcome: "started" });
+            await runBeforeDeadline(
+              () => module.start?.(activationContext),
+              absoluteDeadline,
+              this.#clock,
+              markActivationTimeout,
+            );
+            checkDeadline();
+            if (module.readiness === "probe") {
+              const ready = await runBeforeDeadline(
+                () => module.ready(activationContext),
+                absoluteDeadline,
+                this.#clock,
+                markActivationTimeout,
+              );
+              if (!ready) throw new Error(`NOT_READY:${moduleId}`);
+            }
+            checkDeadline();
+            localTraces.push({ phase: "ready", moduleId, generation, outcome: "confirmed" });
+            return { localTraces };
+          } catch (error) {
+            return { localTraces, error: asError(error) };
+          }
         }));
-        const failed = outcomes.find((outcome): outcome is PromiseRejectedResult => outcome.status === "rejected");
-        if (failed) throw failed.reason;
+        for (const outcome of outcomes) traces.push(...outcome.localTraces);
+        const failed = outcomes.find(outcome => outcome.error !== undefined);
+        if (failed?.error) throw failed.error;
       }
 
       checkDeadline();
+      if (this.#activeGeneration !== identity.expectedActiveGeneration) {
+        traces.push({ phase: "publish", generation, outcome: "stale" });
+        throw new Error("STALE_ACTIVE_GENERATION");
+      }
       const previous = this.#active;
       this.#activeGeneration = generation;
       this.#active = { generation, plan, hooks };
@@ -200,50 +319,84 @@ export class GenerationLifecycle {
       traces.push({ phase: "publish", generation, outcome: "confirmed" });
 
       if (previous) {
-        const drained = await this.drain(previous.generation, Math.min(absoluteDeadline, Date.now() + cleanupTimeoutMs));
+        const cleanupDeadline = this.#clock.now() + cleanupTimeoutMs;
+        const cleanupController = new AbortController();
+        const cleanupContext: ActivationContext = {
+          generation: previous.generation,
+          phase: "cleanup",
+          signal: cleanupController.signal,
+        };
+        const drained = await this.drain(previous.generation, cleanupDeadline);
         traces.push({ phase: "drain", generation: previous.generation, outcome: drained ? "confirmed" : "timed-out" });
         if (!drained) errors.push(new Error(`DRAIN_TIMEOUT:${previous.generation}`));
-        for (const batch of previous.plan.stopBatches) {
-          await Promise.all(batch.map(async moduleId => {
-            try {
-              await runBeforeDeadline(
-                () => previous.hooks.get(moduleId)?.stop?.({ generation: previous.generation, signal: AbortSignal.timeout(cleanupTimeoutMs) }),
-                Date.now() + cleanupTimeoutMs,
-                () => undefined,
-                `CLEANUP_TIMEOUT:${moduleId}`,
-              );
-              traces.push({ phase: "stop", moduleId, generation: previous.generation, outcome: "confirmed" });
-            } catch (cleanupError) {
-              errors.push(asError(cleanupError));
-              traces.push({ phase: "stop", moduleId, generation: previous.generation, outcome: "failed" });
-            }
-          }));
-        }
+        this.#fenceGeneration(previous.generation);
+        await this.#stopBatches(previous.plan, previous.hooks, cleanupContext, cleanupDeadline, traces, errors, "stop", cleanupController);
       }
-      return { ok: true, generation, traces: Object.freeze(traces), errors: Object.freeze(errors) };
+      return { ok: true, generation, termination: "proven", traces: Object.freeze(traces), errors: Object.freeze(errors) };
     } catch (error) {
-      controller.abort(error);
-      errors.push(asError(error));
-      const timedOut = asError(error).message === "ABSOLUTE_DEADLINE_EXCEEDED";
-      for (const batch of plan.stopBatches) {
-        await Promise.all(batch.filter(id => cleanupCandidates.has(id)).map(async moduleId => {
-          const module = hooks.get(moduleId);
-          try {
-            await runBeforeDeadline(
-              () => module?.stop?.(context),
-              Date.now() + cleanupTimeoutMs,
-              () => undefined,
-              `CLEANUP_TIMEOUT:${moduleId}`,
-            );
-            traces.push({ phase: "abort", moduleId, generation, outcome: "confirmed" });
-          } catch (cleanupError) {
-            errors.push(asError(cleanupError));
-            traces.push({ phase: "abort", moduleId, generation, outcome: "failed" });
-          }
-        }));
+      activationController.abort(error);
+      const failure = asError(error);
+      errors.push(failure);
+      const cleanupDeadline = this.#clock.now() + cleanupTimeoutMs;
+      const cleanupController = new AbortController();
+      const cleanupContext: ActivationContext = { generation, phase: "cleanup", signal: cleanupController.signal };
+      await this.#stopBatches(
+        plan,
+        hooks,
+        cleanupContext,
+        cleanupDeadline,
+        traces,
+        errors,
+        "abort",
+        cleanupController,
+        cleanupCandidates,
+      );
+      const termination = activationController.signal.reason === "ABSOLUTE_DEADLINE_EXCEEDED" ? "unproven" : "proven";
+      const outcome: LifecycleOutcome = termination === "unproven"
+        ? "termination-unproven"
+        : failure.message === "STALE_ACTIVE_GENERATION" ? "stale" : "failed";
+      traces.push({ phase: "abort", generation, outcome });
+      return { ok: false, generation, termination, traces: Object.freeze(traces), errors: Object.freeze(errors) };
+    }
+  }
+
+  async #stopBatches(
+    plan: CompiledGraph,
+    hooks: ReadonlyMap<string, ModuleHooks>,
+    context: ActivationContext,
+    cleanupDeadline: number,
+    traces: LifecycleTrace[],
+    errors: Error[],
+    phase: "stop" | "abort",
+    controller: AbortController,
+    candidates?: ReadonlySet<string>,
+  ): Promise<void> {
+    for (const batch of plan.stopBatches) {
+      const outcomes = await Promise.all(batch.filter(id => candidates?.has(id) ?? true).map(async moduleId => {
+        try {
+          await runBeforeDeadline(
+            () => hooks.get(moduleId)?.stop?.(context),
+            cleanupDeadline,
+            this.#clock,
+            () => controller.abort(`CLEANUP_TIMEOUT:${moduleId}`),
+            `CLEANUP_TIMEOUT:${moduleId}`,
+          );
+          return { moduleId, outcome: "confirmed" as const };
+        } catch (cleanupError) {
+          return { moduleId, outcome: "failed" as const, error: asError(cleanupError) };
+        }
+      }));
+      for (const outcome of outcomes) {
+        if (outcome.error) errors.push(outcome.error);
+        traces.push({ phase, moduleId: outcome.moduleId, generation: context.generation, outcome: outcome.outcome });
       }
-      traces.push({ phase: "abort", generation, outcome: timedOut ? "timed-out" : "failed" });
-      return { ok: false, generation, traces: Object.freeze(traces), errors: Object.freeze(errors) };
+    }
+  }
+
+  #fenceGeneration(generation: number): void {
+    this.#sealedGenerations.add(generation);
+    for (const lease of this.#leases) {
+      if (lease.generation === generation) this.#leases.delete(lease);
     }
   }
 }

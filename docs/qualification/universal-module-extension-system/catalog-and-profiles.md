@@ -76,7 +76,9 @@ The generated lockfile is immutable input to admission and records:
 - exact catalog source identity and revision or snapshot digest;
 - source-bound namespace, package name and version identity;
 - artifact repository, manifest digest, platform variants, and content digests;
-- publisher identity and verified provenance references;
+- publisher identity plus immutable signature, attestation, transparency,
+  provenance-subject, builder/source and dependency evidence required to
+  re-evaluate the original decision without disappearing registry references;
 - selected contribution identities and compatibility decisions;
 - explicit target tuple and complete target-specific graph;
 - bound optional edges or enumerated semantic omission records;
@@ -139,6 +141,13 @@ freshness and rollback policy before use. Import is quarantined and bounded by
 entry count, expanded bytes and nesting; traversal, links, duplicate paths,
 digest mismatch and decompression bombs fail before promotion. Trust roots are
 provisioned separately from the bundle.
+
+A signed snapshot is not fresh merely because its signature verifies. The
+consumer compares expiry and monotonic sequence against a separately trusted
+local high-water mark or TUF-equivalent metadata. Direct-digest installation
+also requires an explicit local trust policy for signer authorization,
+provenance, dependencies and revocation; digest equality alone proves identity,
+not permission or safety.
 
 PostgreSQL full-text search is the first hosted derived search adapter. SQLite
 FTS5 is a candidate local/offline derived adapter. Search results never become
