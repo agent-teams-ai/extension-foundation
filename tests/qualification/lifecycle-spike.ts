@@ -59,6 +59,8 @@ export interface ActivationResult {
 
 export interface LifecycleError {
   readonly message: string;
+  readonly moduleId?: string;
+  readonly phase?: LifecyclePhase;
 }
 
 export interface WaiterOptions {
@@ -121,8 +123,29 @@ function errorMessage(error: unknown): string {
   }
 }
 
+class AttributedLifecycleError extends Error {
+  readonly moduleId: string | undefined;
+  readonly phase: LifecyclePhase | undefined;
+
+  constructor(
+    message: string,
+    moduleId?: string,
+    phase?: LifecyclePhase,
+  ) {
+    super(message);
+    this.moduleId = moduleId;
+    this.phase = phase;
+  }
+}
+
 function asError(error: unknown): Error {
-  return new Error(errorMessage(error));
+  return error instanceof AttributedLifecycleError
+    ? new AttributedLifecycleError(errorMessage(error), error.moduleId, error.phase)
+    : new Error(errorMessage(error));
+}
+
+function attributedError(error: unknown, moduleId: string, phase: LifecyclePhase): Error {
+  return new AttributedLifecycleError(errorMessage(error), moduleId, phase);
 }
 
 function aggregateErrors(error: unknown): readonly Error[] {
@@ -152,10 +175,47 @@ function fingerprint(request: ActivationRequest): string {
 }
 
 function snapshotHooks(hooks: ReadonlyMap<string, ModuleHooks>): ReadonlyMap<string, ModuleHooks> {
-  return new Map([...hooks].map(([moduleId, moduleHooks]) => [
-    moduleId,
-    Object.freeze({ ...moduleHooks }) as ModuleHooks,
-  ]));
+  const snapshots = new Map<string, ModuleHooks>();
+  const allowedFields = new Set(["readiness", "prepare", "start", "ready", "stop"]);
+  for (const [moduleId, moduleHooks] of hooks) {
+    if (typeof moduleHooks !== "object" || moduleHooks === null) {
+      throw new Error(`INVALID_HOOKS:${moduleId}`);
+    }
+    const descriptors = Object.getOwnPropertyDescriptors(moduleHooks);
+    for (const [field, descriptor] of Object.entries(descriptors)) {
+      if (!allowedFields.has(field)) throw new Error(`UNKNOWN_HOOK_FIELD:${moduleId}:${field}`);
+      if (descriptor.get !== undefined || descriptor.set !== undefined) {
+        throw new Error(`ACCESSOR_HOOK_FIELD:${moduleId}:${field}`);
+      }
+    }
+    const readiness = descriptors.readiness?.value;
+    if (readiness !== "inert" && readiness !== "probe") {
+      throw new Error(`INVALID_READINESS:${moduleId}`);
+    }
+    const prepare = descriptors.prepare?.value;
+    const start = descriptors.start?.value;
+    const stop = descriptors.stop?.value;
+    const ready = descriptors.ready?.value;
+    for (const [field, hook] of [["prepare", prepare], ["start", start], ["stop", stop]] as const) {
+      if (hook !== undefined && typeof hook !== "function") {
+        throw new Error(`INVALID_HOOK_FIELD:${moduleId}:${field}`);
+      }
+    }
+    if (readiness === "probe" && typeof ready !== "function") {
+      throw new Error(`INVALID_HOOK_FIELD:${moduleId}:ready`);
+    }
+    if (readiness === "inert" && ready !== undefined) {
+      throw new Error(`INVALID_HOOK_FIELD:${moduleId}:ready`);
+    }
+    snapshots.set(moduleId, Object.freeze({
+      readiness,
+      ...(prepare === undefined ? {} : { prepare }),
+      ...(start === undefined ? {} : { start }),
+      ...(ready === undefined ? {} : { ready }),
+      ...(stop === undefined ? {} : { stop }),
+    }) as ModuleHooks);
+  }
+  return snapshots;
 }
 
 function freezeResult(
@@ -170,7 +230,15 @@ function freezeResult(
     generation,
     termination,
     traces: Object.freeze(traces.map(trace => Object.freeze({ ...trace }))),
-    errors: Object.freeze(errors.map(error => Object.freeze({ message: errorMessage(error) }))),
+    errors: Object.freeze(errors.map(error => Object.freeze({
+      message: errorMessage(error),
+      ...(error instanceof AttributedLifecycleError && error.moduleId !== undefined
+        ? { moduleId: error.moduleId }
+        : {}),
+      ...(error instanceof AttributedLifecycleError && error.phase !== undefined
+        ? { phase: error.phase }
+        : {}),
+    }))),
   });
 }
 
@@ -362,7 +430,7 @@ export class GenerationLifecycle {
     const normalizedRequest: ActivationRequest = Object.freeze({
       identity,
       plan: request.plan,
-      hooks: snapshotHooks(request.hooks),
+      hooks: request.hooks,
       absoluteDeadline,
       cleanupTimeoutMs,
     });
@@ -533,7 +601,8 @@ export class GenerationLifecycle {
     request: ActivationRequest,
     activationDeadline: DeadlineBudget,
   ): Promise<ActivationResult> {
-    const { identity, plan, hooks } = request;
+    const { identity, plan } = request;
+    let hooks = request.hooks;
     const cleanupTimeoutMs = request.cleanupTimeoutMs ?? 50;
     const traces: LifecycleTrace[] = [];
     const errors: Error[] = [];
@@ -567,10 +636,12 @@ export class GenerationLifecycle {
         traces.push({ phase: "publish", generation, outcome: "stale" });
         throw new Error("STALE_ACTIVE_GENERATION");
       }
+      hooks = snapshotHooks(hooks);
 
       for (const batch of plan.startBatches) {
         const outcomes = await Promise.all(batch.map(async moduleId => {
           const localTraces: LifecycleTrace[] = [];
+          let phase: LifecyclePhase = "prepare";
           try {
             checkDeadline();
             const module = hooks.get(moduleId);
@@ -584,6 +655,7 @@ export class GenerationLifecycle {
               markActivationTimeout,
             );
             checkDeadline();
+            phase = "start";
             localTraces.push({ phase: "start", moduleId, generation, outcome: "started" });
             await runBeforeDeadline(
               () => module.start?.(activationContext),
@@ -592,6 +664,7 @@ export class GenerationLifecycle {
               markActivationTimeout,
             );
             checkDeadline();
+            phase = "ready";
             if (module.readiness !== "inert" && module.readiness !== "probe") {
               throw new Error(`INVALID_READINESS:${moduleId}`);
             }
@@ -608,7 +681,7 @@ export class GenerationLifecycle {
             localTraces.push({ phase: "ready", moduleId, generation, outcome: "confirmed" });
             return { localTraces };
           } catch (error) {
-            return { localTraces, error: asError(error) };
+            return { localTraces, error: attributedError(error, moduleId, phase) };
           }
         }));
         for (const outcome of outcomes) traces.push(...outcome.localTraces);
@@ -741,7 +814,7 @@ export class GenerationLifecycle {
           );
           return { moduleId, outcome: "confirmed" as const };
         } catch (cleanupError) {
-          const error = asError(cleanupError);
+          const error = attributedError(cleanupError, moduleId, phase);
           return {
             moduleId,
             outcome: error.message.startsWith("CLEANUP_TIMEOUT:")

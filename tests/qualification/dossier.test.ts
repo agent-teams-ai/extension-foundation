@@ -137,7 +137,13 @@ test("decision ledger has one semantic owner and ten unique approval forks", asy
 test("qualified identity and extraction rules preserve accepted ADR authority", async () => {
   const antiPatterns = await readFile(resolve(dossier, "anti-patterns.md"), "utf8");
   const moduleGraph = await readFile(resolve(dossier, "module-graph.md"), "utf8");
+  const antiPatternIds = [...antiPatterns.matchAll(/^\| (AP-\d{3}) \|/gm)].map(match => match[1]);
 
+  assert.deepEqual(
+    antiPatternIds,
+    Array.from({ length: 83 }, (_, index) => `AP-${String(index + 1).padStart(3, "0")}`),
+    "anti-pattern identifiers must remain unique, contiguous, and ordered",
+  );
   assert.match(antiPatterns, /AP-080 \| Extract a neutral package without satisfying an accepted ADR-0012 admission basis/);
   assert.doesNotMatch(antiPatterns, /AP-080 \| Extract a neutral package before a second consumer/);
   assert.match(moduleGraph, /`BuiltInModuleInstallation` activation-source identity/);

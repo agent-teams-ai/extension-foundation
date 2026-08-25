@@ -173,13 +173,17 @@ that policy is applied; this qualification does not make the proposal operative.
 
 Estimated change: 300-700 documentation/tooling LOC, 1-3 days.
 
-### Phase 1: Product-Local Graph Kernel
+### Phase 1: First Graph Kernel, Decision-Gated
 
-Implement the first graph-only compiler inside one accepted owning product
-feature. Promote the proven ID-DAG primitive, then add only that feature's
-explicit bindings, cardinality, compatibility, scope and source validation. No
-Foundation runtime package, installation, lifecycle, container, process,
-catalog, public schema, runtime reuse or distributed behavior.
+This phase cannot begin while ADR-0012 remains the effective ownership decision.
+The product-local path requires explicit acceptance of ADR-0013, or another
+accepted decision that supersedes ADR-0012 and names the first-consumer owner.
+If that approval is not granted, the first graph-only compiler must instead be
+implemented in Foundation under ADR-0012 and admitted through its existing
+product-neutrality rules. In either path, promote the proven ID-DAG primitive,
+then add only explicit bindings, cardinality, compatibility, scope and source
+validation. Do not create installation, container, process, catalog, public SPI,
+runtime reuse or distributed behavior in this phase.
 
 Exit criteria: two fixed `T0` built-ins, one independent graph oracle,
 10,000-node budget, invalid-input loader sentinel and framework-free local
@@ -212,6 +216,10 @@ Estimated change: 4,000-8,000 LOC including fixtures, 2-4 weeks.
 
 ### Phase 4: Process Host
 
+Do not begin this production-oriented host phase until ADR-0011 is accepted,
+superseded, or replaced by another accepted decision that closes custody,
+revision-bound publication, revocation, retirement and crash-recovery gaps.
+
 Implement mandatory handshake, N/N-1 codecs, absolute monotonic deadlines,
 request journal, readiness proof, byte-credit streams, drain watermark,
 process-tree custody and crash reconciliation. Start with explicitly supported
@@ -220,6 +228,9 @@ OS containment; unsupported hard guarantees fail closed.
 Estimated change: 8,000-13,000 LOC including Linux/Windows tests, 4-8 weeks.
 
 ### Phase 5: Artifact, Profile And Catalog Path
+
+This phase has the same ADR-0011 closure gate as Phase 4. A proposed decision is
+not implementation authority and cannot be treated as an implicit approval.
 
 Implement digest-pinned OCI artifact verification, signer/provenance policy,
 profile/lock separation, PostgreSQL catalog source, signed snapshot and direct

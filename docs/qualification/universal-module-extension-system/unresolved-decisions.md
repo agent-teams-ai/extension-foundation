@@ -103,8 +103,9 @@ adapter does not prove meaningful code deletion and would overlap lifecycle
 authority. The 25% threshold remains a real-consumer kill criterion. **Reversibility:**
 high because contracts exclude framework types. **Impact:** Foundation
 extraction and runtime admission, not the private product-local rehearsal.
-**Approval:** required through `OD-003`; Foundation admission also requires
-acceptance of proposed `ADR-0013`. Evidence currently favors native.
+**Approval:** required through `OD-003`. ADR-0013 is a separate ownership-path
+decision for a product-local Phase 1 and is not an additional Foundation
+admission authority while proposed. Evidence currently favors native.
 
 ## UMEQ-014: Package Module Formats
 

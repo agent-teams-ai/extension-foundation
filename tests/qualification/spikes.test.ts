@@ -580,6 +580,28 @@ test("readiness is fail-closed for unknown discriminators and non-boolean probe 
   }
 });
 
+test("readiness shape is validated before prepare or start effects", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([{ id: "candidate", requires: [] }]);
+  let effects = 0;
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "invalid-readiness-preflight",
+    plan,
+    new Map([[
+      "candidate",
+      {
+        readiness: "unknown",
+        prepare: () => { effects += 1; },
+        start: () => { effects += 1; },
+      } as unknown as ModuleHooks,
+    ]]),
+  ));
+  assert.equal(result.ok, false);
+  assert.equal(effects, 0);
+  assert.deepEqual(result.errors.map(error => error.message), ["INVALID_READINESS:candidate"]);
+});
+
 test("effectful module without stop evidence cannot claim proven termination", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "candidate", requires: [] }]);
@@ -852,6 +874,10 @@ test("parallel activation reports every sibling failure", async () => {
   ));
   assert.equal(result.ok, false);
   assert.deepEqual(new Set(result.errors.map(error => error.message)), new Set(["A_FAILED", "B_FAILED"]));
+  assert.deepEqual(
+    new Set(result.errors.map(error => `${error.moduleId}:${error.phase}`)),
+    new Set(["fails-a:start", "fails-b:start"]),
+  );
 });
 
 test("hook bindings are complete before any module effect starts", async () => {
@@ -870,6 +896,29 @@ test("hook bindings are complete before any module effect starts", async () => {
   assert.equal(result.ok, false);
   assert.equal(effects, 0);
   assert.deepEqual(result.errors.map(error => error.message), ["MISSING_HOOKS:consumer"]);
+});
+
+test("hook preflight rejects accessors without invoking them", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([{ id: "candidate", requires: [] }]);
+  let getterEffects = 0;
+  const hooks = { readiness: "inert" } as Record<string, unknown>;
+  Object.defineProperty(hooks, "start", {
+    enumerable: true,
+    get: () => {
+      getterEffects += 1;
+      return () => undefined;
+    },
+  });
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "accessor-hook-preflight",
+    plan,
+    new Map([["candidate", hooks as unknown as ModuleHooks]]),
+  ));
+  assert.equal(result.ok, false);
+  assert.equal(getterEffects, 0);
+  assert.deepEqual(result.errors.map(error => error.message), ["ACCESSOR_HOOK_FIELD:candidate:start"]);
 });
 
 test("ignored activation cancellation is bounded without refreshing cleanup time", async () => {
@@ -1662,6 +1711,7 @@ test("Worker structured-clone boundary preserves validation and stale rejection"
 });
 
 test("browser Worker carries a portable generation-bound frame", { timeout: 20_000 }, async t => {
+  const isCi = process.env.CI?.trim().toLowerCase() === "true";
   const candidates = process.platform === "darwin"
     ? [
         "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
@@ -1684,7 +1734,7 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 20_0
     }
   }
   if (!browser) {
-    if (process.env.CI) assert.fail("CI_BROWSER_NOT_AVAILABLE");
+    if (isCi) assert.fail("CI_BROWSER_NOT_AVAILABLE");
     t.skip("no supported Chromium browser is installed");
     return;
   }
@@ -1722,7 +1772,7 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 20_0
     "--disable-background-timer-throttling",
     "--no-first-run",
     "--no-default-browser-check",
-    ...(process.env.CI ? ["--no-sandbox"] : []),
+    ...(isCi ? ["--no-sandbox"] : []),
     "--remote-debugging-port=0",
     `--user-data-dir=${profile}`,
     page,
