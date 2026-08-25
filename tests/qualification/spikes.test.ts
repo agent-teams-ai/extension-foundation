@@ -1722,6 +1722,7 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 20_0
     "--disable-background-timer-throttling",
     "--no-first-run",
     "--no-default-browser-check",
+    ...(process.env.CI ? ["--no-sandbox"] : []),
     "--remote-debugging-port=0",
     `--user-data-dir=${profile}`,
     page,
