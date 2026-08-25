@@ -110,6 +110,7 @@ function activationRequest(
     readonly profileLockDigest?: string;
     readonly activationSourceDigest?: string;
     readonly authorityScope?: string;
+    readonly productAuthorizationRevision?: string;
   } = {},
 ): ActivationRequest {
   return {
@@ -120,6 +121,7 @@ function activationRequest(
       authorityScope: options.authorityScope ?? testAuthorityScope,
       profileLockDigest: options.profileLockDigest ?? "sha256:profile-lock-1",
       configurationFingerprint: "sha256:configuration-1",
+      productAuthorizationRevision: options.productAuthorizationRevision ?? "product-authorization-revision-1",
       grantRevision: "grant-revision-1",
       hostPolicyRevision: "host-policy-revision-1",
     },
@@ -329,6 +331,11 @@ test("same operation with changed authority inputs is an idempotency conflict", 
   });
   assert.throws(() => lifecycle.activate(changedSource), /ACTIVATION_IDEMPOTENCY_CONFLICT/);
 
+  const changedProductAuthorization = activationRequest(lifecycle, "activation-conflict", plan, hooks, {
+    productAuthorizationRevision: "product-authorization-revision-2",
+  });
+  assert.throws(() => lifecycle.activate(changedProductAuthorization), /ACTIVATION_IDEMPOTENCY_CONFLICT/);
+
   const changedCleanupPolicy = activationRequest(lifecycle, "activation-conflict", plan, hooks, {
     cleanupTimeoutMs: 250,
   });
@@ -430,24 +437,31 @@ test("same completed operation returns its retained result without a second star
 
 test("different operation identities are separate candidates and only one publishes", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
-  const firstPlan = requirePlan([{ id: "first", requires: [] }]);
-  const secondPlan = requirePlan([{ id: "second", requires: [] }]);
+  const plan = requirePlan([{ id: "candidate", requires: [] }]);
+  let starts = 0;
+  const hooks = new Map([["candidate", inertHooks({
+    start: async () => {
+      starts += 1;
+      await delay(10);
+    },
+  })]]);
   const expectedActiveGeneration = lifecycle.activeGeneration;
   const first = activationRequest(
     lifecycle,
     "candidate-first",
-    firstPlan,
-    new Map([["first", inertHooks({ start: async () => delay(10) })]]),
+    plan,
+    hooks,
     { expectedActiveGeneration },
   );
   const second = activationRequest(
     lifecycle,
     "candidate-second",
-    secondPlan,
-    new Map([["second", inertHooks()]]),
+    plan,
+    hooks,
     { expectedActiveGeneration },
   );
   const results = await Promise.all([lifecycle.activate(first), lifecycle.activate(second)]);
+  assert.equal(starts, 2, "distinct operation identities were incorrectly deduplicated");
   assert.equal(results.filter(result => result.ok).length, 1);
   assert.equal(results.filter(result => result.errors.some(error => error.message === "STALE_ACTIVE_GENERATION")).length, 1);
   assert.equal(lifecycle.cutovers, 1);

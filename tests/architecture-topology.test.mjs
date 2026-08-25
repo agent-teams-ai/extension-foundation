@@ -10,6 +10,7 @@ import {
   CONFORMANCE_VERSION,
   loadPackagePolicy,
   materializationPlanPath,
+  packageAdmissionPath,
 } from "../architecture/checks/package-policy.mjs";
 import {
   isFilesystemPathInside,
@@ -698,6 +699,27 @@ test("catalog root rejects unknown and duplicate fields", async () => {
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
       "package policy: DUPLICATE_JSON_KEY:version",
     ]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("invalid package identities fail before admission evidence is read", async () => {
+  const root = await mkdtemp(join(tmpdir(), "extension-topology-invalid-package-id-"));
+  const invalidEntry = {
+    id: "../probe",
+    role: "foundation-component",
+    path: "packages/example",
+    package_name: "@agent-teams/example",
+    owner_document: "ADR-0099",
+  };
+  const catalog = JSON.stringify({ version: 1, packages: [invalidEntry] });
+  try {
+    await writeArchitecture(root, { catalog });
+    await writeFixture(root, packageAdmissionPath(invalidEntry), '{"broken":true,"broken":false}\n');
+
+    const policy = await loadPackagePolicy(root);
+    assert.deepEqual(policy.errors, ["../probe: package id is invalid"]);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

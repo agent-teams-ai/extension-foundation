@@ -47,7 +47,7 @@ the dossier has status `qualified`.
 | Profile | Mandatory proof |
 | --- | --- |
 | `GRAPH-1` | Closed-world closure; duplicate, missing, cycle and ambiguous provider rejection; deterministic plan/digest; exact dependency object; zero effects before admission |
-| `LIFECYCLE-1` | Single activation per fingerprint; complete hook preflight before effects; explicit readiness; one publication commit point; aggregate sibling failures; reverse rollback only before publication; idempotent stop; bounded waiter resources; absolute deadlines; cleanup debt |
+| `LIFECYCLE-1` | Single activation per operation identity and exact activation fingerprint; distinct operation identities remain separate candidates even for identical source and plan inputs; complete hook preflight before effects; explicit readiness; one publication commit point; aggregate sibling failures; reverse rollback only before publication; idempotent stop; bounded waiter resources; absolute effect deadlines; explicit bounded result-observation deadlines; cleanup debt |
 | `GENERATION-1` | Immutable generation identity; monotonic fence; stale request/write rejection; bounded drain; rollback as a forward generation |
 | `PROTOCOL-1` | Version negotiation; bounded frames; identity/deadline validation; duplicate/reordered messages; cancellation; malformed peer failure |
 | `PACKAGE-1` | Exact exports; no framework leakage; packed consumer E2E; browser/Node condition checks; API report and compatibility fixtures |

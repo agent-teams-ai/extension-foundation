@@ -226,7 +226,8 @@ Estimated change: 4,000-8,000 LOC including fixtures, 2-4 weeks.
 
 Do not begin this production-oriented host phase until ADR-0011 is accepted,
 superseded, or replaced by another accepted decision that closes custody,
-revision-bound publication, revocation, retirement and crash-recovery gaps.
+revision-bound publication, revocation, retirement and crash-recovery gaps, and
+`UMEQ-009` is resolved through `OD-003` for the selected process wire format.
 
 Implement mandatory handshake, N/N-1 codecs, absolute monotonic deadlines,
 request journal, readiness proof, byte-credit streams, drain watermark,

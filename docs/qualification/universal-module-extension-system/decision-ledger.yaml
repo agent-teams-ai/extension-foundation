@@ -63,6 +63,13 @@ implementationGates:
     allOf:
       - decision: ADR-0011
         requiredStatus: accepted
+  - id: process-host-wire-format
+    appliesTo:
+      - phase-4-process-host
+    mode: all
+    allOf:
+      - decision: UMEQ-009
+        requiredStatus: resolved
   - id: frontend-extension-host
     appliesTo:
       - phase-6-frontend-and-untrusted-hosts

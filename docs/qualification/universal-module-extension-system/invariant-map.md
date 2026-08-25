@@ -77,8 +77,9 @@ models. A library consumer never needs the module or plugin stack.
    the remaining budget but never refresh or extend it.
 5. Publication has one linearization point and atomically selects one active
    graph generation for the authority scope.
-6. Invocation admission binds graph generation, module activation generation, activation
-   source, and a current grant revision.
+6. Invocation admission binds graph generation, module activation generation,
+   activation source, an independent current product-authorization revision,
+   and a current capability-grant revision.
 7. A stale generation cannot publish routes or commit fenced durable writes.
 8. Rollback and stop follow the reverse successful-activation dependency DAG,
    continue bounded cleanup after individual failures, and preserve all errors.

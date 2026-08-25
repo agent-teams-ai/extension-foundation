@@ -67,7 +67,8 @@ canonical serialization, and hashing separately. No phase may allocate an
 
 Lifecycle benchmarks include:
 
-- 100 concurrent same-fingerprint starts;
+- 100 concurrent starts with one operation identity and exact fingerprint;
+- distinct operation identities with identical source and plan inputs;
 - ready and failed candidate;
 - diamond reverse rollback;
 - one hung disposer;

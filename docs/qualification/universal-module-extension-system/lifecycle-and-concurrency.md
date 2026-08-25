@@ -127,7 +127,8 @@ to reject stale generations.
 
 The activation fingerprint binds the exact resolved hook bundle and host-adapter
 implementation through an activation-source digest, plus plan, authority scope,
-profile/configuration/grant/host-policy revisions, deadline, and cleanup policy.
+profile/configuration, independent product-authorization, capability-grant and
+host-policy revisions, deadline, and cleanup policy.
 Functions are never serialized to invent identity. Resolution creates the
 digest before lifecycle admission and snapshots the corresponding hook bindings.
 The complete caller-owned activation identity is copied and frozen at the same
@@ -153,12 +154,21 @@ handle issued by another scope is rejected.
 | Late completion versus deadline | Late result is stale and cannot publish |
 | Reentrant `A -> B -> A` | Fail synchronously with a causal-cycle diagnostic |
 
-Relative timeout refresh is forbidden. One absolute deadline follows every hop,
-retry, joiner, and adapter. Authority time determines expiry. An in-process host
-also carries one independent monotonic wall-time bound for correctness: a stalled,
-throwing, or non-finite injected clock fails closed and cannot refresh activation,
-drain, or cleanup budgets between phases. `cleanupTimeoutMs` is only a tighter
-cap inside that operation deadline; it never extends the lifecycle operation.
+Relative timeout refresh is forbidden. One absolute authority/effect deadline
+follows every effect hop, retry, and adapter. Authority time determines expiry.
+An in-process host also carries one independent monotonic wall-time bound for
+correctness: a stalled, throwing, or non-finite injected clock fails closed and
+cannot refresh activation, drain, or cleanup budgets between phases.
+`cleanupTimeoutMs` is only a tighter cap inside that operation deadline; it
+never extends the lifecycle operation.
+
+A caller's result-observation deadline is separate and cannot authorize an
+effect or publication after the authority/effect deadline. The disposable spike
+uses a bounded 100 ms local observation grace when a waiter does not provide an
+explicit deadline, so it can receive terminal timeout or cleanup evidence. A
+production contract must make this grace explicit and profile-owned rather than
+silently treating it as renewed execution authority. An explicit shorter waiter
+deadline still detaches only that caller.
 
 A correctness deadline remains a referenced event-loop obligation while its
 result is awaited. Its timer must stay referenced: a standalone host must stay
@@ -315,7 +325,9 @@ LifecycleIntent
   phase
   absoluteDeadline
   planDigest
+  productAuthorizationRevision
   grantRevision
+  hostPolicyRevision
   expectedActiveGeneration
 
 LifecycleEvidence

@@ -168,6 +168,12 @@ test("decision ledger has one semantic owner and ten unique approval forks", asy
       allOf: [{ decision: "ADR-0011", requiredStatus: "accepted" }],
     },
     {
+      id: "process-host-wire-format",
+      appliesTo: ["phase-4-process-host"],
+      mode: "all",
+      allOf: [{ decision: "UMEQ-009", requiredStatus: "resolved" }],
+    },
+    {
       id: "frontend-extension-host",
       appliesTo: ["phase-6-frontend-and-untrusted-hosts"],
       mode: "all",
@@ -332,6 +338,7 @@ test("execution admission and every production host remain independently gated",
   assert.match(trust, /Product --> Intersect\["Authority intersection"\]/);
   assert.match(trust, /Grant\["Current product capability grant"\] --> Intersect/);
   assert.doesNotMatch(trust, /Product --> Grant/);
+  assert.match(recommendation, /`UMEQ-009` is resolved through `OD-003` for the selected process wire format/);
   assert.match(trust, /AR authorization = allow when AR owns the capability/);
   assert.match(trust, /Unknown applicability, a bare decision without\s+an `allow` result.*deny execution/is);
   assert.match(

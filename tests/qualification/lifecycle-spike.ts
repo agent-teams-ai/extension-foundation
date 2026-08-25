@@ -38,6 +38,7 @@ export interface ActivationIdentity {
   readonly authorityScope: string;
   readonly profileLockDigest: string;
   readonly configurationFingerprint: string;
+  readonly productAuthorizationRevision: string;
   readonly grantRevision: string;
   readonly hostPolicyRevision: string;
 }
@@ -168,6 +169,7 @@ function fingerprint(request: ActivationRequest): string {
     identity.authorityScope,
     identity.profileLockDigest,
     identity.configurationFingerprint,
+    identity.productAuthorizationRevision,
     identity.grantRevision,
     identity.hostPolicyRevision,
     absoluteDeadline,
@@ -425,6 +427,7 @@ export class GenerationLifecycle {
       authorityScope: requestIdentity.authorityScope,
       profileLockDigest: requestIdentity.profileLockDigest,
       configurationFingerprint: requestIdentity.configurationFingerprint,
+      productAuthorizationRevision: requestIdentity.productAuthorizationRevision,
       grantRevision: requestIdentity.grantRevision,
       hostPolicyRevision: requestIdentity.hostPolicyRevision,
     });

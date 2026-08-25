@@ -274,7 +274,8 @@ export async function loadPackagePolicy(root) {
       errors.push(`${CATALOG_PATH}: every entry must contain exactly ${CATALOG_ENTRY_KEYS.join(", ")}`);
       continue;
     }
-    if (!PACKAGE_ID.test(entry.id)) errors.push(`${entry.id}: package id is invalid`);
+    const packageIdIsValid = PACKAGE_ID.test(entry.id);
+    if (!packageIdIsValid) errors.push(`${entry.id}: package id is invalid`);
     if (!allowedRoles.has(entry.role)) errors.push(`${entry.id}: unknown role ${entry.role}`);
     if (!PACKAGE_PATH.test(entry.path)) {
       errors.push(`${entry.id}: path must be a normalized directory under packages/`);
@@ -285,11 +286,13 @@ export async function loadPackagePolicy(root) {
     if (!OWNER_DOCUMENT.test(entry.owner_document)) {
       errors.push(`${entry.id}: owner_document must be an ADR identity`);
     }
-    try {
-      const admission = parseStrictJson(await readFile(join(root, packageAdmissionPath(entry)), "utf8"));
-      validateAdmission(entry, admission, errors);
-    } catch (error) {
-      errors.push(`${entry.id}: admission evidence is missing or invalid: ${error instanceof Error ? error.message : String(error)}`);
+    if (packageIdIsValid) {
+      try {
+        const admission = parseStrictJson(await readFile(join(root, packageAdmissionPath(entry)), "utf8"));
+        validateAdmission(entry, admission, errors);
+      } catch (error) {
+        errors.push(`${entry.id}: admission evidence is missing or invalid: ${error instanceof Error ? error.message : String(error)}`);
+      }
     }
     for (const field of Object.keys(seen)) {
       if (seen[field].has(entry[field])) errors.push(`${entry.id}: duplicate ${field} ${entry[field]}`);

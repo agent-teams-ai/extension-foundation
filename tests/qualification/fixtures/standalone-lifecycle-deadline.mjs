@@ -19,6 +19,7 @@ const request = (operationId, plan, hooks) => ({
     authorityScope,
     profileLockDigest: "sha256:profile",
     configurationFingerprint: "sha256:configuration",
+    productAuthorizationRevision: "product-authorization-1",
     grantRevision: "grant-1",
     hostPolicyRevision: "policy-1",
   },
