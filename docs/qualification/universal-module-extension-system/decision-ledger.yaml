@@ -1,0 +1,112 @@
+schemaVersion: 1
+qualification: universal-module-extension-system
+sourceRevision: 78850cbc57a1a688913a3694ca6f0efde34ab192
+entries:
+  - id: UMEQ-001
+    status: accepted-existing
+    topic: product-neutral-foundation
+    authority: ADR-0001
+    detail: ../../decisions/0001-product-neutral-extension-foundation-boundary.md
+    approvalRequired: false
+  - id: UMEQ-002
+    status: accepted-existing
+    topic: extension-safety-floor
+    authority: ADR-0010
+    detail: ../../decisions/0010-extension-safety-floor-and-retirement-closure.md
+    approvalRequired: false
+  - id: UMEQ-003
+    status: accepted-existing
+    topic: library-module-plugin-boundaries
+    authority: ADR-0012
+    detail: ../../decisions/0012-reusable-library-module-and-plugin-boundaries.md
+    approvalRequired: false
+  - id: UMEQ-004
+    status: recommended
+    topic: native-module-graph-kernel
+    authority: OD-003
+    detail: module-graph.md#runtime-implementation
+    approvalRequired: true
+  - id: UMEQ-005
+    status: recommended
+    topic: generation-lifecycle-coordinator
+    authority: OD-003
+    detail: lifecycle-and-concurrency.md#recommended-model
+    approvalRequired: true
+  - id: UMEQ-006
+    status: recommended
+    topic: trusted-and-isolated-host-tiers
+    authority: OD-003
+    detail: trust-and-security.md#host-tier-matrix
+    approvalRequired: true
+  - id: UMEQ-007
+    status: recommended
+    topic: restart-safe-update-baseline
+    authority: OD-003
+    detail: lifecycle-and-concurrency.md#replacement-and-update
+    approvalRequired: true
+  - id: UMEQ-008
+    status: deferred
+    topic: extism-wasm-host
+    authority: OD-003
+    detail: trust-and-security.md#post-mvp-wasm
+    approvalRequired: false
+  - id: UMEQ-009
+    status: open
+    topic: public-process-protocol-wire-format
+    authority: OD-003
+    detail: unresolved-decisions.md#umeq-009-process-wire-format
+    approvalRequired: true
+  - id: UMEQ-010
+    status: open
+    topic: frontend-contribution-and-isolation-model
+    authority: product-owner
+    detail: unresolved-decisions.md#umeq-010-frontend-extension-model
+    approvalRequired: true
+  - id: UMEQ-011
+    status: open
+    topic: explicit-provider-binding
+    authority: OD-003
+    detail: unresolved-decisions.md#umeq-011-provider-binding-policy
+    approvalRequired: true
+  - id: UMEQ-012
+    status: open
+    topic: contract-source-model
+    authority: OD-003
+    detail: unresolved-decisions.md#umeq-012-contract-source-model
+    approvalRequired: true
+  - id: UMEQ-013
+    status: open
+    topic: trusted-module-runtime
+    authority: OD-003
+    detail: unresolved-decisions.md#umeq-013-trusted-module-runtime
+    approvalRequired: true
+  - id: UMEQ-014
+    status: open
+    topic: package-module-formats
+    authority: product-owner
+    detail: unresolved-decisions.md#umeq-014-package-module-formats
+    approvalRequired: true
+  - id: UMEQ-015
+    status: open
+    topic: package-publication-topology
+    authority: ADR-0010
+    detail: unresolved-decisions.md#umeq-015-package-publication-topology
+    approvalRequired: true
+  - id: UMEQ-016
+    status: open
+    topic: update-and-hot-reload-baseline
+    authority: OD-003
+    detail: unresolved-decisions.md#umeq-016-update-and-hot-reload-baseline
+    approvalRequired: true
+  - id: UMEQ-017
+    status: open
+    topic: distributed-cutover-guarantee
+    authority: OD-003
+    detail: unresolved-decisions.md#umeq-017-distributed-cutover-guarantee
+    approvalRequired: true
+  - id: UMEQ-018
+    status: open
+    topic: managed-update-metadata
+    authority: OD-001/OD-002
+    detail: unresolved-decisions.md#umeq-018-managed-update-metadata
+    approvalRequired: true

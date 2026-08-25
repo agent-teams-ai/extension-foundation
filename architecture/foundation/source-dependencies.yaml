@@ -41,19 +41,28 @@ boundaries:
       - tests/docs-protocol-qualification.test.mjs
       - tests/document-authoring.test.mjs
       - tests/scaffolding.test.mjs
+      - tests/qualification/spikes.test.ts
     allow:
       boundaries:
         - repository.architecture-checks
       packages:
+        - "@dagrejs/graphlib"
+        - "@deepseek-ai/cordis"
+        - "@extism/extism"
         - "@agent-teams/docs-protocol"
         - "@agent-teams/engineering-foundation"
+        - fast-check
       builtins:
         - node:assert/strict
         - node:child_process
+        - node:crypto
+        - node:events
         - node:fs/promises
         - node:os
         - node:path
         - node:test
+        - node:timers/promises
         - node:url
         - node:util
+        - node:worker_threads
       runtimeReferences: []

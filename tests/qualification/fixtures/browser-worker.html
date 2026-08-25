@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Browser Worker qualification</title>
+<pre id="result">pending</pre>
+<script>
+  const source = `
+    self.onmessage = event => {
+      const frame = event.data;
+      if (frame.protocol !== "agent-teams.extension-host/v1" || frame.runtimeGeneration !== 7) {
+        self.postMessage({ ok: false, error: "STALE_OR_INVALID" });
+        return;
+      }
+      self.postMessage({ ok: true, frame: { ...frame, kind: "result" } });
+    };
+  `;
+  const url = URL.createObjectURL(new Blob([source], { type: "text/javascript" }));
+  const worker = new Worker(url);
+  worker.onmessage = event => {
+    document.querySelector("#result").textContent = JSON.stringify(event.data);
+    worker.terminate();
+    URL.revokeObjectURL(url);
+  };
+  worker.postMessage({
+    protocol: "agent-teams.extension-host/v1",
+    requestId: "browser-request-1",
+    operationId: "browser-operation-1",
+    graphGeneration: 1,
+    runtimeGeneration: 7,
+    kind: "prepare",
+  });
+</script>
+</html>

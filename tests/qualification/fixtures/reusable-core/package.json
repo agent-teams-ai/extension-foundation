@@ -1,0 +1,17 @@
+{
+  "name": "@agent-teams/qualification-reusable-core",
+  "version": "0.0.0-qualification",
+  "private": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    }
+  },
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
+  "sideEffects": false
+}

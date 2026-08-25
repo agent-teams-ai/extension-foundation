@@ -1,0 +1,253 @@
+---
+id: qualification.universal-module-extension-system.final-recommendation
+type: qualification
+status: qualified
+owner: architecture
+summary: Recommends the minimum universal module and extension system justified by accepted constraints, source research, and executable evidence.
+related:
+  - ADR-0001
+  - ADR-0010
+  - ADR-0012
+  - OD-001
+  - OD-002
+  - OD-003
+---
+
+# Final Recommendation
+
+## Architecture
+
+Use one product-neutral contract and conformance foundation, while every product
+retains its feature-owned SPI, DDD authority and deployment adapters.
+
+```mermaid
+flowchart TB
+    Library["Reusable library core"] --> Adapter["Product-owned module adapter"]
+    BuiltIn["Built-in module definition"] --> Definitions["Inert module definitions"]
+    Adapter --> Definitions
+
+    Artifact["Digest-pinned plugin artifact"] --> Verify["Verify and admit"]
+    Verify --> Contributions["1..N contributions"]
+    Contributions --> Definitions
+
+    Profile["Product profile and exact lock"] --> Compiler["Closed-world native graph compiler"]
+    Definitions --> Compiler
+    Compiler --> Plan["Immutable plan and diagnostics"]
+    Plan --> Lifecycle["Product-owned generation coordinator"]
+
+    Lifecycle --> Trusted["Trusted in-process host"]
+    Lifecycle --> Process["Isolated process host"]
+    Lifecycle --> Browser["Browser Worker or iframe host"]
+    Lifecycle -. post-MVP .-> Wasm["Extism/WASI host"]
+
+    Product["Owning use case: authorization, invariants, transaction"] --> SPI["Narrow product SPI"]
+    Trusted --> SPI
+    Process --> SPI
+    Browser --> SPI
+    Wasm --> SPI
+```
+
+The module system composes capabilities. It never replaces product aggregates,
+authorization, transactions or recovery policy. A plugin may propose, transform
+or perform a post-commit effect; the owning use case validates its result before
+any canonical mutation.
+
+## Status Separation
+
+### Accepted Earlier
+
+- Reusable library core does not depend on module/plugin runtime.
+- Product-owned module adapter may depend on a reusable core.
+- Plugin artifact is a distribution, trust, install and update envelope; one
+  artifact may provide multiple contributions.
+- Built-ins do not receive synthetic artifact identities.
+- Product-specific SPI, aggregates, invariants, authorization and transactions
+  remain with the owning product/feature.
+- No plugin/provider call occurs inside a Unit of Work.
+- Requests are not grants; signatures are not sandboxes; graph validity is not
+  authorization.
+- No global service locator, ambient container, registration-order semantics or
+  public framework types.
+- Production SPI requires a real owner, two independently authored conforming
+  implementations and compatibility evidence.
+
+### Verified By This Qualification
+
+- A small native compiler can produce deterministic batches/digest, reject
+  invalid graphs before effects and remain stack-safe at 10,000 modules.
+- One hundred concurrent starts can share one activation and publication.
+- Failed readiness preserves the active generation; deadlines prevent late
+  publication; hung cleanup is bounded and visible.
+- Parallel startup failure waits for every bounded sibling outcome before
+  reverse cleanup, preventing cleanup from racing a still-starting peer.
+- Generation replacement can drain admitted work and reject stale durable
+  writes at the commit seam; drain expiry becomes explicit debt before fencing.
+- Crash/recovery choices can be represented as a deterministic reducer rather
+  than process-memory continuation.
+- Node process, Node Worker and real browser Worker carry one serializable,
+  generation-bound envelope.
+- Native and Cordis-backed resource hooks can emit the same applicable neutral
+  lifecycle trace.
+- A packed reusable core installs and runs without Foundation, Cordis or plugin
+  dependencies.
+- Extism 1.0.3 can execute a digest-verified official Wasm plugin, but Node
+  reports experimental WASI and npm `latest` is a 2.0 release candidate.
+
+### Recommended
+
+- Native TypeScript closed-world compiler as the first private implementation.
+- Explicit profile bindings for V1 single-provider slots.
+- One generation lifecycle vocabulary with separate distributed fence,
+  route-revision, rollout-intent and replica-incarnation identities.
+- Side-by-side generation replacement plus bounded drain; restart is an honest
+  fallback, arbitrary hot unload is not baseline.
+- Environment-neutral structural contracts, explicit Node/process/browser/
+  Electron adapters and no smart root package that changes product semantics by
+  export condition.
+- JSON Schema for serialized wire data and handwritten TypeScript for
+  executable ports, pending approval.
+- ESM-only internal/reusable packages first; public fixed-version train only
+  after ADR-0010 evidence.
+- OCI/ORAS plus Cosign/Sigstore for digest-pinned artifacts, with TUF required
+  before mutable managed channels or delegated publisher updates.
+
+### Hypotheses Still Needing Product Evidence
+
+- Exact product SPI shapes and cardinality/version grammar.
+- First Orchestrator and AR adoption slices.
+- Frontend contribution API and Web/Electron permission UX.
+- Durable database schema, process protocol encoding and distributed bindings.
+- Whether Cordis deletes enough owned code in a future real consumer.
+- `T2/T3` untrusted-host portability and full cross-platform sandbox claims.
+
+### Deferred
+
+- Stable public SPI and npm publication.
+- CommonJS without a demonstrated consumer.
+- Arbitrary HMR/hot unload.
+- Extism/WASI production host and non-TypeScript plugin authoring.
+- General SAT dependency solver, multiple coexisting module versions and
+  implicit parent scopes.
+- Distributed consensus, multi-router rollout and VM isolation in the first
+  local module slice.
+
+## Cordis Verdict
+
+Do not adopt Cordis as the baseline module runtime.
+
+Its exact 4.0.1 implementation is useful for Fiber-owned scoped effects, but it
+does not provide closed-world compilation, product readiness, generation
+fencing, atomic publication, bounded drain, durable recovery or hostile-code
+isolation. The measured adapter would not delete the required 25% of equivalent
+owned code and risks a second lifecycle authority.
+
+Keep Cordis pinned only as a development qualification dependency and design
+reference. Reopen adoption if a real product adapter stays private, passes the
+same conformance traces, uses no private API, requires no vendor fork and meets
+the measured deletion threshold.
+
+## Implementation Roadmap
+
+### Phase 0: Approvals And Baseline
+
+Approve `UMEQ-011`, `UMEQ-012`, `UMEQ-013`, and `UMEQ-015` in
+[Unresolved Decisions](unresolved-decisions.md): provider binding, contract
+source model, trusted module runtime, and publication timing. Keep all packages
+private and all SPI experimental. Process wire, Frontend, update, distributed
+cutover, and managed-update decisions may remain open during the local graph
+slice because Phase 1 does not publish or isolate executable modules.
+
+Estimated change: 300-700 documentation/tooling LOC, 1-3 days.
+
+### Phase 1: Internal Graph Kernel
+
+Promote only the proven descriptor validation, explicit binding, deterministic
+graph, diagnostics, canonical plan and property/differential fixtures into one
+internal package. No installation, container, process or distributed behavior.
+
+Exit criteria: one independent oracle, packed consumer, 10,000-node budgets,
+zero-effect invalid graphs and framework-free declarations.
+
+Estimated change: 2,500-4,500 LOC including tests, 1-2 weeks.
+
+### Phase 2: One Two-Module Product Rehearsal
+
+Use two fixed trusted built-ins in one owning product feature. Prove
+`prepare -> start -> ready -> publish -> drain -> stop`, absolute deadlines,
+single-flight, reverse cleanup, generation fences and structured diagnostics.
+Do not publish the contract.
+
+Exit criteria: feature authority remains product-owned; one native and one
+bounded reference adapter produce matching applicable traces; no lifecycle
+framework leakage.
+
+Estimated change: 3,000-6,000 LOC including product tests, 1-3 weeks.
+
+### Phase 3: Reusable Internal Contracts And Conformance
+
+Extract only semantics proved by two consumers: structural IDs/envelopes,
+graph fixtures, lifecycle outcomes and packed conformance runner. Product
+contracts and adapters stay local. Add exact package exports and API reports.
+
+Estimated change: 4,000-8,000 LOC including fixtures, 2-4 weeks.
+
+### Phase 4: Process Host
+
+Implement mandatory handshake, N/N-1 codecs, absolute monotonic deadlines,
+request journal, readiness proof, byte-credit streams, drain watermark,
+process-tree custody and crash reconciliation. Start with explicitly supported
+OS containment; unsupported hard guarantees fail closed.
+
+Estimated change: 8,000-13,000 LOC including Linux/Windows tests, 4-8 weeks.
+
+### Phase 5: Artifact, Profile And Catalog Path
+
+Implement digest-pinned OCI artifact verification, signer/provenance policy,
+profile/lock separation, PostgreSQL catalog source, signed snapshot and direct
+digest install. Remain pin-only unless TUF-managed update metadata is ready.
+
+Estimated change: 10,000-18,000 LOC including conformance, 5-10 weeks.
+
+### Phase 6: Frontend And Untrusted Hosts
+
+After separate Frontend approval, add declarative contributions, a strict
+capability broker, Web Worker/iframe placement and Electron main/preload/
+renderer adapters. Extism is a separate post-MVP host qualification.
+
+Estimated change: 10,000-20,000 LOC including browser/Electron/platform tests,
+6-12 weeks.
+
+Phases overlap only where ownership and write sets are independent. The first
+usable internal module system is roughly 8,000-15,000 LOC including tests. A
+cross-product plugin platform with process, artifact and frontend hosts is
+roughly 40,000-75,000 LOC before product-specific plugin behavior.
+
+## Main Risks
+
+| Risk | Control |
+| --- | --- |
+| Foundation becomes a product shared kernel | Product-owned SPI and authority tests; no product models in public declarations |
+| Two graph/lifecycle authorities | One neutral plan/trace; adapter kill criteria and differential conformance |
+| Public API freezes before evidence | Internal packages and Draft ADR until two implementations pass packed tests |
+| Hidden security downgrade | Explicit `T0-T4` tier and required-control feature reporting; fail closed |
+| Distributed system promises false atomicity | Separate route decision, admission and sink-effect guarantees |
+| Package explosion | Colocate by default; extraction needs a second consumer or independent lifecycle |
+| Compatibility matrix grows without bound | Fixed release train, ESM-first, N/N-1 only and explicit defer list |
+| AI agents cannot locate ownership | Machine-readable descriptors, stable diagnostics and generated views from one model |
+| Research framework delays product delivery | Two-module rehearsal, LOC/time kill criteria and no general DSL in first slice |
+
+## Decision
+
+The architecture is implementation-ready for **Phase 1 only after the four
+priority approvals**. It is not ready for a stable public SPI, Cordis adoption,
+untrusted plugin claim or production package publication.
+
+The recommended design is intentionally smaller than “Everything is a Plugin”:
+
+- everything composable is a module;
+- everything intentionally replaceable has a narrow extension point;
+- only independently distributed, trusted and lifecycle-managed artifacts are
+  plugins.
+
+That retains the constructor-like flexibility without moving every class,
+domain invariant or internal feature behind a runtime framework.

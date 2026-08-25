@@ -9,7 +9,12 @@ policies:
   reservedScopes:
     - "@agent-teams/"
   developmentOnlyPackages:
+    - "@dagrejs/graphlib"
+    - "@deepseek-ai/cordis"
+    - "@extism/extism"
+    - "@types/node"
     - cspell
+    - fast-check
     - markdownlint-cli2
   exactRegistryDevelopmentOnlyPackages:
     - "@agent-teams/docs-protocol"
