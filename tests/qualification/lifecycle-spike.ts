@@ -661,6 +661,7 @@ export class GenerationLifecycle {
           let phase: LifecyclePhase = "prepare";
           try {
             checkDeadline();
+            if (activationController.signal.aborted) return { localTraces };
             const module = hooks.get(moduleId);
             if (!module) throw new Error(`MISSING_HOOKS:${moduleId}`);
             cleanupCandidates.add(moduleId);
@@ -672,6 +673,7 @@ export class GenerationLifecycle {
               markActivationTimeout,
             );
             checkDeadline();
+            if (activationController.signal.aborted) return { localTraces };
             phase = "start";
             localTraces.push({ phase: "start", moduleId, generation, outcome: "started" });
             await runBeforeDeadline(
@@ -681,6 +683,7 @@ export class GenerationLifecycle {
               markActivationTimeout,
             );
             checkDeadline();
+            if (activationController.signal.aborted) return { localTraces };
             phase = "ready";
             if (module.readiness !== "inert" && module.readiness !== "probe") {
               throw new Error(`INVALID_READINESS:${moduleId}`);
@@ -695,6 +698,7 @@ export class GenerationLifecycle {
               if (ready !== true) throw new Error(`NOT_READY:${moduleId}`);
             }
             checkDeadline();
+            if (activationController.signal.aborted) return { localTraces };
             localTraces.push({ phase: "ready", moduleId, generation, outcome: "confirmed" });
             return { localTraces };
           } catch (error) {

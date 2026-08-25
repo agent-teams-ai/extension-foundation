@@ -134,15 +134,23 @@ function activationRequest(
   };
 }
 
-test("invalid ID-DAG input produces deterministic diagnostics without loading hooks", () => {
-  const definitions = [
+test("invalid ID-DAG inputs produce deterministic diagnostics without loading hooks", () => {
+  const duplicateDefinitions = [
     { id: "consumer", requires: ["missing"] },
     { id: "consumer", requires: [] },
   ];
-  const first = compileGraph(definitions);
-  const second = compileGraph([...definitions].reverse());
-  assert.equal(first.ok, false);
-  assert.deepEqual(first, second);
+  const firstDuplicate = compileGraph(duplicateDefinitions);
+  const secondDuplicate = compileGraph([...duplicateDefinitions].reverse());
+  assert.equal(firstDuplicate.ok, false);
+  assert.deepEqual(firstDuplicate, secondDuplicate);
+  assert.deepEqual(firstDuplicate.diagnostics.map(diagnostic => diagnostic.code), ["DUPLICATE_MODULE"]);
+
+  const missingDefinitions = [{ id: "consumer", requires: ["missing"] }];
+  const firstMissing = compileGraph(missingDefinitions);
+  const secondMissing = compileGraph([...missingDefinitions].reverse());
+  assert.equal(firstMissing.ok, false);
+  assert.deepEqual(firstMissing, secondMissing);
+  assert.deepEqual(firstMissing.diagnostics.map(diagnostic => diagnostic.code), ["MISSING_PROVIDER"]);
 });
 
 test("graph plan uses stable batches and reverse dependency cleanup", () => {
@@ -1083,6 +1091,44 @@ test("a fast sibling failure promptly aborts cooperative siblings before cleanup
   assert.deepEqual(result.errors.map(error => error.message), ["FAST_FAILURE"]);
 });
 
+test("a failed prepare prevents siblings from entering later activation phases", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([
+    { id: "fails", requires: [] },
+    { id: "sibling", requires: [] },
+  ]);
+  let siblingStarts = 0;
+  let siblingReadinessChecks = 0;
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "prepare-sibling-abort",
+    plan,
+    new Map<string, ModuleHooks>([
+      ["fails", inertHooks({
+        prepare: async () => {
+          await delay(5);
+          throw new Error("PREPARE_FAILURE");
+        },
+        stop: () => undefined,
+      })],
+      ["sibling", {
+        readiness: "probe",
+        prepare: async () => { await delay(15); },
+        start: () => { siblingStarts += 1; },
+        ready: () => { siblingReadinessChecks += 1; return true; },
+        stop: () => undefined,
+      }],
+    ]),
+    { deadlineMs: 200, cleanupTimeoutMs: 80 },
+  ));
+  assert.equal(result.ok, false);
+  assert.equal(siblingStarts, 0);
+  assert.equal(siblingReadinessChecks, 0);
+  assert.deepEqual(result.errors.map(error => error.message), ["PREPARE_FAILURE"]);
+  assert.equal(result.traces.some(trace => trace.moduleId === "sibling" && trace.phase === "start"), false);
+  assert.equal(result.traces.some(trace => trace.moduleId === "sibling" && trace.phase === "ready"), false);
+});
+
 test("ignored activation cancellation is bounded without refreshing cleanup time", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "slow", requires: [] }]);
@@ -1095,17 +1141,17 @@ test("ignored activation cancellation is bounded without refreshing cleanup time
     new Map([["slow", inertHooks({
       start: async () => {
         startRunning = true;
-        await delay(30);
+        await delay(500);
         startRunning = false;
       },
       stop: () => { cleanupOverlapped = startRunning; },
     })]]),
-    { deadlineMs: 5, cleanupTimeoutMs: 20 },
+    { deadlineMs: 250, cleanupTimeoutMs: 20 },
   ));
   assert.equal(result.ok, false);
   assert.equal(result.termination, "termination_unproven");
   assert.equal(cleanupOverlapped, false);
-  await delay(35);
+  await delay(300);
   assert.equal(startRunning, false);
 });
 
