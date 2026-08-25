@@ -1375,7 +1375,7 @@ test("standalone lifecycle deadlines record async hangs and finite event-loop bl
     child.stderr.setEncoding("utf8");
     child.stdout.on("data", chunk => { stdout += chunk; });
     child.stderr.on("data", chunk => { stderr += chunk; });
-    const [code] = await once(child, "exit", { signal: AbortSignal.timeout(2_000) });
+    const [code] = await once(child, "close", { signal: AbortSignal.timeout(2_000) });
     children.delete(child);
     assert.equal(code, 0, `${phase}:${stderr}`);
     const result = JSON.parse(stdout) as {
@@ -1811,7 +1811,7 @@ test("process-host stop is a terminal receive barrier for already-buffered frame
     encodeLengthPrefixedFrame(stopRequest),
     encodeLengthPrefixedFrame(prepareAfterStop),
   ]));
-  const [exitCode] = await once(child, "exit", { signal: AbortSignal.timeout(2_000) });
+  const [exitCode] = await once(child, "close", { signal: AbortSignal.timeout(2_000) });
   assert.equal(exitCode, 0);
   assert.equal(responses.length, 1);
   assert.equal(validateResponseEnvelope(
@@ -1981,11 +1981,6 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 40_0
   let debuggerUrl: string | undefined;
   const debuggerDeadline = performance.now() + 15_000;
   while (performance.now() < debuggerDeadline) {
-    const stderrEndpoint = /DevTools listening on (ws:\/\/[^\s]+)/.exec(stderr)?.[1];
-    if (stderrEndpoint) {
-      debuggerUrl = stderrEndpoint;
-      break;
-    }
     try {
       const [portLine, pathLine] = (await readFile(join(profile, "DevToolsActivePort"), "utf8")).trim().split(/\r?\n/, 2);
       const port = Number(portLine);
