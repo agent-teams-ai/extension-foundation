@@ -76,6 +76,20 @@ candidates:
     adopt: patterns-and-test-oracle
     usefulFor: encapsulation, deterministic boot, ready and close ordering
     missing: generations, replaceable graph, durable intents, hostile isolation
+  - id: dagrejs-graphlib
+    evidenceStatus: pinned
+    category: graph-test-oracle
+    versionOrRevision: "@dagrejs/graphlib@4.0.5"
+    evidence:
+      - kind: npm-release
+        package: "@dagrejs/graphlib"
+        version: 4.0.5
+        url: "https://registry.npmjs.org/@dagrejs/graphlib/-/graphlib-4.0.5.tgz"
+        integrity: "sha512-7xrBTqIts3o+PMUZX97wSc+7TUbW+/rULzGNCTP6yooNVDXbzw4Wutg/H/xOutTB/c/k0YqOAavgPh4/Zk9PFA=="
+        locked: true
+    adopt: qualification-test-oracle-only
+    usefulFor: independent cycle-validity and deterministic-order differential checks
+    missing: capability versions, provider binding, lifecycle, authority, isolation and recovery
   - id: osgi
     evidenceStatus: orientation
     category: dynamic-module-system

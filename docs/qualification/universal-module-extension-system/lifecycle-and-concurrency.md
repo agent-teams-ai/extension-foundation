@@ -382,8 +382,10 @@ Specify but defer production implementation and executable fault injection of:
 - Extism/WASM host;
 - automatic retry policy for product-specific effects.
 
-This keeps the first spike below roughly 1,500 implementation and test LOC. If
-an adapter needs another overlapping lifecycle coordinator, it fails
+The graph, lifecycle and recovery implementations total roughly 1,250 physical
+LOC. Their cases share the broader roughly 1,960-line cross-boundary test
+harness, so the complete four-file qualification surface is roughly 3,200 LOC.
+If an adapter needs another overlapping lifecycle coordinator, it fails
 qualification rather than enlarging the kernel.
 
 ## Conformance Minimum
