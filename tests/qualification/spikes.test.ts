@@ -111,6 +111,8 @@ function activationRequest(
     readonly activationSourceDigest?: string;
     readonly authorityScope?: string;
     readonly productAuthorizationRevision?: string;
+    readonly grantRevision?: string;
+    readonly hostPolicyRevision?: string;
   } = {},
 ): ActivationRequest {
   return {
@@ -122,8 +124,8 @@ function activationRequest(
       profileLockDigest: options.profileLockDigest ?? "sha256:profile-lock-1",
       configurationFingerprint: "sha256:configuration-1",
       productAuthorizationRevision: options.productAuthorizationRevision ?? "product-authorization-revision-1",
-      grantRevision: "grant-revision-1",
-      hostPolicyRevision: "host-policy-revision-1",
+      grantRevision: options.grantRevision ?? "grant-revision-1",
+      hostPolicyRevision: options.hostPolicyRevision ?? "host-policy-revision-1",
     },
     plan,
     hooks,
@@ -335,6 +337,16 @@ test("same operation with changed authority inputs is an idempotency conflict", 
     productAuthorizationRevision: "product-authorization-revision-2",
   });
   assert.throws(() => lifecycle.activate(changedProductAuthorization), /ACTIVATION_IDEMPOTENCY_CONFLICT/);
+
+  const changedGrant = activationRequest(lifecycle, "activation-conflict", plan, hooks, {
+    grantRevision: "grant-revision-2",
+  });
+  assert.throws(() => lifecycle.activate(changedGrant), /ACTIVATION_IDEMPOTENCY_CONFLICT/);
+
+  const changedHostPolicy = activationRequest(lifecycle, "activation-conflict", plan, hooks, {
+    hostPolicyRevision: "host-policy-revision-2",
+  });
+  assert.throws(() => lifecycle.activate(changedHostPolicy), /ACTIVATION_IDEMPOTENCY_CONFLICT/);
 
   const changedCleanupPolicy = activationRequest(lifecycle, "activation-conflict", plan, hooks, {
     cleanupTimeoutMs: 250,
@@ -1867,7 +1879,14 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 40_0
         "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
         "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
       ]
-    : ["/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"];
+    : process.platform === "win32"
+      ? [
+          join(process.env.PROGRAMFILES ?? "C:\\Program Files", "Google", "Chrome", "Application", "chrome.exe"),
+          join(process.env["PROGRAMFILES(X86)"] ?? "C:\\Program Files (x86)", "Google", "Chrome", "Application", "chrome.exe"),
+          join(process.env.PROGRAMFILES ?? "C:\\Program Files", "Microsoft", "Edge", "Application", "msedge.exe"),
+          join(process.env["PROGRAMFILES(X86)"] ?? "C:\\Program Files (x86)", "Microsoft", "Edge", "Application", "msedge.exe"),
+        ]
+      : ["/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"];
   let browser: string | undefined;
   for (const candidate of candidates) {
     const probe = spawn(candidate, ["--version"], { stdio: "ignore" });
@@ -1920,10 +1939,10 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 40_0
     "--headless=new",
     "--disable-gpu",
     "--disable-background-timer-throttling",
-    ...(isCi ? ["--disable-dev-shm-usage"] : []),
+    ...(isCi && process.platform === "linux" ? ["--disable-dev-shm-usage"] : []),
     "--no-first-run",
     "--no-default-browser-check",
-    ...(isCi ? ["--no-sandbox"] : []),
+    ...(isCi && process.platform === "linux" ? ["--no-sandbox"] : []),
     "--remote-debugging-port=0",
     `--user-data-dir=${profile}`,
     page,

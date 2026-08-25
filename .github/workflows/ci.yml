@@ -53,3 +53,5 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm architecture:check
+      - run: pnpm qualification:typecheck
+      - run: pnpm qualification:browser-worker:check
