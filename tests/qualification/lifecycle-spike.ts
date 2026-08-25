@@ -491,6 +491,17 @@ export class GenerationLifecycle {
         callback();
       };
       const onAbort = (): void => finish(() => reject(new Error("WAITER_CANCELLED")));
+      const finishFromFlight = (callback: () => void): void => {
+        if (signal?.aborted) {
+          finish(() => reject(new Error("WAITER_CANCELLED")));
+          return;
+        }
+        if (deadlineExpired(waiterBudget, this.#clock)) {
+          finish(() => reject(new Error("WAITER_DEADLINE_EXCEEDED")));
+          return;
+        }
+        finish(callback);
+      };
       const armTimeout = (): void => {
         const currentRemaining = remainingBeforeDeadline(waiterBudget, this.#clock);
         if (currentRemaining <= 0) {
@@ -506,8 +517,8 @@ export class GenerationLifecycle {
       }
       armTimeout();
       result.then(
-        value => finish(() => resolve(value)),
-        error => finish(() => reject(error)),
+        value => finishFromFlight(() => resolve(value)),
+        error => finishFromFlight(() => reject(error)),
       );
     });
   }

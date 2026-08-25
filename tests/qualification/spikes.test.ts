@@ -268,6 +268,32 @@ test("a waiter deadline detaches without cancelling the shared activation", asyn
   assert.equal(starts, 1);
 });
 
+test("a waiter deadline remains fail-closed after event-loop blocking", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([{ id: "module", requires: [] }]);
+  let starts = 0;
+  const request = activationRequest(
+    lifecycle,
+    "waiter-event-loop-block",
+    plan,
+    new Map([["module", inertHooks({
+      start: () => {
+        starts += 1;
+        const blockedUntil = performance.now() + 50;
+        while (performance.now() < blockedUntil) {
+          // Synchronous module code can delay the timer queue beyond the waiter deadline.
+        }
+      },
+    })]]),
+  );
+
+  const impatient = lifecycle.activate(request, lifecycle.deadlineAfter(5));
+  const patient = lifecycle.activate(request, lifecycle.deadlineAfter(1_000));
+  await assert.rejects(impatient, /WAITER_DEADLINE_EXCEEDED/);
+  assert.equal((await patient).ok, true);
+  assert.equal(starts, 1);
+});
+
 test("a cancelled waiter detaches without cancelling the shared activation", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "module", requires: [] }]);
