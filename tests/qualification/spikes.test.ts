@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { access, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { access, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -682,6 +682,32 @@ test("absolute deadline prevents late publication and cleanup is bounded", async
   assert.ok(Date.now() - startedAt < 250);
   assert.ok(result.errors.some(error => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
   assert.ok(result.errors.some(error => error.message === "CLEANUP_TIMEOUT:slow"));
+});
+
+test("absolute deadline wins when blocking module code throws after expiry", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([{ id: "blocking", requires: [] }]);
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "blocking-error-after-deadline",
+    plan,
+    new Map([["blocking", inertHooks({
+      start: () => {
+        const blockedUntil = performance.now() + 50;
+        while (performance.now() < blockedUntil) {
+          // Force promise settlement ahead of the overdue timer callback.
+        }
+        throw new Error("START_FAILED_AFTER_DEADLINE");
+      },
+      stop: () => undefined,
+    })]]),
+    { deadlineMs: 5, cleanupTimeoutMs: 20 },
+  ));
+
+  assert.equal(result.ok, false);
+  assert.equal(lifecycle.activeGeneration, 0);
+  assert.ok(result.errors.some(error => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
+  assert.ok(!result.errors.some(error => error.message === "START_FAILED_AFTER_DEADLINE"));
 });
 
 test("cleanup cap cannot refresh the operation absolute deadline", async () => {
@@ -1860,8 +1886,28 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
   const [installCode] = await once(install, "exit", { signal: AbortSignal.timeout(30_000) });
   children.delete(install);
   assert.equal(installCode, 0);
-  const packageEntries = await readdir(join(consumer, "node_modules", "@agent-teams", "qualification-toy-package"));
-  assert.ok(!packageEntries.some(entry => entry.includes("module") || entry.includes("plugin")));
+  const list = spawn("npm", ["ls", "--all", "--json"], { cwd: consumer, stdio: ["ignore", "pipe", "pipe"] });
+  children.add(list);
+  let listOutput = "";
+  let listError = "";
+  list.stdout.setEncoding("utf8");
+  list.stderr.setEncoding("utf8");
+  list.stdout.on("data", chunk => { listOutput += chunk; });
+  list.stderr.on("data", chunk => { listError += chunk; });
+  const [listCode] = await once(list, "exit", { signal: AbortSignal.timeout(30_000) });
+  children.delete(list);
+  assert.equal(listCode, 0, listError);
+  const dependencyNames = new Set<string>();
+  const visitDependencies = (node: { readonly dependencies?: Record<string, unknown> }): void => {
+    for (const [name, dependency] of Object.entries(node.dependencies ?? {})) {
+      dependencyNames.add(name);
+      if (typeof dependency === "object" && dependency !== null) {
+        visitDependencies(dependency as { readonly dependencies?: Record<string, unknown> });
+      }
+    }
+  };
+  visitDependencies(JSON.parse(listOutput) as { readonly dependencies?: Record<string, unknown> });
+  assert.deepEqual([...dependencyNames].sort(), ["@agent-teams/qualification-toy-package"]);
   const execute = spawn(process.execPath, [
     "--input-type=module",
     "--eval",

@@ -281,6 +281,11 @@ function runBeforeDeadline<T>(
         },
         error => {
           if (timer) clearTimeout(timer);
+          if (deadlineExpired(deadline, clock)) {
+            onTimeout();
+            reject(new Error(timeoutCode));
+            return;
+          }
           reject(error);
         },
       );
