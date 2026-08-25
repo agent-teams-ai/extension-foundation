@@ -723,6 +723,13 @@ export class GenerationLifecycle {
         }
         finish(callback);
       };
+      const settleFromFlight = (callback: () => void): void => {
+        try {
+          finishFromFlight(callback);
+        } catch (error) {
+          finish(() => reject(asError(error)));
+        }
+      };
       const armTimeout = (): void => {
         const currentRemaining = remainingBeforeDeadline(waiterBudget, this.#clock);
         if (currentRemaining <= 0) {
@@ -737,10 +744,10 @@ export class GenerationLifecycle {
         return;
       }
       armTimeout();
-      result.then(
-        value => finishFromFlight(() => resolve(value)),
-        error => finishFromFlight(() => reject(error)),
-      );
+      void result.then(
+        value => settleFromFlight(() => resolve(value)),
+        error => settleFromFlight(() => reject(error)),
+      ).catch(error => finish(() => reject(asError(error))));
     });
   }
 

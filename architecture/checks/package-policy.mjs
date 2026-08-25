@@ -61,6 +61,18 @@ export const SOURCE_REVISION = /^[0-9a-f]{40}$/;
 export const CONFORMANCE_VERSION = STRICT_SEMVER;
 export const EVIDENCE_DIGEST = /^sha256=[0-9a-f]{64}$/;
 
+async function assertRealParentDirectories(root, relativePath) {
+  const segments = relativePath.split("/");
+  let current = root;
+  for (const segment of segments.slice(0, -1)) {
+    current = join(current, segment);
+    const metadata = await lstat(current);
+    if (!metadata.isDirectory() || metadata.isSymbolicLink()) {
+      throw new Error(`${relativePath}: authority path ancestors must be real directories, not symbolic links`);
+    }
+  }
+}
+
 export function isRecord(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -270,6 +282,7 @@ function validateAdmission(entry, admission, errors) {
 
 export async function loadPackagePolicy(root) {
   const catalogPath = join(root, CATALOG_PATH);
+  await assertRealParentDirectories(root, CATALOG_PATH);
   const catalogFile = await lstat(catalogPath);
   if (!catalogFile.isFile() || catalogFile.isSymbolicLink()) {
     throw new Error(`${CATALOG_PATH}: package catalog must be a real regular file, not a symbolic link`);
@@ -286,6 +299,7 @@ export async function loadPackagePolicy(root) {
   let admissionDirectoryAvailable = false;
 
   try {
+    await assertRealParentDirectories(root, PACKAGE_ADMISSION_DIRECTORY);
     const admissionDirectory = await lstat(admissionDirectoryPath);
     if (!admissionDirectory.isDirectory() || admissionDirectory.isSymbolicLink()) {
       errors.push(`${PACKAGE_ADMISSION_DIRECTORY}: admission evidence directory must be a real directory, not a symbolic link`);
@@ -333,7 +347,9 @@ export async function loadPackagePolicy(root) {
       expectedAdmissionFiles.add(packageAdmissionPath(entry).slice(PACKAGE_ADMISSION_DIRECTORY.length + 1));
       try {
         if (!admissionDirectoryAvailable) throw new Error("admission evidence directory is unavailable");
-        const admissionPath = join(root, packageAdmissionPath(entry));
+        const admissionRelativePath = packageAdmissionPath(entry);
+        await assertRealParentDirectories(root, admissionRelativePath);
+        const admissionPath = join(root, admissionRelativePath);
         const admissionFile = await lstat(admissionPath);
         if (!admissionFile.isFile() || admissionFile.isSymbolicLink()) {
           throw new Error("admission evidence must be a regular file, not a symbolic link");

@@ -890,21 +890,32 @@ test("failed readiness-only effects without stop evidence cannot claim proven te
 test("absolute deadline prevents late publication and cleanup is bounded", { timeout: 2_000 }, async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "slow", requires: [] }]);
-  const result = await lifecycle.activate(activationRequest(
+  const entered = Promise.withResolvers<void>();
+  const release = Promise.withResolvers<void>();
+  const activation = lifecycle.activate(activationRequest(
     lifecycle,
     "slow-timeout",
     plan,
     new Map([["slow", inertHooks({
-      start: async () => delay(20),
+      start: async () => {
+        entered.resolve();
+        await release.promise;
+      },
       stop: async () => new Promise(() => undefined),
     })]]),
-    { deadlineMs: 5, cleanupTimeoutMs: 20 },
+    { deadlineMs: 100, cleanupTimeoutMs: 20 },
   ));
-  assert.equal(result.ok, false);
-  assert.equal(result.termination, "termination_unproven");
-  assert.equal(lifecycle.activeGeneration, 0);
-  assert.ok(result.errors.some(error => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
-  assert.ok(result.errors.some(error => error.message === "IN_FLIGHT_HOOK_UNSETTLED:slow"));
+  try {
+    await Promise.race([entered.promise, rejectAfter(500, () => new Error("START_NOT_ENTERED"))]);
+    const result = await activation;
+    assert.equal(result.ok, false);
+    assert.equal(result.termination, "termination_unproven");
+    assert.equal(lifecycle.activeGeneration, 0);
+    assert.ok(result.errors.some(error => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
+    assert.ok(result.errors.some(error => error.message === "IN_FLIGHT_HOOK_UNSETTLED:slow"));
+  } finally {
+    release.resolve();
+  }
 });
 
 test("absolute deadline wins when blocking module code throws after expiry", async () => {
@@ -1192,6 +1203,43 @@ test("hostile abort-listener cleanup cannot strand a completed waiter", { timeou
     rejectAfter(200, () => new Error("WAITER_STRANDED")),
   ]);
   assert.strictEqual(replay, completed);
+});
+
+test("a hostile aborted getter rejects rather than stranding the waiter", { timeout: 2_000 }, async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([{ id: "candidate", requires: [] }]);
+  const request = activationRequest(
+    lifecycle,
+    "hostile-waiter-aborted-getter",
+    plan,
+    new Map([["candidate", inertHooks()]]),
+  );
+  await lifecycle.activate(request);
+  const controller = new AbortController();
+  let abortedReads = 0;
+  Object.defineProperty(controller.signal, "aborted", {
+    get: () => {
+      abortedReads += 1;
+      if (abortedReads >= 3) throw new Error("ABORTED_GETTER_FAILED");
+      return false;
+    },
+  });
+  const unhandled: unknown[] = [];
+  const onUnhandled = (error: unknown): void => { unhandled.push(error); };
+  process.on("unhandledRejection", onUnhandled);
+  try {
+    await assert.rejects(
+      lifecycle.activate(request, {
+        absoluteDeadline: lifecycle.deadlineAfter(1_000),
+        signal: controller.signal,
+      }),
+      /ABORTED_GETTER_FAILED/,
+    );
+    await delay(0);
+    assert.deepEqual(unhandled, []);
+  } finally {
+    process.removeListener("unhandledRejection", onUnhandled);
+  }
 });
 
 test("failed parallel batch settles siblings before reverse cleanup", async () => {

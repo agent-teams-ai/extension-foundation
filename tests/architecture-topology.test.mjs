@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -728,6 +728,35 @@ test("package catalog authority cannot be a symbolic link", {
   } finally {
     await rm(root, { recursive: true, force: true });
     await rm(outside, { recursive: true, force: true });
+  }
+});
+
+test("package catalog authority cannot traverse a symbolic-link directory", async () => {
+  const root = await mkdtemp(join(tmpdir(), "extension-topology-catalog-parent-link-"));
+  const outside = await mkdtemp(join(tmpdir(), "extension-topology-catalog-parent-outside-"));
+  try {
+    await writeArchitecture(outside);
+    await symlink(
+      join(outside, "architecture"),
+      join(root, "architecture"),
+      process.platform === "win32" ? "junction" : "dir",
+    );
+
+    await assert.rejects(
+      loadPackagePolicy(root),
+      /authority path ancestors must be real directories, not symbolic links/u,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+    await rm(outside, { recursive: true, force: true });
+  }
+});
+
+test("workspace package selectors use shell-neutral quoting", async () => {
+  const manifest = JSON.parse(await readFile(join(repositoryRoot, "package.json"), "utf8"));
+  for (const script of [manifest.scripts["packages:check"], manifest.scripts.typecheck]) {
+    assert.match(script, /--filter "\.\/packages\/\*\*"/u);
+    assert.doesNotMatch(script, /--filter '\.\/packages\/\*\*'/u);
   }
 });
 
