@@ -201,8 +201,10 @@ If ADR-0012 remains effective, resolve both `UMEQ-011` and `UMEQ-013` through
 needed before reusable contract extraction. Public package publication is a
 cumulative gate: reusable extraction must already be admitted; `UMEQ-014`,
 `UMEQ-015` and `UMEQ-016` must be resolved; packed-package `PACKAGE-1` and public
-API evidence must pass; and the Foundation owner must accept an artifact-specific
-publication decision. That release decision is not another strategic UMEQ fork.
+API evidence must pass; the immutable package admission record must be verified;
+and the Foundation owner must accept an artifact-specific package admission
+decision followed by an artifact-specific publication decision. Those release
+decisions are not additional strategic UMEQ forks.
 `UMEQ-009` is additionally needed before a process release. `UMEQ-017` is
 required before hosted distributed claims. `UMEQ-018` is needed before managed
 update channels. `UMEQ-010` remains a separate Frontend decision and cannot

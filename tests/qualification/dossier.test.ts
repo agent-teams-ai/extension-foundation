@@ -261,6 +261,7 @@ test("decision ledger has one semantic owner and ten unique approval forks", asy
           id: "product-local-extraction",
           allOf: [
             { decision: "ADR-0013", requiredStatus: "accepted" },
+            { decision: "owning-product-feature-decision", requiredStatus: "accepted" },
             { evidence: "second-independent-consumer", requiredStatus: "proven" },
             { evidence: "cross-implementation-conformance", requiredStatus: "passed" },
             { decision: "UMEQ-012", requiredStatus: "resolved" },
@@ -293,6 +294,8 @@ test("decision ledger has one semantic owner and ten unique approval forks", asy
         { decision: "UMEQ-016", requiredStatus: "resolved" },
         { evidence: "PACKAGE-1", requiredStatus: "passed" },
         { evidence: "public-api-report", requiredStatus: "passed" },
+        { evidence: "immutable-package-admission-record", requiredStatus: "verified" },
+        { decision: "foundation-package-admission-decision", requiredStatus: "accepted" },
         { decision: "foundation-package-publication-decision", requiredStatus: "accepted" },
       ],
     },
@@ -540,6 +543,7 @@ test("accepted publication gates remain authoritative while proposed ADR-0013 is
   assert.match(files[3]!, /Public package publication additionally requires the cumulative\s+`phase-3-package-publication` gate/);
   assert.match(files[3]!, /`UMEQ-014`, `UMEQ-015` and `UMEQ-016` are resolved/);
   assert.match(files[3]!, /`PACKAGE-1` packed-package\s+conformance and the public API report pass/);
+  assert.match(files[3]!, /immutable package admission\s+record is verified/);
   assert.match(files[5]!, /Public package publication is a\s+cumulative gate/);
   assert.match(files[5]!, /`UMEQ-014`,\s+`UMEQ-015` and `UMEQ-016` must be resolved/);
   assert.match(files[6]!, /status: proposed/);

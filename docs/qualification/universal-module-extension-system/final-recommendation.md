@@ -223,8 +223,9 @@ After the selected extraction path proves its applicable evidence, extract only
 repeated semantics: structural IDs/envelopes, graph fixtures, lifecycle outcomes
 and the packed conformance runner. The
 `phase-3-reusable-contract-extraction` ledger gate must select one path. The
-product-local ADR-0013 path requires a second independent consumer plus a
-separate Foundation extraction decision. The existing ADR-0012
+product-local ADR-0013 path preserves the owning product feature decision,
+requires a second independent consumer and requires a separate Foundation
+extraction decision. The existing ADR-0012
 Foundation-owned path instead requires immutable evidence naming one of
 ADR-0012's accepted admission bases, a schema-valid package admission record,
 independent conformance, resolved runtime decisions and an artifact-specific
@@ -236,10 +237,11 @@ selected gate passes.
 Public package publication additionally requires the cumulative
 `phase-3-package-publication` gate: the reusable-extraction gate is satisfied;
 `UMEQ-014`, `UMEQ-015` and `UMEQ-016` are resolved; `PACKAGE-1` packed-package
-conformance and the public API report pass; and the Foundation owner accepts an
-artifact-specific publication decision. `UMEQ-015` is one of the ten strategic
-UMEQ forks. The artifact-specific publication decision is separate release
-authority and is not an eleventh strategic fork.
+conformance and the public API report pass; the immutable package admission
+record is verified; and the Foundation owner accepts both the artifact-specific
+package admission decision and publication decision. `UMEQ-015` is one of the
+ten strategic UMEQ forks. These artifact-specific decisions are release
+authority and are not additional strategic forks.
 
 Estimated change: 4,000-8,000 LOC including fixtures, 2-4 weeks.
 

@@ -124,6 +124,8 @@ implementationGates:
         allOf:
           - decision: ADR-0013
             requiredStatus: accepted
+          - decision: owning-product-feature-decision
+            requiredStatus: accepted
           - evidence: second-independent-consumer
             requiredStatus: proven
           - evidence: cross-implementation-conformance
@@ -167,6 +169,10 @@ implementationGates:
         requiredStatus: passed
       - evidence: public-api-report
         requiredStatus: passed
+      - evidence: immutable-package-admission-record
+        requiredStatus: verified
+      - decision: foundation-package-admission-decision
+        requiredStatus: accepted
       - decision: foundation-package-publication-decision
         requiredStatus: accepted
   - id: production-extension-host-safety

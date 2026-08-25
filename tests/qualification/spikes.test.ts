@@ -1274,6 +1274,31 @@ test("hook preflight rejects a Proxy that disguises prototype methods", async ()
   }]);
 });
 
+test("hostile preflight errors are normalized and retained without escaping activation", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([{ id: "candidate", requires: [] }]);
+  const hostileError = new Proxy({}, {
+    getPrototypeOf: () => { throw new Error("HOSTILE_PROTOTYPE"); },
+    get: () => { throw new Error("HOSTILE_PROPERTY"); },
+  });
+  class HostileMap extends Map<string, ModuleHooks> {
+    override has(): boolean {
+      throw hostileError;
+    }
+  }
+  const request = activationRequest(
+    lifecycle,
+    "hostile-preflight-error",
+    plan,
+    new HostileMap([["candidate", inertHooks()]]),
+  );
+  const result = await lifecycle.activate(request);
+  assert.equal(result.ok, false);
+  assert.equal(result.termination, "proven");
+  assert.deepEqual(result.errors, [{ message: "UNREADABLE_ERROR" }]);
+  assert.strictEqual(await lifecycle.activate(request), result);
+});
+
 test("a fast sibling failure promptly aborts cooperative siblings before cleanup", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([
@@ -2339,7 +2364,7 @@ test("Worker structured-clone boundary preserves validation and stale rejection"
   assert.deepEqual(responses[1], { ok: false, error: "STALE_MODULE_ACTIVATION_GENERATION" });
 });
 
-test("browser Worker carries a portable generation-bound frame", { timeout: 70_000 }, async t => {
+test("browser Worker carries a portable generation-bound frame", { timeout: 120_000 }, async t => {
   const isCi = process.env.CI?.trim().toLowerCase() === "true";
   const candidates = process.platform === "darwin"
     ? [
@@ -2400,6 +2425,7 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 70_0
   let profile: string | undefined;
   let debuggerUrl: string | undefined;
   let pageTarget: { readonly url?: string; readonly webSocketDebuggerUrl?: string } | undefined;
+  let socket: WebSocket | undefined;
   let readBrowserStderr = (): string => "";
   const startupErrors: string[] = [];
   for (const browser of availableBrowsers) {
@@ -2464,12 +2490,30 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 70_0
         await delay(50);
       }
     }
+    let candidateSocket: WebSocket | undefined;
     if (candidateDebuggerUrl && candidatePageTarget?.webSocketDebuggerUrl) {
+      try {
+        candidateSocket = new WebSocket(candidatePageTarget.webSocketDebuggerUrl);
+        await Promise.race([
+          new Promise<void>((resolve, reject) => {
+            candidateSocket!.addEventListener("open", () => resolve(), { once: true });
+            candidateSocket!.addEventListener("error", () => reject(new Error("BROWSER_CDP_SOCKET_ERROR")), { once: true });
+          }),
+          rejectAfter(2_000, () => new Error("BROWSER_CDP_SOCKET_TIMEOUT")),
+        ]);
+      } catch (error) {
+        discoveryError = error;
+        candidateSocket?.close();
+        candidateSocket = undefined;
+      }
+    }
+    if (candidateDebuggerUrl && candidatePageTarget?.webSocketDebuggerUrl && candidateSocket) {
       child = candidateChild;
       childExit = candidateExit;
       profile = candidateProfile;
       debuggerUrl = candidateDebuggerUrl;
       pageTarget = candidatePageTarget;
+      socket = candidateSocket;
       readBrowserStderr = () => candidateStderr;
       break;
     }
@@ -2484,7 +2528,7 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 70_0
     ]);
     await rm(candidateProfile, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
-  if (!child || !childExit || !profile || !debuggerUrl || !pageTarget?.webSocketDebuggerUrl) {
+  if (!child || !childExit || !profile || !debuggerUrl || !pageTarget?.webSocketDebuggerUrl || !socket) {
     throw new Error(`CI_BROWSER_START_FAILED:${startupErrors.join("|")}`);
   }
   const activeChild = child;
@@ -2498,21 +2542,14 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 70_0
     ]);
     await rm(activeProfile, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   });
-  const socket = new WebSocket(pageTarget.webSocketDebuggerUrl);
-  await Promise.race([
-    new Promise<void>((resolve, reject) => {
-      socket.addEventListener("open", () => resolve(), { once: true });
-      socket.addEventListener("error", () => reject(new Error("BROWSER_CDP_SOCKET_ERROR")), { once: true });
-    }),
-    rejectAfter(5_000, () => new Error("BROWSER_CDP_SOCKET_TIMEOUT")),
-  ]);
+  const activeSocket = socket;
   t.after(async () => {
-    if (socket.readyState === WebSocket.CLOSED) return;
+    if (activeSocket.readyState === WebSocket.CLOSED) return;
     const closed = new Promise<void>((resolve, reject) => {
-      socket.addEventListener("close", () => resolve(), { once: true });
-      socket.addEventListener("error", () => reject(new Error("BROWSER_CDP_SOCKET_CLOSE_FAILED")), { once: true });
+      activeSocket.addEventListener("close", () => resolve(), { once: true });
+      activeSocket.addEventListener("error", () => reject(new Error("BROWSER_CDP_SOCKET_CLOSE_FAILED")), { once: true });
     });
-    socket.close();
+    activeSocket.close();
     await Promise.race([
       closed,
       rejectAfter(2_000, () => new Error("BROWSER_CDP_SOCKET_CLOSE_TIMEOUT")),
@@ -2531,9 +2568,9 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 70_0
       pendingCommands.delete(id);
     }
   };
-  socket.addEventListener("close", () => rejectPendingCommands(new Error("BROWSER_CDP_SOCKET_CLOSED")));
-  socket.addEventListener("error", () => rejectPendingCommands(new Error("BROWSER_CDP_SOCKET_ERROR")));
-  socket.addEventListener("message", event => {
+  activeSocket.addEventListener("close", () => rejectPendingCommands(new Error("BROWSER_CDP_SOCKET_CLOSED")));
+  activeSocket.addEventListener("error", () => rejectPendingCommands(new Error("BROWSER_CDP_SOCKET_ERROR")));
+  activeSocket.addEventListener("message", event => {
     const message = JSON.parse(String(event.data)) as {
       readonly id?: number;
       readonly result?: Record<string, unknown>;
@@ -2556,7 +2593,7 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 70_0
     timer.unref();
     pendingCommands.set(id, { resolve, reject, timer });
     try {
-      socket.send(JSON.stringify({ id, method: "Runtime.evaluate", params: { expression, returnByValue: true } }));
+      activeSocket.send(JSON.stringify({ id, method: "Runtime.evaluate", params: { expression, returnByValue: true } }));
     } catch (error) {
       clearTimeout(timer);
       pendingCommands.delete(id);

@@ -164,7 +164,11 @@ function attributedError(error: unknown, moduleId: string, phase: LifecyclePhase
 }
 
 function aggregateErrors(error: unknown): readonly Error[] {
-  if (!(error instanceof AggregateError)) return [asError(error)];
+  try {
+    if (!(error instanceof AggregateError)) return [asError(error)];
+  } catch {
+    return [asError(error)];
+  }
   try {
     return Array.from(error.errors as Iterable<unknown>, asError);
   } catch {

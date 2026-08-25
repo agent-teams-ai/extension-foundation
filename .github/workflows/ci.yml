@@ -36,7 +36,6 @@ jobs:
 
   architecture-windows:
     name: architecture-windows
-    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
     runs-on: windows-2025
     timeout-minutes: 15
     steps:
@@ -58,7 +57,6 @@ jobs:
 
   architecture-macos:
     name: architecture-macos
-    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
     runs-on: macos-15
     timeout-minutes: 15
     steps:
