@@ -5,6 +5,7 @@ import { docsFind } from "@agent-teams/docs-protocol";
 import { parse as parseYaml } from "yaml";
 
 import { parseStrictJson } from "./strict-json.mjs";
+import { STRICT_SEMVER } from "./strict-semver.mjs";
 
 export const CATALOG_PATH = "architecture/package-catalog.json";
 export const FOUNDATION_REPOSITORY = "agent-teams-ai/extension-foundation";
@@ -52,7 +53,7 @@ export const FEATURE_NAME = /^[a-z0-9][a-z0-9-]*$/;
 export const OWNER_DOCUMENT = /^ADR-[0-9]{4}$/;
 export const REPOSITORY_ID = /^[a-z0-9][a-z0-9_.-]*\/[a-z0-9][a-z0-9_.-]*$/;
 export const SOURCE_REVISION = /^[0-9a-f]{40}$/;
-export const CONFORMANCE_VERSION = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$(?![\s\S])/;
+export const CONFORMANCE_VERSION = STRICT_SEMVER;
 export const EVIDENCE_DIGEST = /^sha256=[0-9a-f]{64}$/;
 
 export function isRecord(value) {

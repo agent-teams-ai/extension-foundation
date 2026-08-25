@@ -137,7 +137,8 @@ contracts and conformance packages.
 implementations before production SPI. A fixed-version train is a good eventual
 release model, not permission to publish now. **Reversibility:** low after public
 API. **Impact:** release workload and compatibility obligations. **Approval:**
-required only when evidence floor is met.
+product owner through a future publication ADR, only after the accepted evidence
+floor is met.
 
 ## UMEQ-016: Update And Hot Reload Baseline
 

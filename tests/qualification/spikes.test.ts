@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { access, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -1670,12 +1670,17 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 20_0
     : ["/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"];
   let browser: string | undefined;
   for (const candidate of candidates) {
+    const probe = spawn(candidate, ["--version"], { stdio: "ignore" });
     try {
-      await access(candidate);
-      browser = candidate;
-      break;
+      const [code] = await once(probe, "exit", { signal: AbortSignal.timeout(2_000) });
+      if (code === 0) {
+        browser = candidate;
+        break;
+      }
     } catch {
       // The cross-platform release matrix supplies a browser when this profile is mandatory.
+    } finally {
+      if (probe.exitCode === null && probe.signalCode === null) probe.kill("SIGKILL");
     }
   }
   if (!browser) {
@@ -1867,6 +1872,10 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
     }));
     await rm(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   });
+  const fixtureManifest = JSON.parse(await readFile(join(fixtureRoot, "toy-package", "package.json"), "utf8")) as {
+    readonly private?: unknown;
+  };
+  assert.equal(fixtureManifest.private, true, "qualification fixture must not be publishable");
   const pack = spawn("npm", ["pack", join(fixtureRoot, "toy-package"), "--json", "--pack-destination", root], { stdio: ["ignore", "pipe", "pipe"] });
   children.add(pack);
   let stdout = "";

@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 
 import { parse } from "yaml";
 
+import { CONFORMANCE_VERSION } from "../../architecture/checks/package-policy.mjs";
+
 const dossier = fileURLToPath(new URL("../../docs/qualification/universal-module-extension-system/", import.meta.url));
 
 interface DecisionEntry {
@@ -95,13 +97,30 @@ test("decision ledger has one semantic owner and ten unique approval forks", asy
   );
   assert.ok(approvals.every(entry => entry.status === "open"));
   assert.ok(ledger.entries.every(entry => entry.authority.length > 0));
+  assert.ok(
+    approvals.every(entry => entry.authority === "product-owner" || /^OD-\d{3}$/.test(entry.authority)),
+    "an open fork requires a resolving authority, not an already accepted ADR",
+  );
 
   const knownIds = new Set([...ids, ...retiredIds]);
   const dossierFiles = (await readdir(dossier)).filter(name => /\.(?:md|ya?ml)$/.test(name));
+  const markdownFiles = new Map<string, string>();
   for (const name of dossierFiles) {
     const contents = await readFile(resolve(dossier, name), "utf8");
+    if (name.endsWith(".md")) markdownFiles.set(name, contents);
     const referencedIds = contents.match(/\bUMEQ-[A-Z0-9-]+\b/g) ?? [];
     for (const id of referencedIds) assert.ok(knownIds.has(id), `${name} references unledgered ${id}`);
+  }
+
+  for (const approval of approvals) {
+    const normativeHeadings = [...markdownFiles].flatMap(([name, contents]) => (
+      [...contents.matchAll(new RegExp(`^#{1,6}\\s+${approval.id}:`, "gm"))].map(match => ({ name, heading: match[0] }))
+    ));
+    assert.deepEqual(
+      normativeHeadings.map(entry => entry.name),
+      ["unresolved-decisions.md"],
+      `${approval.id} must have exactly one normative approval heading`,
+    );
   }
 
   for (const entry of ledger.entries) {
@@ -115,6 +134,17 @@ test("decision ledger has one semantic owner and ten unique approval forks", asy
   }
 });
 
+test("qualified identity and extraction rules preserve accepted ADR authority", async () => {
+  const antiPatterns = await readFile(resolve(dossier, "anti-patterns.md"), "utf8");
+  const moduleGraph = await readFile(resolve(dossier, "module-graph.md"), "utf8");
+
+  assert.match(antiPatterns, /AP-080 \| Extract a neutral package without satisfying an accepted ADR-0012 admission basis/);
+  assert.doesNotMatch(antiPatterns, /AP-080 \| Extract a neutral package before a second consumer/);
+  assert.match(moduleGraph, /`BuiltInModuleInstallation` activation-source identity/);
+  assert.match(moduleGraph, /product authority scope, stable module identity, and immutable implementation\s+digest/);
+  assert.doesNotMatch(moduleGraph, /built-in module has an immutable\s+implementation identity but no artifact or installation identity/);
+});
+
 test("OSS comparison distinguishes immutable evidence from orientation research", async () => {
   const repositoryRoot = resolve(dossier, "../../..");
   const lock = parse(await readFile(resolve(repositoryRoot, "pnpm-lock.yaml"), "utf8")) as {
@@ -125,6 +155,10 @@ test("OSS comparison distinguishes immutable evidence from orientation research"
     readonly candidates: readonly OssCandidate[];
   };
   assert.equal(record.schemaVersion, 1);
+  assert.ok(CONFORMANCE_VERSION.test("1.0.0-rc.4"));
+  for (const invalid of ["01.0.0", "1.01.0", "1.0.01", "1.0.0-01", "1.0.0-alpha..1"]) {
+    assert.ok(!CONFORMANCE_VERSION.test(invalid), `invalid SemVer accepted: ${invalid}`);
+  }
   assert.equal(new Set(record.candidates.map(candidate => candidate.id)).size, record.candidates.length);
   for (const candidate of record.candidates) {
     assert.ok(["pinned", "orientation", "qualified-experiment"].includes(candidate.evidenceStatus));
@@ -143,7 +177,7 @@ test("OSS comparison distinguishes immutable evidence from orientation research"
         assert.equal(evidence.url, `${evidence.repository}/commit/${evidence.revision}`);
       } else if (evidence.kind === "npm-release") {
         assert.match(evidence.package ?? "", /^(?:@[a-z0-9_.-]+\/)?[a-z0-9_.-]+$/);
-        assert.match(evidence.version ?? "", /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/);
+        assert.match(evidence.version ?? "", CONFORMANCE_VERSION);
         assert.match(evidence.url ?? "", /^https:\/\/registry\.npmjs\.org\//);
         assert.match(evidence.integrity ?? "", /^sha512-[A-Za-z0-9+/]+={0,2}$/);
         if (evidence.locked) {
@@ -159,7 +193,7 @@ test("OSS comparison distinguishes immutable evidence from orientation research"
   }
 });
 
-test("publication and first-slice gates cannot be weakened by qualification prose", async () => {
+test("accepted publication gates remain authoritative while proposed ADR-0013 is non-operative", async () => {
   const repositoryRoot = resolve(dossier, "../../..");
   const files = await Promise.all([
     readFile(resolve(repositoryRoot, "docs/decisions/0001-product-neutral-extension-foundation-boundary.md"), "utf8"),
@@ -169,6 +203,7 @@ test("publication and first-slice gates cannot be weakened by qualification pros
     readFile(resolve(dossier, "product-adoption.md"), "utf8"),
     readFile(resolve(dossier, "unresolved-decisions.md"), "utf8"),
     readFile(resolve(repositoryRoot, "docs/decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md"), "utf8"),
+    readFile(resolve(repositoryRoot, "docs/decisions/0012-reusable-library-module-and-plugin-boundaries.md"), "utf8"),
   ]);
   assert.match(files[0]!, /Public SPI requires independent implementations/);
   for (const markdown of files.slice(1, 4)) assert.match(markdown, /two independently authored/);
@@ -178,9 +213,14 @@ test("publication and first-slice gates cannot be weakened by qualification pros
   assert.match(files[5]!, /first product-local graph slice requires its owning product's accepted\s+feature decision/is);
   assert.doesNotMatch(files[5]!, /Approve `UMEQ-011`.*before the\s+first product-local graph slice/is);
   assert.match(files[6]!, /status: proposed/);
-  assert.match(files[6]!, /no Foundation runtime package or public SPI may be admitted/);
+  assert.match(files[6]!, /ADR-0012\s+remains the effective admission policy/);
+  assert.match(files[6]!, /cannot narrow or block the admission bases already accepted in ADR-0012/);
+  assert.doesNotMatch(files[6]!, /no Foundation runtime package or public SPI may be admitted/);
+  assert.match(files[7]!, /Extract or publish only when at least one of these is proven/);
+  assert.match(files[3]!, /ADR-0012 remains the effective admission policy/);
+  assert.match(files[3]!, /does not make the proposal operative/);
   const packageCatalog = JSON.parse(await readFile(resolve(repositoryRoot, "architecture/package-catalog.json"), "utf8")) as {
     readonly packages?: readonly unknown[];
   };
-  assert.deepEqual(packageCatalog.packages, [], "proposed ADR-0013 keeps Foundation runtime admission closed");
+  assert.deepEqual(packageCatalog.packages, [], "this qualification does not admit a production package");
 });

@@ -38,7 +38,7 @@ evidence.
 | Spike | Verified evidence | Not proved |
 | --- | --- | --- |
 | ID-DAG compiler | Duplicate and missing module IDs fail before hook resolution; stable immutable batches, reverse cleanup and digest | Capability slots, bindings, cardinality, versions, scope, sources and product SPI |
-| Property and differential graph | 200 input permutations keep one digest; 500 generated directed graphs agree with Graphlib cycle validity and ordering | Graphlib is not selected as production authority |
+| Property and differential graph | 200 input permutations keep one digest; 500 generated directed graphs agree with Graphlib on cycle validity, while both orders independently satisfy every source edge | Graphlib is not selected as production authority |
 | Large graph | 10,000-node chain and cycle compile without recursive stack overflow; observed test phase about 41 ms | Cross-machine p95, dense graph memory and final SLO gate |
 | Concurrent activation | 100 same-fingerprint starts share one activation; callers can cancel their own wait without cancelling shared startup; activation source, scope, policy and cleanup changes conflict; caller-owned identity is snapshotted before admission; expected-active CAS permits one publisher among different candidates | Multi-process consensus or distributed admission |
 | Readiness and rollback | Explicit probe/inert policy blocks dependents; failed candidate leaves active routing unchanged | Product-specific health policy and durable recovery store |

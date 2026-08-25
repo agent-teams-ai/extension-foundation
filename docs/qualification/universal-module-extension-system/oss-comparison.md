@@ -31,7 +31,7 @@ replace all OSS:
 
 | Layer | Primary comparator or reusable primitive |
 | --- | --- |
-| ID-DAG and ordering | native algorithm checked against Graphlib; Avvio as boot-lifecycle reference |
+| ID-DAG and ordering | native algorithm; Graphlib cycle oracle and independent topological-validity check; Avvio as boot-lifecycle reference |
 | Scoped resources | Cordis and Effect as private adapter/reference candidates |
 | Frontend contributions | Backstage and Lumino patterns; VS Code/Theia placement lessons |
 | Process protocol | Terraform go-plugin handshake/versioning lessons |

@@ -1,7 +1,7 @@
 {
   "name": "@agent-teams/qualification-toy-package",
   "version": "0.0.0-qualification",
-  "private": false,
+  "private": true,
   "type": "module",
   "exports": {
     ".": {

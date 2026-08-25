@@ -23,8 +23,9 @@ ADR-0010's requirement for two independently authored implementations before a
 stable public SPI.
 
 The qualification cannot rewrite an accepted ADR. This proposal records the
-smallest correction for product-owner approval. Until it is accepted, OD-003
-remains open and no Foundation runtime package or public SPI may be admitted.
+smallest correction for product-owner approval. Until it is accepted, ADR-0012
+remains the effective admission policy and OD-003 remains open. This proposed
+ADR cannot narrow or block the admission bases already accepted in ADR-0012.
 
 ## Proposed Decision
 

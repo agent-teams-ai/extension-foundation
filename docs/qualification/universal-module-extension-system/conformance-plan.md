@@ -72,7 +72,8 @@ the dossier has status `qualified`.
 
 Every adapter must run the neutral suite plus its own negative cases:
 
-- native TypeScript graph compiler versus an independent Graphlib oracle;
+- native TypeScript graph compiler versus an independent Graphlib cycle oracle,
+  with each result checked separately for topological validity;
 - optional Cordis adapter versus the native lifecycle trace oracle;
 - Node process and Worker protocol adapters;
 - future browser Worker and sandboxed iframe adapters;

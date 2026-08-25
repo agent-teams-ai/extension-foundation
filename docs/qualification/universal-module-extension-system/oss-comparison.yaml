@@ -88,7 +88,7 @@ candidates:
         integrity: "sha512-7xrBTqIts3o+PMUZX97wSc+7TUbW+/rULzGNCTP6yooNVDXbzw4Wutg/H/xOutTB/c/k0YqOAavgPh4/Zk9PFA=="
         locked: true
     adopt: qualification-test-oracle-only
-    usefulFor: independent cycle-validity and deterministic-order differential checks
+    usefulFor: independent cycle-validity differential and topological-validity checks
     missing: capability versions, provider binding, lifecycle, authority, isolation and recovery
   - id: osgi
     evidenceStatus: orientation

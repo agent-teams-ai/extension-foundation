@@ -77,7 +77,7 @@ entries:
   - id: UMEQ-015
     status: open
     topic: package-publication-topology
-    authority: ADR-0010
+    authority: product-owner
     detail: unresolved-decisions.md#umeq-015-package-publication-topology
     approvalRequired: true
   - id: UMEQ-016

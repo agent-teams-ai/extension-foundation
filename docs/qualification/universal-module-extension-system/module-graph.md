@@ -48,7 +48,7 @@ identities separate.
 | Identity | Meaning | Changes when |
 | --- | --- | --- |
 | `ArtifactIdentity` | Immutable plugin bytes and provenance | Digest changes |
-| `InstallationIdentity` | One admitted installation in one authority scope | Installation is recreated |
+| `InstallationIdentity` | One admitted artifact installation or built-in activation source in one authority scope | Installation or built-in implementation binding is recreated |
 | `ContributionIdentity` | One implementation offered by an installation or built-in source | Declared implementation changes incompatibly |
 | `ModuleIdentity` | Stable composition and lifecycle unit | Logical module is replaced |
 | `CapabilityIdentity` | Product-owned semantic contract | Owning contract changes identity |
@@ -56,8 +56,11 @@ identities separate.
 | `ModuleActivationGeneration` | One activation attempt for one module in a graph generation | Module is prepared again |
 
 Publisher, artifact, installation, contribution, module, graph generation, and
-module activation generation are never aliases. A built-in module has an immutable
-implementation identity but no artifact or installation identity.
+module activation generation are never aliases. A built-in module has no
+publisher, artifact, manifest, catalog, or artifact-installation identity. It
+does have a `BuiltInModuleInstallation` activation-source identity bound to the
+product authority scope, stable module identity, and immutable implementation
+digest as required by ADR-0009 and retained by ADR-0010.
 
 Capability identity is a stable URI-like string owned by the product feature,
 for example `agent-teams.orchestrator/work-placement-proposal`. During the first
@@ -259,37 +262,21 @@ The compiler must enforce explicit profile limits before allocation:
 - maximum ordered-many providers per slot;
 - bounded diagnostic path count.
 
-## Recorded Approval Forks
+## Related Approval Forks
 
-### UMEQ-011: Provider Binding Policy
-
-- **Recommended:** allow only product-declared binding profiles in V1. It gives
-  stable review evidence and prevents a newly installed provider from silently
-  changing behavior.
-- **Alternative:** auto-bind when exactly one compatible provider exists. This
-  is more ergonomic but makes installation change composition implicitly.
-- **Confidence:** 8/10. **Reliability:** 9/10. **Complexity:** 5/10.
-- **Estimated implementation:** 80-160 LOC beyond basic resolution.
-- **Approval required:** yes, through OD-003.
-
-### UMEQ-012: Contract Compatibility Grammar
-
-- **Recommended:** Foundation-owned constrained compatibility families and
-  half-open ranges, not arbitrary npm SemVer expressions in runtime manifests.
-- **Alternative:** exact versions only for V1, adding ranges after N/N-1
-  fixtures exist.
-- **Confidence:** 7/10. **Reliability:** 8/10. **Complexity:** 6/10.
-- **Estimated implementation:** 150-350 LOC plus fixtures.
-- **Approval required:** yes, through OD-003 together with the canonical
-  contract-source decision.
+Provider binding and contract compatibility remain unresolved. Their only
+normative option sets, estimates, and approval authorities are
+[UMEQ-011](unresolved-decisions.md#umeq-011-provider-binding-policy) and
+[UMEQ-012](unresolved-decisions.md#umeq-012-contract-source-and-compatibility-model).
+This graph document does not duplicate or narrow those approval surfaces.
 
 ## Conformance Minimum
 
 - Equivalent inputs in different source orders produce identical plans,
   diagnostics, traces, and digests.
 - Invalid graphs execute zero factories and effects.
-- Independent native and graph-library algorithms agree over generated DAGs and
-  failure fixtures.
+- Native and Graphlib algorithms agree on cycle validity, and each emitted order
+  independently satisfies every source edge over generated DAGs.
 - Framework adapters cannot add undeclared dependencies or change ordering.
 - Packed consumers do not receive Cordis, container, host, or product types.
 - A 10,000-module synthetic graph stays within the final memory and latency
