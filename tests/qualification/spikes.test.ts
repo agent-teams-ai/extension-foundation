@@ -365,7 +365,11 @@ test("invocation handles are scope-bound in-memory capabilities, not structural 
 });
 
 test("same completed operation returns its retained result without a second start", async () => {
-  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  let now = 0;
+  const lifecycle = new GenerationLifecycle(testAuthorityScope, {
+    now: () => now,
+    sleep: async milliseconds => { now += milliseconds; },
+  });
   const plan = requirePlan([{ id: "module", requires: [] }]);
   let starts = 0;
   const request = activationRequest(
@@ -375,6 +379,7 @@ test("same completed operation returns its retained result without a second star
     new Map([["module", inertHooks({ start: () => { starts += 1; } })]]),
   );
   const first = await lifecycle.activate(request);
+  now = request.absoluteDeadline + 1_000;
   const replay = await lifecycle.activate(request);
   assert.equal(replay.generation, first.generation);
   assert.equal(starts, 1);
@@ -685,8 +690,9 @@ test("deadlines beyond the Node timer limit are re-armed rather than clamped to 
   assert.equal(result.ok, true);
 });
 
-test("waiter clock failure consistently produces a structured waiter deadline error", async () => {
+test("waiter clock failure leaves the retained terminal result replayable", async () => {
   let reads = 0;
+  let starts = 0;
   const lifecycle = new GenerationLifecycle(testAuthorityScope, {
     now: () => {
       reads += 1;
@@ -700,11 +706,14 @@ test("waiter clock failure consistently produces a structured waiter deadline er
     lifecycle,
     "waiter-clock-failure",
     plan,
-    new Map([["candidate", inertHooks({ start: async () => delay(5) })]]),
+    new Map([["candidate", inertHooks({ start: async () => { starts += 1; await delay(5); } })]]),
   );
   await assert.rejects(lifecycle.activate(request), /WAITER_DEADLINE_EXCEEDED/);
   await delay(20);
-  await assert.rejects(lifecycle.activate(request), /WAITER_DEADLINE_EXCEEDED/);
+  const replay = await lifecycle.activate(request);
+  assert.equal(replay.generation, 1);
+  assert.deepEqual(await lifecycle.activate(request), replay);
+  assert.equal(starts, 0);
 });
 
 test("waiter deadline expiry during timer arming removes its abort listener", async () => {
@@ -1448,6 +1457,12 @@ test("portable protocol rejects stale, expired, malformed, and oversized frames"
     request,
     "result",
   ), /RESPONSE_DEADLINE_MISMATCH/);
+  assert.throws(() => validateResponseEnvelope(
+    response,
+    { ...responseAuthority, now: Date.now() },
+    request,
+    "stop" as never,
+  ), /INVALID_EXPECTED_RESPONSE_KIND/);
 });
 
 test("process-host smoke acknowledges hello and readiness over bounded length-prefixed JSON", async t => {
@@ -1474,9 +1489,11 @@ test("process-host smoke acknowledges hello and readiness over bounded length-pr
   });
   const helloRequest = frame();
   const prepareRequest = frame({ requestId: "request-2", kind: "prepare" });
+  const drainRequest = frame({ requestId: "request-3", kind: "drain" });
   child.stdin.write(encodeLengthPrefixedFrame(helloRequest));
   child.stdin.write(encodeLengthPrefixedFrame(prepareRequest));
-  await waitUntil(() => responses.length >= 2 || childFailure !== undefined, 2_000, "PROCESS_RESPONSE_TIMEOUT");
+  child.stdin.write(encodeLengthPrefixedFrame(drainRequest));
+  await waitUntil(() => responses.length >= 3 || childFailure !== undefined, 2_000, "PROCESS_RESPONSE_TIMEOUT");
   if (childFailure) throw childFailure;
   assert.equal(validateResponseEnvelope(
     responses[0],
@@ -1490,13 +1507,19 @@ test("process-host smoke acknowledges hello and readiness over bounded length-pr
     prepareRequest,
     "ready",
   ).kind, "ready");
-  const stopRequest = frame({ requestId: "request-3", kind: "stop" });
-  const exit = once(child, "exit", { signal: AbortSignal.timeout(2_000) });
-  child.stdin.write(encodeLengthPrefixedFrame(stopRequest));
-  await waitUntil(() => responses.length >= 3 || childFailure !== undefined, 2_000, "PROCESS_STOP_RESPONSE_TIMEOUT");
-  if (childFailure) throw childFailure;
   assert.equal(validateResponseEnvelope(
     responses[2],
+    { ...responseAuthority, now: Date.now() },
+    drainRequest,
+    "result",
+  ).payload.drained, true);
+  const stopRequest = frame({ requestId: "request-4", kind: "stop" });
+  const exit = once(child, "exit", { signal: AbortSignal.timeout(2_000) });
+  child.stdin.write(encodeLengthPrefixedFrame(stopRequest));
+  await waitUntil(() => responses.length >= 4 || childFailure !== undefined, 2_000, "PROCESS_STOP_RESPONSE_TIMEOUT");
+  if (childFailure) throw childFailure;
+  assert.equal(validateResponseEnvelope(
+    responses[3],
     { ...responseAuthority, now: Date.now() },
     stopRequest,
     "result",

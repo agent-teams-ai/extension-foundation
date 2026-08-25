@@ -14,6 +14,8 @@ export interface ProtocolEnvelope {
   readonly payload: Readonly<Record<string, unknown>>;
 }
 
+export type ProtocolResponseKind = Extract<ProtocolEnvelope["kind"], "ready" | "result">;
+
 export declare const protocolName: ProtocolEnvelope["protocol"];
 export declare const maxFrameBytes: number;
 export declare function validateEnvelope(value: unknown): ProtocolEnvelope;
@@ -43,7 +45,7 @@ export declare function validateResponseEnvelope(
     now: number;
   }>,
   request: ProtocolEnvelope,
-  expectedKind: ProtocolEnvelope["kind"],
+  expectedKind: ProtocolResponseKind,
 ): ProtocolEnvelope;
 export declare function handlePortableWorkerFrame(
   value: unknown,

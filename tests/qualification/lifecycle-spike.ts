@@ -362,9 +362,10 @@ export class GenerationLifecycle {
       cleanupTimeoutMs,
     });
     const waiterOptions = typeof waiter === "number" ? { absoluteDeadline: waiter } : waiter;
-    const waiterDeadline = waiterOptions.absoluteDeadline
-      ?? absoluteDeadline + 100;
-    if (!Number.isFinite(waiterDeadline)) throw new Error("INVALID_WAITER_DEADLINE");
+    const explicitWaiterDeadline = waiterOptions.absoluteDeadline;
+    if (explicitWaiterDeadline !== undefined && !Number.isFinite(explicitWaiterDeadline)) {
+      throw new Error("INVALID_WAITER_DEADLINE");
+    }
     const operationId = identity.operationId;
     const key = fingerprint(normalizedRequest);
     const previousKey = this.#operationFingerprints.get(operationId);
@@ -372,10 +373,24 @@ export class GenerationLifecycle {
     this.#operationFingerprints.set(operationId, key);
 
     const existing = this.#flights.get(operationId);
-    if (existing) return this.#waitForFlight(existing.result, waiterDeadline, waiterOptions.signal);
+    if (existing) {
+      return this.#waitForFlight(
+        existing.result,
+        explicitWaiterDeadline ?? absoluteDeadline + 100,
+        waiterOptions.signal,
+      );
+    }
     const completed = this.#operationResults.get(operationId);
     if (completed) {
-      return this.#waitForFlight(Promise.resolve(completed), waiterDeadline, waiterOptions.signal);
+      if (explicitWaiterDeadline !== undefined) {
+        return this.#waitForFlight(
+          Promise.resolve(completed),
+          explicitWaiterDeadline,
+          waiterOptions.signal,
+        );
+      }
+      if (waiterOptions.signal?.aborted) return Promise.reject(new Error("WAITER_CANCELLED"));
+      return Promise.resolve(completed);
     }
 
     const activationDeadline = absoluteDeadlineBudget(absoluteDeadline, this.#clock);
@@ -387,7 +402,11 @@ export class GenerationLifecycle {
       })
       .finally(() => this.#flights.delete(operationId));
     this.#flights.set(operationId, { result });
-    return this.#waitForFlight(result, waiterDeadline, waiterOptions.signal);
+    return this.#waitForFlight(
+      result,
+      explicitWaiterDeadline ?? absoluteDeadline + 100,
+      waiterOptions.signal,
+    );
   }
 
   acquireInvocation(): InvocationHandle {

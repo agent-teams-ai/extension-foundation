@@ -114,7 +114,9 @@ or cancellation detaches that waiter; it does not cancel shared startup.
 
 The disposable in-memory spike retains completed operation results and sealed
 generations for its process lifetime so qualification can prove replay and stale
-rejection. It is not a production retention design. A product coordinator must
+rejection. A completed replay remains available after the original waiter's
+deadline; cancellation and an explicit deadline belong to the current waiter.
+It is not a production retention design. A product coordinator must
 persist idempotency outcomes for an explicit bounded policy, compact them only
 after the retry and reconciliation horizon, and preserve a tombstone sufficient
 to reject stale generations.

@@ -46,6 +46,8 @@ function handleFrame(frame) {
     send({ ...response, kind: "result", payload: { negotiatedProtocol: protocolName } });
   } else if (frame.kind === "prepare") {
     send({ ...response, kind: "ready", payload: { ready: true } });
+  } else if (frame.kind === "drain") {
+    send({ ...response, kind: "result", payload: { drained: true } });
   } else if (frame.kind === "stop") {
     send({ ...response, kind: "result", payload: { stopped: true } });
     stopped = true;

@@ -9,6 +9,7 @@ const envelopeKeys = new Set([
 ]);
 const kinds = new Set(["hello", "prepare", "ready", "drain", "stop", "result"]);
 const requestKinds = new Set(["hello", "prepare", "drain", "stop"]);
+const responseKinds = new Set(["ready", "result"]);
 const exactIntegerWireFields = new Set([
   "absoluteDeadline",
   "graphGeneration",
@@ -202,6 +203,7 @@ export function validateAuthorizedEnvelope(value, authority) {
 }
 
 export function validateResponseEnvelope(value, authority, request, expectedKind) {
+  if (!responseKinds.has(expectedKind)) throw new Error("INVALID_EXPECTED_RESPONSE_KIND");
   const response = validateAuthorizedEnvelope(value, authority);
   if (response.requestId !== request.requestId) throw new Error("RESPONSE_REQUEST_MISMATCH");
   if (response.operationId !== request.operationId) throw new Error("RESPONSE_OPERATION_MISMATCH");
