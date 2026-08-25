@@ -33,11 +33,14 @@ The recommended first-consumer model gives the first product ownership of its
 private schemas, fixtures, diagnostics and minimum traces only after ADR-0013 is
 accepted. While ADR-0012 remains effective, Foundation retains semantic
 ownership and cannot implement the runtime until `UMEQ-011` and `UMEQ-013` are
-resolved through `OD-003`. After two independent consumers prove the same
-semantics and extraction is approved, Foundation may own the admitted neutral
-subset under either path. Products always own authorization, data invariants,
-persistence, placement and stronger security claims. Passing conformance never
-grants a plugin permission to execute.
+resolved through `OD-003`. Under the product-local ADR-0013 path, two independent
+consumers must prove the same semantics before extraction is approved. Under the
+effective ADR-0012 path, the selected accepted admission basis and its applicable
+evidence control extraction; a second consumer is not imposed on the other
+accepted bases. Foundation may then own only the admitted neutral subset.
+Products always own authorization, data invariants, persistence, placement and
+stronger security claims. Passing conformance never grants a plugin permission
+to execute.
 
 ## Core Profiles
 

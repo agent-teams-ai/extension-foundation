@@ -348,7 +348,17 @@ function runBeforeDeadline<T>(
     armTimeout();
     if (expired) return;
     Promise.resolve()
-      .then(operation)
+      .then(() => {
+        if (expired || deadlineExpired(deadline, clock)) {
+          if (!expired) {
+            expired = true;
+            if (timer) clearTimeout(timer);
+            onTimeout();
+          }
+          throw new Error(timeoutCode);
+        }
+        return operation();
+      })
       .then(
         value => {
           if (timer) clearTimeout(timer);
@@ -361,7 +371,8 @@ function runBeforeDeadline<T>(
         },
         error => {
           if (timer) clearTimeout(timer);
-          if (deadlineExpired(deadline, clock)) {
+          if (!expired && deadlineExpired(deadline, clock)) {
+            expired = true;
             onTimeout();
             reject(new Error(timeoutCode));
             return;
@@ -386,6 +397,7 @@ export class GenerationLifecycle {
   readonly #leaseByHandle = new WeakMap<object, InvocationLease>();
   readonly #lifecycleToken = Symbol("generation-lifecycle");
   readonly #sealedGenerations = new Set<number>();
+  readonly #drainDeadlines = new Map<number, DeadlineBudget>();
   #nextLeaseId = 1;
   #nextGeneration = 1;
   #activeGeneration = 0;
@@ -523,6 +535,7 @@ export class GenerationLifecycle {
 
   assertInMemoryFence(handle: InvocationHandle): void {
     const lease = this.#leaseByHandle.get(handle);
+    const drainDeadline = lease === undefined ? undefined : this.#drainDeadlines.get(lease.generation);
     if (lease === undefined
       || lease.lifecycleToken !== this.#lifecycleToken
       || lease.authorityScope !== this.#authorityScope
@@ -530,12 +543,14 @@ export class GenerationLifecycle {
       || handle.generation !== lease.generation
       || handle.id !== lease.id
       || lease.released
-      || !this.#leases.has(lease)) {
+      || !this.#leases.has(lease)
+      || (drainDeadline !== undefined && deadlineExpired(drainDeadline, this.#clock))) {
       throw new Error("STALE_GENERATION");
     }
   }
 
   async #drainGeneration(generation: number, deadline: DeadlineBudget): Promise<boolean> {
+    this.#drainDeadlines.set(generation, deadline);
     this.#sealedGenerations.add(generation);
     const timeoutCode = `DRAIN_TIMEOUT:${generation}`;
     try {
@@ -870,6 +885,7 @@ export class GenerationLifecycle {
   }
 
   #fenceGeneration(generation: number): void {
+    this.#drainDeadlines.delete(generation);
     this.#sealedGenerations.add(generation);
     for (const lease of this.#leases) {
       if (lease.generation === generation) this.#leases.delete(lease);

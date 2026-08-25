@@ -358,6 +358,13 @@ test("accepted publication gates remain authoritative while proposed ADR-0013 is
   assert.match(files[5]!, /No graph slice starts until its ownership path is complete/);
   assert.match(files[5]!, /ADR-0013.*owning product's\s+feature decision/is);
   assert.match(files[5]!, /ADR-0012 remains effective.*`UMEQ-011` and `UMEQ-013`/is);
+  assert.match(files[2]!, /Under the product-local ADR-0013 path, two independent\s+consumers/);
+  assert.match(files[2]!, /Under the\s+effective ADR-0012 path, the selected accepted admission basis/);
+  assert.match(files[2]!, /a second consumer is not imposed on the other\s+accepted bases/);
+  assert.match(files[3]!, /ADR-0012's accepted admission\s+bases/);
+  assert.match(files[3]!, /not\s+silently narrowed to the second-consumer basis/);
+  assert.match(files[3]!, /Internal extraction may proceed after the selected gate passes; package\s+publication additionally requires the `UMEQ-015`/);
+  assert.match(files[5]!, /`UMEQ-012` is\s+needed before reusable contract extraction; `UMEQ-015` is additionally required\s+before package publication/);
   assert.match(files[6]!, /status: proposed/);
   assert.match(files[6]!, /ADR-0012\s+remains the effective admission policy/);
   assert.match(files[6]!, /cannot narrow or block the admission bases already accepted in ADR-0012/);
