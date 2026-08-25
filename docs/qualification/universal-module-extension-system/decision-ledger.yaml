@@ -1,6 +1,8 @@
 schemaVersion: 1
 qualification: universal-module-extension-system
+sourceRepository: agent-teams-ai/extension-foundation
 sourceRevision: 78850cbc57a1a688913a3694ca6f0efde34ab192
+sourcePurpose: immutable-analyzed-baseline
 entries:
   - id: UMEQ-001
     status: accepted-existing

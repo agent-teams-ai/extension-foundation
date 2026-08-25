@@ -5,9 +5,11 @@ import { docsFind } from "@agent-teams/docs-protocol";
 import { parse as parseYaml } from "yaml";
 
 export const CATALOG_PATH = "architecture/package-catalog.json";
+export const FOUNDATION_REPOSITORY = "agent-teams-ai/extension-foundation";
 export const DOCS_PROFILE_PATH = "architecture/foundation/docs-protocol.yaml";
 export const SCAFFOLDING_POLICY_PATH = "architecture/foundation/scaffolding.yaml";
 export const MATERIALIZATION_PLAN_DIRECTORY = "architecture/scaffolding-plans";
+export const PACKAGE_ADMISSION_DIRECTORY = "architecture/package-admissions";
 export const CATALOG_ROOT_KEYS = Object.freeze(["packages", "version"]);
 export const CATALOG_ENTRY_KEYS = Object.freeze([
   "id",
@@ -16,11 +18,32 @@ export const CATALOG_ENTRY_KEYS = Object.freeze([
   "path",
   "role",
 ]);
+export const ADMISSION_KEYS = Object.freeze([
+  "schema_version",
+  "conformance_version",
+  "consumer_evidence",
+  "extraction_decision",
+  "neutrality_claim",
+  "owner_repository",
+  "package_id",
+  "release_policy",
+]);
+export const CONSUMER_EVIDENCE_KEYS = Object.freeze([
+  "conformance_result",
+  "consumer_id",
+  "consumer_repository",
+  "evidence_reference",
+  "source_revision",
+]);
 export const PACKAGE_ID = /^[a-z0-9][a-z0-9.-]*$/;
 export const PACKAGE_PATH = /^packages\/[a-z0-9][a-z0-9-]*(?:\/[a-z0-9][a-z0-9-]*)*$/;
 export const PACKAGE_NAME = /^@agent-teams\/[a-z0-9][a-z0-9._-]*$/;
 export const FEATURE_NAME = /^[a-z0-9][a-z0-9-]*$/;
 export const OWNER_DOCUMENT = /^ADR-[0-9]{4}$/;
+export const REPOSITORY_ID = /^[a-z0-9][a-z0-9_.-]*\/[a-z0-9][a-z0-9_.-]*$/i;
+export const SOURCE_REVISION = /^[0-9a-f]{40}$/;
+export const CONFORMANCE_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
+export const IMMUTABLE_EVIDENCE_REFERENCE = /^(?:https:\/\/|docs\/).+#sha256=[0-9a-f]{64}$/;
 
 export function isRecord(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -67,13 +90,92 @@ export function pathsOverlap(left, right) {
   return left === right || left.startsWith(`${right}/`) || right.startsWith(`${left}/`);
 }
 
-export function materializationPlanPath(entry) {
-  const encodedId = [...entry.id].map(character => {
+function encodedPackageId(entry) {
+  return [...entry.id].map(character => {
     if (character === ".") return "-dot-";
     if (character === "-") return "-dash-";
     return character;
   }).join("");
-  return `${MATERIALIZATION_PLAN_DIRECTORY}/${encodedId}.json`;
+}
+
+export function materializationPlanPath(entry) {
+  return `${MATERIALIZATION_PLAN_DIRECTORY}/${encodedPackageId(entry)}.json`;
+}
+
+export function packageAdmissionPath(entry) {
+  return `${PACKAGE_ADMISSION_DIRECTORY}/${encodedPackageId(entry)}.json`;
+}
+
+function validateAdmission(entry, admission, errors) {
+  if (!hasExactKeys(admission, ADMISSION_KEYS)) {
+    errors.push(`${entry.id}: admission must contain exactly ${ADMISSION_KEYS.join(", ")}`);
+    return;
+  }
+  if (admission.schema_version !== 1) {
+    errors.push(`${entry.id}: admission.schema_version must equal 1`);
+  }
+  for (const key of ADMISSION_KEYS.filter(key => !["consumer_evidence", "schema_version"].includes(key))) {
+    if (typeof admission[key] !== "string" || admission[key].length === 0) {
+      errors.push(`${entry.id}: admission.${key} must be a non-empty string`);
+    }
+  }
+  if (!REPOSITORY_ID.test(admission.owner_repository ?? "")) {
+    errors.push(`${entry.id}: admission.owner_repository must be an owner/repository identity`);
+  } else if (admission.owner_repository !== FOUNDATION_REPOSITORY) {
+    errors.push(`${entry.id}: admission.owner_repository must identify ${FOUNDATION_REPOSITORY}`);
+  }
+  if (admission.package_id !== entry.id) {
+    errors.push(`${entry.id}: admission.package_id must equal the catalog package id`);
+  }
+  if (admission.extraction_decision !== entry.owner_document) {
+    errors.push(`${entry.id}: admission.extraction_decision must equal the accepted owner_document`);
+  }
+  if (!CONFORMANCE_VERSION.test(admission.conformance_version ?? "")) {
+    errors.push(`${entry.id}: admission.conformance_version must be an exact SemVer`);
+  }
+  if (!Array.isArray(admission.consumer_evidence) || admission.consumer_evidence.length < 2) {
+    errors.push(`${entry.id}: admission requires at least two independent consumer evidence records`);
+    return;
+  }
+  const consumerIds = new Set();
+  const consumerRepositories = new Set();
+  const evidenceReferences = new Set();
+  for (const [index, evidence] of admission.consumer_evidence.entries()) {
+    if (!hasExactKeys(evidence, CONSUMER_EVIDENCE_KEYS)) {
+      errors.push(`${entry.id}: consumer_evidence[${index}] must contain exactly ${CONSUMER_EVIDENCE_KEYS.join(", ")}`);
+      continue;
+    }
+    if (CONSUMER_EVIDENCE_KEYS.some(key => typeof evidence[key] !== "string" || evidence[key].length === 0)) {
+      errors.push(`${entry.id}: consumer_evidence[${index}] fields must be non-empty strings`);
+      continue;
+    }
+    if (!PACKAGE_ID.test(evidence.consumer_id)) {
+      errors.push(`${entry.id}: consumer_evidence[${index}].consumer_id is invalid`);
+    }
+    if (!REPOSITORY_ID.test(evidence.consumer_repository)) {
+      errors.push(`${entry.id}: consumer_evidence[${index}].consumer_repository is invalid`);
+    }
+    if (!SOURCE_REVISION.test(evidence.source_revision)) {
+      errors.push(`${entry.id}: consumer_evidence[${index}].source_revision must be an exact commit`);
+    }
+    if (evidence.conformance_result !== "passed") {
+      errors.push(`${entry.id}: consumer_evidence[${index}].conformance_result must be passed`);
+    }
+    if (!IMMUTABLE_EVIDENCE_REFERENCE.test(evidence.evidence_reference)) {
+      errors.push(`${entry.id}: consumer_evidence[${index}].evidence_reference must carry a sha256 fragment`);
+    }
+    consumerIds.add(evidence.consumer_id);
+    consumerRepositories.add(evidence.consumer_repository);
+    evidenceReferences.add(evidence.evidence_reference);
+  }
+  if (consumerIds.size !== admission.consumer_evidence.length
+    || consumerRepositories.size !== admission.consumer_evidence.length
+    || evidenceReferences.size !== admission.consumer_evidence.length) {
+    errors.push(`${entry.id}: consumer evidence must use distinct identities, repositories, and immutable references`);
+  }
+  if (consumerRepositories.has(admission.owner_repository)) {
+    errors.push(`${entry.id}: consumer evidence must be independent from the Foundation owner repository`);
+  }
 }
 
 export async function loadPackagePolicy(root) {
@@ -116,6 +218,12 @@ export async function loadPackagePolicy(root) {
     }
     if (!OWNER_DOCUMENT.test(entry.owner_document)) {
       errors.push(`${entry.id}: owner_document must be an ADR identity`);
+    }
+    try {
+      const admission = JSON.parse(await readFile(join(root, packageAdmissionPath(entry)), "utf8"));
+      validateAdmission(entry, admission, errors);
+    } catch (error) {
+      errors.push(`${entry.id}: admission evidence is missing or invalid: ${error instanceof Error ? error.message : String(error)}`);
     }
     for (const field of Object.keys(seen)) {
       if (seen[field].has(entry[field])) errors.push(`${entry.id}: duplicate ${field} ${entry[field]}`);

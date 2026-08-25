@@ -117,6 +117,34 @@ function packageCatalog() {
   });
 }
 
+function packageAdmission() {
+  return {
+    schema_version: 1,
+    package_id: "module.example",
+    owner_repository: "agent-teams-ai/extension-foundation",
+    extraction_decision: "ADR-0099",
+    neutrality_claim: "The capability contains no product-owned language or runtime authority.",
+    release_policy: "Exact SemVer with immutable packed-artifact evidence.",
+    conformance_version: "1.0.0",
+    consumer_evidence: [
+      {
+        consumer_id: "consumer.alpha",
+        consumer_repository: "agent-teams-ai/consumer-alpha",
+        source_revision: "1111111111111111111111111111111111111111",
+        conformance_result: "passed",
+        evidence_reference: `docs/evidence/consumer-alpha.json#sha256=${"a".repeat(64)}`,
+      },
+      {
+        consumer_id: "consumer.beta",
+        consumer_repository: "agent-teams-ai/consumer-beta",
+        source_revision: "2222222222222222222222222222222222222222",
+        conformance_result: "passed",
+        evidence_reference: `docs/evidence/consumer-beta.json#sha256=${"b".repeat(64)}`,
+      },
+    ],
+  };
+}
+
 function packageTsconfig(compilerOptions = {}) {
   return JSON.stringify({
     extends: "../../tsconfig.json",
@@ -187,6 +215,13 @@ function sourcePolicy({ packageBoundary = false } = {}) {
 
 async function writeArchitecture(root, { catalog = '{"version":1,"packages":[]}', packageBoundary = false } = {}) {
   await writeFixture(root, "architecture/package-catalog.json", `${catalog}\n`);
+  for (const entry of JSON.parse(catalog).packages ?? []) {
+    const admission = { ...packageAdmission(), package_id: entry.id, extraction_decision: entry.owner_document };
+    const encodedId = [...entry.id].map(character => (
+      character === "." ? "-dot-" : character === "-" ? "-dash-" : character
+    )).join("");
+    await writeFixture(root, `architecture/package-admissions/${encodedId}.json`, `${JSON.stringify(admission)}\n`);
+  }
   await writeFixture(root, "architecture/foundation/scaffolding.yaml", `schemaVersion: 1
 compositions:
   - id: fixture
@@ -635,6 +670,52 @@ test("catalog root rejects unknown fields", async () => {
     await writeArchitecture(root, { catalog: '{"version":1,"packages":[],"future":true}' });
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
       "architecture/package-catalog.json must contain exactly version 1 and a packages array",
+    ]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("package admission fails closed without versioned independent evidence", async () => {
+  const root = await mkdtemp(join(tmpdir(), "extension-topology-admission-"));
+  try {
+    await writeArchitecture(root, { catalog: packageCatalog(), packageBoundary: true });
+    await rm(join(root, "architecture/package-admissions/module-dot-example.json"));
+    const missingErrors = await validatePackageTopology({ root, resolveOwner: acceptedOwner });
+    assert.equal(missingErrors.length, 1);
+    assert.match(missingErrors[0], /admission evidence is missing or invalid/);
+
+    const oneConsumer = packageAdmission();
+    oneConsumer.consumer_evidence.pop();
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(oneConsumer)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: admission requires at least two independent consumer evidence records",
+    ]);
+
+    const duplicateConsumer = packageAdmission();
+    duplicateConsumer.consumer_evidence[1].consumer_repository = duplicateConsumer.consumer_evidence[0].consumer_repository;
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(duplicateConsumer)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: consumer evidence must use distinct identities, repositories, and immutable references",
+    ]);
+
+    const wrongDecision = packageAdmission();
+    wrongDecision.extraction_decision = "ADR-0100";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(wrongDecision)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: admission.extraction_decision must equal the accepted owner_document",
     ]);
   } finally {
     await rm(root, { recursive: true, force: true });

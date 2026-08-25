@@ -44,6 +44,7 @@ function normalizeJson(value, depth, budget) {
   const output = {};
   for (const key of Object.keys(descriptors).sort()) {
     const descriptor = descriptors[key];
+    if (!isWellFormedUnicode(key)) throw new Error("INVALID_UNICODE_STRING");
     if (!descriptor?.enumerable || !("value" in descriptor) || forbiddenKeys.has(key)) {
       throw new Error("INVALID_JSON_OBJECT");
     }
@@ -123,6 +124,11 @@ function requireNonNegativeInteger(frame, key) {
 
 export function validateEnvelope(value) {
   const frame = normalizeJson(value, 0, { count: 0 });
+  try {
+    structuredClone(value);
+  } catch {
+    throw new Error("INVALID_JSON_VALUE");
+  }
   if (!frame || typeof frame !== "object" || Array.isArray(frame)) throw new Error("INVALID_FRAME");
   if (Object.keys(frame).some(key => !envelopeKeys.has(key)) || Object.keys(frame).length !== envelopeKeys.size) {
     throw new Error("UNKNOWN_OR_MISSING_FIELD");
@@ -145,7 +151,7 @@ export function validateEnvelope(value) {
   return frame;
 }
 
-export function handlePortableWorkerFrame(value, authority) {
+export function validateAuthorizedEnvelope(value, authority) {
   const request = validateEnvelope(value);
   if (request.authorityScope !== authority.authorityScope) throw new Error("AUTHORITY_SCOPE_MISMATCH");
   if (request.extensionInstanceId !== authority.extensionInstanceId) throw new Error("EXTENSION_INSTANCE_MISMATCH");
@@ -157,7 +163,22 @@ export function handlePortableWorkerFrame(value, authority) {
   if (request.senderId !== authority.authenticatedPeerId) throw new Error("AUTHENTICATED_PEER_MISMATCH");
   if (request.audience !== authority.audience) throw new Error("AUDIENCE_MISMATCH");
   if (authority.now >= request.absoluteDeadline) throw new Error("DEADLINE_EXCEEDED");
-  return validateEnvelope({ ...request, kind: "result", payload: { acceptedKind: request.kind } });
+  return request;
+}
+
+export function handlePortableWorkerFrame(value, authority) {
+  const request = validateAuthorizedEnvelope(value, authority);
+  if (typeof authority.localSenderId !== "string" || authority.localSenderId.length === 0) {
+    throw new Error("INVALID_LOCAL_SENDER_ID");
+  }
+  if (authority.localSenderId !== authority.audience) throw new Error("LOCAL_IDENTITY_MISMATCH");
+  return validateEnvelope({
+    ...request,
+    senderId: authority.localSenderId,
+    audience: authority.authenticatedPeerId,
+    kind: "result",
+    payload: { acceptedKind: request.kind },
+  });
 }
 
 export function encodeLengthPrefixedFrame(value) {

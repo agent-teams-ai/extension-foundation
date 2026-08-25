@@ -71,9 +71,18 @@ export interface MonotonicClock {
   sleep(milliseconds: number): Promise<void>;
 }
 
+export interface InvocationHandle {
+  readonly generation: number;
+  readonly id: number;
+  readonly authorityScope: string;
+  release(): void;
+}
+
 interface InvocationLease {
   readonly generation: number;
   readonly id: number;
+  readonly authorityScope: string;
+  readonly lifecycleToken: symbol;
   released: boolean;
 }
 
@@ -181,6 +190,8 @@ export class GenerationLifecycle {
   readonly #operationFingerprints = new Map<string, string>();
   readonly #operationResults = new Map<string, ActivationResult>();
   readonly #leases = new Set<InvocationLease>();
+  readonly #leaseByHandle = new WeakMap<object, InvocationLease>();
+  readonly #lifecycleToken = Symbol("generation-lifecycle");
   readonly #sealedGenerations = new Set<number>();
   #nextLeaseId = 1;
   #nextGeneration = 1;
@@ -242,28 +253,44 @@ export class GenerationLifecycle {
     return this.#waitForFlight(result, waiterDeadline, waiterOptions.signal);
   }
 
-  acquireInvocation(): { readonly generation: number; readonly id: number; release(): void } {
+  acquireInvocation(): InvocationHandle {
     if (this.#activeGeneration === 0 || this.#sealedGenerations.has(this.#activeGeneration)) {
       throw new Error("NO_ACTIVE_GENERATION");
     }
-    const lease: InvocationLease = { generation: this.#activeGeneration, id: this.#nextLeaseId++, released: false };
+    const lease: InvocationLease = {
+      generation: this.#activeGeneration,
+      id: this.#nextLeaseId++,
+      authorityScope: this.#authorityScope,
+      lifecycleToken: this.#lifecycleToken,
+      released: false,
+    };
     this.#leases.add(lease);
-    return {
+    const handle: InvocationHandle = Object.freeze({
       generation: lease.generation,
       id: lease.id,
+      authorityScope: lease.authorityScope,
       release: () => {
         if (lease.released) return;
         lease.released = true;
         this.#leases.delete(lease);
       },
-    };
+    });
+    this.#leaseByHandle.set(handle, lease);
+    return handle;
   }
 
-  assertInMemoryFence(lease: { readonly generation: number; readonly id: number }): void {
-    const admitted = [...this.#leases].some(candidate =>
-      candidate.generation === lease.generation && candidate.id === lease.id && !candidate.released,
-    );
-    if (!admitted) throw new Error("STALE_GENERATION");
+  assertInMemoryFence(handle: InvocationHandle): void {
+    const lease = this.#leaseByHandle.get(handle);
+    if (lease === undefined
+      || lease.lifecycleToken !== this.#lifecycleToken
+      || lease.authorityScope !== this.#authorityScope
+      || handle.authorityScope !== lease.authorityScope
+      || handle.generation !== lease.generation
+      || handle.id !== lease.id
+      || lease.released
+      || !this.#leases.has(lease)) {
+      throw new Error("STALE_GENERATION");
+    }
   }
 
   async drain(generation: number, absoluteDeadline: number): Promise<boolean> {

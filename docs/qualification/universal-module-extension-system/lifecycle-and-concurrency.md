@@ -112,6 +112,18 @@ generation, activation fingerprint)`. One hundred concurrent same-fingerprint
 starts join one attempt and observe the same durable result. A waiter's timeout
 or cancellation detaches that waiter; it does not cancel shared startup.
 
+The activation fingerprint binds the exact resolved hook bundle and host-adapter
+implementation through an activation-source digest, plus plan, authority scope,
+profile/configuration/grant/host-policy revisions, deadline, and cleanup policy.
+Functions are never serialized to invent identity. Resolution creates the
+digest before lifecycle admission and snapshots the corresponding hook bindings.
+
+An in-process invocation handle is an object-identity capability issued by one
+lifecycle instance. Its private membership, exact authority scope, generation,
+and release state are checked together. Numeric lease fields are diagnostics,
+not durable or cross-process authority; a structurally identical object or a
+handle issued by another scope is rejected.
+
 | Race | Required result |
 | --- | --- |
 | Same candidate start/start | Join one attempt |

@@ -105,6 +105,15 @@ catalog must record its neutrality claim, canonical owner repository, consumer
 evidence, release policy and conformance profile. The current empty catalog
 cannot reserve or admit packages on the strength of this qualification alone.
 
+The catalog keeps its stable version 1 identity shape. Every non-empty entry
+requires a separate versioned package-admission manifest binding an accepted
+extraction ADR, owner repository, neutrality claim, release policy, exact
+conformance version, and at least two distinct consumer repositories with exact
+source commits, passed results, and digest-bound evidence references. A missing
+or malformed manifest fails closed. This validates admission evidence shape and
+identity; a release promotion gate must additionally retrieve and verify the
+referenced bytes before publication.
+
 ## Dependency Rules
 
 1. A reusable core never imports Foundation runtime, product host, Cordis,

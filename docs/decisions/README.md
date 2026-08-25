@@ -11,6 +11,7 @@ summary: Canonical index of proposed, accepted, and superseded Extension Foundat
 ## Proposed decisions
 
 - [ADR-0011: Extension admission, custody, and retirement closure](0011-extension-admission-custody-and-retirement-closure.md)
+- [ADR-0013: First-consumer module semantics before Foundation extraction](0013-first-consumer-module-semantics-before-foundation-extraction.md)
 
 ## Accepted decisions
 

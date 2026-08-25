@@ -13,6 +13,7 @@ const authority = Object.freeze({
   moduleActivationGeneration: 7,
   hostIncarnation: "host-incarnation-1",
   authenticatedPeerId: "product-host",
+  localSenderId: "extension-host",
   audience: "extension-host",
 });
 
@@ -35,13 +36,13 @@ function send(frame) {
 }
 
 function handleFrame(frame) {
-  handlePortableWorkerFrame(frame, { ...authority, now: Date.now() });
+  const response = handlePortableWorkerFrame(frame, { ...authority, now: Date.now() });
   if (frame.kind === "hello") {
-    send({ ...frame, kind: "result", payload: { negotiatedProtocol: protocolName } });
+    send({ ...response, kind: "result", payload: { negotiatedProtocol: protocolName } });
   } else if (frame.kind === "prepare") {
-    send({ ...frame, kind: "ready", payload: { ready: true } });
+    send({ ...response, kind: "ready", payload: { ready: true } });
   } else if (frame.kind === "stop") {
-    send({ ...frame, kind: "result", payload: { stopped: true } });
+    send({ ...response, kind: "result", payload: { stopped: true } });
     process.exitCode = 0;
     process.stdin.destroy();
   }

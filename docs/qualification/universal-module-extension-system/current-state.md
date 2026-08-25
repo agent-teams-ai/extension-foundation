@@ -8,6 +8,7 @@ related:
   - ADR-0001
   - ADR-0010
   - ADR-0012
+  - ADR-0013
   - OD-003
 ---
 
@@ -47,7 +48,9 @@ package-artifact checks.
 The accepted decision registry contains ADR-0001 through ADR-0010 and ADR-0012.
 ADR-0006 through ADR-0009 are historical and superseded by ADR-0010. ADR-0011
 remains proposed and is not silently treated as accepted. ADR-0012 may relate to
-ADR-0011 without inheriting its proposed rules.
+ADR-0011 without inheriting its proposed rules. ADR-0013 is a qualification-
+driven proposal to correct ADR-0012's premature Foundation ownership; it has no
+effect until explicit product-owner approval.
 
 The effective accepted direction is:
 

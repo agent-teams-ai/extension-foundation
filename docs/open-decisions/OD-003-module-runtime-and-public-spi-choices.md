@@ -150,7 +150,7 @@ and the ADR-0010 evidence justify it.
 
 ```text
 packages/<admitted-capability>/
-  core/                  # optional product-neutral or product-scoped library
+  core/                  # optional product-neutral library admitted after reuse evidence
   module-adapter/        # optional integration with the module runtime
   test-kit/              # optional reusable conformance fixtures
   adapters/<technology>/ # only independently released integrations
@@ -160,7 +160,9 @@ This is an illustrative role layout aligned with ADR-0012, not a reserved
 horizontal package topology. Before cross-product admission, the first graph and
 lifecycle implementation stays inside its owning product feature. No
 `module-kit`, `plugin-protocol`, integration or testing package is created by
-this open decision.
+this open decision. Product-scoped libraries and module adapters stay in the
+owning product repository; proposed ADR-0013 records the ownership correction
+that still requires product-owner approval.
 
 - A module is a runtime composition and lifecycle unit. A plugin artifact is a
   signed distribution, trust, installation, and update envelope.

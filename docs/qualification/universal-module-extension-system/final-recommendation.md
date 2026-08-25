@@ -164,7 +164,8 @@ two fixed `T0` built-ins, explicit bindings and the authority that remains outsi
 the graph. Foundation approval forks `UMEQ-011` and `UMEQ-013` remain open because
 Phase 1 creates no Foundation package or public SPI. Contract source, process,
 Frontend, update, distributed cutover and managed-update decisions also remain
-deferred.
+deferred. Proposed ADR-0013 must be accepted before later Foundation extraction;
+the qualification does not silently change accepted ADR-0012.
 
 Estimated change: 300-700 documentation/tooling LOC, 1-3 days.
 

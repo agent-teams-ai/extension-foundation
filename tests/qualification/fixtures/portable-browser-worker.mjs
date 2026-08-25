@@ -11,6 +11,7 @@ self.onmessage = event => {
         moduleActivationGeneration: 7,
         hostIncarnation: "host-incarnation-1",
         authenticatedPeerId: "product-host",
+        localSenderId: "extension-host",
         audience: "extension-host",
         now: Date.now(),
       }),

@@ -65,6 +65,34 @@ async function writeFixture(root, path, contents) {
   await writeFile(target, contents);
 }
 
+function packageAdmission(packageId = "module.example", extractionDecision = "ADR-0099") {
+  return {
+    schema_version: 1,
+    package_id: packageId,
+    owner_repository: "agent-teams-ai/extension-foundation",
+    extraction_decision: extractionDecision,
+    neutrality_claim: "The capability contains no product-owned language or runtime authority.",
+    release_policy: "Exact SemVer with immutable packed-artifact evidence.",
+    conformance_version: "1.0.0",
+    consumer_evidence: [
+      {
+        consumer_id: "consumer.alpha",
+        consumer_repository: "agent-teams-ai/consumer-alpha",
+        source_revision: "1111111111111111111111111111111111111111",
+        conformance_result: "passed",
+        evidence_reference: `docs/evidence/consumer-alpha.json#sha256=${"a".repeat(64)}`,
+      },
+      {
+        consumer_id: "consumer.beta",
+        consumer_repository: "agent-teams-ai/consumer-beta",
+        source_revision: "2222222222222222222222222222222222222222",
+        conformance_result: "passed",
+        evidence_reference: `docs/evidence/consumer-beta.json#sha256=${"b".repeat(64)}`,
+      },
+    ],
+  };
+}
+
 async function createConsumer() {
   const root = await mkdtemp(join(tmpdir(), "extension-scaffolding-"));
   const catalog = {
@@ -79,6 +107,11 @@ async function createConsumer() {
   };
 
   await writeFixture(root, "architecture/package-catalog.json", `${JSON.stringify(catalog)}\n`);
+  await writeFixture(
+    root,
+    "architecture/package-admissions/module-dot-example.json",
+    `${JSON.stringify(packageAdmission())}\n`,
+  );
   await writeFixture(root, "architecture/foundation/scaffolding.yaml", `schemaVersion: 1
 projectId: extension-foundation-fixture
 targetCatalogPath: architecture/package-catalog.json
@@ -575,6 +608,11 @@ test("scaffold rejects nested catalog roots before any operation", async () => {
       owner_document: "ADR-0099",
     });
     await writeFile(catalogPath, `${JSON.stringify(catalog)}\n`);
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-child.json",
+      `${JSON.stringify(packageAdmission("module.child"))}\n`,
+    );
     await assert.rejects(publishScaffoldPlan({
       root,
       intentPath: "architecture/scaffolding-intents/example.yaml",

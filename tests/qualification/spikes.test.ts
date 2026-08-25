@@ -27,6 +27,7 @@ import {
   encodeLengthPrefixedFrame,
   handlePortableWorkerFrame,
   type ProtocolEnvelope,
+  validateAuthorizedEnvelope,
   validateEnvelope,
 } from "./protocol-spike.ts";
 import {
@@ -45,7 +46,14 @@ const protocolAuthority = Object.freeze({
   moduleActivationGeneration: 7,
   hostIncarnation: "host-incarnation-1",
   authenticatedPeerId: "product-host",
+  localSenderId: "extension-host",
   audience: "extension-host",
+});
+const responseAuthority = Object.freeze({
+  ...protocolAuthority,
+  authenticatedPeerId: "extension-host",
+  localSenderId: "product-host",
+  audience: "product-host",
 });
 
 function requirePlan(descriptors: readonly ModuleDescriptor[]) {
@@ -309,6 +317,34 @@ test("lifecycle is bound to one authority scope and snapshots hook bindings", as
     new Map([["second", inertHooks()]]),
   ));
   assert.deepEqual(stopped, ["original"]);
+});
+
+test("invocation handles are scope-bound in-memory capabilities, not structural authority", async () => {
+  const plan = requirePlan([{ id: "module", requires: [] }]);
+  const first = new GenerationLifecycle("tenant:first/project:first");
+  const second = new GenerationLifecycle("tenant:second/project:second");
+  await first.activate(activationRequest(
+    first,
+    "first-scope",
+    plan,
+    new Map([["module", inertHooks()]]),
+    { authorityScope: "tenant:first/project:first" },
+  ));
+  await second.activate(activationRequest(
+    second,
+    "second-scope",
+    plan,
+    new Map([["module", inertHooks()]]),
+    { authorityScope: "tenant:second/project:second" },
+  ));
+  const firstHandle = first.acquireInvocation();
+  const secondHandle = second.acquireInvocation();
+  first.assertInMemoryFence(firstHandle);
+  second.assertInMemoryFence(secondHandle);
+  assert.throws(() => second.assertInMemoryFence(firstHandle), /STALE_GENERATION/);
+  assert.throws(() => first.assertInMemoryFence({ ...firstHandle }), /STALE_GENERATION/);
+  firstHandle.release();
+  secondHandle.release();
 });
 
 test("same completed operation returns its retained result without a second start", async () => {
@@ -664,7 +700,11 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
 
 test("portable protocol rejects stale, expired, malformed, and oversized frames", () => {
   const authority = { ...protocolAuthority, now: Date.now() };
-  assert.equal(handlePortableWorkerFrame(frame(), authority).kind, "result");
+  const accepted = handlePortableWorkerFrame(frame(), authority);
+  assert.equal(accepted.kind, "result");
+  assert.equal(accepted.senderId, "extension-host");
+  assert.equal(accepted.audience, "product-host");
+  assert.deepEqual(validateAuthorizedEnvelope(accepted, { ...responseAuthority, now: Date.now() }), accepted);
   assert.throws(() => handlePortableWorkerFrame(frame({ authorityScope: "tenant:other/project:other" }), authority), /AUTHORITY_SCOPE_MISMATCH/);
   assert.throws(() => handlePortableWorkerFrame(frame({ extensionInstanceId: "extension-instance-2" }), authority), /EXTENSION_INSTANCE_MISMATCH/);
   assert.throws(() => handlePortableWorkerFrame(frame({ graphGeneration: 2 }), authority), /STALE_GRAPH_GENERATION/);
@@ -672,7 +712,7 @@ test("portable protocol rejects stale, expired, malformed, and oversized frames"
   assert.throws(() => handlePortableWorkerFrame(frame({ hostIncarnation: "stale-host" }), authority), /STALE_HOST_INCARNATION/);
   assert.throws(() => handlePortableWorkerFrame(frame({ senderId: "unauthenticated-peer" }), authority), /AUTHENTICATED_PEER_MISMATCH/);
   assert.throws(() => handlePortableWorkerFrame(frame({ audience: "different-host" }), authority), /AUDIENCE_MISMATCH/);
-  assert.throws(() => handlePortableWorkerFrame(frame({ absoluteDeadline: Date.now() - 1 }), authority), /DEADLINE_EXCEEDED/);
+  assert.throws(() => handlePortableWorkerFrame(frame({ absoluteDeadline: authority.now - 1 }), authority), /DEADLINE_EXCEEDED/);
   assert.throws(() => validateEnvelope({}), /UNKNOWN_OR_MISSING_FIELD/);
   assert.throws(() => validateEnvelope({ ...frame(), extra: true }), /UNKNOWN_OR_MISSING_FIELD/);
   const cyclicPayload: Record<string, unknown> = {};
@@ -682,6 +722,7 @@ test("portable protocol rejects stale, expired, malformed, and oversized frames"
   assert.throws(() => validateEnvelope(frame({ payload: { value: Number.NaN } })), /INVALID_JSON_NUMBER/);
   assert.throws(() => validateEnvelope(frame({ payload: { value: -0 } })), /INVALID_JSON_NUMBER/);
   assert.throws(() => validateEnvelope(frame({ payload: { value: "\ud800" } })), /INVALID_UNICODE_STRING/);
+  assert.throws(() => validateEnvelope(frame({ payload: { ["\ud800"]: true } })), /INVALID_UNICODE_STRING/);
   assert.throws(() => validateEnvelope(frame({ payload: { value: undefined } })), /INVALID_JSON_VALUE/);
   assert.throws(() => validateEnvelope(frame({ payload: new Map() as unknown as Record<string, unknown> })), /INVALID_JSON_OBJECT/);
   const accessor = {} as Record<string, unknown>;
@@ -697,6 +738,8 @@ test("portable protocol rejects stale, expired, malformed, and oversized frames"
   const extraArrayProperty: unknown[] & { extra?: string } = [];
   extraArrayProperty.extra = "unexpected";
   assert.throws(() => validateEnvelope(frame({ payload: { extraArrayProperty } })), /INVALID_JSON_ARRAY/);
+  const proxyArray = new Proxy([1], {});
+  assert.throws(() => validateEnvelope(frame({ payload: { proxyArray } })), /INVALID_JSON_VALUE/);
   const normalized = validateEnvelope(frame({ payload: { nested: { value: 1 } } }));
   assert.equal(Object.isFrozen(normalized.payload), true);
   assert.equal(Object.isFrozen(normalized.payload.nested), true);
@@ -741,7 +784,10 @@ test("process-host smoke acknowledges hello and readiness over bounded length-pr
     once(child, "exit").then(([code]) => { throw new Error(`PROCESS_EXITED_EARLY:${String(code)}`); }),
     delay(2_000).then(() => { throw new Error("PROCESS_RESPONSE_TIMEOUT"); }),
   ]);
-  assert.deepEqual(responses.map(value => validateEnvelope(value).kind), ["result", "ready"]);
+  assert.deepEqual(responses.map(value => validateAuthorizedEnvelope(
+    value,
+    { ...responseAuthority, now: Date.now() },
+  ).kind), ["result", "ready"]);
   child.stdin.write(encodeLengthPrefixedFrame(frame({ requestId: "request-3", kind: "stop" })));
   await once(child, "exit");
 });
@@ -762,7 +808,16 @@ test("Worker structured-clone boundary preserves validation and stale rejection"
   const response = new Promise<unknown>(resolve => worker.once("message", resolve));
   const request = frame({ kind: "prepare" });
   worker.postMessage(structuredClone(request));
-  assert.deepEqual(await response, { ok: true, frame: { ...request, kind: "result", payload: { acceptedKind: "prepare" } } });
+  assert.deepEqual(await response, {
+    ok: true,
+    frame: {
+      ...request,
+      senderId: "extension-host",
+      audience: "product-host",
+      kind: "result",
+      payload: { acceptedKind: "prepare" },
+    },
+  });
   const stale = new Promise<unknown>(resolve => worker.once("message", resolve));
   worker.postMessage(frame({ moduleActivationGeneration: 6 }));
   assert.deepEqual(await stale, { ok: false, error: "STALE_MODULE_ACTIVATION_GENERATION" });
@@ -833,6 +888,8 @@ test("browser Worker carries a portable generation-bound frame", async t => {
   assert.equal(code, 0);
   assert.match(output, /"ok":true/);
   assert.match(output, /"moduleActivationGeneration":7/);
+  assert.match(output, /"senderId":"extension-host"/);
+  assert.match(output, /"audience":"product-host"/);
   assert.match(output, /"kind":"result"/);
 });
 

@@ -161,6 +161,12 @@ Every host protocol method declares:
 - `rejected`, `applied`, `in_progress`, `unknown`, or
   `termination_unproven` semantics.
 
+Direction is part of authenticated identity. A response preserves request and
+operation correlation but swaps the authenticated endpoints: the receiving host
+becomes `sender`, and the authenticated requester becomes `audience`. Shape-only
+validation is insufficient; each direction validates its own peer/audience
+tuple before accepting a frame.
+
 Control and data lanes are separate. Stop, abort, inspect and credit messages
 retain reserved capacity when output is backpressured. Canonical output cannot
 be silently dropped; explicitly diagnostic streams may declare bounded

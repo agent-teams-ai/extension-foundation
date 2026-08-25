@@ -19,7 +19,9 @@ interface DecisionEntry {
 
 interface DecisionLedger {
   readonly schemaVersion: number;
+  readonly sourceRepository: string;
   readonly sourceRevision: string;
+  readonly sourcePurpose: string;
   readonly entries: readonly DecisionEntry[];
 }
 
@@ -55,8 +57,15 @@ function markdownAnchor(title: string): string {
 test("decision ledger has one semantic owner and ten unique approval forks", async () => {
   const ledgerPath = resolve(dossier, "decision-ledger.yaml");
   const ledger = parse(await readFile(ledgerPath, "utf8")) as DecisionLedger;
+  const currentState = await readFile(resolve(dossier, "current-state.md"), "utf8");
   assert.equal(ledger.schemaVersion, 1);
+  assert.equal(ledger.sourceRepository, "agent-teams-ai/extension-foundation");
+  assert.equal(ledger.sourcePurpose, "immutable-analyzed-baseline");
   assert.match(ledger.sourceRevision, /^[0-9a-f]{40}$/);
+  const foundationRevision = currentState.match(
+    /`agent-teams-ai\/extension-foundation` \| `([0-9a-f]{40})`/,
+  )?.[1];
+  assert.equal(ledger.sourceRevision, foundationRevision);
   const ids = ledger.entries.map(entry => entry.id);
   const topics = ledger.entries.map(entry => entry.topic);
   assert.equal(new Set(ids).size, ids.length);
@@ -133,10 +142,16 @@ test("publication and first-slice gates cannot be weakened by qualification pros
     readFile(resolve(dossier, "conformance-plan.md"), "utf8"),
     readFile(resolve(dossier, "final-recommendation.md"), "utf8"),
     readFile(resolve(dossier, "product-adoption.md"), "utf8"),
+    readFile(resolve(dossier, "unresolved-decisions.md"), "utf8"),
+    readFile(resolve(repositoryRoot, "docs/decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md"), "utf8"),
   ]);
   assert.match(files[0]!, /Public SPI requires independent implementations/);
   for (const markdown of files.slice(1, 4)) assert.match(markdown, /two independently authored/);
   assert.doesNotMatch(files[2]!, /one real implementation plus a bounded reference adapter/);
   assert.match(files[3]!, /owning product.*accepted feature decision/is);
   assert.doesNotMatch(files[4]!, /independently packaged reference implementation/);
+  assert.match(files[5]!, /first product-local graph slice requires its owning product's accepted\s+feature decision/is);
+  assert.doesNotMatch(files[5]!, /Approve `UMEQ-011`.*before the\s+first product-local graph slice/is);
+  assert.match(files[6]!, /status: proposed/);
+  assert.match(files[6]!, /no Foundation runtime package or public SPI may be admitted/);
 });

@@ -100,8 +100,10 @@ resource ownership.
 **Evidence:** Cordis reliably owns scoped effects, but the trivial qualification
 adapter does not prove meaningful code deletion and would overlap lifecycle
 authority. The 25% threshold remains a real-consumer kill criterion. **Reversibility:**
-high because contracts exclude framework types. **Impact:** first implementation
-slice. **Approval:** required through `OD-003`; evidence currently favors native.
+high because contracts exclude framework types. **Impact:** Foundation
+extraction and runtime admission, not the private product-local rehearsal.
+**Approval:** required through `OD-003`; Foundation admission also requires
+acceptance of proposed `ADR-0013`. Evidence currently favors native.
 
 ## UMEQ-014: Package Module Formats
 
@@ -186,9 +188,12 @@ medium; release records should already map cleanly to future TUF targets.
 
 ## Recommended Approval Order
 
-Approve `UMEQ-011` and the narrow native graph choice in `UMEQ-013` before the
-first product-local graph slice. `UMEQ-012` and `UMEQ-015` are needed only
-before reusable contract extraction/publication. `UMEQ-009`, `UMEQ-014` and `UMEQ-016` are needed before a
+The first product-local graph slice requires its owning product's accepted
+feature decision. That decision may choose explicit binding and a private native
+implementation without deciding Foundation forks `UMEQ-011` or `UMEQ-013`.
+Approve those two forks only before cross-product extraction or Foundation
+runtime admission. `UMEQ-012` and `UMEQ-015` are needed only before reusable
+contract extraction/publication. `UMEQ-009`, `UMEQ-014` and `UMEQ-016` are needed before a
 process/package release. `UMEQ-017` is required before hosted distributed
 claims. `UMEQ-018` is needed before managed update channels. `UMEQ-010` remains
 a separate Frontend decision.

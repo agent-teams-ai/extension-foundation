@@ -13,6 +13,7 @@ parentPort.on("message", frame => {
         moduleActivationGeneration: workerData.moduleActivationGeneration,
         hostIncarnation: workerData.hostIncarnation,
         authenticatedPeerId: workerData.authenticatedPeerId,
+        localSenderId: workerData.localSenderId,
         audience: workerData.audience,
         now: Date.now(),
       }),

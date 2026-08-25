@@ -17,6 +17,19 @@ export interface ProtocolEnvelope {
 export declare const protocolName: ProtocolEnvelope["protocol"];
 export declare const maxFrameBytes: number;
 export declare function validateEnvelope(value: unknown): ProtocolEnvelope;
+export declare function validateAuthorizedEnvelope(
+  value: unknown,
+  authority: Readonly<{
+    authorityScope: string;
+    extensionInstanceId: string;
+    graphGeneration: number;
+    moduleActivationGeneration: number;
+    hostIncarnation: string;
+    authenticatedPeerId: string;
+    audience: string;
+    now: number;
+  }>,
+): ProtocolEnvelope;
 export declare function handlePortableWorkerFrame(
   value: unknown,
   authority: Readonly<{
@@ -26,6 +39,7 @@ export declare function handlePortableWorkerFrame(
     moduleActivationGeneration: number;
     hostIncarnation: string;
     authenticatedPeerId: string;
+    localSenderId: string;
     audience: string;
     now: number;
   }>,
