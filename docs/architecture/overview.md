@@ -71,23 +71,29 @@ deterministic scaffold plan and output, value-level `src/features/<feature>/`
 implementation, explicit feature entrypoint, and executable structural evidence
 under `test/features/<feature>/`. The same change must include a versioned
 `architecture/package-admissions/<encoded-package-id>.json` record that binds
-the accepted extraction decision and at least two distinct, independently
-authored consumer repositories to exact commits, conformance results, and
-digest-bearing evidence references. Repository identities are canonical
-lowercase `owner/repository` values and reject transport/path aliases such as
-`.git` or trailing dots. Local evidence paths must remain under `docs/` and use
-exactly one digest fragment. External HTTPS locations are compared by their
-canonical URL, and independent evidence records must have distinct SHA-256
-locations and digests; aliases, one location with conflicting claimed digests,
-or mirrors of the same bytes cannot satisfy the gate twice.
+the accepted extraction decision, one explicit ADR-0012 admission basis, exact
+source commits, conformance results, implementation identities, and
+digest-bearing evidence references. A second-consumer basis requires two real
+consumer identities. A public-SPI basis requires two independently authored
+implementation identities. Independent replacement/release or
+deployment/isolation lifecycles may justify a package with one evidence record;
+they do not imply that its exports are a public extension SPI. Repository
+identities are canonical lowercase `owner/repository` values and reject
+transport/path aliases such as `.git` or trailing dots. Local evidence paths
+must remain under `docs/` and use exactly one digest fragment. External HTTPS
+locations are compared by their canonical URL, and independent evidence records
+must have distinct SHA-256 locations and digests; aliases, one location with
+conflicting claimed digests, or mirrors of the same bytes cannot satisfy a gate
+twice.
 
 These checks prove topology and evidence syntax, not business completeness or
 the referenced evidence bytes. A non-empty catalog therefore fails closed until
 an executable admission verifier is supplied. That verifier must resolve each
-slug through its provider to a stable repository ID, prove both consumer IDs
-differ from each other and from Foundation, and hash the evidence bytes before
-admission. Publication re-verifies the immutable receipt. The admitting ADR and
-review evidence establish that the slice is semantically real. Reserving empty packages or root-level
+repository slug through its provider to a stable repository ID, prove the
+selected admission basis and any claimed implementation independence, and hash
+the evidence bytes before admission. Publication re-verifies the immutable
+receipt. The admitting ADR and review evidence establish that the slice is
+semantically real. Reserving empty packages or root-level
 `domain`, `application`, `contracts`, or `adapters` directories is not allowed.
 
 Feature-specific contracts and adapters stay inside their owning feature.

@@ -383,6 +383,18 @@ test("same completed operation returns its retained result without a second star
   assert.equal(Object.isFrozen(replay.traces[0]), true);
   assert.throws(() => (replay.traces as Array<unknown>).push({}), TypeError);
   assert.deepEqual(await lifecycle.activate(request), first);
+
+  const cancelled = new AbortController();
+  cancelled.abort();
+  await assert.rejects(
+    lifecycle.activate(request, { signal: cancelled.signal }),
+    /WAITER_CANCELLED/,
+  );
+  await assert.rejects(
+    lifecycle.activate(request, { absoluteDeadline: lifecycle.deadlineAfter(0) }),
+    /WAITER_DEADLINE_EXCEEDED/,
+  );
+  assert.equal(starts, 1);
 });
 
 test("different candidates race through expected-active CAS and only one publishes", async () => {
@@ -558,6 +570,67 @@ test("effectful module without stop evidence cannot claim proven termination", a
   assert.equal(lateEffects, 1);
 });
 
+test("readiness-only effects without stop evidence cannot claim proven replacement", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const oldPlan = requirePlan([{ id: "old", requires: [] }]);
+  let lateEffects = 0;
+  const initial = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "readiness-only-old",
+    oldPlan,
+    new Map([[
+      "old",
+      {
+        readiness: "probe",
+        ready: () => {
+          setTimeout(() => { lateEffects += 1; }, 25);
+          return true;
+        },
+      },
+    ]]),
+  ));
+  assert.equal(initial.ok, true);
+
+  const replacementPlan = requirePlan([{ id: "replacement", requires: [] }]);
+  const replacement = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "readiness-only-replacement",
+    replacementPlan,
+    new Map([["replacement", inertHooks()]]),
+  ));
+  assert.equal(replacement.ok, true);
+  assert.equal(replacement.termination, "termination_unproven");
+  assert.ok(replacement.errors.some(error => error.message === "MISSING_STOP_EVIDENCE:old"));
+  await delay(35);
+  assert.equal(lateEffects, 1);
+});
+
+test("failed readiness-only effects without stop evidence cannot claim proven termination", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([{ id: "candidate", requires: [] }]);
+  let lateEffects = 0;
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "readiness-only-failure",
+    plan,
+    new Map([[
+      "candidate",
+      {
+        readiness: "probe",
+        ready: () => {
+          setTimeout(() => { lateEffects += 1; }, 25);
+          return false;
+        },
+      },
+    ]]),
+  ));
+  assert.equal(result.ok, false);
+  assert.equal(result.termination, "termination_unproven");
+  assert.ok(result.errors.some(error => error.message === "MISSING_STOP_EVIDENCE:candidate"));
+  await delay(35);
+  assert.equal(lateEffects, 1);
+});
+
 test("absolute deadline prevents late publication and cleanup is bounded", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "slow", requires: [] }]);
@@ -612,7 +685,7 @@ test("deadlines beyond the Node timer limit are re-armed rather than clamped to 
   assert.equal(result.ok, true);
 });
 
-test("waiter clock failure produces a structured waiter deadline error", async () => {
+test("waiter clock failure consistently produces a structured waiter deadline error", async () => {
   let reads = 0;
   const lifecycle = new GenerationLifecycle(testAuthorityScope, {
     now: () => {
@@ -631,7 +704,45 @@ test("waiter clock failure produces a structured waiter deadline error", async (
   );
   await assert.rejects(lifecycle.activate(request), /WAITER_DEADLINE_EXCEEDED/);
   await delay(20);
-  await assert.doesNotReject(lifecycle.activate(request));
+  await assert.rejects(lifecycle.activate(request), /WAITER_DEADLINE_EXCEEDED/);
+});
+
+test("waiter deadline expiry during timer arming removes its abort listener", async () => {
+  let expiryMode = false;
+  let expiryReads = 0;
+  const lifecycle = new GenerationLifecycle(testAuthorityScope, {
+    now: () => {
+      if (!expiryMode) return performance.now();
+      expiryReads += 1;
+      return expiryReads <= 2 ? 100 : 1_000;
+    },
+    sleep: milliseconds => delay(milliseconds),
+  });
+  const plan = requirePlan([{ id: "candidate", requires: [] }]);
+  const request = activationRequest(
+    lifecycle,
+    "waiter-listener-cleanup",
+    plan,
+    new Map([["candidate", inertHooks()]]),
+  );
+  await lifecycle.activate(request);
+
+  const listeners = new Set<EventListenerOrEventListenerObject>();
+  const signal = {
+    aborted: false,
+    addEventListener: (_type: string, listener: EventListenerOrEventListenerObject) => {
+      listeners.add(listener);
+    },
+    removeEventListener: (_type: string, listener: EventListenerOrEventListenerObject) => {
+      listeners.delete(listener);
+    },
+  } as unknown as AbortSignal;
+  expiryMode = true;
+  await assert.rejects(
+    lifecycle.activate(request, { absoluteDeadline: 500, signal }),
+    /WAITER_DEADLINE_EXCEEDED/,
+  );
+  assert.equal(listeners.size, 0);
 });
 
 test("failed parallel batch settles siblings before reverse cleanup", async () => {
@@ -1305,10 +1416,19 @@ test("portable protocol rejects stale, expired, malformed, and oversized frames"
     '"payload":{"value":9007199254740993}',
   );
   assert.throws(() => decodeLengthPrefixedFrame(rawFrame(unsafeInteger)), /INVALID_JSON_NUMBER/);
+  const aliasedGeneration = JSON.stringify(frame()).replace(
+    '"graphGeneration":1',
+    '"graphGeneration":1.00000000000000001',
+  );
+  assert.throws(() => decodeLengthPrefixedFrame(rawFrame(aliasedGeneration)), /INVALID_JSON_NUMBER/);
   const invalidUtf8 = Uint8Array.from([0, 0, 0, 2, 0xc3, 0x28]);
   assert.throws(() => decodeLengthPrefixedFrame(invalidUtf8), /INVALID_JSON_FRAME/);
 
   const request = frame({ kind: "prepare" });
+  assert.throws(
+    () => handlePortableWorkerFrame(frame({ kind: "ready" }), { ...protocolAuthority, now: Date.now() }),
+    /INVALID_REQUEST_KIND/,
+  );
   const response = handlePortableWorkerFrame(request, { ...protocolAuthority, now: Date.now() });
   assert.equal(validateResponseEnvelope(
     response,

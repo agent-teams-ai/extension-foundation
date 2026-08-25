@@ -62,9 +62,11 @@ implementation identity but no artifact or installation identity.
 Capability identity is a stable URI-like string owned by the product feature,
 for example `agent-teams.orchestrator/work-placement-proposal`. During the first
 product-local slice, the owning product also owns its private grammar and
-comparison rules. Foundation may own only a product-neutral grammar proven by a
-second independent consumer and admitted through a separate extraction decision;
-it never owns product vocabulary.
+comparison rules. Effective ADR-0012 permits Foundation extraction through any
+of its explicit evidence gates and a separate accepted extraction decision.
+This qualification recommends the stronger second-consumer threshold for shared
+runtime grammar through proposed ADR-0013, but does not enforce that proposal
+before approval. Foundation never owns product vocabulary.
 
 ## Descriptor Boundary
 

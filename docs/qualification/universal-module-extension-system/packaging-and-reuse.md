@@ -82,8 +82,11 @@ earlier process boundary, but it must be explicit.
 
 There are two distinct extractions. A product may first extract a product-scoped
 library or adapter inside its own repository when that boundary has independent
-value. Admission into Extension Foundation is a later cross-product decision and
-requires two independent consumers proving the same product-neutral semantics.
+value. Under effective ADR-0012, later Foundation admission may be justified by
+a second real consumer, an independent replacement/release lifecycle,
+independent deployment/isolation, or a qualified public SPI. Proposed ADR-0013
+would narrow product-neutral runtime-semantic extraction to two independently
+authored consumers, but that proposal is not an active admission rule.
 Product-local extraction is not Foundation admission.
 
 When extraction is justified, related packages remain discoverable:
@@ -107,16 +110,19 @@ cannot reserve or admit packages on the strength of this qualification alone.
 
 The catalog keeps its stable version 1 identity shape. Every non-empty entry
 requires a separate versioned package-admission manifest binding an accepted
-extraction ADR, owner repository, neutrality claim, release policy, exact
-conformance version, and at least two distinct consumer repositories with exact
-source commits, passed results, and digest-bound evidence references. A missing
-or malformed manifest fails closed. This validates admission evidence shape and
-identity. Canonical HTTPS locations and distinct evidence digests prevent URL
-aliases or mirrors of the same bytes from satisfying independent evidence more
-than once. A release promotion gate must additionally resolve every slug to a
-stable source-provider repository ID, reject aliases, renames or transfers that
-do not prove independent ownership, and retrieve and verify the referenced
-bytes before publication.
+extraction ADR, one explicit ADR-0012 admission basis, owner repository,
+neutrality claim, release policy, exact conformance version, source commits,
+implementation identities, passed results, and digest-bound evidence
+references. Second-consumer and public-SPI bases require two records for their
+respective consumer or implementation claim; independent lifecycle and
+deployment/isolation bases require one. A missing or malformed manifest fails
+closed. This validates admission evidence shape and identity, not the semantic
+truth of a self-reported basis. Canonical HTTPS locations and distinct evidence
+digests prevent URL aliases or mirrors of the same bytes from satisfying
+independent evidence more than once. A release promotion gate must additionally
+resolve every slug to a stable source-provider repository ID, prove the selected
+basis and claimed implementation independence, and retrieve and verify the
+referenced bytes before publication.
 
 ## Dependency Rules
 

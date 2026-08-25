@@ -374,7 +374,9 @@ export class GenerationLifecycle {
     const existing = this.#flights.get(operationId);
     if (existing) return this.#waitForFlight(existing.result, waiterDeadline, waiterOptions.signal);
     const completed = this.#operationResults.get(operationId);
-    if (completed) return Promise.resolve(completed);
+    if (completed) {
+      return this.#waitForFlight(Promise.resolve(completed), waiterDeadline, waiterOptions.signal);
+    }
 
     const activationDeadline = absoluteDeadlineBudget(absoluteDeadline, this.#clock);
     const generation = this.#nextGeneration++;
@@ -478,8 +480,12 @@ export class GenerationLifecycle {
         }
         timer = setTimeout(armTimeout, Math.min(currentRemaining, maxTimerMilliseconds));
       };
-      armTimeout();
       signal?.addEventListener("abort", onAbort, { once: true });
+      if (signal?.aborted) {
+        onAbort();
+        return;
+      }
+      armTimeout();
       result.then(
         value => finish(() => resolve(value)),
         error => finish(() => reject(error)),
@@ -686,7 +692,9 @@ export class GenerationLifecycle {
           const moduleHooks = hooks.get(moduleId);
           if (!moduleHooks) throw new Error(`MISSING_HOOKS:${moduleId}`);
           if (moduleHooks.stop === undefined
-            && (moduleHooks.prepare !== undefined || moduleHooks.start !== undefined)) {
+            && (moduleHooks.prepare !== undefined
+              || moduleHooks.start !== undefined
+              || moduleHooks.ready !== undefined)) {
             throw new Error(`MISSING_STOP_EVIDENCE:${moduleId}`);
           }
           await runBeforeDeadline(

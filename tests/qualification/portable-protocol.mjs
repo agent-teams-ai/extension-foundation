@@ -8,7 +8,13 @@ const envelopeKeys = new Set([
   "audience", "absoluteDeadline", "kind", "payload",
 ]);
 const kinds = new Set(["hello", "prepare", "ready", "drain", "stop", "result"]);
-const requestKinds = new Set(["hello", "prepare", "ready", "drain", "stop"]);
+const requestKinds = new Set(["hello", "prepare", "drain", "stop"]);
+const exactIntegerWireFields = new Set([
+  "absoluteDeadline",
+  "graphGeneration",
+  "moduleActivationGeneration",
+]);
+const canonicalNonNegativeInteger = /^(?:0|[1-9]\d*)$/;
 const forbiddenKeys = new Set(["__proto__", "constructor", "prototype"]);
 const identifierPattern = /^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$/;
 
@@ -116,6 +122,28 @@ function assertNoDuplicateObjectKeys(text) {
   }
 }
 
+function parseWireJson(text) {
+  const integerSourcesByHolder = new WeakMap();
+  return JSON.parse(text, function parseWithSource(key, value, context) {
+    if (key !== "" && exactIntegerWireFields.has(key) && typeof this === "object" && this !== null) {
+      const sources = integerSourcesByHolder.get(this) ?? new Map();
+      sources.set(key, context?.source);
+      integerSourcesByHolder.set(this, sources);
+    }
+    if (key === "" && typeof value === "object" && value !== null && !Array.isArray(value)) {
+      const sources = integerSourcesByHolder.get(value);
+      if (sources) {
+        for (const source of sources.values()) {
+          if (typeof source !== "string" || !canonicalNonNegativeInteger.test(source)) {
+            throw new Error("INVALID_JSON_NUMBER");
+          }
+        }
+      }
+    }
+    return value;
+  });
+}
+
 function requireIdentifier(frame, key) {
   const value = frame[key];
   if (typeof value !== "string" || value.length > 128 || !identifierPattern.test(value)) {
@@ -217,8 +245,9 @@ export function decodeLengthPrefixedFrame(value) {
   try {
     const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(4));
     assertNoDuplicateObjectKeys(text);
-    parsed = JSON.parse(text);
-  } catch {
+    parsed = parseWireJson(text);
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_JSON_NUMBER") throw error;
     throw new Error("INVALID_JSON_FRAME");
   }
   return validateEnvelope(parsed);

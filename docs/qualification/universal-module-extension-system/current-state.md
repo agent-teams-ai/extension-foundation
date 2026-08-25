@@ -14,18 +14,25 @@ related:
 
 # Current State
 
-## Qualified Inputs
+## Repository Inputs
 
-The audit used immutable repository revisions captured before research started.
+The audit captured immutable repository revisions before research started. Only
+inputs marked `qualified` are independently reproducible evidence. Private
+repositories are orientation context and cannot support a qualification claim.
 
-| Repository | Revision | Role |
-| --- | --- | --- |
-| `agent-teams-ai/extension-foundation` | `78850cbc57a1a688913a3694ca6f0efde34ab192` | Canonical owner of product-neutral extension semantics |
-| `agent-teams-ai/engineering-foundation` | `3211447cff927c39821603c298ebb44d031013d7` | Development-only static policy, docs, scaffolding, and diagnostics |
-| `agent-teams-ai/agent-teams-orchestrator` | `fc06a0aecb6c37e6cade8841fa781df9193858de` | Orchestration product and product-owned extension points |
-| `agent-teams-ai/agent-runtime` | `fffa22486afb470ba5347f2ed6a8c3dc738b3add` | Runtime execution, provider, sandbox, and enforcement authority |
-| `agent-teams-ai/agent-teams-platform` | `2e0804e0c290f1a3078145f5948cdf62d233fea7` | Managed deployment, identity linkage, commercial policy, and optional catalog operation |
-| `777genius/agent-teams-ai` | `7d0c0210a4e9420d6fb3f8c3a26d8c80f5c941e4` | Web/Electron target branch used for frontend adoption analysis |
+| Repository | Revision | Evidence status | Role |
+| --- | --- | --- | --- |
+| `agent-teams-ai/extension-foundation` | `78850cbc57a1a688913a3694ca6f0efde34ab192` | qualified | Canonical owner of product-neutral extension semantics |
+| `agent-teams-ai/engineering-foundation` | `3211447cff927c39821603c298ebb44d031013d7` | qualified | Development-only static policy, docs, scaffolding, and diagnostics |
+| `agent-teams-ai/agent-teams-orchestrator` | `fc06a0aecb6c37e6cade8841fa781df9193858de` | qualified | Orchestration product and product-owned extension points |
+| `agent-teams-ai/agent-runtime` | `fffa22486afb470ba5347f2ed6a8c3dc738b3add` | qualified | Runtime execution, provider, sandbox, and enforcement authority |
+| `agent-teams-ai/agent-teams-platform` | `2e0804e0c290f1a3078145f5948cdf62d233fea7` | private orientation only | Managed deployment context; excluded from independently reproducible conclusions |
+| `777genius/agent-teams-ai` | `7d0c0210a4e9420d6fb3f8c3a26d8c80f5c941e4` | qualified | Web/Electron target branch used for frontend adoption analysis |
+
+Platform ownership statements in this dossier are derived from Extension
+Foundation's accepted ADR-0003 through ADR-0005 and resolved OD-001. The private
+Platform revision informed orientation only; no finding depends on inaccessible
+bytes from that repository.
 
 The research branch is `research/universal-module-extension-qualification`,
 created from the Extension Foundation revision above in an isolated worktree.

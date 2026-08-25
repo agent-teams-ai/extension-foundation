@@ -184,10 +184,13 @@ activation while preserving evidence and controlled recovery.
 
 ## Remaining Decisions
 
-OD-001 still owns namespace delegation, federation priority, moderation
-lifecycle, source health, and operator contracts. OD-002 still owns signing key
-custody, quorum, transparency/freshness rules, offline validity windows,
-revocation retention, and rollback thresholds.
+OD-001 is resolved. ADR-0003 owns canonical catalog state and snapshots,
+ADR-0004 owns namespace authority and federation priority, and ADR-0005 owns
+trust and moderation boundaries. OD-002 still owns signing key custody, quorum,
+transparency/freshness rules, offline validity windows, revocation retention,
+and rollback thresholds. Concrete source-health and operator contracts remain
+implementation work under those accepted boundaries rather than a reopened
+OD-001 decision.
 
 No new catalog service or repository schema should be implemented until those
 decisions have a proposed contract and conformance fixtures.

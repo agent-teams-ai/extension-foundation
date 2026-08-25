@@ -68,7 +68,8 @@ async function writeFixture(root, path, contents) {
 
 function packageAdmission(packageId = "module.example", extractionDecision = "ADR-0099") {
   return {
-    schema_version: 1,
+    schema_version: 2,
+    admission_basis: "public-spi",
     package_id: packageId,
     owner_repository: "agent-teams-ai/extension-foundation",
     extraction_decision: extractionDecision,
@@ -78,6 +79,7 @@ function packageAdmission(packageId = "module.example", extractionDecision = "AD
     consumer_evidence: [
       {
         consumer_id: "consumer.alpha",
+        implementation_id: "implementation.alpha",
         consumer_repository: "agent-teams-ai/consumer-alpha",
         source_revision: "1111111111111111111111111111111111111111",
         conformance_result: "passed",
@@ -85,6 +87,7 @@ function packageAdmission(packageId = "module.example", extractionDecision = "AD
       },
       {
         consumer_id: "consumer.beta",
+        implementation_id: "implementation.beta",
         consumer_repository: "agent-teams-ai/consumer-beta",
         source_revision: "2222222222222222222222222222222222222222",
         conformance_result: "passed",

@@ -22,6 +22,11 @@ interface DecisionLedger {
   readonly sourceRepository: string;
   readonly sourceRevision: string;
   readonly sourcePurpose: string;
+  readonly retiredIdentifiers: readonly {
+    readonly id: string;
+    readonly formerTopic: string;
+    readonly disposition: string;
+  }[];
   readonly entries: readonly DecisionEntry[];
 }
 
@@ -66,9 +71,21 @@ test("decision ledger has one semantic owner and ten unique approval forks", asy
     /`agent-teams-ai\/extension-foundation` \| `([0-9a-f]{40})`/,
   )?.[1];
   assert.equal(ledger.sourceRevision, foundationRevision);
+  assert.match(currentState, /agent-teams-platform` \| `[0-9a-f]{40}` \| private orientation only/);
+  assert.match(currentState, /no finding depends on inaccessible\s+bytes from that repository/);
   const ids = ledger.entries.map(entry => entry.id);
+  const retiredIds = ledger.retiredIdentifiers.map(entry => entry.id);
   const topics = ledger.entries.map(entry => entry.topic);
   assert.equal(new Set(ids).size, ids.length);
+  assert.deepEqual(retiredIds, Array.from({ length: 5 }, (_, index) => `UMEQ-${String(index + 4).padStart(3, "0")}`));
+  assert.ok(ledger.retiredIdentifiers.every(entry => (
+    entry.formerTopic.length > 0
+    && entry.disposition === "withdrawn-draft-consolidated-into-OD-003"
+  )));
+  assert.deepEqual(
+    [...ids, ...retiredIds].sort(),
+    Array.from({ length: 18 }, (_, index) => `UMEQ-${String(index + 1).padStart(3, "0")}`),
+  );
   assert.equal(new Set(topics).size, topics.length);
 
   const approvals = ledger.entries.filter(entry => entry.approvalRequired);
@@ -79,7 +96,7 @@ test("decision ledger has one semantic owner and ten unique approval forks", asy
   assert.ok(approvals.every(entry => entry.status === "open"));
   assert.ok(ledger.entries.every(entry => entry.authority.length > 0));
 
-  const knownIds = new Set(ids);
+  const knownIds = new Set([...ids, ...retiredIds]);
   const dossierFiles = (await readdir(dossier)).filter(name => /\.(?:md|ya?ml)$/.test(name));
   for (const name of dossierFiles) {
     const contents = await readFile(resolve(dossier, name), "utf8");

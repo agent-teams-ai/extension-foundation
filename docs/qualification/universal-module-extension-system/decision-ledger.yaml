@@ -3,6 +3,22 @@ qualification: universal-module-extension-system
 sourceRepository: agent-teams-ai/extension-foundation
 sourceRevision: 78850cbc57a1a688913a3694ca6f0efde34ab192
 sourcePurpose: immutable-analyzed-baseline
+retiredIdentifiers:
+  - id: UMEQ-004
+    formerTopic: native-module-graph-kernel
+    disposition: withdrawn-draft-consolidated-into-OD-003
+  - id: UMEQ-005
+    formerTopic: generation-lifecycle-coordinator
+    disposition: withdrawn-draft-consolidated-into-OD-003
+  - id: UMEQ-006
+    formerTopic: trusted-and-isolated-host-tiers
+    disposition: withdrawn-draft-consolidated-into-OD-003
+  - id: UMEQ-007
+    formerTopic: restart-safe-update-baseline
+    disposition: withdrawn-draft-consolidated-into-OD-003
+  - id: UMEQ-008
+    formerTopic: extism-wasm-host
+    disposition: withdrawn-draft-consolidated-into-OD-003
 entries:
   - id: UMEQ-001
     status: accepted-existing

@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { docsFind } from "@agent-teams/docs-protocol";
 import { parse as parseYaml } from "yaml";
 
+import { parseStrictJson } from "./strict-json.mjs";
+
 export const CATALOG_PATH = "architecture/package-catalog.json";
 export const FOUNDATION_REPOSITORY = "agent-teams-ai/extension-foundation";
 export const DOCS_PROFILE_PATH = "architecture/foundation/docs-protocol.yaml";
@@ -19,6 +21,7 @@ export const CATALOG_ENTRY_KEYS = Object.freeze([
   "role",
 ]);
 export const ADMISSION_KEYS = Object.freeze([
+  "admission_basis",
   "schema_version",
   "conformance_version",
   "consumer_evidence",
@@ -33,7 +36,14 @@ export const CONSUMER_EVIDENCE_KEYS = Object.freeze([
   "consumer_id",
   "consumer_repository",
   "evidence_reference",
+  "implementation_id",
   "source_revision",
+]);
+export const ADMISSION_BASES = Object.freeze([
+  "independent-deployment-or-isolation",
+  "independent-replacement-or-release-lifecycle",
+  "public-spi",
+  "second-real-consumer",
 ]);
 export const PACKAGE_ID = /^[a-z0-9][a-z0-9.-]*$/;
 export const PACKAGE_PATH = /^packages\/[a-z0-9][a-z0-9-]*(?:\/[a-z0-9][a-z0-9-]*)*$/;
@@ -146,8 +156,8 @@ function validateAdmission(entry, admission, errors) {
     errors.push(`${entry.id}: admission must contain exactly ${ADMISSION_KEYS.join(", ")}`);
     return;
   }
-  if (admission.schema_version !== 1) {
-    errors.push(`${entry.id}: admission.schema_version must equal 1`);
+  if (admission.schema_version !== 2) {
+    errors.push(`${entry.id}: admission.schema_version must equal 2`);
   }
   for (const key of ADMISSION_KEYS.filter(key => !["consumer_evidence", "schema_version"].includes(key))) {
     if (typeof admission[key] !== "string" || admission[key].length === 0) {
@@ -168,12 +178,15 @@ function validateAdmission(entry, admission, errors) {
   if (!CONFORMANCE_VERSION.test(admission.conformance_version ?? "")) {
     errors.push(`${entry.id}: admission.conformance_version must be an exact SemVer`);
   }
-  if (!Array.isArray(admission.consumer_evidence) || admission.consumer_evidence.length < 2) {
-    errors.push(`${entry.id}: admission requires at least two independent consumer evidence records`);
+  if (!ADMISSION_BASES.includes(admission.admission_basis)) {
+    errors.push(`${entry.id}: admission.admission_basis must identify one ADR-0012 extraction gate`);
+  }
+  if (!Array.isArray(admission.consumer_evidence) || admission.consumer_evidence.length < 1) {
+    errors.push(`${entry.id}: admission requires at least one immutable evidence record`);
     return;
   }
-  const consumerIds = new Set();
-  const consumerRepositories = new Set();
+  const consumerIdentities = new Set();
+  const implementationIdentities = new Set();
   const evidenceReferences = new Set();
   const evidenceLocations = new Set();
   const evidenceDigests = new Set();
@@ -188,6 +201,9 @@ function validateAdmission(entry, admission, errors) {
     }
     if (!PACKAGE_ID.test(evidence.consumer_id)) {
       errors.push(`${entry.id}: consumer_evidence[${index}].consumer_id is invalid`);
+    }
+    if (!PACKAGE_ID.test(evidence.implementation_id)) {
+      errors.push(`${entry.id}: consumer_evidence[${index}].implementation_id is invalid`);
     }
     if (!isCanonicalRepositoryId(evidence.consumer_repository)) {
       errors.push(`${entry.id}: consumer_evidence[${index}].consumer_repository must be a canonical lowercase owner/repository identity`);
@@ -209,24 +225,27 @@ function validateAdmission(entry, admission, errors) {
       evidenceLocations.add(canonicalEvidence.location);
       evidenceDigests.add(canonicalEvidence.digest);
     }
-    consumerIds.add(evidence.consumer_id);
-    consumerRepositories.add(canonicalRepositoryId(evidence.consumer_repository));
+    const repository = canonicalRepositoryId(evidence.consumer_repository);
+    consumerIdentities.add(`${repository}\0${evidence.consumer_id}`);
+    implementationIdentities.add(`${repository}\0${evidence.implementation_id}`);
   }
-  if (consumerIds.size !== admission.consumer_evidence.length
-    || consumerRepositories.size !== admission.consumer_evidence.length
+  if (consumerIdentities.size !== admission.consumer_evidence.length
     || evidenceReferences.size !== admission.consumer_evidence.length
     || evidenceLocations.size !== admission.consumer_evidence.length
     || evidenceDigests.size !== admission.consumer_evidence.length) {
-    errors.push(`${entry.id}: consumer evidence must use distinct identities, repositories, and immutable references`);
+    errors.push(`${entry.id}: evidence must use distinct consumer identities and immutable references`);
   }
-  if (consumerRepositories.has(canonicalRepositoryId(admission.owner_repository))) {
-    errors.push(`${entry.id}: consumer evidence must be independent from the Foundation owner repository`);
+  if (admission.admission_basis === "second-real-consumer" && consumerIdentities.size < 2) {
+    errors.push(`${entry.id}: second-real-consumer admission requires two distinct consumer identities`);
+  }
+  if (admission.admission_basis === "public-spi" && implementationIdentities.size < 2) {
+    errors.push(`${entry.id}: public-spi admission requires two independently authored implementation identities`);
   }
 }
 
 export async function loadPackagePolicy(root) {
   const [catalog, allowedRoles] = await Promise.all([
-    readFile(join(root, CATALOG_PATH), "utf8").then(JSON.parse),
+    readFile(join(root, CATALOG_PATH), "utf8").then(parseStrictJson),
     loadAllowedPackageRoles(root),
   ]);
   const errors = [];
@@ -266,7 +285,7 @@ export async function loadPackagePolicy(root) {
       errors.push(`${entry.id}: owner_document must be an ADR identity`);
     }
     try {
-      const admission = JSON.parse(await readFile(join(root, packageAdmissionPath(entry)), "utf8"));
+      const admission = parseStrictJson(await readFile(join(root, packageAdmissionPath(entry)), "utf8"));
       validateAdmission(entry, admission, errors);
     } catch (error) {
       errors.push(`${entry.id}: admission evidence is missing or invalid: ${error instanceof Error ? error.message : String(error)}`);
