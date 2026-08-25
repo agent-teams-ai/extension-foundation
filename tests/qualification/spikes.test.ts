@@ -428,7 +428,7 @@ test("same completed operation returns its retained result without a second star
   assert.equal(starts, 1);
 });
 
-test("different candidates race through expected-active CAS and only one publishes", async () => {
+test("different operation identities are separate candidates and only one publishes", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const firstPlan = requirePlan([{ id: "first", requires: [] }]);
   const secondPlan = requirePlan([{ id: "second", requires: [] }]);
@@ -899,7 +899,31 @@ test("hook bindings are complete before any module effect starts", async () => {
   ));
   assert.equal(result.ok, false);
   assert.equal(effects, 0);
-  assert.deepEqual(result.errors.map(error => error.message), ["MISSING_HOOKS:consumer"]);
+  assert.deepEqual(result.errors, [{
+    message: "MISSING_HOOKS:consumer",
+    moduleId: "consumer",
+    phase: "preflight",
+  }]);
+});
+
+test("unplanned hook bindings fail preflight with module attribution", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([{ id: "candidate", requires: [] }]);
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "unplanned-hook-preflight",
+    plan,
+    new Map([
+      ["candidate", inertHooks()],
+      ["unplanned", inertHooks()],
+    ]),
+  ));
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.errors, [{
+    message: "UNPLANNED_HOOKS:unplanned",
+    moduleId: "unplanned",
+    phase: "preflight",
+  }]);
 });
 
 test("hook preflight rejects accessors without invoking them", async () => {
@@ -957,6 +981,80 @@ test("hook preflight rejects prototype methods instead of silently dropping them
     moduleId: "candidate",
     phase: "preflight",
   }]);
+});
+
+test("hook preflight rejects a Proxy that disguises prototype methods", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([{ id: "candidate", requires: [] }]);
+  let effects = 0;
+  class PrototypeHooks {
+    readonly readiness = "inert" as const;
+
+    start(): void {
+      effects += 1;
+    }
+  }
+  const disguised = new Proxy(new PrototypeHooks(), {
+    getPrototypeOf: () => Object.prototype,
+  });
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "proxy-hook-preflight",
+    plan,
+    new Map([["candidate", disguised]]),
+  ));
+  assert.equal(result.ok, false);
+  assert.equal(effects, 0);
+  assert.deepEqual(result.errors, [{
+    message: "PROXY_HOOKS:candidate",
+    moduleId: "candidate",
+    phase: "preflight",
+  }]);
+});
+
+test("a fast sibling failure promptly aborts cooperative siblings before cleanup", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([
+    { id: "fails", requires: [] },
+    { id: "cooperative", requires: [] },
+  ]);
+  let cooperativeAborted = false;
+  let stops = 0;
+  const startedAt = performance.now();
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "prompt-sibling-abort",
+    plan,
+    new Map<string, ModuleHooks>([
+      ["fails", inertHooks({
+        start: async () => {
+          await delay(5);
+          throw new Error("FAST_FAILURE");
+        },
+        stop: () => { stops += 1; },
+      })],
+      ["cooperative", inertHooks({
+        start: ({ signal }) => new Promise<void>(resolve => {
+          if (signal.aborted) {
+            cooperativeAborted = true;
+            resolve();
+            return;
+          }
+          signal.addEventListener("abort", () => {
+            cooperativeAborted = true;
+            resolve();
+          }, { once: true });
+        }),
+        stop: () => { stops += 1; },
+      })],
+    ]),
+    { deadlineMs: 200, cleanupTimeoutMs: 80 },
+  ));
+  assert.equal(result.ok, false);
+  assert.equal(cooperativeAborted, true);
+  assert.equal(stops, 2);
+  assert.ok(performance.now() - startedAt < 100, "cooperative sibling consumed the operation deadline");
+  assert.deepEqual(result.errors.map(error => error.message), ["FAST_FAILURE"]);
 });
 
 test("ignored activation cancellation is bounded without refreshing cleanup time", async () => {

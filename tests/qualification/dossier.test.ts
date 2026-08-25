@@ -38,6 +38,22 @@ interface DecisionLedger {
     readonly effectWhileProposed: string;
     readonly approvalTrackedBy: string;
   }[];
+  readonly implementationGates: readonly {
+    readonly id: string;
+    readonly appliesTo: readonly string[];
+    readonly mode: "all" | "exactly-one-path";
+    readonly allOf?: readonly {
+      readonly decision: string;
+      readonly requiredStatus: string;
+    }[];
+    readonly paths?: readonly {
+      readonly id: string;
+      readonly allOf: readonly {
+        readonly decision: string;
+        readonly requiredStatus: string;
+      }[];
+    }[];
+  }[];
   readonly entries: readonly DecisionEntry[];
 }
 
@@ -98,15 +114,66 @@ test("decision ledger has one semantic owner and ten unique approval forks", asy
     Array.from({ length: 18 }, (_, index) => `UMEQ-${String(index + 1).padStart(3, "0")}`),
   );
   assert.equal(new Set(topics).size, topics.length);
-  assert.deepEqual(ledger.externalDecisionGates, [{
-    id: "ADR-0013",
-    status: "proposed",
-    topic: "first-consumer-module-semantics",
-    authority: "product-owner",
-    detail: "../../decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md",
-    effectWhileProposed: "product-local-phase-1-blocked",
-    approvalTrackedBy: "adr-lifecycle",
-  }]);
+  assert.deepEqual(ledger.externalDecisionGates, [
+    {
+      id: "ADR-0011",
+      status: "proposed",
+      topic: "production-extension-host-safety-closure",
+      authority: "product-owner",
+      detail: "../../decisions/0011-extension-admission-custody-and-retirement-closure.md",
+      effectWhileProposed: "production-extension-host-phases-blocked",
+      approvalTrackedBy: "adr-lifecycle",
+    },
+    {
+      id: "ADR-0013",
+      status: "proposed",
+      topic: "first-consumer-module-semantics",
+      authority: "product-owner",
+      detail: "../../decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md",
+      effectWhileProposed: "product-local-phase-1-blocked",
+      approvalTrackedBy: "adr-lifecycle",
+    },
+  ]);
+  assert.deepEqual(ledger.implementationGates, [
+    {
+      id: "phase-1-graph-kernel",
+      appliesTo: ["phase-1-graph-kernel"],
+      mode: "exactly-one-path",
+      paths: [
+        {
+          id: "product-local",
+          allOf: [
+            { decision: "ADR-0013", requiredStatus: "accepted" },
+            { decision: "owning-product-feature-decision", requiredStatus: "accepted" },
+          ],
+        },
+        {
+          id: "foundation-owned",
+          allOf: [
+            { decision: "ADR-0012", requiredStatus: "accepted" },
+            { decision: "UMEQ-011", requiredStatus: "resolved" },
+            { decision: "UMEQ-013", requiredStatus: "resolved" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "production-extension-host-safety",
+      appliesTo: [
+        "phase-4-process-host",
+        "phase-5-packaging-and-installation",
+        "phase-6-frontend-and-untrusted-hosts",
+      ],
+      mode: "all",
+      allOf: [{ decision: "ADR-0011", requiredStatus: "accepted" }],
+    },
+    {
+      id: "frontend-extension-host",
+      appliesTo: ["phase-6-frontend-and-untrusted-hosts"],
+      mode: "all",
+      allOf: [{ decision: "UMEQ-010", requiredStatus: "resolved" }],
+    },
+  ]);
 
   const approvals = ledger.entries.filter(entry => entry.approvalRequired);
   assert.deepEqual(
@@ -235,12 +302,15 @@ test("accepted publication gates remain authoritative while proposed ADR-0013 is
   assert.match(files[3]!, /No graph implementation begins until one ownership path is explicitly opened/);
   assert.match(files[3]!, /Until one complete path is approved, Phase 1 is blocked/);
   assert.doesNotMatch(files[4]!, /independently packaged reference implementation/);
+  assert.match(files[4]!, /accepted internal model\s+and one complete Phase 1 ownership path is approved/);
+  assert.match(files[4]!, /product-local path additionally requires ADR-0013 acceptance/);
   assert.match(files[5]!, /No graph slice starts until its ownership path is complete/);
   assert.match(files[5]!, /ADR-0013.*owning product's\s+feature decision/is);
   assert.match(files[5]!, /ADR-0012 remains effective.*`UMEQ-011` and `UMEQ-013`/is);
   assert.match(files[6]!, /status: proposed/);
   assert.match(files[6]!, /ADR-0012\s+remains the effective admission policy/);
   assert.match(files[6]!, /cannot narrow or block the admission bases already accepted in ADR-0012/);
+  assert.match(files[6]!, /related:[\s\S]*ADR-0012/);
   assert.doesNotMatch(files[6]!, /no Foundation runtime package or public SPI may be admitted/);
   assert.match(files[7]!, /Extract or publish only when at least one of these is proven/);
   assert.match(files[3]!, /If ADR-0012\s+remains effective/);
@@ -258,6 +328,10 @@ test("execution admission and every production host remain independently gated",
   assert.match(trust, /entitlement decision = allow OR entitlement plane = explicitly not-applicable/);
   assert.match(trust, /product authorization = allow/);
   assert.match(trust, /current product capability grant/);
+  assert.match(trust, /Request\["Capability request"\] --> Product\["Product authorization"\]/);
+  assert.match(trust, /Product --> Intersect\["Authority intersection"\]/);
+  assert.match(trust, /Grant\["Current product capability grant"\] --> Intersect/);
+  assert.doesNotMatch(trust, /Product --> Grant/);
   assert.match(trust, /AR authorization = allow when AR owns the capability/);
   assert.match(trust, /Unknown applicability, a bare decision without\s+an `allow` result.*deny execution/is);
   assert.match(

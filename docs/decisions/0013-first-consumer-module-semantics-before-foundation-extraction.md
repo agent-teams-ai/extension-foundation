@@ -7,6 +7,7 @@ summary: Proposes keeping private module semantics with the first owning product
 related:
   - ADR-0001
   - ADR-0010
+  - ADR-0012
   - OD-003
 ---
 

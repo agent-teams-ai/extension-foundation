@@ -24,17 +24,23 @@ flowchart LR
     Request["Capability request"] --> Product["Product authorization"]
     Artifact["Artifact and provenance"] --> Verify["Foundation verification"]
     Product --> Intersect["Authority intersection"]
+    Grant["Current product capability grant"] --> Intersect
+    Entitlement["Entitlement allow or explicit N/A"] --> Intersect
+    Installation["Installation admission"] --> Intersect
     Verify --> Intersect
     AR["AR technical authorization when AR owns the capability"] --> Intersect
     Admission["Product host and capacity decision"] --> Intersect
+    Fence["Current generation and fence"] --> Intersect
     Intersect --> Host["Qualified host containment"]
     Host --> Effect["Fenced product or runtime effect"]
 ```
 
-Effective authority is the intersection of product grant, Foundation-produced
-verification evidence accepted by the product, applicable AR technical
-authorization, current generation/fence and host containment. Any
-missing, stale, ambiguous, differently canonicalized or unknown input denies.
+Effective authority is the intersection of product authorization, a separate
+current product capability grant, applicable entitlement and installation
+admission, Foundation-produced verification evidence accepted by the product,
+applicable AR technical authorization, current generation/fence, host policy
+and containment. Any missing, stale, ambiguous, differently canonicalized or
+unknown input denies.
 
 ## Identity Chain
 

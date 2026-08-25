@@ -107,10 +107,14 @@ may continue after a failed cleanup is recorded as bounded debt.
 
 ## Single-Flight And Races
 
-Startup is one logical flight per `(authority scope, module identity, candidate
-generation, activation fingerprint)`. One hundred concurrent same-fingerprint
-starts join one attempt and observe the same durable result. A waiter's timeout
-or cancellation detaches that waiter; it does not cancel shared startup.
+Startup is one logical flight per `(operation identity, activation
+fingerprint)`. One hundred concurrent starts with the same operation identity
+and fingerprint join one attempt and observe the same durable result. Reusing
+that operation identity with a changed fingerprint is an idempotency conflict.
+Distinct operation identities intentionally represent distinct competing
+candidates even when source and plan match; expected-active compare-and-set
+still permits only one publication. A waiter's timeout or cancellation detaches
+that waiter; it does not cancel shared startup.
 
 The disposable in-memory spike retains completed operation results and sealed
 generations for its process lifetime so qualification can prove replay and stale
@@ -208,6 +212,15 @@ Cleanup requirements:
 - prevent late callbacks from recreating retired state;
 - detect leaked timers, listeners, streams, child processes, and unresolved
   promises in conformance tests.
+
+The coordinator snapshots a complete host-private hook record before effects.
+The Node `T0` spike admits only own data fields on plain or null-prototype
+objects and rejects Proxy objects before reflective inspection, so prototype or
+accessor hooks cannot disappear during snapshotting. Untrusted contributions
+never cross this boundary as JavaScript hook objects; their host adapter exposes
+a validated protocol proxy instead. The first module failure aborts the shared
+activation signal immediately so cooperative siblings can settle before the
+bounded cleanup phase.
 
 A hung disposer is fenced or force-stopped only when its host provides that
 authority. A trusted in-process hook that ignores cancellation is reported as

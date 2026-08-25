@@ -69,8 +69,10 @@ models. A library consumer never needs the module or plugin stack.
 1. Discovery, verification, admission, and graph compilation do not execute
    extension code.
 2. Candidate resources are isolated from active routing until readiness passes.
-3. Startup is single-flight per source and candidate generation; caller
-   cancellation does not silently cancel shared startup.
+3. Startup is single-flight per operation identity and exact activation
+   fingerprint; caller cancellation does not silently cancel shared startup.
+   Distinct operation identities are distinct competing candidates even when
+   their source and plan match, and publication CAS still admits only one.
 4. Every phase uses one absolute operation deadline. A cleanup cap may shorten
    the remaining budget but never refresh or extend it.
 5. Publication has one linearization point and atomically selects one active

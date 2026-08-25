@@ -1,5 +1,6 @@
 import { performance } from "node:perf_hooks";
 import { setTimeout as delay } from "node:timers/promises";
+import { types as nodeTypes } from "node:util";
 
 import type { CompiledGraph } from "./graph-spike.ts";
 
@@ -180,6 +181,9 @@ function snapshotHooks(hooks: ReadonlyMap<string, ModuleHooks>): ReadonlyMap<str
   for (const [moduleId, moduleHooks] of hooks) {
     if (typeof moduleHooks !== "object" || moduleHooks === null) {
       throw new AttributedLifecycleError(`INVALID_HOOKS:${moduleId}`, moduleId, "preflight");
+    }
+    if (nodeTypes.isProxy(moduleHooks)) {
+      throw new AttributedLifecycleError(`PROXY_HOOKS:${moduleId}`, moduleId, "preflight");
     }
     const prototype = Object.getPrototypeOf(moduleHooks);
     if (prototype !== Object.prototype && prototype !== null) {
@@ -633,10 +637,14 @@ export class GenerationLifecycle {
     try {
       const planModuleIds = new Set(plan.nodes.map(node => node.id));
       for (const moduleId of planModuleIds) {
-        if (!hooks.has(moduleId)) throw new Error(`MISSING_HOOKS:${moduleId}`);
+        if (!hooks.has(moduleId)) {
+          throw new AttributedLifecycleError(`MISSING_HOOKS:${moduleId}`, moduleId, "preflight");
+        }
       }
       for (const moduleId of hooks.keys()) {
-        if (!planModuleIds.has(moduleId)) throw new Error(`UNPLANNED_HOOKS:${moduleId}`);
+        if (!planModuleIds.has(moduleId)) {
+          throw new AttributedLifecycleError(`UNPLANNED_HOOKS:${moduleId}`, moduleId, "preflight");
+        }
       }
       if (this.#activeGeneration !== identity.expectedActiveGeneration) {
         traces.push({ phase: "publish", generation, outcome: "stale" });
@@ -687,6 +695,7 @@ export class GenerationLifecycle {
             localTraces.push({ phase: "ready", moduleId, generation, outcome: "confirmed" });
             return { localTraces };
           } catch (error) {
+            activationController.abort(error);
             return { localTraces, error: attributedError(error, moduleId, phase) };
           }
         }));

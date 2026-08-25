@@ -20,6 +20,13 @@ retiredIdentifiers:
     formerTopic: extism-wasm-host
     disposition: withdrawn-draft-consolidated-into-OD-003
 externalDecisionGates:
+  - id: ADR-0011
+    status: proposed
+    topic: production-extension-host-safety-closure
+    authority: product-owner
+    detail: ../../decisions/0011-extension-admission-custody-and-retirement-closure.md
+    effectWhileProposed: production-extension-host-phases-blocked
+    approvalTrackedBy: adr-lifecycle
   - id: ADR-0013
     status: proposed
     topic: first-consumer-module-semantics
@@ -27,6 +34,42 @@ externalDecisionGates:
     detail: ../../decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
     effectWhileProposed: product-local-phase-1-blocked
     approvalTrackedBy: adr-lifecycle
+implementationGates:
+  - id: phase-1-graph-kernel
+    appliesTo:
+      - phase-1-graph-kernel
+    mode: exactly-one-path
+    paths:
+      - id: product-local
+        allOf:
+          - decision: ADR-0013
+            requiredStatus: accepted
+          - decision: owning-product-feature-decision
+            requiredStatus: accepted
+      - id: foundation-owned
+        allOf:
+          - decision: ADR-0012
+            requiredStatus: accepted
+          - decision: UMEQ-011
+            requiredStatus: resolved
+          - decision: UMEQ-013
+            requiredStatus: resolved
+  - id: production-extension-host-safety
+    appliesTo:
+      - phase-4-process-host
+      - phase-5-packaging-and-installation
+      - phase-6-frontend-and-untrusted-hosts
+    mode: all
+    allOf:
+      - decision: ADR-0011
+        requiredStatus: accepted
+  - id: frontend-extension-host
+    appliesTo:
+      - phase-6-frontend-and-untrusted-hosts
+    mode: all
+    allOf:
+      - decision: UMEQ-010
+        requiredStatus: resolved
 entries:
   - id: UMEQ-001
     status: accepted-existing

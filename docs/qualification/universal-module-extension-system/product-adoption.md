@@ -66,9 +66,14 @@ authored, feature-local reference implementation. It uses post-commit dispatch,
 stable operation identity, explicit provider binding, and no dual mutation
 authority during migration. Packaging remains a later evidence-backed decision.
 
-This pilot starts only after its owning feature has an accepted internal model.
-Publishing the contract remains a separate decision after compatibility and
-substitutability evidence; Foundation does not own its product DTOs.
+This pilot starts only after its owning feature has an accepted internal model
+and one complete Phase 1 ownership path is approved. The recommended
+product-local path additionally requires ADR-0013 acceptance. If ADR-0012
+remains effective, the pilot instead consumes a Foundation-owned graph compiler
+only after `UMEQ-011` and `UMEQ-013` are resolved through `OD-003`; its product
+contract and authority remain feature-owned. Publishing the contract remains a
+separate decision after compatibility and substitutability evidence; Foundation
+does not own its product DTOs.
 
 ## Agent Runtime
 
