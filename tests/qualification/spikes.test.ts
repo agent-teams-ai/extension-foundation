@@ -2052,26 +2052,12 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 40_0
       : ["/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"];
   let browser: string | undefined;
   for (const candidate of candidates) {
-    if (process.platform === "win32") {
-      try {
-        await access(candidate);
-        browser = candidate;
-        break;
-      } catch {
-        continue;
-      }
-    }
-    const probe = spawn(candidate, ["--version"], { stdio: "ignore" });
     try {
-      const [code] = await once(probe, "exit", { signal: AbortSignal.timeout(2_000) });
-      if (code === 0) {
-        browser = candidate;
-        break;
-      }
+      await access(candidate);
+      browser = candidate;
+      break;
     } catch {
-      // The cross-platform release matrix supplies a browser when this profile is mandatory.
-    } finally {
-      if (probe.exitCode === null && probe.signalCode === null) probe.kill("SIGKILL");
+      continue;
     }
   }
   if (!browser) {
