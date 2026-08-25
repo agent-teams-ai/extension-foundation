@@ -125,20 +125,26 @@ accept artifact =
 
 execute artifact =
   accept artifact
-  AND compatible host, contract and capability set
-  AND product-accepted catalog or direct-digest trust route
-  AND applicable entitlement decision
-  AND installation admission
-  AND product grant
-  AND AR authorization when AR owns the capability
+  AND compatibility decision = allow
+  AND catalog or direct-digest trust route = allow
+  AND (entitlement decision = allow OR entitlement plane = explicitly not-applicable)
+  AND installation admission = allow
+  AND product authorization = allow
+  AND current product capability grant
+  AND (AR authorization = allow when AR owns the capability
+       OR AR plane = explicitly not-applicable)
   AND current generation and fence
-  AND host policy and containment
+  AND host policy = allow
+  AND required containment = ready
 ```
 
-Every conjunct is an independent, current decision. `Applicable` means the
-owning product explicitly declares that the plane participates; absence of an
-inapplicable AR or entitlement plane is not a denial. Unknown applicability,
-missing evidence, stale revisions or contradictory decisions deny execution.
+Every conjunct is an independent, current decision. A product authorization is
+the product policy result; a capability grant is its narrower technical
+invocation authority, and neither implies the other. `Explicitly
+not-applicable` means the owning product declares that the plane does not
+participate for this capability. Unknown applicability, a bare decision without
+an `allow` result, missing evidence, stale revisions or contradictory decisions
+deny execution.
 
 V1 may remain strictly digest-pinned with a signed release/revocation record,
 but that profile makes no timely revocation or freeze-resistance guarantee.

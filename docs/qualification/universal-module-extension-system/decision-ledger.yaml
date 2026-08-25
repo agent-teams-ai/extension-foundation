@@ -19,6 +19,14 @@ retiredIdentifiers:
   - id: UMEQ-008
     formerTopic: extism-wasm-host
     disposition: withdrawn-draft-consolidated-into-OD-003
+externalDecisionGates:
+  - id: ADR-0013
+    status: proposed
+    topic: first-consumer-module-semantics
+    authority: product-owner
+    detail: ../../decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
+    effectWhileProposed: product-local-phase-1-blocked
+    approvalTrackedBy: adr-lifecycle
 entries:
   - id: UMEQ-001
     status: accepted-existing

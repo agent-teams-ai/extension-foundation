@@ -39,7 +39,8 @@ models. A library consumer never needs the module or plugin stack.
 | --- | --- | --- |
 | Aggregate transitions and business invariants | Owning product bounded context | Source graph, use-case tests, repository/UoW boundaries |
 | Product extension contract | Owning product feature | Feature entrypoint, compatibility fixtures, conformance suite |
-| First-consumer private module identity, graph semantics and lifecycle outcomes | Owning product feature | Product-local descriptors, diagnostics and traces |
+| Effective pre-implementation module identity, graph semantics and lifecycle outcomes | Extension Foundation under ADR-0012; implementation blocked pending `UMEQ-011` and `UMEQ-013` | Accepted ownership plus unresolved runtime-admission gates |
+| Proposed first-consumer private module identity, graph semantics and lifecycle outcomes | Owning product feature only after ADR-0013 acceptance | Product-local descriptors, diagnostics and traces |
 | Admitted cross-product module identity, graph semantics and lifecycle outcomes | Extension Foundation after extraction approval | Serializable descriptors and cross-host traces from two independent consumers |
 | Artifact identity and immutable digest | Extension Foundation protocol | OCI digest and signature/provenance verification |
 | Catalog governance records | Selected catalog authority | PostgreSQL revision and signed snapshot evidence |

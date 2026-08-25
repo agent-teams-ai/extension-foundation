@@ -599,7 +599,11 @@ test("readiness shape is validated before prepare or start effects", async () =>
   ));
   assert.equal(result.ok, false);
   assert.equal(effects, 0);
-  assert.deepEqual(result.errors.map(error => error.message), ["INVALID_READINESS:candidate"]);
+  assert.deepEqual(result.errors, [{
+    message: "INVALID_READINESS:candidate",
+    moduleId: "candidate",
+    phase: "preflight",
+  }]);
 });
 
 test("effectful module without stop evidence cannot claim proven termination", async () => {
@@ -918,7 +922,41 @@ test("hook preflight rejects accessors without invoking them", async () => {
   ));
   assert.equal(result.ok, false);
   assert.equal(getterEffects, 0);
-  assert.deepEqual(result.errors.map(error => error.message), ["ACCESSOR_HOOK_FIELD:candidate:start"]);
+  assert.deepEqual(result.errors, [{
+    message: "ACCESSOR_HOOK_FIELD:candidate:start",
+    moduleId: "candidate",
+    phase: "preflight",
+  }]);
+});
+
+test("hook preflight rejects prototype methods instead of silently dropping them", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([{ id: "candidate", requires: [] }]);
+  let effects = 0;
+  class PrototypeHooks {
+    readonly readiness = "inert" as const;
+
+    start(): void {
+      effects += 1;
+    }
+
+    stop(): void {
+      effects += 1;
+    }
+  }
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "prototype-hook-preflight",
+    plan,
+    new Map([["candidate", new PrototypeHooks()]]),
+  ));
+  assert.equal(result.ok, false);
+  assert.equal(effects, 0);
+  assert.deepEqual(result.errors, [{
+    message: "NON_PLAIN_HOOKS:candidate",
+    moduleId: "candidate",
+    phase: "preflight",
+  }]);
 });
 
 test("ignored activation cancellation is bounded without refreshing cleanup time", async () => {

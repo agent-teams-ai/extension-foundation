@@ -162,28 +162,32 @@ the measured deletion threshold.
 
 ### Phase 0: Approvals And Baseline
 
-The owning product must first accept a feature decision naming the graph owner,
-two fixed `T0` built-ins, explicit bindings and the authority that remains outside
-the graph. Foundation approval forks `UMEQ-011` and `UMEQ-013` remain open because
-Phase 1 creates no Foundation package or public SPI. Contract source, process,
-Frontend, update, distributed cutover and managed-update decisions also remain
-deferred. ADR-0012 remains the effective admission policy. If the product owner
-chooses the stricter first-consumer deferral, ADR-0013 must be accepted before
-that policy is applied; this qualification does not make the proposal operative.
+No graph implementation begins until one ownership path is explicitly opened.
+The recommended product-local path requires acceptance of ADR-0013 plus an
+owning-product feature decision naming the graph owner, two fixed `T0` built-ins,
+explicit bindings and the authority that remains outside the graph. If ADR-0012
+remains effective, the Foundation path instead requires resolution of
+`UMEQ-011` and `UMEQ-013` through `OD-003` before Foundation admits graph or
+runtime semantics. Contract source, process, Frontend, update, distributed
+cutover and managed-update decisions remain deferred. This qualification does
+not make either approval path operative.
 
 Estimated change: 300-700 documentation/tooling LOC, 1-3 days.
 
 ### Phase 1: First Graph Kernel, Decision-Gated
 
-This phase cannot begin while ADR-0012 remains the effective ownership decision.
-The product-local path requires explicit acceptance of ADR-0013, or another
-accepted decision that supersedes ADR-0012 and names the first-consumer owner.
-If that approval is not granted, the first graph-only compiler must instead be
-implemented in Foundation under ADR-0012 and admitted through its existing
-product-neutrality rules. In either path, promote the proven ID-DAG primitive,
-then add only explicit bindings, cardinality, compatibility, scope and source
-validation. Do not create installation, container, process, catalog, public SPI,
-runtime reuse or distributed behavior in this phase.
+This phase begins only through one of two mutually exclusive approval paths:
+
+1. accept ADR-0013, or an equivalent superseding decision, and the owning
+   product's feature decision for a product-local graph-only compiler; or
+2. retain ADR-0012 and resolve `UMEQ-011` plus `UMEQ-013` through `OD-003` for a
+   Foundation-owned graph-only compiler.
+
+Until one complete path is approved, Phase 1 is blocked. In either approved path,
+promote the proven ID-DAG primitive, then add only explicit bindings,
+cardinality, compatibility, scope and source validation. Do not create
+installation, container, process, catalog, public SPI, runtime reuse or
+distributed behavior in this phase.
 
 Exit criteria: two fixed `T0` built-ins, one independent graph oracle,
 10,000-node budget, invalid-input loader sentinel and framework-free local
@@ -193,7 +197,11 @@ Estimated change: 1,500-3,000 LOC including tests, 1-2 weeks.
 
 ### Phase 2: One Two-Module Product Rehearsal
 
-Use two fixed trusted built-ins in one owning product feature. Prove
+Use two fixed trusted built-ins in one owning product feature, connected to the
+graph compiler admitted through Phase 1. Under the product-local path that
+compiler remains feature-owned; under the Foundation path the product adapter
+consumes the admitted Foundation compiler without moving product contracts or
+authority into Foundation. Prove
 `prepare -> start -> ready -> publish -> drain -> stop`, absolute deadlines,
 single-flight, reverse cleanup, generation fences and structured diagnostics.
 Do not load artifacts, install plugins, expose public SPI, share private state
@@ -240,9 +248,12 @@ Estimated change: 10,000-18,000 LOC including conformance, 5-10 weeks.
 
 ### Phase 6: Frontend And Untrusted Hosts
 
-After separate Frontend approval, add declarative contributions, a strict
-capability broker, Web Worker/iframe placement and Electron main/preload/
-renderer adapters. Extism is a separate post-MVP host qualification.
+This phase has the same ADR-0011 closure gate as Phases 4 and 5 because a Web
+Worker, iframe or Electron process that executes a contribution is a production
+extension host. After that closure and separate Frontend approval, add
+declarative contributions, a strict capability broker, Web Worker/iframe
+placement and Electron main/preload/renderer adapters. Extism is a separate
+post-MVP host qualification.
 
 Estimated change: 10,000-20,000 LOC including browser/Electron/platform tests,
 6-12 weeks.
@@ -268,10 +279,12 @@ roughly 40,000-75,000 LOC before product-specific plugin behavior.
 
 ## Decision
 
-The architecture guides Phase 1 only after the identified owning product has an
-accepted feature decision that fixes the two `T0` built-ins and authority boundary.
-Foundation approval forks remain open until cross-product admission. The result
-is not ready for a stable public SPI, Cordis adoption, untrusted plugin claim or
+The architecture guides Phase 1 only after one complete ownership path in Phase
+1 is approved. The recommended path is acceptance of ADR-0013 plus an owning
+product feature decision fixing the two `T0` built-ins and authority boundary.
+If ADR-0012 remains effective, `UMEQ-011` and `UMEQ-013` must instead be resolved
+through `OD-003` before a Foundation implementation begins. The result is not
+ready for a stable public SPI, Cordis adoption, untrusted plugin claim or
 production package publication.
 
 The recommended design is intentionally smaller than “Everything is a Plugin”:

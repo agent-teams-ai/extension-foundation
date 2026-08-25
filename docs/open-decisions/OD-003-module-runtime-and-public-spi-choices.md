@@ -157,12 +157,14 @@ packages/<admitted-capability>/
 ```
 
 This is an illustrative role layout aligned with ADR-0012, not a reserved
-horizontal package topology. Before cross-product admission, the first graph and
-lifecycle implementation stays inside its owning product feature. No
-`module-kit`, `plugin-protocol`, integration or testing package is created by
-this open decision. Product-scoped libraries and module adapters stay in the
-owning product repository; proposed ADR-0013 records the ownership correction
-that still requires product-owner approval.
+horizontal package topology. A first product-local graph and lifecycle
+implementation is permitted only after proposed ADR-0013, or an equivalent
+superseding decision, is accepted. While ADR-0012 remains effective, a
+Foundation graph/runtime implementation requires this open decision to resolve
+provider binding and trusted-runtime choices first. No `module-kit`,
+`plugin-protocol`, integration or testing package is created by this open
+decision. Product-scoped libraries and module adapters otherwise stay in the
+owning product repository.
 
 - A module is a runtime composition and lifecycle unit. A plugin artifact is a
   signed distribution, trust, installation, and update envelope.

@@ -29,12 +29,15 @@ flowchart TB
     Host --> Product
 ```
 
-Before cross-product admission, the first product owns its private schemas,
-fixtures, diagnostics and minimum traces. After two independent consumers prove
-the same semantics and extraction is approved, Foundation may own the admitted
-neutral subset. Products always own authorization, data invariants, persistence,
-placement and stronger security claims. Passing conformance never grants a
-plugin permission to execute.
+The recommended first-consumer model gives the first product ownership of its
+private schemas, fixtures, diagnostics and minimum traces only after ADR-0013 is
+accepted. While ADR-0012 remains effective, Foundation retains semantic
+ownership and cannot implement the runtime until `UMEQ-011` and `UMEQ-013` are
+resolved through `OD-003`. After two independent consumers prove the same
+semantics and extraction is approved, Foundation may own the admitted neutral
+subset under either path. Products always own authorization, data invariants,
+persistence, placement and stronger security claims. Passing conformance never
+grants a plugin permission to execute.
 
 ## Core Profiles
 

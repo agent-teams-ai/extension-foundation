@@ -63,13 +63,14 @@ product authority scope, stable module identity, and immutable implementation
 digest as required by ADR-0009 and retained by ADR-0010.
 
 Capability identity is a stable URI-like string owned by the product feature,
-for example `agent-teams.orchestrator/work-placement-proposal`. During the first
-product-local slice, the owning product also owns its private grammar and
-comparison rules. Effective ADR-0012 permits Foundation extraction through any
-of its explicit evidence gates and a separate accepted extraction decision.
-This qualification recommends the stronger second-consumer threshold for shared
-runtime grammar through proposed ADR-0013, but does not enforce that proposal
-before approval. Foundation never owns product vocabulary.
+for example `agent-teams.orchestrator/work-placement-proposal`. Under the
+recommended product-local path, the owning product also owns its private grammar
+and comparison rules only after ADR-0013 is accepted. While ADR-0012 remains
+effective, Foundation retains module-semantic ownership and implementation is
+blocked until `UMEQ-011` and `UMEQ-013` are resolved through `OD-003`. Effective
+ADR-0012 permits later Foundation extraction through any of its explicit
+evidence gates and a separate accepted extraction decision. Foundation never
+owns product vocabulary.
 
 ## Descriptor Boundary
 

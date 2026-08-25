@@ -29,6 +29,15 @@ interface DecisionLedger {
     readonly formerTopic: string;
     readonly disposition: string;
   }[];
+  readonly externalDecisionGates: readonly {
+    readonly id: string;
+    readonly status: string;
+    readonly topic: string;
+    readonly authority: string;
+    readonly detail: string;
+    readonly effectWhileProposed: string;
+    readonly approvalTrackedBy: string;
+  }[];
   readonly entries: readonly DecisionEntry[];
 }
 
@@ -89,6 +98,15 @@ test("decision ledger has one semantic owner and ten unique approval forks", asy
     Array.from({ length: 18 }, (_, index) => `UMEQ-${String(index + 1).padStart(3, "0")}`),
   );
   assert.equal(new Set(topics).size, topics.length);
+  assert.deepEqual(ledger.externalDecisionGates, [{
+    id: "ADR-0013",
+    status: "proposed",
+    topic: "first-consumer-module-semantics",
+    authority: "product-owner",
+    detail: "../../decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md",
+    effectWhileProposed: "product-local-phase-1-blocked",
+    approvalTrackedBy: "adr-lifecycle",
+  }]);
 
   const approvals = ledger.entries.filter(entry => entry.approvalRequired);
   assert.deepEqual(
@@ -123,7 +141,7 @@ test("decision ledger has one semantic owner and ten unique approval forks", asy
     );
   }
 
-  for (const entry of ledger.entries) {
+  for (const entry of [...ledger.entries, ...ledger.externalDecisionGates]) {
     const [relativePath, fragment] = entry.detail.split("#", 2);
     const targetPath = resolve(dirname(ledgerPath), relativePath!);
     const markdown = await readFile(targetPath, "utf8");
@@ -214,19 +232,36 @@ test("accepted publication gates remain authoritative while proposed ADR-0013 is
   assert.match(files[0]!, /Public SPI requires independent implementations/);
   for (const markdown of files.slice(1, 4)) assert.match(markdown, /two independently authored/);
   assert.doesNotMatch(files[2]!, /one real implementation plus a bounded reference adapter/);
-  assert.match(files[3]!, /owning product.*accepted feature decision/is);
+  assert.match(files[3]!, /No graph implementation begins until one ownership path is explicitly opened/);
+  assert.match(files[3]!, /Until one complete path is approved, Phase 1 is blocked/);
   assert.doesNotMatch(files[4]!, /independently packaged reference implementation/);
-  assert.match(files[5]!, /first product-local graph slice requires its owning product's accepted\s+feature decision/is);
-  assert.doesNotMatch(files[5]!, /Approve `UMEQ-011`.*before the\s+first product-local graph slice/is);
+  assert.match(files[5]!, /No graph slice starts until its ownership path is complete/);
+  assert.match(files[5]!, /ADR-0013.*owning product's\s+feature decision/is);
+  assert.match(files[5]!, /ADR-0012 remains effective.*`UMEQ-011` and `UMEQ-013`/is);
   assert.match(files[6]!, /status: proposed/);
   assert.match(files[6]!, /ADR-0012\s+remains the effective admission policy/);
   assert.match(files[6]!, /cannot narrow or block the admission bases already accepted in ADR-0012/);
   assert.doesNotMatch(files[6]!, /no Foundation runtime package or public SPI may be admitted/);
   assert.match(files[7]!, /Extract or publish only when at least one of these is proven/);
-  assert.match(files[3]!, /ADR-0012 remains the effective admission policy/);
-  assert.match(files[3]!, /does not make the proposal operative/);
+  assert.match(files[3]!, /If ADR-0012\s+remains effective/);
+  assert.match(files[3]!, /does\s+not\s+make either approval path operative/);
   const packageCatalog = JSON.parse(await readFile(resolve(repositoryRoot, "architecture/package-catalog.json"), "utf8")) as {
     readonly packages?: readonly unknown[];
   };
   assert.deepEqual(packageCatalog.packages, [], "this qualification does not admit a production package");
+});
+
+test("execution admission and every production host remain independently gated", async () => {
+  const trust = await readFile(resolve(dossier, "trust-and-security.md"), "utf8");
+  const recommendation = await readFile(resolve(dossier, "final-recommendation.md"), "utf8");
+
+  assert.match(trust, /entitlement decision = allow OR entitlement plane = explicitly not-applicable/);
+  assert.match(trust, /product authorization = allow/);
+  assert.match(trust, /current product capability grant/);
+  assert.match(trust, /AR authorization = allow when AR owns the capability/);
+  assert.match(trust, /Unknown applicability, a bare decision without\s+an `allow` result.*deny execution/is);
+  assert.match(
+    recommendation,
+    /Phase 6: Frontend And Untrusted Hosts[\s\S]*same ADR-0011 closure gate as Phases 4 and 5/,
+  );
 });

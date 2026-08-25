@@ -3,7 +3,7 @@ import { setTimeout as delay } from "node:timers/promises";
 
 import type { CompiledGraph } from "./graph-spike.ts";
 
-export type LifecyclePhase = "prepare" | "start" | "ready" | "publish" | "drain" | "stop" | "abort";
+export type LifecyclePhase = "preflight" | "prepare" | "start" | "ready" | "publish" | "drain" | "stop" | "abort";
 export type LifecycleOutcome = "started" | "confirmed" | "failed" | "timed-out" | "stale" | "termination_unproven";
 
 export interface LifecycleTrace {
@@ -179,18 +179,24 @@ function snapshotHooks(hooks: ReadonlyMap<string, ModuleHooks>): ReadonlyMap<str
   const allowedFields = new Set(["readiness", "prepare", "start", "ready", "stop"]);
   for (const [moduleId, moduleHooks] of hooks) {
     if (typeof moduleHooks !== "object" || moduleHooks === null) {
-      throw new Error(`INVALID_HOOKS:${moduleId}`);
+      throw new AttributedLifecycleError(`INVALID_HOOKS:${moduleId}`, moduleId, "preflight");
+    }
+    const prototype = Object.getPrototypeOf(moduleHooks);
+    if (prototype !== Object.prototype && prototype !== null) {
+      throw new AttributedLifecycleError(`NON_PLAIN_HOOKS:${moduleId}`, moduleId, "preflight");
     }
     const descriptors = Object.getOwnPropertyDescriptors(moduleHooks);
     for (const [field, descriptor] of Object.entries(descriptors)) {
-      if (!allowedFields.has(field)) throw new Error(`UNKNOWN_HOOK_FIELD:${moduleId}:${field}`);
+      if (!allowedFields.has(field)) {
+        throw new AttributedLifecycleError(`UNKNOWN_HOOK_FIELD:${moduleId}:${field}`, moduleId, "preflight");
+      }
       if (descriptor.get !== undefined || descriptor.set !== undefined) {
-        throw new Error(`ACCESSOR_HOOK_FIELD:${moduleId}:${field}`);
+        throw new AttributedLifecycleError(`ACCESSOR_HOOK_FIELD:${moduleId}:${field}`, moduleId, "preflight");
       }
     }
     const readiness = descriptors.readiness?.value;
     if (readiness !== "inert" && readiness !== "probe") {
-      throw new Error(`INVALID_READINESS:${moduleId}`);
+      throw new AttributedLifecycleError(`INVALID_READINESS:${moduleId}`, moduleId, "preflight");
     }
     const prepare = descriptors.prepare?.value;
     const start = descriptors.start?.value;
@@ -198,14 +204,14 @@ function snapshotHooks(hooks: ReadonlyMap<string, ModuleHooks>): ReadonlyMap<str
     const ready = descriptors.ready?.value;
     for (const [field, hook] of [["prepare", prepare], ["start", start], ["stop", stop]] as const) {
       if (hook !== undefined && typeof hook !== "function") {
-        throw new Error(`INVALID_HOOK_FIELD:${moduleId}:${field}`);
+        throw new AttributedLifecycleError(`INVALID_HOOK_FIELD:${moduleId}:${field}`, moduleId, "preflight");
       }
     }
     if (readiness === "probe" && typeof ready !== "function") {
-      throw new Error(`INVALID_HOOK_FIELD:${moduleId}:ready`);
+      throw new AttributedLifecycleError(`INVALID_HOOK_FIELD:${moduleId}:ready`, moduleId, "preflight");
     }
     if (readiness === "inert" && ready !== undefined) {
-      throw new Error(`INVALID_HOOK_FIELD:${moduleId}:ready`);
+      throw new AttributedLifecycleError(`INVALID_HOOK_FIELD:${moduleId}:ready`, moduleId, "preflight");
     }
     snapshots.set(moduleId, Object.freeze({
       readiness,

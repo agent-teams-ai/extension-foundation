@@ -192,12 +192,14 @@ medium; release records should already map cleanly to future TUF targets.
 
 ## Recommended Approval Order
 
-The first product-local graph slice requires its owning product's accepted
-feature decision. That decision may choose explicit binding and a private native
-implementation without deciding Foundation forks `UMEQ-011` or `UMEQ-013`.
-Approve those two forks only before cross-product extraction or Foundation
-runtime admission. `UMEQ-012` and `UMEQ-015` are needed only before reusable
-contract extraction/publication. `UMEQ-009`, `UMEQ-014` and `UMEQ-016` are needed before a
-process/package release. `UMEQ-017` is required before hosted distributed
-claims. `UMEQ-018` is needed before managed update channels. `UMEQ-010` remains
-a separate Frontend decision.
+No graph slice starts until its ownership path is complete. The recommended
+product-local path requires acceptance of ADR-0013 plus the owning product's
+feature decision; it may use private explicit binding and a private native
+implementation without resolving Foundation forks `UMEQ-011` or `UMEQ-013`.
+If ADR-0012 remains effective, resolve both `UMEQ-011` and `UMEQ-013` through
+`OD-003` before a Foundation graph/runtime implementation begins. `UMEQ-012` and
+`UMEQ-015` are needed before reusable contract extraction/publication.
+`UMEQ-009`, `UMEQ-014` and `UMEQ-016` are needed before a process/package
+release. `UMEQ-017` is required before hosted distributed claims. `UMEQ-018` is
+needed before managed update channels. `UMEQ-010` remains a separate Frontend
+decision and cannot bypass the ADR-0011 production-host gate.
