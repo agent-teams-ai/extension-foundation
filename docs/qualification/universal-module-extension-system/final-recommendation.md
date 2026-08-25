@@ -238,7 +238,9 @@ Public package publication additionally requires the cumulative
 `phase-3-package-publication` gate: the reusable-extraction gate is satisfied;
 `UMEQ-014`, `UMEQ-015` and `UMEQ-016` are resolved; `PACKAGE-1` packed-package
 conformance and the public API report pass; the immutable package admission
-record is verified; and the Foundation owner accepts both the artifact-specific
+record is verified; release-promotion verification passes for stable provider
+identities, the selected admission basis, implementation independence and the
+referenced bytes; and the Foundation owner accepts both the artifact-specific
 package admission decision and publication decision. `UMEQ-015` is one of the
 ten strategic UMEQ forks. These artifact-specific decisions are release
 authority and are not additional strategic forks.

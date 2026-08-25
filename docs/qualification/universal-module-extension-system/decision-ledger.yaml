@@ -90,6 +90,11 @@ requirementDefinitions:
     authority: qualification-evidence
     detail: conformance-plan.md
     purpose: exact public API and framework-leak report for the publication candidate
+  - id: package-release-promotion-verification
+    kind: evidence
+    authority: foundation-release-promotion
+    detail: packaging-and-reuse.md
+    purpose: stable provider identities, accepted admission basis, independence and referenced bytes verified before publication
   - id: foundation-package-publication-decision
     kind: decision
     authority: foundation-owner
@@ -171,6 +176,8 @@ implementationGates:
         requiredStatus: passed
       - evidence: immutable-package-admission-record
         requiredStatus: verified
+      - evidence: package-release-promotion-verification
+        requiredStatus: passed
       - decision: foundation-package-admission-decision
         requiredStatus: accepted
       - decision: foundation-package-publication-decision

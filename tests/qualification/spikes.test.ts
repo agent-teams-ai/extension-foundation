@@ -90,6 +90,52 @@ function rejectAfter(milliseconds: number, errorFactory: () => Error): Promise<n
   });
 }
 
+function proveCdpConnection(socket: WebSocket, milliseconds: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (callback: () => void): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      socket.removeEventListener("message", onMessage);
+      socket.removeEventListener("close", onClose);
+      socket.removeEventListener("error", onError);
+      callback();
+    };
+    const onMessage = (event: MessageEvent): void => {
+      try {
+        const message = JSON.parse(String(event.data)) as {
+          readonly id?: number;
+          readonly error?: { readonly message?: string };
+        };
+        if (message.id !== 1) return;
+        if (message.error) {
+          finish(() => reject(new Error(message.error?.message ?? "BROWSER_CDP_PROBE_FAILED")));
+          return;
+        }
+        finish(resolve);
+      } catch {
+        finish(() => reject(new Error("BROWSER_CDP_PROBE_INVALID_RESPONSE")));
+      }
+    };
+    const onClose = (): void => finish(() => reject(new Error("BROWSER_CDP_PROBE_CLOSED")));
+    const onError = (): void => finish(() => reject(new Error("BROWSER_CDP_PROBE_ERROR")));
+    const timer = setTimeout(
+      () => finish(() => reject(new Error("BROWSER_CDP_PROBE_TIMEOUT"))),
+      milliseconds,
+    );
+    timer.unref();
+    socket.addEventListener("message", onMessage);
+    socket.addEventListener("close", onClose, { once: true });
+    socket.addEventListener("error", onError, { once: true });
+    try {
+      socket.send(JSON.stringify({ id: 1, method: "Runtime.enable" }));
+    } catch (error) {
+      finish(() => reject(error));
+    }
+  });
+}
+
 async function waitUntil(predicate: () => boolean, milliseconds: number, errorCode: string): Promise<void> {
   const deadline = Date.now() + milliseconds;
   while (!predicate()) {
@@ -858,7 +904,7 @@ test("absolute deadline prevents late publication and cleanup is bounded", { tim
   assert.equal(result.termination, "termination_unproven");
   assert.equal(lifecycle.activeGeneration, 0);
   assert.ok(result.errors.some(error => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
-  assert.ok(result.errors.some(error => error.message === "CLEANUP_TIMEOUT:slow"));
+  assert.ok(result.errors.some(error => error.message === "IN_FLIGHT_HOOK_UNSETTLED:slow"));
 });
 
 test("absolute deadline wins when blocking module code throws after expiry", async () => {
@@ -1056,6 +1102,35 @@ test("waiter clock failure leaves the retained terminal result replayable", asyn
   assert.equal(starts, 0);
 });
 
+test("a waiter clock failure cannot leave a hidden rejected activation flight", async () => {
+  let clockAvailable = true;
+  const lifecycle = new GenerationLifecycle(testAuthorityScope, {
+    now: () => {
+      if (!clockAvailable) throw new Error("CLOCK_FAILED");
+      return performance.now();
+    },
+    sleep: milliseconds => delay(milliseconds),
+  });
+  const plan = requirePlan([{ id: "candidate", requires: [] }]);
+  const request = activationRequest(
+    lifecycle,
+    "clock-fails-before-waiter-observes-flight",
+    plan,
+    new Map([["candidate", inertHooks()]]),
+  );
+  const unhandled: unknown[] = [];
+  const onUnhandled = (error: unknown): void => { unhandled.push(error); };
+  process.on("unhandledRejection", onUnhandled);
+  try {
+    clockAvailable = false;
+    await assert.rejects(lifecycle.activate(request), /WAITER_DEADLINE_EXCEEDED/);
+    await delay(0);
+    assert.deepEqual(unhandled, []);
+  } finally {
+    process.removeListener("unhandledRejection", onUnhandled);
+  }
+});
+
 test("waiter deadline expiry during timer arming removes its abort listener", async () => {
   let expiryMode = false;
   let expiryReads = 0;
@@ -1092,6 +1167,31 @@ test("waiter deadline expiry during timer arming removes its abort listener", as
     /WAITER_DEADLINE_EXCEEDED/,
   );
   assert.equal(listeners.size, 0);
+});
+
+test("hostile abort-listener cleanup cannot strand a completed waiter", { timeout: 2_000 }, async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([{ id: "candidate", requires: [] }]);
+  const request = activationRequest(
+    lifecycle,
+    "hostile-waiter-listener-cleanup",
+    plan,
+    new Map([["candidate", inertHooks()]]),
+  );
+  const completed = await lifecycle.activate(request);
+  const controller = new AbortController();
+  Object.defineProperty(controller.signal, "removeEventListener", {
+    value: () => { throw new Error("REMOVE_LISTENER_FAILED"); },
+  });
+
+  const replay = await Promise.race([
+    lifecycle.activate(request, {
+      absoluteDeadline: lifecycle.deadlineAfter(1_000),
+      signal: controller.signal,
+    }),
+    rejectAfter(200, () => new Error("WAITER_STRANDED")),
+  ]);
+  assert.strictEqual(replay, completed);
 });
 
 test("failed parallel batch settles siblings before reverse cleanup", async () => {
@@ -1282,7 +1382,7 @@ test("hostile preflight errors are normalized and retained without escaping acti
     get: () => { throw new Error("HOSTILE_PROPERTY"); },
   });
   class HostileMap extends Map<string, ModuleHooks> {
-    override has(): boolean {
+    override [Symbol.iterator](): MapIterator<[string, ModuleHooks]> {
       throw hostileError;
     }
   }
@@ -1297,6 +1397,56 @@ test("hostile preflight errors are normalized and retained without escaping acti
   assert.equal(result.termination, "proven");
   assert.deepEqual(result.errors, [{ message: "UNREADABLE_ERROR" }]);
   assert.strictEqual(await lifecycle.activate(request), result);
+});
+
+test("the validated hook snapshot cannot omit a planned module before effects", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([
+    { id: "provider", requires: [] },
+    { id: "consumer", requires: ["provider"] },
+  ]);
+  let effects = 0;
+  class InconsistentMap extends Map<string, ModuleHooks> {
+    override *[Symbol.iterator](): MapIterator<[string, ModuleHooks]> {
+      yield ["provider", this.get("provider")!];
+    }
+  }
+  const hooks = new InconsistentMap([
+    ["provider", inertHooks({ start: () => { effects += 1; } })],
+    ["consumer", inertHooks({ start: () => { effects += 1; } })],
+  ]);
+
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "snapshot-must-cover-plan",
+    plan,
+    hooks,
+  ));
+  assert.equal(result.ok, false);
+  assert.equal(effects, 0);
+  assert.deepEqual(result.errors, [{
+    message: "MISSING_HOOKS:consumer",
+    moduleId: "consumer",
+    phase: "preflight",
+  }]);
+});
+
+test("an empty AggregateError remains visible as failure evidence", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([{ id: "candidate", requires: [] }]);
+  class EmptyAggregateMap extends Map<string, ModuleHooks> {
+    override *[Symbol.iterator](): MapIterator<[string, ModuleHooks]> {
+      throw new AggregateError([], "EMPTY_AGGREGATE");
+    }
+  }
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "empty-aggregate-evidence",
+    plan,
+    new EmptyAggregateMap([["candidate", inertHooks()]]),
+  ));
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.errors, [{ message: "EMPTY_AGGREGATE" }]);
 });
 
 test("a fast sibling failure promptly aborts cooperative siblings before cleanup", async () => {
@@ -1461,6 +1611,50 @@ test("ignored activation cancellation is bounded without refreshing cleanup time
   assert.equal(cleanupOverlapped, false);
   release.resolve();
   await finished.promise;
+  assert.equal(startRunning, false);
+});
+
+test("a transient clock timeout cannot overlap cleanup with an unsettled hook", { timeout: 2_000 }, async () => {
+  let clockReads = 0;
+  let failNextRead = false;
+  const lifecycle = new GenerationLifecycle(testAuthorityScope, {
+    now: () => {
+      clockReads += 1;
+      if (failNextRead) {
+        failNextRead = false;
+        throw new Error("TRANSIENT_CLOCK_FAILURE");
+      }
+      return clockReads <= 2 ? 0 : 995;
+    },
+    sleep: milliseconds => delay(milliseconds),
+  });
+  const plan = requirePlan([{ id: "slow", requires: [] }]);
+  const release = Promise.withResolvers<void>();
+  let startRunning = false;
+  let stopCalls = 0;
+  const result = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "transient-clock-unsettled-hook",
+    plan,
+    new Map([["slow", inertHooks({
+      start: async () => {
+        startRunning = true;
+        failNextRead = true;
+        await release.promise;
+        startRunning = false;
+      },
+      stop: () => { stopCalls += 1; },
+    })]]),
+    { deadlineMs: 1_000, cleanupTimeoutMs: 50 },
+  ));
+
+  assert.equal(result.ok, false);
+  assert.equal(result.termination, "termination_unproven");
+  assert.equal(startRunning, true);
+  assert.equal(stopCalls, 0);
+  assert.ok(result.errors.some(error => error.message === "IN_FLIGHT_HOOK_UNSETTLED:slow"));
+  release.resolve();
+  await delay(0);
   assert.equal(startRunning, false);
 });
 
@@ -2364,7 +2558,7 @@ test("Worker structured-clone boundary preserves validation and stale rejection"
   assert.deepEqual(responses[1], { ok: false, error: "STALE_MODULE_ACTIVATION_GENERATION" });
 });
 
-test("browser Worker carries a portable generation-bound frame", { timeout: 180_000 }, async t => {
+test("browser Worker carries a portable generation-bound frame", { timeout: 300_000 }, async t => {
   const isCi = process.env.CI?.trim().toLowerCase() === "true";
   const slowWindowsCi = isCi && process.platform === "win32";
   const debuggerStartupTimeoutMs = slowWindowsCi ? 15_000 : 10_000;
@@ -2510,6 +2704,8 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 180_
           }),
           rejectAfter(2_000, () => new Error("BROWSER_CDP_SOCKET_TIMEOUT")),
         ]);
+        if (candidateSocket.readyState !== WebSocket.OPEN) throw new Error("BROWSER_CDP_SOCKET_NOT_OPEN");
+        await proveCdpConnection(candidateSocket, 2_000);
       } catch (error) {
         discoveryError = error;
         candidateSocket?.close();

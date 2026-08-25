@@ -53,7 +53,7 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm architecture:check
       - run: pnpm qualification:check
-      - run: pnpm packages:artifacts:check
+      - run: pnpm packages:check
 
   architecture-macos:
     name: architecture-macos
@@ -74,4 +74,4 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm architecture:check
       - run: pnpm qualification:check
-      - run: pnpm packages:artifacts:check
+      - run: pnpm packages:check

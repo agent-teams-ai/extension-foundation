@@ -269,8 +269,13 @@ function validateAdmission(entry, admission, errors) {
 }
 
 export async function loadPackagePolicy(root) {
+  const catalogPath = join(root, CATALOG_PATH);
+  const catalogFile = await lstat(catalogPath);
+  if (!catalogFile.isFile() || catalogFile.isSymbolicLink()) {
+    throw new Error(`${CATALOG_PATH}: package catalog must be a real regular file, not a symbolic link`);
+  }
   const [catalog, allowedRoles] = await Promise.all([
-    readFile(join(root, CATALOG_PATH), "utf8").then(parseStrictJson),
+    readFile(catalogPath, "utf8").then(parseStrictJson),
     loadAllowedPackageRoles(root),
   ]);
   const errors = [];

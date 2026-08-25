@@ -170,7 +170,8 @@ function aggregateErrors(error: unknown): readonly Error[] {
     return [asError(error)];
   }
   try {
-    return Array.from(error.errors as Iterable<unknown>, asError);
+    const errors = Array.from(error.errors as Iterable<unknown>, asError);
+    return errors.length === 0 ? [asError(error)] : errors;
   } catch {
     return [asError(error)];
   }
@@ -590,6 +591,9 @@ export class GenerationLifecycle {
     }
 
     const deferred = Promise.withResolvers<ActivationResult>();
+    // A waiter can fail while constructing its own deadline before it observes
+    // a synchronously rejected activation flight.
+    void deferred.promise.catch(() => undefined);
     const flight = { result: deferred.promise };
     this.#flights.set(operationId, flight);
     try {
@@ -700,7 +704,11 @@ export class GenerationLifecycle {
         if (settled) return;
         settled = true;
         if (timer) clearTimeout(timer);
-        signal?.removeEventListener("abort", onAbort);
+        try {
+          signal?.removeEventListener("abort", onAbort);
+        } catch {
+          // Caller-owned signals cannot prevent the waiter from settling.
+        }
         callback();
       };
       const onAbort = (): void => finish(() => reject(new Error("WAITER_CANCELLED")));
@@ -747,6 +755,7 @@ export class GenerationLifecycle {
     const traces: LifecycleTrace[] = [];
     const errors: Error[] = [];
     const cleanupCandidates = new Set<string>();
+    const unsettledHookModules = new Set<string>();
     const activationController = new AbortController();
     const activationContext: ActivationContext = Object.freeze({
       generation,
@@ -772,6 +781,7 @@ export class GenerationLifecycle {
 
     try {
       const planModuleIds = new Set(plan.nodes.map(node => node.id));
+      hooks = snapshotHooks(hooks);
       for (const moduleId of planModuleIds) {
         if (!hooks.has(moduleId)) {
           throw new AttributedLifecycleError(`MISSING_HOOKS:${moduleId}`, moduleId, "preflight");
@@ -786,7 +796,15 @@ export class GenerationLifecycle {
         traces.push({ phase: "publish", generation, outcome: "stale" });
         throw new Error("STALE_ACTIVE_GENERATION");
       }
-      hooks = snapshotHooks(hooks);
+
+      const invokeTracked = async <T>(moduleId: string, operation: () => T | Promise<T>): Promise<T> => {
+        unsettledHookModules.add(moduleId);
+        try {
+          return await operation();
+        } finally {
+          unsettledHookModules.delete(moduleId);
+        }
+      };
 
       const runBatchPhase = async (
         batch: readonly string[],
@@ -808,7 +826,7 @@ export class GenerationLifecycle {
                   assertActivationAdmitted();
                   cleanupCandidates.add(moduleId);
                   localTraces.push({ phase, moduleId, generation, outcome: "started" });
-                  return module.prepare?.(activationContext);
+                  return invokeTracked(moduleId, () => module.prepare?.(activationContext));
                 },
                 activationDeadline,
                 this.#clock,
@@ -819,7 +837,7 @@ export class GenerationLifecycle {
                 () => {
                   assertActivationAdmitted();
                   localTraces.push({ phase, moduleId, generation, outcome: "started" });
-                  return module.start?.(activationContext);
+                  return invokeTracked(moduleId, () => module.start?.(activationContext));
                 },
                 activationDeadline,
                 this.#clock,
@@ -833,7 +851,7 @@ export class GenerationLifecycle {
                 const ready = await runBeforeDeadline(
                   () => {
                     assertActivationAdmitted();
-                    return module.ready(activationContext);
+                    return invokeTracked(moduleId, () => module.ready(activationContext));
                   },
                   activationDeadline,
                   this.#clock,
@@ -898,8 +916,11 @@ export class GenerationLifecycle {
         "abort",
         cleanupController,
         cleanupCandidates,
+        unsettledHookModules,
       );
-      const termination = !cleanupProven ? "termination_unproven" : "proven";
+      const termination = !cleanupProven || unsettledHookModules.size > 0
+        ? "termination_unproven"
+        : "proven";
       const outcome: LifecycleOutcome = termination === "termination_unproven"
         ? "termination_unproven"
         : failure.message === "STALE_ACTIVE_GENERATION" ? "stale" : "failed";
@@ -967,11 +988,15 @@ export class GenerationLifecycle {
     phase: "stop" | "abort",
     controller: AbortController,
     candidates?: ReadonlySet<string>,
+    unsettledHookModules: ReadonlySet<string> = new Set(),
   ): Promise<boolean> {
     let terminationProven = true;
     for (const batch of plan.stopBatches) {
       const outcomes = await Promise.all(batch.filter(id => candidates?.has(id) ?? true).map(async moduleId => {
         try {
+          if (unsettledHookModules.has(moduleId)) {
+            throw new Error(`IN_FLIGHT_HOOK_UNSETTLED:${moduleId}`);
+          }
           const moduleHooks = hooks.get(moduleId);
           if (!moduleHooks) throw new Error(`MISSING_HOOKS:${moduleId}`);
           if (moduleHooks.stop === undefined
@@ -994,6 +1019,7 @@ export class GenerationLifecycle {
             moduleId,
             outcome: error.message.startsWith("CLEANUP_TIMEOUT:")
               || error.message.startsWith("MISSING_STOP_EVIDENCE:")
+              || error.message.startsWith("IN_FLIGHT_HOOK_UNSETTLED:")
               ? "termination_unproven" as const
               : "failed" as const,
             error,

@@ -706,6 +706,31 @@ test("catalog root rejects unknown and duplicate fields", async () => {
   }
 });
 
+test("package catalog authority cannot be a symbolic link", {
+  skip: process.platform === "win32" ? "file symlink creation requires elevated Windows privileges" : false,
+}, async () => {
+  const root = await mkdtemp(join(tmpdir(), "extension-topology-catalog-link-"));
+  const outside = await mkdtemp(join(tmpdir(), "extension-topology-catalog-outside-"));
+  try {
+    await writeArchitecture(root);
+    await writeFixture(outside, "catalog.json", `${packageCatalog()}\n`);
+    await rm(join(root, "architecture/package-catalog.json"));
+    await symlink(
+      join(outside, "catalog.json"),
+      join(root, "architecture/package-catalog.json"),
+      "file",
+    );
+
+    await assert.rejects(
+      loadPackagePolicy(root),
+      /package catalog must be a real regular file, not a symbolic link/u,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+    await rm(outside, { recursive: true, force: true });
+  }
+});
+
 test("invalid package identities fail before admission evidence is read", async () => {
   const root = await mkdtemp(join(tmpdir(), "extension-topology-invalid-package-id-"));
   const invalidEntry = {
