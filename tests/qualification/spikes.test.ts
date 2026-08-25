@@ -2364,8 +2364,12 @@ test("Worker structured-clone boundary preserves validation and stale rejection"
   assert.deepEqual(responses[1], { ok: false, error: "STALE_MODULE_ACTIVATION_GENERATION" });
 });
 
-test("browser Worker carries a portable generation-bound frame", { timeout: 120_000 }, async t => {
+test("browser Worker carries a portable generation-bound frame", { timeout: 180_000 }, async t => {
   const isCi = process.env.CI?.trim().toLowerCase() === "true";
+  const slowWindowsCi = isCi && process.platform === "win32";
+  const debuggerStartupTimeoutMs = slowWindowsCi ? 15_000 : 10_000;
+  const pageDiscoveryTimeoutMs = slowWindowsCi ? 20_000 : 8_000;
+  const discoveryRequestTimeoutMs = slowWindowsCi ? 2_000 : 500;
   const candidates = process.platform === "darwin"
     ? [
         "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
@@ -2434,6 +2438,11 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 120_
       "--headless=new",
       "--disable-gpu",
       "--disable-background-timer-throttling",
+      "--disable-background-networking",
+      "--disable-component-update",
+      "--disable-default-apps",
+      "--disable-extensions",
+      "--disable-sync",
       ...(isCi && process.platform === "linux" ? ["--disable-dev-shm-usage"] : []),
       "--no-first-run",
       "--no-default-browser-check",
@@ -2451,7 +2460,7 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 120_
       candidateChild.once("close", () => resolve());
     });
     let candidateDebuggerUrl: string | undefined;
-    const debuggerDeadline = performance.now() + 10_000;
+    const debuggerDeadline = performance.now() + debuggerStartupTimeoutMs;
     while (performance.now() < debuggerDeadline) {
       try {
         const [portLine, pathLine] = (await readFile(join(candidateProfile, "DevToolsActivePort"), "utf8")).trim().split(/\r?\n/, 2);
@@ -2474,10 +2483,10 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 120_
       debuggerHttp.pathname = "/json/list";
       debuggerHttp.search = "";
       debuggerHttp.hash = "";
-      const discoveryDeadline = performance.now() + 8_000;
+      const discoveryDeadline = performance.now() + pageDiscoveryTimeoutMs;
       while (performance.now() < discoveryDeadline) {
         try {
-          const targets = await fetch(debuggerHttp, { signal: AbortSignal.timeout(500) }).then(response => response.json()) as readonly {
+          const targets = await fetch(debuggerHttp, { signal: AbortSignal.timeout(discoveryRequestTimeoutMs) }).then(response => response.json()) as readonly {
             readonly type?: string;
             readonly url?: string;
             readonly webSocketDebuggerUrl?: string;
@@ -2619,6 +2628,7 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 120_
 
 test("packed toy package exercises an isolated consumer without Foundation, Cordis, or plugin dependencies", async t => {
   const root = await mkdtemp(join(tmpdir(), "extension packed consumer-"));
+  const packageManagerTimeoutMs = process.platform === "win32" ? 90_000 : 30_000;
   const children = new Set<ReturnType<typeof spawn>>();
   const npmCli = await resolveNpmCli();
   const npmArguments = (args: readonly string[]): string[] => [npmCli, ...args];
@@ -2641,7 +2651,7 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
   let stdout = "";
   pack.stdout.setEncoding("utf8");
   pack.stdout.on("data", chunk => { stdout += chunk; });
-  const [packCode] = await once(pack, "close", { signal: AbortSignal.timeout(30_000) });
+  const [packCode] = await once(pack, "close", { signal: AbortSignal.timeout(packageManagerTimeoutMs) });
   children.delete(pack);
   assert.equal(packCode, 0);
   const packed = JSON.parse(stdout) as Array<{ filename: string; files: Array<{ path: string }> }>;
@@ -2655,7 +2665,7 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
     stdio: "ignore",
   });
   children.add(install);
-  const [installCode] = await once(install, "close", { signal: AbortSignal.timeout(30_000) });
+  const [installCode] = await once(install, "close", { signal: AbortSignal.timeout(packageManagerTimeoutMs) });
   children.delete(install);
   assert.equal(installCode, 0);
   const list = spawn(process.execPath, npmArguments(["ls", "--all", "--json"]), {
@@ -2669,7 +2679,7 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
   list.stderr.setEncoding("utf8");
   list.stdout.on("data", chunk => { listOutput += chunk; });
   list.stderr.on("data", chunk => { listError += chunk; });
-  const [listCode] = await once(list, "close", { signal: AbortSignal.timeout(30_000) });
+  const [listCode] = await once(list, "close", { signal: AbortSignal.timeout(packageManagerTimeoutMs) });
   children.delete(list);
   assert.equal(listCode, 0, listError);
   const dependencyNames = new Set<string>();
