@@ -1337,7 +1337,7 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 20_0
       childExit,
       rejectAfter(2_000, () => new Error("BROWSER_PROCESS_TERMINATION_TIMEOUT")),
     ]);
-    await rm(profile, { recursive: true, force: true });
+    await rm(profile, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   });
   child.stderr.setEncoding("utf8");
   let stderr = "";
