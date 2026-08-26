@@ -47,7 +47,7 @@ function validManifest(digest = "a".repeat(64)) {
     schemaVersion: 1,
     campaignId: "campaign-1",
     baseline: { commit: "e69ac5544ee64d497e56c060f75e8ba6eaae1ceb" },
-    objects: [objectRecord(digest)],
+    objects: [objectRecord(digest, { sourcePath: `job-config/${JOB_ID}/job.json` })],
     jobs: [{
       jobId: JOB_ID,
       wave: "W7",
@@ -186,17 +186,76 @@ test("verifier reports stale aliases and missing object records", async () => {
   assert.match(result.gates["G-CUSTODY"].failures.join("\n"), /missing object record/u);
 });
 
+test("verifier hash and size checks every declared object, including unreferenced records", async t => {
+  const root = await temporaryDirectory(t);
+  const store = new ObjectStore(root);
+  const bytes = Buffer.from("evidence");
+  const published = await store.publish(bytes);
+  const manifest = validManifest(published.sha256);
+  manifest.objects[0] = objectRecord(published.sha256, {
+    bytes: bytes.length,
+    sourcePath: `job-config/${JOB_ID}/job.json`,
+  });
+  const unreferenced = sha256("unreferenced");
+  manifest.objects.push(objectRecord(unreferenced, { bytes: 12, sourcePath: "research/unreferenced.json" }));
+
+  const missing = await verifyManifest(manifest, { store });
+  assert.equal(missing.integrityValid, false);
+  assert.match(missing.gates["G-CUSTODY"].failures.join("\n"), new RegExp(unreferenced, "u"));
+
+  const corruptPath = store.objectPath(unreferenced);
+  await mkdir(dirname(corruptPath), { recursive: true });
+  await writeFile(corruptPath, "wrong bytes!");
+  const corrupt = await verifyManifest(manifest, { store });
+  assert.equal(corrupt.integrityValid, false);
+  assert.match(corrupt.gates["G-CUSTODY"].failures.join("\n"), /corrupt object/u);
+});
+
 test("portable verification trusts stored objects and live-source audit is explicit", async t => {
   const root = await temporaryDirectory(t);
   const store = new ObjectStore(root);
   const bytes = Buffer.from("evidence");
   const published = await store.publish(bytes);
   const manifest = validManifest(published.sha256);
-  manifest.objects[0] = objectRecord(published.sha256, { bytes: bytes.length, sourcePath: "retired/source.json" });
+  manifest.objects[0] = objectRecord(published.sha256, { bytes: bytes.length, sourcePath: `runtime/${JOB_ID}/retired/source.json` });
   assert.equal((await verifyManifest(manifest, { store })).gates["G-PATH"].pass, true);
   assert.equal((await verifyManifest(manifest, { store, auditLiveSources: true, sourceRoot: root })).gates["G-PATH"].pass, false);
   manifest.objects[0].sourcePath = "/host-specific/source.json";
   assert.equal((await verifyManifest(manifest, { store })).gates["G-PATH"].pass, false);
+});
+
+test("job capturedObjects exactly accounts for portable provenance in sorted order", () => {
+  const secondDigest = "b".repeat(64);
+  const complete = validManifest();
+  complete.objects.push(objectRecord(secondDigest, { sourcePath: `runtime/${JOB_ID}/state/attempt-journal/journal.json` }));
+  complete.jobs[0].capturedObjects.push(secondDigest);
+  assert.equal(validateManifest(complete).valid, true);
+
+  for (const mutate of [
+    manifest => { manifest.jobs[0].capturedObjects.pop(); },
+    manifest => { manifest.jobs[0].capturedObjects.reverse(); },
+    manifest => {
+      const foreign = "c".repeat(64);
+      manifest.objects.push(objectRecord(foreign, { sourcePath: "research/foreign.json" }));
+      manifest.jobs[0].capturedObjects.push(foreign);
+    },
+    manifest => { manifest.jobs[0].capturedObjects.push(manifest.jobs[0].capturedObjects[0]); },
+  ]) {
+    const manifest = structuredClone(complete);
+    mutate(manifest);
+    assert.equal(validateManifest(manifest).valid, false);
+  }
+});
+
+test("portable source paths reject drive-absolute and other unsafe metadata in runtime and schema", async () => {
+  const schema = JSON.parse(await readFile(join(import.meta.dirname, "..", "architecture", "evidence-custody-manifest.schema.json"), "utf8"));
+  const schemaPattern = new RegExp(schema.$defs.object.properties.sourcePath.pattern, "u");
+  for (const sourcePath of ["C:/host/file", "z:/host/file", "/host/file", "host\\file", "host/../file", "host//file", "host/./file", "host\0file"]) {
+    const manifest = validManifest();
+    manifest.objects[0].sourcePath = sourcePath;
+    assert.equal(validateManifest(manifest).valid, false, `runtime accepted ${JSON.stringify(sourcePath)}`);
+    assert.equal(schemaPattern.test(sourcePath), false, `schema accepted ${JSON.stringify(sourcePath)}`);
+  }
 });
 
 test("lineage requires exact membership, adjacent predecessors, and acyclic earlier continuations", () => {
@@ -290,6 +349,24 @@ test("malformed manifest shapes return a structured fail-closed report and CLI e
   });
 });
 
+test("CLI reports syntactically malformed JSON without stack traces or host paths", async t => {
+  const root = await temporaryDirectory(t);
+  const manifestPath = join(root, "syntactically-malformed.json");
+  await writeFile(manifestPath, '{"schemaVersion":');
+  const cli = join(import.meta.dirname, "..", "architecture", "checks", "evidence-custody-cli.mjs");
+  await assert.rejects(execFileAsync(process.execPath, [cli, "verify", manifestPath, join(root, "objects")]), error => {
+    assert.equal(error.code, 1);
+    assert.equal(error.stderr, "");
+    assert.deepEqual(JSON.parse(error.stdout), {
+      ok: false,
+      error: { code: "INVALID_JSON", message: "input must be valid JSON" },
+    });
+    assert.equal(error.stdout.includes(root), false);
+    assert.equal(error.stdout.includes("SyntaxError"), false);
+    return true;
+  });
+});
+
 test("publication fails closed when its parent directory identity changes", async t => {
   const root = await temporaryDirectory(t);
   const storeRoot = join(root, "store");
@@ -357,7 +434,7 @@ test("CLI verifies a portable NO-GO bundle without admitting promotion", async t
   const bytes = Buffer.from("evidence");
   const published = await store.publish(bytes);
   const manifest = validManifest(published.sha256);
-  manifest.objects[0] = objectRecord(published.sha256, { bytes: bytes.length });
+  manifest.objects[0] = objectRecord(published.sha256, { bytes: bytes.length, sourcePath: `job-config/${JOB_ID}/job.json` });
   const manifestPath = join(root, "manifest.json");
   await writeFile(manifestPath, `${JSON.stringify(manifest)}\n`);
   const cli = join(import.meta.dirname, "..", "architecture", "checks", "evidence-custody-cli.mjs");
@@ -430,6 +507,9 @@ test("capture preserves required runtime bytes and decodes lastOutputSummary", a
   }
   const summary = result.manifest.objects.find(object => object.kind === "decoded-output-summary");
   assert.equal(await readFile(result.store.objectPath(summary.sha256), "utf8"), '{"claim":"preserve these exact UTF-8 bytes"}');
+  assert.deepEqual(result.manifest.jobs[0].capturedObjects, [...result.manifest.jobs[0].capturedObjects].sort());
+  assert.equal(result.manifest.jobs[0].capturedObjects.length, result.manifest.objects.length);
+  assert.ok(result.manifest.jobs[0].capturedObjects.includes(summary.sha256));
   assert.equal(result.manifest.exceptions.length, 0);
 });
 

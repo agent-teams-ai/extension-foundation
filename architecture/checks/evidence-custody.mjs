@@ -65,8 +65,14 @@ function rejectAdditionalProperties(value, allowed, path, errors) {
 
 function portableSourcePath(value) {
   if (typeof value !== "string" || value.length === 0 || value.includes("\0") || value.includes("\\")) return false;
-  if (isAbsolute(value) || value.startsWith("/") || value.split("#", 1)[0].split("/").includes("..")) return false;
+  if (isAbsolute(value) || value.startsWith("/") || /^[A-Za-z]:\//u.test(value) || value.split("#", 1)[0].split("/").includes("..")) return false;
   return !value.split("#", 1)[0].split("/").some(part => part === "" || part === ".");
+}
+
+function provenanceJobId(sourcePath) {
+  if (typeof sourcePath !== "string") return undefined;
+  const [scope, jobId, ...remainder] = sourcePath.split("#", 1)[0].split("/");
+  return (scope === "job-config" || scope === "runtime") && remainder.length > 0 ? jobId : undefined;
 }
 
 function normalizedPublisher(value) {
@@ -409,6 +415,20 @@ export function validateManifest(manifest) {
     if (jobs.has(job.jobId)) errors.push(`${path}.jobId is duplicated`);
     jobs.set(job.jobId, job);
   }
+  for (const [index, job] of arrayOrEmpty(manifest.jobs).entries()) {
+    if (!record(job) || typeof job.jobId !== "string" || !Array.isArray(job.capturedObjects)) continue;
+    const expected = arrayOrEmpty(manifest.objects)
+      .filter(object => record(object) && provenanceJobId(object.sourcePath) === job.jobId)
+      .map(object => object.sha256)
+      .sort();
+    const actual = [...job.capturedObjects];
+    if (actual.some(digest => provenanceJobId(objects.get(digest)?.sourcePath) !== job.jobId)) {
+      errors.push(`jobs[${index}].capturedObjects contains foreign or missing object custody`);
+    }
+    if (actual.length !== expected.length || actual.some((digest, position) => digest !== expected[position])) {
+      errors.push(`jobs[${index}].capturedObjects must exactly match job provenance in deterministic order`);
+    }
+  }
 
   const attempts = new Map();
   for (const [index, attempt] of arrayOrEmpty(manifest.attempts).entries()) {
@@ -574,9 +594,12 @@ export async function verifyManifest(manifest, { store, auditLiveSources = false
     };
   }
   const objectMap = new Map(manifest.objects.map(object => [object.sha256, object]));
-  for (const digest of referencedDigests(manifest)) {
-    const object = objectMap.get(digest);
-    if (object === undefined) { failures["G-CUSTODY"].push(`missing object record ${digest}`); continue; }
+  const referenced = referencedDigests(manifest);
+  for (const digest of referenced) {
+    if (!objectMap.has(digest)) failures["G-CUSTODY"].push(`missing object record ${digest}`);
+  }
+  for (const object of manifest.objects) {
+    const digest = object.sha256;
     if (store !== undefined) {
       try {
         const bytes = await secureRead(store.root, store.objectPath(digest));
@@ -730,12 +753,14 @@ export async function captureEvidence({
       log: join(jobRoot, `${jobId}.log`),
     };
     const captured = {};
+    const jobCapturedObjects = new Set();
     for (const [kind, path] of Object.entries(expected)) {
       try {
         captured[kind] = await add(await secureRead(kind === "jobConfig" ? safeConfigRoot : safeRuntimeRoot, path), {
           kind: kind === "wrapper" ? "worker-report" : kind,
           sourcePath: sourceLabel(kind === "jobConfig" ? safeConfigRoot : safeRuntimeRoot, path, kind === "jobConfig" ? "job-config" : "runtime"),
         });
+        jobCapturedObjects.add(captured[kind]);
       } catch (error) {
         if (error?.code !== "ENOENT") throw error;
         const label = sourceLabel(kind === "jobConfig" ? safeConfigRoot : safeRuntimeRoot, path, kind === "jobConfig" ? "job-config" : "runtime");
@@ -751,6 +776,7 @@ export async function captureEvidence({
     for (const journalFile of journalFiles) {
       const journalLabel = sourceLabel(safeRuntimeRoot, journalFile.path, "runtime");
       const journalDigest = await add(journalFile.bytes, { kind: "attempt-journal", sourcePath: journalLabel });
+      jobCapturedObjects.add(journalDigest);
       let journal;
       try { journal = JSON.parse(journalFile.bytes.toString("utf8")); }
       catch { exceptions.push({ exceptionId: `${jobId}:journal:${journalDigest}:invalid`, kind: "unknown-historical-bytes", detail: "Attempt journal is not valid JSON and was preserved only as raw bytes" }); continue; }
@@ -776,6 +802,7 @@ export async function captureEvidence({
           exceptions.push({ exceptionId: `${attemptId}:summary:missing`, kind: "missing-historical-bytes", detail: "lastOutputSummary was absent; no output was fabricated" });
         } else {
           summaryDigest = await add(summary, { kind: "decoded-output-summary", sourcePath: `${journalLabel}#attempts/${entry.attemptNumber}/lastOutputSummary` });
+          jobCapturedObjects.add(summaryDigest);
         }
         const isCurrentAttempt = entry.attemptNumber === currentAttemptNumber;
         if (!isCurrentAttempt || captured.wrapper === undefined) {
@@ -807,7 +834,7 @@ export async function captureEvidence({
       jobConfigObject: captured.jobConfig ?? null,
       attemptIds,
       currentAlias: captured.wrapper ?? null,
-      capturedObjects: Object.values(captured),
+      capturedObjects: [...jobCapturedObjects].sort(),
     });
   }
   const continuationByAttempt = new Map(continuations.map(continuation => [continuation.attemptId, continuation.continuationOf]));
