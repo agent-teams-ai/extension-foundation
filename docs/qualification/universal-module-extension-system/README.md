@@ -58,3 +58,31 @@ not a property claimed by this research branch.
 
 The [decision ledger](decision-ledger.yaml) is the machine-readable navigation
 source. It links to full rationale and never duplicates normative decisions.
+
+## Evidence Custody Qualification Tool
+
+The dependency-free Node 24 custody tool and its
+[`manifest schema`](../../../architecture/evidence-custody-manifest.schema.json)
+capture an explicit allowlist of job IDs into create-only SHA-256 objects and a
+deterministic manifest. The tool never
+discovers jobs with globs and must not be pointed at an authentication root or
+`CODEX_HOME`. Its serializer supports JSON null, booleans, strings, finite
+numbers, dense arrays and plain objects; it sorts object keys but does not claim
+full RFC 8785 canonicalization.
+
+Prepare a JSON configuration with `campaignId`, `baseline`, `jobIds`,
+`runtimeRoot`, `jobConfigRoot` and `outputRoot`, then run:
+
+```console
+pnpm evidence:custody -- capture /absolute/path/to/config.json
+pnpm evidence:custody -- verify /absolute/path/to/manifest.json /absolute/path/to/evidence
+pnpm evidence:custody:test
+```
+
+Capture includes each allowed job's configuration, current result alias,
+progress, events, log, attempt journals and exactly decoded
+`lastOutputSummary` bytes. Missing or unknown historical bytes become explicit
+exceptions. They are never reconstructed. Verification reports custody,
+terminal-state, alias, path, source-independence, hypothesis, draft-scope,
+synthesis and promotion gates independently; worker counts never satisfy a
+source or voting requirement.

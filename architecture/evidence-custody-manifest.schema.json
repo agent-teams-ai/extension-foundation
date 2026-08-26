@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-teams.ai/schemas/evidence-custody-manifest.v1.json",
+  "title": "Evidence custody manifest",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "campaignId",
+    "baseline",
+    "objects",
+    "jobs",
+    "attempts",
+    "continuations",
+    "claims",
+    "exceptions",
+    "promotion"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "campaignId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]{0,127}$" },
+    "baseline": { "type": "object" },
+    "objects": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/object" }
+    },
+    "jobs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/job" }
+    },
+    "attempts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/attempt" }
+    },
+    "continuations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/continuation" }
+    },
+    "claims": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/claim" }
+    },
+    "exceptions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/exception" }
+    },
+    "promotion": { "$ref": "#/$defs/promotion" }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "object": {
+      "type": "object",
+      "required": ["sha256", "bytes", "mediaType", "kind", "sourcePath", "capturedAt"],
+      "properties": {
+        "sha256": { "$ref": "#/$defs/digest" },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "mediaType": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string", "minLength": 1 },
+        "sourcePath": { "type": "string", "minLength": 1 },
+        "capturedAt": { "type": "string", "minLength": 1 }
+      }
+    },
+    "job": {
+      "type": "object",
+      "required": ["jobId", "wave", "jobConfigObject", "attemptIds", "currentAlias"],
+      "properties": {
+        "jobId": {
+          "type": "string",
+          "pattern": "^modres-w(?:[1-9]|10|11)-[a-z0-9][a-z0-9-]*-[0-9]{8}-r[0-9]+$"
+        },
+        "wave": { "type": "string", "pattern": "^W(?:[1-9]|10|11)$" },
+        "jobConfigObject": { "type": "string", "minLength": 1 },
+        "attemptIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "currentAlias": { "type": "string", "minLength": 1 }
+      }
+    },
+    "attempt": {
+      "type": "object",
+      "required": [
+        "attemptId",
+        "jobId",
+        "attemptNumber",
+        "status",
+        "predecessorAttemptId",
+        "continuationOf",
+        "startedAt",
+        "finishedAt",
+        "outputSummaryObject",
+        "wrapperObject",
+        "transcriptObjects"
+      ],
+      "properties": {
+        "attemptId": { "type": "string", "minLength": 1 },
+        "jobId": { "type": "string", "minLength": 1 },
+        "attemptNumber": { "type": "integer", "minimum": 1 },
+        "status": {
+          "enum": ["abandoned", "blocked", "cancelled", "completed", "done", "failed"]
+        },
+        "predecessorAttemptId": { "type": ["string", "null"] },
+        "continuationOf": { "type": ["string", "null"] },
+        "startedAt": { "type": "string", "minLength": 1 },
+        "finishedAt": { "type": "string", "minLength": 1 },
+        "outputSummaryObject": { "type": "string", "minLength": 1 },
+        "wrapperObject": { "type": "string", "minLength": 1 },
+        "transcriptObjects": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "continuation": {
+      "type": "object",
+      "required": ["attemptId", "continuationOf"],
+      "properties": {
+        "attemptId": { "type": "string", "minLength": 1 },
+        "continuationOf": { "type": "string", "minLength": 1 }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "required": [
+        "claimId",
+        "text",
+        "classification",
+        "applicability",
+        "primarySourceObjects",
+        "executableEvidenceObjects",
+        "publisherIndependence",
+        "hypothesis",
+        "promotionEligible"
+      ],
+      "properties": {
+        "claimId": { "type": "string", "minLength": 1 },
+        "text": { "type": "string", "minLength": 1 },
+        "classification": {
+          "enum": ["observed", "inference", "hypothesis", "decision-authority", "unsupported", "contradicted"]
+        },
+        "applicability": { "type": "string", "minLength": 1 },
+        "primarySourceObjects": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/digest" }
+        },
+        "executableEvidenceObjects": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/digest" }
+        },
+        "publisherIndependence": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "hypothesis": { "type": "boolean" },
+        "promotionEligible": { "type": "boolean" }
+      }
+    },
+    "exception": {
+      "type": "object",
+      "required": ["exceptionId", "kind", "detail"],
+      "properties": {
+        "exceptionId": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string", "minLength": 1 },
+        "detail": { "type": "string", "minLength": 1 }
+      }
+    },
+    "promotion": {
+      "type": "object",
+      "required": [
+        "draftScope",
+        "synthesisVerdict",
+        "workerAccounting",
+        "manifestGates",
+        "productOwnerReview",
+        "separateAdrChange",
+        "p0P1ExecutableClosure"
+      ],
+      "properties": {
+        "draftScope": { "const": "evidence-tooling-only" },
+        "synthesisVerdict": { "const": "NO-GO" },
+        "workerAccounting": {
+          "type": "object",
+          "required": ["countsAsVotes"],
+          "properties": {
+            "countsAsVotes": { "const": false }
+          }
+        },
+        "manifestGates": { "type": "boolean" },
+        "productOwnerReview": { "type": "boolean" },
+        "separateAdrChange": { "type": "boolean" },
+        "p0P1ExecutableClosure": { "type": "boolean" }
+      }
+    }
+  }
+}

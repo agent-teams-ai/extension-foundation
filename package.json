@@ -15,14 +15,16 @@
     "url": "git+https://github.com/agent-teams-ai/extension-foundation.git"
   },
   "scripts": {
-    "architecture:check": "pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && node --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/scaffolding.test.mjs",
-    "architecture:check:fast": "pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && node --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/scaffolding.test.mjs",
+    "architecture:check": "pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && node --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/evidence-custody.test.mjs tests/scaffolding.test.mjs",
+    "architecture:check:fast": "pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && node --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/evidence-custody.test.mjs tests/scaffolding.test.mjs",
     "architecture:package-artifacts:check": "node architecture/checks/package-artifacts.mjs",
     "architecture:scaffold:apply": "node architecture/checks/scaffold.mjs apply",
     "architecture:scaffold:plan": "node architecture/checks/scaffold.mjs plan",
     "architecture:scaffold:recover": "node architecture/checks/scaffold.mjs recover",
     "architecture:source-dependencies:check": "agent-teams-foundation check architecture.source-dependencies",
     "architecture:topology:check": "node architecture/checks/package-topology.mjs",
+    "evidence:custody": "node architecture/checks/evidence-custody-cli.mjs",
+    "evidence:custody:test": "node --test --test-concurrency=1 tests/evidence-custody.test.mjs",
     "check": "pnpm foundation:check && pnpm docs:protocol:check && pnpm architecture:check && pnpm typecheck && pnpm qualification:check && pnpm packages:check",
     "check:changed": "agent-teams-foundation agent-workflow changed --consumer .",
     "check:fast": "pnpm foundation:check && pnpm docs:protocol:check && pnpm architecture:check:fast && pnpm typecheck && pnpm packages:check",
