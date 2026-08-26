@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { mkdir, mkdtemp, readFile, rename, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { promisify } from "node:util";
 import test from "node:test";
 
 import {
@@ -17,6 +19,7 @@ import {
 } from "../architecture/checks/evidence-custody.mjs";
 
 const JOB_ID = "modres-w7-example-20260826-r1";
+const execFileAsync = promisify(execFile);
 
 async function temporaryDirectory(t) {
   const root = await mkdtemp(join(tmpdir(), "evidence-custody-"));
@@ -174,12 +177,87 @@ test("manifest validator rejects invalid lineage", () => {
 
 test("verifier reports stale aliases and missing object records", async () => {
   const manifest = validManifest();
-  manifest.jobs[0].currentAliasSha256 = "b".repeat(64);
+  manifest.jobs[0].currentAlias = "b".repeat(64);
   manifest.jobs[0].jobConfigObject = "c".repeat(64);
   const result = await verifyManifest(manifest);
   assert.equal(result.gates["G-ALIAS"].pass, false);
   assert.equal(result.gates["G-CUSTODY"].pass, false);
   assert.match(result.gates["G-CUSTODY"].failures.join("\n"), /missing object record/u);
+});
+
+test("portable verification trusts stored objects and live-source audit is explicit", async t => {
+  const root = await temporaryDirectory(t);
+  const store = new ObjectStore(root);
+  const bytes = Buffer.from("evidence");
+  const published = await store.publish(bytes);
+  const manifest = validManifest(published.sha256);
+  manifest.objects[0] = objectRecord(published.sha256, { bytes: bytes.length, sourcePath: "retired/source.json" });
+  assert.equal((await verifyManifest(manifest, { store })).gates["G-PATH"].pass, true);
+  assert.equal((await verifyManifest(manifest, { store, auditLiveSources: true, sourceRoot: root })).gates["G-PATH"].pass, false);
+  manifest.objects[0].sourcePath = "/host-specific/source.json";
+  assert.equal((await verifyManifest(manifest, { store })).gates["G-PATH"].pass, false);
+});
+
+test("lineage requires exact membership, adjacent predecessors, and acyclic earlier continuations", () => {
+  const secondDigest = "b".repeat(64);
+  const base = validManifest();
+  base.objects.push(objectRecord(secondDigest));
+  base.jobs[0].attemptIds.push(`${JOB_ID}:attempt:2`);
+  base.jobs[0].currentAlias = secondDigest;
+  base.attempts.push({ ...base.attempts[0], attemptId: `${JOB_ID}:attempt:2`, attemptNumber: 2, predecessorAttemptId: base.attempts[0].attemptId, wrapperObject: secondDigest });
+  assert.equal(validateManifest(base).valid, true);
+
+  const duplicate = structuredClone(base);
+  duplicate.jobs[0].attemptIds.push(duplicate.jobs[0].attemptIds[0]);
+  assert.equal(validateManifest(duplicate).valid, false);
+  const orphan = structuredClone(base);
+  orphan.jobs[0].attemptIds.pop();
+  assert.ok(validateManifest(orphan).errors.some(error => error.includes("exactly one")));
+  const duplicateNumber = structuredClone(base);
+  duplicateNumber.attempts[1].attemptNumber = 1;
+  assert.ok(validateManifest(duplicateNumber).errors.some(error => error.includes("attemptNumber is duplicated")));
+  const cycle = structuredClone(base);
+  cycle.attempts[0].continuationOf = cycle.attempts[1].attemptId;
+  cycle.attempts[1].continuationOf = cycle.attempts[0].attemptId;
+  cycle.continuations = cycle.attempts.map(attempt => ({ attemptId: attempt.attemptId, continuationOf: attempt.continuationOf }));
+  assert.ok(validateManifest(cycle).errors.some(error => error.includes("cyclic continuation")));
+});
+
+test("source and executable claims require distinct resolved identities and allowed kinds", async () => {
+  const manifest = validManifest();
+  manifest.claims.push({ claimId: "claim", text: "claim", classification: "observed", applicability: "test", primarySourceObjects: [manifest.objects[0].sha256, manifest.objects[0].sha256], executableEvidenceObjects: [manifest.objects[0].sha256], publisherIndependence: [" Publisher ", "publisher"], hypothesis: false, promotionEligible: true });
+  const result = await verifyManifest(manifest);
+  assert.equal(result.gates["G-SOURCE"].pass, false);
+  assert.match(result.gates["G-SOURCE"].failures.join("\n"), /distinct sources or publishers|non-executable/u);
+});
+
+test("runtime validation closes shapes and matches digest, wave, safe-integer, and enum constraints", () => {
+  for (const mutate of [
+    manifest => { manifest.extra = true; },
+    manifest => { manifest.objects[0].extra = true; },
+    manifest => { manifest.jobs[0].wave = "W12"; },
+    manifest => { manifest.attempts[0].attemptNumber = Number.MAX_SAFE_INTEGER + 1; },
+    manifest => { manifest.attempts[0].status = "running"; },
+    manifest => { manifest.jobs[0].jobConfigObject = "not-a-digest"; },
+    manifest => { manifest.promotion.manifestGates = true; },
+  ]) {
+    const manifest = validManifest();
+    mutate(manifest);
+    assert.equal(validateManifest(manifest).valid, false);
+  }
+});
+
+test("publication fails closed when its parent directory identity changes", async t => {
+  const root = await temporaryDirectory(t);
+  const storeRoot = join(root, "store");
+  let swapped = false;
+  const store = new ObjectStore(storeRoot, { beforePublication: async ({ directory }) => {
+    if (swapped) return;
+    swapped = true;
+    await rename(directory, `${directory}.replaced`);
+    await mkdir(directory);
+  } });
+  await assert.rejects(store.publish("race"), /changed during publication/u);
 });
 
 test("worker accounting never becomes voting authority", async () => {
@@ -226,6 +304,26 @@ test("an honestly labeled hypothesis is non-promotable", async () => {
   assert.equal(result.gates["G-SOURCE"].pass, true);
   assert.equal(result.gates["G-HYPOTHESIS"].pass, true);
   assert.equal(result.gates["G-PROMOTION"].pass, false);
+  assert.equal(result.integrityValid, true);
+  assert.equal(result.promotionAllowed, false);
+});
+
+test("CLI verifies a portable NO-GO bundle without admitting promotion", async t => {
+  const root = await temporaryDirectory(t);
+  const store = new ObjectStore(join(root, "objects"));
+  const bytes = Buffer.from("evidence");
+  const published = await store.publish(bytes);
+  const manifest = validManifest(published.sha256);
+  manifest.objects[0] = objectRecord(published.sha256, { bytes: bytes.length });
+  const manifestPath = join(root, "manifest.json");
+  await writeFile(manifestPath, `${JSON.stringify(manifest)}\n`);
+  const cli = join(import.meta.dirname, "..", "architecture", "checks", "evidence-custody-cli.mjs");
+
+  const portable = await execFileAsync(process.execPath, [cli, "verify", manifestPath, store.root]);
+  const report = JSON.parse(portable.stdout);
+  assert.equal(report.verification.integrityValid, true);
+  assert.equal(report.verification.promotionAllowed, false);
+  await assert.rejects(execFileAsync(process.execPath, [cli, "verify", manifestPath, store.root, "--require-promotion"]), error => error.code === 1);
 });
 
 test("secret scanning detects common credentials without echoing the secret", () => {

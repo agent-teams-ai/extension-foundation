@@ -86,3 +86,15 @@ exceptions. They are never reconstructed. Verification reports custody,
 terminal-state, alias, path, source-independence, hypothesis, draft-scope,
 synthesis and promotion gates independently; worker counts never satisfy a
 source or voting requirement.
+
+After capture, verification treats the stored object's SHA-256 digest and byte
+size as authoritative; checking whether a mutable source path still exists is a
+separate, explicit live-source audit. Source paths in the manifest are portable
+relative metadata, and the current alias is bound to the latest captured attempt
+wrapper in the immutable object store. The store root must be exclusively owned
+by the custody process. Publication revalidates root and parent directory
+identity and fails closed on a detected swap, but Node's path-based filesystem
+APIs cannot make this a security boundary against a hostile same-user process.
+The default `verify` command reports success for an intact portable NO-GO bundle;
+`verify ... --require-promotion` is the explicit admission check and remains
+fail-closed while any promotion prerequisite is unproven.

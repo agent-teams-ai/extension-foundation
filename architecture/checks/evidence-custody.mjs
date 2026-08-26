@@ -14,6 +14,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 const SHA256 = /^[a-f0-9]{64}$/u;
 const JOB_ID = /^modres-w(?:[1-9]|10|11)-[a-z0-9][a-z0-9-]*-\d{8}-r\d+$/u;
 const CAMPAIGN_ID = /^[a-z0-9][a-z0-9.-]{0,127}$/u;
+const WAVE = /^W(?:[1-9]|10|11)$/u;
 const TERMINAL = new Set(["abandoned", "blocked", "cancelled", "completed", "done", "failed"]);
 const CLASSIFICATIONS = new Set([
   "observed",
@@ -23,6 +24,15 @@ const CLASSIFICATIONS = new Set([
   "unsupported",
   "contradicted",
 ]);
+const EXECUTABLE_EVIDENCE_KINDS = new Set(["executable-test-result", "reproduction-result"]);
+const MANIFEST_FIELDS = new Set(["schemaVersion", "campaignId", "baseline", "objects", "jobs", "attempts", "continuations", "claims", "exceptions", "promotion"]);
+const OBJECT_FIELDS = new Set(["sha256", "bytes", "mediaType", "kind", "sourcePath", "capturedAt"]);
+const JOB_FIELDS = new Set(["jobId", "wave", "jobConfigObject", "attemptIds", "currentAlias", "capturedObjects"]);
+const ATTEMPT_FIELDS = new Set(["attemptId", "jobId", "attemptNumber", "status", "predecessorAttemptId", "continuationOf", "startedAt", "finishedAt", "outputSummaryObject", "wrapperObject", "transcriptObjects"]);
+const CONTINUATION_FIELDS = new Set(["attemptId", "continuationOf"]);
+const CLAIM_FIELDS = new Set(["claimId", "text", "classification", "applicability", "primarySourceObjects", "executableEvidenceObjects", "publisherIndependence", "hypothesis", "promotionEligible"]);
+const EXCEPTION_FIELDS = new Set(["exceptionId", "kind", "detail"]);
+const PROMOTION_FIELDS = new Set(["draftScope", "synthesisVerdict", "workerAccounting", "manifestGates", "productOwnerReview", "separateAdrChange", "p0P1ExecutableClosure"]);
 const GATES = [
   "G-CUSTODY",
   "G-TERMINAL",
@@ -46,6 +56,21 @@ const SECRET_PATTERNS = [
 
 function record(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function rejectAdditionalProperties(value, allowed, path, errors) {
+  if (!record(value)) return;
+  for (const field of Object.keys(value)) if (!allowed.has(field)) errors.push(`${path}.${field} is not allowed`);
+}
+
+function portableSourcePath(value) {
+  if (typeof value !== "string" || value.length === 0 || value.includes("\0") || value.includes("\\")) return false;
+  if (isAbsolute(value) || value.startsWith("/") || value.split("#", 1)[0].split("/").includes("..")) return false;
+  return !value.split("#", 1)[0].split("/").some(part => part === "" || part === ".");
+}
+
+function normalizedPublisher(value) {
+  return value.normalize("NFKC").trim().toLocaleLowerCase("en-US");
 }
 
 function contained(root, candidate) {
@@ -148,6 +173,16 @@ async function assertDirectoryChain(root, directory) {
   }
 }
 
+async function directoryIdentity(path, label) {
+  const metadata = await lstat(path);
+  if (metadata.isSymbolicLink() || !metadata.isDirectory()) throw new Error(`${label} must remain a real directory`);
+  return { dev: metadata.dev, ino: metadata.ino };
+}
+
+function sameIdentity(left, right) {
+  return left.dev === right.dev && left.ino === right.ino;
+}
+
 async function syncDirectory(directory) {
   const handle = await open(directory, constants.O_RDONLY);
   try {
@@ -202,8 +237,9 @@ function temporaryOwnerIsAlive(name) {
 }
 
 export class ObjectStore {
-  constructor(root) {
+  constructor(root, { beforePublication } = {}) {
     this.root = assertPermittedRoot(root, "object store");
+    this.beforePublication = beforePublication;
   }
 
   objectPath(digest) {
@@ -265,9 +301,20 @@ export class ObjectStore {
       await handle.writeFile(bytes);
       await handle.sync();
       await handle.close();
+      const rootIdentity = await directoryIdentity(this.root, "object store root");
+      const parentIdentity = await directoryIdentity(directory, "object publication parent");
+      await this.beforePublication?.({ destination, directory });
+      if (!sameIdentity(rootIdentity, await directoryIdentity(this.root, "object store root")) ||
+          !sameIdentity(parentIdentity, await directoryIdentity(directory, "object publication parent"))) {
+        throw new Error("object store root or publication parent changed during publication");
+      }
       try {
         await link(temporary, destination);
         linked = true;
+        if (!sameIdentity(rootIdentity, await directoryIdentity(this.root, "object store root")) ||
+            !sameIdentity(parentIdentity, await directoryIdentity(directory, "object publication parent"))) {
+          throw new Error("object store root or publication parent changed during publication");
+        }
         await syncDirectory(directory);
       } catch (error) {
         if (error?.code !== "EEXIST") throw error;
@@ -307,6 +354,7 @@ function requiredArray(value, path, errors) {
 export function validateManifest(manifest) {
   const errors = [];
   if (!record(manifest)) return { valid: false, errors: ["manifest must be an object"] };
+  rejectAdditionalProperties(manifest, MANIFEST_FIELDS, "manifest", errors);
   if (manifest.schemaVersion !== 1) errors.push("schemaVersion must be 1");
   requiredString(manifest.campaignId, "campaignId", errors);
   if (!CAMPAIGN_ID.test(manifest.campaignId ?? "")) errors.push("campaignId must be a safe lowercase path component");
@@ -320,9 +368,11 @@ export function validateManifest(manifest) {
   for (const [index, object] of (manifest.objects ?? []).entries()) {
     const path = `objects[${index}]`;
     if (!record(object)) { errors.push(`${path} must be an object`); continue; }
+    rejectAdditionalProperties(object, OBJECT_FIELDS, path, errors);
     for (const field of ["sha256", "mediaType", "kind", "sourcePath", "capturedAt"]) requiredString(object[field], `${path}.${field}`, errors);
     if (!SHA256.test(object.sha256 ?? "")) errors.push(`${path}.sha256 must be lowercase SHA-256`);
     if (!Number.isSafeInteger(object.bytes) || object.bytes < 0) errors.push(`${path}.bytes must be a non-negative safe integer`);
+    if (!portableSourcePath(object.sourcePath)) errors.push(`${path}.sourcePath must be portable relative metadata`);
     const prior = objects.get(object.sha256);
     if (prior !== undefined && (prior.bytes !== object.bytes || prior.mediaType !== object.mediaType)) {
       errors.push(`${path} conflicts with another interpretation of identical bytes`);
@@ -334,9 +384,17 @@ export function validateManifest(manifest) {
   for (const [index, job] of (manifest.jobs ?? []).entries()) {
     const path = `jobs[${index}]`;
     if (!record(job)) { errors.push(`${path} must be an object`); continue; }
-    for (const field of ["jobId", "wave", "jobConfigObject", "currentAlias"]) requiredString(job[field], `${path}.${field}`, errors);
+    rejectAdditionalProperties(job, JOB_FIELDS, path, errors);
+    for (const field of ["jobId", "wave"]) requiredString(job[field], `${path}.${field}`, errors);
     requiredArray(job.attemptIds, `${path}.attemptIds`, errors);
     if (!JOB_ID.test(job.jobId ?? "")) errors.push(`${path}.jobId is invalid`);
+    if (!WAVE.test(job.wave ?? "")) errors.push(`${path}.wave is invalid`);
+    if (job.jobConfigObject !== null && !SHA256.test(job.jobConfigObject ?? "")) errors.push(`${path}.jobConfigObject must be lowercase SHA-256 or null`);
+    if (job.currentAlias !== null && !SHA256.test(job.currentAlias ?? "")) errors.push(`${path}.currentAlias must be lowercase SHA-256 or null`);
+    if (job.capturedObjects !== undefined) {
+      requiredArray(job.capturedObjects, `${path}.capturedObjects`, errors);
+      for (const digest of job.capturedObjects ?? []) if (!SHA256.test(digest)) errors.push(`${path}.capturedObjects must contain lowercase SHA-256`);
+    }
     if (jobs.has(job.jobId)) errors.push(`${path}.jobId is duplicated`);
     jobs.set(job.jobId, job);
   }
@@ -345,23 +403,38 @@ export function validateManifest(manifest) {
   for (const [index, attempt] of (manifest.attempts ?? []).entries()) {
     const path = `attempts[${index}]`;
     if (!record(attempt)) { errors.push(`${path} must be an object`); continue; }
-    for (const field of ["attemptId", "jobId", "status", "startedAt", "finishedAt", "outputSummaryObject", "wrapperObject"]) requiredString(attempt[field], `${path}.${field}`, errors);
+    rejectAdditionalProperties(attempt, ATTEMPT_FIELDS, path, errors);
+    for (const field of ["attemptId", "jobId", "status", "startedAt", "finishedAt"]) requiredString(attempt[field], `${path}.${field}`, errors);
+    for (const field of ["outputSummaryObject", "wrapperObject"]) if (attempt[field] !== null && !SHA256.test(attempt[field] ?? "")) errors.push(`${path}.${field} must be lowercase SHA-256 or null`);
     requiredArray(attempt.transcriptObjects, `${path}.transcriptObjects`, errors);
-    if (!Number.isSafeInteger(attempt.attemptNumber) || attempt.attemptNumber < 1) errors.push(`${path}.attemptNumber must be positive`);
+    if (!Number.isSafeInteger(attempt.attemptNumber) || attempt.attemptNumber < 1) errors.push(`${path}.attemptNumber must be a positive safe integer`);
     if (!TERMINAL.has(attempt.status)) errors.push(`${path}.status must be terminal`);
     if (attempt.predecessorAttemptId !== null && typeof attempt.predecessorAttemptId !== "string") errors.push(`${path}.predecessorAttemptId must be a string or null`);
     if (attempt.continuationOf !== null && typeof attempt.continuationOf !== "string") errors.push(`${path}.continuationOf must be a string or null`);
     if (attempts.has(attempt.attemptId)) errors.push(`${path}.attemptId is duplicated`);
     attempts.set(attempt.attemptId, attempt);
   }
+  const attemptNumbersByJob = new Set();
+  for (const [index, attempt] of (manifest.attempts ?? []).entries()) {
+    const key = `${attempt.jobId}\0${attempt.attemptNumber}`;
+    if (attemptNumbersByJob.has(key)) errors.push(`attempts[${index}].attemptNumber is duplicated for its job`);
+    attemptNumbersByJob.add(key);
+  }
+  const memberships = new Map();
   for (const [index, job] of (manifest.jobs ?? []).entries()) {
-    if (job.attemptIds?.length === 0) errors.push(`jobs[${index}].attemptIds must not be empty`);
     for (const attemptId of job.attemptIds ?? []) {
       const attempt = attempts.get(attemptId);
       if (attempt === undefined || attempt.jobId !== job.jobId) errors.push(`jobs[${index}].attemptIds contains invalid lineage`);
+      memberships.set(attemptId, (memberships.get(attemptId) ?? 0) + 1);
     }
+    if (new Set(job.attemptIds ?? []).size !== (job.attemptIds ?? []).length) errors.push(`jobs[${index}].attemptIds contains duplicates`);
   }
   for (const [index, attempt] of (manifest.attempts ?? []).entries()) {
+    if (memberships.get(attempt.attemptId) !== 1) errors.push(`attempts[${index}] must belong to exactly one matching job`);
+    const jobAttempts = (manifest.attempts ?? []).filter(candidate => candidate.jobId === attempt.jobId).sort((a, b) => a.attemptNumber - b.attemptNumber);
+    const position = jobAttempts.findIndex(candidate => candidate.attemptId === attempt.attemptId);
+    const expectedPredecessor = position > 0 ? jobAttempts[position - 1].attemptId : null;
+    if (attempt.predecessorAttemptId !== expectedPredecessor) errors.push(`attempts[${index}].predecessorAttemptId must identify the adjacent prior attempt`);
     if (attempt.predecessorAttemptId !== null) {
       const predecessor = attempts.get(attempt.predecessorAttemptId);
       if (predecessor === undefined) errors.push(`attempts[${index}].predecessorAttemptId does not resolve`);
@@ -372,22 +445,42 @@ export function validateManifest(manifest) {
     if (attempt.continuationOf !== null && !attempts.has(attempt.continuationOf)) {
       errors.push(`attempts[${index}].continuationOf does not resolve`);
     }
+    const continuationTarget = attempts.get(attempt.continuationOf);
+    if (continuationTarget !== undefined && (continuationTarget.jobId !== attempt.jobId || continuationTarget.attemptNumber >= attempt.attemptNumber)) {
+      errors.push(`attempts[${index}].continuationOf must identify an earlier attempt for the same job`);
+    }
   }
+  const continuationAttempts = new Set();
   for (const [index, continuation] of (manifest.continuations ?? []).entries()) {
     if (!record(continuation)) { errors.push(`continuations[${index}] must be an object`); continue; }
+    rejectAdditionalProperties(continuation, CONTINUATION_FIELDS, `continuations[${index}]`, errors);
     requiredString(continuation.attemptId, `continuations[${index}].attemptId`, errors);
     requiredString(continuation.continuationOf, `continuations[${index}].continuationOf`, errors);
     if (!attempts.has(continuation.attemptId) || !attempts.has(continuation.continuationOf)) {
       errors.push(`continuations[${index}] lineage does not resolve`);
     }
     if (continuation.attemptId === continuation.continuationOf) errors.push(`continuations[${index}] must not be self-referential`);
+    if (continuationAttempts.has(continuation.attemptId)) errors.push(`continuations[${index}].attemptId is duplicated`);
+    continuationAttempts.add(continuation.attemptId);
     if (attempts.get(continuation.attemptId)?.continuationOf !== continuation.continuationOf) {
       errors.push(`continuations[${index}] must match the attempt continuationOf field`);
     }
   }
+  for (const attempt of manifest.attempts ?? []) {
+    const seen = new Set();
+    let current = attempt;
+    while (current?.continuationOf !== null) {
+      if (seen.has(current.attemptId)) { errors.push(`${attempt.attemptId} has cyclic continuation lineage`); break; }
+      seen.add(current.attemptId);
+      current = attempts.get(current.continuationOf);
+      if (current === undefined) break;
+    }
+    if (attempt.continuationOf !== null && !continuationAttempts.has(attempt.attemptId)) errors.push(`${attempt.attemptId} continuation is missing its index record`);
+  }
   for (const [index, claim] of (manifest.claims ?? []).entries()) {
     const path = `claims[${index}]`;
     if (!record(claim)) { errors.push(`${path} must be an object`); continue; }
+    rejectAdditionalProperties(claim, CLAIM_FIELDS, path, errors);
     for (const field of ["claimId", "text", "classification", "applicability"]) requiredString(claim[field], `${path}.${field}`, errors);
     for (const field of ["primarySourceObjects", "executableEvidenceObjects", "publisherIndependence"]) requiredArray(claim[field], `${path}.${field}`, errors);
     if (!CLASSIFICATIONS.has(claim.classification)) errors.push(`${path}.classification is invalid`);
@@ -396,18 +489,21 @@ export function validateManifest(manifest) {
   }
   for (const [index, exception] of (manifest.exceptions ?? []).entries()) {
     if (!record(exception)) { errors.push(`exceptions[${index}] must be an object`); continue; }
+    rejectAdditionalProperties(exception, EXCEPTION_FIELDS, `exceptions[${index}]`, errors);
     requiredString(exception.exceptionId, `exceptions[${index}].exceptionId`, errors);
     requiredString(exception.kind, `exceptions[${index}].kind`, errors);
     requiredString(exception.detail, `exceptions[${index}].detail`, errors);
   }
   if (record(manifest.promotion)) {
+    rejectAdditionalProperties(manifest.promotion, PROMOTION_FIELDS, "promotion", errors);
     if (manifest.promotion.draftScope !== "evidence-tooling-only") errors.push("promotion.draftScope must be evidence-tooling-only");
     if (manifest.promotion.synthesisVerdict !== "NO-GO") errors.push("promotion.synthesisVerdict must be NO-GO");
     if (!record(manifest.promotion.workerAccounting) || manifest.promotion.workerAccounting.countsAsVotes !== false) {
       errors.push("promotion.workerAccounting.countsAsVotes must be false");
     }
+    rejectAdditionalProperties(manifest.promotion.workerAccounting, new Set(["countsAsVotes"]), "promotion.workerAccounting", errors);
     for (const field of ["manifestGates", "productOwnerReview", "separateAdrChange", "p0P1ExecutableClosure"]) {
-      if (typeof manifest.promotion[field] !== "boolean") errors.push(`promotion.${field} must be boolean`);
+      if (manifest.promotion[field] !== false) errors.push(`promotion.${field} must remain false without a separate attestation operation`);
     }
   }
   return { valid: errors.length === 0, errors };
@@ -416,12 +512,12 @@ export function validateManifest(manifest) {
 function referencedDigests(manifest) {
   const values = new Set();
   for (const job of manifest.jobs) {
-    values.add(job.jobConfigObject);
-    values.add(job.currentAlias);
+    if (job.jobConfigObject !== null) values.add(job.jobConfigObject);
+    if (job.currentAlias !== null) values.add(job.currentAlias);
   }
   for (const attempt of manifest.attempts) {
-    values.add(attempt.outputSummaryObject);
-    values.add(attempt.wrapperObject);
+    if (attempt.outputSummaryObject !== null) values.add(attempt.outputSummaryObject);
+    if (attempt.wrapperObject !== null) values.add(attempt.wrapperObject);
     for (const digest of attempt.transcriptObjects) values.add(digest);
   }
   for (const claim of manifest.claims) {
@@ -441,7 +537,7 @@ async function defaultPathExists(path) {
   }
 }
 
-export async function verifyManifest(manifest, { store, pathExists = defaultPathExists } = {}) {
+export async function verifyManifest(manifest, { store, auditLiveSources = false, sourceRoot, pathExists = defaultPathExists } = {}) {
   const validation = validateManifest(manifest);
   const failures = Object.fromEntries(GATES.map(id => [id, []]));
   if (!validation.valid) failures["G-CUSTODY"].push(...validation.errors);
@@ -466,11 +562,12 @@ export async function verifyManifest(manifest, { store, pathExists = defaultPath
     if (job.attemptIds.length === 0 || job.attemptIds.some(attemptId => !attemptsById.has(attemptId))) {
       failures["G-TERMINAL"].push(`${job.jobId} has incomplete attempt accounting`);
     }
-    if (job.currentAliasSha256 !== undefined && job.currentAliasSha256 !== job.currentAlias) failures["G-ALIAS"].push(`${job.jobId} alias is stale`);
     const aliasObject = objectMap.get(job.currentAlias);
-    if (aliasObject?.sourcePath.startsWith("/")) {
+    const latest = job.attemptIds.map(id => attemptsById.get(id)).filter(Boolean).sort((a, b) => a.attemptNumber - b.attemptNumber).at(-1);
+    if (latest === undefined || job.currentAlias === null || job.currentAlias !== latest.wrapperObject) failures["G-ALIAS"].push(`${job.jobId} alias does not bind the latest attempt wrapper`);
+    if (store !== undefined && aliasObject !== undefined) {
       try {
-        const currentBytes = await secureRead(dirname(aliasObject.sourcePath), aliasObject.sourcePath);
+        const currentBytes = await secureRead(store.root, store.objectPath(job.currentAlias));
         if (sha256(currentBytes) !== job.currentAlias) failures["G-ALIAS"].push(`${job.jobId} alias bytes changed after capture`);
       } catch (error) {
         failures["G-ALIAS"].push(`${job.jobId} alias is unreadable: ${error.message}`);
@@ -478,14 +575,23 @@ export async function verifyManifest(manifest, { store, pathExists = defaultPath
     }
   }
   for (const object of manifest.objects ?? []) {
-    if (object.sourcePath.startsWith("/") && !(await pathExists(object.sourcePath, object))) failures["G-PATH"].push(object.sourcePath);
+    if (!portableSourcePath(object.sourcePath)) failures["G-PATH"].push(object.sourcePath);
+    if (auditLiveSources) {
+      if (sourceRoot === undefined) failures["G-PATH"].push("live-source audit requires sourceRoot");
+      else if (!(await pathExists(join(sourceRoot, object.sourcePath.split("#", 1)[0]), object))) failures["G-PATH"].push(object.sourcePath);
+    }
   }
   for (const claim of manifest.claims ?? []) {
-    const sourceSatisfied = claim.primarySourceObjects.length >= 2 && claim.publisherIndependence.length >= 2;
-    const executableSatisfied = claim.executableEvidenceObjects.length > 0;
+    const sourceDigests = new Set(claim.primarySourceObjects);
+    const publishers = new Set(claim.publisherIndependence.map(normalizedPublisher));
+    const sourceSatisfied = sourceDigests.size >= 2 && publishers.size >= 2 && [...sourceDigests].every(digest => objectMap.has(digest));
+    const executableSatisfied = claim.executableEvidenceObjects.length > 0 && claim.executableEvidenceObjects.every(digest => EXECUTABLE_EVIDENCE_KINDS.has(objectMap.get(digest)?.kind));
+    for (const digest of [...claim.primarySourceObjects, ...claim.executableEvidenceObjects]) if (!objectMap.has(digest)) failures["G-SOURCE"].push(`${claim.claimId} references missing evidence ${digest}`);
     if (claim.promotionEligible && !sourceSatisfied && !executableSatisfied) failures["G-SOURCE"].push(claim.claimId);
     if (!executableSatisfied && !claim.hypothesis && ["inference", "hypothesis"].includes(claim.classification)) failures["G-HYPOTHESIS"].push(claim.claimId);
     if (claim.primarySourceObjects.some(digest => objectMap.get(digest)?.kind === "worker-report")) failures["G-SOURCE"].push(`${claim.claimId} treats a worker report as primary`);
+    if (claim.executableEvidenceObjects.some(digest => !EXECUTABLE_EVIDENCE_KINDS.has(objectMap.get(digest)?.kind))) failures["G-SOURCE"].push(`${claim.claimId} has non-executable evidence kind`);
+    if (claim.primarySourceObjects.length !== sourceDigests.size || claim.publisherIndependence.length !== publishers.size) failures["G-SOURCE"].push(`${claim.claimId} lacks distinct sources or publishers`);
     if (claim.promotionEligible && ["unsupported", "contradicted"].includes(claim.classification)) failures["G-SYNTHESIS"].push(`${claim.claimId} is an unsupported positive claim`);
   }
   if (manifest.promotion.draftScope !== "evidence-tooling-only") failures["G-DRAFT-SCOPE"].push("draft scope is not evidence-tooling-only");
@@ -497,6 +603,7 @@ export async function verifyManifest(manifest, { store, pathExists = defaultPath
   return {
     valid: validation.valid,
     gates: Object.fromEntries(GATES.map(id => [id, { pass: failures[id].length === 0, failures: failures[id] }])),
+    integrityValid: validation.valid && GATES.filter(id => id !== "G-PROMOTION").every(id => failures[id].length === 0),
     promotionAllowed: GATES.every(id => failures[id].length === 0),
   };
 }
@@ -538,6 +645,11 @@ async function captureObject(store, bytes, { kind, sourcePath, capturedAt }) {
     sourcePath,
     capturedAt,
   };
+}
+
+function sourceLabel(root, path, prefix) {
+  const label = relative(root, path).split(sep).join("/");
+  return `${prefix}/${label}`;
 }
 
 function waveFor(jobId) {
@@ -587,7 +699,7 @@ export async function captureEvidence({
       try {
         captured[kind] = await add(await secureRead(kind === "jobConfig" ? safeConfigRoot : safeRuntimeRoot, path), {
           kind: kind === "wrapper" ? "worker-report" : kind,
-          sourcePath: path,
+          sourcePath: sourceLabel(kind === "jobConfig" ? safeConfigRoot : safeRuntimeRoot, path, kind === "jobConfig" ? "job-config" : "runtime"),
         });
       } catch (error) {
         if (error?.code !== "ENOENT") throw error;
@@ -599,7 +711,8 @@ export async function captureEvidence({
     let priorAttemptId = null;
     const attemptIds = [];
     for (const journalFile of journalFiles) {
-      const journalDigest = await add(journalFile.bytes, { kind: "attempt-journal", sourcePath: journalFile.path });
+      const journalLabel = sourceLabel(safeRuntimeRoot, journalFile.path, "runtime");
+      const journalDigest = await add(journalFile.bytes, { kind: "attempt-journal", sourcePath: journalLabel });
       let journal;
       try { journal = JSON.parse(journalFile.bytes.toString("utf8")); }
       catch { exceptions.push({ exceptionId: `${jobId}:journal:${journalDigest}:invalid`, kind: "unknown-historical-bytes", detail: "Attempt journal is not valid JSON and was preserved only as raw bytes" }); continue; }
@@ -607,11 +720,11 @@ export async function captureEvidence({
       for (const [entryIndex, entry] of journalAttempts.entries()) {
         const attemptId = `${jobId}:attempt:${entry.attemptNumber}`;
         const summary = typeof entry.lastOutputSummary === "string" ? Buffer.from(entry.lastOutputSummary, "utf8") : undefined;
-        let summaryDigest = "missing";
+        let summaryDigest = null;
         if (summary === undefined) {
           exceptions.push({ exceptionId: `${attemptId}:summary:missing`, kind: "missing-historical-bytes", detail: "lastOutputSummary was absent; no output was fabricated" });
         } else {
-          summaryDigest = await add(summary, { kind: "decoded-output-summary", sourcePath: `${journalFile.path}#attempts/${entry.attemptNumber}/lastOutputSummary` });
+          summaryDigest = await add(summary, { kind: "decoded-output-summary", sourcePath: `${journalLabel}#attempts/${entry.attemptNumber}/lastOutputSummary` });
         }
         const isCurrentAttempt = entryIndex === journalAttempts.length - 1;
         if (!isCurrentAttempt) {
@@ -631,7 +744,7 @@ export async function captureEvidence({
           startedAt: entry.startedAt ?? "unknown",
           finishedAt: entry.finishedAt ?? "unknown",
           outputSummaryObject: summaryDigest,
-          wrapperObject: isCurrentAttempt ? (captured.wrapper ?? "missing") : "missing",
+          wrapperObject: isCurrentAttempt ? (captured.wrapper ?? null) : null,
           transcriptObjects: [journalDigest],
         });
         attemptIds.push(attemptId);
@@ -641,9 +754,9 @@ export async function captureEvidence({
     jobs.push({
       jobId,
       wave: waveFor(jobId),
-      jobConfigObject: captured.jobConfig ?? "missing",
+      jobConfigObject: captured.jobConfig ?? null,
       attemptIds,
-      currentAlias: captured.wrapper ?? "missing",
+      currentAlias: captured.wrapper ?? null,
       capturedObjects: Object.values(captured),
     });
   }
@@ -669,7 +782,11 @@ export async function captureEvidence({
       productOwnerReview: false,
       separateAdrChange: false,
       p0P1ExecutableClosure: false,
-      ...promotion,
+      ...Object.fromEntries(Object.entries(promotion).filter(([key]) => !["manifestGates", "productOwnerReview", "separateAdrChange", "p0P1ExecutableClosure"].includes(key))),
+      manifestGates: false,
+      productOwnerReview: false,
+      separateAdrChange: false,
+      p0P1ExecutableClosure: false,
     },
   };
   const validation = validateManifest(manifest);
@@ -693,11 +810,21 @@ export async function captureEvidence({
     await handle.writeFile(manifestBytes);
     await handle.sync();
     await handle.close();
+    const rootIdentity = await directoryIdentity(store.root, "object store root");
+    const parentIdentity = await directoryIdentity(manifestDirectory, "manifest publication parent");
+    if (!sameIdentity(rootIdentity, await directoryIdentity(store.root, "object store root")) ||
+        !sameIdentity(parentIdentity, await directoryIdentity(manifestDirectory, "manifest publication parent"))) {
+      throw new Error("object store root or manifest publication parent changed during publication");
+    }
     try { await link(temporary, manifestPath); }
     catch (error) {
       if (error?.code !== "EEXIST") throw error;
       const existing = await secureRead(store.root, manifestPath);
       if (!existing.equals(manifestBytes)) throw new Error("manifest destination collision");
+    }
+    if (!sameIdentity(rootIdentity, await directoryIdentity(store.root, "object store root")) ||
+        !sameIdentity(parentIdentity, await directoryIdentity(manifestDirectory, "manifest publication parent"))) {
+      throw new Error("object store root or manifest publication parent changed during publication");
     }
     await syncDirectory(manifestDirectory);
     const publishedManifest = await secureRead(store.root, manifestPath);

@@ -3,6 +3,7 @@
   "$id": "https://agent-teams.ai/schemas/evidence-custody-manifest.v1.json",
   "title": "Evidence custody manifest",
   "type": "object",
+  "additionalProperties": false,
   "required": [
     "schemaVersion",
     "campaignId",
@@ -52,18 +53,20 @@
     },
     "object": {
       "type": "object",
+      "additionalProperties": false,
       "required": ["sha256", "bytes", "mediaType", "kind", "sourcePath", "capturedAt"],
       "properties": {
         "sha256": { "$ref": "#/$defs/digest" },
-        "bytes": { "type": "integer", "minimum": 0 },
+        "bytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
         "mediaType": { "type": "string", "minLength": 1 },
         "kind": { "type": "string", "minLength": 1 },
-        "sourcePath": { "type": "string", "minLength": 1 },
+        "sourcePath": { "type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*\\\\)(?!.*\\u0000)[^/]+(?:/[^/]+)*(?:#.*)?$" },
         "capturedAt": { "type": "string", "minLength": 1 }
       }
     },
     "job": {
       "type": "object",
+      "additionalProperties": false,
       "required": ["jobId", "wave", "jobConfigObject", "attemptIds", "currentAlias"],
       "properties": {
         "jobId": {
@@ -71,17 +74,23 @@
           "pattern": "^modres-w(?:[1-9]|10|11)-[a-z0-9][a-z0-9-]*-[0-9]{8}-r[0-9]+$"
         },
         "wave": { "type": "string", "pattern": "^W(?:[1-9]|10|11)$" },
-        "jobConfigObject": { "type": "string", "minLength": 1 },
+        "jobConfigObject": { "anyOf": [{ "$ref": "#/$defs/digest" }, { "type": "null" }] },
         "attemptIds": {
           "type": "array",
-          "minItems": 1,
-          "items": { "type": "string", "minLength": 1 }
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
         },
-        "currentAlias": { "type": "string", "minLength": 1 }
+        "currentAlias": { "anyOf": [{ "$ref": "#/$defs/digest" }, { "type": "null" }] },
+        "capturedObjects": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/digest" },
+          "uniqueItems": true
+        }
       }
     },
     "attempt": {
       "type": "object",
+      "additionalProperties": false,
       "required": [
         "attemptId",
         "jobId",
@@ -98,7 +107,7 @@
       "properties": {
         "attemptId": { "type": "string", "minLength": 1 },
         "jobId": { "type": "string", "minLength": 1 },
-        "attemptNumber": { "type": "integer", "minimum": 1 },
+        "attemptNumber": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
         "status": {
           "enum": ["abandoned", "blocked", "cancelled", "completed", "done", "failed"]
         },
@@ -106,16 +115,17 @@
         "continuationOf": { "type": ["string", "null"] },
         "startedAt": { "type": "string", "minLength": 1 },
         "finishedAt": { "type": "string", "minLength": 1 },
-        "outputSummaryObject": { "type": "string", "minLength": 1 },
-        "wrapperObject": { "type": "string", "minLength": 1 },
+        "outputSummaryObject": { "anyOf": [{ "$ref": "#/$defs/digest" }, { "type": "null" }] },
+        "wrapperObject": { "anyOf": [{ "$ref": "#/$defs/digest" }, { "type": "null" }] },
         "transcriptObjects": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 }
+          "items": { "$ref": "#/$defs/digest" }
         }
       }
     },
     "continuation": {
       "type": "object",
+      "additionalProperties": false,
       "required": ["attemptId", "continuationOf"],
       "properties": {
         "attemptId": { "type": "string", "minLength": 1 },
@@ -124,6 +134,7 @@
     },
     "claim": {
       "type": "object",
+      "additionalProperties": false,
       "required": [
         "claimId",
         "text",
@@ -160,6 +171,7 @@
     },
     "exception": {
       "type": "object",
+      "additionalProperties": false,
       "required": ["exceptionId", "kind", "detail"],
       "properties": {
         "exceptionId": { "type": "string", "minLength": 1 },
@@ -169,6 +181,7 @@
     },
     "promotion": {
       "type": "object",
+      "additionalProperties": false,
       "required": [
         "draftScope",
         "synthesisVerdict",
@@ -183,15 +196,16 @@
         "synthesisVerdict": { "const": "NO-GO" },
         "workerAccounting": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["countsAsVotes"],
           "properties": {
             "countsAsVotes": { "const": false }
           }
         },
-        "manifestGates": { "type": "boolean" },
-        "productOwnerReview": { "type": "boolean" },
-        "separateAdrChange": { "type": "boolean" },
-        "p0P1ExecutableClosure": { "type": "boolean" }
+        "manifestGates": { "const": false },
+        "productOwnerReview": { "const": false },
+        "separateAdrChange": { "const": false },
+        "p0P1ExecutableClosure": { "const": false }
       }
     }
   }
