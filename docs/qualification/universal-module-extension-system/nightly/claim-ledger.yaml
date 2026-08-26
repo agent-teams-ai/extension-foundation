@@ -1,20 +1,34 @@
 schemaVersion: 1
 ledgerId: qualification.universal-module-extension-system.nightly.retained-claims
 status: non-operative
-custodyGate: pending-lane-c
+custodyGate: worker-corpus-captured-non-promotable
+workerCorpus:
+  evidenceToolRevision: b3cb81d36e506a1bdd4cc19358eca0be0b830ff4
+  manifestSha256: f84a0cb6d6f9a639d429ab8f3c20d91c135ac767fb8102b7b599460f85e2b094
+  capturedJobs: 140
+  capturedAttempts: 161
+  capturedObjects: 994
+  integrityValid: true
+  promotionAllowed: false
+  coverage: worker configs, wrappers, progress, events, logs, journals, and decoded summaries
+  exclusions:
+    - primary-source snapshots are not independently archived claim by claim
+    - spike artifacts referenced below are not objects in the worker-corpus manifest
+    - publisher independence is not established
 promotionRule: >-
-  No claim is promotion eligible until Lane C captures immutable objects,
-  verifies source and executable references, and establishes independent
-  publisher or reproduction evidence where required.
+  Worker-corpus custody is complete, but no claim is promotion eligible until
+  source and executable references are bound into a claim-level manifest,
+  independent publisher or reproduction evidence is established where
+  required, the product owner reviews the result, and a separate ADR is accepted.
 claims:
   - id: W11-CLM-001
     statement: A generic Foundation runtime or public dynamic plugin platform is no-go now.
     classification: inference
     applicability: Current repository at e69ac5544ee64d497e56c060f75e8ba6eaae1ceb, with no admitted runtime or package.
     evidenceSourceReferences:
-      - path: /root/.cache/subscription-runtime/modres-w11-architecture-integrator-b-20260826-r1/modres-w11-architecture-integrator-b-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-architecture-integrator-b-20260826-r1/modres-w11-architecture-integrator-b-20260826-r1.latest-result.json
         sha256: 987b7f5b6b7722706ba233eb7824dd4e31bb0a35bdbdccd4ba20821aaec1805e
-      - path: /root/.cache/subscription-runtime/modres-w11-contradiction-auditor-20260826-r1/modres-w11-contradiction-auditor-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-contradiction-auditor-20260826-r1/modres-w11-contradiction-auditor-20260826-r1.latest-result.json
         sha256: 3bd415f98164e38bdc85f205bad621e7de3c9dcee10337888db7beb506feec3c
     executableEvidenceRefs: []
     independentPublisherStatus: not-established
@@ -25,9 +39,9 @@ claims:
     classification: inference
     applicability: First Orchestrator rehearsal after explicit product-owner approval.
     evidenceSourceReferences:
-      - path: /root/.cache/subscription-runtime/modres-w11-product-mvp-adjudicator-20260826-r1/modres-w11-product-mvp-adjudicator-20260826-r1.latest-result.json
-        sha256: 437cf9a96e9507ffdb27bb19697915a7532ef6bfb0580a6a43fa1e400c1c1195
-      - path: /root/.cache/subscription-runtime/modres-w11-security-adjudicator-20260826-r1/modres-w11-security-adjudicator-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-product-mvp-adjudicator-20260826-r1/modres-w11-product-mvp-adjudicator-20260826-r1.latest-result.json
+        sha256: 268bc012d6a5da27c824eb8c485d9b9594b14aadccc2b8044e860063add0b610
+      - path: runtime/modres-w11-security-adjudicator-20260826-r1/modres-w11-security-adjudicator-20260826-r1.latest-result.json
         sha256: 0f65982746bef8f7d36a3684656baa3313dfe3a0322084de65b83b9b2647f8ce
     executableEvidenceRefs: []
     independentPublisherStatus: not-established
@@ -38,9 +52,9 @@ claims:
     classification: inference
     applicability: Private trusted in-process product seam.
     evidenceSourceReferences:
-      - path: /root/.cache/subscription-runtime/modres-w11-product-mvp-adjudicator-20260826-r1/modres-w11-product-mvp-adjudicator-20260826-r1.latest-result.json
-        sha256: 437cf9a96e9507ffdb27bb19697915a7532ef6bfb0580a6a43fa1e400c1c1195
-      - path: /root/.cache/subscription-runtime/modres-w11-architecture-integrator-b-20260826-r1/modres-w11-architecture-integrator-b-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-product-mvp-adjudicator-20260826-r1/modres-w11-product-mvp-adjudicator-20260826-r1.latest-result.json
+        sha256: 268bc012d6a5da27c824eb8c485d9b9594b14aadccc2b8044e860063add0b610
+      - path: runtime/modres-w11-architecture-integrator-b-20260826-r1/modres-w11-architecture-integrator-b-20260826-r1.latest-result.json
         sha256: 987b7f5b6b7722706ba233eb7824dd4e31bb0a35bdbdccd4ba20821aaec1805e
     executableEvidenceRefs: []
     independentPublisherStatus: not-established
@@ -51,12 +65,12 @@ claims:
     classification: inference
     applicability: Post-rehearsal product-local experimentation.
     evidenceSourceReferences:
-      - path: /root/.cache/subscription-runtime/modres-w11-product-mvp-adjudicator-20260826-r1/modres-w11-product-mvp-adjudicator-20260826-r1.latest-result.json
-        sha256: 437cf9a96e9507ffdb27bb19697915a7532ef6bfb0580a6a43fa1e400c1c1195
-      - path: /root/.cache/subscription-runtime/modres-w11-architecture-integrator-b-20260826-r1/modres-w11-architecture-integrator-b-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-product-mvp-adjudicator-20260826-r1/modres-w11-product-mvp-adjudicator-20260826-r1.latest-result.json
+        sha256: 268bc012d6a5da27c824eb8c485d9b9594b14aadccc2b8044e860063add0b610
+      - path: runtime/modres-w11-architecture-integrator-b-20260826-r1/modres-w11-architecture-integrator-b-20260826-r1.latest-result.json
         sha256: 987b7f5b6b7722706ba233eb7824dd4e31bb0a35bdbdccd4ba20821aaec1805e
     executableEvidenceRefs:
-      - path: /home/modres-spikes/modres-w4-graph-properties-20260826-r1/EVIDENCE.json
+      - path: spikes/modres-w4-graph-properties-20260826-r1/EVIDENCE.json
         sha256: 9f969f662a49513fd0eb123113b95b3f5b94e1bdee6fe8d4ad0f8e7fcc5ffcd6
         qualification: Local synthetic graph evidence only; not independently reproduced or product-applicable.
     independentPublisherStatus: not-established
@@ -67,12 +81,12 @@ claims:
     classification: inference
     applicability: Current Cordis 4.0.1 qualification and proposed product seam.
     evidenceSourceReferences:
-      - path: /root/.cache/subscription-runtime/modres-w11-architecture-integrator-b-20260826-r1/modres-w11-architecture-integrator-b-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-architecture-integrator-b-20260826-r1/modres-w11-architecture-integrator-b-20260826-r1.latest-result.json
         sha256: 987b7f5b6b7722706ba233eb7824dd4e31bb0a35bdbdccd4ba20821aaec1805e
-      - path: /root/.cache/subscription-runtime/modres-w11-security-adjudicator-20260826-r1/modres-w11-security-adjudicator-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-security-adjudicator-20260826-r1/modres-w11-security-adjudicator-20260826-r1.latest-result.json
         sha256: 0f65982746bef8f7d36a3684656baa3313dfe3a0322084de65b83b9b2647f8ce
     executableEvidenceRefs:
-      - path: /home/modres-spikes/modres-w3-native-cordis-parity-20260826-r1/evidence/qualification-report.json
+      - path: spikes/modres-w3-native-cordis-parity-20260826-r1/evidence/qualification-report.json
         sha256: 825b8eb37fae592f69868d3cff144ec8e6943f5ffe240a8c14758d93a478bfdb
         qualification: Trace-shape comparator, not complete lifecycle equivalence.
     independentPublisherStatus: not-established
@@ -83,12 +97,12 @@ claims:
     classification: inference
     applicability: Trusted product-local V1 and rehearsal.
     evidenceSourceReferences:
-      - path: /root/.cache/subscription-runtime/modres-w11-distributed-systems-adjudicator-20260826-r1/modres-w11-distributed-systems-adjudicator-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-distributed-systems-adjudicator-20260826-r1/modres-w11-distributed-systems-adjudicator-20260826-r1.latest-result.json
         sha256: 2cd218735ea97958e892158602597f11a17a9ac350962fa2de0867276f6ae5c4
-      - path: /root/.cache/subscription-runtime/modres-w11-product-mvp-adjudicator-20260826-r1/modres-w11-product-mvp-adjudicator-20260826-r1.latest-result.json
-        sha256: 437cf9a96e9507ffdb27bb19697915a7532ef6bfb0580a6a43fa1e400c1c1195
+      - path: runtime/modres-w11-product-mvp-adjudicator-20260826-r1/modres-w11-product-mvp-adjudicator-20260826-r1.latest-result.json
+        sha256: 268bc012d6a5da27c824eb8c485d9b9594b14aadccc2b8044e860063add0b610
     executableEvidenceRefs:
-      - path: /home/modres-spikes/modres-w3-leaks-20260826-r1/qualification-report.json
+      - path: spikes/modres-w3-leaks-20260826-r1/qualification-report.json
         sha256: fa53d15be2526b2f20aef2bcda982bf910fb77558132cfe33cbd568e47fd4141
         qualification: Local negative evidence; independent reproduction failed.
     independentPublisherStatus: not-established
@@ -99,12 +113,12 @@ claims:
     classification: observed
     applicability: Current local lifecycle and partial-cleanup qualification spikes.
     evidenceSourceReferences:
-      - path: /root/.cache/subscription-runtime/modres-w11-evidence-provenance-auditor-20260826-r1/modres-w11-evidence-provenance-auditor-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-evidence-provenance-auditor-20260826-r1/modres-w11-evidence-provenance-auditor-20260826-r1.latest-result.json
         sha256: cab0f81885f421855334b991018cbe9d4d16f8f77e7534f06f48d367ca4a67bc
-      - path: /root/.cache/subscription-runtime/modres-w11-security-adjudicator-20260826-r1/modres-w11-security-adjudicator-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-security-adjudicator-20260826-r1/modres-w11-security-adjudicator-20260826-r1.latest-result.json
         sha256: 0f65982746bef8f7d36a3684656baa3313dfe3a0322084de65b83b9b2647f8ce
     executableEvidenceRefs:
-      - path: /home/modres-spikes/modres-w3-partial-cleanup-20260826-r1/evidence/report.json
+      - path: spikes/modres-w3-partial-cleanup-20260826-r1/evidence/report.json
         sha256: a481434b2b6966c2e6924e8ee6efa3907e6816da57d407329b510288610d10e7
         qualification: Local observed counterexample; not independently reproduced.
     independentPublisherStatus: not-established
@@ -115,12 +129,12 @@ claims:
     classification: inference
     applicability: Any later process, browser, Electron, or Wasm carrier.
     evidenceSourceReferences:
-      - path: /root/.cache/subscription-runtime/modres-w11-security-adjudicator-20260826-r1/modres-w11-security-adjudicator-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-security-adjudicator-20260826-r1/modres-w11-security-adjudicator-20260826-r1.latest-result.json
         sha256: 0f65982746bef8f7d36a3684656baa3313dfe3a0322084de65b83b9b2647f8ce
-      - path: /root/.cache/subscription-runtime/modres-w11-contradiction-auditor-20260826-r1/modres-w11-contradiction-auditor-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-contradiction-auditor-20260826-r1/modres-w11-contradiction-auditor-20260826-r1.latest-result.json
         sha256: 3bd415f98164e38bdc85f205bad621e7de3c9dcee10337888db7beb506feec3c
     executableEvidenceRefs:
-      - path: /home/modres-spikes/modres-w4-cross-host-plan-20260826-r1/spikes/w4-cross-host-plan-20260826-r1/qualification-result.json
+      - path: spikes/modres-w4-cross-host-plan-20260826-r1/spikes/w4-cross-host-plan-20260826-r1/qualification-result.json
         sha256: e77d4b76ac09fd8f4d0ade85f55af1f78d8eff9ad5dc6550b34f73b73cf59cba
         qualification: Codec behavior only; executed uncommitted bytes and proves no authentication.
     independentPublisherStatus: not-established
@@ -131,9 +145,9 @@ claims:
     classification: inference
     applicability: Remotely refreshed release, channel, mirror, cohort, or revocation metadata.
     evidenceSourceReferences:
-      - path: /root/.cache/subscription-runtime/modres-w11-security-adjudicator-20260826-r1/modres-w11-security-adjudicator-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-security-adjudicator-20260826-r1/modres-w11-security-adjudicator-20260826-r1.latest-result.json
         sha256: 0f65982746bef8f7d36a3684656baa3313dfe3a0322084de65b83b9b2647f8ce
-      - path: /root/.cache/subscription-runtime/modres-w11-architecture-integrator-b-20260826-r1/modres-w11-architecture-integrator-b-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-architecture-integrator-b-20260826-r1/modres-w11-architecture-integrator-b-20260826-r1.latest-result.json
         sha256: 987b7f5b6b7722706ba233eb7824dd4e31bb0a35bdbdccd4ba20821aaec1805e
     executableEvidenceRefs: []
     independentPublisherStatus: not-established
@@ -144,12 +158,12 @@ claims:
     classification: inference
     applicability: Frontend executable contribution delivery.
     evidenceSourceReferences:
-      - path: /root/.cache/subscription-runtime/modres-w11-architecture-integrator-b-20260826-r1/modres-w11-architecture-integrator-b-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-architecture-integrator-b-20260826-r1/modres-w11-architecture-integrator-b-20260826-r1.latest-result.json
         sha256: 987b7f5b6b7722706ba233eb7824dd4e31bb0a35bdbdccd4ba20821aaec1805e
-      - path: /root/.cache/subscription-runtime/modres-w11-product-mvp-adjudicator-20260826-r1/modres-w11-product-mvp-adjudicator-20260826-r1.latest-result.json
-        sha256: 437cf9a96e9507ffdb27bb19697915a7532ef6bfb0580a6a43fa1e400c1c1195
+      - path: runtime/modres-w11-product-mvp-adjudicator-20260826-r1/modres-w11-product-mvp-adjudicator-20260826-r1.latest-result.json
+        sha256: 268bc012d6a5da27c824eb8c485d9b9594b14aadccc2b8044e860063add0b610
     executableEvidenceRefs:
-      - path: /home/modres-spikes/modres-w7-mf2-20260826-r1/evidence/qualification-report.json
+      - path: spikes/modres-w7-mf2-20260826-r1/evidence/qualification-report.json
         sha256: 75e600632ccb745290ba4809d6808c7c6cb75abafef7be51bce738bb79d70754
         qualification: Local synthetic evidence; no independent product applicability or performance ranking.
     independentPublisherStatus: not-established
@@ -160,9 +174,9 @@ claims:
     classification: inference
     applicability: Post-MVP extension placements and publication.
     evidenceSourceReferences:
-      - path: /root/.cache/subscription-runtime/modres-w11-architecture-integrator-b-20260826-r1/modres-w11-architecture-integrator-b-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-architecture-integrator-b-20260826-r1/modres-w11-architecture-integrator-b-20260826-r1.latest-result.json
         sha256: 987b7f5b6b7722706ba233eb7824dd4e31bb0a35bdbdccd4ba20821aaec1805e
-      - path: /root/.cache/subscription-runtime/modres-w11-distributed-systems-adjudicator-20260826-r1/modres-w11-distributed-systems-adjudicator-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-distributed-systems-adjudicator-20260826-r1/modres-w11-distributed-systems-adjudicator-20260826-r1.latest-result.json
         sha256: 2cd218735ea97958e892158602597f11a17a9ac350962fa2de0867276f6ae5c4
     executableEvidenceRefs: []
     independentPublisherStatus: not-established
@@ -173,9 +187,9 @@ claims:
     classification: inference
     applicability: Cross-product reuse after Orchestrator and Agent Runtime product evidence.
     evidenceSourceReferences:
-      - path: /root/.cache/subscription-runtime/modres-w11-product-mvp-adjudicator-20260826-r1/modres-w11-product-mvp-adjudicator-20260826-r1.latest-result.json
-        sha256: 437cf9a96e9507ffdb27bb19697915a7532ef6bfb0580a6a43fa1e400c1c1195
-      - path: /root/.cache/subscription-runtime/modres-w11-architecture-integrator-b-20260826-r1/modres-w11-architecture-integrator-b-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-product-mvp-adjudicator-20260826-r1/modres-w11-product-mvp-adjudicator-20260826-r1.latest-result.json
+        sha256: 268bc012d6a5da27c824eb8c485d9b9594b14aadccc2b8044e860063add0b610
+      - path: runtime/modres-w11-architecture-integrator-b-20260826-r1/modres-w11-architecture-integrator-b-20260826-r1.latest-result.json
         sha256: 987b7f5b6b7722706ba233eb7824dd4e31bb0a35bdbdccd4ba20821aaec1805e
     executableEvidenceRefs: []
     independentPublisherStatus: not-established
@@ -186,9 +200,9 @@ claims:
     classification: inference
     applicability: All future architecture, APIs, packaging, and deployment profiles.
     evidenceSourceReferences:
-      - path: /home/umeq-nightly-20260826/base/docs/decisions/0012-reusable-library-module-and-plugin-boundaries.md
+      - path: repository/docs/decisions/0012-reusable-library-module-and-plugin-boundaries.md
         sha256: 3c039041ca7babe7c8285723509dfe5bff3b1ff61213c3f6a08a99642508bb1e
-      - path: /root/.cache/subscription-runtime/modres-w11-architecture-integrator-b-20260826-r1/modres-w11-architecture-integrator-b-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-architecture-integrator-b-20260826-r1/modres-w11-architecture-integrator-b-20260826-r1.latest-result.json
         sha256: 987b7f5b6b7722706ba233eb7824dd4e31bb0a35bdbdccd4ba20821aaec1805e
     executableEvidenceRefs: []
     independentPublisherStatus: not-applicable-single-authority
@@ -199,9 +213,9 @@ claims:
     classification: observed
     applicability: W1-W11 research corpus and any synthesis derived from it.
     evidenceSourceReferences:
-      - path: /root/.cache/subscription-runtime/modres-w11-evidence-provenance-auditor-20260826-r1/modres-w11-evidence-provenance-auditor-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-evidence-provenance-auditor-20260826-r1/modres-w11-evidence-provenance-auditor-20260826-r1.latest-result.json
         sha256: cab0f81885f421855334b991018cbe9d4d16f8f77e7534f06f48d367ca4a67bc
-      - path: /root/.cache/subscription-runtime/modres-w11-contradiction-auditor-20260826-r1/modres-w11-contradiction-auditor-20260826-r1.latest-result.json
+      - path: runtime/modres-w11-contradiction-auditor-20260826-r1/modres-w11-contradiction-auditor-20260826-r1.latest-result.json
         sha256: 3bd415f98164e38bdc85f205bad621e7de3c9dcee10337888db7beb506feec3c
     executableEvidenceRefs: []
     independentPublisherStatus: failed

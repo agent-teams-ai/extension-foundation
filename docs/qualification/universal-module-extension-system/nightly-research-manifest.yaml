@@ -1,6 +1,6 @@
 schemaVersion: 1
 campaignId: umeq-nightly-2026-08-26
-status: running
+status: completed-no-go
 purpose: >-
   Falsify, refine, or qualify the proposed universal module and extension
   architecture using primary-source research, executable spikes, independent
@@ -15,10 +15,11 @@ execution:
   runtime: subscription-runtime-hosted
   model: gpt-5.6-sol
   reasoningEffort: xhigh
-  serviceTier: default
+  serviceTier: mixed
   localSubagentsAllowed: false
   baseDistinctWorkers: 124
   adaptiveMaximumDistinctWorkers: 140
+  actualDistinctResearchJobs: 140
   maximumParallelWorkers: 12
   canonicalAdrsMutable: false
   productionPackagesMutable: false
@@ -27,6 +28,10 @@ execution:
       primary researchers are continued into non-overlapping critic roles.
     - Additional workers are admitted only for unresolved contradictions,
       missing primary evidence, failed spikes, or P0/P1 findings.
+    - W1 through W9 used the default service tier. W10 and W11 used the fast
+      service tier after the user changed the execution policy.
+    - Operational capture, remediation, and exact-SHA review jobs are excluded
+      from the 140 research-job count.
 evidencePolicy:
   primarySourcesRequiredPerRecommendation: 2
   immutableSourceIdentityRequired: true
@@ -238,8 +243,8 @@ waves:
   - id: W10
     title: Red team
     logicalRoleCount: 8
-    newWorkerBudget: 0
-    continuationRoleCount: 8
+    newWorkerBudget: 8
+    continuationRoleCount: 0
     dependsOn: [W9]
     attacks:
       - malicious-plugin
@@ -253,8 +258,8 @@ waves:
   - id: W11
     title: Final arbitration
     logicalRoleCount: 8
-    newWorkerBudget: 0
-    continuationRoleCount: 8
+    newWorkerBudget: 8
+    continuationRoleCount: 0
     dependsOn: [W9, W10]
     roles:
       - architecture-integrator-a
@@ -309,3 +314,33 @@ deliverables:
   - architecture-and-loc-roadmap
   - approval-ready-adr-list
   - deferred-decision-list
+completion:
+  completedAt: 2026-08-26T15:56:00Z
+  terminalResearchJobs: 140
+  terminalAttempts: 161
+  synthesisVerdict: NO-GO
+  promotionCriteriaSatisfied: false
+  acceptedAdrChanges: 0
+  productionPackagesCreated: 0
+  reason: >-
+    The evidence supports only a product-local static trusted rehearsal after
+    product-owner approval. It does not support a generic Foundation runtime,
+    public SPI, or dynamic or untrusted plugin platform now.
+evidenceCustody:
+  evidenceToolRevision: b3cb81d36e506a1bdd4cc19358eca0be0b830ff4
+  manifestSha256: f84a0cb6d6f9a639d429ab8f3c20d91c135ac767fb8102b7b599460f85e2b094
+  capturedJobs: 140
+  capturedAttempts: 161
+  capturedObjects: 994
+  explicitExceptions: 28
+  integrityValid: true
+  promotionAllowed: false
+  failedGates: [G-PROMOTION]
+  archive:
+    provider: github-draft-release
+    releaseId: 377251766
+    tag: research-evidence-umeq-2026-08-26
+    draft: true
+    asset: umeq-nightly-2026-08-26-evidence-b3.tar.zst
+    assetSha256: dc71f8b26a52d54756226d46f3bd434e64a33bc131b962ae5863aa8a3f095efc
+    publishForbidden: true

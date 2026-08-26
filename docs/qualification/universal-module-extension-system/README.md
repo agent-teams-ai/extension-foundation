@@ -33,6 +33,7 @@ post-MVP hypotheses.
 
 ## Qualification Outcome
 
+- [Completed nightly research dossier](nightly/README.md)
 - [Anti-pattern catalog](anti-patterns.md)
 - [Spike results](spike-results.md)
 - [Conformance plan](conformance-plan.md)
@@ -53,8 +54,10 @@ The frontmatter status `qualified` means the document has completed this
 research pass. It does not mean every requirement inside it is implemented or
 passed. [Conformance Plan](conformance-plan.md#current-evidence-status) contains
 the explicit human-reviewed status table for planned, implemented and passed
-evidence. Machine-produced evidence manifests remain a promotion requirement,
-not a property claimed by this research branch.
+evidence. The nightly worker corpus now has a machine-produced immutable
+evidence manifest, but its promotion gate remains intentionally closed. Corpus
+integrity does not replace product-owner approval, primary-source independence,
+executable closure, or a separate ADR.
 
 The [decision ledger](decision-ledger.yaml) is the machine-readable navigation
 source. It links to full rationale and never duplicates normative decisions.
@@ -86,6 +89,13 @@ exceptions. They are never reconstructed. Verification reports custody,
 terminal-state, alias, path, source-independence, hypothesis, draft-scope,
 synthesis and promotion gates independently; worker counts never satisfy a
 source or voting requirement.
+
+Attempt entries from every journal are combined before current-alias binding;
+duplicate attempt numbers are rejected as ambiguous. Identical bytes observed
+under different provenance are also rejected instead of silently collapsing
+their source path or evidence kind. A future generalized custody service may
+model multiple provenance occurrences explicitly, but this bounded research
+tool remains fail-closed.
 
 After capture, verification treats the stored object's SHA-256 digest and byte
 size as authoritative; checking whether a mutable source path still exists is a
