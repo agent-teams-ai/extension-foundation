@@ -60,11 +60,22 @@ features/<capability>/
     inbound/
     outbound/
   composition/
-    module.ts
-  tests/
+    feature-module-factory.ts       # optional static product composition
+    extension-module-adapter.ts     # only for an admitted runtime graph
+
+tests/features/<capability>/        # contract, integration and adapter tests
+tests/package/                      # packed and black-box consumer tests
 ```
 
-Not every feature needs every directory. Empty DDD layers are forbidden.
+Focused white-box unit tests may remain beside source as `*.test.ts`, provided
+the product build excludes them and a separate no-emit test configuration owns
+their compilation. Not every feature needs every directory. Empty DDD layers
+are forbidden.
+
+The static `FeatureModuleFactory`, runtime `ExtensionModuleDefinition`, and
+distributable `PluginArtifact` are different concepts. A generic `module.ts`
+that can mean any of them is prohibited in product standards because it hides
+ownership and lifecycle.
 
 ## Extraction Gates
 
@@ -138,6 +149,11 @@ referenced bytes before publication.
 6. `peerDependencies` are reserved for true host-provided runtime APIs; they
    are not used to hide normal dependencies.
 7. Package exports are curated. Internal paths are not supported API.
+
+A plugin contribution never becomes a product application contract directly.
+The owning product feature maps it through an inbound or outbound adapter to a
+private consumer-owned port and model, then validates authority, revision,
+policy, and invariants before mutation.
 
 ## Compatibility
 

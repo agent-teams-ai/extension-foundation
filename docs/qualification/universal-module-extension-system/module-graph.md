@@ -78,7 +78,7 @@ A descriptor is inert data. The exact public schema remains open, but the
 qualification uses this conceptual shape:
 
 ```text
-ModuleDefinition
+ExtensionModuleDefinition
   moduleId
   implementationId
   provides[]
@@ -133,16 +133,20 @@ flowchart TD
     Cardinality -->|ordered-many| Ordered["Product-authored ordered bindings"]
 ```
 
-## Scope And Lifetime
+## Authority Scope And Module Lifetime
 
-V1 should support explicit scopes with no parent-container fallback. The first
-implementation needs only scoped instances whose lifetime equals one compiled
-graph activation scope. Transient, pooled, and implicit singleton lifetimes are
-deferred until a real consumer requires them.
+Authority identity and runtime lifetime are orthogonal. `AuthorityScopeId` is an
+opaque product-owned authorization and custody identity. It may represent a
+deployment, tenant, project, workspace, or session boundary, but it never asks
+the DI container or module runtime to create a corresponding scope.
 
-An authority scope is an opaque, product-owned identity such as one host,
-tenant, project, workspace, or session boundary. Foundation validates declared
-scope relations but does not define product tenancy.
+The first implementation has one `ModuleLifetime`: one admitted module instance
+per immutable graph generation. Replacement creates a new generation, performs
+staged readiness and cutover, then drains the old generation. Transient, pooled,
+per-tenant, per-project, per-workspace, per-run, and per-session module lifetimes
+are deferred until independent product evidence requires and qualifies them.
+Foundation validates declared authority-scope relations but does not define
+product tenancy or derive lifetimes from product identifiers.
 
 A module receives a frozen dependency object containing only its declared,
 resolved direct capabilities. It cannot access:

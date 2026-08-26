@@ -106,6 +106,8 @@ any canonical mutation.
 ### Recommended
 
 - Native TypeScript closed-world compiler as the first private implementation.
+- Use `FeatureModuleFactory`, `ExtensionModuleDefinition`, and `PluginArtifact`
+  as separate terms; authority identity never implies module or DI lifetime.
 - Explicit profile bindings for V1 single-provider slots.
 - One generation lifecycle vocabulary with separate distributed fence,
   route-revision, rollout-intent and replica-incarnation identities.

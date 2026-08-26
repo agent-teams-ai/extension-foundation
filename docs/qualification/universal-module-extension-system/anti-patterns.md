@@ -136,6 +136,9 @@ framework makes the unsafe behavior convenient.
 | AP-083 | Arbitrary JSON number accepted in authority or audit data | Unsafe integers alias distinct wire values | Use a safe-integer numeric domain or an explicit lossless decimal/string encoding |
 | AP-084 | Multiple canonical writers for one catalog source | Conflicting histories make governance, audit and recovery ambiguous | Give each writable source one PostgreSQL canonical state owner and derive snapshots/search projections from it |
 | AP-085 | Merge or fallback after catalog authority selection | Outage, revocation or not-found changes extension identity or downgrades trust | Route to one explicit authority and fail closed; mirrors may serve only that authority's immutable content |
+| AP-086 | One `Module` name for static feature wiring, runtime graph definitions, and plugin artifacts | Ownership, lifecycle, and compatibility rules become ambiguous | Name `FeatureModuleFactory`, `ExtensionModuleDefinition`, and `PluginArtifact` separately |
+| AP-087 | Tenant, project, workspace, run, or session identity treated as a DI/module lifetime | Durable authority identity creates unbounded containers and leaks resources | Keep `AuthorityScopeId` independent; start with one module instance per admitted graph generation |
+| AP-088 | Plugin contribution object used directly as an application/domain contract | Framework and publisher models bypass product ownership and validation | Map through a feature-owned adapter to a private consumer-owned port and model |
 
 ## Enforcement Plan
 
