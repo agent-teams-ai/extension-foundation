@@ -94,7 +94,7 @@ The T0 rehearsal avoids those surfaces; it does not close their blockers.
 
 These portable labels identify wrapper bytes that are now included in immutable
 campaign manifest
-`f84a0cb6d6f9a639d429ab8f3c20d91c135ac767fb8102b7b599460f85e2b094`.
+`4302a0b02f1b54f876a5824919e5e195594843ce778e74aa59852d65363fd8fe`.
 
 | Result path | SHA-256 |
 | --- | --- |

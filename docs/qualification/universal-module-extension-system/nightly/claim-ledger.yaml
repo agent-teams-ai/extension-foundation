@@ -3,8 +3,8 @@ ledgerId: qualification.universal-module-extension-system.nightly.retained-claim
 status: non-operative
 custodyGate: worker-corpus-captured-non-promotable
 workerCorpus:
-  evidenceToolRevision: b3cb81d36e506a1bdd4cc19358eca0be0b830ff4
-  manifestSha256: f84a0cb6d6f9a639d429ab8f3c20d91c135ac767fb8102b7b599460f85e2b094
+  evidenceToolRevision: dff2a416003eb99acdb87de961dab380ff651e0f
+  manifestSha256: 4302a0b02f1b54f876a5824919e5e195594843ce778e74aa59852d65363fd8fe
   capturedJobs: 140
   capturedAttempts: 161
   capturedObjects: 994

@@ -327,8 +327,8 @@ completion:
     product-owner approval. It does not support a generic Foundation runtime,
     public SPI, or dynamic or untrusted plugin platform now.
 evidenceCustody:
-  evidenceToolRevision: b3cb81d36e506a1bdd4cc19358eca0be0b830ff4
-  manifestSha256: f84a0cb6d6f9a639d429ab8f3c20d91c135ac767fb8102b7b599460f85e2b094
+  evidenceToolRevision: dff2a416003eb99acdb87de961dab380ff651e0f
+  manifestSha256: 4302a0b02f1b54f876a5824919e5e195594843ce778e74aa59852d65363fd8fe
   capturedJobs: 140
   capturedAttempts: 161
   capturedObjects: 994
@@ -341,6 +341,6 @@ evidenceCustody:
     releaseId: 377251766
     tag: research-evidence-umeq-2026-08-26
     draft: true
-    asset: umeq-nightly-2026-08-26-evidence-b3.tar.zst
-    assetSha256: dc71f8b26a52d54756226d46f3bd434e64a33bc131b962ae5863aa8a3f095efc
+    asset: umeq-nightly-2026-08-26-evidence-dff2a41.tar.zst
+    assetSha256: 6c42f205ba8e2301dc1c999a65224ee8e0752445e4c5a40d31dc3a47e09011ed
     publishForbidden: true

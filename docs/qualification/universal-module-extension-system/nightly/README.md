@@ -38,9 +38,9 @@ owner approval.
 
 - Research jobs: `140`; terminal attempts: `161`.
 - Immutable objects: `994`; explicit missing-history exceptions: `28`.
-- Manifest: `f84a0cb6d6f9a639d429ab8f3c20d91c135ac767fb8102b7b599460f85e2b094`.
-- Evidence tool: `b3cb81d36e506a1bdd4cc19358eca0be0b830ff4`.
-- Archive SHA-256: `dc71f8b26a52d54756226d46f3bd434e64a33bc131b962ae5863aa8a3f095efc`.
+- Manifest: `4302a0b02f1b54f876a5824919e5e195594843ce778e74aa59852d65363fd8fe`.
+- Evidence tool: `dff2a416003eb99acdb87de961dab380ff651e0f`.
+- Archive SHA-256: `6c42f205ba8e2301dc1c999a65224ee8e0752445e4c5a40d31dc3a47e09011ed`.
 - Verification: `integrityValid=true`, `promotionAllowed=false`.
 
 The archive is stored in restricted GitHub Draft Release
