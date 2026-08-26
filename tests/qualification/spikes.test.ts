@@ -6,6 +6,7 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { performance } from "node:perf_hooks";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -15,7 +16,13 @@ import { Graph, alg } from "@dagrejs/graphlib";
 import { Context } from "@deepseek-ai/cordis";
 import fc from "fast-check";
 
-import { compileGraph, type CompiledGraph, type ModuleDescriptor } from "./graph-spike.ts";
+import {
+  compileGraph,
+  compileQualificationBindings,
+  type CompiledGraph,
+  type ModuleDescriptor,
+  type QualificationBindingModule,
+} from "./graph-spike.ts";
 import {
   GenerationLifecycle,
   inertHooks,
@@ -289,15 +296,25 @@ test("native compiler agrees with Graphlib on generated directed-graph validity"
   }), { numRuns: 500 });
 });
 
-test("graph compiler remains stack-safe for ten thousand modules", () => {
+test("graph compiler remains stack-safe for ten thousand modules", t => {
   const count = 10_000;
   const chain = Array.from({ length: count }, (_, index) => ({
     id: `module-${String(index).padStart(5, "0")}`,
     requires: index === 0 ? [] : [`module-${String(index - 1).padStart(5, "0")}`],
   }));
+  assert.equal(requirePlan(chain.slice(0, 1_000)).startOrder.length, 1_000);
+  const heapBefore = process.memoryUsage().heapUsed;
+  const startedAt = performance.now();
   const plan = requirePlan(chain);
+  const elapsedMs = performance.now() - startedAt;
+  const retainedHeapBytes = Math.max(0, process.memoryUsage().heapUsed - heapBefore);
   assert.equal(plan.startOrder.length, count);
   assert.equal(plan.startBatches.length, count);
+  assert.ok(elapsedMs < 5_000, `GRAPH_10K_TIMEOUT:${elapsedMs}`);
+  assert.ok(retainedHeapBytes < 256 * 1024 * 1024, `GRAPH_10K_HEAP:${retainedHeapBytes}`);
+  t.diagnostic(
+    `graph-10k elapsedMs=${elapsedMs.toFixed(2)} retainedHeapBytes=${retainedHeapBytes}`,
+  );
 
   const cyclic = chain.map((descriptor, index) => index === 0
     ? { ...descriptor, requires: [`module-${String(count - 1).padStart(5, "0")}`] }
@@ -307,6 +324,165 @@ test("graph compiler remains stack-safe for ten thousand modules", () => {
   if (result.ok) assert.fail("expected a cycle");
   assert.equal(result.diagnostics[0]?.code, "HARD_CYCLE");
   assert.ok((result.diagnostics[0]?.dependencyPath.length ?? 0) > 1);
+});
+
+test("qualification bindings preserve required, optional, and ordered-many semantics", () => {
+  const modules: QualificationBindingModule[] = [
+    {
+      id: "consumer",
+      consumes: [
+        { slot: "source", cardinality: "required", compatibleContractVersions: ["v1"] },
+        { slot: "telemetry", cardinality: "optional", compatibleContractVersions: ["v1"] },
+        { slot: "transform", cardinality: "ordered-many", compatibleContractVersions: ["v1"] },
+      ],
+      provides: [],
+    },
+    { id: "source", consumes: [], provides: [{ slot: "source", contractVersion: "v1" }] },
+    { id: "transform-a", consumes: [], provides: [{ slot: "transform", contractVersion: "v1" }] },
+    { id: "transform-b", consumes: [], provides: [{ slot: "transform", contractVersion: "v1" }] },
+  ];
+  const bindings = [
+    { consumerId: "consumer", slot: "source", providerIds: ["source"] },
+    { consumerId: "consumer", slot: "transform", providerIds: ["transform-b", "transform-a"] },
+  ];
+  const first = compileQualificationBindings(modules, bindings);
+  const second = compileQualificationBindings([...modules].reverse(), [...bindings].reverse());
+  assert.equal(first.ok, true);
+  assert.deepEqual(first, second);
+  if (!first.ok) return;
+  assert.equal(Object.isFrozen(first.plan), true);
+  assert.equal(Object.isFrozen(first.plan.resolved), true);
+  assert.deepEqual(
+    first.plan.resolved.find(binding => binding.slot === "telemetry")?.providers,
+    [],
+  );
+  assert.deepEqual(
+    first.plan.resolved.find(binding => binding.slot === "transform")?.providers.map(
+      provider => provider.moduleId,
+    ),
+    ["transform-b", "transform-a"],
+  );
+  assert.deepEqual(first.plan.graph.startBatches, [
+    ["source", "transform-a", "transform-b"],
+    ["consumer"],
+  ]);
+  assert.deepEqual(structuredClone(first.plan), first.plan);
+});
+
+test("qualification bindings fail closed on cardinality and compatibility errors", () => {
+  const modules: QualificationBindingModule[] = [
+    {
+      id: "consumer",
+      consumes: [
+        { slot: "required", cardinality: "required", compatibleContractVersions: ["v1"] },
+        { slot: "optional", cardinality: "optional", compatibleContractVersions: ["v1"] },
+        { slot: "incompatible", cardinality: "required", compatibleContractVersions: ["v2"] },
+      ],
+      provides: [],
+    },
+    {
+      id: "provider",
+      consumes: [],
+      provides: [
+        { slot: "optional", contractVersion: "v1" },
+        { slot: "incompatible", contractVersion: "v1" },
+      ],
+    },
+  ];
+  const result = compileQualificationBindings(modules, [
+    { consumerId: "consumer", slot: "optional", providerIds: ["provider", "missing"] },
+    { consumerId: "consumer", slot: "incompatible", providerIds: ["provider"] },
+    { consumerId: "consumer", slot: "undeclared", providerIds: ["provider"] },
+  ]);
+  assert.equal(result.ok, false);
+  if (result.ok) return;
+  assert.deepEqual(result.diagnostics.map(item => item.code), [
+    "CARDINALITY_MISMATCH",
+    "INCOMPATIBLE_PROVIDER",
+    "MISSING_BINDING",
+    "UNDECLARED_BINDING",
+  ]);
+});
+
+test("two fixed T0 built-ins publish a detached result and release the source resource", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([
+    { id: "synthetic-source", requires: [] },
+    { id: "synthetic-consumer", requires: ["synthetic-source"] },
+  ]);
+  const resource = { prepared: false, started: false, value: "" };
+  let detached: Readonly<{ value: string }> | undefined;
+  const hooks = new Map<string, ModuleHooks>([
+    ["synthetic-source", {
+      readiness: "probe",
+      prepare() {
+        resource.prepared = true;
+      },
+      start() {
+        assert.equal(resource.prepared, true);
+        resource.started = true;
+        resource.value = "source-generation-value";
+      },
+      ready() {
+        return resource.started;
+      },
+      stop() {
+        resource.prepared = false;
+        resource.started = false;
+        resource.value = "";
+      },
+    }],
+    ["synthetic-consumer", {
+      readiness: "probe",
+      start() {
+        assert.equal(resource.started, true);
+        detached = Object.freeze({ value: resource.value });
+      },
+      ready() {
+        return detached?.value === "source-generation-value";
+      },
+      stop() {
+        detached = detached === undefined ? undefined : Object.freeze({ ...detached });
+      },
+    }],
+  ]);
+  const activation = await lifecycle.activate(
+    activationRequest(lifecycle, "two-built-ins", plan, hooks),
+  );
+  assert.equal(activation.ok, true);
+  assert.deepEqual(detached, { value: "source-generation-value" });
+  assert.equal(Object.isFrozen(detached), true);
+  assert.deepEqual(
+    activation.traces.map(trace => [trace.phase, trace.moduleId ?? "host", trace.outcome]),
+    [
+      ["prepare", "synthetic-source", "started"],
+      ["start", "synthetic-source", "started"],
+      ["ready", "synthetic-source", "confirmed"],
+      ["prepare", "synthetic-consumer", "started"],
+      ["start", "synthetic-consumer", "started"],
+      ["ready", "synthetic-consumer", "confirmed"],
+      ["publish", "host", "confirmed"],
+    ],
+  );
+
+  const replacementPlan = requirePlan([{ id: "replacement", requires: [] }]);
+  const replacement = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "two-built-ins-replacement",
+      replacementPlan,
+      new Map([["replacement", inertHooks()]]),
+    ),
+  );
+  assert.equal(replacement.ok, true);
+  assert.equal(resource.started, false);
+  assert.deepEqual(detached, { value: "source-generation-value" });
+  assert.deepEqual(
+    replacement.traces
+      .filter(trace => trace.phase === "stop")
+      .map(trace => trace.moduleId),
+    ["synthetic-consumer", "synthetic-source"],
+  );
 });
 
 test("one hundred concurrent starts share one activation and one cutover", async () => {

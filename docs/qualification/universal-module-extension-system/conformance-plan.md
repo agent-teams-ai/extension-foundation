@@ -74,6 +74,40 @@ the dossier has status `qualified`.
 | Recovery reducer examples | implemented/passed locally | No crash-injected persistent recovery |
 | Supply chain and `HOST-T2/T3` negatives | planned | Required before their corresponding claims |
 
+## Qualification Gap Matrix
+
+This matrix was refreshed at
+`a95b3efda046161839d44b83f619e4e160aabf14` before gap-only changes. The
+unchanged baseline passed 86 qualification tests in 11.1 seconds. The code
+listed below remains disposable evidence under `tests/qualification`; it is not
+a production package, public SPI, or ownership decision.
+
+| Required evidence | Executable evidence | Result and remaining limit |
+| --- | --- | --- |
+| Deterministic graph identity across input permutations | `permutations produce the same graph plan and digest` | Passed; digest is private qualification vocabulary |
+| Required, optional and ordered-many cardinality | `qualification bindings preserve required, optional, and ordered-many semantics` | Gap closed with explicit bindings; no product grammar admitted |
+| Missing, duplicate, ambiguous and incompatible providers | `invalid ID-DAG inputs produce deterministic diagnostics without loading hooks`; `qualification bindings fail closed on cardinality and compatibility errors` | Passed before executable hooks |
+| Cycles, self-cycles and independent oracle | `native compiler agrees with Graphlib on generated directed-graph validity`; `graph compiler remains stack-safe for ten thousand modules` | Passed; Graphlib remains test-only |
+| Deeply immutable serializable plan and stable diagnostics | `compiled ID-DAG plan is deeply immutable and serializable`; invalid-ID tests | Passed |
+| 1,000 and 10,000-node stack and performance budgets | `graph compiler remains stack-safe for ten thousand modules` | Passed with diagnostic runtime and retained-heap measurements; 5-second and 256-MiB qualification caps are not production SLOs |
+| Invalid graph performs zero implementation effects | `invalid ID-DAG inputs produce deterministic diagnostics without loading hooks`; lifecycle hook preflight cases | Passed |
+| Honest two-module T0 source and consumer | `two fixed T0 built-ins publish a detached result and release the source resource` | Gap closed; source owns a bounded fake resource and consumer publishes a detached immutable result |
+| Prepare, start, readiness and publication ordering | two-built-in rehearsal; readiness and publication cases | Passed; passive product features must not copy these hooks |
+| Single-flight, activation fingerprint and caller cancellation | concurrent-start, idempotency-conflict and waiter-cancellation cases | Passed |
+| Sibling settlement, reverse cleanup and bounded cleanup debt | parallel-failure, multi-level rollback and hung-cleanup cases | Passed |
+| Generation, authority-scope and stale-write fencing | authority-scope, invocation-handle, drain and stale-write cases | Passed only for the in-memory model |
+| Candidate remains unpublished until ready; old route survives failed candidate | readiness and failed-candidate cases | Passed |
+| Recovery across every represented durable phase | `crash recovery decisions are deterministic at durable boundaries` | Passed as reducer fault injection for prepared, started, ready, published, draining and retired phases |
+| Corrupt, stale, conflicting and unknown recovery evidence | recovery boundary cases with malformed shapes, stale tuples, uncertain outcomes and conflicting generations | Passed fail-closed as `CONTROLLED_RECOVERY` |
+| Cleanup never retires a still-referenced generation | recovery cases combining in-flight, termination and cleanup evidence | Passed in reducer model |
+
+No new graph, lifecycle, or recovery implementation is justified by this gap
+pass. Persistent crash injection, a durable coordinator, sink-enforced fencing,
+and a second independently authored implementation remain production admission
+gaps. The two synthetic built-ins qualify only test behavior and cannot be
+promoted into a product feature or Foundation package without the unresolved
+ownership decision.
+
 ## Adapter Matrix
 
 Every adapter must run the neutral suite plus its own negative cases:

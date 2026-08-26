@@ -27,6 +27,72 @@ export type GraphResult =
   | { readonly ok: true; readonly plan: CompiledGraph }
   | { readonly ok: false; readonly diagnostics: readonly GraphDiagnostic[] };
 
+export type QualificationBindingCardinality =
+  | "optional"
+  | "ordered-many"
+  | "required";
+
+export interface QualificationCapabilityOffer {
+  readonly contractVersion: string;
+  readonly slot: string;
+}
+
+export interface QualificationCapabilityDemand {
+  readonly compatibleContractVersions: readonly string[];
+  readonly cardinality: QualificationBindingCardinality;
+  readonly slot: string;
+}
+
+export interface QualificationBindingModule {
+  readonly id: string;
+  readonly consumes: readonly QualificationCapabilityDemand[];
+  readonly provides: readonly QualificationCapabilityOffer[];
+}
+
+export interface QualificationExplicitBinding {
+  readonly consumerId: string;
+  readonly providerIds: readonly string[];
+  readonly slot: string;
+}
+
+export interface QualificationResolvedBinding {
+  readonly cardinality: QualificationBindingCardinality;
+  readonly consumerId: string;
+  readonly providers: readonly Readonly<{
+    readonly contractVersion: string;
+    readonly moduleId: string;
+  }>[];
+  readonly slot: string;
+}
+
+export interface QualificationBindingDiagnostic {
+  readonly code:
+    | "AMBIGUOUS_BINDING"
+    | "CARDINALITY_MISMATCH"
+    | "DUPLICATE_MODULE"
+    | "HARD_CYCLE"
+    | "INCOMPATIBLE_PROVIDER"
+    | "MISSING_BINDING"
+    | "MISSING_PROVIDER"
+    | "UNDECLARED_BINDING";
+  readonly consumerId: string;
+  readonly slot: string;
+}
+
+export type QualificationBindingResult =
+  | {
+      readonly ok: true;
+      readonly plan: Readonly<{
+        readonly digest: `sha256:${string}`;
+        readonly graph: CompiledGraph;
+        readonly resolved: readonly QualificationResolvedBinding[];
+      }>;
+    }
+  | {
+      readonly diagnostics: readonly QualificationBindingDiagnostic[];
+      readonly ok: false;
+    };
+
 const compareIds = (left: string, right: string): number =>
   left === right ? 0 : left < right ? -1 : 1;
 
@@ -167,5 +233,149 @@ export function compileGraph(input: readonly ModuleDescriptor[]): GraphResult {
       stopBatches,
       stopOrder: Object.freeze(stopBatches.flat()),
     }),
+  };
+}
+
+export function compileQualificationBindings(
+  modulesInput: readonly QualificationBindingModule[],
+  bindingsInput: readonly QualificationExplicitBinding[],
+): QualificationBindingResult {
+  const diagnostics: QualificationBindingDiagnostic[] = [];
+  const modules = new Map<string, QualificationBindingModule>();
+  for (const module of [...modulesInput].sort((left, right) => compareIds(left.id, right.id))) {
+    if (modules.has(module.id)) {
+      diagnostics.push({ code: "DUPLICATE_MODULE", consumerId: module.id, slot: "module" });
+    } else {
+      modules.set(module.id, module);
+    }
+  }
+
+  const bindingByDemand = new Map<string, QualificationExplicitBinding>();
+  for (const binding of bindingsInput) {
+    const key = `${binding.consumerId}\0${binding.slot}`;
+    if (bindingByDemand.has(key)) {
+      diagnostics.push({
+        code: "AMBIGUOUS_BINDING",
+        consumerId: binding.consumerId,
+        slot: binding.slot,
+      });
+    } else {
+      bindingByDemand.set(key, binding);
+    }
+  }
+
+  const resolved: QualificationResolvedBinding[] = [];
+  const declaredDemands = new Set<string>();
+  const graphNodes: ModuleDescriptor[] = [];
+  for (const module of modules.values()) {
+    const dependencies: string[] = [];
+    const demands = [...module.consumes].sort((left, right) => compareIds(left.slot, right.slot));
+    for (const demand of demands) {
+      const key = `${module.id}\0${demand.slot}`;
+      declaredDemands.add(key);
+      const binding = bindingByDemand.get(key);
+      const providerIds = binding === undefined ? [] : [...binding.providerIds];
+      const uniqueProviderIds = [...new Set(providerIds)];
+      if (uniqueProviderIds.length !== providerIds.length) {
+        diagnostics.push({ code: "AMBIGUOUS_BINDING", consumerId: module.id, slot: demand.slot });
+        continue;
+      }
+      const cardinalityValid =
+        (demand.cardinality === "required" && providerIds.length === 1) ||
+        (demand.cardinality === "optional" && providerIds.length <= 1) ||
+        demand.cardinality === "ordered-many";
+      if (!cardinalityValid) {
+        diagnostics.push({
+          code:
+            providerIds.length === 0 && demand.cardinality === "required"
+              ? "MISSING_BINDING"
+              : "CARDINALITY_MISMATCH",
+          consumerId: module.id,
+          slot: demand.slot,
+        });
+        continue;
+      }
+
+      const providers: Array<{ contractVersion: string; moduleId: string }> = [];
+      for (const providerId of providerIds) {
+        const provider = modules.get(providerId);
+        if (provider === undefined) {
+          diagnostics.push({ code: "MISSING_PROVIDER", consumerId: module.id, slot: demand.slot });
+          continue;
+        }
+        const offers = provider.provides.filter(
+          offer =>
+            offer.slot === demand.slot &&
+            demand.compatibleContractVersions.includes(offer.contractVersion),
+        );
+        if (offers.length !== 1) {
+          diagnostics.push({
+            code: offers.length > 1 ? "AMBIGUOUS_BINDING" : "INCOMPATIBLE_PROVIDER",
+            consumerId: module.id,
+            slot: demand.slot,
+          });
+          continue;
+        }
+        providers.push({
+          contractVersion: offers[0]!.contractVersion,
+          moduleId: providerId,
+        });
+        dependencies.push(providerId);
+      }
+      resolved.push(Object.freeze({
+        cardinality: demand.cardinality,
+        consumerId: module.id,
+        providers: Object.freeze(providers.map(provider => Object.freeze(provider))),
+        slot: demand.slot,
+      }));
+    }
+    graphNodes.push({ id: module.id, requires: [...new Set(dependencies)] });
+  }
+
+  for (const binding of bindingsInput) {
+    if (!declaredDemands.has(`${binding.consumerId}\0${binding.slot}`)) {
+      diagnostics.push({
+        code: "UNDECLARED_BINDING",
+        consumerId: binding.consumerId,
+        slot: binding.slot,
+      });
+    }
+  }
+  if (diagnostics.length > 0) {
+    return {
+      diagnostics: Object.freeze(diagnostics.sort((left, right) =>
+        compareIds(
+          `${left.code}:${left.consumerId}:${left.slot}`,
+          `${right.code}:${right.consumerId}:${right.slot}`,
+        ),
+      )),
+      ok: false,
+    };
+  }
+
+  const graph = compileGraph(graphNodes);
+  if (!graph.ok) {
+    return {
+      diagnostics: Object.freeze(graph.diagnostics.map(diagnostic => {
+        const code: QualificationBindingDiagnostic["code"] =
+          diagnostic.code === "DUPLICATE_MODULE"
+            ? "DUPLICATE_MODULE"
+            : diagnostic.code === "HARD_CYCLE"
+              ? "HARD_CYCLE"
+              : "MISSING_PROVIDER";
+        return { code, consumerId: diagnostic.moduleId, slot: "graph" };
+      })),
+      ok: false,
+    };
+  }
+  const immutableResolved = Object.freeze([...resolved].sort((left, right) =>
+    compareIds(`${left.consumerId}:${left.slot}`, `${right.consumerId}:${right.slot}`),
+  ));
+  const digest = `sha256:${createHash("sha256")
+    .update(canonicalJson({ graphDigest: graph.plan.digest, resolved: immutableResolved }))
+    .digest("hex")}` as const;
+  return {
+    ok: true,
+    plan: Object.freeze({ digest, graph: graph.plan, resolved: immutableResolved }),
   };
 }
