@@ -67,7 +67,7 @@
     "job": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["jobId", "wave", "jobConfigObject", "attemptIds", "currentAlias"],
+      "required": ["jobId", "wave", "jobConfigObject", "attemptIds", "currentAlias", "capturedObjects"],
       "properties": {
         "jobId": {
           "type": "string",
@@ -119,7 +119,8 @@
         "wrapperObject": { "anyOf": [{ "$ref": "#/$defs/digest" }, { "type": "null" }] },
         "transcriptObjects": {
           "type": "array",
-          "items": { "$ref": "#/$defs/digest" }
+          "items": { "$ref": "#/$defs/digest" },
+          "uniqueItems": true
         }
       }
     },
@@ -155,15 +156,18 @@
         "applicability": { "type": "string", "minLength": 1 },
         "primarySourceObjects": {
           "type": "array",
-          "items": { "$ref": "#/$defs/digest" }
+          "items": { "$ref": "#/$defs/digest" },
+          "uniqueItems": true
         },
         "executableEvidenceObjects": {
           "type": "array",
-          "items": { "$ref": "#/$defs/digest" }
+          "items": { "$ref": "#/$defs/digest" },
+          "uniqueItems": true
         },
         "publisherIndependence": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 }
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
         },
         "hypothesis": { "type": "boolean" },
         "promotionEligible": { "type": "boolean" }

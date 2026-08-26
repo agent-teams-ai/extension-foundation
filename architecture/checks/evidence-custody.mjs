@@ -351,6 +351,21 @@ function requiredArray(value, path, errors) {
   if (!Array.isArray(value)) errors.push(`${path} must be an array`);
 }
 
+function arrayOrEmpty(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function validateUniqueArray(value, path, errors, validateEntry) {
+  requiredArray(value, path, errors);
+  if (!Array.isArray(value)) return;
+  const seen = new Set();
+  for (const entry of value) {
+    validateEntry?.(entry);
+    if (seen.has(entry)) errors.push(`${path} must contain unique items`);
+    seen.add(entry);
+  }
+}
+
 export function validateManifest(manifest) {
   const errors = [];
   if (!record(manifest)) return { valid: false, errors: ["manifest must be an object"] };
@@ -365,7 +380,7 @@ export function validateManifest(manifest) {
   if (!record(manifest.promotion)) errors.push("promotion must be an object");
 
   const objects = new Map();
-  for (const [index, object] of (manifest.objects ?? []).entries()) {
+  for (const [index, object] of arrayOrEmpty(manifest.objects).entries()) {
     const path = `objects[${index}]`;
     if (!record(object)) { errors.push(`${path} must be an object`); continue; }
     rejectAdditionalProperties(object, OBJECT_FIELDS, path, errors);
@@ -373,40 +388,38 @@ export function validateManifest(manifest) {
     if (!SHA256.test(object.sha256 ?? "")) errors.push(`${path}.sha256 must be lowercase SHA-256`);
     if (!Number.isSafeInteger(object.bytes) || object.bytes < 0) errors.push(`${path}.bytes must be a non-negative safe integer`);
     if (!portableSourcePath(object.sourcePath)) errors.push(`${path}.sourcePath must be portable relative metadata`);
-    const prior = objects.get(object.sha256);
-    if (prior !== undefined && (prior.bytes !== object.bytes || prior.mediaType !== object.mediaType)) {
-      errors.push(`${path} conflicts with another interpretation of identical bytes`);
-    }
+    if (objects.has(object.sha256)) errors.push(`${path}.sha256 is duplicated`);
     objects.set(object.sha256, object);
   }
 
   const jobs = new Map();
-  for (const [index, job] of (manifest.jobs ?? []).entries()) {
+  for (const [index, job] of arrayOrEmpty(manifest.jobs).entries()) {
     const path = `jobs[${index}]`;
     if (!record(job)) { errors.push(`${path} must be an object`); continue; }
     rejectAdditionalProperties(job, JOB_FIELDS, path, errors);
     for (const field of ["jobId", "wave"]) requiredString(job[field], `${path}.${field}`, errors);
-    requiredArray(job.attemptIds, `${path}.attemptIds`, errors);
+    validateUniqueArray(job.attemptIds, `${path}.attemptIds`, errors, attemptId => requiredString(attemptId, `${path}.attemptIds[]`, errors));
     if (!JOB_ID.test(job.jobId ?? "")) errors.push(`${path}.jobId is invalid`);
     if (!WAVE.test(job.wave ?? "")) errors.push(`${path}.wave is invalid`);
     if (job.jobConfigObject !== null && !SHA256.test(job.jobConfigObject ?? "")) errors.push(`${path}.jobConfigObject must be lowercase SHA-256 or null`);
     if (job.currentAlias !== null && !SHA256.test(job.currentAlias ?? "")) errors.push(`${path}.currentAlias must be lowercase SHA-256 or null`);
-    if (job.capturedObjects !== undefined) {
-      requiredArray(job.capturedObjects, `${path}.capturedObjects`, errors);
-      for (const digest of job.capturedObjects ?? []) if (!SHA256.test(digest)) errors.push(`${path}.capturedObjects must contain lowercase SHA-256`);
-    }
+    validateUniqueArray(job.capturedObjects, `${path}.capturedObjects`, errors, digest => {
+      if (!SHA256.test(digest ?? "")) errors.push(`${path}.capturedObjects must contain lowercase SHA-256`);
+    });
     if (jobs.has(job.jobId)) errors.push(`${path}.jobId is duplicated`);
     jobs.set(job.jobId, job);
   }
 
   const attempts = new Map();
-  for (const [index, attempt] of (manifest.attempts ?? []).entries()) {
+  for (const [index, attempt] of arrayOrEmpty(manifest.attempts).entries()) {
     const path = `attempts[${index}]`;
     if (!record(attempt)) { errors.push(`${path} must be an object`); continue; }
     rejectAdditionalProperties(attempt, ATTEMPT_FIELDS, path, errors);
     for (const field of ["attemptId", "jobId", "status", "startedAt", "finishedAt"]) requiredString(attempt[field], `${path}.${field}`, errors);
     for (const field of ["outputSummaryObject", "wrapperObject"]) if (attempt[field] !== null && !SHA256.test(attempt[field] ?? "")) errors.push(`${path}.${field} must be lowercase SHA-256 or null`);
-    requiredArray(attempt.transcriptObjects, `${path}.transcriptObjects`, errors);
+    validateUniqueArray(attempt.transcriptObjects, `${path}.transcriptObjects`, errors, digest => {
+      if (!SHA256.test(digest ?? "")) errors.push(`${path}.transcriptObjects must contain lowercase SHA-256`);
+    });
     if (!Number.isSafeInteger(attempt.attemptNumber) || attempt.attemptNumber < 1) errors.push(`${path}.attemptNumber must be a positive safe integer`);
     if (!TERMINAL.has(attempt.status)) errors.push(`${path}.status must be terminal`);
     if (attempt.predecessorAttemptId !== null && typeof attempt.predecessorAttemptId !== "string") errors.push(`${path}.predecessorAttemptId must be a string or null`);
@@ -415,23 +428,26 @@ export function validateManifest(manifest) {
     attempts.set(attempt.attemptId, attempt);
   }
   const attemptNumbersByJob = new Set();
-  for (const [index, attempt] of (manifest.attempts ?? []).entries()) {
+  for (const [index, attempt] of arrayOrEmpty(manifest.attempts).entries()) {
+    if (!record(attempt)) continue;
     const key = `${attempt.jobId}\0${attempt.attemptNumber}`;
     if (attemptNumbersByJob.has(key)) errors.push(`attempts[${index}].attemptNumber is duplicated for its job`);
     attemptNumbersByJob.add(key);
   }
   const memberships = new Map();
-  for (const [index, job] of (manifest.jobs ?? []).entries()) {
-    for (const attemptId of job.attemptIds ?? []) {
+  for (const [index, job] of arrayOrEmpty(manifest.jobs).entries()) {
+    if (!record(job)) continue;
+    for (const attemptId of arrayOrEmpty(job.attemptIds)) {
       const attempt = attempts.get(attemptId);
       if (attempt === undefined || attempt.jobId !== job.jobId) errors.push(`jobs[${index}].attemptIds contains invalid lineage`);
       memberships.set(attemptId, (memberships.get(attemptId) ?? 0) + 1);
     }
-    if (new Set(job.attemptIds ?? []).size !== (job.attemptIds ?? []).length) errors.push(`jobs[${index}].attemptIds contains duplicates`);
+    if (new Set(arrayOrEmpty(job.attemptIds)).size !== arrayOrEmpty(job.attemptIds).length) errors.push(`jobs[${index}].attemptIds contains duplicates`);
   }
-  for (const [index, attempt] of (manifest.attempts ?? []).entries()) {
+  for (const [index, attempt] of arrayOrEmpty(manifest.attempts).entries()) {
+    if (!record(attempt)) continue;
     if (memberships.get(attempt.attemptId) !== 1) errors.push(`attempts[${index}] must belong to exactly one matching job`);
-    const jobAttempts = (manifest.attempts ?? []).filter(candidate => candidate.jobId === attempt.jobId).sort((a, b) => a.attemptNumber - b.attemptNumber);
+    const jobAttempts = arrayOrEmpty(manifest.attempts).filter(candidate => record(candidate) && candidate.jobId === attempt.jobId).sort((a, b) => a.attemptNumber - b.attemptNumber);
     const position = jobAttempts.findIndex(candidate => candidate.attemptId === attempt.attemptId);
     const expectedPredecessor = position > 0 ? jobAttempts[position - 1].attemptId : null;
     if (attempt.predecessorAttemptId !== expectedPredecessor) errors.push(`attempts[${index}].predecessorAttemptId must identify the adjacent prior attempt`);
@@ -451,7 +467,7 @@ export function validateManifest(manifest) {
     }
   }
   const continuationAttempts = new Set();
-  for (const [index, continuation] of (manifest.continuations ?? []).entries()) {
+  for (const [index, continuation] of arrayOrEmpty(manifest.continuations).entries()) {
     if (!record(continuation)) { errors.push(`continuations[${index}] must be an object`); continue; }
     rejectAdditionalProperties(continuation, CONTINUATION_FIELDS, `continuations[${index}]`, errors);
     requiredString(continuation.attemptId, `continuations[${index}].attemptId`, errors);
@@ -466,7 +482,8 @@ export function validateManifest(manifest) {
       errors.push(`continuations[${index}] must match the attempt continuationOf field`);
     }
   }
-  for (const attempt of manifest.attempts ?? []) {
+  for (const attempt of arrayOrEmpty(manifest.attempts)) {
+    if (!record(attempt)) continue;
     const seen = new Set();
     let current = attempt;
     while (current?.continuationOf !== null) {
@@ -477,17 +494,22 @@ export function validateManifest(manifest) {
     }
     if (attempt.continuationOf !== null && !continuationAttempts.has(attempt.attemptId)) errors.push(`${attempt.attemptId} continuation is missing its index record`);
   }
-  for (const [index, claim] of (manifest.claims ?? []).entries()) {
+  for (const [index, claim] of arrayOrEmpty(manifest.claims).entries()) {
     const path = `claims[${index}]`;
     if (!record(claim)) { errors.push(`${path} must be an object`); continue; }
     rejectAdditionalProperties(claim, CLAIM_FIELDS, path, errors);
     for (const field of ["claimId", "text", "classification", "applicability"]) requiredString(claim[field], `${path}.${field}`, errors);
-    for (const field of ["primarySourceObjects", "executableEvidenceObjects", "publisherIndependence"]) requiredArray(claim[field], `${path}.${field}`, errors);
+    for (const field of ["primarySourceObjects", "executableEvidenceObjects"]) {
+      validateUniqueArray(claim[field], `${path}.${field}`, errors, digest => {
+        if (!SHA256.test(digest ?? "")) errors.push(`${path}.${field} must contain lowercase SHA-256`);
+      });
+    }
+    validateUniqueArray(claim.publisherIndependence, `${path}.publisherIndependence`, errors, publisher => requiredString(publisher, `${path}.publisherIndependence[]`, errors));
     if (!CLASSIFICATIONS.has(claim.classification)) errors.push(`${path}.classification is invalid`);
     if (typeof claim.hypothesis !== "boolean" || typeof claim.promotionEligible !== "boolean") errors.push(`${path} boolean labels are required`);
     if (claim.hypothesis && claim.promotionEligible) errors.push(`${path} hypotheses cannot be promotion eligible`);
   }
-  for (const [index, exception] of (manifest.exceptions ?? []).entries()) {
+  for (const [index, exception] of arrayOrEmpty(manifest.exceptions).entries()) {
     if (!record(exception)) { errors.push(`exceptions[${index}] must be an object`); continue; }
     rejectAdditionalProperties(exception, EXCEPTION_FIELDS, `exceptions[${index}]`, errors);
     requiredString(exception.exceptionId, `exceptions[${index}].exceptionId`, errors);
@@ -514,6 +536,7 @@ function referencedDigests(manifest) {
   for (const job of manifest.jobs) {
     if (job.jobConfigObject !== null) values.add(job.jobConfigObject);
     if (job.currentAlias !== null) values.add(job.currentAlias);
+    for (const digest of job.capturedObjects) values.add(digest);
   }
   for (const attempt of manifest.attempts) {
     if (attempt.outputSummaryObject !== null) values.add(attempt.outputSummaryObject);
@@ -540,9 +563,18 @@ async function defaultPathExists(path) {
 export async function verifyManifest(manifest, { store, auditLiveSources = false, sourceRoot, pathExists = defaultPathExists } = {}) {
   const validation = validateManifest(manifest);
   const failures = Object.fromEntries(GATES.map(id => [id, []]));
-  if (!validation.valid) failures["G-CUSTODY"].push(...validation.errors);
-  const objectMap = new Map((manifest.objects ?? []).map(object => [object.sha256, object]));
-  for (const digest of validation.valid ? referencedDigests(manifest) : []) {
+  if (!validation.valid) {
+    failures["G-CUSTODY"].push(...validation.errors);
+    for (const id of GATES.filter(id => id !== "G-CUSTODY")) failures[id].push("manifest validation failed");
+    return {
+      valid: false,
+      gates: Object.fromEntries(GATES.map(id => [id, { pass: false, failures: failures[id] }])),
+      integrityValid: false,
+      promotionAllowed: false,
+    };
+  }
+  const objectMap = new Map(manifest.objects.map(object => [object.sha256, object]));
+  for (const digest of referencedDigests(manifest)) {
     const object = objectMap.get(digest);
     if (object === undefined) { failures["G-CUSTODY"].push(`missing object record ${digest}`); continue; }
     if (store !== undefined) {
@@ -683,6 +715,9 @@ export async function captureEvidence({
     const object = await captureObject(store, bytes, { ...metadata, capturedAt });
     const prior = objectByDigest.get(object.sha256);
     if (prior === undefined) { objectByDigest.set(object.sha256, object); objects.push(object); }
+    else if (prior.kind !== object.kind || prior.sourcePath !== object.sourcePath || prior.mediaType !== object.mediaType) {
+      throw new Error(`conflicting provenance for captured object ${object.sha256}`);
+    }
     return object.sha256;
   }
   for (const jobId of allowlist) {
@@ -703,21 +738,37 @@ export async function captureEvidence({
         });
       } catch (error) {
         if (error?.code !== "ENOENT") throw error;
-        exceptions.push({ exceptionId: `${jobId}:${kind}:missing`, kind: "missing-historical-bytes", detail: `${path} was unavailable; no bytes were fabricated` });
+        const label = sourceLabel(kind === "jobConfig" ? safeConfigRoot : safeRuntimeRoot, path, kind === "jobConfig" ? "job-config" : "runtime");
+        exceptions.push({ exceptionId: `${jobId}:${kind}:missing`, kind: "missing-historical-bytes", detail: `${label} was unavailable; no bytes were fabricated` });
       }
     }
     const journalFiles = await regularFilesBelow(jobRoot, "state/attempt-journal");
     if (journalFiles.length === 0) exceptions.push({ exceptionId: `${jobId}:attempt-journal:missing`, kind: "missing-historical-bytes", detail: "No attempt journal was available; no lineage was inferred" });
     let priorAttemptId = null;
     const attemptIds = [];
+    const journalEntries = [];
+    const attemptNumbers = new Set();
     for (const journalFile of journalFiles) {
       const journalLabel = sourceLabel(safeRuntimeRoot, journalFile.path, "runtime");
       const journalDigest = await add(journalFile.bytes, { kind: "attempt-journal", sourcePath: journalLabel });
       let journal;
       try { journal = JSON.parse(journalFile.bytes.toString("utf8")); }
       catch { exceptions.push({ exceptionId: `${jobId}:journal:${journalDigest}:invalid`, kind: "unknown-historical-bytes", detail: "Attempt journal is not valid JSON and was preserved only as raw bytes" }); continue; }
-      const journalAttempts = journal.attempts ?? [];
-      for (const [entryIndex, entry] of journalAttempts.entries()) {
+      if (!Array.isArray(journal.attempts)) throw new Error(`attempt journal ${journalLabel} must contain an attempts array`);
+      for (const entry of journal.attempts) {
+        if (!record(entry) || !Number.isSafeInteger(entry.attemptNumber) || entry.attemptNumber < 1) {
+          throw new Error(`attempt journal ${journalLabel} contains an invalid attempt number`);
+        }
+        if (attemptNumbers.has(entry.attemptNumber)) {
+          throw new Error(`ambiguous attempt ${entry.attemptNumber} for ${jobId} appears in multiple journal entries`);
+        }
+        attemptNumbers.add(entry.attemptNumber);
+        journalEntries.push({ entry, journalDigest, journalLabel });
+      }
+    }
+    journalEntries.sort((left, right) => left.entry.attemptNumber - right.entry.attemptNumber);
+    const currentAttemptNumber = journalEntries.at(-1)?.entry.attemptNumber;
+    for (const { entry, journalDigest, journalLabel } of journalEntries) {
         const attemptId = `${jobId}:attempt:${entry.attemptNumber}`;
         const summary = typeof entry.lastOutputSummary === "string" ? Buffer.from(entry.lastOutputSummary, "utf8") : undefined;
         let summaryDigest = null;
@@ -726,8 +777,8 @@ export async function captureEvidence({
         } else {
           summaryDigest = await add(summary, { kind: "decoded-output-summary", sourcePath: `${journalLabel}#attempts/${entry.attemptNumber}/lastOutputSummary` });
         }
-        const isCurrentAttempt = entryIndex === journalAttempts.length - 1;
-        if (!isCurrentAttempt) {
+        const isCurrentAttempt = entry.attemptNumber === currentAttemptNumber;
+        if (!isCurrentAttempt || captured.wrapper === undefined) {
           exceptions.push({
             exceptionId: `${attemptId}:wrapper:missing`,
             kind: "missing-historical-bytes",
@@ -749,7 +800,6 @@ export async function captureEvidence({
         });
         attemptIds.push(attemptId);
         priorAttemptId = attemptId;
-      }
     }
     jobs.push({
       jobId,
