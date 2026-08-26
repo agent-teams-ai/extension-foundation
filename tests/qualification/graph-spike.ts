@@ -69,6 +69,7 @@ export interface QualificationBindingDiagnostic {
   readonly code:
     | "AMBIGUOUS_BINDING"
     | "CARDINALITY_MISMATCH"
+    | "DUPLICATE_DEMAND"
     | "DUPLICATE_MODULE"
     | "HARD_CYCLE"
     | "INCOMPATIBLE_PROVIDER"
@@ -272,6 +273,10 @@ export function compileQualificationBindings(
     const demands = [...module.consumes].sort((left, right) => compareIds(left.slot, right.slot));
     for (const demand of demands) {
       const key = `${module.id}\0${demand.slot}`;
+      if (declaredDemands.has(key)) {
+        diagnostics.push({ code: "DUPLICATE_DEMAND", consumerId: module.id, slot: demand.slot });
+        continue;
+      }
       declaredDemands.add(key);
       const binding = bindingByDemand.get(key);
       const providerIds = binding === undefined ? [] : [...binding.providerIds];

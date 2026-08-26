@@ -404,6 +404,33 @@ test("qualification bindings fail closed on cardinality and compatibility errors
   ]);
 });
 
+test("qualification bindings fail closed on duplicate demand declarations", () => {
+  const result = compileQualificationBindings(
+    [
+      {
+        id: "consumer",
+        consumes: [
+          { slot: "source", cardinality: "required", compatibleContractVersions: ["v1"] },
+          { slot: "source", cardinality: "optional", compatibleContractVersions: ["v1"] },
+        ],
+        provides: [],
+      },
+      {
+        id: "provider",
+        consumes: [],
+        provides: [{ slot: "source", contractVersion: "v1" }],
+      },
+    ],
+    [{ consumerId: "consumer", slot: "source", providerIds: ["provider"] }],
+  );
+
+  assert.equal(result.ok, false);
+  if (result.ok) return;
+  assert.deepEqual(result.diagnostics, [
+    { code: "DUPLICATE_DEMAND", consumerId: "consumer", slot: "source" },
+  ]);
+});
+
 test("two fixed T0 built-ins publish a detached result and release the source resource", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([
