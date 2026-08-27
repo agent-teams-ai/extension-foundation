@@ -4,7 +4,6 @@ type: open-decision
 status: resolved
 owner: architecture
 summary: Decide the official, managed, self-hosted, and local extension catalog topology and governance protocol.
-blocked_by: []
 resolved_by: ADR-0003
 related:
   - ADR-0001

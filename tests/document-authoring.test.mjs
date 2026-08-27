@@ -85,7 +85,29 @@ test("find combines catalog and relation filters and treats zero matches as succ
   assert.deepEqual(forwardedEnvelope.result.documents.map(({ id }) => id), ["OD-001"]);
 });
 
-test("new previews and applies both supported types only inside a disposable repository", async () => {
+test("catalog preserves reciprocal supersession and resolved-decision evidence", () => {
+  const documents = new Map(
+    run(repositoryRoot, "find").result.documents.map(document => [document.id, document]),
+  );
+  for (const [predecessorId, successorId] of [
+    ["ADR-0006", "ADR-0007"],
+    ["ADR-0007", "ADR-0008"],
+    ["ADR-0008", "ADR-0009"],
+    ["ADR-0009", "ADR-0010"],
+  ]) {
+    const predecessor = documents.get(predecessorId);
+    const successor = documents.get(successorId);
+    assert.ok(predecessor.metadata.superseded_by.includes(successorId));
+    assert.ok(successor.metadata.supersedes.includes(predecessorId));
+  }
+
+  const resolved = documents.get("OD-001");
+  const resolver = documents.get("ADR-0003");
+  assert.equal(resolved.metadata.resolved_by, "ADR-0003");
+  assert.ok(resolver.metadata.related.includes("OD-001"));
+});
+
+test("new previews and applies every supported type only inside a disposable repository", async () => {
   const fixture = await disposableRepository();
   try {
     const adrTarget = join(fixture, "docs/decisions/0099-disposable-contract-proof.md");

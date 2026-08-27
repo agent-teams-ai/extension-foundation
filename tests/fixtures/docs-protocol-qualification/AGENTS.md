@@ -1,3 +1,0 @@
-# Agent Navigation
-
-Use [.agents/skills/docs-authoring/SKILL.md](.agents/skills/docs-authoring/SKILL.md) for documentation.
