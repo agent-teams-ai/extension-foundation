@@ -444,7 +444,7 @@ test("qualified identity and extraction rules preserve accepted ADR authority", 
 
   assert.deepEqual(
     antiPatternIds,
-    Array.from({ length: 88 }, (_, index) => `AP-${String(index + 1).padStart(3, "0")}`),
+    Array.from({ length: 96 }, (_, index) => `AP-${String(index + 1).padStart(3, "0")}`),
     "anti-pattern identifiers must remain unique, contiguous, and ordered",
   );
   assert.match(antiPatterns, /AP-080 \| Extract a neutral package without satisfying an accepted ADR-0012 admission basis/);
