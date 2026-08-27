@@ -8,6 +8,7 @@ related:
   - ADR-0010
   - ADR-0012
   - ADR-0013
+  - ADR-0014
   - OD-002
   - OD-003
 ---
@@ -28,6 +29,10 @@ plugin platform are **NO-GO now**. The only conditional next step is one
 product-local, statically composed, trusted T0 rehearsal after the product owner
 approves ownership, scope, success measures, and deletion criteria.
 
+This static-first direction is the sole current implementation recommendation.
+Earlier graph-first conclusions remain preserved historical research rather
+than an alternative roadmap.
+
 The rehearsal uses one Orchestrator-owned port, two fixed audited built-ins,
 static imports, direct construction, explicit materialized selection, and
 restart-first recovery. Orchestrator retains authorization, canonical state,
@@ -35,14 +40,18 @@ transaction, and result-revalidation authority. It introduces no runtime graph,
 artifact loader, public contract, catalog, independent deployment, or hostile
 code claim.
 
+The feature exports a pure `FeatureModuleFactory`; the application composition
+root selects the implementation, configuration, and lifetime. Neither layer
+provides an ambient container or global service locator.
+
 ## Before The Rehearsal
 
 1. An accepted owning-product decision names the bounded context, accountable
    owner, capability, two built-ins, authority exclusions, success metric, and
    kill criteria.
-2. If the work introduces module identities, descriptors, graph, or lifecycle
-   semantics, an accepted successor resolves the ADR-0012/ADR-0013 ownership
-   conflict. ADR-0013 is currently proposed and non-operative.
+2. ADR-0013 and ADR-0014 govern the product-local, static-first path. Any later
+   graph or lifecycle work requires a measured need and separate product scope;
+   ADR-0012 is superseded historical authority.
 3. A private TypeScript port returns evidence, pending, reconciliation-required,
    or unsupported; it cannot complete Work or return a bare authoritative
    completion Boolean.
@@ -58,9 +67,9 @@ code claim.
 
 ## Decision Status
 
-- Effective: ADR-0012 and the other accepted ADRs in the canonical decision
-  index.
-- Proposed, non-operative: ADR-0011 and ADR-0013.
+- Effective: ADR-0013, ADR-0014, and the other accepted ADRs in the canonical
+  decision index. ADR-0012 is superseded historical authority.
+- Proposed, non-operative: ADR-0011.
 - Open, non-operative: OD-002, OD-003, and UMEQ-009 through UMEQ-018.
 - No W11 report silently supersedes, accepts, or resolves any of them.
 - Worker counts are job IDs and logical roles, not independent experts, votes,
@@ -119,5 +128,7 @@ separate ADR remain outside this corpus capture.
 
 See the existing [final recommendation](../final-recommendation.md),
 [decision ledger](../decision-ledger.yaml), and
-[unresolved decisions](../unresolved-decisions.md) for the pre-W11 authority and
-qualification context.
+[unresolved decisions](../unresolved-decisions.md). The final recommendation is
+the current roadmap; the ledger and unresolved-decision material preserve
+pre-W11 authority and qualification context where not yet updated by their
+owners.

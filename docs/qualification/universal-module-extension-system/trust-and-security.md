@@ -19,6 +19,12 @@ Extension Foundation verifies and transports evidence. It never turns a request,
 manifest, signature, catalog entry, entitlement, or installation into product
 or runtime authority.
 
+The current qualified surface is deliberately smaller than the target
+architecture. It covers audited, co-released `T0` built-ins and the fail-closed
+authority joins exercised by the rehearsal. It does not qualify remote artifact
+adapters, arbitrary third-party execution, managed update channels, stateful
+plugin update or uninstall, or production secret and egress brokers.
+
 ```mermaid
 flowchart LR
     Request["Capability request"] --> Product["Product authorization"]
@@ -41,6 +47,12 @@ admission, Foundation-produced verification evidence accepted by the product,
 applicable AR technical authorization, current generation/fence, host policy
 and containment. Any missing, stale, ambiguous, differently canonicalized or
 unknown input denies.
+
+Tenant, authority scope, graph generation, runtime generation and grant are
+checked again at publication, invocation-lease acceptance and every privileged
+sink. An extension, provider, broker, registry or network call never occurs
+inside the product Unit of Work: the Unit of Work records canonical state and
+durable intent, then dispatch and reconciliation occur after commit.
 
 ## Identity Chain
 
@@ -85,10 +97,18 @@ not become a Foundation-owned production secret service.
 
 ## Host Tier Matrix
 
+An **audited `T0` built-in** is part of one signed product build and is reachable
+only through that build's literal, target-specific loader closure. Its exact
+transitive executable closure has a recorded digest, provenance, review owner
+and approval evidence. It cannot gain executable bytes, imports or loader
+entries through post-deployment mutation. Configuration and every effective
+grant remain product-controlled. A package being statically present, signed or
+named in generated metadata does not satisfy this definition.
+
 | Tier | Honest claim | Candidate placement |
 | --- | --- | --- |
 | `T0` trusted | Same authority and crash radius as host application | audited built-in in-process module |
-| `T1` fault-contained | Ordinary failures separated; malicious code still has user/app authority | Node Worker, Electron utility process, same-user child process |
+| `T1` fault-contained | Trusted fault containment for ordinary failures; not arbitrary third-party isolation | Node Worker, Electron utility process, same-user child process |
 | `T2` capability sandbox | Guest limited to explicit imports by an independently enforced boundary | dedicated cross-origin/opaque-origin document or deny-by-default Wasm; an ordinary Worker remains `T1` |
 | `T3` OS-enforced | Kernel policy constrains identity, files, network, IPC, descendants and resources | hardened Linux sandbox, macOS sandboxed helper, Windows AppContainer/Job |
 | `T4` workload-isolated | Separate kernel or machine behind a narrow broker | microVM, VM or remote disposable host |
@@ -97,6 +117,14 @@ Node Permission Model, Worker threads, `utilityProcess`, process PIDs,
 containers, origins and Wasm labels do not upgrade a tier automatically. The
 weakest granted capability determines the effective claim. Unsupported required
 containment fails before activation.
+
+`T1` process hosting assumes code trusted with the operating-system user's and
+application's ambient authority. It can improve crash, restart and cleanup
+containment, but it is not a malicious-code sandbox. Untrusted native code
+requires a stronger product/platform boundary with independently enforced
+`T3` or `T4` controls and per-platform escape tests. That boundary is not
+implemented or qualified here; a product must defer activation rather than
+label a `T1` process as untrusted isolation.
 
 Frontend adoption remains a product decision. An opaque-origin iframe is bound
 through exact `WindowProxy` source, nonce and a freshly transferred
@@ -109,7 +137,9 @@ normally retains origin network/storage authority.
 
 ## Artifact Supply Chain
 
-The recommended distribution stack remains conditional:
+The following distribution stack is target architecture. This qualification
+does not contain or qualify production OCI/ORAS, Cosign/Sigstore or TUF
+adapters, and their names must not be read as current implementation evidence:
 
 - OCI/ORAS stores and transports immutable bytes;
 - Cosign/Sigstore authenticates signature, attestation and transparency
@@ -152,10 +182,14 @@ participate for this capability. Unknown applicability, a bare decision without
 an `allow` result, missing evidence, stale revisions or contradictory decisions
 deny execution.
 
-V1 may remain strictly digest-pinned with a signed release/revocation record,
-but that profile makes no timely revocation or freeze-resistance guarantee.
-If it adds mutable channels, multiple delegated publishers, mirrors or automatic
-updates, TUF becomes part of that profile rather than an optional badge.
+A direct digest route is explicitly `manual-pin/no-currentness`. Authenticating
+the selected digest can prove which bytes were selected; it does not prove
+freshness, revocation status, freeze or rollback protection, or that the digest
+is the publisher's current release. A local policy may admit that limited mode
+only while naming those absences. TUF is required before any remote mutable
+channel, delegated publisher, automatic update or publisher-currentness claim.
+A signed release record beside a manual pin does not silently upgrade the route
+to a currentness protocol.
 
 OCI tags support discovery only. The installer pulls by digest, hashes raw
 manifest bytes and every descriptor, verifies provenance subject and dependency
@@ -176,7 +210,7 @@ Every host protocol method declares:
 - frozen versioned request, response, event and error schema;
 - peer, extension instance, authority scope and current generation;
 - request and operation identities with payload-conflict detection;
-- one absolute deadline, cancellation and bounded concurrency;
+- one absolute request deadline, cancellation and bounded concurrency;
 - strict frame size, nesting, stream credit and output limits;
 - capability and object-ownership check at use time;
 - redacted audit and outcome classification;
@@ -264,16 +298,43 @@ test must observe a denied external effect, not only an adapter return value.
 These are required gates, not claims that the current disposable spike has
 implemented every fixture.
 
-## Plugin Platform Security Floor And Deferred Work
+## Future Qualification Gates
 
-The first plugin-platform security phase includes canonical IDs, digest-pinned OCI artifacts, one
-verified signer policy, installation receipts, revocation records, explicit
-`T0/T1` labels, strict IPC, secret broker contracts and negative fixtures.
+The current rehearsal does not qualify a plugin platform. Each expansion fails
+closed until its own implementation and negative conformance evidence exist:
 
-Untrusted third-party execution is not implied by the first module-graph slice.
-`T2` Wasm/browser hosts, `T3` platform launchers, TUF-managed channels,
-publisher self-service, threshold promotion, transparency monitoring and `T4`
-native execution remain separately gated.
+- **Artifact admission and materialization:** prove exact transitive executable
+  dependency closure, target-specific loader and bundle receipt chains, bounded
+  extraction, traversal/link rejection, digest-before-execute, atomic promotion
+  and cleanup of partial materialization. Only then may OCI/ORAS and
+  Cosign/Sigstore adapters be described as implemented or qualified.
+- **Remote currentness:** implement and qualify TUF roles, delegation, expiry,
+  revocation, rollback/freeze protection and trusted high-water recovery before
+  mutable channels, publisher currentness or automatic updates.
+- **Hosting:** keep `T1` limited to trusted fault containment. Qualify `T2`
+  Wasm/browser or per-platform `T3` launchers before hostile code, and a `T4`
+  boundary before untrusted native workload claims.
+- **Egress and secrets:** use product-owned destination policy, DNS/redirect and
+  response limits, opaque secret references, one-operation leases, redacted
+  audit and revocation. No ambient network, credential or environment access is
+  an acceptable interim mode.
+- **State custody and migration:** define the exact state subject, owner,
+  authority and schema lineage; require current custody authorization and a
+  fenced migration lease; reconcile ambiguous effects before publication or
+  rollback.
+- **Uninstall and retained state:** enumerate every exact retained-state
+  reference and owner decision. Retirement remains non-terminal while a staged
+  pin, route, invocation, runtime, effect or attachment is unresolved, and
+  uninstall never infers deletion.
+- **Resources and cleanup debt:** enforce hierarchical CPU, wall-time, memory,
+  process/thread, descriptor, disk/inode, network, stream and queue budgets.
+  Persist cleanup debt, bound restart loops, prove descendant/resource terminal
+  receipts and make unresolved debt block unsafe reuse or retirement.
+
+Untrusted third-party execution is not implied by the module-graph slice.
+Publisher self-service, threshold promotion, transparency monitoring, stateful
+updates and public SPI remain separately gated by product evidence and an
+independent conformance implementation.
 
 ## Primary References
 

@@ -25,7 +25,7 @@ flowchart LR
     Resolver --> Lock
     Snapshot["Signed catalog snapshot"] --> Resolver
     Lock --> Admission["Verification, policy, grants"]
-    Admission --> Graph["Compiled runtime graph"]
+    Admission --> Graph["Future target-local bound plan"]
 ```
 
 - Catalog answers what is discoverable and governed.
@@ -35,7 +35,9 @@ flowchart LR
 - Grant set records environment-specific authority and remains outside the lock.
 - Offline bundle transports authenticated lock closure without becoming authority.
 - Product admission decides whether the resolved inputs may run.
-- Module graph resolves runtime capabilities for one authority scope.
+- If triggered, a product-private module graph resolves runtime capabilities
+  for one authority scope and one execution target. No such production compiler
+  exists in Foundation today.
 
 Catalog discovery is never runtime service resolution. Presence in a catalog,
 signature validity, entitlement, product authorization, and capability grants
@@ -80,19 +82,49 @@ The generated lockfile is immutable input to admission and records:
   provenance-subject, builder/source and dependency evidence required to
   re-evaluate the original decision without disappearing registry references;
 - selected contribution identities and compatibility decisions;
+- exact binding coordinates in the form
+  `(consumerModuleId, localSlotId) -> providerContributionId | null | ordered
+  providerContributionIds`, preserving required, optional, and many semantics;
 - explicit target tuple and complete target-specific graph;
 - bound optional edges or enumerated semantic omission records;
 - configuration schema version and non-secret fingerprint;
 - requested capability set;
 - product and host compatibility ranges;
-- graph input digest;
+- graph input, `PlanTemplateDigest`, and `PlanContentDigest` values where a
+  triggered private graph exists;
 - resolution timestamp and freshness evidence;
 - signature over the lock when required by policy.
 
-The lockfile never contains grants, raw secrets, product authorization, or
-runtime service instances. Re-resolution is explicit and creates a reviewable
-diff. Normal verification performs no dependency solving and no catalog or
-registry lookup; it verifies the exact authenticated closure already recorded.
+The lockfile never contains grants, raw secrets, product authorization,
+candidate/runtime generations, active-head revisions, or runtime service
+instances. Re-resolution is explicit and creates a reviewable diff. Normal
+verification performs no dependency solving and no catalog or registry lookup;
+it verifies the exact authenticated closure already recorded.
+
+For an absent optional provider, the binding value is literal `null`; omission
+is malformed. Ordered-many order and minimum/maximum are graph cardinality and
+semantic order, never runtime concurrency controls.
+
+## Future Artifact Contribution Index
+
+A future admission pipeline may derive an immutable
+`ArtifactContributionIndex` for each verified artifact. This is a target model,
+not an implemented Foundation contract, catalog table, or discovery service.
+Each canonical entry binds:
+
+- artifact digest and stable contribution ID;
+- digest of the inert contribution descriptor;
+- exact execution target and trust/isolation tier;
+- entrypoint plus complete digest-pinned blob closure;
+- configuration, message, state, and capability schema references and digests;
+- declared host/product compatibility;
+- requested capabilities, which remain requests rather than grants; and
+- an isolated-host loader key, never an interpolated built-in import.
+
+The index is derived only from admitted inert descriptors, OCI evidence, and
+verification receipts. Discovery can read these inert bytes without importing
+or evaluating the contribution's executable code. It does not select providers,
+grant authority, establish compatibility by itself, or make an artifact active.
 
 MVP resolution uses exact source mappings, explicit capability bindings and
 deterministic closed-world constraints. Unique-provider auto-binding remains
@@ -174,9 +206,17 @@ sequenceDiagram
     H-->>U: admitted, rejected, or approval required
 ```
 
-Update prepares a new lock and candidate generation. It never mutates the
-installed identity in place. Rollback is a new higher generation using a
-previously approved digest, subject to current revocation and rollback policy.
+Update prepares a new lock and, only in a future triggered runtime graph, a new
+monotonic `CandidateGeneration`. It never mutates the installed identity in
+place. Equivalent normalized plan content retains its `PlanContentDigest`;
+generation is not a hash input. Rollback uses prior content under a new higher
+candidate generation and `ActiveHeadRevision`, subject to current revocation
+and rollback policy.
+
+Catalog and lock evidence describe one target at a time. Relationships among
+services, processes, Workers, and isolated hosts belong to a separate
+product-owned deployment plan; catalog federation does not synthesize a global
+runtime graph.
 
 Uninstall removes activation and installation references after bounded drain.
 It does not automatically delete product or user data. Revocation can stop new

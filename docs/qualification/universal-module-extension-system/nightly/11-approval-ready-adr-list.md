@@ -8,6 +8,7 @@ related:
   - ADR-0011
   - ADR-0012
   - ADR-0013
+  - ADR-0014
   - OD-002
   - OD-003
 ---
@@ -23,12 +24,13 @@ resolved, or superseded by this dossier.
    completion evidence, or name a different capability, bounded context,
    accountable owner, two built-ins, authority exclusions, success measure,
    and deletion trigger.
-2. **Semantic ownership path.** Either accept ADR-0013 or an equivalent successor
-   with explicit ADR-0012 supersession metadata for first-consumer semantics, or
-   retain the ADR-0012 Foundation path and resolve OD-003, UMEQ-011, and
-   UMEQ-013 before graph work.
-3. **Rehearsal architecture.** Approve direct composition and the rule that no
-   graph is built without measured need.
+2. **Semantic ownership path.** Apply accepted ADR-0013's cumulative
+   first-consumer ownership model. ADR-0012 is historical authority, not a
+   competing Foundation graph path.
+3. **Rehearsal architecture.** Apply ADR-0014's direct-composition direction:
+   the feature exports a pure `FeatureModuleFactory`, the application root owns
+   implementation/configuration/lifetime, and no graph is built without
+   measured runtime-selection or independent-lifecycle need.
 
 ## Approval Questions For Later Phases
 
@@ -52,9 +54,10 @@ resolved, or superseded by this dossier.
 
 | Authority | Current status | W11 effect |
 | --- | --- | --- |
-| ADR-0012 | Accepted and effective | Remains effective |
+| ADR-0012 | Superseded by ADR-0013 | Preserved historical authority only |
 | ADR-0011 | Proposed | Remains non-operative |
-| ADR-0013 | Proposed | Remains non-operative |
+| ADR-0013 | Accepted cumulative successor | Product-local ownership is effective |
+| ADR-0014 | Accepted | Static-first rehearsal direction is effective |
 | OD-002 and OD-003 | Open | Remain open |
 | UMEQ-009 through UMEQ-018 | Open | Remain open |
 

@@ -40,6 +40,12 @@ Plugin contributions may become runtime modules or remote proxies after host
 verification. Built-in modules reuse the same semantic contracts but do not
 pretend to be installed artifacts.
 
+A package boundary proves only that bytes, exports, dependencies, and release
+metadata can be isolated. It is not evidence that Foundation owns the enclosed
+semantics, that the API is product-neutral, or that a runtime abstraction should
+be public. Semantic ownership remains with the capability owner until an
+accepted extraction basis and independent conformance evidence prove otherwise.
+
 ## Colocation First
 
 Before extraction, keep contracts, core, module adapter, technology adapters,
@@ -88,17 +94,23 @@ ownership and lifecycle.
 | Plugin artifact | Independent install, update, rollback, trust, or isolation lifecycle |
 | Process/service | Trust, deployment, scaling, failure, or data-ownership boundary requires it |
 
-An imagined future consumer is not evidence. Security isolation may justify an
-earlier process boundary, but it must be explicit.
+An imagined future consumer is not evidence. Nor is a packed fixture, workspace
+split, copied repository, or consumer that merely imports the same implementation.
+An independent consumer must exercise the semantics it actually needs through
+its own use case and expected outcomes; it need not reproduce irrelevant source
+semantics, but it must independently prove every semantic claimed as shared.
+Security isolation may justify an earlier process boundary, but it must be
+explicit.
 
 There are two distinct extractions. A product may first extract a product-scoped
 library or adapter inside its own repository when that boundary has independent
-value. Under effective ADR-0012, later Foundation admission may be justified by
-a second real consumer, an independent replacement/release lifecycle,
-independent deployment/isolation, or a qualified public SPI. Proposed ADR-0013
-would narrow product-neutral runtime-semantic extraction to two independently
-authored consumers, but that proposal is not an active admission rule.
-Product-local extraction is not Foundation admission.
+value. Under accepted ADR-0013, later Foundation package admission may be
+justified by a second real consumer, an independent replacement/release
+lifecycle, independent deployment/isolation, or a qualified public SPI.
+Product-neutral runtime-semantic extraction is narrower: two independently
+authored consumers, executable cross-consumer conformance, and a separate
+accepted extraction decision are mandatory. Product-local extraction is not
+Foundation admission.
 
 When extraction is justified, related packages remain discoverable:
 
@@ -121,15 +133,16 @@ cannot reserve or admit packages on the strength of this qualification alone.
 
 The catalog keeps its stable version 1 identity shape. Every non-empty entry
 requires a separate versioned package-admission manifest binding an accepted
-extraction ADR, one explicit ADR-0012 admission basis, owner repository,
+extraction ADR, one explicit ADR-0013 package-admission basis, owner repository,
 neutrality claim, release policy, exact conformance version, source commits,
 implementation identities, passed results, and digest-bound evidence
 references. Second-consumer and public-SPI bases require two records for their
 respective consumer or implementation claim; independent lifecycle and
 deployment/isolation bases require one. A missing or malformed manifest fails
 closed. This validates admission evidence shape and identity, not the semantic
-truth of a self-reported basis. Canonical HTTPS locations and distinct evidence
-digests prevent URL aliases or mirrors of the same bytes from satisfying
+truth of a self-reported basis. Package-boundary evidence cannot substitute for
+semantic evidence. Canonical HTTPS locations and distinct evidence digests
+prevent URL aliases or mirrors of the same bytes from satisfying
 independent evidence more than once. A release promotion gate must additionally
 resolve every slug to a stable source-provider repository ID, prove the selected
 basis and claimed implementation independence, and retrieve and verify the
@@ -192,7 +205,10 @@ must prove:
 
 The source workspace is not evidence of a valid published package because
 workspace links can hide missing files, undeclared dependencies, and invalid
-exports.
+exports. Conversely, a green packed-consumer fixture proves package mechanics,
+not Foundation semantic ownership. Admission evidence must also show an
+independent consumer exercising its own required shared semantics and rejecting
+incompatible behavior.
 
 ## Local Development
 

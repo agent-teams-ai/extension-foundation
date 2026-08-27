@@ -7,6 +7,7 @@ summary: Indexes the completed non-operative nightly research dossier and its im
 related:
   - ADR-0012
   - ADR-0013
+  - ADR-0014
   - OD-003
 ---
 
@@ -17,6 +18,13 @@ runtime, public SPI, and dynamic or untrusted plugin platform now. The dossier
 does not accept an ADR or authorize production implementation. Its only
 conditional next step is a product-local static trusted rehearsal after product
 owner approval.
+
+W11's static imports and Pure DI direction is the sole current implementation
+recommendation. Earlier W1-W10 graph-first conclusions and the pre-W11 roadmap
+are preserved historical research: they retain provenance and constrain later
+work if measured runtime-selection or independent-lifecycle need appears, but
+they are not a competing roadmap. No report, package, or current Git SHA is
+production-qualified by this index.
 
 ## Reports
 

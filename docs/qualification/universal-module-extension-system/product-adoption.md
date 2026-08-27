@@ -3,11 +3,12 @@ id: qualification.universal-module-extension-system.product-adoption
 type: qualification
 status: qualified
 owner: architecture
-summary: Maps reusable Foundation responsibilities to product-owned extension points without moving product authority into Foundation.
+summary: Maps the static-first product rehearsal and later evidence-gated extension adoption without moving product authority into Foundation.
 related:
   - ADR-0001
   - ADR-0010
-  - ADR-0012
+  - ADR-0013
+  - ADR-0014
   - OD-003
 ---
 
@@ -17,24 +18,42 @@ related:
 
 ```mermaid
 flowchart TB
-    Foundation["Extension Foundation<br/>identity, graph, lifecycle outcomes, trust protocols"]
+    Foundation["Extension Foundation<br/>no admitted product runtime package"]
     O["Orchestrator<br/>business orchestration authority"]
     AR["Agent Runtime<br/>execution and enforcement authority"]
     UI["Frontend<br/>interaction and presentation authority"]
     Catalog["Extension Catalog<br/>discovery and governance state"]
     Platform["Platform<br/>managed operation and commercial policy"]
 
-    Foundation --> O
-    Foundation --> AR
-    Foundation --> UI
-    Foundation --> Catalog
+    O -. future proved neutral intersection .-> Foundation
+    AR -. future proved neutral intersection .-> Foundation
+    UI -. future proved neutral intersection .-> Foundation
+    Foundation -. future admitted protocol .-> Catalog
     Platform -. optional operator .-> Catalog
 ```
 
 Foundation never imports product models. Each product owns its extension-point
-contracts, adapters, composition profiles, grants, conformance additions, and
-authority decisions. Shared Foundation semantics make host behavior comparable;
-they do not make products one bounded context.
+contracts, adapters, static composition, grants, conformance additions, and
+authority decisions. The first rehearsal consumes no Foundation runtime
+package. Any later shared semantics require the second-consumer, reconciliation,
+extraction, admission, and publication gates in the
+[final recommendation](final-recommendation.md); they do not make products one
+bounded context.
+
+## Two-Level Composition
+
+The owning feature exports a pure `FeatureModuleFactory`. It accepts explicit
+feature dependencies and returns the feature's product-owned port or use-case
+surface without reading configuration, selecting a provider, or managing an
+application lifetime. The application composition root statically imports the
+two implementations, materializes the implementation choice and configuration,
+chooses lifetime, and calls the factory.
+
+This division keeps feature composition testable while leaving deployment
+policy at the application edge. A factory is not an
+`ExtensionModuleDefinition`, resolver, container, registry, or service locator.
+Tenant, project, workspace, run, and session identities do not implicitly
+create DI scopes.
 
 ## Orchestrator
 
@@ -58,22 +77,23 @@ receipt. The owning use case validates it before mutation. A workflow engine
 adapter never owns Run aggregates, product approvals, work completion, or
 business recovery.
 
-The leading first-pilot candidate is Work Coordination completion evidence. A
-private provider may return evidence, pending, unknown/reconciliation, or
-unsupported; it never returns a bare completion Boolean and cannot complete
-Work. The pilot starts with two fixed built-ins, including one independently
-authored, feature-local reference implementation. It uses post-commit dispatch,
-stable operation identity, explicit provider binding, and no dual mutation
-authority during migration. Packaging remains a later evidence-backed decision.
+The leading first-pilot candidate is Work Coordination Work Completion evidence.
+It is a candidate product-owned static `T0` rehearsal, not a graph-first module
+pilot and not an accepted new SPI. A private provider may return evidence,
+pending, unknown/reconciliation, or unsupported; it never returns a bare
+completion Boolean and cannot complete Work. The rehearsal starts with two
+fixed audited built-ins, including one independently authored feature-local
+implementation. The application composition root statically imports both,
+materializes the selection, configuration, and lifetime, and injects the
+selected implementation through the feature's pure `FeatureModuleFactory`.
 
-This pilot starts only after its owning feature has an accepted internal model
-and one complete Phase 1 ownership path is approved. The recommended
-product-local path additionally requires ADR-0013 acceptance. If ADR-0012
-remains effective, the pilot instead consumes a Foundation-owned graph compiler
-only after `UMEQ-011` and `UMEQ-013` are resolved through `OD-003`; its product
-contract and authority remain feature-owned. Publishing the contract remains a
-separate decision after compatibility and substitutability evidence; Foundation
-does not own its product DTOs.
+The rehearsal uses post-commit dispatch, stable operation identity, stale-result
+revalidation, and no dual mutation authority. It has no runtime graph, module
+descriptor grammar, global container, plugin loading, Foundation package, or
+public contract. Packaging remains a later evidence-backed decision. If direct
+composition later fails a measured runtime-selection or independent-lifecycle
+need, the owning product may separately approve the smallest private graph; it
+does not start with one.
 
 ## Agent Runtime
 
@@ -106,8 +126,33 @@ The safest first AR slice is non-executable: one internal provider-bundle
 descriptor plus one pinned OpenCode instruction classifier/compiler with an
 empty executable closure. It proves strict schemas, deterministic digests,
 secret-shaped-field rejection and fail-closed omission without provider launch,
-credentials, workspace mutation or sandbox claims. Executable adoption remains
-blocked by AR's own Agent Execution decisions.
+credentials, workspace mutation or sandbox claims. Because it has no executable
+provider selection, independently managed resources, activation, or lifecycle,
+this descriptor is not an independent graph/lifecycle consumer and cannot
+satisfy the second-consumer gate for extracting runtime semantics. Executable
+adoption remains blocked by AR's own Agent Execution decisions.
+
+## Plugin Contribution Mapping
+
+A future `PluginArtifact` is a distribution and trust envelope, not an
+application module or product port. After verification and product admission,
+each artifact contribution is translated by a product-owned adapter into a
+consumer-owned product port. The owning use case still authorizes and validates
+the result.
+
+```mermaid
+flowchart LR
+    Artifact["PluginArtifact contribution"] --> Adapter["Product-owned adapter"]
+    Adapter --> Port["Feature-owned product port"]
+    Port --> UseCase["Owning use case and authority"]
+    Adapter -. "only after measured graph/lifecycle need" .-> Runtime["Private product runtime module"]
+```
+
+A contribution becomes a runtime module only when runtime selection or
+independent lifecycle management is actually required and the product has
+approved the private graph described in Phase 2. Artifact installation alone,
+multiple contribution records, or a declarative descriptor does not create
+that need.
 
 ## Frontend
 

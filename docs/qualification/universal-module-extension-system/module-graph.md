@@ -15,28 +15,33 @@ related:
 
 ## Recommendation
 
-Use a small native TypeScript graph compiler as the canonical implementation
-for the first slice. Keep its inputs and outputs serializable and independent of
-Cordis, Awilix, Effect, or a graph library. Commodity graph libraries may be
-used behind a private algorithm adapter and as differential-test oracles.
+The current baseline is product-first static composition: Pure DI, explicit
+factories and a handwritten target-local literal table. There is no production
+graph compiler or Foundation module runtime today. The model below is the
+qualified target if a real product slice later triggers a private runtime
+graph. Its inputs and outputs stay serializable and independent of Cordis,
+Awilix, Effect, or a graph library. Commodity graph libraries may be used
+behind a private algorithm adapter and as differential-test oracles.
 
 This is a recommendation under OD-003, not an accepted public SPI.
 
 ```mermaid
 flowchart LR
-    Definitions["Product-selected definitions"] --> Parse["Validate descriptors"]
+    Definitions["Product-selected inert declarations"] --> Parse["Validate descriptors"]
     Profile["Bindings and configuration"] --> Parse
     Parse --> Resolve["Resolve capability slots"]
     Resolve --> Check["Check versions, scopes, cycles"]
-    Check --> Plan["Canonical immutable plan"]
-    Plan --> Digest["Plan digest"]
-    Plan --> Activate["Lifecycle coordinator"]
+    Check --> Plan["Canonical immutable plan template"]
+    Plan --> TemplateDigest["Template digest"]
+    Plan --> Target["Target execution closure"]
+    Target --> Scope["Scope binding + content digest"]
+    Scope --> Activate["Runtime generation"]
 
     Cordis["Optional Cordis adapter"] -. private .-> Activate
     Graphlib["Optional graph algorithm adapter"] -. private .-> Check
 ```
 
-The graph compiler performs no imports, factories, provider calls, timers,
+Any future graph compiler performs no imports, factories, provider calls, timers,
 filesystem access, network access, or product mutations. Invalid input produces
 diagnostics and zero effects.
 
@@ -52,11 +57,21 @@ identities separate.
 | `ContributionIdentity` | One implementation offered by an installation or built-in source | Declared implementation changes incompatibly |
 | `ModuleIdentity` | Stable composition and lifecycle unit | Logical module is replaced |
 | `CapabilityIdentity` | Product-owned semantic contract | Owning contract changes identity |
-| `GraphGeneration` | One compiled and admitted plan in one authority scope | A new candidate is compiled |
-| `ModuleActivationGeneration` | One activation attempt for one module in a graph generation | Module is prepared again |
+| `PlanTemplateDigest` | Content identity of canonical target-independent graph intent | Semantic template input changes |
+| `PlanContentDigest` | Content identity of one canonical target closure and scope binding | Any normalized plan content changes |
+| `CandidateGeneration` | Monotonic operational identity for one preparation attempt in an authority scope | A candidate attempt is allocated, even for identical content |
+| `ActiveHeadRevision` | Monotonic compare-and-set revision of the active-head record | The authority's active-head record changes |
+| `RuntimeGeneration` | Monotonic identity of an admitted runtime instance set | A runtime generation is admitted |
+| `ModuleActivationGeneration` | One activation attempt for one module in a runtime generation | Module is prepared again |
 
-Publisher, artifact, installation, contribution, module, graph generation, and
-module activation generation are never aliases. A built-in module has no
+Publisher, artifact, installation, contribution, module, plan digest, candidate
+generation, active-head revision, runtime generation, and module activation
+generation are never aliases. Equivalent normalized inputs produce identical
+`PlanTemplateDigest` and `PlanContentDigest` values. Operational generations
+and revisions are allocated monotonically and are never hash inputs. Reusing
+content, including rollback to prior content, therefore keeps its content
+digest while receiving a higher candidate generation and active-head revision.
+A built-in module has no
 publisher, artifact, manifest, catalog, or artifact-installation identity. It
 does have a `BuiltInModuleInstallation` activation-source identity bound to the
 product authority scope, stable module identity, and immutable implementation
@@ -64,18 +79,21 @@ digest as required by ADR-0009 and retained by ADR-0010.
 
 Capability identity is a stable URI-like string owned by the product feature,
 for example `agent-teams.orchestrator/work-placement-proposal`. Under the
-recommended product-local path, the owning product also owns its private grammar
-and comparison rules only after ADR-0013 is accepted. While ADR-0012 remains
-effective, Foundation retains module-semantic ownership and implementation is
-blocked until `UMEQ-011` and `UMEQ-013` are resolved through `OD-003`. Effective
-ADR-0012 permits later Foundation extraction through any of its explicit
-evidence gates and a separate accepted extraction decision. Foundation never
-owns product vocabulary.
+accepted product-local path, the owning product also owns its private grammar
+and comparison rules. Foundation may own only a neutral semantic intersection
+proven by two independently authored consumers, executable cross-consumer
+conformance, and a separate accepted extraction decision. Package extraction
+under another ADR-0013 evidence basis does not prove that semantic intersection.
+Foundation never owns product vocabulary.
 
-## Descriptor Boundary
+## Declaration And Executable Boundaries
 
-A descriptor is inert data. The exact public schema remains open, but the
-qualification uses this conceptual shape:
+A module has exactly one metadata authority: a fixed-name, module-local,
+serialized declaration whose bytes are inert data. The exact filename and
+public schema remain open; a consumer rehearsal may choose a private name such
+as `extension-module.json`. Discovery parses that bounded file and never imports
+TypeScript, executes a getter or decorator, or resolves the activation
+entrypoint. The qualification uses this conceptual shape:
 
 ```text
 ExtensionModuleDefinition
@@ -99,10 +117,14 @@ ExtensionModuleDefinition
   sourceRef
 ```
 
-The descriptor does not contain executable factories, container tokens,
+The declaration does not contain executable factories, container tokens,
 framework contexts, credentials, permission grants, or mutable runtime state.
-Executable activation is resolved only after verification, admission, graph
-compile, and product authorization.
+The executable activation factory is a separate target-specific binding,
+resolved only after verification, admission, graph compile, and product
+authorization. Generated TypeScript handles and dependency types, aggregate
+inventory, reverse-dependency index, diagrams, and diagnostics are disposable
+projections of the serialized declarations and selected profile. Authors do not
+repeat the metadata in `defineExtensionModule(...)` or any executable module.
 
 ## Identity Authoring And Projections
 
@@ -113,7 +135,7 @@ Identity authority stays with the semantic owner:
 | `ModuleId`, requirements, offers, and bounded source reference | The owning module's colocated inert declaration |
 | `CapabilityId`, compatibility family, and semantic owner | The owning product capability contract |
 | Provider selection and collection order | The product composition profile |
-| TypeScript handles, indexes, reverse dependencies, and diagrams | Deterministic generated projections |
+| TypeScript handles and dependency types, inventory, reverse dependencies, diagrams, and diagnostics | Deterministic generated projections |
 | Implementation, plan, loader, and artifact digests | Build or admission receipts |
 
 Module and capability identities are stable, authority-qualified strings. They
@@ -144,26 +166,23 @@ typed imports, but it is disposable output and cannot be edited as a registry.
 No global `moduleIds` object is an authoring source.
 
 `provides` names product-owned capability contracts implemented by the module;
-it does not name modules. A conceptual authoring facade is:
+it does not name modules. Generated code may give application code a typed view
+of the declaration, but is not another metadata authoring facade. Conceptually:
 
 ```ts
-const activityFeedModule = defineExtensionModule({
-  id: ActivityFeedModuleId,
-  provides: [provide(ActivityFeedV1)],
-  requires: {
-    events: required(RuntimeEventStreamV1),
-    search: optional(LogSearchV1),
-    transforms: many(LogTransformV1, {
-      minProviders: 1,
-      maxProviders: 8,
-      ordering: "profile",
-    }),
-  },
-});
+type ActivityFeedDependencies = {
+  events: RuntimeEventStreamV1;
+  search: LogSearchV1 | undefined;
+  transforms: readonly [LogTransformV1, ...LogTransformV1[]];
+};
+
+export const activateActivityFeed = (
+  dependencies: ActivityFeedDependencies,
+): ActivityFeedRuntime => { /* executable code, no metadata */ };
 ```
 
-These values are generated typed handles backed by inert declaration data. The
-example fixes only the private authoring vocabulary, not a published API.
+The dependency type and handles are derived from inert declaration data. The
+example fixes only the separation, not a published API.
 
 - `required(C)` resolves exactly one explicitly bound compatible provider and
   injects `C`; zero or multiple unresolved candidates fail compilation.
@@ -176,14 +195,14 @@ example fixes only the private authoring vocabulary, not a published API.
   never supply it. A non-semantic collection may instead use a canonical
   identity order in the normalized contract.
 
-The compiler may type a collection with `minProviders: 1` as a non-empty tuple.
+The future compiler may type a collection with `minProviders: 1` as a non-empty tuple.
 The value `8` above is illustrative; every real limit is product policy plus a
 deployment-wide safety ceiling.
 
 ## Closed-World Resolution
 
 The product composition profile selects the complete candidate module set and
-binds each dependency slot. The compiler does not scan a global registry.
+binds each dependency slot. A future compiler does not scan a global registry.
 
 Rules:
 
@@ -198,6 +217,16 @@ Rules:
 6. A bound optional edge participates in cycle and scope analysis.
 7. Unknown descriptor fields follow the selected compatibility policy; they are
    never silently interpreted as grants or executable instructions.
+
+Every resolved slot is recorded at the explicit coordinate
+`(consumerModuleId, localSlotId)`. Its value is exactly one
+`providerContributionId`, literal `null` for optional absence, or an ordered
+list of provider contribution IDs. Missing coordinates and `null` are not
+interchangeable. The declaration supplies `required`, `optional`, or `many`;
+the profile supplies selections; and the compiled binding preserves both.
+For `many`, minimum, maximum, and order constrain graph cardinality and semantic
+iteration order only. They never specify activation parallelism, worker count,
+dispatch concurrency, or backpressure.
 
 ```mermaid
 flowchart TD
@@ -222,12 +251,13 @@ flowchart LR
     Fragments --> Inventory["Derived diagnostic inventory"]
     Profile["Product profile"] --> Compile["Compile exact plan"]
     Inventory --> Compile
-    Compile --> Plan["Immutable plan + digest"]
+    Compile --> Plan["Immutable plan template + digest"]
     Plan --> Loaders["Target-specific private loader receipt"]
     Loaders --> Runtime["Authorized runtime generation"]
 ```
 
-Build and CI:
+This is a target model, not a description of a pipeline implemented today.
+Build and CI for a future graph would:
 
 1. Resolve bounded roots from consumer-owned topology and admitted package
    paths. The Foundation package catalog may contribute roots after package
@@ -240,18 +270,19 @@ Build and CI:
    matching fragment.
 4. Compile one exact profile and lock. Provider selection happens once; normal
    startup verifies and materializes that result rather than resolving again.
-5. For co-released built-ins, emit a private lazy literal-import table per host
-   target: Node/server, Electron main, preload, renderer/Worker, and browser
-   targets never share one authority table.
+5. For co-released built-ins, start with a handwritten private lazy
+   literal-import table per host target: Node/server, Electron main, preload,
+   renderer/Worker, and browser targets never share one authority table.
 6. Bind declaration-input, resolved-plan, loader-source, implementation, and
    emitted-bundle digests through receipts. The selected executable IDs and
    loader keys form an exact bijection. Invalid and unselected sentinel modules
    must prove zero top-level evaluation in every supported target.
-7. Generate into a digest-named temporary location and publish atomically only
+7. Only after repeated wiring or profile variants demonstrate drift, generate
+   the target table into a digest-named temporary location and publish atomically only
    after a clean target build, byte-for-byte regeneration check, stale-output
    check, and emitted dependency-graph audit.
 
-The runtime receives only the exact plan and matching target loader receipt. It
+The future runtime receives only the exact plan and matching target loader receipt. It
 does not scan the filesystem, package catalog, aggregate inventory, decorators,
 or a global container. Changing a built-in loader closure requires a new build
 or host restart; ESM query-string cache busting is not a lifecycle mechanism.
@@ -261,10 +292,31 @@ adapter keyed by immutable artifact and contribution identity. They are never
 added to the trusted built-in table by runtime string interpolation. Tree
 shaking and chunk count are optimization evidence, not authorization evidence.
 
-The first fixed slice may use a handwritten private literal-import table plus
-the same declaration/table bijection check. Deterministic loader generation is
-introduced only when repeated wiring or profile variants justify it; the target
-receipt and isolation invariants do not change.
+The current fixed slice uses static Pure DI and a handwritten private
+literal-import table. Declaration/table bijection checks are the first useful
+automation. Deterministic loader generation is introduced only after repeated
+wiring or profile drift justifies it; the target receipt and isolation
+invariants do not change.
+
+## Staged Plan Decomposition
+
+Scale does not justify one deployment-wide graph. A future compiler decomposes
+work into four explicit stages:
+
+1. `PlanTemplate` validates inert declarations and profile bindings and emits a
+   target-independent semantic template identified by `PlanTemplateDigest`.
+2. A target execution closure selects exactly the built-in entrypoints or
+   isolated artifact blobs usable by one host target. Each target graph is
+   local to that process/Worker/isolated-host boundary.
+3. Scope binding applies one authority scope's configuration fingerprints,
+   grants, policy revisions, and admitted artifact evidence. Canonical stage
+   two and three content is identified by `PlanContentDigest`.
+4. Runtime generation allocates monotonic candidate and runtime identities,
+   activates the bound content, and publishes through `ActiveHeadRevision` CAS.
+
+Cross-target and cross-service placement, rollout, routing, compatibility, and
+failure relationships belong to a separate product-owned deployment plan. They
+are not edges smuggled into a Foundation module DAG.
 
 ## Authority Scope And Module Lifetime
 
@@ -273,9 +325,10 @@ opaque product-owned authorization and custody identity. It may represent a
 deployment, tenant, project, workspace, or session boundary, but it never asks
 the DI container or module runtime to create a corresponding scope.
 
-The first implementation has one `ModuleLifetime`: one admitted module instance
-per immutable graph generation. Replacement creates a new generation, performs
-staged readiness and cutover, then drains the old generation. Transient, pooled,
+The first triggered implementation would have one `ModuleLifetime`: one
+admitted module instance per immutable runtime generation. Replacement creates
+a new generation, performs staged readiness and cutover, then drains the old
+generation. Transient, pooled,
 per-tenant, per-project, per-workspace, per-run, and per-session module lifetimes
 are deferred until independent product evidence requires and qualifies them.
 Foundation validates declared authority-scope relations but does not define
@@ -292,19 +345,38 @@ resolved direct capabilities. It cannot access:
 - product repositories or Unit of Work unless the product intentionally grants
   a narrow non-transactional capability.
 
-## Cycles And Ordering
+## Typed Edges, Cycles, And Orders
 
-Hard required edges form a directed graph. The compiler rejects every strongly
-connected component with more than one node and every self-edge. Production
-diagnostics must include a minimal useful cycle path and source locations for
-all edges. The disposable ID-DAG spike currently proves a stable deterministic
-witness, not shortest-path optimality or source attribution.
+The target model preserves the reason for every edge, rather than flattening
+all relationships into `dependsOn`. Edge kinds include capability readiness,
+drain safety, retirement/resource custody, and state-migration sequencing.
+Other kinds require explicit semantics and validation before admission.
+
+Hard capability-readiness edges form a directed graph. A future compiler
+rejects every strongly connected component with more than one node and every
+self-edge. Its production diagnostics must include a minimal useful cycle path
+and source locations for all edges. The disposable ID-DAG spike currently
+proves a stable deterministic witness, not shortest-path optimality or source
+attribution.
 
 Optional and ordered-many edges become hard edges when bound. Observation
 hooks do not create graph edges unless invocation requires the target to be
 ready before the source.
 
-The compiler emits deterministic activation levels:
+From typed edges, a future compiler derives distinct deterministic orders:
+
+- activation prepares providers before capability consumers;
+- drain seals and drains consumers before providers they can still call;
+- retirement releases dependents before resources or providers they retain;
+- migration follows its explicit state-compatibility and custody edges, which
+  need not match activation edges.
+
+Stop and rollback use the successful typed-edge receipts, not a universal
+reverse topological order. T0 may implement only capability-readiness edges,
+but neither its stored schema nor any published claim may assert that one DAG
+defines activation, drain, retirement, and migration.
+
+A future compiler may emit deterministic activation levels:
 
 ```text
 level 0: modules with no unresolved dependencies
@@ -312,28 +384,44 @@ level N: modules whose dependencies are in earlier levels
 ```
 
 Modules in one level may prepare concurrently. Canonical serialization sorts
-identities for evidence only; it does not invent business ordering. Stop and
-rollback traverse the actual successful activation DAG in reverse levels.
+identities for evidence only; it does not invent business ordering. `many`
+provider order remains semantic collection order and does not authorize
+concurrent preparation.
 
-## Plan And Digest
+## Plan Evidence And Operator Read Model
 
-The plan is immutable, serializable evidence containing:
+The future plan template and bound plan are immutable, serializable evidence
+containing:
 
 - schema version;
 - authority scope hash;
-- graph generation;
 - selected module and implementation identities;
-- exact contribution bindings and declared order;
+- every binding coordinate, including explicit optional `null`, and declared
+  ordered-many order;
 - compatibility decisions;
-- activation levels and dependency edges;
+- typed edges plus distinct activation, drain, retirement, and migration orders;
 - configuration fingerprints, never raw secrets;
 - required host tiers and capability requests;
 - source evidence and stable diagnostics;
 - canonicalization algorithm version.
 
-The digest is computed from canonical bytes. It identifies the plan, not its
-authorization. A valid digest cannot bypass admission, grant revision,
+`PlanTemplateDigest` is computed from canonical template bytes.
+`PlanContentDigest` is computed from the canonical target closure and scope
+binding. Candidate generation, runtime generation, active-head revision,
+timestamps, attempts, and mutable status are excluded from both. A digest
+identifies content, not its authorization. A valid digest cannot bypass
+admission, grant revision,
 entitlement, product policy, readiness, or generation fences.
+
+A future operator read model must join, without conflating, profile intent,
+resolved lock, plan template/content digests, candidate and runtime generation,
+and active-head revision. For each contribution and binding it explains why it
+was selected, denied, or inactive and exposes reverse dependencies. Every
+proposed change emits an immutable change-impact artifact describing retained,
+restarted, replaced, degraded, and disabled modules; peak old/new coexistence;
+required state operations and compatibility; rollback availability and limits;
+and target/scope blast radius. This artifact is planning evidence, not approval
+or execution authority.
 
 ## Diagnostics
 
@@ -373,7 +461,7 @@ diagram is not another source of truth.
 | Awilix | Useful in product composition roots, not a graph or lifecycle authority | Composition-only |
 | Graph library | Useful behind an algorithm adapter and as an independent oracle | Optional private primitive |
 
-The expected native compiler is deliberately small: descriptor validation,
+If triggered, the expected native compiler is deliberately small: descriptor validation,
 binding resolution, scope/version checks, cycle detection, deterministic levels,
 canonical serialization, and diagnostics. It does not implement installation,
 security policy, DI reflection, hot reload, process management, or distributed
@@ -384,20 +472,21 @@ proves deterministic scheduling, immutable plan data and graph diagnostics. A
 separate disposable binding compiler now proves explicit `required`, `optional`
 and `ordered-many` bindings plus selected cardinality, compatibility, ambiguity
 and binding-induced-cycle negatives. It does not admit a production grammar,
-scope/source model, package, public SPI or runtime owner. Production Phase 1
-therefore remains blocked. Ownership follows the single approved Phase 1 path:
-product-local only after ADR-0013 and the owning feature decision are accepted,
-or Foundation-owned while ADR-0012 remains effective only after `UMEQ-011` and
-`UMEQ-013` are resolved through `OD-003`.
+scope/source model, package, public SPI or runtime owner. Phase 1 is the single
+approved product-local static Pure DI rehearsal under ADR-0013, ADR-0014, and an
+accepted owning feature decision. A production runtime graph remains blocked
+until a measured trigger and accepted owning-product runtime decision satisfy
+the later gate.
 
 ## Scale And Complexity
 
-For `V` modules and `E` resolved edges, validation and topological compilation
+For one target-local graph with `V` modules and `E` resolved typed edges,
+validation and topological compilation
 should remain `O(V + E)` aside from deterministic sorting, which may add
 `O(V log V + E log E)`. Synthetic qualification targets are 1,000 and 10,000
 modules, while normal product profiles should remain much smaller.
 
-The compiler must enforce explicit profile limits before allocation:
+A future compiler must enforce explicit profile limits before allocation:
 
 - maximum descriptors and edges;
 - maximum descriptor and diagnostic byte size;
@@ -407,19 +496,22 @@ The compiler must enforce explicit profile limits before allocation:
 
 ## Related Approval Forks
 
-Provider binding and contract compatibility remain unresolved. Their only
-normative option sets, estimates, and approval authorities are
-[UMEQ-011](unresolved-decisions.md#umeq-011-provider-binding-policy) and
+ADR-0014 fixes explicit product-profile provider binding for the static
+rehearsal and constrains any future private graph. Contract source and
+compatibility remain unresolved; their only normative option set, estimates,
+and approval authority are
 [UMEQ-012](unresolved-decisions.md#umeq-012-contract-source-and-compatibility-model).
-This graph document does not duplicate or narrow those approval surfaces.
+This graph document does not duplicate or narrow that approval surface.
 
 ## Conformance Minimum
 
-- Equivalent inputs in different source orders produce identical plans,
-  diagnostics, traces, and digests.
+- Equivalent inputs in different source orders produce identical templates,
+  target/scope plan content, diagnostics, traces, `PlanTemplateDigest`, and
+  `PlanContentDigest`; allocating another candidate changes neither digest.
 - Invalid graphs execute zero factories and effects.
-- Native and Graphlib algorithms agree on cycle validity, and each emitted order
-  independently satisfies every source edge over generated DAGs.
+- Native and Graphlib algorithms agree on cycle validity, and each emitted
+  activation, drain, retirement, or migration order independently satisfies
+  the typed edges that govern it.
 - Framework adapters cannot add undeclared dependencies or change ordering.
 - Packed consumers do not receive Cordis, container, host, or product types.
 - A 10,000-module synthetic graph stays within the final memory and latency

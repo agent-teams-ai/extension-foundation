@@ -3,12 +3,13 @@ id: qualification.universal-module-extension-system.current-state
 type: qualification
 status: qualified
 owner: architecture
-summary: Records the exact repository inputs, existing decisions, implementation state, and ownership gaps used by the qualification.
+summary: Records exact qualification inputs, the static-first current recommendation, implementation state, and ownership gaps.
 related:
   - ADR-0001
   - ADR-0010
   - ADR-0012
   - ADR-0013
+  - ADR-0014
   - OD-003
 ---
 
@@ -16,13 +17,14 @@ related:
 
 ## Repository Inputs
 
-The audit captured immutable repository revisions before research started. Only
+The audit captured the following immutable historical repository revisions
+before research started. Only
 inputs marked `qualified` are independently reproducible evidence. Private
 repositories are orientation context and cannot support a qualification claim.
 
 | Repository | Revision | Evidence status | Role |
 | --- | --- | --- | --- |
-| `agent-teams-ai/extension-foundation` | `78850cbc57a1a688913a3694ca6f0efde34ab192` | qualified | Canonical owner of product-neutral extension semantics |
+| `agent-teams-ai/extension-foundation` | `78850cbc57a1a688913a3694ca6f0efde34ab192` | qualified | Qualification baseline for proposed product-neutral extension semantics |
 | `agent-teams-ai/engineering-foundation` | `3211447cff927c39821603c298ebb44d031013d7` | qualified | Development-only static policy, docs, scaffolding, and diagnostics |
 | `agent-teams-ai/agent-teams-orchestrator` | `fc06a0aecb6c37e6cade8841fa781df9193858de` | qualified | Orchestration product and product-owned extension points |
 | `agent-teams-ai/agent-runtime` | `fffa22486afb470ba5347f2ed6a8c3dc738b3add` | qualified | Runtime execution, provider, sandbox, and enforcement authority |
@@ -34,7 +36,7 @@ Foundation's accepted ADR-0003 through ADR-0005 and resolved OD-001. The private
 Platform revision informed orientation only; no finding depends on inaccessible
 bytes from that repository.
 
-The research branch is `research/universal-module-extension-qualification`,
+The research branch was `research/universal-module-extension-qualification`,
 created from the Extension Foundation revision above in an isolated worktree.
 No related product worktree or active pull request is modified by this dossier.
 
@@ -52,12 +54,13 @@ package-artifact checks.
 
 ## Effective Decision Set
 
-The accepted decision registry contains ADR-0001 through ADR-0010 and ADR-0012.
-ADR-0006 through ADR-0009 are historical and superseded by ADR-0010. ADR-0011
-remains proposed and is not silently treated as accepted. ADR-0012 may relate to
-ADR-0011 without inheriting its proposed rules. ADR-0013 is a qualification-
-driven proposal to correct ADR-0012's premature Foundation ownership; it has no
-effect until explicit product-owner approval.
+ADR-0013 is the accepted cumulative successor to ADR-0012 and retains the useful
+library/module/plugin role boundaries while moving first-consumer semantics to
+the owning product. ADR-0012 is superseded historical authority, not an
+alternative Foundation implementation path. ADR-0014 records the static-first
+rehearsal direction. ADR-0006 through ADR-0009 remain historical and superseded
+by ADR-0010. ADR-0011 remains proposed and is not silently treated as accepted.
+Open decisions remain non-operative until their owners resolve them.
 
 The effective accepted direction is:
 
@@ -71,8 +74,14 @@ The effective accepted direction is:
   capability grants, custody authorization, and runtime enforcement are
   independent decisions.
 - Extension code is not invoked inside a product Unit of Work.
-- Candidate graphs are compiled without extension execution and are published
-  only after admission, readiness, and staged-reference checks.
+- The only current implementation recommendation is a product-owned static
+  `T0` rehearsal using static imports, Pure DI, explicit materialized selection,
+  and a pure `FeatureModuleFactory`.
+- The application composition root, not the feature factory, selects the
+  implementation, configuration, and lifetime. No global service locator is
+  introduced.
+- A runtime graph is added only after measured runtime-selection or independent-
+  lifecycle need, and remains private to the owning product until later gates.
 - A reusable library core has no module-runtime dependency. A feature-owned
   module adapter may depend on the core. A plugin artifact is an optional
   distribution and trust envelope that can provide several contributions.
@@ -84,7 +93,8 @@ The accepted-decision ledger uses Engineering Foundation's canonical semantic
 payload, not raw Markdown bytes: LF-normalized body without frontmatter plus
 key-sorted immutable metadata excluding `status` and `superseded_by`, serialized
 as JSON and hashed with SHA-256. Exact Git blob comparison remains separate
-evidence that this research branch did not edit accepted ADR files.
+historical provenance evidence. The current documentation SHA is not, by
+itself, production qualification or package admission.
 
 ## Current Implementation State
 
@@ -92,6 +102,10 @@ Extension Foundation remains an architecture and qualification repository. The
 package catalog is intentionally empty. No public runtime SPI, module graph
 kernel, lifecycle coordinator, process host, browser host, or extension catalog
 service has been admitted.
+
+No product-local Phase 1 rehearsal is implemented in this repository. No
+Foundation package is promoted by the W11 synthesis, the accepted roadmap
+decisions, or this documentation update.
 
 Engineering Foundation is already integrated as an exact, development-only
 dependency. Its source graph, dependency policy, architecture-decision guard,
@@ -102,12 +116,12 @@ generation replacement, or extension isolation.
 ```mermaid
 flowchart LR
     EF["Engineering Foundation<br/>static evidence and repository policy"]
-    XF["Extension Foundation<br/>product-neutral runtime contracts"]
+    XF["Extension Foundation<br/>architecture and qualification; no admitted runtime package"]
     P["Products<br/>domain authority and product SPI"]
     C["Future extension-catalog<br/>catalog governance and state"]
 
     EF -->|development-only checks| XF
-    XF -->|released contracts| P
+    P -->|future extraction proposal after two consumers| XF
     C -->|catalog source protocol| P
     XF -.->|portable schemas and verification| C
 ```
@@ -122,12 +136,19 @@ automation conditions and post-commit effects, integration ACLs, and
 deterministic observation processors. The owning bounded context retains every
 business invariant and validates every proposed result.
 
+Work Completion evidence is the candidate first static rehearsal. It is not an
+accepted product SPI and does not begin with a graph.
+
 ### Agent Runtime
 
 Provider bundles, provider/runtime adapters, artifact storage, and observation
 or redaction adapters may become extension planes. Runtime sessions, execution
 identity, process custody, sandbox policy, capability enforcement, permission
 enforcement, fencing, and recovery remain Agent Runtime authority.
+
+The proposed non-executable AR provider-bundle descriptor has no runtime
+selection or independently managed lifecycle. It therefore does not count as a
+second graph/lifecycle consumer for extraction.
 
 ### Frontend
 
@@ -157,6 +178,9 @@ contracts. Self-hosted and direct-digest use must not require Platform.
 - OD-002 still owns key custody, signing quorum, freshness, retention, and
   offline operating parameters.
 - The package catalog has no admitted implementation slice.
+- The historical graph-first roadmap and graph/lifecycle dossier remain useful
+  bounded research, but are superseded as implementation sequencing by W11's
+  static-first recommendation.
 - No admitted production graph/lifecycle conformance suite exists yet. This
   dossier adds only disposable qualification evidence under
   `tests/qualification`; promotion requires a separate implementation change.

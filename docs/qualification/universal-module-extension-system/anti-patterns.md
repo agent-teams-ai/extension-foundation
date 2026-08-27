@@ -44,7 +44,7 @@ framework makes the unsafe behavior convenient.
 | AP-016 | Silent provider replacement or last-registration-wins | Misconfiguration changes behavior without evidence | Reject duplicate single providers or require explicit profile selection |
 | AP-017 | JavaScript object, constructor, or duplicated package token as durable identity | Bundling or reload splits identity | Use a serializable canonical contract ID and version family |
 | AP-018 | Positional dependency arrays | Reordering changes meaning without a type-safe name | Use named dependency declarations and named injected properties |
-| AP-019 | Treat provider failure as optional absence | A broken provider silently changes capability | Distinguish absent optional provider from selected provider failure |
+| AP-019 | Silently degrade after a selected optional provider fails | A selected broken provider is reclassified as absence and changes capability without review | Distinguish unselected absence from selected-provider failure and fail the candidate closed |
 | AP-020 | Resolve cycles through laziness, `forwardRef`, or runtime lookup | Initialization order and invariants become indeterminate | Reject hard cycles or redesign responsibility around an explicit mediator |
 | AP-021 | Generated runtime registry from a hand-maintained allowlist | Two sources of truth drift | Derive indexes from validated colocated descriptors and selected profiles |
 | AP-022 | Load executable code while compiling the graph | Invalid or malicious code runs before admission | Compile from bounded declarative descriptors only |
@@ -57,8 +57,8 @@ framework makes the unsafe behavior convenient.
 | --- | --- | --- | --- |
 | AP-025 | Plugin, provider, network, or filesystem call inside a Unit of Work | Locks are held and external effects cannot roll back atomically | Commit state plus durable intent, then dispatch and reconcile |
 | AP-026 | One lifecycle implementation for trusted and isolated hosts | Cooperative cleanup is mistaken for hard termination | Share semantic outcomes, but use host-specific execution and containment |
-| AP-027 | Timeout without cancellation and late-result fencing | Timed-out code publishes or mutates later | Use one absolute deadline, cancellation, and generation checks at commit |
-| AP-028 | Refreshing a relative timeout at each phase | A workflow can run forever | Derive every phase budget from one absolute deadline |
+| AP-027 | Timeout without cancellation and late-result fencing | Timed-out code publishes or mutates later | Fix non-renewable effect/publication, termination/reconciliation, and caller-observation horizons; cancel cooperatively and fence every authoritative commit |
+| AP-028 | Refreshing a relative timeout at each phase | A workflow can run forever | Derive every phase budget from its applicable fixed lifecycle horizon |
 | AP-029 | Unbounded retry | A bad extension creates endless load or effects | Bound attempts, classify failures, back off, and quarantine |
 | AP-030 | Blind retry after an ambiguous external effect | Duplicate external behavior | Query or reconcile authoritative state before deciding |
 | AP-031 | Claim exactly-once external effects | Crash windows are hidden | Use idempotency, fencing, durable intent, and explicit uncertainty |
@@ -66,7 +66,7 @@ framework makes the unsafe behavior convenient.
 | AP-033 | Stop cleanup after the first disposer failure | Later resources leak | Run all bounded cleanup and aggregate failures |
 | AP-034 | Infer rollback from registration order | Parallel or partial activation cleans in the wrong order | Record successful activation and unwind its reverse dependency DAG |
 | AP-035 | Hot unload without leak and compatibility proof | Timers, listeners, code references, or native state survive | Use staged replacement and a controlled restart fallback |
-| AP-036 | Mutable `latest` tag as installation or routing identity | Existing version resolves to new bytes | Pin immutable artifact and recursive dependency digests |
+| AP-036 | Mutable tag or `latest` treated as installation, routing, or update authority | Tag movement chooses new bytes and impersonates publisher currentness | Pin immutable artifact and recursive dependency digests; use TUF for remote currentness |
 | AP-037 | Restartless update as correctness requirement | Failure to unload makes security rollback impossible | Treat restartless replacement as qualified optimization |
 | AP-038 | External effect without durable intent | Crash loses whether work was attempted | Record intent before dispatch and outcome after acknowledgement |
 | AP-039 | Multiple unrelated epoch/fence systems | Stale work can satisfy the wrong check | Reuse one authority-scope graph/runtime/grant tuple with explicit revisions |
@@ -79,7 +79,7 @@ framework makes the unsafe behavior convenient.
 | ID | Forbidden pattern | Failure mode | Required alternative |
 | --- | --- | --- | --- |
 | AP-043 | Manifest permissions automatically become grants | Publisher requests become product authority | Render requests, decide policy, and issue narrower revocable grants |
-| AP-044 | Signature or catalog listing treated as sandbox | Correctly signed malware receives ambient authority | Verify provenance and still enforce isolation and capabilities |
+| AP-044 | Artifact signature or catalog listing treated as sandbox or grant | Correctly signed malware receives ambient authority | Verify provenance, then independently enforce product grants and qualified isolation |
 | AP-045 | Untrusted third-party Node code in process | It has host filesystem, network, environment, and process authority | Use an OS-enforced isolated host or defer support |
 | AP-046 | Electron `utilityProcess` treated as malicious-code sandbox | Node authority remains broad | Use it only for trusted crash-prone code unless OS confinement is added |
 | AP-047 | Web Worker treated as no-network sandbox | Worker normally retains origin network and storage APIs | Enforce CSP/origin policy and mediate capabilities independently |
@@ -130,7 +130,7 @@ framework makes the unsafe behavior convenient.
 | AP-077 | Reducer enum cases described as crash-recovery proof | Persistence, ambiguous writes and replay seams remain untested | Label reducer evidence narrowly and require a persistent fault-injection harness |
 | AP-078 | Signature described as trusted code | Authenticated malicious code passes policy | Validate signer authorization, provenance subject, builder/source and dependency closure, then sandbox separately |
 | AP-079 | Duplicate approval entries for one semantic fork | Agents count one decision twice or accept contradictory states | Keep one machine-readable topic/ID and validate links/counts in CI |
-| AP-080 | Extract a neutral package without satisfying an accepted ADR-0012 admission basis | Product assumptions freeze into Foundation without independent lifecycle, isolation, reuse, or SPI evidence | Rehearse product-locally only through an accepted ownership gate; extract only through an accepted gate with explicit admission evidence |
+| AP-080 | Extract a neutral package without satisfying an accepted ADR-0013 package-admission basis | Product assumptions freeze into Foundation without independent lifecycle, isolation, reuse, or SPI evidence | Rehearse product-locally only through an accepted ownership gate; extract only through an accepted gate with explicit admission evidence |
 | AP-081 | Self-reported repository, commit, digest, or conformance treated as admission evidence | Fabricated records pass a shape-only gate | Require an independently executable verifier before any non-empty catalog admission |
 | AP-082 | Event-loop timer described as a hard bound for synchronous in-process code | CPU blocking prevents timeout and cleanup callbacks | Treat `T0` deadlines as cooperative and move hard-bounded work to a host with forced termination |
 | AP-083 | Arbitrary JSON number accepted in authority or audit data | Unsafe integers alias distinct wire values | Use a safe-integer numeric domain or an explicit lossless decimal/string encoding |
@@ -147,6 +147,15 @@ framework makes the unsafe behavior convenient.
 | AP-094 | Dynamic disable implemented as an in-place `enabled` boolean | Required dependents, grants, in-flight work, cleanup, and crash recovery become inconsistent | Create a new desired revision and generation, compile impact, publish with CAS, then drain and retire |
 | AP-095 | Resolved `stop()` or `dispose()` treated as unload or termination proof | Timers, listeners, tasks, child processes, native state, or escaped authority survive | Require resource-specific terminal receipts and enter sticky `restart_required` when proof is incomplete |
 | AP-096 | Co-released built-ins and post-deployment plugin artifacts share one loader path | Build authority and artifact admission collapse; unverified code can enter the trusted realm | Keep target-specific built-in tables separate from digest-pinned isolated artifact hosts |
+| AP-097 | Plugin contribution automatically becomes an application module | Publisher packaging controls product composition, ownership, and lifecycle | Map a contribution through a consumer-owned extension point; admit a module only by a separate product graph decision |
+| AP-098 | `T1` process hosting claimed as untrusted isolation | Same-user native code retains ambient filesystem, network, environment, IPC, and descendant authority | Call `T1` trusted fault containment; require a qualified `T3` or `T4` boundary for untrusted native code |
+| AP-099 | Graph digest includes operational generation, attempt, timestamp, or runtime identity | Semantically identical graphs cannot compare or cache deterministically, while operational state masquerades as graph meaning | Digest only canonical semantic graph inputs and bind generation/fence separately at publication and invocation |
+| AP-100 | One DAG reused for activation, shutdown, rollback, migration, drain, and retirement order | Different edge semantics produce unsafe or cyclic lifecycle ordering | Compile operation-specific order from typed edges and recorded acquired resources |
+| AP-101 | Existing runtime reused by a candidate without a staged reference pin | Concurrent retirement can terminate a runtime before the candidate publishes | Acquire a durable generation- and scope-bound staged pin under the retirement fence; promote or release it atomically |
+| AP-102 | Update publishes code before state custody and migration gates complete | New code observes incompatible state or an unauthorized/ambiguous migration | Authorize custody, fence and reconcile migration, verify schema compatibility, then permit publication |
+| AP-103 | Open decision contains hidden normative implementation decisions | Unaccepted prose becomes de facto architecture without review or supersession | Keep options and constraints non-normative; move an actual decision through the governed ADR process |
+| AP-104 | Duplicate module metadata authorities | Handwritten descriptor, generated registry, package metadata and loader table can disagree about identity or executable closure | Keep one colocated inert declaration and derive target-specific validated projections with receipt binding |
+| AP-105 | One universal graph shared across Node, Electron, browser, Wasm, and remote targets | Target-specific capabilities, loader conditions and trust boundaries disappear | Compile, digest and attest a complete graph per target and compare only explicitly portable semantics |
 
 ## Enforcement Plan
 

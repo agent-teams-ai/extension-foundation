@@ -12,6 +12,7 @@ dagrejs
 DeepSeek
 digest-pinned
 Extism
+exfiltration
 GHCR
 Graphlib
 frontmatter

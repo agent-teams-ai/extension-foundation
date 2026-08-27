@@ -48,6 +48,48 @@ The provisional implementation direction is a minimal native private kernel.
 Cordis and a native/Cordis hybrid remain rejected. The runtime graph remains
 private and trigger-based; it is not a Foundation or public contract.
 
+If triggered, the target model has these non-negotiable separations:
+
+- one fixed-name module-local inert serialized declaration is metadata
+  authority; typed handles/types, inventory, reverse dependencies, diagrams,
+  and diagnostics are derived, while activation factories remain separate;
+- each `(consumerModuleId, localSlotId)` binds to one contribution ID, explicit
+  optional `null`, or ordered contribution IDs, preserving required/optional/
+  many semantics without treating many bounds/order as concurrency;
+- `PlanTemplateDigest` and `PlanContentDigest` identify canonical content;
+  monotonic `CandidateGeneration`, `RuntimeGeneration`, and
+  `ActiveHeadRevision` identify operations and never enter those hashes;
+- compilation stages are `PlanTemplate`, target execution closure, scope
+  binding, and runtime generation. Graphs are target-local; a product-owned
+  deployment plan owns cross-target/service relationships;
+- typed edges derive distinct activation, drain, retirement, and migration
+  orders. T0 may support only readiness edges but may not publish a universal
+  DAG contract; and
+- built-ins start with one handwritten literal loader table per target.
+  Generation follows only demonstrated wiring/profile drift, and discovery
+  reads inert data without executable imports.
+
+Future operator evidence must explain selection, denial, and inactivity across
+profile, lock, plan, generation, active-head revision, and reverse dependencies.
+Its immutable change-impact artifact classifies retained, restarted, replaced,
+degraded, and disabled modules and reports peak coexistence, state operations,
+rollback constraints, and blast radius. A future immutable
+`ArtifactContributionIndex` may bind artifact and descriptor digests,
+contribution ID, target/tier, entrypoint/blob closure, schemas, compatibility,
+requested capabilities, and isolated-host loader key. Neither artifact exists
+as a production Foundation contract today.
+
+## Cross-Lane Anti-Pattern Report
+
+The security-owned anti-pattern catalog already prohibits executable metadata
+discovery, shared all-target loader tables, handwritten central identity lists,
+and conflating static modules, runtime definitions, and artifacts. A later
+security-lane update should additionally forbid: hashing candidate generations
+or active-head revisions into plan content identity; treating ordered-many as a
+concurrency control; flattening activation, drain, retirement, and migration
+edges into one universal DAG; and treating package-boundary evidence as proof of
+Foundation semantic ownership. This lane does not edit `anti-patterns.md`.
+
 ## Extraction
 
 After a genuine independent second consumer, compare both product-local seams.

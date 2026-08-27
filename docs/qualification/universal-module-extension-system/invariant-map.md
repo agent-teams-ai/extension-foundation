@@ -3,11 +3,12 @@ id: qualification.universal-module-extension-system.invariant-map
 type: qualification
 status: qualified
 owner: architecture
-summary: Maps the non-negotiable ownership, dependency, lifecycle, trust, and evidence invariants for the proposed system.
+summary: Maps static-first ownership and composition invariants plus explicit gates for any later graph, lifecycle, extraction, or publication.
 related:
   - ADR-0001
   - ADR-0010
-  - ADR-0012
+  - ADR-0013
+  - ADR-0014
   - OD-003
 ---
 
@@ -17,21 +18,24 @@ related:
 
 ```mermaid
 flowchart LR
+    BuiltInA["Fixed built-in A"] --> Root["Application composition root"]
+    BuiltInB["Fixed built-in B"] --> Root
+    Config["Selection, config and lifetime"] --> Root
+    Root --> Factory["Pure FeatureModuleFactory"]
+    Factory --> Contract["Product-owned capability contract"]
     Consumer["Direct library consumer"] --> Core["Reusable library core"]
-    Module["Feature-owned module adapter"] --> Core
-    Module --> Contract["Product-owned capability contract"]
-    Artifact["Plugin artifact"] --> Contribution["Contribution adapter or proxy"]
-    Contribution --> Contract
-    Host["Product-owned host"] --> Foundation["Extension Foundation primitives"]
-    Host --> Contract
+    Factory --> Core
 
-    Foundation -. forbidden .-> Contract
-    Core -. forbidden .-> Module
-    Contract -. forbidden .-> Host
+    Foundation["Extension Foundation"] -. forbidden .-> Contract
+    Core -. forbidden .-> Root
+    Factory -. forbidden lookup .-> Root
 ```
 
-The arrows are compile-time dependencies. Foundation never imports product
-models. A library consumer never needs the module or plugin stack.
+The arrows are compile-time dependencies for the current rehearsal. Foundation
+never imports product models. A library consumer never needs the module or
+plugin stack. The feature factory receives explicit dependencies and remains
+pure; the application composition root alone selects implementation,
+configuration, and lifetime. Neither exposes a global service locator.
 
 ## Ownership Invariants
 
@@ -39,8 +43,9 @@ models. A library consumer never needs the module or plugin stack.
 | --- | --- | --- |
 | Aggregate transitions and business invariants | Owning product bounded context | Source graph, use-case tests, repository/UoW boundaries |
 | Product extension contract | Owning product feature | Feature entrypoint, compatibility fixtures, conformance suite |
-| Effective pre-implementation module identity, graph semantics and lifecycle outcomes | Extension Foundation under ADR-0012; implementation blocked pending `UMEQ-011` and `UMEQ-013` | Accepted ownership plus unresolved runtime-admission gates |
-| Proposed first-consumer private module identity, graph semantics and lifecycle outcomes | Owning product feature only after ADR-0013 acceptance | Product-local descriptors, diagnostics and traces |
+| Static rehearsal selection, configuration and lifetime | Owning application's composition root | Static imports, materialized selection, composition tests |
+| Pure feature composition | Owning product feature | `FeatureModuleFactory` tests and source dependency checks |
+| Triggered first-consumer private graph semantics and lifecycle outcomes | Owning product after measured need and separate approval | Product-local descriptors, diagnostics, traces and comparison with static baseline |
 | Admitted cross-product module identity, graph semantics and lifecycle outcomes | Extension Foundation after extraction approval | Serializable descriptors and cross-host traces from two independent consumers |
 | Artifact identity and immutable digest | Extension Foundation protocol | OCI digest and signature/provenance verification |
 | Catalog governance records | Selected catalog authority | PostgreSQL revision and signed snapshot evidence |
@@ -48,7 +53,12 @@ models. A library consumer never needs the module or plugin stack.
 | Runtime enforcement | Owning product host; AR for runtime execution | Invocation grant, generation fence, audit result |
 | Private state custody | Product or tenant authority | Operation-specific custody authorization |
 
-## Graph Invariants
+## Conditional Graph Invariants
+
+No graph is part of the current rehearsal. The following preserved invariants
+apply only if measured runtime-selection or independent-lifecycle need triggers
+an approved private product graph. They are constraints on later work, not
+evidence that the graph should be built.
 
 1. The complete selected profile is validated before executable extension code
    is loaded.
@@ -65,6 +75,10 @@ models. A library consumer never needs the module or plugin stack.
 7. A graph is composition evidence, not authorization.
 
 ## Lifecycle And Concurrency Invariants
+
+These invariants likewise apply only to a triggered lifecycle runtime. Phase 1
+uses application-owned construction and restart-first recovery; it does not
+generalize these research outcomes into a coordinator.
 
 1. Discovery, verification, admission, and graph compilation do not execute
    extension code.
@@ -118,3 +132,9 @@ models. A library consumer never needs the module or plugin stack.
   oldest and newest supported combinations.
 - A production SPI is admitted only after two independently authored
   implementations pass the same positive and negative conformance suite.
+- A second consumer must have a real executable semantic need. A copied
+  implementation or non-executable AR descriptor is not independent graph or
+  lifecycle evidence.
+- One-way imports bound candidate file movement but do not make extraction
+  mechanical. Semantic reconciliation, ownership, versioning, compatibility,
+  migration, and release policy require explicit review.

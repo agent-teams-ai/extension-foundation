@@ -3,7 +3,7 @@ id: qualification.universal-module-extension-system.index
 type: index
 status: active
 owner: architecture
-summary: Index of the pre-implementation qualification for the reusable Agent Teams module and extension system.
+summary: Index of the static-first recommendation and its preserved pre-implementation qualification evidence.
 ---
 
 # Universal Module And Extension System Qualification
@@ -13,6 +13,12 @@ any production package or public SPI is admitted. It distinguishes accepted
 decisions, verified evidence, recommendations, unresolved product choices, and
 post-MVP hypotheses.
 
+The [final recommendation](final-recommendation.md) is the sole current
+implementation roadmap: product-local static imports and Pure DI first, with a
+private product graph only after measured runtime-selection or independent-
+lifecycle need. No current Git SHA, package, runtime, or public SPI is declared
+production-qualified by this dossier.
+
 ## Evidence And Decisions
 
 - [Current state](current-state.md)
@@ -21,7 +27,13 @@ post-MVP hypotheses.
 - [OSS comparison](oss-comparison.md)
 - [Machine-readable OSS comparison](oss-comparison.yaml)
 
-## Proposed Architecture
+## Preserved Historical Architecture Research
+
+The following graph-first and generalized-runtime documents preserve exact
+qualification evidence, constraints, and failure findings. Their graph-first
+sequencing is superseded historical research, not a competing implementation
+recommendation. Use them only if the current roadmap's explicit later gate is
+triggered.
 
 - [Module graph](module-graph.md)
 - [Lifecycle and concurrency](lifecycle-and-concurrency.md)
@@ -38,7 +50,7 @@ post-MVP hypotheses.
 - [Spike results](spike-results.md)
 - [Conformance plan](conformance-plan.md)
 - [Unresolved decisions](unresolved-decisions.md)
-- [Final recommendation](final-recommendation.md)
+- [Final recommendation — sole current implementation roadmap](final-recommendation.md)
 
 ## Status Vocabulary
 
@@ -52,7 +64,8 @@ post-MVP hypotheses.
 
 The frontmatter status `qualified` means the document has completed this
 research pass. It does not mean every requirement inside it is implemented or
-passed. [Conformance Plan](conformance-plan.md#current-evidence-status) contains
+passed, and it does not qualify the current repository revision for production.
+[Conformance Plan](conformance-plan.md#current-evidence-status) contains
 the explicit human-reviewed status table for planned, implemented and passed
 evidence. The nightly worker corpus now has a machine-produced immutable
 evidence manifest, but its promotion gate remains intentionally closed. Corpus

@@ -13,16 +13,22 @@ related:
 
 ## Measure Before Optimizing
 
-The module system is control-plane infrastructure. Its first responsibility is
-correctness; its second is to stay small enough that feature delivery does not
-pay a hidden framework tax. Budgets are initial qualification targets and must
-be recalibrated on reference CI and product hardware.
+The current baseline is static Pure DI; the graph and lifecycle measurements in
+this document are qualification targets for a future product-triggered private
+runtime, not claims about production Foundation infrastructure. Its first
+responsibility would be correctness; its second is to stay small enough that
+feature delivery does not pay a hidden framework tax. Budgets are initial
+qualification targets and must be recalibrated on reference CI and product
+hardware.
 
 ## Signals
 
 | Signal | Measurement |
 | --- | --- |
 | Graph compile latency | Descriptor input accepted to immutable plan or diagnostic |
+| Template compile latency | Canonical declarations/profile accepted to `PlanTemplate` or diagnostic |
+| Target closure latency | Template accepted to one target-local executable/blob closure |
+| Scope binding latency | Target closure accepted to canonical authority-scope binding |
 | Activation latency | Durable intent to ready evidence |
 | Publication latency | Ready accepted to active pointer visible |
 | Update interruption | Interval where no admitted generation can serve work |
@@ -39,7 +45,7 @@ be recalibrated on reference CI and product hardware.
 | --- | ---: | ---: |
 | 1,000-node sparse graph compile | p95 under 100 ms | 500 ms |
 | 10,000-node sparse graph compile | p95 under 1 s | 5 s or stack overflow |
-| Equivalent graph permutations | identical digest and diagnostics | any mismatch |
+| Equivalent graph permutations | identical template/content digests and diagnostics | any mismatch |
 | Trusted in-process dispatch overhead | p95 under 1 ms excluding capability work | 5 ms |
 | Local process-host round trip | p95 under 10 ms excluding capability work | 50 ms |
 | Browser Worker round trip | p95 under 10 ms on reference desktop | 50 ms |
@@ -57,13 +63,20 @@ exactly-once delivery.
 
 ## Synthetic Matrix
 
-Graph benchmarks include empty, chain, diamond, wide DAG, sparse random DAG,
-layered DAG, giant cycle, many small cycles, and duplicate-edge storm at 1,000
-and 10,000 nodes. Fixed seeds and checksums make regressions reproducible.
+Graph benchmarks apply to one target-local graph and include empty, chain,
+diamond, wide DAG, sparse random DAG, layered DAG, giant cycle, many small
+cycles, and duplicate-edge storm at 1,000 and 10,000 nodes. Fixed seeds and
+checksums make regressions reproducible. Cross-target/service relationships are
+benchmarked in the consuming product's separate deployment-plan suite, not by
+pretending they are one module graph.
 
-Measure parsing, validation, provider resolution, topology, cycle diagnostics,
-canonical serialization, and hashing separately. No phase may allocate an
-`N x N` matrix. Long chains must not depend on recursive JavaScript call depth.
+Measure `PlanTemplate` parsing/validation/provider resolution, target execution
+closure, authority-scope binding, runtime-generation allocation, typed topology,
+cycle diagnostics, each derived order, canonical serialization, and hashing
+separately. Repeated equivalent inputs must reproduce `PlanTemplateDigest` and
+`PlanContentDigest` while monotonic candidate/runtime generations and
+active-head revisions advance independently. No phase may allocate an `N x N`
+matrix. Long chains must not depend on recursive JavaScript call depth.
 
 Lifecycle benchmarks include:
 
@@ -73,6 +86,11 @@ Lifecycle benchmarks include:
 - diamond reverse rollback;
 - one hung disposer;
 - generation replacement with 0, 10, and 1,000 in-flight calls;
+- retained, restarted, replaced, degraded, and disabled impact classifications;
+- predicted versus observed peak coexistence of old/new module instances,
+  process RSS, artifact blobs, connections, and migration scratch state;
+- distinct activation, drain, retirement, and migration orders over typed-edge
+  fixtures;
 - controller crash at each durable boundary;
 - duplicate/reordered protocol messages;
 - process and browser host backpressure.
@@ -89,11 +107,19 @@ route rejection, readiness convergence, and partition state separately from
 the local graph compiler. Foundation does not promise simultaneous physical
 rollout across partitions.
 
+A future immutable change-impact artifact reports the predicted peak
+coexistence and blast radius before activation. Runtime evidence then records
+actual retained/restarted/replaced/degraded/disabled outcomes, state operations,
+rollback disposition, and high-water resource use. Exceeding an admitted peak
+budget fails before cutover or forces the explicit product-owned degraded plan;
+it never silently increases parallelism. Ordered-many cardinality and order do
+not define concurrency.
+
 ## Telemetry
 
 Stable low-cardinality attributes include host tier, lifecycle phase, outcome,
 diagnostic code, schema version, and product identifier. Module, artifact,
-tenant, project, operation, graph generation, digest, path, error message, and
+tenant, project, operation, runtime generation, digest, path, error message, and
 publisher are evidence or log fields, not unbounded metric labels.
 
 Each product profile declares a telemetry-cardinality budget and tests the

@@ -12,6 +12,10 @@ related:
 
 # Deferred Decisions
 
+Static imports and Pure DI are the sole current implementation recommendation.
+The deferred graph and host items below are explicit later gates, not a parallel
+graph-first roadmap.
+
 ## Explicit Non-Goals For The First Rehearsal
 
 - Foundation graph, generic runtime, public SPI, stable npm publication, package
@@ -39,8 +43,8 @@ related:
 
 | Decision | Earliest gate |
 | --- | --- |
-| Runtime graph | Real direct-composition failure, accepted ownership path, private bounded prototype |
-| Foundation extraction | Real second consumer, neutral intersection, independent expectations, conformance, separate decision |
+| Runtime graph | Measured runtime-selection or independent-lifecycle need that static composition cannot meet; product approval; private bounded prototype |
+| Foundation extraction | Real executable second consumer, semantic reconciliation, neutral intersection, independent expectations, conformance, ownership/version/migration review, separate decision |
 | Public SPI | Independent implementations, compatibility and release fixtures, immutable admission, governance, support |
 | Community modules | Public gates plus grants, revocation, T2/T3 containment, custody, uninstall, recovery, moderation |
 | Cordis | 25% net deletion and complete private lifecycle parity in a real resource-heavy consumer |
@@ -50,12 +54,20 @@ related:
 | Side-by-side | Restart cannot meet numeric SLO; prove fencing, state, capacity, cleanup, rollback, recovery |
 | Distributed cutover | Named topology and sinks, L0/D1/D2/T1 profile, operator, measured barrier and propagation SLO |
 | Managed channel | TUF operations from first remotely refreshed mutable metadata |
-| Catalog | Independent distribution exists; one PostgreSQL writer and derived snapshots/indexes are sufficient |
+| Catalog | Independent distribution exists; one PostgreSQL writer, explicit authority route, and derived snapshots/indexes are sufficient |
 
-Evidence custody is also deferred to Lane C, but it gates publication of this
-qualified synthesis. Lane C must freeze create-only content-addressed results,
-recover attempt lineage, quarantine invalid citations, scan for secrets, build a
-deterministic claim manifest, and verify it independently. Deferred production
+A non-executable AR descriptor does not satisfy the graph/lifecycle
+second-consumer gate. One-way imports bound candidate file movement but do not
+make extraction mechanical; semantics, versioning, compatibility, ownership,
+migration, and release policy remain reviewed work. Future plugin artifact
+contributions map through product-owned adapters to product ports and become
+runtime modules only after the runtime graph trigger is met.
+
+Worker-corpus custody is complete under manifest
+`4302a0b02f1b54f876a5824919e5e195594843ce778e74aa59852d65363fd8fe`:
+`integrityValid=true` and `promotionAllowed=false`. Claim-level primary-source
+and executable closure, independent publisher/reproduction evidence,
+product-owner review, and separate decisions remain gates. Deferred production
 mechanisms need not be implemented merely to document their absence as blockers.
 
 See [architecture roadmap](10-architecture-and-loc-roadmap.md),

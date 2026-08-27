@@ -12,6 +12,9 @@ related:
 # UMEQ Decision Matrix
 
 Every UMEQ remains **open**. This table is an approval aid, not resolution.
+W11 static Pure DI is the sole current implementation recommendation; entries
+about a graph describe reversal gates and costs, not a parallel graph-first
+roadmap.
 
 | ID | Recommendation | Confidence | Triggered cost | Reversal condition |
 | --- | --- | ---: | --- | --- |
@@ -30,11 +33,15 @@ Every UMEQ remains **open**. This table is an approval aid, not resolution.
 
 | Fork | W11 choice | Confidence | Reverse when |
 | --- | --- | ---: | --- |
-| Ownership | Product owner should accept an ADR-0013-equivalent path before module-shaped rehearsal | 0.99 | Owner deliberately retains ADR-0012 and resolves OD-003, UMEQ-011, and UMEQ-013 |
-| Composition | Static direct composition | 0.97 | Measured variable graph or lifecycle need improves outcomes within the glue threshold |
+| Ownership | ADR-0013/ADR-0014 product-local path; ADR-0012 is superseded historical authority | 0.99 | A later accepted decision changes ownership without moving product authority into Foundation |
+| Composition | Feature exports a pure `FeatureModuleFactory`; application root owns static selection, configuration, and lifetime | 0.97 | Measured runtime-selection or independent-lifecycle need improves outcomes within the glue threshold |
 | Cordis | Comparator only | 0.98 | Real consumer meets deletion, lifecycle, and isolation gates |
 | Extism/WASI | Defer | 0.96 | Funded non-TS or stronger isolation case passes ABI and host qualification |
 | Module Federation | Defer; possible Frontend adapter only | 0.95 | Independent deployment value and full Web/Electron security and operations gates pass |
+
+Foundation extraction remains a separate fork after a real second consumer and
+semantic reconciliation. One-way imports bound movement, but ownership,
+versioning, compatibility, migration, and release policy are reviewed work.
 
 See [deferred decisions](12-deferred-decisions.md), the existing
 [unresolved decisions](../unresolved-decisions.md), and the
