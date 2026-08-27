@@ -320,10 +320,16 @@ test("graph compiler remains stack-safe within 1k and 10k hard caps", t => {
   const oneThousandSamples = measure(1_000, 500);
   const heapBefore = process.memoryUsage().heapUsed;
   const tenThousandSamples = measure(10_000, 5_000);
-  const retainedHeapBytes = Math.max(0, process.memoryUsage().heapUsed - heapBefore);
-  assert.ok(retainedHeapBytes < 256 * 1024 * 1024, `GRAPH_10K_HEAP:${retainedHeapBytes}`);
+  const observedHeapDeltaBytes = Math.max(
+    0,
+    process.memoryUsage().heapUsed - heapBefore,
+  );
+  assert.ok(
+    observedHeapDeltaBytes < 256 * 1024 * 1024,
+    `GRAPH_10K_HEAP:${observedHeapDeltaBytes}`,
+  );
   t.diagnostic(
-    `graph-1k p95Ms=${oneThousandSamples.at(-1)?.toFixed(2)} graph-10k p95Ms=${tenThousandSamples.at(-1)?.toFixed(2)} retainedHeapBytes=${retainedHeapBytes}`,
+    `graph-1k maxOfFiveMs=${oneThousandSamples.at(-1)?.toFixed(2)} graph-10k maxOfFiveMs=${tenThousandSamples.at(-1)?.toFixed(2)} observedHeapDeltaBytes=${observedHeapDeltaBytes}`,
   );
 
   const cyclic = chain.map((descriptor, index) => index === 0
