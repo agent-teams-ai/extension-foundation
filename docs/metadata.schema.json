@@ -7,7 +7,7 @@
     "id": {"type": "string", "minLength": 1},
     "type": {"enum": ["adr", "architecture", "index", "open-decision", "qualification"]},
     "status": {"type": "string", "minLength": 1},
-    "owner": {"enum": ["architecture", "architecture/security", "architecture/tooling"]},
+    "owner": {"type": "string", "minLength": 1},
     "summary": {"type": "string", "minLength": 1},
     "approved_by": {"type": "string", "minLength": 1},
     "accepted_at": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},

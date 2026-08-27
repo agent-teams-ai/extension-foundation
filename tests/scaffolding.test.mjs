@@ -217,6 +217,7 @@ capabilities:
     "docs/metadata.schema.json",
     "docs/owners.yaml",
     "docs/templates/adr.md",
+    "docs/templates/architecture.md",
     "docs/templates/open-decision.md",
     ".agents/skills/docs-authoring/SKILL.md",
   ]) {
