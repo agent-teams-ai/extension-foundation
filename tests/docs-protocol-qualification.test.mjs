@@ -2,48 +2,33 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { runDocsProtocolQualification } from "@agent-teams/docs-protocol/qualification";
-
-const fixtureRoot = new URL("./fixtures/docs-protocol-qualification", import.meta.url).pathname;
-
-test("qualification manifest binds the exact protocol gate and registry packages", async () => {
-  const [qualification, manifest] = await Promise.all([
+test("managed integration owns a data-only v2 qualification contract and external gate", async () => {
+  const [integration, qualification, rollout, stagedProfile] = await Promise.all([
+    readFile(new URL("../architecture/foundation/docs-consumer-integration.json", import.meta.url), "utf8").then(JSON.parse),
     readFile(new URL("../architecture/foundation/docs-protocol-qualification.json", import.meta.url), "utf8").then(JSON.parse),
-    readFile(new URL("../package.json", import.meta.url), "utf8").then(JSON.parse),
+    readFile(new URL("../architecture/foundation/docs-protocol-rollout.yaml", import.meta.url), "utf8"),
+    readFile(new URL("../architecture/foundation/rollouts/docs-protocol-v2/document-authoring.yaml", import.meta.url), "utf8"),
   ]);
-  assert.equal(qualification.gateCommand, "pnpm docs:protocol:check");
-  assert.deepEqual(qualification.packages, {
-    "@agent-teams/docs-protocol": manifest.devDependencies["@agent-teams/docs-protocol"],
-    "@agent-teams/engineering-foundation": manifest.devDependencies["@agent-teams/engineering-foundation"],
-  });
-  assert.deepEqual(qualification.qualificationTests, [
-    "tests/docs-protocol-qualification.test.mjs",
-    "tests/document-authoring.test.mjs",
+  assert.equal(integration.schemaVersion, 1);
+  assert.match(rollout, /^status: stable3-current-v2-staged$/mu);
+  assert.match(rollout, /^  integrationSchemaVersion: 2$/mu);
+  assert.match(rollout, /^  qualificationContractSchemaVersion: 2$/mu);
+  assert.equal(qualification.schemaVersion, 2);
+  assert.deepEqual(Object.keys(qualification).sort(), ["scenarios", "schemaVersion"]);
+  assert.deepEqual(qualification.scenarios.map(({ type }) => type).sort(), [
+    "adr", "architecture", "open-decision",
   ]);
-});
-
-test("shared runner qualifies Extension adoption in its owned disposable copy", async () => {
-  const receipt = await runDocsProtocolQualification({
-    fixtureRoot,
-    scenario: {
-      find: { query: { type: "adr" }, expectedIds: [] },
-      newDocument: {
-        intent: {
-          type: "open-decision",
-          id: "OD-099",
-          title: "Disposable Extension Choice",
-          owner: "architecture/tooling",
-          summary: "Qualifies Extension authoring, crash recovery, and reachability.",
-        },
-        codeAnchors: [{ enforcement: "required", pattern: "package.json" }],
-      },
-    },
-  });
-
-  assert.equal(receipt.projectId, "extension-foundation-qualification");
-  assert.equal(receipt.appliedDocumentPath, "docs/open-decisions/generated/OD-099-disposable-extension-choice.md");
-  assert.deepEqual(receipt.checks, [
-    "info", "find", "preview", "crash", "doctor", "recover", "receipt",
-    "parent", "apply", "index", "check", "source-unchanged",
-  ]);
+  assert.deepEqual(
+    [...stagedProfile.matchAll(/^    - type: ([a-z-]+)$/gmu)].map(([, type]) => type).sort(),
+    qualification.scenarios.map(({ type }) => type).sort(),
+  );
+  assert.equal(new Set(qualification.scenarios.map(({ id }) => id)).size, qualification.scenarios.length);
+  for (const { expected, intent } of qualification.scenarios) {
+    assert.deepEqual(Object.keys(intent).filter(key => ["id", "owner", "summary", "title"].includes(key)).sort(), [
+      "id", "owner", "summary", "title",
+    ]);
+    assert.equal(expected.metadataStorage, "frontmatter");
+    assert.equal(expected.reachability.state, "manual-required");
+    assert.ok(expected.documentPath.endsWith(".md"));
+  }
 });

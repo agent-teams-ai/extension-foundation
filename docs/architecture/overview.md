@@ -4,6 +4,13 @@ type: architecture
 status: accepted
 owner: architecture
 summary: Defines the product-neutral scope, ownership, and dependency direction of Extension Foundation.
+code_anchors:
+  - enforcement: required
+    pattern: architecture/package-catalog.json
+  - enforcement: required
+    pattern: architecture/foundation/scaffolding.yaml
+  - enforcement: required
+    pattern: architecture/checks/package-topology.mjs
 ---
 
 # Architecture Overview

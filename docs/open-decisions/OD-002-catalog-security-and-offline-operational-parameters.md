@@ -4,7 +4,6 @@ type: open-decision
 status: open
 owner: architecture
 summary: Choose concrete key custody, signing quorum, freshness, retention, and offline operating parameters.
-blocked_by: []
 related:
   - ADR-0002
   - ADR-0003
