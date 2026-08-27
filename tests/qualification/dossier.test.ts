@@ -90,11 +90,12 @@ function markdownAnchor(title: string): string {
 }
 
 function parseMarkdown(path: string, body: string): MarkdownDocument {
-  const frontmatter = body.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
+  const normalizedBody = body.replace(/\r\n?/g, "\n");
+  const frontmatter = normalizedBody.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
   assert.ok(frontmatter, `${path} must have YAML frontmatter`);
   const metadata = parse(frontmatter[1]!) as unknown;
   assert.ok(typeof metadata === "object" && metadata !== null && !Array.isArray(metadata));
-  return { path, body, metadata: metadata as Readonly<Record<string, unknown>> };
+  return { path, body: normalizedBody, metadata: metadata as Readonly<Record<string, unknown>> };
 }
 
 async function readMarkdown(path: string): Promise<MarkdownDocument> {
@@ -129,6 +130,17 @@ function assertMarkers(text: string, markers: readonly RegExp[], context: string
 function gateRequirements(gate: DecisionLedger["implementationGates"][number]): readonly GateRequirement[] {
   return [...(gate.allOf ?? []), ...(gate.paths ?? []).flatMap(path => path.allOf)];
 }
+
+test("Markdown qualification parsing is independent of checkout line endings", () => {
+  const document = parseMarkdown(
+    "portable.md",
+    "---\r\nid: ADR-TEST\r\nstatus: accepted\r\n---\r\n\r\n# Portable\r\n",
+  );
+
+  assert.equal(document.metadata.id, "ADR-TEST");
+  assert.equal(document.metadata.status, "accepted");
+  assert.equal(document.body, "---\nid: ADR-TEST\nstatus: accepted\n---\n\n# Portable\n");
+});
 
 test("decision ledger is referentially sound and records current implementation gates", async () => {
   const ledgerPath = resolve(dossier, "decision-ledger.yaml");
