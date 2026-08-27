@@ -92,7 +92,7 @@ a production package, public SPI, or ownership decision.
 | 1,000 and 10,000-node stack and performance budgets | `graph compiler remains stack-safe within 1k and 10k hard caps` | Passed with five timing samples per size and an observed heap-delta measurement; max-of-five values are diagnostic until reference CI baselines exist, while 500-ms/5-second and 256-MiB hard caps fail immediately |
 | Invalid graph performs zero implementation effects | `invalid ID-DAG inputs produce deterministic diagnostics without loading hooks`; lifecycle hook preflight cases | Passed |
 | Honest two-module T0 source and consumer | `two fixed T0 built-ins publish a detached result and release the source resource` | Gap closed; source owns a bounded fake resource and consumer publishes a detached immutable result |
-| Prepare, start, readiness and publication ordering | two-built-in rehearsal; readiness and publication cases | Passed; passive product features must not copy these hooks |
+| Prepare, start, readiness, publication and shutdown ordering | two-built-in rehearsal; readiness/publication cases; `shutdown drains admitted work and stops dependencies in reverse order` | Passed for replacement and explicit shutdown; passive product features must not copy these hooks |
 | Single-flight, activation fingerprint and caller cancellation | concurrent-start, idempotency-conflict and waiter-cancellation cases | Passed |
 | Sibling settlement, reverse cleanup and bounded cleanup debt | parallel-failure, multi-level rollback and hung-cleanup cases | Passed |
 | Generation, authority-scope and stale-write fencing | authority-scope, invocation-handle, drain and stale-write cases | Passed only for the in-memory model |

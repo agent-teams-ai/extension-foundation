@@ -647,6 +647,64 @@ test("two fixed T0 built-ins publish a detached result and release the source re
   );
 });
 
+test("shutdown drains admitted work and stops dependencies in reverse order", async () => {
+  const lifecycle = new GenerationLifecycle(testAuthorityScope);
+  const plan = requirePlan([
+    { id: "source", requires: [] },
+    { id: "consumer", requires: ["source"] },
+  ]);
+  const stopped: string[] = [];
+  const activation = await lifecycle.activate(activationRequest(
+    lifecycle,
+    "shutdown-source-consumer",
+    plan,
+    new Map([
+      ["source", inertHooks({ stop: () => { stopped.push("source"); } })],
+      ["consumer", inertHooks({ stop: () => { stopped.push("consumer"); } })],
+    ]),
+  ));
+  assert.equal(activation.ok, true);
+  const admitted = lifecycle.acquireInvocation();
+
+  const first = lifecycle.shutdown(100);
+  const concurrent = lifecycle.shutdown(100);
+  assert.equal(first, concurrent);
+  assert.throws(() => lifecycle.acquireInvocation(), /NO_ACTIVE_GENERATION/);
+  assert.throws(
+    () => lifecycle.activate(activationRequest(
+      lifecycle,
+      "activation-during-shutdown",
+      plan,
+      new Map([
+        ["source", inertHooks()],
+        ["consumer", inertHooks()],
+      ]),
+    )),
+    /LIFECYCLE_SHUTTING_DOWN/,
+  );
+  lifecycle.assertInMemoryFence(admitted);
+  admitted.release();
+
+  const result = await first;
+  assert.equal(result.ok, true);
+  assert.equal(result.termination, "proven");
+  assert.deepEqual(
+    result.traces.map(trace => [trace.phase, trace.moduleId ?? "host", trace.outcome]),
+    [
+      ["drain", "host", "confirmed"],
+      ["stop", "consumer", "confirmed"],
+      ["stop", "source", "confirmed"],
+    ],
+  );
+  assert.deepEqual(stopped, ["consumer", "source"]);
+  assert.throws(() => lifecycle.assertInMemoryFence(admitted), /STALE_GENERATION/);
+
+  const replay = await lifecycle.shutdown(100);
+  assert.equal(replay.ok, true);
+  assert.equal(replay.termination, "proven");
+  assert.deepEqual(replay.traces, []);
+});
+
 test("one hundred concurrent starts share one activation and one cutover", async () => {
   const plan = requirePlan([{ id: "module", requires: [] }]);
   const lifecycle = new GenerationLifecycle(testAuthorityScope);

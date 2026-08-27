@@ -496,6 +496,7 @@ export class GenerationLifecycle {
   readonly #lifecycleToken = Symbol("generation-lifecycle");
   readonly #sealedGenerations = new Set<number>();
   readonly #drainDeadlines = new Map<number, DeadlineBudget>();
+  #shutdownFlight: Promise<ActivationResult> | undefined;
   #nextLeaseId = 1;
   #nextGeneration = 1;
   #activeGeneration = 0;
@@ -527,6 +528,9 @@ export class GenerationLifecycle {
     request: ActivationRequest,
     waiter: WaiterOptions | number = {},
   ): Promise<ActivationResult> {
+    if (this.#shutdownFlight !== undefined) {
+      throw new Error("LIFECYCLE_SHUTTING_DOWN");
+    }
     const absoluteDeadline = request.absoluteDeadline;
     const cleanupTimeoutMs = request.cleanupTimeoutMs ?? 50;
     const requestIdentity = request.identity;
@@ -618,6 +622,33 @@ export class GenerationLifecycle {
     );
   }
 
+  shutdown(cleanupTimeoutMs = 50): Promise<ActivationResult> {
+    if (!Number.isFinite(cleanupTimeoutMs) || cleanupTimeoutMs < 0) {
+      throw new Error("INVALID_CLEANUP_TIMEOUT");
+    }
+    if (this.#shutdownFlight !== undefined) {
+      return this.#shutdownFlight;
+    }
+    if (this.#flights.size > 0) {
+      throw new Error("LIFECYCLE_ACTIVATION_IN_FLIGHT");
+    }
+    const active = this.#active;
+    if (active === undefined) {
+      return Promise.resolve(
+        freezeResult(true, this.#activeGeneration, "proven", [], []),
+      );
+    }
+
+    let flight: Promise<ActivationResult>;
+    flight = this.#shutdown(active, cleanupTimeoutMs).finally(() => {
+      if (this.#shutdownFlight === flight) {
+        this.#shutdownFlight = undefined;
+      }
+    });
+    this.#shutdownFlight = flight;
+    return flight;
+  }
+
   acquireInvocation(): InvocationHandle {
     if (this.#activeGeneration === 0 || this.#sealedGenerations.has(this.#activeGeneration)) {
       throw new Error("NO_ACTIVE_GENERATION");
@@ -681,6 +712,66 @@ export class GenerationLifecycle {
       if (errorMessage(error) === timeoutCode) return false;
       throw error;
     }
+  }
+
+  async #shutdown(
+    active: ActiveGraph,
+    cleanupTimeoutMs: number,
+  ): Promise<ActivationResult> {
+    const generation = active.generation;
+    const traces: LifecycleTrace[] = [];
+    const errors: Error[] = [];
+    const cleanupDeadline = absoluteDeadlineBudget(
+      this.deadlineAfter(cleanupTimeoutMs),
+      this.#clock,
+    );
+    const cleanupController = new AbortController();
+    const cleanupContext: ActivationContext = Object.freeze({
+      generation,
+      phase: "cleanup",
+      signal: cleanupController.signal,
+    });
+    let terminationProven = true;
+
+    try {
+      const drained = await this.#drainGeneration(generation, cleanupDeadline);
+      traces.push({
+        phase: "drain",
+        generation,
+        outcome: drained ? "confirmed" : "timed-out",
+      });
+      if (!drained) {
+        errors.push(new Error(`DRAIN_TIMEOUT:${generation}`));
+        terminationProven = false;
+      }
+    } catch (error) {
+      errors.push(asError(error));
+      traces.push({ phase: "drain", generation, outcome: "termination_unproven" });
+      terminationProven = false;
+    }
+
+    this.#fenceGeneration(generation);
+    const cleanupProven = await this.#stopBatches(
+      active.plan,
+      active.hooks,
+      cleanupContext,
+      cleanupDeadline,
+      traces,
+      errors,
+      "stop",
+      cleanupController,
+    );
+    terminationProven &&= cleanupProven;
+    if (this.#active === active) {
+      this.#active = undefined;
+    }
+    return freezeResult(
+      true,
+      generation,
+      terminationProven ? "proven" : "termination_unproven",
+      traces,
+      errors,
+    );
   }
 
   async #waitForFlight(
