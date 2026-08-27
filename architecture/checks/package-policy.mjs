@@ -619,6 +619,7 @@ export function createDocsOwnerCatalog(root) {
   let acceptedDecisionEntriesExecution;
   let authoritativeDecisionStatusesExecution;
   let acceptedDecisionGovernanceExecution;
+  let authoritySnapshotExecution;
   const documents = async () => {
     documentsExecution ??= docsFind({
       consumerRoot: root,
@@ -640,26 +641,34 @@ export function createDocsOwnerCatalog(root) {
   const acceptedDecisionGovernance = async () => (
     acceptedDecisionGovernanceExecution ??= assertAcceptedDecisionGovernance(root)
   );
-  return {
-    resolve: async ownerDocumentId => {
-      const [allDocuments, acceptedEntries, authoritativeStatuses] = await Promise.all([
-        documents(),
-        acceptedDecisionEntries(),
+  const authoritySnapshot = async () => (
+    authoritySnapshotExecution ??= (async () => {
+      const results = await Promise.allSettled([
         authoritativeDecisionStatuses(),
         acceptedDecisionGovernance(),
+        documents(),
+        acceptedDecisionEntries(),
       ]);
+      for (const result of results) {
+        if (result.status === "rejected") throw result.reason;
+      }
+      return {
+        authoritativeStatuses: results[0].value,
+        allDocuments: results[2].value,
+        acceptedEntries: results[3].value,
+      };
+    })()
+  );
+  return {
+    resolve: async ownerDocumentId => {
+      const { allDocuments, acceptedEntries, authoritativeStatuses } = await authoritySnapshot();
       const matches = allDocuments.filter(document => document.id === ownerDocumentId);
       if (matches.length !== 1
         || !statusCrossChecksWithAcceptedLedger(matches[0], acceptedEntries, authoritativeStatuses)) return undefined;
       return normalizeOwnerDocument(allDocuments, matches[0]);
     },
     listEffective: async () => {
-      const [allDocuments, acceptedEntries, authoritativeStatuses] = await Promise.all([
-        documents(),
-        acceptedDecisionEntries(),
-        authoritativeDecisionStatuses(),
-        acceptedDecisionGovernance(),
-      ]);
+      const { allDocuments, acceptedEntries, authoritativeStatuses } = await authoritySnapshot();
       return allDocuments
         .filter(document => statusCrossChecksWithAcceptedLedger(document, acceptedEntries, authoritativeStatuses))
         .map(document => normalizeOwnerDocument(allDocuments, document))
