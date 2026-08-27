@@ -104,6 +104,72 @@ framework contexts, credentials, permission grants, or mutable runtime state.
 Executable activation is resolved only after verification, admission, graph
 compile, and product authorization.
 
+## Identity Authoring And Projections
+
+Identity authority stays with the semantic owner:
+
+| Fact | Authored source |
+| --- | --- |
+| `ModuleId`, requirements, offers, and bounded source reference | The owning module's colocated inert declaration |
+| `CapabilityId`, compatibility family, and semantic owner | The owning product capability contract |
+| Provider selection and collection order | The product composition profile |
+| TypeScript handles, indexes, reverse dependencies, and diagrams | Deterministic generated projections |
+| Implementation, plan, loader, and artifact digests | Build or admission receipts |
+
+Module and capability identities are stable, authority-qualified strings. They
+do not change when a directory, package, repository, display name, or
+implementation digest changes. A semantic replacement receives a new identity;
+retired identities are never reused.
+
+`enum` remains suitable for a small closed set such as lifecycle status, but it
+is not the authority for an extensible cross-repository ID namespace. Runtime
+`Symbol()` and `Symbol.for()` are not serializable across persistence, Worker,
+process, Electron IPC, or WASM boundaries. Generated TypeScript handles may use
+an erased `unique symbol` brand to prevent accidental type mixing while runtime
+equality and wire data continue to use validated strings.
+
+The canonical declaration is colocated with the module. A generated aggregate
+index may expose the same identity for navigation, dependency reports, and
+typed imports, but it is disposable output and cannot be edited as a registry.
+No global `moduleIds` object is an authoring source.
+
+`provides` names product-owned capability contracts implemented by the module;
+it does not name modules. A conceptual authoring facade is:
+
+```ts
+const activityFeedModule = defineExtensionModule({
+  id: ActivityFeedModuleId,
+  provides: [provide(ActivityFeedV1)],
+  requires: {
+    events: required(RuntimeEventStreamV1),
+    search: optional(LogSearchV1),
+    transforms: many(LogTransformV1, {
+      minProviders: 1,
+      maxProviders: 8,
+      ordering: "profile",
+    }),
+  },
+});
+```
+
+These values are generated typed handles backed by inert declaration data. The
+example fixes only the private authoring vocabulary, not a published API.
+
+- `required(C)` resolves exactly one explicitly bound compatible provider and
+  injects `C`; zero or multiple unresolved candidates fail compilation.
+- `optional(C)` resolves zero or one provider and injects `C | undefined`. A
+  selected provider that fails is a failure, not optional absence.
+- `many(C, ...)` resolves an immutable ordered collection. `minProviders` and
+  `maxProviders` are graph-validity and fan-in bounds, not retry or runtime
+  concurrency limits. `ordering: "profile"` requires the profile to state the
+  exact behaviorally meaningful order; registration order and provider priority
+  never supply it. A non-semantic collection may instead use a canonical
+  identity order in the normalized contract.
+
+The compiler may type a collection with `minProviders: 1` as a non-empty tuple.
+The value `8` above is illustrative; every real limit is product policy plus a
+deployment-wide safety ceiling.
+
 ## Closed-World Resolution
 
 The product composition profile selects the complete candidate module set and
@@ -111,8 +177,9 @@ binds each dependency slot. The compiler does not scan a global registry.
 
 Rules:
 
-1. A required-one slot resolves to exactly one compatible contribution.
-2. An optional-one slot resolves to zero or one contribution.
+1. A `required` single-provider slot resolves to exactly one compatible
+   contribution.
+2. An `optional` single-provider slot resolves to zero or one contribution.
 3. Ordered-many is a distinct contract. Its order is declared by the product
    profile, not inferred from registration or provider priority.
 4. An ambiguous one-provider slot fails. A unique compatible provider may be
@@ -132,6 +199,62 @@ flowchart TD
     Binding -->|yes| One["Resolved provider"]
     Cardinality -->|ordered-many| Ordered["Product-authored ordered bindings"]
 ```
+
+## Candidate Enumeration And Execution Binding
+
+The target pipeline is closed-world without making one package catalog or
+runtime registry a universal source of truth:
+
+```mermaid
+flowchart LR
+    Roots["Consumer-owned bounded roots"] --> Declarations["Module-local inert declarations"]
+    Declarations --> Fragments["Canonical owner fragments"]
+    Fragments --> Inventory["Derived diagnostic inventory"]
+    Profile["Product profile"] --> Compile["Compile exact plan"]
+    Inventory --> Compile
+    Compile --> Plan["Immutable plan + digest"]
+    Plan --> Loaders["Target-specific private loader receipt"]
+    Loaders --> Runtime["Authorized runtime generation"]
+```
+
+Build and CI:
+
+1. Resolve bounded roots from consumer-owned topology and admitted package
+   paths. The Foundation package catalog may contribute roots after package
+   admission, but it is not the product module catalog.
+2. Read only fixed-name serialized declarations. Reject duplicate keys,
+   symlinks, path escapes, case-fold collisions, unknown fields, duplicate IDs,
+   oversized inputs, and executable declaration imports.
+3. Emit canonical per-owner fragments and a disposable aggregate inventory.
+   Coverage checks fail on orphan declarations and cataloged roots without a
+   matching fragment.
+4. Compile one exact profile and lock. Provider selection happens once; normal
+   startup verifies and materializes that result rather than resolving again.
+5. For co-released built-ins, emit a private lazy literal-import table per host
+   target: Node/server, Electron main, preload, renderer/Worker, and browser
+   targets never share one authority table.
+6. Bind declaration-input, resolved-plan, loader-source, implementation, and
+   emitted-bundle digests through receipts. The selected executable IDs and
+   loader keys form an exact bijection. Invalid and unselected sentinel modules
+   must prove zero top-level evaluation in every supported target.
+7. Generate into a digest-named temporary location and publish atomically only
+   after a clean target build, byte-for-byte regeneration check, stale-output
+   check, and emitted dependency-graph audit.
+
+The runtime receives only the exact plan and matching target loader receipt. It
+does not scan the filesystem, package catalog, aggregate inventory, decorators,
+or a global container. Changing a built-in loader closure requires a new build
+or host restart; ESM query-string cache busting is not a lifecycle mechanism.
+
+Independently installed plugin artifacts use a separate verified isolated-host
+adapter keyed by immutable artifact and contribution identity. They are never
+added to the trusted built-in table by runtime string interpolation. Tree
+shaking and chunk count are optimization evidence, not authorization evidence.
+
+The first fixed slice may use a handwritten private literal-import table plus
+the same declaration/table bijection check. Deterministic loader generation is
+introduced only when repeated wiring or profile variants justify it; the target
+receipt and isolation invariants do not change.
 
 ## Authority Scope And Module Lifetime
 

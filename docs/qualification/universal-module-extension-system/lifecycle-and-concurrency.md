@@ -247,6 +247,64 @@ host, or another externally supervised boundary with forced termination.
 
 V1 uses restart-safe generation replacement, not arbitrary hot unload.
 
+Installation, desired enablement, active routing, runtime health, state custody,
+and artifact retirement remain independent state planes. Enable or disable
+therefore creates a new immutable desired-profile revision and compiles the
+complete affected dependency closure; it never flips a mutable boolean in a
+live registry.
+
+```mermaid
+stateDiagram-v2
+    [*] --> DisabledClean
+    DisabledClean --> Enabling: new desired revision
+    Enabling --> Enabled: ready + publication CAS
+    Enabling --> Aborting: failed or superseded
+    Aborting --> DisabledClean: cleanup confirmed
+    Aborting --> RestartRequired: termination unproven
+    Enabled --> Sealing: disable revision admitted
+    Sealing --> Draining: new admission fenced
+    Draining --> Stopping: complete or bounded cutoff
+    Stopping --> DisabledClean: termination confirmed
+    Stopping --> RestartRequired: cleanup or termination uncertain
+    RestartRequired --> DisabledClean: fresh host incarnation + reconciliation
+```
+
+Dependency impact is compiled before staging:
+
+- removing a provider for `required` blocks the change unless a separately
+  reviewed plan also disables, replaces, or rebinds every affected dependent;
+- removing an `optional` provider permits a consumer to remain active only when
+  the consumer declares the exact degraded behavior and recovery semantics;
+- a `many` binding must continue to satisfy its minimum, maximum, compatibility,
+  ordering, scope, and authorization constraints;
+- disabling a module means it is absent from the candidate graph, provider set,
+  grants, and selected built-in loader closure. It remains distinguishable from
+  uninstalled, denied, incompatible, failed, quarantined, and restart-required.
+
+Each activation generation owns a host-created resource scope before any module
+hook runs. It combines one generation-bound abort signal, a tracked task group,
+an invocation registry, LIFO asynchronous disposal, late-acquisition rejection,
+and resource-specific custody for timers, listeners, streams, sockets, Workers,
+child processes, queues, and external leases. Resource acquisition registers
+cleanup before exposing the resource. Module top-level code and ambient
+resources created outside host brokers cannot satisfy this contract.
+
+`stop()` or `dispose()` returning is cleanup evidence, not cleanup proof.
+`cleanup_confirmed` requires closed admission, joined or fenced work, attempted
+disposers, terminal receipts for every effect-capable resource, no accepted late
+acquisition, reconciled ambiguous external effects, and zero generation-owned
+references. Keep separate absolute effect and termination deadlines fixed at
+intent creation; neither is refreshed between phases.
+
+For trusted in-process code, logical disable can fence brokered calls and
+durable effects but cannot prove JavaScript unload, interrupt synchronous code,
+or revoke escaped ambient authority. Any unjoined task, missing terminal receipt,
+late resource acquisition, process-global mutation, changed cached module bytes,
+or prior `termination_unproven` makes `restart_required` sticky for that host
+incarnation. A Worker, process, WASM store, or dedicated browser realm may claim
+stronger termination only after its placement adapter observes realm exit and
+still fences stale results at authoritative sinks.
+
 ```mermaid
 flowchart LR
     Old["Generation N active"] --> Candidate["Prepare N+1 in isolation"]

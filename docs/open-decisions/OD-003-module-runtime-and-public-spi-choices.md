@@ -53,6 +53,24 @@ for trusted and isolated implementations.
 The choice must prove duplicate detection, deterministic identity, useful
 diagnostics, and no generic runtime resolver in product code.
 
+The qualification direction is narrowed without resolving this open decision:
+
+- `ModuleId` is authored once in the owning module's colocated inert
+  declaration. `CapabilityId` is authored once by the owning product contract;
+  provider modules reference it rather than redefining it.
+- Durable identities are validated authority-qualified strings. Generated
+  TypeScript handles may use an erased `unique symbol` brand, but runtime
+  `Symbol`, a central `enum`, paths, package names, and content hashes are not
+  identity authorities.
+- A central module list is a generated read-only projection for diagnostics and
+  navigation, never a hand-maintained registration source.
+- The private TypeScript authoring facade uses `required`, `optional`, and
+  `many`. The normalized serialized descriptor still records presence and
+  cardinality explicitly; these helper names do not publish the final SPI.
+
+The exact descriptor schema, compatibility grammar, generated-handle package
+surface, and publication policy remain open under `UMEQ-012`.
+
 ### Runtime hosts
 
 - A small native trusted-module runner plus a separate process contribution
