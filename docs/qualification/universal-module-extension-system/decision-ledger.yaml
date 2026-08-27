@@ -121,7 +121,7 @@ requirementDefinitions:
   - id: publication-independent-consumers
     kind: evidence
     authority: qualification-evidence
-    detail: conformance-plan.md#product-adoption-gate
+    detail: conformance-plan.md#publication-candidate-consumer-gate
     purpose: immutable publication-candidate proof from two real independently authored conforming consumers, separate from extraction and admission evidence
   - id: production-host-evidence
     kind: evidence
@@ -183,6 +183,15 @@ implementationGates:
         requiredStatus: passed
       - decision: foundation-package-admission-decision
         requiredStatus: accepted
+  - id: phase-3-module-semantic-package-admission
+    appliesTo:
+      - phase-3-foundation-module-semantic-package-admission
+    mode: all
+    allOf:
+      - gate: foundation-semantic-extraction
+        requiredStatus: satisfied
+      - gate: phase-3-package-admission
+        requiredStatus: satisfied
   - id: phase-3-package-publication
     appliesTo:
       - phase-3-public-package-publication
@@ -212,6 +221,15 @@ implementationGates:
         requiredStatus: accepted
       - decision: foundation-package-publication-decision
         requiredStatus: accepted
+  - id: phase-3-module-semantic-package-publication
+    appliesTo:
+      - phase-3-foundation-module-semantic-package-publication
+    mode: all
+    allOf:
+      - gate: phase-3-module-semantic-package-admission
+        requiredStatus: satisfied
+      - gate: phase-3-package-publication
+        requiredStatus: satisfied
   - id: production-extension-host-safety
     appliesTo:
       - phase-4-process-host

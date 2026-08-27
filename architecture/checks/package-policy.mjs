@@ -1,11 +1,20 @@
+import { execFile } from "node:child_process";
 import { lstat, readFile, readdir } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 
 import { docsFind } from "@agent-teams/docs-protocol";
 import { parse as parseYaml } from "yaml";
 
 import { parseStrictJson } from "./strict-json.mjs";
 import { STRICT_SEMVER } from "./strict-semver.mjs";
+
+const execFileAsync = promisify(execFile);
+const FOUNDATION_PACKAGE_MANIFEST_PATH = fileURLToPath(
+  import.meta.resolve("@agent-teams/engineering-foundation/package.json"),
+);
+let foundationCliPathExecution;
 
 export const CATALOG_PATH = "architecture/package-catalog.json";
 export const FOUNDATION_REPOSITORY = "agent-teams-ai/extension-foundation";
@@ -62,6 +71,50 @@ export const REPOSITORY_ID = /^[a-z0-9][a-z0-9_.-]*\/[a-z0-9][a-z0-9_.-]*$/;
 export const SOURCE_REVISION = /^[0-9a-f]{40}$/;
 export const CONFORMANCE_VERSION = STRICT_SEMVER;
 export const EVIDENCE_DIGEST = /^sha256=[0-9a-f]{64}$/;
+
+async function foundationCliPath() {
+  foundationCliPathExecution ??= (async () => {
+    const manifest = parseStrictJson(await readFile(FOUNDATION_PACKAGE_MANIFEST_PATH, "utf8"));
+    const binPath = isRecord(manifest.bin) ? manifest.bin["agent-teams-foundation"] : undefined;
+    if (typeof binPath !== "string"
+      || !/^\.\/[a-zA-Z0-9._/-]+$/.test(binPath)
+      || binPath.split("/").includes("..")) {
+      throw new Error("@agent-teams/engineering-foundation: invalid CLI package contract");
+    }
+    const resolved = join(dirname(FOUNDATION_PACKAGE_MANIFEST_PATH), binPath);
+    const metadata = await lstat(resolved);
+    if (!metadata.isFile() || metadata.isSymbolicLink()) {
+      throw new Error("@agent-teams/engineering-foundation: CLI must be a real regular file");
+    }
+    return resolved;
+  })();
+  return foundationCliPathExecution;
+}
+
+async function assertAcceptedDecisionGovernance(root) {
+  try {
+    await execFileAsync(process.execPath, [
+      await foundationCliPath(),
+      "check",
+      "governance.architecture-decisions",
+      "--consumer",
+      root,
+      "--format",
+      "json",
+    ], {
+      cwd: root,
+      encoding: "utf8",
+      maxBuffer: 1024 * 1024,
+      timeout: 30_000,
+    });
+  } catch (error) {
+    const detail = `${error?.stdout ?? ""}\n${error?.stderr ?? ""}`.trim();
+    throw new Error(
+      `Accepted ADR governance rejected package ownership authority${detail.length === 0 ? "" : `: ${detail.slice(0, 600)}`}`,
+      { cause: error },
+    );
+  }
+}
 
 async function assertRealParentDirectories(root, relativePath) {
   const segments = relativePath.split("/");
@@ -475,7 +528,7 @@ function normalizeOwnerDocument(documents, document) {
   };
 }
 
-export async function loadAcceptedDecisionIds(root) {
+export async function loadAcceptedDecisionEntries(root) {
   await assertRealParentDirectories(root, ACCEPTED_DECISION_LEDGER_PATH);
   const ledgerPath = join(root, ACCEPTED_DECISION_LEDGER_PATH);
   const ledgerFile = await lstat(ledgerPath);
@@ -489,19 +542,26 @@ export async function loadAcceptedDecisionIds(root) {
     || !Array.isArray(ledger.decisions)) {
     throw new Error(`${ACCEPTED_DECISION_LEDGER_PATH}: invalid accepted-decision ledger`);
   }
-  const ids = new Set();
+  const entries = new Map();
   for (const decision of ledger.decisions) {
     if (!hasExactKeys(decision, ["id", "immutableDigest", "path"])
       || !OWNER_DOCUMENT.test(decision.id ?? "")
       || typeof decision.path !== "string"
       || typeof decision.immutableDigest !== "string"
       || !/^sha256:[0-9a-f]{64}$/.test(decision.immutableDigest)
-      || ids.has(decision.id)) {
+      || entries.has(decision.id)) {
       throw new Error(`${ACCEPTED_DECISION_LEDGER_PATH}: invalid or duplicate decision entry`);
     }
-    ids.add(decision.id);
+    entries.set(decision.id, Object.freeze({
+      immutableDigest: decision.immutableDigest,
+      path: decision.path,
+    }));
   }
-  return ids;
+  return entries;
+}
+
+export async function loadAcceptedDecisionIds(root) {
+  return new Set((await loadAcceptedDecisionEntries(root)).keys());
 }
 
 async function loadAuthoritativeDecisionStatuses(root) {
@@ -514,7 +574,19 @@ async function loadAuthoritativeDecisionStatuses(root) {
   const contents = (await readFile(indexPath, "utf8")).replace(/\r\n?/g, "\n");
   const statuses = new Map();
   const sections = [...contents.matchAll(/^## (Proposed|Accepted|Superseded) decisions\s*$([\s\S]*?)(?=^## |(?![\s\S]))/gmi)];
-  if (sections.length !== 3) throw new Error(`${DECISION_INDEX_PATH}: decision lifecycle sections are incomplete`);
+  const lifecycleSectionCounts = new Map([
+    ["proposed", 0],
+    ["accepted", 0],
+    ["superseded", 0],
+  ]);
+  for (const section of sections) {
+    const status = section[1].toLowerCase();
+    lifecycleSectionCounts.set(status, (lifecycleSectionCounts.get(status) ?? 0) + 1);
+  }
+  if (sections.length !== 3
+    || [...lifecycleSectionCounts.values()].some(count => count !== 1)) {
+    throw new Error(`${DECISION_INDEX_PATH}: requires exactly one proposed, accepted, and superseded section`);
+  }
   for (const section of sections) {
     const status = section[1].toLowerCase();
     for (const match of section[2].matchAll(/^- \[(ADR-[0-9]{4}):[^\]]+\]\([^)]+\)$/gm)) {
@@ -525,21 +597,28 @@ async function loadAuthoritativeDecisionStatuses(root) {
   return statuses;
 }
 
-export function statusCrossChecksWithAcceptedLedger(document, acceptedDecisionIds, authoritativeStatuses) {
+export function statusCrossChecksWithAcceptedLedger(document, acceptedDecisions, authoritativeStatuses) {
   if (document.metadata.type !== "adr") return true;
   const status = String(document.metadata.status ?? "");
-  const recordedAsAccepted = acceptedDecisionIds.has(document.id);
+  const recordedAsAccepted = acceptedDecisions.has(document.id);
+  const acceptedEntry = acceptedDecisions instanceof Map
+    ? acceptedDecisions.get(document.id)
+    : undefined;
+  const immutablePathMatches = acceptedEntry === undefined
+    || acceptedEntry.path === document.repositoryPath;
   const acceptedHistoryMatches = ["accepted", "superseded"].includes(status)
     ? recordedAsAccepted
     : status === "proposed" && !recordedAsAccepted;
-  return acceptedHistoryMatches
+  return immutablePathMatches
+    && acceptedHistoryMatches
     && (authoritativeStatuses === undefined || authoritativeStatuses.get(document.id) === status);
 }
 
 export function createDocsOwnerCatalog(root) {
   let documentsExecution;
-  let acceptedDecisionIdsExecution;
+  let acceptedDecisionEntriesExecution;
   let authoritativeDecisionStatusesExecution;
+  let acceptedDecisionGovernanceExecution;
   const documents = async () => {
     documentsExecution ??= docsFind({
       consumerRoot: root,
@@ -552,32 +631,37 @@ export function createDocsOwnerCatalog(root) {
     }
     return execution.envelope.result.documents;
   };
-  const acceptedDecisionIds = async () => (
-    acceptedDecisionIdsExecution ??= loadAcceptedDecisionIds(root)
+  const acceptedDecisionEntries = async () => (
+    acceptedDecisionEntriesExecution ??= loadAcceptedDecisionEntries(root)
   );
   const authoritativeDecisionStatuses = async () => (
     authoritativeDecisionStatusesExecution ??= loadAuthoritativeDecisionStatuses(root)
   );
+  const acceptedDecisionGovernance = async () => (
+    acceptedDecisionGovernanceExecution ??= assertAcceptedDecisionGovernance(root)
+  );
   return {
     resolve: async ownerDocumentId => {
-      const [allDocuments, acceptedIds, authoritativeStatuses] = await Promise.all([
+      const [allDocuments, acceptedEntries, authoritativeStatuses] = await Promise.all([
         documents(),
-        acceptedDecisionIds(),
+        acceptedDecisionEntries(),
         authoritativeDecisionStatuses(),
+        acceptedDecisionGovernance(),
       ]);
       const matches = allDocuments.filter(document => document.id === ownerDocumentId);
       if (matches.length !== 1
-        || !statusCrossChecksWithAcceptedLedger(matches[0], acceptedIds, authoritativeStatuses)) return undefined;
+        || !statusCrossChecksWithAcceptedLedger(matches[0], acceptedEntries, authoritativeStatuses)) return undefined;
       return normalizeOwnerDocument(allDocuments, matches[0]);
     },
     listEffective: async () => {
-      const [allDocuments, acceptedIds, authoritativeStatuses] = await Promise.all([
+      const [allDocuments, acceptedEntries, authoritativeStatuses] = await Promise.all([
         documents(),
-        acceptedDecisionIds(),
+        acceptedDecisionEntries(),
         authoritativeDecisionStatuses(),
+        acceptedDecisionGovernance(),
       ]);
       return allDocuments
-        .filter(document => statusCrossChecksWithAcceptedLedger(document, acceptedIds, authoritativeStatuses))
+        .filter(document => statusCrossChecksWithAcceptedLedger(document, acceptedEntries, authoritativeStatuses))
         .map(document => normalizeOwnerDocument(allDocuments, document))
         .filter(document => (
           document.type === "adr"

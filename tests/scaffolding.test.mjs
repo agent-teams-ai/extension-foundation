@@ -151,15 +151,6 @@ targetRef: module.example
 `);
   await writeFixture(root, "package.json", '{"name":"fixture","private":true,"type":"module"}\n');
   await writeFixture(root, "pnpm-workspace.yaml", 'packages:\n  - "packages/**"\n');
-  await writeFixture(root, "architecture/decisions/accepted-decisions.json", `${JSON.stringify({
-    schemaVersion: 1,
-    algorithm: "sha256",
-    decisions: [{
-      id: "ADR-0099",
-      path: "docs/decisions/0099-example-package.md",
-      immutableDigest: `sha256:${"a".repeat(64)}`,
-    }],
-  })}\n`);
   await writeFixture(root, "docs/decisions/0099-example-package.md", `---
 id: ADR-0099
 type: adr
@@ -175,7 +166,7 @@ package_ownership:
     features: [example]
 ---
 
-# Example Package
+# ADR-0099: Example Package
 `);
   await writeFixture(root, "docs/decisions/README.md", `---
 id: decisions.index
@@ -195,6 +186,31 @@ summary: Canonical index of fixture decisions.
 
 ## Superseded decisions
 `);
+  await writeFixture(root, "architecture/foundation/governance-architecture-decisions.yaml", `schemaVersion: 1
+adrRoots:
+  - docs/decisions
+index:
+  path: docs/decisions/README.md
+  sections:
+    proposed: Proposed decisions
+    accepted: Accepted decisions
+    superseded: Superseded decisions
+acceptedBaselinePath: architecture/decisions/accepted-decisions.json
+`);
+  await writeFixture(root, "foundation.config.yaml", `schemaVersion: 1
+project:
+  id: extension-scaffolding-fixture
+capabilities:
+  governance.architecture-decisions:
+    configPath: architecture/foundation/governance-architecture-decisions.yaml
+`);
+  await execFileAsync(process.execPath, [
+    foundationCli,
+    "architecture-decisions-promote-baseline",
+    "--consumer",
+    root,
+    "--json",
+  ], { cwd: root });
   for (const path of [
     "architecture/foundation/docs-protocol.yaml",
     "architecture/foundation/document-authoring.yaml",
@@ -401,6 +417,52 @@ test("scaffolding rejects stale owner authority before publishing files", async 
 
     const receipt = await applyFilesystemScaffold(root, plan);
     assert.equal(receipt.outcome, "authority-stale");
+    assert.equal(await exists(join(root, "packages/example")), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("default owner resolution rejects changed immutable ADR path or digest", async () => {
+  for (const mutation of [
+    ledger => { ledger.decisions[0].path = "docs/decisions/relocated-owner.md"; },
+    ledger => { ledger.decisions[0].immutableDigest = `sha256:${"a".repeat(64)}`; },
+  ]) {
+    const root = await createConsumer();
+    try {
+      const baselinePath = join(root, "architecture/decisions/accepted-decisions.json");
+      const baseline = JSON.parse(await readFile(baselinePath, "utf8"));
+      mutation(baseline);
+      await writeFile(baselinePath, `${JSON.stringify(baseline)}\n`);
+      await assert.rejects(
+        publishScaffoldPlan({
+          root,
+          intentPath: "architecture/scaffolding-intents/example.yaml",
+          planPath: "architecture/scaffolding-plans/module-dot-example.json",
+        }),
+        /Accepted ADR governance rejected package ownership authority/u,
+      );
+      assert.equal(await exists(join(root, "packages/example")), false);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  }
+});
+
+test("default owner resolution rejects duplicate decision lifecycle sections", async () => {
+  const root = await createConsumer();
+  try {
+    const indexPath = join(root, "docs/decisions/README.md");
+    const index = await readFile(indexPath, "utf8");
+    await writeFile(indexPath, index.replace("## Superseded decisions", "## Accepted decisions"));
+    await assert.rejects(
+      publishScaffoldPlan({
+        root,
+        intentPath: "architecture/scaffolding-intents/example.yaml",
+        planPath: "architecture/scaffolding-plans/module-dot-example.json",
+      }),
+      /requires exactly one proposed, accepted, and superseded section/u,
+    );
     assert.equal(await exists(join(root, "packages/example")), false);
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -618,11 +680,14 @@ test("CLI uses the real Docs owner resolver and rejects changed authority", asyn
     const ownerPath = join(root, "docs/decisions/0099-example-package.md");
     const owner = await readFile(ownerPath, "utf8");
     await writeFile(ownerPath, owner.replace("disposable package", "changed disposable package"));
-    assert.equal(await runScaffoldCli({
-      root,
-      args: ["apply", "architecture/scaffolding-plans/module-dot-example.json", planDigest],
-      write: () => undefined,
-    }), 2);
+    await assert.rejects(
+      runScaffoldCli({
+        root,
+        args: ["apply", "architecture/scaffolding-plans/module-dot-example.json", planDigest],
+        write: () => undefined,
+      }),
+      /Accepted ADR governance rejected package ownership authority/u,
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }

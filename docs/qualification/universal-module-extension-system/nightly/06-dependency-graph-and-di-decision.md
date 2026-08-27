@@ -36,9 +36,11 @@ described as a runtime platform.
 
 ## Triggered Private Graph
 
-A graph becomes eligible only if a real slice demonstrates runtime provider
-selection, variable dependencies, or independently managed lifecycle that a
-literal table cannot express. Before implementation, one accepted governance
+A graph becomes eligible only if a real slice demonstrates measured runtime
+provider selection or independently managed lifecycle that a literal table
+cannot express. Dependency variability is evidence only when it concretely
+demonstrates that accepted runtime-selection trigger; it is never a third
+trigger. Before implementation, one accepted governance
 path must resolve ownership. The private graph must bound input size, reject
 duplicate and missing identities and cycles, materialize exact bindings, produce
 deterministic complete diagnostics, seal source-to-factory identity, and remain
@@ -58,8 +60,10 @@ If triggered, the target model has these non-negotiable separations:
   many semantics without treating many bounds/order as concurrency;
 - `PlanTemplateDigest` identifies canonical intent; only a successful product
   admission issues `PlanContentDigest` over canonical admitted content, and a
-  monotonic `GraphGeneration` maps immutably to that receipt, explicit provider
-  binding, and `ActiveHeadRevision` without entering the content hash;
+  monotonic `CandidateGeneration` maps immutably to that receipt and explicit
+  provider binding, while a distinct `RuntimeGeneration` identifies the runtime
+  pinned by that candidate. Neither enters the content hash or aliases
+  `ActiveHeadRevision`;
 - compilation stages are `PlanTemplate`, target execution closure, inert scope
   binding, product-owned first-graph validation/admission, and graph generation.
   Graphs are target-local; a product-owned

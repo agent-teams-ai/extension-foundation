@@ -43,20 +43,30 @@ flowchart LR
     Host --> Effect["Fenced product or runtime effect"]
 ```
 
-Effective authority is the intersection of product authorization, a separate
-current product capability grant, applicable entitlement and installation
-admission, Foundation-produced verification evidence accepted by the product,
-an exact provider binding and admitted plan receipt, applicable AR technical
-authorization, current generation/fence, host policy and containment. Any
-missing, stale, ambiguous, differently canonicalized or
-unknown input denies.
+For a triggered runtime graph or dynamically loaded artifact, effective
+authority is the intersection of product authorization, a separate current
+product capability grant, applicable entitlement and installation admission,
+Foundation-produced verification evidence accepted by the product, an exact
+provider binding and current unexpired admitted plan receipt, applicable AR
+technical authorization, current candidate/runtime generations and fence, host
+policy and containment. Any missing, stale, ambiguous, differently
+canonicalized or unknown input denies.
 
-No executable bytes, module import, factory, getter, provider callback, or
-declarative payload with executable semantics is evaluated while that
-intersection is incomplete. Verification, catalog presence, signature,
-admission, graph construction, entitlement, or a grant alone cannot cross the
-execution boundary. The host resolves and evaluates only the executable named
-by the admitted provider binding after it rereads all current inputs.
+No dynamic executable bytes, import, getter, provider callback, or declarative
+payload with executable semantics is evaluated while that intersection is
+incomplete. Verification, catalog presence, signature, admission, graph
+construction, entitlement, or a grant alone cannot cross the dynamic execution
+boundary. The host resolves and evaluates only the executable named by the
+current admitted provider binding after it rereads all current inputs.
+
+Static T0 built-ins use a separate accepted route: build provenance, literal
+target selection, immutable built-in implementation binding, and the trusted
+product composition root may evaluate a passive factory without inventing a
+runtime graph receipt. That evaluation grants no privileged effect authority.
+Every privileged invocation still requires current product authorization,
+grant, candidate/runtime generations and fence, host policy, and any applicable
+AR authorization or containment. A static built-in cannot silently become a
+dynamic provider or bypass those invocation checks.
 
 | Receipt or decision | Precise fact established | Does not establish |
 | --- | --- | --- |
@@ -172,26 +182,53 @@ adapters, and their names must not be read as current implementation evidence:
 - runtime sandbox and product grant remain independent after verification.
 
 ```text
-accept artifact =
+verify artifact =
   canonical digest
   AND namespace-authorized signer
   AND verified provenance
   AND exact dependency closure
-  AND fresh non-revoked release record
 
-execute artifact =
-  accept artifact
+accept managed artifact =
+  verify artifact
+  AND TUF-protected current non-revoked release metadata
+
+accept manual exact-digest artifact =
+  verify artifact
+  AND exact recursive digest closure
+  AND configured local revocation authority at its latest imported monotonic revision
+  AND route explicitly records no publisher-currentness claim
+
+accepted artifact =
+  accept managed artifact OR accept manual exact-digest artifact
+
+execute dynamically loaded provider =
+  accepted artifact
   AND compatibility decision = allow
   AND catalog or direct-digest trust route = allow
   AND (entitlement decision = allow OR entitlement plane = explicitly not-applicable)
   AND installation admission = allow
+  AND current unexpired AdmittedPlanReceipt matches authority scope,
+      PlanContentDigest, and provider-binding digest
+  AND exact provider binding matches installation, contribution, artifact,
+      implementation, and target loader identity
   AND product authorization = allow
   AND current product capability grant
   AND (AR authorization = allow when AR owns the capability
        OR AR plane = explicitly not-applicable)
-  AND current generation and fence
+  AND current candidate generation, runtime generation, and fence
   AND host policy = allow
   AND required containment = ready
+
+invoke static built-in =
+  build provenance and literal target selection = allow
+  AND exact BuiltInModuleInstallation implementation binding
+  AND product authorization = allow
+  AND current product capability grant
+  AND (AR authorization = allow when AR owns the capability
+       OR AR plane = explicitly not-applicable)
+  AND current candidate generation, runtime generation, and fence
+  AND host policy = allow
+  AND required containment = ready or explicitly not-applicable by product policy
 ```
 
 Every conjunct is an independent, current decision. A product authorization is

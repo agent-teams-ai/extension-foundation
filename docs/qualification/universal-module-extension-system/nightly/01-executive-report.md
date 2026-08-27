@@ -67,11 +67,21 @@ provides an ambient container or global service locator.
 
 ## Decision Status
 
-- Effective: ADR-0013, ADR-0014, and the other accepted ADRs in the canonical
-  decision index. ADR-0012 is superseded historical authority.
-- Proposed, non-operative: ADR-0011.
-- Open, non-operative: OD-002, OD-003, and UMEQ-009 through UMEQ-018.
-- No W11 report silently supersedes, accepts, or resolves any of them.
+| Authority | Current status |
+| --- | --- |
+| ADR-0012 | `superseded` |
+| ADR-0011 | `proposed` |
+| ADR-0013 | `accepted` |
+| ADR-0014 | `accepted` |
+| OD-002 and OD-003 | `open` |
+| UMEQ-009 through UMEQ-010 | `open` |
+| UMEQ-011 | `accepted-existing` |
+| UMEQ-012 through UMEQ-015 | `open` |
+| UMEQ-016 | `accepted-existing` |
+| UMEQ-017 through UMEQ-018 | `open` |
+
+No W11 report silently supersedes, accepts, or resolves another decision.
+
 - Worker counts are job IDs and logical roles, not independent experts, votes,
   or independent reproductions.
 

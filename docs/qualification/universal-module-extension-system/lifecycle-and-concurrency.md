@@ -14,10 +14,12 @@ related:
 
 ## Recommended Model
 
-Use one monotonic `GraphGeneration` per product authority scope and one
-`ModuleActivationGeneration` per module activation within that graph. A host may map
-these values to database revisions, compare-and-set tokens, process epochs, or
-leases, but it must not expose competing generation models to module code.
+Use one monotonic `CandidateGeneration` per product authority scope, one
+distinct `RuntimeGeneration` per concrete runtime incarnation, and one
+`ModuleActivationGeneration` per module activation within that candidate and
+runtime. A host may map these values to database revisions, compare-and-set
+tokens, process epochs, or leases, but it must not collapse or expose competing
+generation models to module code.
 
 Distributed adapters keep additional infrastructure identities separate:
 
@@ -31,13 +33,17 @@ Distributed adapters keep additional infrastructure identities separate:
 Rollback is a forward transition to a fresh generation and higher fence. It
 never revives a prior epoch or decrements authority.
 
-`GraphGeneration` is allocated only from one immutable `AdmittedPlanReceipt`.
+`CandidateGeneration` is allocated only from one immutable `AdmittedPlanReceipt`.
 The durable projection records authority scope, `PlanContentDigest`, exact
 provider-binding digest, admission decision and generation together. A retry of
 the same durable candidate retains its generation; every newly allocated
 activation, replacement, disablement, restart, or forward rollback receives a
 higher generation even when admitted content is byte-identical. No generation
-may float to another receipt, scope, provider binding, or inferred provider.
+may float to another receipt, scope, provider binding, or inferred provider. A
+candidate references a `RuntimeGeneration` only through a durable
+`StagedRuntimeReferencePin` serialized with runtime retirement. Publication
+promotes that exact pin; abandonment releases it only after candidate effects
+are terminal or reconciled.
 
 ```mermaid
 stateDiagram-v2
@@ -174,19 +180,28 @@ handle issued by another scope is rejected.
 | Late completion versus provider or handoff deadline | Late result is stale and cannot publish |
 | Reentrant `A -> B -> A` | Fail synchronously with a causal-cycle diagnostic |
 
-Relative timeout refresh is forbidden. One durable lifecycle intent records
-three distinct, non-renewable absolute deadlines; none is inferred from or
-collapsed into a generic operation timeout:
+Relative timeout refresh is forbidden. Before verification begins, the product
+persists one idempotent `AdmissionIntent` containing the operation identity,
+authority scope, candidate comparison digest, provider references, and all
+three distinct non-renewable absolute deadlines on authority clocks. A retry with the same
+operation and fingerprint reuses this intent; a changed fingerprint conflicts.
+Successful admission atomically attaches the receipt, content digest, provider
+binding, and candidate generation to that intent. A crash before admission
+therefore cannot refresh a deadline or allocate another receipt/generation.
+None of the three deadlines is inferred from or collapsed into a generic
+operation timeout:
 
 | Deadline | What it bounds | Clock and boundary receipt |
 | --- | --- | --- |
 | Admission/validation | Inert verification, graph construction, product-owned invariant validation, policy evaluation, and issuance of `AdmittedPlanReceipt` | The admission authority clock and decision receipt prove completion by this deadline. Expiry yields no receipt, digest, or generation and leaves current desired and active state unchanged. |
-| Provider execution | Evaluation and execution of explicitly bound provider code, including prepare/start and acceptance of its readiness result | The supervising host's monotonic clock bounds execution; provider receipts bind provider identity, admitted receipt, generation, attempt, and observed completion. Expiry cancels where possible, rejects late results, and opens termination/reconciliation debt when termination is unproven. |
+| Provider execution | Evaluation and execution of explicitly bound provider code, including prepare/start and acceptance of its readiness result | A persisted authority-clock cutoff is the durable source of truth. Each host incarnation derives a non-renewable local monotonic watchdog from the remaining interval and records its incarnation. If clock continuity or the authority cutoff cannot be proved after restart/failover, execution fails closed into reconciliation; it never derives a fresh duration. Provider receipts bind provider identity, admitted receipt, candidate/runtime generations, attempt, cutoff, and observed completion. |
 | Activation/handoff | Final validation and the product-owned active-head compare-and-set that hands routing or effect authority to the ready generation | The product authority clock decides expiry. The CAS and authoritative sink receipts bind intent, admitted receipt, generation, dynamically read fence, and authority timestamp. Expiry forbids handoff even if provider execution completed. |
 
 The deadlines can differ and govern different facts. No heartbeat, progress
 event, phase transition, retry, adapter hop, queue wait, or cleanup activity
-extends any of them. Caller observation and termination/reconciliation use
+extends or rebases any of them. A host-monotonic value is only an
+incarnation-local enforcement aid, never the durable deadline. Caller
+observation and termination/reconciliation use
 separate bounded wait policies; they are not substituted for these authority
 deadlines and cannot authorize admission, provider execution, or handoff.
 
@@ -472,14 +487,25 @@ scope, publisher and extension lineage, schema transition,
 current product- or tenant-owned `StateCustodyAuthorization` for the requested
 attach/rebind/migrate operation. Migration prepares only a versioned staging
 copy or a product-approved forward/backward-compatible change while the old
-active generation and its valid state remain authoritative. At every step the
-product custody authority rereads the current owner revision, active head,
-graph generation, migration revision, and sink fence inside the fenced
-operation; caller assertions or material cached at planning time are comparison
-inputs only. Per-step receipts bind those observed values. An ambiguous step is
-reconciled, never retried automatically. Only after the replacement is admitted,
-migration receipts and comparison rules pass, and activation/handoff CAS wins
-may the product switch the authoritative state reference and route. Failure
+active generation and its valid state remain authoritative. Concurrent source
+writes are handled by one explicit product-owned strategy: either seal old
+write admission, copy the final delta, and prove quiescence, or continuously
+capture/dual-write changes under a source revision watermark and prove the
+staging sink has applied through that watermark. A snapshot copy alone is never
+sufficient.
+
+At every step the product custody authority rereads the current owner revision,
+active head, candidate and runtime generations, migration revision, source-state
+revision/change-log watermark, staging-applied watermark, write-barrier state,
+and sink fence inside the fenced operation; caller assertions or material
+cached at planning time are comparison inputs only. Per-step receipts bind
+those observed values. The handoff linearization point atomically verifies that
+old writes are sealed or the staging sink is caught up through the current
+source watermark, then advances the authoritative state reference and route.
+An ambiguous copy, barrier, or handoff step is reconciled, never retried
+automatically. Only after the replacement is admitted, migration receipts and
+comparison rules pass, and activation/handoff CAS wins may the product switch
+the authoritative state reference and route. Failure
 before that point discards or quarantines staging and leaves the old generation
 and old valid state active; failure after handoff leaves the new generation
 active and records cleanup debt. An irreversible in-place migration that would
@@ -552,10 +578,22 @@ controller failover and process restart never turn unknown into failed.
 The durable model stores intent and evidence, not call-stack continuation:
 
 ```text
+AdmissionIntent
+  operationId
+  authorityScope
+  candidateComparisonDigest
+  providerReferences
+  activationFingerprint
+  admissionValidationDeadline
+  providerExecutionDeadline
+  activationHandoffDeadline
+  status: pending | admitted | expired | rejected
+
 LifecycleIntent
   operationId
   authorityScope
-  graphGeneration
+  candidateGeneration
+  runtimeGeneration
   moduleActivationGeneration
   activationFingerprint
   phase
@@ -575,7 +613,8 @@ LifecycleEvidence
   operationId
   intentDigest
   authorityScope
-  graphGeneration
+  candidateGeneration
+  runtimeGeneration
   moduleActivationGeneration
   activationFingerprint
   expectedDesiredHead
@@ -592,6 +631,10 @@ LifecycleEvidence
   payloadDigest
   observedAt
 ```
+
+The transition from `AdmissionIntent` to `LifecycleIntent` is atomic with
+issuance of `AdmittedPlanReceipt`, `PlanContentDigest`, provider-binding digest,
+and `CandidateGeneration`; it preserves the original three cutoffs unchanged.
 
 After coordinator restart, reconciliation compares durable intent, current
 desired and active heads, routing, host-incarnation facts, all fixed deadlines,

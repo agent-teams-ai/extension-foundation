@@ -76,6 +76,26 @@ interface OssCandidate {
 
 const OSS_EVIDENCE_STATUSES = ["pinned", "orientation", "qualified-experiment"] as const satisfies
   readonly OssCandidate["evidenceStatus"][];
+const OSS_EVIDENCE_KINDS = ["git-commit", "npm-release", "artifact-digest"] as const satisfies
+  readonly OssEvidence["kind"][];
+const EXPECTED_NIGHTLY_STATUS_IDS = [
+  "ADR-0011",
+  "ADR-0012",
+  "ADR-0013",
+  "ADR-0014",
+  "OD-002",
+  "OD-003",
+  "UMEQ-009",
+  "UMEQ-010",
+  "UMEQ-011",
+  "UMEQ-012",
+  "UMEQ-013",
+  "UMEQ-014",
+  "UMEQ-015",
+  "UMEQ-016",
+  "UMEQ-017",
+  "UMEQ-018",
+] as const;
 
 interface DecisionProjection {
   readonly id: string;
@@ -148,6 +168,10 @@ function validateOssCandidates(candidates: readonly OssCandidate[]): readonly st
       errors.push(`${candidate.id}: pinned status requires executable immutable evidence`);
     }
     for (const evidence of candidate.evidence ?? []) {
+      if (!(OSS_EVIDENCE_KINDS as readonly unknown[]).includes(evidence.kind)) {
+        errors.push(`${candidate.id}: unknown evidence kind ${String(evidence.kind)}`);
+        continue;
+      }
       if (evidence.kind !== "npm-release") continue;
       const expected = evidence.package && evidence.version
         ? canonicalNpmTarball(evidence.package, evidence.version)
@@ -179,19 +203,34 @@ function validateDecisionProjections(
 }
 
 function projectedDecisionStatuses(markdown: string): readonly DecisionProjection[] {
-  const table = section(markdown, /^Canonical Status To Preserve$/i);
+  const table = section(markdown, /^(?:Canonical Status To Preserve|Decision Status)$/i);
   const projections: DecisionProjection[] = [];
-  for (const match of table.matchAll(/^\|\s*([^|]+?)\s*\|\s*`?([^|`]+?)`?\s*\|/gmi)) {
-    const authority = match[1]!;
+  const seen = new Set<string>();
+  for (const row of table.split(/\r?\n/).filter(line => line.trimStart().startsWith("|"))) {
+    const cells = row.split("|").slice(1, -1).map(cell => cell.trim());
+    assert.ok(cells.length >= 2, `malformed decision projection row: ${row}`);
+    const authority = cells[0]!;
     if (authority === "Authority" || /^-+$/.test(authority.replace(/\s/g, ""))) continue;
-    const status = match[2]!.trim().toLowerCase();
+    const status = cells[1]!.replaceAll("`", "").trim().toLowerCase();
     const ids = new Set(authority.match(/(?:ADR|OD|UMEQ)-\d{3,4}/g) ?? []);
-    for (const range of authority.matchAll(/(UMEQ-)(\d{3})\s+through\s+UMEQ-(\d{3})/g)) {
-      for (let number = Number(range[2]); number <= Number(range[3]); number += 1) {
+    const ranges = [...authority.matchAll(/(UMEQ-)(\d{3})\s+through\s+UMEQ-(\d{3})/g)];
+    if (/\bthrough\b/i.test(authority)) {
+      assert.equal(ranges.length, 1, `malformed decision projection range: ${authority}`);
+    }
+    for (const range of ranges) {
+      const first = Number(range[2]);
+      const last = Number(range[3]);
+      assert.ok(first <= last, `reversed decision projection range: ${authority}`);
+      for (let number = first; number <= last; number += 1) {
         ids.add(`${range[1]}${String(number).padStart(3, "0")}`);
       }
     }
-    for (const id of ids) projections.push({ id, status });
+    assert.ok(ids.size > 0, `decision projection row has no well-formed authority: ${authority}`);
+    for (const id of ids) {
+      assert.ok(!seen.has(id), `duplicate decision projection for ${id}`);
+      seen.add(id);
+      projections.push({ id, status });
+    }
   }
   return projections;
 }
@@ -217,7 +256,16 @@ function gateIsSatisfied(
       || (requirement.requiredStatus === "satisfied" && gateIsSatisfied(requirement.gate, ledger, statuses, nextVisiting));
   };
   if (gate.mode === "all") return (gate.allOf ?? []).every(requirementSatisfied);
-  return (gate.paths ?? []).some(path => path.allOf.every(requirementSatisfied));
+  if (gate.mode === "exactly-one-path") {
+    return (gate.paths ?? []).filter(path => path.allOf.every(requirementSatisfied)).length === 1;
+  }
+  throw new Error(`${gate.id}: unsupported gate mode ${String(gate.mode)}`);
+}
+
+function requirementKey(requirement: GateRequirement): string {
+  if ("decision" in requirement) return `decision:${requirement.decision}=${requirement.requiredStatus}`;
+  if ("evidence" in requirement) return `evidence:${requirement.evidence}=${requirement.requiredStatus}`;
+  return `gate:${requirement.gate}=${requirement.requiredStatus}`;
 }
 
 function assertMarkers(text: string, markers: readonly RegExp[], context: string): void {
@@ -285,12 +333,15 @@ test("decision ledger is referentially sound and records current implementation 
 
   for (const gate of ledger.implementationGates) {
     assert.ok(gate.appliesTo.length > 0, `${gate.id} must name its protected phase`);
+    assert.ok(["all", "exactly-one-path"].includes(gate.mode), `${gate.id} has unsupported mode ${String(gate.mode)}`);
     if (gate.mode === "all") {
       assert.ok((gate.allOf?.length ?? 0) > 0, `${gate.id} requires allOf entries`);
       assert.equal(gate.paths, undefined, `${gate.id} cannot mix allOf and paths`);
     } else {
       assert.ok((gate.paths?.length ?? 0) > 0, `${gate.id} requires alternative paths`);
       assert.equal(gate.allOf, undefined, `${gate.id} cannot mix allOf and paths`);
+      assert.equal(new Set(gate.paths?.map(path => path.id)).size, gate.paths?.length, `${gate.id} path IDs must be unique`);
+      assert.ok(gate.paths?.every(path => path.allOf.length > 0), `${gate.id} paths require allOf entries`);
     }
     gateDependencies.set(gate.id, []);
     for (const requirement of gateRequirements(gate)) {
@@ -332,29 +383,47 @@ test("decision ledger is referentially sound and records current implementation 
 
   const publicationGate = ledger.implementationGates.find(gate => gate.id === "phase-3-package-publication");
   assert.ok(publicationGate, "publication gate is required");
-  assert.ok(publicationGate.allOf?.some(requirement => (
-    "evidence" in requirement
-    && requirement.evidence === "publication-independent-consumers"
-    && requirement.requiredStatus === "proven"
-  )), "publication must directly require evidence for two independent consumers");
-
-  const publicationStatuses = new Map<string, string>();
-  for (const requirement of publicationGate.allOf ?? []) {
-    if ("decision" in requirement) publicationStatuses.set(requirement.decision, requirement.requiredStatus);
-    else if ("evidence" in requirement && requirement.evidence !== "publication-independent-consumers") {
-      publicationStatuses.set(requirement.evidence, requirement.requiredStatus);
-    } else if ("gate" in requirement) publicationStatuses.set(requirement.gate, requirement.requiredStatus);
-  }
-  publicationStatuses.set("foundation-semantic-extraction", "satisfied");
-  assert.equal(
-    gateIsSatisfied(publicationGate.id, ledger, publicationStatuses),
-    false,
-    "extraction and admission cannot transitively satisfy publication without direct two-consumer evidence",
-  );
-  publicationStatuses.set("publication-independent-consumers", "proven");
+  const expectedPublicationRequirements = [
+    "gate:phase-3-package-admission=satisfied",
+    "decision:UMEQ-012=resolved",
+    "decision:UMEQ-014=resolved",
+    "decision:UMEQ-015=resolved",
+    "decision:ADR-0014=accepted",
+    "evidence:PACKAGE-1=passed",
+    "evidence:public-api-report=passed",
+    "evidence:immutable-package-admission-record=verified",
+    "evidence:package-release-promotion-verification=passed",
+    "evidence:publication-independent-consumers=proven",
+    "decision:foundation-package-admission-decision=accepted",
+    "decision:foundation-package-publication-decision=accepted",
+  ].sort();
+  assert.deepEqual((publicationGate.allOf ?? []).map(requirementKey).sort(), expectedPublicationRequirements);
+  const publicationStatuses = new Map(expectedPublicationRequirements.map(key => {
+    const [, idAndStatus] = key.split(":", 2);
+    const separator = idAndStatus!.lastIndexOf("=");
+    return [idAndStatus!.slice(0, separator), idAndStatus!.slice(separator + 1)] as const;
+  }));
   assert.equal(gateIsSatisfied(publicationGate.id, ledger, publicationStatuses), true);
+  for (const key of expectedPublicationRequirements) {
+    const [, idAndStatus] = key.split(":", 2);
+    const id = idAndStatus!.slice(0, idAndStatus!.lastIndexOf("="));
+    const status = publicationStatuses.get(id)!;
+    publicationStatuses.delete(id);
+    assert.equal(gateIsSatisfied(publicationGate.id, ledger, publicationStatuses), false, `${key} must be mandatory`);
+    publicationStatuses.set(id, status);
+  }
 
-  const statusProjection = await readFile(resolve(dossier, "nightly/11-approval-ready-adr-list.md"), "utf8");
+  const semanticAdmissionGate = ledger.implementationGates.find(gate => gate.id === "phase-3-module-semantic-package-admission");
+  const semanticPublicationGate = ledger.implementationGates.find(gate => gate.id === "phase-3-module-semantic-package-publication");
+  assert.deepEqual((semanticAdmissionGate?.allOf ?? []).map(requirementKey).sort(), [
+    "gate:foundation-semantic-extraction=satisfied",
+    "gate:phase-3-package-admission=satisfied",
+  ]);
+  assert.deepEqual((semanticPublicationGate?.allOf ?? []).map(requirementKey).sort(), [
+    "gate:phase-3-module-semantic-package-admission=satisfied",
+    "gate:phase-3-package-publication=satisfied",
+  ]);
+
   const authoritativeStatuses = new Map<string, string>([
     ...ledger.entries.map(entry => [entry.id, entry.status] as const),
     ...ledger.externalDecisionGates.map(entry => [entry.id, entry.status] as const),
@@ -372,13 +441,53 @@ test("decision ledger is referentially sound and records current implementation 
       }
     }
   }
-  const projections = projectedDecisionStatuses(statusProjection);
-  assert.ok(projections.length > 0, "the projected decision status table must be validated");
-  assert.deepEqual(validateDecisionProjections(projections, authoritativeStatuses), []);
+  const nightlyDirectory = resolve(dossier, "nightly");
+  const statusProjectionDocuments: string[] = [];
+  for (const name of (await readdir(nightlyDirectory)).filter(candidate => candidate.endsWith(".md"))) {
+    const contents = await readFile(resolve(nightlyDirectory, name), "utf8");
+    if (!/^## (?:Decision Status|Canonical Status To Preserve)\s*$/mi.test(contents)) continue;
+    statusProjectionDocuments.push(name);
+    const projections = projectedDecisionStatuses(contents);
+    assert.deepEqual(projections.map(projection => projection.id).sort(), [...EXPECTED_NIGHTLY_STATUS_IDS].sort(), `${name} status projection coverage`);
+    assert.deepEqual(validateDecisionProjections(projections, authoritativeStatuses), [], `${name} status projection`);
+  }
+  assert.deepEqual(statusProjectionDocuments.sort(), [
+    "01-executive-report.md",
+    "02-principles-matrix.md",
+    "11-approval-ready-adr-list.md",
+  ]);
   assert.match(
     validateDecisionProjections([{ id: "ADR-0013", status: "proposed" }], authoritativeStatuses)[0] ?? "",
     /disagrees with authoritative status accepted/,
   );
+  assert.throws(
+    () => projectedDecisionStatuses("## Decision Status\n\n| Authority | Current status |\n| --- | --- |\n| ADR_0013 | `accepted` |\n"),
+    /no well-formed authority/,
+  );
+  assert.throws(
+    () => projectedDecisionStatuses("## Decision Status\n\n| Authority | Current status |\n| --- | --- |\n| UMEQ-018 through UMEQ-017 | `open` |\n"),
+    /reversed decision projection range/,
+  );
+
+  const exactPathLedger = {
+    ...ledger,
+    implementationGates: [{
+      id: "exact-path-fixture",
+      appliesTo: ["test"],
+      mode: "exactly-one-path" as const,
+      paths: [
+        { id: "a", allOf: [{ evidence: "a", requiredStatus: "passed" }] },
+        { id: "b", allOf: [{ evidence: "b", requiredStatus: "passed" }] },
+      ],
+    }],
+  };
+  assert.equal(gateIsSatisfied("exact-path-fixture", exactPathLedger, new Map([["a", "passed"]])), true);
+  assert.equal(gateIsSatisfied("exact-path-fixture", exactPathLedger, new Map([["a", "passed"], ["b", "passed"]])), false);
+  const invalidModeLedger = {
+    ...exactPathLedger,
+    implementationGates: [{ ...exactPathLedger.implementationGates[0]!, mode: "typo" as "all" }],
+  };
+  assert.throws(() => gateIsSatisfied("exact-path-fixture", invalidModeLedger, new Map()), /unsupported gate mode/);
   assert.match(
     validateDecisionProjections([{ id: "ADR-9999", status: "accepted" }], authoritativeStatuses)[0] ?? "",
     /cannot be resolved/,
@@ -478,6 +587,7 @@ test("the dossier has one trigger-gated roadmap with static Pure DI first", asyn
     "invariant-map.md",
     "module-graph.md",
     "product-adoption.md",
+    "nightly/06-dependency-graph-and-di-decision.md",
   ].map(name => readFile(resolve(dossier, name), "utf8"))).then(files => files.join("\n"));
 
   assertMarkers(roadmap, [
@@ -492,6 +602,11 @@ test("the dossier has one trigger-gated roadmap with static Pure DI first", asyn
     roadmap,
     /(?:composition|configuration|ownership) defects[\s\S]{0,120}(?:trigger|eligible|private (?:product )?graph)/i,
     "composition defects are deletion evidence, not an accepted private-graph trigger",
+  );
+  assert.doesNotMatch(
+    roadmap,
+    /runtime provider\s+selection,\s*variable dependencies,\s*or independently managed lifecycle/i,
+    "dependency variability cannot become a third private-graph trigger",
   );
 
   assert.equal(
@@ -623,10 +738,12 @@ test("OSS comparison distinguishes immutable evidence from orientation research"
           assert.equal(evidence.locked, true, `${candidate.id}: immutable npm evidence must be lock-backed`);
           assert.equal(lock.packages[`${evidence.package}@${evidence.version}`]?.resolution?.integrity, evidence.integrity);
         }
-      } else {
+      } else if (evidence.kind === "artifact-digest") {
         assert.match(evidence.url ?? "", /^https:\/\//);
         assert.match(evidence.digest ?? "", /^sha256:[0-9a-f]{64}$/);
         assert.ok((evidence.command?.length ?? 0) > 0);
+      } else {
+        assert.fail(`${candidate.id}: unknown evidence kind ${String(evidence.kind)}`);
       }
     }
   }
@@ -653,6 +770,15 @@ test("OSS comparison distinguishes immutable evidence from orientation research"
   assert.match(
     validateOssCandidates([candidate("pinned", [{ ...canonicalEvidence, package: "npm:@scope/pkg" }])])[0] ?? "",
     /canonical registry tarball URL/,
+  );
+  assert.match(
+    validateOssCandidates([candidate("pinned", [{
+      kind: "mutable-page",
+      url: "https://example.invalid/latest",
+      digest: `sha256:${"a".repeat(64)}`,
+      command: "curl latest",
+    } as unknown as OssEvidence])])[0] ?? "",
+    /unknown evidence kind/,
   );
   for (const url of [
     "https://registry.npmjs.com/@scope/pkg/-/pkg-1.2.3.tgz",

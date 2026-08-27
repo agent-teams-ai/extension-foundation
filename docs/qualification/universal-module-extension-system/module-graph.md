@@ -37,7 +37,7 @@ flowchart LR
     Target --> Scope["Scope-bound admission candidate"]
     Scope --> Admit["Product admission + validation"]
     Admit --> Receipt["AdmittedPlanReceipt + content digest"]
-    Receipt --> Activate["GraphGeneration"]
+    Receipt --> Activate["CandidateGeneration"]
 
     Cordis["Optional Cordis adapter"] -. private .-> Activate
     Graphlib["Optional graph algorithm adapter"] -. private .-> Check
@@ -62,18 +62,23 @@ identities separate.
 | `PlanTemplateDigest` | Content identity of canonical target-independent graph intent | Semantic template input changes |
 | `PlanContentDigest` | Admission-authority receipt digest over the canonical content actually admitted, including explicit provider bindings | The admitted canonical content changes; it does not exist before admission |
 | `ActiveHeadRevision` | Monotonic compare-and-set revision of the active-head record | The authority's active-head record changes |
-| `GraphGeneration` | Monotonic operational identity projected from exactly one admitted plan receipt in one product authority scope | A candidate is allocated for activation, replacement, disablement, restart, or forward rollback, even for identical admitted content |
-| `ModuleActivationGeneration` | One activation attempt for one module in a graph generation | Module is prepared again |
+| `CandidateGeneration` | Monotonic operational identity projected from exactly one admitted plan receipt in one product authority scope | A candidate is allocated for activation, replacement, disablement, restart, or forward rollback, even for identical admitted content |
+| `RuntimeGeneration` | One concrete runtime incarnation that may be referenced by one or more staged or published candidates | Runtime startup or replacement creates another incarnation |
+| `ModuleActivationGeneration` | One activation attempt for one module within a candidate and runtime generation | Module is prepared again |
 
 Publisher, artifact, installation, contribution, module, plan digest,
-active-head revision, graph generation, and module activation
-generation are never aliases. Equivalent normalized inputs produce identical
+active-head revision, candidate generation, runtime generation, and module
+activation generation are never aliases. Equivalent normalized inputs produce identical
 `PlanTemplateDigest` values. Equivalent content admitted by the same admission
 authority under the same canonicalization and provider binding produces the
 same `PlanContentDigest` receipt value. Operational generations
 and revisions are allocated monotonically and are never hash inputs. Reusing
 content, including rollback to prior content, therefore keeps its content
-digest while receiving a higher graph generation and active-head revision.
+digest while receiving a higher candidate generation and active-head revision.
+Each staged runtime reference pin binds both the candidate generation and the
+exact runtime generation under the shared retirement fence required by
+ADR-0010; candidate abandonment, publication, and runtime retirement never
+infer one identity from the other.
 A built-in module has no
 publisher, artifact, manifest, catalog, or artifact-installation identity. It
 does have a `BuiltInModuleInstallation` activation-source identity bound to the
@@ -219,8 +224,10 @@ Rules:
 2. An `optional` single-provider slot resolves to zero or one contribution.
 3. Ordered-many is a distinct contract. Its order is declared by the product
    profile, not inferred from registration or provider priority.
-4. An ambiguous one-provider slot fails. A unique compatible provider may be
-   selected only if the final OD-003 decision explicitly permits that policy.
+4. An ambiguous one-provider slot fails. Installation state or apparent
+   uniqueness never selects a provider; every selected provider requires an
+   explicit product-profile binding. Changing this accepted rule requires a
+   superseding ADR, not an open-decision interpretation.
 5. Missing, duplicate, incompatible, or out-of-scope providers fail closed.
 6. A bound optional edge participates in cycle and scope analysis.
 7. Unknown descriptor fields follow the selected compatibility policy; they are
@@ -270,7 +277,7 @@ flowchart LR
     Plan --> Admit["Product admission and first-graph validation"]
     Admit --> Receipt["AdmittedPlanReceipt"]
     Receipt --> Loaders["Explicit target loader binding"]
-    Loaders --> Runtime["Authorized GraphGeneration"]
+    Loaders --> Runtime["Authorized CandidateGeneration + RuntimeGeneration"]
 ```
 
 This is a target model, not a description of a pipeline implemented today.
@@ -318,7 +325,7 @@ invariants do not change.
 ## Staged Plan Decomposition
 
 Scale does not justify one deployment-wide graph. A future compiler decomposes
-work into four explicit stages:
+work into five explicit stages:
 
 1. `PlanTemplate` validates inert declarations and profile bindings and emits a
    target-independent semantic template identified by `PlanTemplateDigest`.
@@ -336,7 +343,7 @@ work into four explicit stages:
    admission decision, authority, provider-binding digest, and expiry.
 5. Candidate allocation projects `(authorityScope, AdmittedPlanReceipt,
    PlanContentDigest, providerBindingDigest)` to a fresh monotonic
-   `GraphGeneration`. The mapping is durable and immutable. Every activation,
+   `CandidateGeneration`. The mapping is durable and immutable. Every activation,
    replacement, disablement, restart, and forward rollback allocates a new
    generation; retries for the same durable candidate retain it, while a new
    candidate never reuses one. Content equality may reuse the digest but never
@@ -355,9 +362,11 @@ deployment, tenant, project, workspace, or session boundary, but it never asks
 the DI container or module runtime to create a corresponding scope.
 
 The first triggered implementation would have one `ModuleLifetime`: one
-admitted module instance per immutable `GraphGeneration`. Replacement creates
-a new generation, performs staged readiness and cutover, then drains the old
-generation. Transient, pooled,
+admitted module instance per immutable `(CandidateGeneration,
+RuntimeGeneration)`. Replacement creates a new candidate and, unless it pins a
+compatible existing runtime through ADR-0010's retirement fence, a new runtime
+generation. It performs staged readiness and cutover, then drains the old
+candidate/runtime references. Transient, pooled,
 per-tenant, per-project, per-workspace, per-run, and per-session module lifetimes
 are deferred until independent product evidence requires and qualifies them.
 Before semantic extraction, the owning product validates declared
@@ -559,9 +568,12 @@ This graph document does not duplicate or narrow that approval surface.
   target/scope admission candidates, diagnostics, traces, and
   `PlanTemplateDigest`. Equivalent successful admissions produce identical
   `PlanContentDigest` receipts; rejected candidates produce none. Allocating
-  another candidate changes neither digest but always changes `GraphGeneration`.
-- Every generation round-trips to exactly one admitted receipt and exact provider
-  binding; missing, inferred, ambient, or cross-provider bindings fail closed.
+  another candidate changes neither digest but always changes
+  `CandidateGeneration`.
+- Every candidate generation round-trips to exactly one admitted receipt and
+  exact provider binding. Every staged or published runtime reference names a
+  distinct `RuntimeGeneration`; missing, inferred, ambient, or cross-provider
+  bindings and pins fail closed.
 - The owning product validates its first graph against product invariants before
   admission and activation; Foundation supplies neutral mechanics only.
 - Invalid graphs execute zero factories and effects.

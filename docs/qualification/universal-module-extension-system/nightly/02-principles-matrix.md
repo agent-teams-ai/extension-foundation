@@ -28,7 +28,20 @@ related:
 | Public SPI is a separate gate | No public package promise now | Two consumers do not prove independent implementation or compatibility | Two independently authored implementations, release evidence, governance, and support |
 | Worker counts are not votes | Weight evidence, not report count | Shared prompts, model, sources, and aliases correlate findings | Independent publisher and reproduction evidence per claim |
 
-This matrix is non-operative. [ADR-0012](../../../decisions/0012-reusable-library-module-and-plugin-boundaries.md)
-remains effective, while
-[ADR-0013](../../../decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md)
-remains proposed. Return to the [executive report](01-executive-report.md).
+## Decision Status
+
+| Authority | Current status |
+| --- | --- |
+| ADR-0012 | `superseded` |
+| ADR-0011 | `proposed` |
+| ADR-0013 | `accepted` |
+| ADR-0014 | `accepted` |
+| OD-002 and OD-003 | `open` |
+| UMEQ-009 through UMEQ-010 | `open` |
+| UMEQ-011 | `accepted-existing` |
+| UMEQ-012 through UMEQ-015 | `open` |
+| UMEQ-016 | `accepted-existing` |
+| UMEQ-017 through UMEQ-018 | `open` |
+
+This matrix is non-operative. Return to the
+[executive report](01-executive-report.md).

@@ -221,8 +221,10 @@ sequenceDiagram
 Update prepares a new lock and inert plan candidate. Only successful product
 admission issues `AdmittedPlanReceipt` and `PlanContentDigest`; the digest is
 never a lock input or caller-selected identity. A future triggered runtime graph
-then allocates a fresh monotonic `GraphGeneration` bound to that receipt and its
-explicit provider-binding digest. It never mutates installed identity in place.
+then allocates a fresh monotonic `CandidateGeneration` bound to that receipt and
+its explicit provider-binding digest. Any concrete runtime is named separately
+by `RuntimeGeneration` and requires an ADR-0010 staged reference pin before an
+existing runtime can be reused. It never mutates installed identity in place.
 Equivalent content can receive the same post-admission digest, but every new
 candidate and rollback uses a higher generation and `ActiveHeadRevision`,
 subject to current revocation and rollback policy.

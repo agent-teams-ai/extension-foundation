@@ -188,6 +188,27 @@ owning feature provides:
 - contract fixtures consumable from a packed artifact;
 - one adversarial fixture proving the extension cannot bypass the owning use case.
 
+## Publication Candidate Consumer Gate
+
+Public package publication requires immutable evidence from two distinct real
+consumer products using the exact same packed candidate artifact. Two
+implementations, fixtures, profiles, or workspaces inside one consumer do not
+count as two consumers. Each consumer record binds:
+
+- consumer repository and exact source revision;
+- candidate package identity, version, packed artifact digest, and conformance
+  version;
+- independently authored implementation identity and owning product boundary;
+- installation from the packed artifact without workspace links or source-path
+  substitution;
+- the applicable positive and negative conformance results and their immutable
+  evidence digests.
+
+The gate compares both records against the same candidate digest and rejects
+missing, duplicated, self-reported-only, mutable, or differently versioned
+evidence. Product-adoption evidence may contribute, but cannot substitute for
+these two artifact-specific consumer records.
+
 ## Target CI Shape
 
 This is the target shape after the first production package exists. The current
