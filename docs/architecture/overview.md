@@ -64,6 +64,13 @@ product. Product-specific SPI remains physically located in the consuming
 product and maps to Foundation lifecycle primitives only at composition and host
 boundaries.
 
+Each product owns its exact feature-slice layout and composition profile.
+For Orchestrator, the canonical authority is its
+[Feature Module Standard](https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/main/docs/architecture/feature-module-standard.md).
+This repository links to that product standard instead of copying its folder
+tree, DDD depth, adapter placement, or composition rules. Foundation contracts
+and conformance tooling must not silently redefine that product-owned profile.
+
 Full DDD belongs inside products where business invariants exist. This
 repository uses domain modelling only for real extension lifecycle and trust
 semantics; adapters, schema codecs, and OCI clients do not receive artificial
