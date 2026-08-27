@@ -71,7 +71,7 @@ the dossier has status `qualified`.
 | Portable strict JSON codec | implemented/passed locally | Canonical JSON subset, safe-integer numeric domain, fatal UTF-8, duplicate-key and request-direction rejection, authority tuple and deadline checks; no method schemas, receiver deadline horizon, N/N-1 negotiation, authenticated channel or operation journal |
 | Process, Node Worker, browser Worker | smoke/passed locally | Placement transport and authority-envelope checks, not isolation conformance |
 | Packed toy consumer | harness/passed locally | Validates the harness shape, not `PACKAGE-1` |
-| Recovery reducer examples | implemented/passed locally | No crash-injected persistent recovery |
+| Recovery checkpoint/reducer examples | implemented/passed locally | Fresh in-memory coordinators restore immutable serialized checkpoints; no process-crash or persistent-store recovery |
 | Supply chain and `HOST-T2/T3` negatives | planned | Required before their corresponding claims |
 
 ## Qualification Gap Matrix
@@ -86,27 +86,27 @@ a production package, public SPI, or ownership decision.
 | --- | --- | --- |
 | Deterministic graph identity across input permutations | `permutations produce the same graph plan and digest` | Passed; digest is private qualification vocabulary |
 | Required, optional and ordered-many cardinality | `qualification bindings preserve required, optional, and ordered-many semantics` | Gap closed with explicit bindings; no product grammar admitted |
-| Missing, duplicate, ambiguous and incompatible providers | `invalid ID-DAG inputs produce deterministic diagnostics without loading hooks`; binding cardinality, duplicate-demand, provider-ambiguity and cycle cases | Passed before executable hooks; table-driven cases cover duplicate explicit bindings/provider IDs/offers, missing providers, duplicate module IDs and binding-induced cycles |
+| Missing, duplicate, ambiguous and incompatible providers | `invalid ID-DAG inputs produce deterministic diagnostics without loading hooks`; binding cardinality, duplicate-demand, provider-ambiguity, collision-free coordinate and cycle cases | Passed before executable hooks; duplicate offers fail even without a consumer, and structured coordinate keys avoid delimiter collisions |
 | Cycles, self-cycles and independent oracle | `native compiler agrees with Graphlib on generated directed-graph validity`; `graph compiler remains stack-safe for ten thousand modules` | Passed; Graphlib remains test-only |
 | Deeply immutable serializable plan and stable diagnostics | `compiled ID-DAG plan is deeply immutable and serializable`; duplicate/missing ID-DAG diagnostics | Passed; an identifier grammar intentionally remains not admitted |
 | 1,000 and 10,000-node stack and performance budgets | `graph compiler remains stack-safe within 1k and 10k hard caps` | Passed with five timing samples per size and an observed heap-delta measurement; max-of-five values are diagnostic until reference CI baselines exist, while 500-ms/5-second and 256-MiB hard caps fail immediately |
 | Invalid graph performs zero implementation effects | `invalid ID-DAG inputs produce deterministic diagnostics without loading hooks`; lifecycle hook preflight cases | Passed |
 | Honest two-module T0 source and consumer | `two fixed T0 built-ins publish a detached result and release the source resource` | Gap closed; source owns a bounded fake resource and consumer publishes a detached immutable result |
-| Prepare, start, readiness, publication and shutdown ordering | two-built-in rehearsal; readiness/publication cases; `shutdown drains admitted work and stops dependencies in reverse order` | Passed for replacement and explicit shutdown; passive product features must not copy these hooks |
+| Prepare, start, readiness, publication and shutdown ordering | two-built-in rehearsal; readiness/publication cases; shutdown drain/order and reentrant single-flight cases | Passed for replacement and terminal explicit shutdown; shutdown reserves its flight before injected code and permanently closes admission |
 | Single-flight, activation fingerprint and caller cancellation | concurrent-start, idempotency-conflict and waiter-cancellation cases | Passed |
 | Sibling settlement, reverse cleanup and bounded cleanup debt | parallel-failure, multi-level rollback and hung-cleanup cases | Passed |
 | Generation, authority-scope and stale-write fencing | authority-scope, invocation-handle, drain and stale-write cases | Passed only for the in-memory model |
 | Candidate remains unpublished until ready; old route survives failed candidate | readiness and failed-candidate cases | Passed |
-| Recovery across every represented durable phase | `crash recovery decisions are deterministic at durable boundaries` | Passed as reducer fault injection for prepared, started, ready, published, draining and retired phases |
+| Recovery across every represented durable phase | `crash recovery decisions are deterministic at durable boundaries` | Prepared, started, ready, published, draining and retired checkpoints are serialized and restored into fresh in-memory coordinators before reconciliation |
 | Corrupt, stale, conflicting and unknown recovery evidence | recovery boundary cases with malformed shapes, stale tuples, uncertain outcomes and conflicting generations | Passed fail-closed as `CONTROLLED_RECOVERY` |
 | Cleanup never retires a still-referenced generation | recovery cases combining in-flight, termination and cleanup evidence | Passed in reducer model |
 
-No new graph, lifecycle, or recovery implementation is justified by this gap
-pass. Persistent crash injection, a durable coordinator, sink-enforced fencing,
-and a second independently authored implementation remain production admission
-gaps. The two synthetic built-ins qualify only test behavior and cannot be
-promoted into a product feature or Foundation package without the unresolved
-ownership decision.
+No production graph, lifecycle, or recovery implementation is justified by this
+gap pass. Process-crash injection, a persistent store, a durable coordinator,
+sink-enforced fencing, and a second independently authored implementation remain
+production admission gaps. The two synthetic built-ins qualify only test
+behavior and cannot be promoted into a product feature or Foundation package
+without the unresolved ownership decision.
 
 ## Adapter Matrix
 

@@ -69,6 +69,8 @@ export type RecoveryAction =
   | "RETURN_RETIRED_RESULT"
   | "CONTROLLED_RECOVERY";
 
+const recoveryCheckpointSchema = "qualification.recovery-checkpoint/v1";
+
 const lifecyclePhases = new Set<unknown>(["prepared", "started", "ready", "published", "draining", "retired"]);
 const publicationEvidenceStates = new Set<unknown>(["none", "committed", "uncertain"]);
 const externalOutcomeStates = new Set<unknown>(["none", "confirmed", "uncertain"]);
@@ -304,4 +306,36 @@ export function reconcileLifecycle(
   } catch {
     return "CONTROLLED_RECOVERY";
   }
+}
+
+export interface RecoveryCoordinator {
+  checkpoint(): string;
+  reconcile(observed: ObservedHostState): RecoveryAction;
+}
+
+export function createRecoveryCoordinator(
+  state: DurableLifecycleState,
+): RecoveryCoordinator {
+  const durableState = snapshotState(state);
+  return Object.freeze({
+    checkpoint: () => JSON.stringify({ schema: recoveryCheckpointSchema, state: durableState }),
+    reconcile: (observed: ObservedHostState) => reconcileLifecycle(durableState, observed),
+  });
+}
+
+export function restoreRecoveryCoordinator(checkpoint: string): RecoveryCoordinator {
+  let restored: unknown;
+  try {
+    const envelope = JSON.parse(checkpoint) as unknown;
+    restored = isRecord(envelope) && envelope.schema === recoveryCheckpointSchema
+      ? envelope.state
+      : undefined;
+  } catch {
+    restored = undefined;
+  }
+  const durableState = restored as DurableLifecycleState;
+  return Object.freeze({
+    checkpoint: () => checkpoint,
+    reconcile: (observed: ObservedHostState) => reconcileLifecycle(durableState, observed),
+  });
 }

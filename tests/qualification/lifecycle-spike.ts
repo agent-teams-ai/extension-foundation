@@ -632,21 +632,20 @@ export class GenerationLifecycle {
     if (this.#flights.size > 0) {
       throw new Error("LIFECYCLE_ACTIVATION_IN_FLIGHT");
     }
+    const deferred = Promise.withResolvers<ActivationResult>();
+    void deferred.promise.catch(() => undefined);
+    this.#shutdownFlight = deferred.promise;
     const active = this.#active;
     if (active === undefined) {
-      return Promise.resolve(
-        freezeResult(true, this.#activeGeneration, "proven", [], []),
-      );
+      deferred.resolve(freezeResult(true, this.#activeGeneration, "proven", [], []));
+      return deferred.promise;
     }
+    this.#sealedGenerations.add(active.generation);
 
-    let flight: Promise<ActivationResult>;
-    flight = this.#shutdown(active, cleanupTimeoutMs).finally(() => {
-      if (this.#shutdownFlight === flight) {
-        this.#shutdownFlight = undefined;
-      }
-    });
-    this.#shutdownFlight = flight;
-    return flight;
+    void Promise.resolve()
+      .then(() => this.#shutdown(active, cleanupTimeoutMs))
+      .then(deferred.resolve, deferred.reject);
+    return deferred.promise;
   }
 
   acquireInvocation(): InvocationHandle {

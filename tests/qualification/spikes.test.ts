@@ -42,7 +42,9 @@ import {
   validateResponseEnvelope,
 } from "./protocol-spike.ts";
 import {
+  createRecoveryCoordinator,
   reconcileLifecycle,
+  restoreRecoveryCoordinator,
   type DurableLifecycleState,
   type ObservedHostState,
 } from "./recovery-spike.ts";
@@ -487,7 +489,7 @@ test("qualification bindings reject every provider ambiguity before activation",
       bindings: [
         { consumerId: "consumer", slot: "source", providerIds: ["provider"] },
       ],
-      code: "AMBIGUOUS_BINDING",
+      code: "DUPLICATE_OFFER",
       modules: [
         baseConsumer,
         {
@@ -562,6 +564,66 @@ test("qualification bindings reject duplicate module IDs and binding-induced cyc
   if (!cycle.ok) {
     assert.deepEqual(cycle.diagnostics, [
       { code: "HARD_CYCLE", consumerId: "left", slot: "graph" },
+    ]);
+  }
+});
+
+test("qualification binding coordinates are collision-free and duplicate offers fail closed", () => {
+  const modules: readonly QualificationBindingModule[] = [
+    {
+      id: "a\0b",
+      consumes: [
+        { slot: "c", cardinality: "required", compatibleContractVersions: ["v1"] },
+      ],
+      provides: [],
+    },
+    {
+      id: "a",
+      consumes: [
+        { slot: "b\0c", cardinality: "required", compatibleContractVersions: ["v1"] },
+      ],
+      provides: [],
+    },
+    {
+      id: "provider-one",
+      consumes: [],
+      provides: [{ slot: "c", contractVersion: "v1" }],
+    },
+    {
+      id: "provider-two",
+      consumes: [],
+      provides: [{ slot: "b\0c", contractVersion: "v1" }],
+    },
+  ];
+  const bindings: readonly QualificationExplicitBinding[] = [
+    { consumerId: "a\0b", slot: "c", providerIds: ["provider-one"] },
+    { consumerId: "a", slot: "b\0c", providerIds: ["provider-two"] },
+  ];
+  const compiled = compileQualificationBindings(modules, bindings);
+  assert.equal(compiled.ok, true);
+  if (!compiled.ok) return;
+  assert.deepEqual(
+    compiled.plan.resolved.map(binding => [binding.consumerId, binding.slot]),
+    [["a", "b\0c"], ["a\0b", "c"]],
+  );
+
+  const duplicateOffer = compileQualificationBindings(
+    [
+      {
+        id: "unbound-provider",
+        consumes: [],
+        provides: [
+          { slot: "source", contractVersion: "v1" },
+          { slot: "source", contractVersion: "v1" },
+        ],
+      },
+    ],
+    [],
+  );
+  assert.equal(duplicateOffer.ok, false);
+  if (!duplicateOffer.ok) {
+    assert.deepEqual(duplicateOffer.diagnostics, [
+      { code: "DUPLICATE_OFFER", consumerId: "unbound-provider", slot: "source" },
     ]);
   }
 });
@@ -699,10 +761,60 @@ test("shutdown drains admitted work and stops dependencies in reverse order", as
   assert.deepEqual(stopped, ["consumer", "source"]);
   assert.throws(() => lifecycle.assertInMemoryFence(admitted), /STALE_GENERATION/);
 
-  const replay = await lifecycle.shutdown(100);
+  const replayFlight = lifecycle.shutdown(100);
+  assert.equal(replayFlight, first);
+  const replay = await replayFlight;
   assert.equal(replay.ok, true);
   assert.equal(replay.termination, "proven");
-  assert.deepEqual(replay.traces, []);
+  assert.equal(replay, result);
+  assert.throws(
+    () => lifecycle.activate(activationRequest(
+      lifecycle,
+      "activation-after-shutdown",
+      plan,
+      new Map([
+        ["source", inertHooks()],
+        ["consumer", inertHooks()],
+      ]),
+    )),
+    /LIFECYCLE_SHUTTING_DOWN/,
+  );
+});
+
+test("shutdown single-flight is reserved before an injected clock can reenter", async () => {
+  let armed = false;
+  let reentered: Promise<Awaited<ReturnType<GenerationLifecycle["shutdown"]>>> | undefined;
+  let lifecycle: GenerationLifecycle;
+  lifecycle = new GenerationLifecycle(testAuthorityScope, {
+    now: () => {
+      if (armed) {
+        armed = false;
+        reentered = lifecycle.shutdown(100);
+      }
+      return performance.now();
+    },
+    sleep: milliseconds => delay(milliseconds),
+  });
+  const plan = requirePlan([{ id: "module", requires: [] }]);
+  let stops = 0;
+  await lifecycle.activate(activationRequest(
+    lifecycle,
+    "shutdown-reentrant-activation",
+    plan,
+    new Map([[
+      "module",
+      inertHooks({ stop: () => { stops += 1; } }),
+    ]]),
+  ));
+
+  armed = true;
+  const outer = lifecycle.shutdown(100);
+  await Promise.resolve();
+  assert.ok(reentered);
+  assert.equal(reentered, outer);
+  const [first, second] = await Promise.all([outer, reentered]);
+  assert.equal(first, second);
+  assert.equal(stops, 1);
 });
 
 test("one hundred concurrent starts share one activation and one cutover", async () => {
@@ -2665,7 +2777,22 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
   for (const [state, observed, expected] of cases) {
     assert.equal(reconcileLifecycle(state, observed), expected);
     assert.equal(reconcileLifecycle(structuredClone(state), structuredClone(observed)), expected);
+    const beforeCrash = createRecoveryCoordinator(state);
+    const checkpoint = beforeCrash.checkpoint();
+    const afterCrash = restoreRecoveryCoordinator(checkpoint);
+    assert.notEqual(afterCrash, beforeCrash);
+    assert.equal(afterCrash.checkpoint(), checkpoint);
+    assert.equal(afterCrash.reconcile(structuredClone(observed)), expected);
   }
+  assert.equal(
+    restoreRecoveryCoordinator("not-json").reconcile(observed("absent", false)),
+    "CONTROLLED_RECOVERY",
+  );
+  assert.equal(
+    restoreRecoveryCoordinator(JSON.stringify({ schema: "unknown", state: baseline }))
+      .reconcile(observed("absent", false)),
+    "CONTROLLED_RECOVERY",
+  );
   assert.equal(reconcileLifecycle(
     { ...baseline, candidateGeneration: Number.POSITIVE_INFINITY },
     observed("absent", false),

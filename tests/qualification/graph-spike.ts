@@ -71,6 +71,7 @@ export interface QualificationBindingDiagnostic {
     | "CARDINALITY_MISMATCH"
     | "DUPLICATE_DEMAND"
     | "DUPLICATE_MODULE"
+    | "DUPLICATE_OFFER"
     | "HARD_CYCLE"
     | "INCOMPATIBLE_PROVIDER"
     | "MISSING_BINDING"
@@ -96,6 +97,21 @@ export type QualificationBindingResult =
 
 const compareIds = (left: string, right: string): number =>
   left === right ? 0 : left < right ? -1 : 1;
+
+const compareBindingCoordinates = (
+  left: Readonly<{ consumerId: string; slot: string }>,
+  right: Readonly<{ consumerId: string; slot: string }>,
+): number =>
+  compareIds(left.consumerId, right.consumerId) || compareIds(left.slot, right.slot);
+
+const compareBindingDiagnostics = (
+  left: QualificationBindingDiagnostic,
+  right: QualificationBindingDiagnostic,
+): number =>
+  compareIds(left.code, right.code) || compareBindingCoordinates(left, right);
+
+const bindingCoordinateKey = (consumerId: string, slot: string): string =>
+  canonicalJson([consumerId, slot]);
 
 function canonicalJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
@@ -257,22 +273,15 @@ export function compileQualificationBindings(
   }
   if (diagnostics.length > 0) {
     return {
-      diagnostics: Object.freeze(diagnostics.sort((left, right) =>
-        compareIds(
-          `${left.code}:${left.consumerId}:${left.slot}`,
-          `${right.code}:${right.consumerId}:${right.slot}`,
-        ),
-      )),
+      diagnostics: Object.freeze(diagnostics.sort(compareBindingDiagnostics)),
       ok: false,
     };
   }
 
   const bindingByDemand = new Map<string, QualificationExplicitBinding>();
   const bindingCounts = new Map<string, number>();
-  for (const binding of [...bindingsInput].sort((left, right) =>
-    compareIds(`${left.consumerId}:${left.slot}`, `${right.consumerId}:${right.slot}`),
-  )) {
-    const key = `${binding.consumerId}\0${binding.slot}`;
+  for (const binding of [...bindingsInput].sort(compareBindingCoordinates)) {
+    const key = bindingCoordinateKey(binding.consumerId, binding.slot);
     bindingCounts.set(key, (bindingCounts.get(key) ?? 0) + 1);
     if (!bindingByDemand.has(key)) {
       bindingByDemand.set(key, binding);
@@ -282,11 +291,11 @@ export function compileQualificationBindings(
   for (const [key, count] of bindingCounts) {
     if (count > 1) {
       duplicateBindingKeys.add(key);
-      const [consumerId = "", slot = ""] = key.split("\0");
+      const binding = bindingByDemand.get(key)!;
       diagnostics.push({
         code: "AMBIGUOUS_BINDING",
-        consumerId,
-        slot,
+        consumerId: binding.consumerId,
+        slot: binding.slot,
       });
     }
   }
@@ -298,29 +307,40 @@ export function compileQualificationBindings(
   for (const module of modules.values()) {
     const demandCounts = new Map<string, number>();
     for (const demand of module.consumes) {
-      const key = `${module.id}\0${demand.slot}`;
+      const key = bindingCoordinateKey(module.id, demand.slot);
       declaredDemands.add(key);
       demandCounts.set(key, (demandCounts.get(key) ?? 0) + 1);
     }
     for (const [key, count] of demandCounts) {
       if (count > 1) {
         duplicateDemandKeys.add(key);
+        const demand = module.consumes.find(
+          candidate => bindingCoordinateKey(module.id, candidate.slot) === key,
+        )!;
         diagnostics.push({
           code: "DUPLICATE_DEMAND",
           consumerId: module.id,
-          slot: key.slice(key.indexOf("\0") + 1),
+          slot: demand.slot,
         });
+      }
+    }
+    const offerCounts = new Map<string, QualificationCapabilityOffer>();
+    for (const offer of module.provides) {
+      const key = canonicalJson([offer.slot, offer.contractVersion]);
+      if (offerCounts.has(key)) {
+        diagnostics.push({
+          code: "DUPLICATE_OFFER",
+          consumerId: module.id,
+          slot: offer.slot,
+        });
+      } else {
+        offerCounts.set(key, offer);
       }
     }
   }
   if (diagnostics.length > 0) {
     return {
-      diagnostics: Object.freeze(diagnostics.sort((left, right) =>
-        compareIds(
-          `${left.code}:${left.consumerId}:${left.slot}`,
-          `${right.code}:${right.consumerId}:${right.slot}`,
-        ),
-      )),
+      diagnostics: Object.freeze(diagnostics.sort(compareBindingDiagnostics)),
       ok: false,
     };
   }
@@ -329,7 +349,7 @@ export function compileQualificationBindings(
     const dependencies: string[] = [];
     const demands = [...module.consumes].sort((left, right) => compareIds(left.slot, right.slot));
     for (const demand of demands) {
-      const key = `${module.id}\0${demand.slot}`;
+      const key = bindingCoordinateKey(module.id, demand.slot);
       if (duplicateDemandKeys.has(key) || duplicateBindingKeys.has(key)) continue;
       const binding = bindingByDemand.get(key);
       const providerIds = binding === undefined ? [] : [...binding.providerIds];
@@ -391,7 +411,7 @@ export function compileQualificationBindings(
   }
 
   for (const binding of bindingsInput) {
-    if (!declaredDemands.has(`${binding.consumerId}\0${binding.slot}`)) {
+    if (!declaredDemands.has(bindingCoordinateKey(binding.consumerId, binding.slot))) {
       diagnostics.push({
         code: "UNDECLARED_BINDING",
         consumerId: binding.consumerId,
@@ -401,12 +421,7 @@ export function compileQualificationBindings(
   }
   if (diagnostics.length > 0) {
     return {
-      diagnostics: Object.freeze(diagnostics.sort((left, right) =>
-        compareIds(
-          `${left.code}:${left.consumerId}:${left.slot}`,
-          `${right.code}:${right.consumerId}:${right.slot}`,
-        ),
-      )),
+      diagnostics: Object.freeze(diagnostics.sort(compareBindingDiagnostics)),
       ok: false,
     };
   }
@@ -426,9 +441,7 @@ export function compileQualificationBindings(
       ok: false,
     };
   }
-  const immutableResolved = Object.freeze([...resolved].sort((left, right) =>
-    compareIds(`${left.consumerId}:${left.slot}`, `${right.consumerId}:${right.slot}`),
-  ));
+  const immutableResolved = Object.freeze([...resolved].sort(compareBindingCoordinates));
   const digest = `sha256:${createHash("sha256")
     .update(canonicalJson({ graphDigest: graph.plan.digest, resolved: immutableResolved }))
     .digest("hex")}` as const;
