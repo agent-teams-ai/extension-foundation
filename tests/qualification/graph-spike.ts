@@ -243,41 +243,94 @@ export function compileQualificationBindings(
 ): QualificationBindingResult {
   const diagnostics: QualificationBindingDiagnostic[] = [];
   const modules = new Map<string, QualificationBindingModule>();
+  const moduleCounts = new Map<string, number>();
   for (const module of [...modulesInput].sort((left, right) => compareIds(left.id, right.id))) {
-    if (modules.has(module.id)) {
-      diagnostics.push({ code: "DUPLICATE_MODULE", consumerId: module.id, slot: "module" });
-    } else {
+    moduleCounts.set(module.id, (moduleCounts.get(module.id) ?? 0) + 1);
+    if (!modules.has(module.id)) {
       modules.set(module.id, module);
     }
   }
+  for (const [moduleId, count] of moduleCounts) {
+    if (count > 1) {
+      diagnostics.push({ code: "DUPLICATE_MODULE", consumerId: moduleId, slot: "module" });
+    }
+  }
+  if (diagnostics.length > 0) {
+    return {
+      diagnostics: Object.freeze(diagnostics.sort((left, right) =>
+        compareIds(
+          `${left.code}:${left.consumerId}:${left.slot}`,
+          `${right.code}:${right.consumerId}:${right.slot}`,
+        ),
+      )),
+      ok: false,
+    };
+  }
 
   const bindingByDemand = new Map<string, QualificationExplicitBinding>();
-  for (const binding of bindingsInput) {
+  const bindingCounts = new Map<string, number>();
+  for (const binding of [...bindingsInput].sort((left, right) =>
+    compareIds(`${left.consumerId}:${left.slot}`, `${right.consumerId}:${right.slot}`),
+  )) {
     const key = `${binding.consumerId}\0${binding.slot}`;
-    if (bindingByDemand.has(key)) {
+    bindingCounts.set(key, (bindingCounts.get(key) ?? 0) + 1);
+    if (!bindingByDemand.has(key)) {
+      bindingByDemand.set(key, binding);
+    }
+  }
+  const duplicateBindingKeys = new Set<string>();
+  for (const [key, count] of bindingCounts) {
+    if (count > 1) {
+      duplicateBindingKeys.add(key);
+      const [consumerId = "", slot = ""] = key.split("\0");
       diagnostics.push({
         code: "AMBIGUOUS_BINDING",
-        consumerId: binding.consumerId,
-        slot: binding.slot,
+        consumerId,
+        slot,
       });
-    } else {
-      bindingByDemand.set(key, binding);
     }
   }
 
   const resolved: QualificationResolvedBinding[] = [];
   const declaredDemands = new Set<string>();
+  const duplicateDemandKeys = new Set<string>();
   const graphNodes: ModuleDescriptor[] = [];
+  for (const module of modules.values()) {
+    const demandCounts = new Map<string, number>();
+    for (const demand of module.consumes) {
+      const key = `${module.id}\0${demand.slot}`;
+      declaredDemands.add(key);
+      demandCounts.set(key, (demandCounts.get(key) ?? 0) + 1);
+    }
+    for (const [key, count] of demandCounts) {
+      if (count > 1) {
+        duplicateDemandKeys.add(key);
+        diagnostics.push({
+          code: "DUPLICATE_DEMAND",
+          consumerId: module.id,
+          slot: key.slice(key.indexOf("\0") + 1),
+        });
+      }
+    }
+  }
+  if (diagnostics.length > 0) {
+    return {
+      diagnostics: Object.freeze(diagnostics.sort((left, right) =>
+        compareIds(
+          `${left.code}:${left.consumerId}:${left.slot}`,
+          `${right.code}:${right.consumerId}:${right.slot}`,
+        ),
+      )),
+      ok: false,
+    };
+  }
+
   for (const module of modules.values()) {
     const dependencies: string[] = [];
     const demands = [...module.consumes].sort((left, right) => compareIds(left.slot, right.slot));
     for (const demand of demands) {
       const key = `${module.id}\0${demand.slot}`;
-      if (declaredDemands.has(key)) {
-        diagnostics.push({ code: "DUPLICATE_DEMAND", consumerId: module.id, slot: demand.slot });
-        continue;
-      }
-      declaredDemands.add(key);
+      if (duplicateDemandKeys.has(key) || duplicateBindingKeys.has(key)) continue;
       const binding = bindingByDemand.get(key);
       const providerIds = binding === undefined ? [] : [...binding.providerIds];
       const uniqueProviderIds = [...new Set(providerIds)];

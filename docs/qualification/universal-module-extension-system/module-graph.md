@@ -246,14 +246,16 @@ canonical serialization, and diagnostics. It does not implement installation,
 security policy, DI reflection, hot reload, process management, or distributed
 coordination.
 
-The executable spike is narrower than this target: it proves only an
-`id + requires[]` scheduling DAG, deterministic batches/digest, mutation-safe
-plan data and cycle/missing/duplicate diagnostics. Capability slots, explicit
-bindings, cardinality, compatibility, scope and source validation remain Phase
-1 work and must not be inferred from the spike result. Ownership follows the
-single approved Phase 1 path: product-local only after ADR-0013 and the owning
-feature decision are accepted, or Foundation-owned while ADR-0012 remains
-effective only after `UMEQ-011` and `UMEQ-013` are resolved through `OD-003`.
+The executable evidence remains narrower than this target. The ID-DAG spike
+proves deterministic scheduling, immutable plan data and graph diagnostics. A
+separate disposable binding compiler now proves explicit `required`, `optional`
+and `ordered-many` bindings plus selected cardinality, compatibility, ambiguity
+and binding-induced-cycle negatives. It does not admit a production grammar,
+scope/source model, package, public SPI or runtime owner. Production Phase 1
+therefore remains blocked. Ownership follows the single approved Phase 1 path:
+product-local only after ADR-0013 and the owning feature decision are accepted,
+or Foundation-owned while ADR-0012 remains effective only after `UMEQ-011` and
+`UMEQ-013` are resolved through `OD-003`.
 
 ## Scale And Complexity
 

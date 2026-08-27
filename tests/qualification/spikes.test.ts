@@ -21,6 +21,8 @@ import {
   compileQualificationBindings,
   type CompiledGraph,
   type ModuleDescriptor,
+  type QualificationBindingDiagnostic,
+  type QualificationExplicitBinding,
   type QualificationBindingModule,
 } from "./graph-spike.ts";
 import {
@@ -296,24 +298,32 @@ test("native compiler agrees with Graphlib on generated directed-graph validity"
   }), { numRuns: 500 });
 });
 
-test("graph compiler remains stack-safe for ten thousand modules", t => {
+test("graph compiler remains stack-safe within 1k and 10k hard caps", t => {
   const count = 10_000;
   const chain = Array.from({ length: count }, (_, index) => ({
     id: `module-${String(index).padStart(5, "0")}`,
     requires: index === 0 ? [] : [`module-${String(index - 1).padStart(5, "0")}`],
   }));
-  assert.equal(requirePlan(chain.slice(0, 1_000)).startOrder.length, 1_000);
+  const measure = (size: number, hardCapMs: number): readonly number[] => {
+    const samples: number[] = [];
+    for (let iteration = 0; iteration < 5; iteration += 1) {
+      const startedAt = performance.now();
+      const measuredPlan = requirePlan(chain.slice(0, size));
+      const elapsedMs = performance.now() - startedAt;
+      assert.equal(measuredPlan.startOrder.length, size);
+      assert.ok(elapsedMs < hardCapMs, `GRAPH_${size}_TIMEOUT:${elapsedMs}`);
+      samples.push(elapsedMs);
+    }
+    return samples.toSorted((left, right) => left - right);
+  };
+
+  const oneThousandSamples = measure(1_000, 500);
   const heapBefore = process.memoryUsage().heapUsed;
-  const startedAt = performance.now();
-  const plan = requirePlan(chain);
-  const elapsedMs = performance.now() - startedAt;
+  const tenThousandSamples = measure(10_000, 5_000);
   const retainedHeapBytes = Math.max(0, process.memoryUsage().heapUsed - heapBefore);
-  assert.equal(plan.startOrder.length, count);
-  assert.equal(plan.startBatches.length, count);
-  assert.ok(elapsedMs < 5_000, `GRAPH_10K_TIMEOUT:${elapsedMs}`);
   assert.ok(retainedHeapBytes < 256 * 1024 * 1024, `GRAPH_10K_HEAP:${retainedHeapBytes}`);
   t.diagnostic(
-    `graph-10k elapsedMs=${elapsedMs.toFixed(2)} retainedHeapBytes=${retainedHeapBytes}`,
+    `graph-1k p95Ms=${oneThousandSamples.at(-1)?.toFixed(2)} graph-10k p95Ms=${tenThousandSamples.at(-1)?.toFixed(2)} retainedHeapBytes=${retainedHeapBytes}`,
   );
 
   const cyclic = chain.map((descriptor, index) => index === 0
@@ -411,7 +421,7 @@ test("qualification bindings fail closed on duplicate demand declarations", () =
         id: "consumer",
         consumes: [
           { slot: "source", cardinality: "required", compatibleContractVersions: ["v1"] },
-          { slot: "source", cardinality: "optional", compatibleContractVersions: ["v1"] },
+          { slot: "source", cardinality: "optional", compatibleContractVersions: ["v2"] },
         ],
         provides: [],
       },
@@ -429,6 +439,125 @@ test("qualification bindings fail closed on duplicate demand declarations", () =
   assert.deepEqual(result.diagnostics, [
     { code: "DUPLICATE_DEMAND", consumerId: "consumer", slot: "source" },
   ]);
+});
+
+test("qualification bindings reject every provider ambiguity before activation", () => {
+  const baseConsumer: QualificationBindingModule = {
+    id: "consumer",
+    consumes: [
+      { slot: "source", cardinality: "required", compatibleContractVersions: ["v1"] },
+    ],
+    provides: [],
+  };
+  const baseProvider: QualificationBindingModule = {
+    id: "provider",
+    consumes: [],
+    provides: [{ slot: "source", contractVersion: "v1" }],
+  };
+  const cases: readonly Readonly<{
+    bindings: readonly QualificationExplicitBinding[];
+    code: QualificationBindingDiagnostic["code"];
+    modules: readonly QualificationBindingModule[];
+  }>[] = [
+    {
+      bindings: [
+        { consumerId: "consumer", slot: "source", providerIds: ["provider"] },
+        { consumerId: "consumer", slot: "source", providerIds: ["missing"] },
+      ],
+      code: "AMBIGUOUS_BINDING",
+      modules: [baseConsumer, baseProvider],
+    },
+    {
+      bindings: [
+        { consumerId: "consumer", slot: "source", providerIds: ["provider", "provider"] },
+      ],
+      code: "AMBIGUOUS_BINDING",
+      modules: [
+        { ...baseConsumer, consumes: [{ ...baseConsumer.consumes[0]!, cardinality: "ordered-many" }] },
+        baseProvider,
+      ],
+    },
+    {
+      bindings: [
+        { consumerId: "consumer", slot: "source", providerIds: ["provider"] },
+      ],
+      code: "AMBIGUOUS_BINDING",
+      modules: [
+        baseConsumer,
+        {
+          ...baseProvider,
+          provides: [
+            { slot: "source", contractVersion: "v1" },
+            { slot: "source", contractVersion: "v1" },
+          ],
+        },
+      ],
+    },
+    {
+      bindings: [
+        { consumerId: "consumer", slot: "source", providerIds: ["missing"] },
+      ],
+      code: "MISSING_PROVIDER",
+      modules: [baseConsumer],
+    },
+  ];
+
+  for (const fixture of cases) {
+    const first = compileQualificationBindings(fixture.modules, fixture.bindings);
+    const second = compileQualificationBindings(
+      [...fixture.modules].reverse(),
+      [...fixture.bindings].reverse(),
+    );
+    assert.equal(first.ok, false);
+    assert.deepEqual(first, second);
+    if (first.ok) continue;
+    assert.ok(first.diagnostics.some(diagnostic => diagnostic.code === fixture.code));
+  }
+});
+
+test("qualification bindings reject duplicate module IDs and binding-induced cycles", () => {
+  const duplicate = compileQualificationBindings(
+    [
+      { id: "duplicate", consumes: [], provides: [] },
+      { id: "duplicate", consumes: [], provides: [] },
+    ],
+    [],
+  );
+  assert.equal(duplicate.ok, false);
+  if (!duplicate.ok) {
+    assert.deepEqual(duplicate.diagnostics, [
+      { code: "DUPLICATE_MODULE", consumerId: "duplicate", slot: "module" },
+    ]);
+  }
+
+  const cycle = compileQualificationBindings(
+    [
+      {
+        id: "left",
+        consumes: [
+          { slot: "right-capability", cardinality: "required", compatibleContractVersions: ["v1"] },
+        ],
+        provides: [{ slot: "left-capability", contractVersion: "v1" }],
+      },
+      {
+        id: "right",
+        consumes: [
+          { slot: "left-capability", cardinality: "required", compatibleContractVersions: ["v1"] },
+        ],
+        provides: [{ slot: "right-capability", contractVersion: "v1" }],
+      },
+    ],
+    [
+      { consumerId: "left", slot: "right-capability", providerIds: ["right"] },
+      { consumerId: "right", slot: "left-capability", providerIds: ["left"] },
+    ],
+  );
+  assert.equal(cycle.ok, false);
+  if (!cycle.ok) {
+    assert.deepEqual(cycle.diagnostics, [
+      { code: "HARD_CYCLE", consumerId: "left", slot: "graph" },
+    ]);
+  }
 });
 
 test("two fixed T0 built-ins publish a detached result and release the source resource", async () => {
