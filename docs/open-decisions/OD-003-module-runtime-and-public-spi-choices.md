@@ -42,6 +42,91 @@ for trusted and isolated implementations.
   generation, immutable grant identity, and a monotonic non-reused revision in
   that grant lineage. This safety floor is not open for selection here.
 
+## Resolved Sub-Decisions
+
+The product owner approved the following foundations on 2026-08-27. They are no
+longer alternatives inside this OD; changing one requires explicit replacement
+evidence and a recorded decision.
+
+### Identity And Authoring
+
+- A canonical `ModuleId` is a validated authority-qualified string authored in
+  the owning module's colocated inert declaration. A canonical `CapabilityId`
+  is authored by the owning product capability contract.
+- Generated TypeScript handles provide nominal separation and may use an erased
+  `unique symbol` brand. The serializable string remains the runtime, wire,
+  persistence, audit, and cross-host identity.
+- Calling `Symbol.prototype.toString()` does not make a `Symbol` a durable
+  identity. Two unequal symbols with the same description produce the same
+  display string, the conversion cannot reconstruct the original symbol, JSON
+  omits symbol values, and symbol registries do not provide identity continuity
+  across Worker, process, Electron IPC, WASM, persistence, or restart boundaries.
+- A hand-maintained central ID registry is forbidden. Aggregate indexes,
+  reverse-dependency maps, diagrams, and typed navigation handles are generated
+  read-only projections and never identity authorities.
+- The private TypeScript authoring vocabulary is `required`, `optional`, and
+  `many`. `many` declares graph cardinality and deterministic collection order;
+  it does not configure concurrency, retries, or execution parallelism.
+
+### Build And Execution Binding
+
+- Candidate enumeration starts from consumer-owned bounded roots and reads only
+  fixed-name inert declarations. Discovery never imports executable code.
+- CI emits canonical per-owner fragments and a disposable aggregate inventory,
+  then compiles one exact product profile into an immutable plan and lock.
+- Provider selection occurs during profile compilation. Normal startup verifies
+  the locked result and matching receipts; it does not resolve providers again.
+- Co-released built-ins use a private lazy literal-import table specific to each
+  host target. Node/server, Electron main, preload, renderer/Worker, and browser
+  authority closures cannot share one loader table.
+- Declaration input, plan, loader source, implementation, and emitted bundle
+  digests are bound through an exact receipt chain. Selected executable IDs and
+  loader keys must form a bijection; invalid and unselected sentinels must prove
+  zero top-level evaluation.
+- Runtime receives only the exact plan and matching loader receipt. It does not
+  scan the filesystem, package catalog, aggregate inventory, decorators, or a
+  global container.
+- Independently installed plugin artifacts use a distinct verified isolated-host
+  adapter keyed by immutable artifact and contribution identity. Runtime string
+  interpolation never adds them to the trusted built-in loader table.
+- A first fixed slice may use a handwritten private literal-import table with
+  the same bijection and receipt checks. Deterministic loader generation begins
+  only after repeated wiring or profile variants provide concrete evidence.
+
+### Enable, Disable, And Replacement
+
+- Installation, desired enablement, active routing, runtime health, state
+  custody, and artifact retirement are independent state planes.
+- Enable, disable, replace, and update create a new immutable desired-profile
+  revision. The compiler validates the complete affected dependency closure;
+  no live registry contains a mutable authoritative `enabled` flag.
+- A candidate generation is prepared and proves readiness before one
+  compare-and-set publication point. Failure before publication leaves the old
+  generation active. Success publishes the new generation, seals old admission,
+  then performs bounded drain and reverse-order cleanup.
+- Removing a required provider is rejected unless the reviewed candidate also
+  rebinds, replaces, or disables all affected dependents. Optional degradation
+  must be declared by the consumer. Ordered-many bindings must retain their
+  cardinality, order, compatibility, scope, and authorization invariants.
+- Every activation receives a host-owned resource scope before module code runs:
+  generation-bound cancellation, tracked tasks, invocation admission, async
+  LIFO disposal, late-acquisition rejection, and resource-specific custody.
+- A resolved `stop()` or `dispose()` is evidence, not termination proof. Missing
+  terminal receipts, unjoined work, late acquisition, ambient/global mutation,
+  changed cached code, or ambiguous external effects make `restart_required`
+  sticky for that host incarnation.
+- Trusted in-process modules support fenced logical disable, not a claim of
+  arbitrary JavaScript unload. Stronger Worker, process, WASM, or browser-realm
+  hosts may prove physical termination only after observed realm exit while
+  authoritative sinks continue rejecting stale-generation effects.
+- V1 therefore promises restart-safe generation replacement. Transparent hot
+  unload remains a placement-specific optimization, never the correctness base.
+
+The remaining open choices are the exact descriptor and generated-handle API,
+compatibility grammar, trusted resource adapter (`native` versus a qualified
+Cordis adapter), state migration protocol, isolated invocation protocol, and
+the evidence required before publishing a stable SPI.
+
 ## Options
 
 ### Contract tokens
@@ -53,7 +138,7 @@ for trusted and isolated implementations.
 The choice must prove duplicate detection, deterministic identity, useful
 diagnostics, and no generic runtime resolver in product code.
 
-The qualification direction is narrowed without resolving this open decision:
+The approved identity direction is:
 
 - `ModuleId` is authored once in the owning module's colocated inert
   declaration. `CapabilityId` is authored once by the owning product contract;

@@ -128,6 +128,16 @@ process, Electron IPC, or WASM boundaries. Generated TypeScript handles may use
 an erased `unique symbol` brand to prevent accidental type mixing while runtime
 equality and wire data continue to use validated strings.
 
+`Symbol.prototype.toString()` is only a display conversion, not durable
+serialization. For example, `Symbol("x") !== Symbol("x")` even though both values
+render as `Symbol(x)`; the display string cannot reconstruct either original
+identity, and JSON omits symbol-valued fields. `Symbol.for()` adds lookup by a
+string key within its registry, but serializing that key simply makes the string
+the durable identity and still does not carry the symbol across a Worker,
+process, persistence, or restart boundary. The design therefore keeps the
+validated string canonical and uses nominal TypeScript handles for authoring
+safety.
+
 The canonical declaration is colocated with the module. A generated aggregate
 index may expose the same identity for navigation, dependency reports, and
 typed imports, but it is disposable output and cannot be edited as a registry.
