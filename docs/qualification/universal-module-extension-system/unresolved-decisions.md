@@ -3,10 +3,11 @@ id: qualification.universal-module-extension-system.unresolved-decisions
 type: qualification
 status: qualified
 owner: architecture
-summary: Presents the ten product and architecture forks that still require approval after qualification evidence.
+summary: Presents the eight product and architecture forks that still require approval after the static-first decisions.
 related:
   - ADR-0010
-  - ADR-0012
+  - ADR-0013
+  - ADR-0014
   - OD-001
   - OD-002
   - OD-003
@@ -53,22 +54,6 @@ universal security claim. **Reversibility:** medium after public UI SPI.
 **Impact:** controls first Frontend slice and permission UX. **Approval:**
 required separately by the Frontend product owner.
 
-## UMEQ-011: Provider Binding Policy
-
-**Problem:** decide whether installing a unique compatible provider may change
-the active graph implicitly.
-
-| Option | Assessment |
-| --- | --- |
-| Explicit profile binding for every single-provider slot, recommended | 🎯 9/10 · 🛡️ 10/10 · 🧠 5/10 · 150-300 LOC |
-| Auto-bind only when exactly one provider exists | 🎯 7/10 · 🛡️ 7/10 · 🧠 6/10 · 250-450 LOC |
-| Priority/registration-order selection | 🎯 1/10 · 🛡️ 2/10 · 🧠 5/10 · rejected |
-
-**Evidence:** explicit binding makes install/update diffs reviewable and prevents
-ambient catalog order from becoming semantics. **Reversibility:** high; an
-auto-binding resolver can be added later. **Impact:** profile ergonomics and
-determinism. **Approval:** required through `OD-003`.
-
 ## UMEQ-012: Contract Source And Compatibility Model
 
 **Problem:** choose sources of truth for serialized protocol and executable
@@ -89,7 +74,8 @@ publication. **Impact:** compatibility tooling and future non-TS hosts.
 
 ## UMEQ-013: Trusted Module Runtime
 
-**Problem:** select the private implementation of closed-world construction and
+**Problem:** after a measured runtime-selection or independent-lifecycle trigger,
+select the private product implementation of closed-world construction and
 resource ownership.
 
 | Option | Assessment |
@@ -103,9 +89,9 @@ adapter does not prove meaningful code deletion and would overlap lifecycle
 authority. The 25% threshold remains a real-consumer kill criterion. **Reversibility:**
 high because contracts exclude framework types. **Impact:** Foundation
 extraction and runtime admission, not the private product-local rehearsal.
-**Approval:** required through `OD-003`. ADR-0013 is a separate ownership-path
-decision for a product-local Phase 1 and is not an additional Foundation
-admission authority while proposed. Evidence currently favors native.
+**Approval:** required through `OD-003` plus an accepted owning-product runtime
+decision. This fork cannot block the Phase 1 static Pure DI rehearsal and cannot
+authorize a Foundation runtime. Evidence currently favors native.
 
 ## UMEQ-014: Package Module Formats
 
@@ -140,22 +126,6 @@ release model, not permission to publish now. **Reversibility:** low after publi
 API. **Impact:** release workload and compatibility obligations. **Approval:**
 product owner through a future publication ADR, only after the accepted evidence
 floor is met.
-
-## UMEQ-016: Update And Hot Reload Baseline
-
-**Problem:** choose whether updates require process/graph replacement or promise
-arbitrary live unload.
-
-| Option | Assessment |
-| --- | --- |
-| Side-by-side generation, atomic route, bounded drain, restart if needed, recommended | 🎯 10/10 · 🛡️ 9/10 · 🧠 7/10 · 2,500-5,000 LOC |
-| Trusted-module hot reload after compatibility proof | 🎯 6/10 · 🛡️ 6/10 · 🧠 9/10 · +3,000-7,000 LOC |
-| Mandatory restart for every update | 🎯 8/10 · 🛡️ 9/10 · 🧠 3/10 · 800-1,500 LOC |
-
-**Evidence:** cleanup hooks are evidence, not proof of unload. Side-by-side
-replacement preserves availability where resources can coexist and remains
-honest when a process restart is required. **Reversibility:** high. **Impact:**
-Desktop/server update UX. **Approval:** required through `OD-003`.
 
 ## UMEQ-017: Distributed Cutover Guarantee
 
@@ -192,21 +162,27 @@ medium; release records should already map cleanly to future TUF targets.
 
 ## Recommended Approval Order
 
-No graph slice starts until its ownership path is complete. The recommended
-product-local path requires acceptance of ADR-0013 plus the owning product's
-feature decision; it may use private explicit binding and a private native
-implementation without resolving Foundation forks `UMEQ-011` or `UMEQ-013`.
-If ADR-0012 remains effective, resolve both `UMEQ-011` and `UMEQ-013` through
-`OD-003` before a Foundation graph/runtime implementation begins. `UMEQ-012` is
-needed before reusable contract extraction. Public package publication is a
-cumulative gate: reusable extraction must already be admitted; `UMEQ-014`,
-`UMEQ-015` and `UMEQ-016` must be resolved; packed-package `PACKAGE-1` and public
-API evidence must pass; the immutable package admission record must be verified;
+Phase 1 is the product-local static module rehearsal authorized by ADR-0013 and
+ADR-0014 plus the owning product's feature decision. It uses explicit profile
+bindings and static Pure DI and does not wait for `UMEQ-013`. A private runtime
+graph is a later path requiring measured runtime-selection or independent-
+lifecycle evidence, an owning-product runtime decision, and resolution of
+`UMEQ-013`.
+
+Foundation semantic extraction is separate again: two real independently
+authored consumers, cross-consumer conformance, and a dedicated accepted
+extraction decision are all required. A package admitted for an independent
+release, replacement, deployment, isolation, reuse, or qualified public-SPI
+lifecycle does not thereby transfer semantic ownership to Foundation.
+
+Public package publication is cumulative: package admission must already be
+satisfied; `UMEQ-012`, `UMEQ-014`, and `UMEQ-015` must be resolved; ADR-0014's
+generation baseline remains effective; packed-package `PACKAGE-1` and public API
+evidence must pass; the immutable package admission record must be verified;
 release promotion must verify stable provider identities, the accepted basis,
-implementation independence and referenced bytes; and the Foundation owner must
-accept an artifact-specific package admission decision followed by an
-artifact-specific publication decision. Those release decisions are not
-additional strategic UMEQ forks.
+implementation independence, and referenced bytes; and the Foundation owner
+must accept artifact-specific package admission and publication decisions.
+Those release decisions are not additional strategic UMEQ forks.
 `UMEQ-009` is additionally needed before a process release. `UMEQ-017` is
 required before hosted distributed claims. `UMEQ-018` is needed before managed
 update channels. `UMEQ-010` remains a separate Frontend decision and cannot

@@ -3,335 +3,104 @@ id: OD-003
 type: open-decision
 status: open
 owner: architecture
-summary: Tracks unresolved contract token, runtime host, ordering, handover, compatibility, state migration, and proof choices.
+summary: Tracks unresolved public SPI, runtime implementation, host protocol, and state-migration choices.
 related:
   - ADR-0001
-  - ADR-0006
-  - ADR-0007
-  - ADR-0008
-  - ADR-0009
   - ADR-0010
-  - ADR-0012
+  - ADR-0013
+  - ADR-0014
 ---
 
 # OD-003: Module Runtime And Public SPI Choices
 
-## Decision required
+## Decision Required
 
-Choose the first executable module graph and runtime contracts without exposing
-a dependency-injection framework or prematurely promising one invocation model
-for trusted and isolated implementations.
+Choose any production module runtime, public contract, host protocol, and state
+migration semantics only after product-local static composition supplies the
+triggers and evidence required by ADR-0013.
 
-## Constraints
+The already approved guardrails are resolved by
+[ADR-0014](../decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md).
+They are not open alternatives here. This open decision cannot authorize a
+Foundation package, production graph runtime, or public SPI by implication.
 
-- ADR-0010 cumulative ownership, authority, identity, transaction, trust-tier, graph, and
-  state boundaries are fixed.
-- Product-specific SPIs remain in Orchestrator, Agent Runtime, Frontend, or
-  another consuming product.
-- Extension Foundation cannot import Run, Task, RuntimeSession, React component,
-  or another product model.
-- A built-in module is not a plugin artifact. One admitted plugin artifact may
-  provide multiple contributions. Artifact installation, contribution
-  authorization, graph activation, and runtime generation remain distinct.
-- A runtime generation has exactly one discriminated activation source:
-  artifact-backed contribution installation or authority-scoped built-in module
-  installation. Built-ins never receive synthetic artifact identities.
-- Public contracts cannot contain Cordis Context, Fiber, Awilix, container,
-  loader, or configuration types.
-- Every invocation is fenced by authority scope, graph generation, runtime
-  generation, immutable grant identity, and a monotonic non-reused revision in
-  that grant lineage. This safety floor is not open for selection here.
+## Fixed Constraints
 
-## Resolved Sub-Decisions
+- ADR-0010's cumulative ownership, authority, identity, transaction,
+  trust-tier, graph, lifecycle, and state safety floor remains fixed.
+- ADR-0013 keeps product-local feature code and static Pure DI first. A private
+  product graph requires a measured runtime-selection or independent-lifecycle
+  trigger and an accepted owning-product decision.
+- Foundation semantic extraction requires two real independently authored
+  consumers, cross-consumer conformance, and a separate accepted extraction
+  decision. Package extraction evidence alone is not semantic ownership.
+- Product-specific SPIs remain in the consuming product. Foundation cannot
+  import product domain or host-framework models.
+- Public contracts cannot expose container, loader, configuration, graph
+  library, or host-framework types.
+- A built-in module is not a plugin artifact. Artifact installation,
+  contribution authorization, graph activation, and runtime generation remain
+  distinct.
+- Every production host remains subject to the accepted production-host safety
+  closure and its own authority and termination evidence.
 
-The product owner approved the following foundations on 2026-08-27. They are no
-longer alternatives inside this OD; changing one requires explicit replacement
-evidence and a recorded decision.
+## Open Choices
 
-### Identity And Authoring
+### Public SPI And Compatibility
 
-- A canonical `ModuleId` is a validated authority-qualified string authored in
-  the owning module's colocated inert declaration. A canonical `CapabilityId`
-  is authored by the owning product capability contract.
-- Generated TypeScript handles provide nominal separation and may use an erased
-  `unique symbol` brand. The serializable string remains the runtime, wire,
-  persistence, audit, and cross-host identity.
-- Calling `Symbol.prototype.toString()` does not make a `Symbol` a durable
-  identity. Two unequal symbols with the same description produce the same
-  display string, the conversion cannot reconstruct the original symbol, JSON
-  omits symbol values, and symbol registries do not provide identity continuity
-  across Worker, process, Electron IPC, WASM, persistence, or restart boundaries.
-- A hand-maintained central ID registry is forbidden. Aggregate indexes,
-  reverse-dependency maps, diagrams, and typed navigation handles are generated
-  read-only projections and never identity authorities.
-- The private TypeScript authoring vocabulary is `required`, `optional`, and
-  `many`. `many` declares graph cardinality and deterministic collection order;
-  it does not configure concurrency, retries, or execution parallelism.
+If independent consumers justify extraction, decide the exact descriptor and
+generated-handle API, compatibility grammar, unknown-field and deprecation
+rules, version negotiation, publication surface, and conformance evidence. The
+choice must preserve validated serializable identities and generated nominal
+TypeScript handles without turning a runtime symbol or central registry into an
+identity authority.
 
-### Build And Execution Binding
-
-- Candidate enumeration starts from consumer-owned bounded roots and reads only
-  fixed-name inert declarations. Discovery never imports executable code.
-- CI emits canonical per-owner fragments and a disposable aggregate inventory,
-  then compiles one exact product profile into an immutable plan and lock.
-- Provider selection occurs during profile compilation. Normal startup verifies
-  the locked result and matching receipts; it does not resolve providers again.
-- Co-released built-ins use a private lazy literal-import table specific to each
-  host target. Node/server, Electron main, preload, renderer/Worker, and browser
-  authority closures cannot share one loader table.
-- Declaration input, plan, loader source, implementation, and emitted bundle
-  digests are bound through an exact receipt chain. Selected executable IDs and
-  loader keys must form a bijection; invalid and unselected sentinels must prove
-  zero top-level evaluation.
-- Runtime receives only the exact plan and matching loader receipt. It does not
-  scan the filesystem, package catalog, aggregate inventory, decorators, or a
-  global container.
-- Independently installed plugin artifacts use a distinct verified isolated-host
-  adapter keyed by immutable artifact and contribution identity. Runtime string
-  interpolation never adds them to the trusted built-in loader table.
-- A first fixed slice may use a handwritten private literal-import table with
-  the same bijection and receipt checks. Deterministic loader generation begins
-  only after repeated wiring or profile variants provide concrete evidence.
-
-### Enable, Disable, And Replacement
-
-- Installation, desired enablement, active routing, runtime health, state
-  custody, and artifact retirement are independent state planes.
-- Enable, disable, replace, and update create a new immutable desired-profile
-  revision. The compiler validates the complete affected dependency closure;
-  no live registry contains a mutable authoritative `enabled` flag.
-- A candidate generation is prepared and proves readiness before one
-  compare-and-set publication point. Failure before publication leaves the old
-  generation active. Success publishes the new generation, seals old admission,
-  then performs bounded drain and reverse-order cleanup.
-- Removing a required provider is rejected unless the reviewed candidate also
-  rebinds, replaces, or disables all affected dependents. Optional degradation
-  must be declared by the consumer. Ordered-many bindings must retain their
-  cardinality, order, compatibility, scope, and authorization invariants.
-- Every activation receives a host-owned resource scope before module code runs:
-  generation-bound cancellation, tracked tasks, invocation admission, async
-  LIFO disposal, late-acquisition rejection, and resource-specific custody.
-- A resolved `stop()` or `dispose()` is evidence, not termination proof. Missing
-  terminal receipts, unjoined work, late acquisition, ambient/global mutation,
-  changed cached code, or ambiguous external effects make `restart_required`
-  sticky for that host incarnation.
-- Trusted in-process modules support fenced logical disable, not a claim of
-  arbitrary JavaScript unload. Stronger Worker, process, WASM, or browser-realm
-  hosts may prove physical termination only after observed realm exit while
-  authoritative sinks continue rejecting stale-generation effects.
-- V1 therefore promises restart-safe generation replacement. Transparent hot
-  unload remains a placement-specific optimization, never the correctness base.
-
-The remaining open choices are the exact descriptor and generated-handle API,
-compatibility grammar, trusted resource adapter (`native` versus a qualified
-Cordis adapter), state migration protocol, isolated invocation protocol, and
-the evidence required before publishing a stable SPI.
-
-## Options
-
-### Contract tokens
-
-- Branded TypeScript values with explicit version-family identity.
-- Serializable contract descriptors plus generated TypeScript bindings.
-- A smaller static module descriptor with product-owned typed keys.
-
-The choice must prove duplicate detection, deterministic identity, useful
-diagnostics, and no generic runtime resolver in product code.
-
-The approved identity direction is:
-
-- `ModuleId` is authored once in the owning module's colocated inert
-  declaration. `CapabilityId` is authored once by the owning product contract;
-  provider modules reference it rather than redefining it.
-- Durable identities are validated authority-qualified strings. Generated
-  TypeScript handles may use an erased `unique symbol` brand, but runtime
-  `Symbol`, a central `enum`, paths, package names, and content hashes are not
-  identity authorities.
-- A central module list is a generated read-only projection for diagnostics and
-  navigation, never a hand-maintained registration source.
-- The private TypeScript authoring facade uses `required`, `optional`, and
-  `many`. The normalized serialized descriptor still records presence and
-  cardinality explicitly; these helper names do not publish the final SPI.
-
-The exact descriptor schema, compatibility grammar, generated-handle package
-surface, and publication policy remain open under `UMEQ-012`.
-
-### Runtime hosts
-
-- A small native trusted-module runner plus a separate process contribution
-  protocol.
-- Cordis `4.0.1` behind a private adapter for trusted modules plus the same
-  separate process protocol.
-- A process-first host, accepting higher overhead for stronger uniformity.
-
-Cordis is a candidate, not a dependency decision. Replaceability requires two
-host adapters passing the same applicable lifecycle traces; source-level type
-isolation alone is not conformance evidence.
-
-### Candidate dependency watchlist
-
-This table is non-normative research evidence, observed on 2026-08-24. An entry
-does not admit a package, select a runtime, or authorize its types in a public
-contract. Recheck the stable version, license, provenance, and conformance
-evidence immediately before adding any dependency.
-
-| Candidate | Observed version | Possible role | Required boundary |
-| --- | --- | --- | --- |
-| [`@deepseek-ai/cordis`](https://github.com/deepseek-ai/deepseek-harness/tree/master/vendor/cordis) | `4.0.1` | Experimental trusted in-process module-host adapter with scoped services, fibers, and reverse effect cleanup | This DeepSeek-owned package is distinct from upstream `cordis@4.0.0-rc.8`. Pin exactly; keep `Context`, `Fiber`, loader, and configuration types inside the adapter; do not delegate product readiness, routing, fencing, durable recovery, or isolation. Reject it if the qualification requires a second competing lifecycle state machine. |
-| [`awilix`](https://github.com/jeffijoe/awilix) | `13.0.5` | Consumer-owned bounded-context composition | Not a Foundation module runtime. Keep it under product `composition/**`; no cradle, container, registration, or resolver types may cross into features or contracts. |
-| [`@dagrejs/graphlib`](https://github.com/dagrejs/graphlib) | `4.0.5` | Private graph-algorithm implementation or differential test oracle | The owned compiler still defines canonical identity, stable tie-breaking, provider selection, diagnostics, serialization, and digest semantics. No mutable graph object or library error crosses the boundary. |
-| [`fast-check`](https://github.com/dubzzz/fast-check) | `4.9.0` | Property-based graph and lifecycle conformance tests | Development dependency only; generated cases must assert product-owned invariants and retain deterministic seeds for failures. |
-| [`xstate`](https://github.com/statelyai/xstate) and [`@xstate/graph`](https://github.com/statelyai/xstate/tree/main/packages/xstate-graph) | `5.32.5` and `3.0.4` | Deferred model-based lifecycle test oracle when the accepted transition matrix becomes non-trivial | Do not make actors, machines, snapshots, or XState persistence the default product runtime or public protocol. |
-| Node.js [`AsyncDisposableStack`](https://nodejs.org/api/globals.html#class-asyncdisposablestack) | Node `24.18.0` baseline | Native LIFO cleanup primitive for trusted runtime resources | Cleanup is cooperative and does not prove process termination, product rollback, drain completion, or external-effect reversal. |
-| [`@lumino/application`](https://github.com/jupyterlab/lumino) | `2.4.10` | Reference implementation and possible adapter spike for typed plugin dependencies and activation | Frontend-oriented lifecycle semantics remain private; it does not own product health, publication fencing, durable recovery, or hard termination. |
-| [`avvio`](https://github.com/fastify/avvio) | `9.3.0` | Reference for deterministic boot, readiness, timeout, and reverse close ordering | Treat as boot/close machinery, not a dynamic module graph, hot-update protocol, or product authority layer. |
-| [`@backstage/backend-plugin-api`](https://github.com/backstage/backstage) | `1.10.0` | Reference for explicit plugin initialization and shutdown hooks | Do not import Backstage's product framework or treat process-shutdown hooks as runtime plugin unload. |
-| [`effect`](https://github.com/Effect-TS/effect) | `3.22.1` | Scoped resource and layer reference for an intentionally Effect-native consumer | Do not introduce Effect types as a hidden adapter vocabulary in otherwise plain product ports and factories. |
-| [Extism](https://github.com/extism/extism) | `v1.30.0` | Deferred post-MVP WASM host for language-neutral isolated extensions | Separate trust-tier adapter and conformance suite; no WASM ABI, host function, or Extism type enters product SPI. |
-
-The first qualification slice should prefer native typed factories and standard
-resource-management primitives. A candidate library is introduced only when a
-measured reduction in lifecycle or composition complexity outweighs its adapter,
-upgrade, and negative-conformance cost.
-
-The agreed reuse boundary is recorded by ADR-0012. Commodity primitives remain
-behind owned ports and diagnostics: Node resource disposal for cooperative local
-cleanup, `fast-check` for property and fault generation, a graph package only as
-a private algorithm or differential oracle, OpenTelemetry through an
-observability adapter, and the already accepted ORAS and Cosign distribution
-baseline. Awilix remains consumer composition machinery, and Extism remains a
-deferred isolated-host adapter. Package admission and exact dependency versions
-still require executable qualification; this list is not permission to expose
-their types or install all candidates preemptively.
-
-### Ordering and handover
-
-- Explicit ordered collections with stable product-owned priority and conflict
-  rules.
-- Named single-provider selection with no collection semantics in the first API.
-- Generation handover with either drain-before-route or route-before-drain,
-  selected per contribution contract and tested against in-flight invocations.
-
-The host must compile one valid handover plan for the complete affected
-dependency closure. Per-contribution route or drain policies are valid only
-when their combined ordering is acyclic and preserves every required dependency;
-an incompatible mixed-policy chain is rejected before staging. The old grant is
-fenced before its runtime enters drain, so no new invocation can enter it.
-Candidate cleanup owns only newly staged runtimes. Referenced existing runtimes
-acquire durable staged pins under the runtime retirement fence. Publication
-promotes those pins; abandonment releases them. A runtime remains pinned until
-no staged candidate, live graph, or accepted bounded invocation references it;
-retirement rechecks reachability under the same fence.
-
-The final contract must still decide health gates, bounded completion versus
-cancellation of already accepted in-flight work, and when recovery may activate
-another generation versus requiring reconciliation or roll-forward. External
-startup effects cannot be made transactional by graph publication.
-
-### Compatibility and state migration
-
-Decide contract token identity, caller and callee compatibility direction,
-supported ranges, unknown-field behavior, deprecation, N/N-1 fixtures, and
-negative cases. Define plugin-private state migration, checkpoint, rollback,
-export, retention, and deletion protocols without moving product migrations into
-Foundation.
-
-### Public API evidence
-
-ADR-0010 already fixes the minimum publication floor: one real product slice, a
-stable owner, two independently authored conforming implementations,
+ADR-0010's minimum publication floor still applies: a real product slice,
+stable ownership, two independently authored conforming implementations,
 compatibility fixtures, negative tests, and an executable conformance suite.
-This decision chooses the evidence format, independence proof, compatibility
-matrix, and any additional evidence required by the first concrete SPI. It does
-not weaken that floor.
+The extraction decision must provide the additional cross-consumer evidence
+required by ADR-0013.
 
-### Candidate repository topology
+### Private Runtime Implementation
 
-The following layout preserves the current research without reserving packages
-or accepting their public APIs. Create a package only when a real product slice
-and the ADR-0010 evidence justify it.
+After an owning product records the required trigger decision, choose whether a
+private runtime uses a minimal native implementation or a qualified private
+adapter around a commodity graph, container, or resource-management library.
+The selected tool cannot own product readiness, routing, authorization,
+fencing, durable recovery, state custody, or isolation. Reject a candidate that
+requires a second overlapping lifecycle state machine.
 
-```text
-packages/<admitted-capability>/
-  core/                  # optional product-neutral library admitted after reuse evidence
-  module-adapter/        # optional integration with the module runtime
-  test-kit/              # optional reusable conformance fixtures
-  adapters/<technology>/ # only independently released integrations
-```
+The decision must define deterministic diagnostics, lifecycle traces, health
+gates, handover order, bounded drain or cancellation, recovery, candidate
+cleanup, and restart-required behavior. It must remain compatible with
+ADR-0014's distinct plan-content, candidate-generation, and active-head
+identities.
 
-This is an illustrative role layout aligned with ADR-0012, not a reserved
-horizontal package topology. A first product-local graph and lifecycle
-implementation is permitted only after proposed ADR-0013, or an equivalent
-superseding decision, is accepted. While ADR-0012 remains effective, a
-Foundation graph/runtime implementation requires this open decision to resolve
-provider binding and trusted-runtime choices first. No `module-kit`,
-`plugin-protocol`, integration or testing package is created by this open
-decision. Product-scoped libraries and module adapters otherwise stay in the
-owning product repository.
+### Production Hosts And Invocation Protocols
 
-- A module is a runtime composition and lifecycle unit. A plugin artifact is a
-  signed distribution, trust, installation, and update envelope.
-- One plugin artifact may provide one or more contribution modules or proxies.
-  A built-in module needs no plugin artifact.
-- Product SPIs remain in their owning products. Contracts, ports, and adapters
-  stay inside the owning feature by default.
-- A separate adapter package is justified only by an independent dependency,
-  release, replacement, or deployment lifecycle.
-- After at least two products prove the same topology rules, the reusable part
-  may become an Engineering Foundation profile. This candidate is not that
-  promotion decision.
+Decide trusted in-process resource adapters separately from isolated Worker,
+process, WASM, Electron, and browser-realm hosts. For every admitted placement,
+define framing, schema limits, authentication, negotiation, backpressure,
+idempotency, timeouts, cancellation, terminal receipts, and stale-generation
+fencing. No transport or host provides a universal security or physical-unload
+claim.
 
-## Acceptance criteria
+Cross-target placement and distributed cutover remain product deployment
+choices. An atomic active-head decision does not imply simultaneous observation
+by every router or effect store.
 
-- Compile a deterministic graph with missing, cyclic, ambiguous, incompatible,
-  and duplicate-provider negative fixtures.
-- Prove one trusted runtime and one isolated runtime without sharing
-  non-serializable public types.
-- Prove required and optional multi-contribution dependencies, explicit
-  contribution selection, separate authorization, partial failure, and the
-  selected recovery behavior.
-- Prove grant binding, revocation fencing, stale-generation rejection, drain,
-  cancellation, unknown-outcome reconciliation, and bounded streaming.
-- Prove that a current new grant lineage may start at the same numeric revision
-  as an old lineage, while the stale old grant tuple is rejected and cannot
-  cross an authority scope.
-- Prove artifact-backed and built-in activation sources, immutable built-in
-  implementation identity, and same-scope versus cross-scope graph admission.
-- Prove exact one-contribution installation mapping, explicit multi-instance
-  identity, manifest-local uniqueness, and wrong-parent or grouped-sibling
-  rejection.
-- Prove that a graph contains only same-scope runtimes and that cross-scope
-  dependency or routing edges fail compilation.
-- Prove closure-wide handover planning, pre-drain fencing, and rejection of an
-  incompatible mixed route/drain policy chain.
-- Prove failed-candidate and successful-handover reuse of an existing runtime,
-  including staged, graph, and in-flight reachability pins before retirement,
-  crash recovery, atomic promotion, abandonment release, and a retirement race.
-- Prove exact artifact-versus-contribution private-state attachment, compatible
-  schema lineage, and sibling-contribution isolation.
-- Prove catalog and direct-digest trust routes with applicable and explicitly
-  not-applicable entitlement, independent product authorization, and mismatched
-  graph-to-runtime-to-source-to-grant relationships.
-- Prove fail-closed negative provenance, trust-route, compatibility,
-  entitlement, product authorization, and capability-grant outcomes.
-- Prove explicit state custody authorization for every operation, including
-  missing, stale, expired, wrong-scope, wrong-lineage, wrong-installation,
-  wrong-schema, and wrong-operation rejection.
-- Prove interruption, retry, uncertain termination, exact state detachment, and
-  target-specific contribution, built-in, and artifact retirement at every
-  checkpoint, including sibling contributions and attachments.
-- Prove N/N-1 request and response fixtures for every direction selected by the
-  final compatibility decision.
-- Prove that Cordis or any other composition library can be replaced without
-  changing product-owned ports or published plugin protocols.
-- Keep non-normative research evidence pinned to immutable source revisions:
-  [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness/tree/b150a551b8d465e31e418e1b2eaf5e79bbb7d28e),
-  [Lumino](https://github.com/jupyterlab/lumino/tree/d9b39db2c6d609af334729eeba2ab9376a11c0a7),
-  [Backstage](https://github.com/backstage/backstage/tree/de92faeb4a375af5bd4f7a84311e702736e98964),
-  [VS Code](https://github.com/microsoft/vscode/tree/62e4ec989dc0bb317b431d9d23a36019ef3c0d5b),
-  and [Spring Modulith](https://github.com/spring-projects/spring-modulith/tree/fc0a547c05dfd240d23c32f3fbb9fa45283af21f).
+### State Migration And Custody
 
-## Resolution
+Define plugin-private state compatibility, checkpoint, migration, rollback,
+export, retention, deletion, and recovery protocols. Every operation remains
+subject to the independent state-custody authorization and exact attachment
+identity required by ADR-0010. Product migrations and canonical product state
+do not move into Foundation.
 
-Open. When resolved, set `status: resolved`, add `resolved_by: ADR-NNNN`, and
-retain the deciding ADR in `related`.
+## Required Evidence
+
+A resolving decision must name the exact product trigger, owner, implementation
+or public surface, applicable host placements, compatibility and migration
+rules, negative cases, immutable evidence, and conformance results. Runtime,
+host, public-SPI, and state-migration choices may be resolved separately; none
+silently grants another.

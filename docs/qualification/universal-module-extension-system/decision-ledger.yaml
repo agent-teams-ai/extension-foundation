@@ -27,44 +27,52 @@ externalDecisionGates:
     detail: ../../decisions/0011-extension-admission-custody-and-retirement-closure.md
     effectWhileProposed: production-extension-host-phases-blocked
     approvalTrackedBy: adr-lifecycle
-  - id: ADR-0013
-    status: proposed
-    topic: first-consumer-module-semantics
-    authority: product-owner
-    detail: ../../decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
-    effectWhileProposed: product-local-phase-1-blocked
-    approvalTrackedBy: adr-lifecycle
 requirementDefinitions:
-  - id: ADR-0012
+  - id: ADR-0013
     kind: decision
     authority: accepted-adr
-    detail: ../../decisions/0012-reusable-library-module-and-plugin-boundaries.md
-    purpose: accepted Foundation package-admission policy
+    detail: ../../decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
+    purpose: cumulative static-first ownership and extraction policy
+  - id: ADR-0014
+    kind: decision
+    authority: accepted-adr
+    detail: ../../decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md
+    purpose: accepted product-local authoring, composition and generation guardrails
   - id: owning-product-feature-decision
     kind: decision
     authority: owning-product
     detail: final-recommendation.md
-    purpose: product-specific ownership approval for a concrete graph slice
+    purpose: product-specific ownership approval for one static module rehearsal
+  - id: private-runtime-selection-trigger
+    kind: evidence
+    authority: owning-product
+    detail: unresolved-decisions.md#umeq-013-trusted-module-runtime
+    purpose: measured runtime-selection or independently managed lifecycle need
+  - id: owning-product-runtime-decision
+    kind: decision
+    authority: owning-product
+    detail: unresolved-decisions.md#umeq-013-trusted-module-runtime
+    purpose: product approval for one private trigger-scoped runtime graph
   - id: second-independent-consumer
     kind: evidence
     authority: qualification-evidence
     detail: conformance-plan.md
-    purpose: immutable proof of a second real consumer
-  - id: cross-implementation-conformance
+    purpose: immutable proof of a second real independently authored consumer
+  - id: cross-consumer-conformance
     kind: evidence
     authority: qualification-evidence
     detail: conformance-plan.md
-    purpose: independently authored implementation passes the shared contract
-  - id: foundation-extraction-decision
+    purpose: executable conformance across the independently authored consumers
+  - id: foundation-semantic-extraction-decision
     kind: decision
     authority: foundation-owner
     detail: final-recommendation.md
-    purpose: artifact-specific approval to extract proved repeated semantics
-  - id: adr-0012-admission-basis
+    purpose: separate artifact-specific approval for the proved product-neutral semantic intersection
+  - id: adr-0013-package-admission-basis
     kind: evidence
     authority: qualification-evidence
-    detail: ../../decisions/0012-reusable-library-module-and-plugin-boundaries.md
-    purpose: immutable proof naming the accepted ADR-0012 admission basis
+    detail: ../../decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
+    purpose: immutable proof naming one preserved package-admission basis
   - id: immutable-package-admission-record
     kind: evidence
     authority: foundation-package-policy
@@ -74,7 +82,7 @@ requirementDefinitions:
     kind: evidence
     authority: qualification-evidence
     detail: conformance-plan.md
-    purpose: independent implementation evidence for the admitted package boundary
+    purpose: independent implementation evidence applicable to the admitted package boundary
   - id: foundation-package-admission-decision
     kind: decision
     authority: foundation-owner
@@ -101,75 +109,73 @@ requirementDefinitions:
     detail: final-recommendation.md
     purpose: artifact-specific release approval after topology and evidence gates pass
 implementationGates:
-  - id: phase-1-graph-kernel
+  - id: phase-1-static-module-rehearsal
     appliesTo:
-      - phase-1-graph-kernel
-    mode: exactly-one-path
-    paths:
-      - id: product-local
-        allOf:
-          - decision: ADR-0013
-            requiredStatus: accepted
-          - decision: owning-product-feature-decision
-            requiredStatus: accepted
-      - id: foundation-owned
-        allOf:
-          - decision: ADR-0012
-            requiredStatus: accepted
-          - decision: UMEQ-011
-            requiredStatus: resolved
-          - decision: UMEQ-013
-            requiredStatus: resolved
-  - id: phase-3-reusable-contract-extraction
+      - phase-1-static-module-rehearsal
+    mode: all
+    allOf:
+      - decision: ADR-0013
+        requiredStatus: accepted
+      - decision: ADR-0014
+        requiredStatus: accepted
+      - decision: owning-product-feature-decision
+        requiredStatus: accepted
+  - id: private-runtime-graph
     appliesTo:
-      - phase-3-reusable-internal-contracts
-    mode: exactly-one-path
-    paths:
-      - id: product-local-extraction
-        allOf:
-          - decision: ADR-0013
-            requiredStatus: accepted
-          - decision: owning-product-feature-decision
-            requiredStatus: accepted
-          - evidence: second-independent-consumer
-            requiredStatus: proven
-          - evidence: cross-implementation-conformance
-            requiredStatus: passed
-          - decision: UMEQ-012
-            requiredStatus: resolved
-          - decision: foundation-extraction-decision
-            requiredStatus: accepted
-      - id: foundation-owned-admission
-        allOf:
-          - decision: ADR-0012
-            requiredStatus: accepted
-          - decision: UMEQ-011
-            requiredStatus: resolved
-          - decision: UMEQ-012
-            requiredStatus: resolved
-          - decision: UMEQ-013
-            requiredStatus: resolved
-          - evidence: adr-0012-admission-basis
-            requiredStatus: proven
-          - evidence: immutable-package-admission-record
-            requiredStatus: verified
-          - evidence: independent-conformance
-            requiredStatus: passed
-          - decision: foundation-package-admission-decision
-            requiredStatus: accepted
+      - later-private-runtime-graph
+    mode: all
+    allOf:
+      - gate: phase-1-static-module-rehearsal
+        requiredStatus: satisfied
+      - evidence: private-runtime-selection-trigger
+        requiredStatus: measured
+      - decision: owning-product-runtime-decision
+        requiredStatus: accepted
+      - decision: UMEQ-013
+        requiredStatus: resolved
+  - id: foundation-semantic-extraction
+    appliesTo:
+      - foundation-module-semantic-extraction
+    mode: all
+    allOf:
+      - decision: ADR-0013
+        requiredStatus: accepted
+      - evidence: second-independent-consumer
+        requiredStatus: proven
+      - evidence: cross-consumer-conformance
+        requiredStatus: passed
+      - decision: foundation-semantic-extraction-decision
+        requiredStatus: accepted
+  - id: phase-3-package-admission
+    appliesTo:
+      - phase-3-reusable-internal-packages
+    mode: all
+    allOf:
+      - decision: ADR-0013
+        requiredStatus: accepted
+      - evidence: adr-0013-package-admission-basis
+        requiredStatus: proven
+      - evidence: immutable-package-admission-record
+        requiredStatus: verified
+      - evidence: independent-conformance
+        requiredStatus: passed
+      - decision: foundation-package-admission-decision
+        requiredStatus: accepted
   - id: phase-3-package-publication
     appliesTo:
       - phase-3-public-package-publication
     mode: all
     allOf:
-      - gate: phase-3-reusable-contract-extraction
+      - gate: phase-3-package-admission
         requiredStatus: satisfied
+      - decision: UMEQ-012
+        requiredStatus: resolved
       - decision: UMEQ-014
         requiredStatus: resolved
       - decision: UMEQ-015
         requiredStatus: resolved
-      - decision: UMEQ-016
-        requiredStatus: resolved
+      - decision: ADR-0014
+        requiredStatus: accepted
       - evidence: PACKAGE-1
         requiredStatus: passed
       - evidence: public-api-report
@@ -196,6 +202,8 @@ implementationGates:
       - phase-4-process-host
     mode: all
     allOf:
+      - gate: production-extension-host-safety
+        requiredStatus: satisfied
       - decision: UMEQ-009
         requiredStatus: resolved
   - id: frontend-extension-host
@@ -203,6 +211,8 @@ implementationGates:
       - phase-6-frontend-and-untrusted-hosts
     mode: all
     allOf:
+      - gate: production-extension-host-safety
+        requiredStatus: satisfied
       - decision: UMEQ-010
         requiredStatus: resolved
 entries:
@@ -220,9 +230,9 @@ entries:
     approvalRequired: false
   - id: UMEQ-003
     status: accepted-existing
-    topic: library-module-plugin-boundaries
-    authority: ADR-0012
-    detail: ../../decisions/0012-reusable-library-module-and-plugin-boundaries.md
+    topic: product-first-library-module-plugin-boundaries
+    authority: ADR-0013
+    detail: ../../decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
     approvalRequired: false
   - id: UMEQ-009
     status: open
@@ -237,20 +247,20 @@ entries:
     detail: unresolved-decisions.md#umeq-010-frontend-extension-model
     approvalRequired: true
   - id: UMEQ-011
-    status: open
+    status: accepted-existing
     topic: explicit-provider-binding
-    authority: OD-003
-    detail: unresolved-decisions.md#umeq-011-provider-binding-policy
-    approvalRequired: true
+    authority: ADR-0014
+    detail: ../../decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md
+    approvalRequired: false
   - id: UMEQ-012
     status: open
-    topic: contract-source-and-compatibility-model
+    topic: public-contract-and-compatibility-model
     authority: OD-003
     detail: unresolved-decisions.md#umeq-012-contract-source-and-compatibility-model
     approvalRequired: true
   - id: UMEQ-013
     status: open
-    topic: trusted-module-runtime
+    topic: private-trusted-module-runtime
     authority: OD-003
     detail: unresolved-decisions.md#umeq-013-trusted-module-runtime
     approvalRequired: true
@@ -267,11 +277,11 @@ entries:
     detail: unresolved-decisions.md#umeq-015-package-publication-topology
     approvalRequired: true
   - id: UMEQ-016
-    status: open
-    topic: update-and-hot-reload-baseline
-    authority: OD-003
-    detail: unresolved-decisions.md#umeq-016-update-and-hot-reload-baseline
-    approvalRequired: true
+    status: accepted-existing
+    topic: generation-based-update-baseline
+    authority: ADR-0014
+    detail: ../../decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md
+    approvalRequired: false
   - id: UMEQ-017
     status: open
     topic: distributed-cutover-guarantee

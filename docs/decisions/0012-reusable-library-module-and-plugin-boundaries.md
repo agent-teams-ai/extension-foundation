@@ -1,11 +1,13 @@
 ---
 id: ADR-0012
 type: adr
-status: accepted
+status: superseded
 owner: architecture
 summary: Defines one-way library-to-module composition, feature colocation, module dependency declarations, and optional plugin packaging.
 approved_by: product-owner
 accepted_at: 2026-08-24
+superseded_by:
+  - ADR-0013
 related:
   - ADR-0001
   - ADR-0010

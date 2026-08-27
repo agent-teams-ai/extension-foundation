@@ -71,7 +71,7 @@ deterministic scaffold plan and output, value-level `src/features/<feature>/`
 implementation, explicit feature entrypoint, and executable structural evidence
 under `test/features/<feature>/`. The same change must include a versioned
 `architecture/package-admissions/<encoded-package-id>.json` record that binds
-the accepted extraction decision, one explicit ADR-0012 admission basis, exact
+the accepted extraction decision, one explicit ADR-0013 package-admission basis, exact
 source commits, conformance results, implementation identities, and
 digest-bearing evidence references. A second-consumer basis requires two real
 consumer identities. A public-SPI basis requires two independently authored
@@ -87,7 +87,11 @@ conflicting claimed digests, or mirrors of the same bytes cannot satisfy a gate
 twice.
 
 These checks prove topology and evidence syntax, not business completeness or
-the referenced evidence bytes. A non-empty catalog therefore fails closed until
+the referenced evidence bytes. Package admission does not prove Foundation
+ownership of module declarations, graph semantics, lifecycle, or diagnostics;
+ADR-0013 separately requires two real independently authored consumers,
+cross-consumer conformance, and an accepted semantic-extraction decision. A
+non-empty catalog therefore fails closed until
 an executable admission verifier is supplied. That verifier must resolve each
 repository slug through its provider to a stable repository ID, prove the
 selected admission basis and any claimed implementation independence, and hash

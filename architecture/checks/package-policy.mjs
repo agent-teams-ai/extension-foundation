@@ -197,7 +197,7 @@ function validateAdmission(entry, admission, errors) {
     errors.push(`${entry.id}: admission.conformance_version must be an exact SemVer`);
   }
   if (!ADMISSION_BASES.includes(admission.admission_basis)) {
-    errors.push(`${entry.id}: admission.admission_basis must identify one ADR-0012 extraction gate`);
+    errors.push(`${entry.id}: admission.admission_basis must identify one ADR-0013 package-admission basis`);
   }
   if (!Array.isArray(admission.consumer_evidence)) {
     errors.push(`${entry.id}: admission.consumer_evidence must be an array`);
