@@ -64,9 +64,9 @@ candidates:
     usefulFor: tokens, commands, widgets, activation and disposal ownership
     missing: durable recovery and security boundary
   - id: fastify-avvio
-    evidenceStatus: pinned
+    evidenceStatus: orientation
     category: startup-graph
-    versionOrRevision: "avvio@9.3.0"
+    versionOrRevision: "reviewed-2026-08-25 (avvio@9.3.0)"
     evidence:
       - kind: npm-release
         package: avvio
@@ -119,9 +119,9 @@ candidates:
     usefulFor: desired versus observed state, generations, finalizers and liveness leases; sink fencing remains separate
     missing: lightweight local composition; not a library dependency candidate
   - id: effect
-    evidenceStatus: pinned
+    evidenceStatus: orientation
     category: typed-runtime
-    versionOrRevision: "effect@3.22.1"
+    versionOrRevision: "reviewed-2026-08-25 (effect@3.22.1)"
     evidence:
       - kind: npm-release
         package: effect
@@ -132,9 +132,9 @@ candidates:
     usefulFor: scoped resources, layers and interruption vocabulary
     missing: closed-world plugin trust and durable product-owned lifecycle; high model adoption cost
   - id: awilix-inversify-nest
-    evidenceStatus: pinned
+    evidenceStatus: orientation
     category: dependency-injection
-    versionOrRevision: "awilix@13.0.5 / inversify@8.2.3 / @nestjs/core@11.2.1"
+    versionOrRevision: "reviewed-2026-08-25 (awilix@13.0.5 / inversify@8.2.3 / @nestjs/core@11.2.1)"
     evidence:
       - kind: npm-release
         package: awilix

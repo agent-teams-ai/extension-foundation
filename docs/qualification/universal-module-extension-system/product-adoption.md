@@ -35,10 +35,13 @@ flowchart TB
 Foundation never imports product models. Each product owns its extension-point
 contracts, adapters, static composition, grants, conformance additions, and
 authority decisions. The first rehearsal consumes no Foundation runtime
-package. Any later shared semantics require the second-consumer, reconciliation,
-extraction, admission, and publication gates in the
-[final recommendation](final-recommendation.md); they do not make products one
-bounded context.
+package. Shared module semantics require a second real consumer,
+cross-consumer conformance, and a separate accepted extraction decision.
+Package admission is a later artifact-specific decision under an ADR-0013
+admission basis; public release is another cumulative gate. Evidence for one
+step never substitutes for another, an admitted internal package need not be
+public, and none of these steps makes products one bounded context. The exact
+gates are recorded in the [final recommendation](final-recommendation.md).
 
 ## Two-Level Composition
 
@@ -90,10 +93,11 @@ selected implementation through the feature's pure `FeatureModuleFactory`.
 The rehearsal uses post-commit dispatch, stable operation identity, stale-result
 revalidation, and no dual mutation authority. It has no runtime graph, module
 descriptor grammar, global container, plugin loading, Foundation package, or
-public contract. Packaging remains a later evidence-backed decision. If direct
-composition later fails a measured runtime-selection or independent-lifecycle
-need, the owning product may separately approve the smallest private graph; it
-does not start with one.
+public contract. Packaging remains a later evidence-backed decision. The owning
+product may separately approve the smallest private graph only when the exact
+Phase 2 trigger is measured: runtime selection that static configuration
+cannot meet or independently managed lifecycles needing dependency-aware
+operation. It does not start with one.
 
 ## Agent Runtime
 
@@ -145,12 +149,12 @@ flowchart LR
     Artifact["PluginArtifact contribution"] --> Adapter["Product-owned adapter"]
     Adapter --> Port["Feature-owned product port"]
     Port --> UseCase["Owning use case and authority"]
-    Adapter -. "only after measured graph/lifecycle need" .-> Runtime["Private product runtime module"]
+    Adapter -. "only after exact measured Phase 2 trigger" .-> Runtime["Private product runtime module"]
 ```
 
-A contribution becomes a runtime module only when runtime selection or
-independent lifecycle management is actually required and the product has
-approved the private graph described in Phase 2. Artifact installation alone,
+A contribution becomes a runtime module only when the exact measured Phase 2
+private-graph trigger is satisfied and the product has approved that graph.
+Artifact installation alone,
 multiple contribution records, or a declarative descriptor does not create
 that need.
 

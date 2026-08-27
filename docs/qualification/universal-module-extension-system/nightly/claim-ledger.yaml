@@ -93,7 +93,7 @@ claims:
     promotionEligible: false
     reversalTrigger: A real consumer proves 25% net deletion and complete private lifecycle parity without framework leakage.
   - id: W11-CLM-006
-    statement: Restart-first is the V1 lifecycle posture; side-by-side and arbitrary hot unload are deferred.
+    statement: UMEQ-016 is accepted-existing under ADR-0014; immutable desired profiles use distinct candidate generations and compare-and-set active-head publication, while arbitrary JavaScript unload is not promised and physical termination remains host-specific.
     classification: inference
     applicability: Trusted product-local V1 and rehearsal.
     evidenceSourceReferences:

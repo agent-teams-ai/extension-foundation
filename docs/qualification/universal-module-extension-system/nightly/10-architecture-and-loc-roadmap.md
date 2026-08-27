@@ -48,8 +48,7 @@ Estimate: 1,500-4,500 LOC including tests, 1-3 weeks. Total through Phase 1:
 Measure whether static composition meets the product need. Keep it when it
 does. A private product graph is eligible only when the product shows measured
 runtime selection that cannot be met by rebuild/configuration, multiple
-independently managed resource lifecycles needing dependency-aware operation,
-or repeated composition defects that a bounded graph prototype can address.
+independently managed resource lifecycles needing dependency-aware operation.
 
 If triggered, approve a private product scope and build only the minimum graph
 needed. Use explicit bindings and closed dependency objects, keep descriptors,
@@ -86,11 +85,13 @@ Estimate after approval: 4,000-8,000 LOC, 2-4 weeks.
 
 ## Separate Publication Gate
 
-Publication additionally requires two independently authored conforming
-implementations, packed-consumer fixtures, immutable artifact admission, public
+Publication additionally requires two real independently authored conforming
+consumers of the exact candidate, independently authored implementations,
+packed-consumer fixtures, immutable artifact admission, public
 API review, compatibility and SemVer policy, release-promotion evidence,
 support ownership, and an artifact-specific publication decision. Extraction
-does not automatically publish.
+or admission evidence does not satisfy the separate two-consumer publication
+proof.
 
 Estimate: 6,000-11,000 incremental LOC, 3-8 weeks plus continuing support.
 
@@ -100,7 +101,7 @@ Estimate: 6,000-11,000 incremental LOC, 3-8 weeks plus continuing support.
 | --- | --- | --- |
 | Frontend trusted compiled catalog | Separate Frontend ownership and contribution decision | 2k-4.5k LOC, 2-4 weeks |
 | Dynamic browser/Electron host | Independent loading value; capability broker; complete Web/Electron admission, containment, and compatibility | 10k-22k LOC, 6-12 weeks |
-| Process host | Accepted production-host decision, named consumer, UMEQ-009/012 closure, authentication, custody and termination | 8k-13k LOC, 4-8 weeks |
+| Process host | Accepted production-host decision, named consumer, UMEQ-009/012 closure, authentication, custody and termination, plus durable independently observable evidence from the named production host | 8k-13k LOC, 4-8 weeks |
 | Plugin artifact/profile path | Independent install/update need, admitted host, digest/provenance, grants, rollback, custody and uninstall | 10k-18k LOC, 5-10 weeks |
 | Public/community modules | Publication gates plus containment, revocation, moderation and support | Part of 40k-75k platform LOC, multiple quarters |
 | Extism/WASI | Funded non-TS or isolation need and qualified ABI, broker, provenance, quota and host | Re-estimate after trigger |

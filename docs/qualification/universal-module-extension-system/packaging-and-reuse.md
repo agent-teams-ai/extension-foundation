@@ -146,7 +146,10 @@ prevent URL aliases or mirrors of the same bytes from satisfying
 independent evidence more than once. A release promotion gate must additionally
 resolve every slug to a stable source-provider repository ID, prove the selected
 basis and claimed implementation independence, and retrieve and verify the
-referenced bytes before publication.
+referenced bytes before publication. Publication then requires its own immutable
+proof from two real independently authored conforming consumers of the exact
+candidate; extraction evidence and the package-admission manifest do not
+substitute for that proof.
 
 ## Dependency Rules
 

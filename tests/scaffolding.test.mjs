@@ -151,6 +151,15 @@ targetRef: module.example
 `);
   await writeFixture(root, "package.json", '{"name":"fixture","private":true,"type":"module"}\n');
   await writeFixture(root, "pnpm-workspace.yaml", 'packages:\n  - "packages/**"\n');
+  await writeFixture(root, "architecture/decisions/accepted-decisions.json", `${JSON.stringify({
+    schemaVersion: 1,
+    algorithm: "sha256",
+    decisions: [{
+      id: "ADR-0099",
+      path: "docs/decisions/0099-example-package.md",
+      immutableDigest: `sha256:${"a".repeat(64)}`,
+    }],
+  })}\n`);
   await writeFixture(root, "docs/decisions/0099-example-package.md", `---
 id: ADR-0099
 type: adr
@@ -167,6 +176,24 @@ package_ownership:
 ---
 
 # Example Package
+`);
+  await writeFixture(root, "docs/decisions/README.md", `---
+id: decisions.index
+type: index
+status: active
+owner: architecture
+summary: Canonical index of fixture decisions.
+---
+
+# Architecture Decision Records
+
+## Proposed decisions
+
+## Accepted decisions
+
+- [ADR-0099: Example Package](0099-example-package.md)
+
+## Superseded decisions
 `);
   for (const path of [
     "architecture/foundation/docs-protocol.yaml",

@@ -43,16 +43,26 @@ requirementDefinitions:
     authority: owning-product
     detail: final-recommendation.md
     purpose: product-specific ownership approval for one static module rehearsal
-  - id: private-runtime-selection-trigger
+  - id: private-runtime-graph-trigger
     kind: evidence
     authority: owning-product
-    detail: unresolved-decisions.md#umeq-013-trusted-module-runtime
-    purpose: measured runtime-selection or independently managed lifecycle need
+    detail: final-recommendation.md#phase-2-measure-need-add-a-private-product-graph-only-if-triggered
+    purpose: exact measured Phase 2 private-graph trigger, not artifact, descriptor, fixture, or extraction evidence
   - id: owning-product-runtime-decision
     kind: decision
     authority: owning-product
     detail: unresolved-decisions.md#umeq-013-trusted-module-runtime
     purpose: product approval for one private trigger-scoped runtime graph
+  - id: lifecycle-semantic-review
+    kind: evidence
+    authority: qualification-evidence
+    detail: lifecycle-and-concurrency.md
+    purpose: verified post-admission digest, admitted-plan-to-generation mapping, provider binding, deadline, CAS-before-seal, migration-preservation, dynamic-fence and authority-intersection semantics
+  - id: manual-digest-revocation-profile
+    kind: evidence
+    authority: qualification-evidence
+    detail: trust-and-security.md#manual-exact-digest-revocation-profile
+    purpose: exact immutable-digest revocation identity, authoritative monotonic input, fail-closed propagation and enforcement receipts
   - id: second-independent-consumer
     kind: evidence
     authority: qualification-evidence
@@ -108,6 +118,16 @@ requirementDefinitions:
     authority: foundation-owner
     detail: final-recommendation.md
     purpose: artifact-specific release approval after topology and evidence gates pass
+  - id: publication-independent-consumers
+    kind: evidence
+    authority: qualification-evidence
+    detail: conformance-plan.md#product-adoption-gate
+    purpose: immutable publication-candidate proof from two real independently authored conforming consumers, separate from extraction and admission evidence
+  - id: production-host-evidence
+    kind: evidence
+    authority: qualification-evidence
+    detail: conformance-plan.md#unproved-production-gates
+    purpose: durable independently observable evidence from the named production host; local fixtures, in-memory models, smoke tests, plans, and aspirational prose are excluded
 implementationGates:
   - id: phase-1-static-module-rehearsal
     appliesTo:
@@ -127,12 +147,14 @@ implementationGates:
     allOf:
       - gate: phase-1-static-module-rehearsal
         requiredStatus: satisfied
-      - evidence: private-runtime-selection-trigger
+      - evidence: private-runtime-graph-trigger
         requiredStatus: measured
       - decision: owning-product-runtime-decision
         requiredStatus: accepted
       - decision: UMEQ-013
         requiredStatus: resolved
+      - evidence: lifecycle-semantic-review
+        requiredStatus: verified
   - id: foundation-semantic-extraction
     appliesTo:
       - foundation-module-semantic-extraction
@@ -184,6 +206,8 @@ implementationGates:
         requiredStatus: verified
       - evidence: package-release-promotion-verification
         requiredStatus: passed
+      - evidence: publication-independent-consumers
+        requiredStatus: proven
       - decision: foundation-package-admission-decision
         requiredStatus: accepted
       - decision: foundation-package-publication-decision
@@ -197,6 +221,14 @@ implementationGates:
     allOf:
       - decision: ADR-0011
         requiredStatus: accepted
+      - decision: UMEQ-012
+        requiredStatus: resolved
+      - evidence: lifecycle-semantic-review
+        requiredStatus: verified
+      - evidence: manual-digest-revocation-profile
+        requiredStatus: verified
+      - evidence: production-host-evidence
+        requiredStatus: production-proven
   - id: process-host-wire-format
     appliesTo:
       - phase-4-process-host

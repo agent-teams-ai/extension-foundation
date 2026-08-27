@@ -33,6 +33,8 @@ flowchart LR
     Grant["Current product capability grant"] --> Intersect
     Entitlement["Entitlement allow or explicit N/A"] --> Intersect
     Installation["Installation admission"] --> Intersect
+    Binding["Explicit provider binding"] --> Intersect
+    Plan["Admitted plan receipt"] --> Intersect
     Verify --> Intersect
     AR["AR technical authorization when AR owns the capability"] --> Intersect
     Admission["Product host and capacity decision"] --> Intersect
@@ -44,11 +46,29 @@ flowchart LR
 Effective authority is the intersection of product authorization, a separate
 current product capability grant, applicable entitlement and installation
 admission, Foundation-produced verification evidence accepted by the product,
-applicable AR technical authorization, current generation/fence, host policy
-and containment. Any missing, stale, ambiguous, differently canonicalized or
+an exact provider binding and admitted plan receipt, applicable AR technical
+authorization, current generation/fence, host policy and containment. Any
+missing, stale, ambiguous, differently canonicalized or
 unknown input denies.
 
-Tenant, authority scope, graph generation, runtime generation and grant are
+No executable bytes, module import, factory, getter, provider callback, or
+declarative payload with executable semantics is evaluated while that
+intersection is incomplete. Verification, catalog presence, signature,
+admission, graph construction, entitlement, or a grant alone cannot cross the
+execution boundary. The host resolves and evaluates only the executable named
+by the admitted provider binding after it rereads all current inputs.
+
+| Receipt or decision | Precise fact established | Does not establish |
+| --- | --- | --- |
+| Artifact verification | Bytes, signature and provenance satisfy verification policy | Admission, benign behavior, authorization or execution |
+| Plan admission | Canonical content and explicit providers were admitted for one scope and validity interval | Provider success, activation or runtime enforcement |
+| Provider execution receipt | One bound provider attempt produced the stated result by its deadline | Product invariant validity, handoff or effect authority |
+| Graph construction evidence | One inert graph candidate is deterministic and structurally valid | Product-owned first-graph validity or admission |
+| Activation/handoff CAS | One admitted generation became the selected active head | Continuing authorization or enforcement at later sinks |
+| Product authorization or grant | The named business action or capability is allowed at one revision | Artifact trust, graph validity, activation or enforcement |
+| Runtime enforcement receipt | One named operation was accepted or denied using current inputs | Any other operation or lifecycle fact |
+
+Tenant, authority scope, graph generation, host runtime incarnation and grant are
 checked again at publication, invocation-lease acceptance and every privileged
 sink. An extension, provider, broker, registry or network call never occurs
 inside the product Unit of Work: the Unit of Work records canonical state and
@@ -183,13 +203,17 @@ an `allow` result, missing evidence, stale revisions or contradictory decisions
 deny execution.
 
 A direct digest route is explicitly `manual-pin/no-currentness`. Authenticating
-the selected digest can prove which bytes were selected; it does not prove
-freshness, revocation status, freeze or rollback protection, or that the digest
-is the publisher's current release. A local policy may admit that limited mode
-only while naming those absences. TUF is required before any remote mutable
-channel, delegated publisher, automatic update or publisher-currentness claim.
-A signed release record beside a manual pin does not silently upgrade the route
-to a currentness protocol.
+the selected digest can prove which bytes were selected; it does not by itself
+prove publisher freshness, publisher-currentness, or freeze and rollback
+protection. The manual exact-digest profile below separately requires a
+configured authoritative local revocation set, a monotonic revision, and
+fail-closed host propagation before that digest can execute. This proves only
+the revocation policy actually imported by the operator; it does not prove that
+the operator has the publisher's newest notice. TUF is required before any
+remote mutable channel, delegated publisher, automatic update, or
+publisher-currentness claim. A signed release or revocation record beside a
+manual pin remains evidence until the configured authority imports it and does
+not silently upgrade the route to a currentness protocol.
 
 OCI tags support discovery only. The installer pulls by digest, hashes raw
 manifest bytes and every descriptor, verifies provenance subject and dependency
@@ -256,6 +280,35 @@ Changing a policy row is not enforcement completion. Completion begins at the
 owning product or AR receipt. Reinstall, successor activation and rollback all
 use a new identity and fresh authorization. Uninstall never deletes product data
 implicitly.
+
+### Manual Exact-Digest Revocation Profile
+
+A manual import identifies its revocation subject only as the complete immutable
+OCI descriptor `(registry authority, repository, manifest digest algorithm and
+value, manifest media type, manifest size)`, plus every executable child digest
+selected from that manifest. A tag, version, package name, display name, URL, or
+catalog slug is never revocation identity and is resolved before review.
+
+The authoritative input is a product-configured, authenticated local revocation
+set with monotonic `revocationRevision`, issuer identity, issued/received times,
+and entries containing exact forbidden digests and an optional cutoff. The
+import receipt records the exact revision checked. A remote publisher notice or
+catalog view is evidence only until the configured authority imports it; a
+manual profile makes no freshness or publisher-currentness claim.
+
+Before admission, provider evaluation, activation/handoff, invocation lease,
+and every privileged sink, the product host checks the exact digest closure
+against the latest durable local revision. Advancing that revision durably
+closes new admission and execution for matching digests, advances the affected
+authority fence, invalidates queued work, and propagates to every affected host
+and sink. A host that cannot prove it has observed at least the required
+revision fails closed for the affected digest. Existing work is drained or
+terminated under lifecycle rules, and stale output fails the dynamically read
+sink fence. Enforcement is complete only when the owning product or AR records
+the revision-bound enforcement receipt; distribution or policy storage alone
+is not completion. Removing a digest requires a higher explicit authority
+revision and fresh admission; absence from a later feed never removes the
+revocation.
 
 ## Data Classes
 

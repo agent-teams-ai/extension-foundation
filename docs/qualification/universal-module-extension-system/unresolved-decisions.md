@@ -180,10 +180,17 @@ satisfied; `UMEQ-012`, `UMEQ-014`, and `UMEQ-015` must be resolved; ADR-0014's
 generation baseline remains effective; packed-package `PACKAGE-1` and public API
 evidence must pass; the immutable package admission record must be verified;
 release promotion must verify stable provider identities, the accepted basis,
-implementation independence, and referenced bytes; and the Foundation owner
+implementation independence, and referenced bytes; separate immutable evidence
+must prove two real independently authored conforming consumers of the
+publication candidate; and the Foundation owner
 must accept artifact-specific package admission and publication decisions.
+Semantic-extraction evidence and package-admission evidence do not substitute
+for that publication-consumer proof.
 Those release decisions are not additional strategic UMEQ forks.
 `UMEQ-009` is additionally needed before a process release. `UMEQ-017` is
 required before hosted distributed claims. `UMEQ-018` is needed before managed
 update channels. `UMEQ-010` remains a separate Frontend decision and cannot
-bypass the ADR-0011 production-host gate.
+bypass the ADR-0011 production-host gate. Every applicable production-host gate
+also requires durable independently observable evidence from the named
+production host; fixtures, in-memory or smoke results, plans, and aspirational
+claims cannot satisfy it.

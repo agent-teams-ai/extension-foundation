@@ -56,11 +56,13 @@ If triggered, the target model has these non-negotiable separations:
 - each `(consumerModuleId, localSlotId)` binds to one contribution ID, explicit
   optional `null`, or ordered contribution IDs, preserving required/optional/
   many semantics without treating many bounds/order as concurrency;
-- `PlanTemplateDigest` and `PlanContentDigest` identify canonical content;
-  monotonic `CandidateGeneration`, `RuntimeGeneration`, and
-  `ActiveHeadRevision` identify operations and never enter those hashes;
-- compilation stages are `PlanTemplate`, target execution closure, scope
-  binding, and runtime generation. Graphs are target-local; a product-owned
+- `PlanTemplateDigest` identifies canonical intent; only a successful product
+  admission issues `PlanContentDigest` over canonical admitted content, and a
+  monotonic `GraphGeneration` maps immutably to that receipt, explicit provider
+  binding, and `ActiveHeadRevision` without entering the content hash;
+- compilation stages are `PlanTemplate`, target execution closure, inert scope
+  binding, product-owned first-graph validation/admission, and graph generation.
+  Graphs are target-local; a product-owned
   deployment plan owns cross-target/service relationships;
 - typed edges derive distinct activation, drain, retirement, and migration
   orders. T0 may support only readiness edges but may not publish a universal

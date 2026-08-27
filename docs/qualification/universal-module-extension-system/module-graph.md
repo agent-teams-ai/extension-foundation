@@ -31,11 +31,13 @@ flowchart LR
     Profile["Bindings and configuration"] --> Parse
     Parse --> Resolve["Resolve capability slots"]
     Resolve --> Check["Check versions, scopes, cycles"]
-    Check --> Plan["Canonical immutable plan template"]
+    Check --> Plan["Canonical immutable plan proposal"]
     Plan --> TemplateDigest["Template digest"]
     Plan --> Target["Target execution closure"]
-    Target --> Scope["Scope binding + content digest"]
-    Scope --> Activate["Runtime generation"]
+    Target --> Scope["Scope-bound admission candidate"]
+    Scope --> Admit["Product admission + validation"]
+    Admit --> Receipt["AdmittedPlanReceipt + content digest"]
+    Receipt --> Activate["GraphGeneration"]
 
     Cordis["Optional Cordis adapter"] -. private .-> Activate
     Graphlib["Optional graph algorithm adapter"] -. private .-> Check
@@ -58,19 +60,20 @@ identities separate.
 | `ModuleIdentity` | Stable composition and lifecycle unit | Logical module is replaced |
 | `CapabilityIdentity` | Product-owned semantic contract | Owning contract changes identity |
 | `PlanTemplateDigest` | Content identity of canonical target-independent graph intent | Semantic template input changes |
-| `PlanContentDigest` | Content identity of one canonical target closure and scope binding | Any normalized plan content changes |
-| `CandidateGeneration` | Monotonic operational identity for one preparation attempt in an authority scope | A candidate attempt is allocated, even for identical content |
+| `PlanContentDigest` | Admission-authority receipt digest over the canonical content actually admitted, including explicit provider bindings | The admitted canonical content changes; it does not exist before admission |
 | `ActiveHeadRevision` | Monotonic compare-and-set revision of the active-head record | The authority's active-head record changes |
-| `RuntimeGeneration` | Monotonic identity of an admitted runtime instance set | A runtime generation is admitted |
-| `ModuleActivationGeneration` | One activation attempt for one module in a runtime generation | Module is prepared again |
+| `GraphGeneration` | Monotonic operational identity projected from exactly one admitted plan receipt in one product authority scope | A candidate is allocated for activation, replacement, disablement, restart, or forward rollback, even for identical admitted content |
+| `ModuleActivationGeneration` | One activation attempt for one module in a graph generation | Module is prepared again |
 
-Publisher, artifact, installation, contribution, module, plan digest, candidate
-generation, active-head revision, runtime generation, and module activation
+Publisher, artifact, installation, contribution, module, plan digest,
+active-head revision, graph generation, and module activation
 generation are never aliases. Equivalent normalized inputs produce identical
-`PlanTemplateDigest` and `PlanContentDigest` values. Operational generations
+`PlanTemplateDigest` values. Equivalent content admitted by the same admission
+authority under the same canonicalization and provider binding produces the
+same `PlanContentDigest` receipt value. Operational generations
 and revisions are allocated monotonically and are never hash inputs. Reusing
 content, including rollback to prior content, therefore keeps its content
-digest while receiving a higher candidate generation and active-head revision.
+digest while receiving a higher graph generation and active-head revision.
 A built-in module has no
 publisher, artifact, manifest, catalog, or artifact-installation identity. It
 does have a `BuiltInModuleInstallation` activation-source identity bound to the
@@ -119,9 +122,13 @@ ExtensionModuleDefinition
 
 The declaration does not contain executable factories, container tokens,
 framework contexts, credentials, permission grants, or mutable runtime state.
-The executable activation factory is a separate target-specific binding,
-resolved only after verification, admission, graph compile, and product
-authorization. Generated TypeScript handles and dependency types, aggregate
+The executable activation factory is a separate target-specific binding. Its
+bytes, import, factory, getter, or provider callback are not evaluated until the
+exact provider binding, artifact verification and revocation status, plan
+admission, product-owned graph validation, product authorization, capability
+grants, host policy, and current generation fence all intersect for the same
+scope and immutable digests. Approval by any one of those authorities is never
+enough. Generated TypeScript handles and dependency types, aggregate
 inventory, reverse-dependency index, diagrams, and diagnostics are disposable
 projections of the serialized declarations and selected profile. Authors do not
 repeat the metadata in `defineExtensionModule(...)` or any executable module.
@@ -136,7 +143,8 @@ Identity authority stays with the semantic owner:
 | `CapabilityId`, compatibility family, and semantic owner | The owning product capability contract |
 | Provider selection and collection order | The product composition profile |
 | TypeScript handles and dependency types, inventory, reverse dependencies, diagrams, and diagnostics | Deterministic generated projections |
-| Implementation, plan, loader, and artifact digests | Build or admission receipts |
+| Implementation, loader, and artifact digests | Build or verification receipts |
+| `PlanContentDigest` and admitted provider-binding digest | Post-admission `AdmittedPlanReceipt` issued by the product admission authority |
 
 Module and capability identities are stable, authority-qualified strings. They
 do not change when a directory, package, repository, display name, or
@@ -224,6 +232,13 @@ Every resolved slot is recorded at the explicit coordinate
 list of provider contribution IDs. Missing coordinates and `null` are not
 interchangeable. The declaration supplies `required`, `optional`, or `many`;
 the profile supplies selections; and the compiled binding preserves both.
+Every non-null provider value also carries its provider authority, installation
+or built-in activation-source identity, contribution identity, implementation
+digest, and target loader key. The canonical provider-binding digest is copied
+into the admission receipt and every derived generation receipt. A plan,
+receipt, or generation is invalid without that explicit binding and cannot be
+rebound through inference, a registry, ambient lookup, or a matching capability
+name.
 For `many`, minimum, maximum, and order constrain graph cardinality and semantic
 iteration order only. They never specify activation parallelism, worker count,
 dispatch concurrency, or backpressure.
@@ -251,9 +266,11 @@ flowchart LR
     Fragments --> Inventory["Derived diagnostic inventory"]
     Profile["Product profile"] --> Compile["Compile exact plan"]
     Inventory --> Compile
-    Compile --> Plan["Immutable plan template + digest"]
-    Plan --> Loaders["Target-specific private loader receipt"]
-    Loaders --> Runtime["Authorized runtime generation"]
+    Compile --> Plan["Immutable plan candidate + template digest"]
+    Plan --> Admit["Product admission and first-graph validation"]
+    Admit --> Receipt["AdmittedPlanReceipt"]
+    Receipt --> Loaders["Explicit target loader binding"]
+    Loaders --> Runtime["Authorized GraphGeneration"]
 ```
 
 This is a target model, not a description of a pipeline implemented today.
@@ -308,11 +325,23 @@ work into four explicit stages:
 2. A target execution closure selects exactly the built-in entrypoints or
    isolated artifact blobs usable by one host target. Each target graph is
    local to that process/Worker/isolated-host boundary.
-3. Scope binding applies one authority scope's configuration fingerprints,
-   grants, policy revisions, and admitted artifact evidence. Canonical stage
-   two and three content is identified by `PlanContentDigest`.
-4. Runtime generation allocates monotonic candidate and runtime identities,
-   activates the bound content, and publishes through `ActiveHeadRevision` CAS.
+3. Scope binding creates an inert admission candidate containing one authority
+   scope, exact provider bindings, configuration fingerprints, requested grants,
+   applicable policy inputs, and verified artifact evidence. It has a canonical
+   candidate digest for comparison but no `PlanContentDigest` identity.
+4. The product admission authority validates that complete candidate, including
+   the product-owned invariants for the product's first graph, and issues an
+   immutable `AdmittedPlanReceipt`. Only this post-decision receipt establishes
+   `PlanContentDigest` over the exact admitted canonical content and binds the
+   admission decision, authority, provider-binding digest, and expiry.
+5. Candidate allocation projects `(authorityScope, AdmittedPlanReceipt,
+   PlanContentDigest, providerBindingDigest)` to a fresh monotonic
+   `GraphGeneration`. The mapping is durable and immutable. Every activation,
+   replacement, disablement, restart, and forward rollback allocates a new
+   generation; retries for the same durable candidate retain it, while a new
+   candidate never reuses one. Content equality may reuse the digest but never
+   the generation. Publication binds that tuple through `ActiveHeadRevision`
+   CAS.
 
 Cross-target and cross-service placement, rollout, routing, compatibility, and
 failure relationships belong to a separate product-owned deployment plan. They
@@ -326,13 +355,17 @@ deployment, tenant, project, workspace, or session boundary, but it never asks
 the DI container or module runtime to create a corresponding scope.
 
 The first triggered implementation would have one `ModuleLifetime`: one
-admitted module instance per immutable runtime generation. Replacement creates
+admitted module instance per immutable `GraphGeneration`. Replacement creates
 a new generation, performs staged readiness and cutover, then drains the old
 generation. Transient, pooled,
 per-tenant, per-project, per-workspace, per-run, and per-session module lifetimes
 are deferred until independent product evidence requires and qualifies them.
-Foundation validates declared authority-scope relations but does not define
-product tenancy or derive lifetimes from product identifiers.
+Before semantic extraction, the owning product validates declared
+authority-scope relations against its own tenancy, authorization, and custody
+invariants. Foundation does not define product tenancy or derive lifetimes from
+product identifiers. After the ADR-0013 cross-consumer and ownership gates, it
+may validate only the explicitly extracted product-neutral relation envelope;
+the product still validates the concrete scope meaning.
 
 A module receives a frozen dependency object containing only its declared,
 resolved direct capabilities. It cannot access:
@@ -363,13 +396,25 @@ Optional and ordered-many edges become hard edges when bound. Observation
 hooks do not create graph edges unless invocation requires the target to be
 ready before the source.
 
-From typed edges, a future compiler derives distinct deterministic orders:
+Typed relations feed distinct deterministic operation projections:
 
-- activation prepares providers before capability consumers;
-- drain seals and drains consumers before providers they can still call;
-- retirement releases dependents before resources or providers they retain;
-- migration follows its explicit state-compatibility and custody edges, which
-  need not match activation edges.
+- the static compiler may derive activation readiness constraints because their
+  declared provider bindings are part of the admitted graph;
+- the product lifecycle coordinator materializes drain from current invocation
+  and resource-use evidence so consumers seal before providers they can still
+  call;
+- the product lifecycle coordinator materializes target-specific retirement
+  from current routes, staged pins, leases, runtimes, contributions,
+  installations, custody references, and the ADR-0010 discriminated target;
+- the product migration coordinator materializes migration from current schema
+  lineage, state-space custody, and migration-step evidence, which need not
+  match activation edges.
+
+The compiler validates declared typed relations and deterministic derivation
+rules. It does not claim compile-time knowledge of current routes, invocations,
+leases, resources, cleanup debt, or custody. Operation-specific projections are
+sealed only after their owning product coordinator reads the authoritative
+current state and records the comparison revisions used by the fenced action.
 
 Stop and rollback use the successful typed-edge receipts, not a universal
 reverse topological order. T0 may implement only capability-readiness edges,
@@ -399,22 +444,27 @@ containing:
 - every binding coordinate, including explicit optional `null`, and declared
   ordered-many order;
 - compatibility decisions;
-- typed edges plus distinct activation, drain, retirement, and migration orders;
+- declared typed relations, deterministic static constraints, and any
+  operation-specific projections already materialized by the owning product
+  coordinator;
 - configuration fingerprints, never raw secrets;
 - required host tiers and capability requests;
 - source evidence and stable diagnostics;
 - canonicalization algorithm version.
 
-`PlanTemplateDigest` is computed from canonical template bytes.
-`PlanContentDigest` is computed from the canonical target closure and scope
-binding. Candidate generation, runtime generation, active-head revision,
+`PlanTemplateDigest` is computed from canonical template bytes before
+admission. A scope-bound admission candidate has comparison identity only.
+After admission succeeds, the admission authority computes
+`PlanContentDigest` from the canonical bytes named in `AdmittedPlanReceipt`;
+callers cannot supply or select it. Graph generation, active-head revision,
 timestamps, attempts, and mutable status are excluded from both. A digest
 identifies content, not its authorization. A valid digest cannot bypass
 admission, grant revision,
 entitlement, product policy, readiness, or generation fences.
 
 A future operator read model must join, without conflating, profile intent,
-resolved lock, plan template/content digests, candidate and runtime generation,
+resolved lock, plan template/admitted-content digests, admission receipt,
+provider-binding digest and graph generation,
 and active-head revision. For each contribution and binding it explains why it
 was selected, denied, or inactive and exposes reverse dependencies. Every
 proposed change emits an immutable change-impact artifact describing retained,
@@ -506,8 +556,14 @@ This graph document does not duplicate or narrow that approval surface.
 ## Conformance Minimum
 
 - Equivalent inputs in different source orders produce identical templates,
-  target/scope plan content, diagnostics, traces, `PlanTemplateDigest`, and
-  `PlanContentDigest`; allocating another candidate changes neither digest.
+  target/scope admission candidates, diagnostics, traces, and
+  `PlanTemplateDigest`. Equivalent successful admissions produce identical
+  `PlanContentDigest` receipts; rejected candidates produce none. Allocating
+  another candidate changes neither digest but always changes `GraphGeneration`.
+- Every generation round-trips to exactly one admitted receipt and exact provider
+  binding; missing, inferred, ambient, or cross-provider bindings fail closed.
+- The owning product validates its first graph against product invariants before
+  admission and activation; Foundation supplies neutral mechanics only.
 - Invalid graphs execute zero factories and effects.
 - Native and Graphlib algorithms agree on cycle validity, and each emitted
   activation, drain, retirement, or migration order independently satisfies

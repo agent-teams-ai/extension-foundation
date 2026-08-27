@@ -74,6 +74,14 @@ interface OssCandidate {
   readonly evidence?: readonly OssEvidence[];
 }
 
+const OSS_EVIDENCE_STATUSES = ["pinned", "orientation", "qualified-experiment"] as const satisfies
+  readonly OssCandidate["evidenceStatus"][];
+
+interface DecisionProjection {
+  readonly id: string;
+  readonly status: string;
+}
+
 interface MarkdownDocument {
   readonly path: string;
   readonly body: string;
@@ -90,12 +98,11 @@ function markdownAnchor(title: string): string {
 }
 
 function parseMarkdown(path: string, body: string): MarkdownDocument {
-  const normalizedBody = body.replace(/\r\n?/g, "\n");
-  const frontmatter = normalizedBody.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
+  const frontmatter = body.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
   assert.ok(frontmatter, `${path} must have YAML frontmatter`);
   const metadata = parse(frontmatter[1]!) as unknown;
   assert.ok(typeof metadata === "object" && metadata !== null && !Array.isArray(metadata));
-  return { path, body: normalizedBody, metadata: metadata as Readonly<Record<string, unknown>> };
+  return { path, body, metadata: metadata as Readonly<Record<string, unknown>> };
 }
 
 async function readMarkdown(path: string): Promise<MarkdownDocument> {
@@ -114,13 +121,103 @@ async function findDocumentById(directory: string, id: string): Promise<Markdown
 }
 
 function section(markdown: string, heading: RegExp): string {
-  const headings = [...markdown.matchAll(/^(#{1,6})\s+(.+)$/gm)];
+  const headings = [...markdown.matchAll(/^(#{1,6})\s+(.+?)\r?$/gm)];
   const startIndex = headings.findIndex(match => heading.test(match[2]!));
   assert.notEqual(startIndex, -1, `missing section ${heading}`);
   const start = headings[startIndex]!;
   const level = start[1]!.length;
   const next = headings.slice(startIndex + 1).find(match => match[1]!.length <= level);
   return markdown.slice(start.index! + start[0].length, next?.index ?? markdown.length);
+}
+
+function canonicalNpmTarball(packageName: string, version: string): string | null {
+  const match = packageName.match(/^(?:@([a-z0-9][a-z0-9._-]*)\/)?([a-z0-9][a-z0-9._-]*)$/);
+  if (!match) return null;
+  const leaf = match[2]!;
+  return `https://registry.npmjs.org/${packageName}/-/${leaf}-${version}.tgz`;
+}
+
+function validateOssCandidates(candidates: readonly OssCandidate[]): readonly string[] {
+  const errors: string[] = [];
+  for (const candidate of candidates) {
+    if (!(OSS_EVIDENCE_STATUSES as readonly unknown[]).includes(candidate.evidenceStatus)) {
+      errors.push(`${candidate.id}: unknown evidenceStatus ${String(candidate.evidenceStatus)}`);
+      continue;
+    }
+    if (candidate.evidenceStatus === "pinned" && (candidate.evidence?.length ?? 0) === 0) {
+      errors.push(`${candidate.id}: pinned status requires executable immutable evidence`);
+    }
+    for (const evidence of candidate.evidence ?? []) {
+      if (evidence.kind !== "npm-release") continue;
+      const expected = evidence.package && evidence.version
+        ? canonicalNpmTarball(evidence.package, evidence.version)
+        : null;
+      if (!expected || evidence.url !== expected) {
+        errors.push(`${candidate.id}: npm evidence must use the canonical registry tarball URL`);
+      }
+      if (candidate.evidenceStatus !== "orientation" && evidence.locked !== true) {
+        errors.push(`${candidate.id}: immutable npm evidence must be lock-backed`);
+      }
+    }
+  }
+  return errors;
+}
+
+function validateDecisionProjections(
+  projections: readonly DecisionProjection[],
+  authoritative: ReadonlyMap<string, string>,
+): readonly string[] {
+  const errors: string[] = [];
+  for (const projection of projections) {
+    const status = authoritative.get(projection.id);
+    if (!status) errors.push(`${projection.id}: cannot be resolved in the authoritative decision ledger`);
+    else if (status !== projection.status) {
+      errors.push(`${projection.id}: projected status ${projection.status} disagrees with authoritative status ${status}`);
+    }
+  }
+  return errors;
+}
+
+function projectedDecisionStatuses(markdown: string): readonly DecisionProjection[] {
+  const table = section(markdown, /^Canonical Status To Preserve$/i);
+  const projections: DecisionProjection[] = [];
+  for (const match of table.matchAll(/^\|\s*([^|]+?)\s*\|\s*`?([^|`]+?)`?\s*\|/gmi)) {
+    const authority = match[1]!;
+    if (authority === "Authority" || /^-+$/.test(authority.replace(/\s/g, ""))) continue;
+    const status = match[2]!.trim().toLowerCase();
+    const ids = new Set(authority.match(/(?:ADR|OD|UMEQ)-\d{3,4}/g) ?? []);
+    for (const range of authority.matchAll(/(UMEQ-)(\d{3})\s+through\s+UMEQ-(\d{3})/g)) {
+      for (let number = Number(range[2]); number <= Number(range[3]); number += 1) {
+        ids.add(`${range[1]}${String(number).padStart(3, "0")}`);
+      }
+    }
+    for (const id of ids) projections.push({ id, status });
+  }
+  return projections;
+}
+
+function hasExactPrivateGraphTrigger(text: string): boolean {
+  return /\bmeasured runtime-selection\s+or\s+independent-lifecycle\s+needs trigger it\b/i.test(text);
+}
+
+function gateIsSatisfied(
+  id: string,
+  ledger: DecisionLedger,
+  statuses: ReadonlyMap<string, string>,
+  visiting = new Set<string>(),
+): boolean {
+  if (visiting.has(id)) return false;
+  const gate = ledger.implementationGates.find(candidate => candidate.id === id);
+  if (!gate) return false;
+  const nextVisiting = new Set(visiting).add(id);
+  const requirementSatisfied = (requirement: GateRequirement): boolean => {
+    if ("decision" in requirement) return statuses.get(requirement.decision) === requirement.requiredStatus;
+    if ("evidence" in requirement) return statuses.get(requirement.evidence) === requirement.requiredStatus;
+    return statuses.get(requirement.gate) === requirement.requiredStatus
+      || (requirement.requiredStatus === "satisfied" && gateIsSatisfied(requirement.gate, ledger, statuses, nextVisiting));
+  };
+  if (gate.mode === "all") return (gate.allOf ?? []).every(requirementSatisfied);
+  return (gate.paths ?? []).some(path => path.allOf.every(requirementSatisfied));
 }
 
 function assertMarkers(text: string, markers: readonly RegExp[], context: string): void {
@@ -139,7 +236,13 @@ test("Markdown qualification parsing is independent of checkout line endings", (
 
   assert.equal(document.metadata.id, "ADR-TEST");
   assert.equal(document.metadata.status, "accepted");
-  assert.equal(document.body, "---\nid: ADR-TEST\nstatus: accepted\n---\n\n# Portable\n");
+  assert.equal(document.body, "---\r\nid: ADR-TEST\r\nstatus: accepted\r\n---\r\n\r\n# Portable\r\n");
+  const crlfDecision = section(
+    `${document.body}\r\n## Decision\r\nA private graph is allowed only after measured runtime-selection or independent-lifecycle needs trigger it.\r\n`,
+    /^Decision$/,
+  );
+  assert.match(crlfDecision, /private graph is allowed only after/i);
+  assert.ok(hasExactPrivateGraphTrigger(crlfDecision));
 });
 
 test("decision ledger is referentially sound and records current implementation gates", async () => {
@@ -227,6 +330,60 @@ test("decision ledger is referentially sound and records current implementation 
   };
   for (const id of gateIds) visit(id);
 
+  const publicationGate = ledger.implementationGates.find(gate => gate.id === "phase-3-package-publication");
+  assert.ok(publicationGate, "publication gate is required");
+  assert.ok(publicationGate.allOf?.some(requirement => (
+    "evidence" in requirement
+    && requirement.evidence === "publication-independent-consumers"
+    && requirement.requiredStatus === "proven"
+  )), "publication must directly require evidence for two independent consumers");
+
+  const publicationStatuses = new Map<string, string>();
+  for (const requirement of publicationGate.allOf ?? []) {
+    if ("decision" in requirement) publicationStatuses.set(requirement.decision, requirement.requiredStatus);
+    else if ("evidence" in requirement && requirement.evidence !== "publication-independent-consumers") {
+      publicationStatuses.set(requirement.evidence, requirement.requiredStatus);
+    } else if ("gate" in requirement) publicationStatuses.set(requirement.gate, requirement.requiredStatus);
+  }
+  publicationStatuses.set("foundation-semantic-extraction", "satisfied");
+  assert.equal(
+    gateIsSatisfied(publicationGate.id, ledger, publicationStatuses),
+    false,
+    "extraction and admission cannot transitively satisfy publication without direct two-consumer evidence",
+  );
+  publicationStatuses.set("publication-independent-consumers", "proven");
+  assert.equal(gateIsSatisfied(publicationGate.id, ledger, publicationStatuses), true);
+
+  const statusProjection = await readFile(resolve(dossier, "nightly/11-approval-ready-adr-list.md"), "utf8");
+  const authoritativeStatuses = new Map<string, string>([
+    ...ledger.entries.map(entry => [entry.id, entry.status] as const),
+    ...ledger.externalDecisionGates.map(entry => [entry.id, entry.status] as const),
+  ]);
+  for (const directory of [decisions, openDecisions]) {
+    for (const name of (await readdir(directory)).filter(candidate => candidate.endsWith(".md"))) {
+      const document = await readMarkdown(resolve(directory, name));
+      if (typeof document.metadata.id === "string" && typeof document.metadata.status === "string") {
+        const existing = authoritativeStatuses.get(document.metadata.id);
+        assert.ok(
+          existing === undefined || existing === document.metadata.status,
+          `${document.metadata.id}: decision metadata disagrees with the authoritative ledger status ${existing}`,
+        );
+        if (existing === undefined) authoritativeStatuses.set(document.metadata.id, document.metadata.status);
+      }
+    }
+  }
+  const projections = projectedDecisionStatuses(statusProjection);
+  assert.ok(projections.length > 0, "the projected decision status table must be validated");
+  assert.deepEqual(validateDecisionProjections(projections, authoritativeStatuses), []);
+  assert.match(
+    validateDecisionProjections([{ id: "ADR-0013", status: "proposed" }], authoritativeStatuses)[0] ?? "",
+    /disagrees with authoritative status accepted/,
+  );
+  assert.match(
+    validateDecisionProjections([{ id: "ADR-9999", status: "accepted" }], authoritativeStatuses)[0] ?? "",
+    /cannot be resolved/,
+  );
+
   const serializedGates = JSON.stringify(ledger.implementationGates);
   assertMarkers(serializedGates, [
     /ADR-0013/,
@@ -267,27 +424,28 @@ test("accepted ADR-0013 cumulatively replaces ADR-0012 without premature extract
   assert.equal(adr13.metadata.status, "accepted");
   assert.deepEqual(adr13.metadata.supersedes, ["ADR-0012"]);
 
-  section(adr13.body, /^(?:Decision|Accepted Decision)$/i);
-  assertMarkers(adr13.body, [
+  const decision = section(adr13.body, /^(?:Decision|Accepted Decision)$/i);
+  assertMarkers(decision, [
     /(?:orthogonal|distinct)[\s\S]{0,120}(?:roles|boundaries)|(?:roles|boundaries)[\s\S]{0,120}(?:orthogonal|distinct)/i,
     /(?:reusable|product-scoped)?\s*librar(?:y|ies)(?: core)?/i,
     /module adapter/i,
     /plugin artifact/i,
     /Product-first composition/i,
     /Product-local feature code and static Pure DI composition are the default/i,
-    /first product can rehearse static composition/i,
     /two (?:real )?independently authored consumers/i,
     /(?:separate|explicit) accepted extraction decision/i,
-  ], "ADR-0013");
-  assert.match(adr13.body, /ADR-0012[\s\S]{0,160}(?:incorporat|preserv|cumulative)/i);
-  assert.doesNotMatch(adr13.body, /first consumer[^.]{0,160}(?:public SPI|Foundation package)[^.]{0,80}(?:publish|admit)/i);
+  ], "ADR-0013 Decision section");
+  assert.match(decision, /ADR-0012[\s\S]{0,160}(?:incorporat|preserv|cumulative)/i);
+  assert.ok(hasExactPrivateGraphTrigger(decision), "ADR-0013 Decision must contain the exact private-graph trigger");
+  assert.doesNotMatch(decision, /first consumer[^.]{0,160}(?:public SPI|Foundation package)[^.]{0,80}(?:publish|admit)/i);
 });
 
 test("accepted ADR-0014 records evidence only and grants no production surface", async () => {
   const adr14 = await findDocumentById(decisions, "ADR-0014");
   assert.equal(adr14.metadata.status, "accepted");
-  section(adr14.body, /^(?:Decision|Accepted Decision)$/i);
-  const noAuthorityStatement = adr14.body.split(/\n\s*\n/).find(paragraph => (
+  const decision = section(adr14.body, /^(?:Decision|Accepted Decision)$/i);
+  assert.match(decision, /measured runtime-selection or independent-lifecycle trigger/i);
+  const noAuthorityStatement = decision.split(/\r?\n\s*\r?\n/).find(paragraph => (
     /(?:does not|no)[\s\S]{0,40}(?:authorize|admit|approve|authority)/i.test(paragraph)
     && /Foundation package/i.test(paragraph)
     && /public SPI/i.test(paragraph)
@@ -330,6 +488,17 @@ test("the dossier has one trigger-gated roadmap with static Pure DI first", asyn
   ], "roadmap");
   assert.doesNotMatch(roadmap, /(?:current|recommended|Phase 1)[^\n]{0,140}graph[- ]first/i);
   assert.doesNotMatch(roadmap, /graph[\s\S]{0,80}(?:before|precedes)[\s\S]{0,80}(?:static|compile-time) Pure DI/i);
+  assert.doesNotMatch(
+    roadmap,
+    /(?:composition|configuration|ownership) defects[\s\S]{0,120}(?:trigger|eligible|private (?:product )?graph)/i,
+    "composition defects are deletion evidence, not an accepted private-graph trigger",
+  );
+
+  assert.equal(
+    hasExactPrivateGraphTrigger("A private graph may be useful when operational complexity grows."),
+    false,
+    "a broader related condition must not activate the private-graph gate",
+  );
 });
 
 test("identity and build descriptions preserve a single inert metadata authority", async () => {
@@ -354,7 +523,7 @@ test("lifecycle semantics are fail-closed, durable, and explicitly ordered", asy
   const graph = await readFile(resolve(dossier, "module-graph.md"), "utf8");
   assert.match(`${graph}\n${lifecycle}`, /selected provider[\s\S]{0,120}(?:failure|fails)[\s\S]{0,100}(?:abort|fail)/i);
   assertMarkers(lifecycle, [
-    /three[\s\S]{0,40}non-renewable absolute horizons/i,
+    /three[\s\S]{0,50}non-renewable absolute (?:deadlines|horizons)/i,
     /expectedDesiredHead[\s\S]{0,100}expectedActiveHead[\s\S]{0,180}(?:serialized|compare)/i,
     /durable[\s\S]{0,100}(?:restart_required[\s\S]{0,100}high-water|high-water[\s\S]{0,100}restart_required)/i,
     /staged runtime[\s\S]{0,100}pins?/i,
@@ -368,6 +537,14 @@ test("lifecycle semantics are fail-closed, durable, and explicitly ordered", asy
     /retirement\s+(?:order|projection|follows)/i,
     /migration\s+(?:order|projection|follows)/i,
   ], "lifecycle order projections");
+  assert.match(
+    graph,
+    /compiler[\s\S]{0,180}does not claim compile-time knowledge of current routes, invocations,[\s\S]{0,100}custody/i,
+  );
+  assert.match(
+    lifecycle,
+    /owning product coordinator[\s\S]{0,120}authoritative current stores[\s\S]{0,160}(?:DrainPlan|RetirementPlan|MigrationPlan)/i,
+  );
 });
 
 test("trust claims distinguish current evidence from future supply-chain work", async () => {
@@ -383,6 +560,8 @@ test("trust claims distinguish current evidence from future supply-chain work", 
     /`T1` fault-contained[^|]*\|[^|]*fault containment[^|]*(?:not|no)[^|]*(?:sandbox|isolation)/i,
     /audited `T0` built-in/i,
     /direct[- ]digest[\s\S]{0,180}manual[- ]pin[\s\S]{0,180}(?:no|without|not)[\s\S]{0,100}currentness/i,
+    /Manual Exact-Digest Revocation Profile[\s\S]{0,500}monotonic `revocationRevision`/i,
+    /manual profile makes no freshness or publisher-currentness claim/i,
     /does not contain or qualify production OCI\/ORAS, Cosign\/Sigstore or TUF\s+adapters/i,
     /TUF[\s\S]{0,120}(?:before|required prior to)[\s\S]{0,120}mutable (?:managed )?channels/i,
   ], "trust-phase evidence");
@@ -402,6 +581,12 @@ test("qualified identity and extraction controls remain contiguous and authorita
 });
 
 test("OSS comparison distinguishes immutable evidence from orientation research", async () => {
+  const policy = await readFile(resolve(dossier, "oss-comparison.md"), "utf8");
+  const documentedStatuses = policy.match(
+    /marks each source as immutable `([^`]+)`, dated\s+`([^`]+)`, or `([^`]+)`/,
+  );
+  assert.ok(documentedStatuses, "OSS evidence status authority must remain explicit");
+  assert.deepEqual(OSS_EVIDENCE_STATUSES, documentedStatuses.slice(1));
   const lock = parse(await readFile(resolve(repositoryRoot, "pnpm-lock.yaml"), "utf8")) as {
     readonly packages: Readonly<Record<string, { readonly resolution?: { readonly integrity?: string } }>>;
   };
@@ -410,6 +595,7 @@ test("OSS comparison distinguishes immutable evidence from orientation research"
     readonly candidates: readonly OssCandidate[];
   };
   assert.equal(record.schemaVersion, 1);
+  assert.deepEqual(validateOssCandidates(record.candidates), []);
   assert.ok(CONFORMANCE_VERSION.test("1.0.0-rc.4"));
   for (const invalid of ["01.0.0", "1.01.0", "1.0.01", "1.0.0-01", "1.0.0-alpha..1"]) {
     assert.ok(!CONFORMANCE_VERSION.test(invalid), `invalid SemVer accepted: ${invalid}`);
@@ -432,7 +618,9 @@ test("OSS comparison distinguishes immutable evidence from orientation research"
       } else if (evidence.kind === "npm-release") {
         assert.match(evidence.version ?? "", CONFORMANCE_VERSION);
         assert.match(evidence.integrity ?? "", /^sha512-[A-Za-z0-9+/]+={0,2}$/);
-        if (evidence.locked) {
+        assert.equal(evidence.url, canonicalNpmTarball(evidence.package ?? "", evidence.version ?? ""));
+        if (candidate.evidenceStatus !== "orientation") {
+          assert.equal(evidence.locked, true, `${candidate.id}: immutable npm evidence must be lock-backed`);
           assert.equal(lock.packages[`${evidence.package}@${evidence.version}`]?.resolution?.integrity, evidence.integrity);
         }
       } else {
@@ -441,6 +629,40 @@ test("OSS comparison distinguishes immutable evidence from orientation research"
         assert.ok((evidence.command?.length ?? 0) > 0);
       }
     }
+  }
+
+  const canonicalEvidence: OssEvidence = {
+    kind: "npm-release",
+    package: "@scope/pkg",
+    version: "1.2.3",
+    url: "https://registry.npmjs.org/@scope/pkg/-/pkg-1.2.3.tgz",
+    integrity: "sha512-AA==",
+  };
+  const candidate = (evidenceStatus: string, evidence?: readonly OssEvidence[]): OssCandidate => ({
+    id: "fixture",
+    versionOrRevision: "@scope/pkg@1.2.3",
+    evidenceStatus: evidenceStatus as OssCandidate["evidenceStatus"],
+    ...(evidence ? { evidence } : {}),
+  });
+  assert.match(validateOssCandidates([candidate("verified", [canonicalEvidence])])[0] ?? "", /unknown evidenceStatus/);
+  assert.match(validateOssCandidates([candidate("pinned")])[0] ?? "", /requires executable immutable evidence/);
+  assert.match(
+    validateOssCandidates([candidate("pinned", [canonicalEvidence])]).join("\n"),
+    /immutable npm evidence must be lock-backed/,
+  );
+  assert.match(
+    validateOssCandidates([candidate("pinned", [{ ...canonicalEvidence, package: "npm:@scope/pkg" }])])[0] ?? "",
+    /canonical registry tarball URL/,
+  );
+  for (const url of [
+    "https://registry.npmjs.com/@scope/pkg/-/pkg-1.2.3.tgz",
+    "https://registry.npmjs.org/@scope/pkg/-/alias-1.2.3.tgz",
+    "https://registry.npmjs.org/%40scope%2fpkg/-/pkg-1.2.3.tgz",
+  ]) {
+    assert.match(
+      validateOssCandidates([candidate("pinned", [{ ...canonicalEvidence, url }])])[0] ?? "",
+      /canonical registry tarball URL/,
+    );
   }
 });
 

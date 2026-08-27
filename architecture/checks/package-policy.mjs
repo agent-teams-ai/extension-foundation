@@ -13,6 +13,8 @@ export const DOCS_PROFILE_PATH = "architecture/foundation/docs-protocol.yaml";
 export const SCAFFOLDING_POLICY_PATH = "architecture/foundation/scaffolding.yaml";
 export const MATERIALIZATION_PLAN_DIRECTORY = "architecture/scaffolding-plans";
 export const PACKAGE_ADMISSION_DIRECTORY = "architecture/package-admissions";
+export const ACCEPTED_DECISION_LEDGER_PATH = "architecture/decisions/accepted-decisions.json";
+export const DECISION_INDEX_PATH = "docs/decisions/README.md";
 export const CATALOG_ROOT_KEYS = Object.freeze(["packages", "version"]);
 export const CATALOG_ENTRY_KEYS = Object.freeze([
   "id",
@@ -473,8 +475,71 @@ function normalizeOwnerDocument(documents, document) {
   };
 }
 
+export async function loadAcceptedDecisionIds(root) {
+  await assertRealParentDirectories(root, ACCEPTED_DECISION_LEDGER_PATH);
+  const ledgerPath = join(root, ACCEPTED_DECISION_LEDGER_PATH);
+  const ledgerFile = await lstat(ledgerPath);
+  if (!ledgerFile.isFile() || ledgerFile.isSymbolicLink()) {
+    throw new Error(`${ACCEPTED_DECISION_LEDGER_PATH}: accepted-decision ledger must be a real regular file`);
+  }
+  const ledger = parseStrictJson(await readFile(ledgerPath, "utf8"));
+  if (!hasExactKeys(ledger, ["algorithm", "decisions", "schemaVersion"])
+    || ledger.schemaVersion !== 1
+    || ledger.algorithm !== "sha256"
+    || !Array.isArray(ledger.decisions)) {
+    throw new Error(`${ACCEPTED_DECISION_LEDGER_PATH}: invalid accepted-decision ledger`);
+  }
+  const ids = new Set();
+  for (const decision of ledger.decisions) {
+    if (!hasExactKeys(decision, ["id", "immutableDigest", "path"])
+      || !OWNER_DOCUMENT.test(decision.id ?? "")
+      || typeof decision.path !== "string"
+      || typeof decision.immutableDigest !== "string"
+      || !/^sha256:[0-9a-f]{64}$/.test(decision.immutableDigest)
+      || ids.has(decision.id)) {
+      throw new Error(`${ACCEPTED_DECISION_LEDGER_PATH}: invalid or duplicate decision entry`);
+    }
+    ids.add(decision.id);
+  }
+  return ids;
+}
+
+async function loadAuthoritativeDecisionStatuses(root) {
+  await assertRealParentDirectories(root, DECISION_INDEX_PATH);
+  const indexPath = join(root, DECISION_INDEX_PATH);
+  const indexFile = await lstat(indexPath);
+  if (!indexFile.isFile() || indexFile.isSymbolicLink()) {
+    throw new Error(`${DECISION_INDEX_PATH}: decision index must be a real regular file`);
+  }
+  const contents = (await readFile(indexPath, "utf8")).replace(/\r\n?/g, "\n");
+  const statuses = new Map();
+  const sections = [...contents.matchAll(/^## (Proposed|Accepted|Superseded) decisions\s*$([\s\S]*?)(?=^## |(?![\s\S]))/gmi)];
+  if (sections.length !== 3) throw new Error(`${DECISION_INDEX_PATH}: decision lifecycle sections are incomplete`);
+  for (const section of sections) {
+    const status = section[1].toLowerCase();
+    for (const match of section[2].matchAll(/^- \[(ADR-[0-9]{4}):[^\]]+\]\([^)]+\)$/gm)) {
+      if (statuses.has(match[1])) throw new Error(`${DECISION_INDEX_PATH}: duplicate decision ${match[1]}`);
+      statuses.set(match[1], status);
+    }
+  }
+  return statuses;
+}
+
+export function statusCrossChecksWithAcceptedLedger(document, acceptedDecisionIds, authoritativeStatuses) {
+  if (document.metadata.type !== "adr") return true;
+  const status = String(document.metadata.status ?? "");
+  const recordedAsAccepted = acceptedDecisionIds.has(document.id);
+  const acceptedHistoryMatches = ["accepted", "superseded"].includes(status)
+    ? recordedAsAccepted
+    : status === "proposed" && !recordedAsAccepted;
+  return acceptedHistoryMatches
+    && (authoritativeStatuses === undefined || authoritativeStatuses.get(document.id) === status);
+}
+
 export function createDocsOwnerCatalog(root) {
   let documentsExecution;
+  let acceptedDecisionIdsExecution;
+  let authoritativeDecisionStatusesExecution;
   const documents = async () => {
     documentsExecution ??= docsFind({
       consumerRoot: root,
@@ -487,16 +552,32 @@ export function createDocsOwnerCatalog(root) {
     }
     return execution.envelope.result.documents;
   };
+  const acceptedDecisionIds = async () => (
+    acceptedDecisionIdsExecution ??= loadAcceptedDecisionIds(root)
+  );
+  const authoritativeDecisionStatuses = async () => (
+    authoritativeDecisionStatusesExecution ??= loadAuthoritativeDecisionStatuses(root)
+  );
   return {
     resolve: async ownerDocumentId => {
-      const allDocuments = await documents();
+      const [allDocuments, acceptedIds, authoritativeStatuses] = await Promise.all([
+        documents(),
+        acceptedDecisionIds(),
+        authoritativeDecisionStatuses(),
+      ]);
       const matches = allDocuments.filter(document => document.id === ownerDocumentId);
-      if (matches.length !== 1) return undefined;
+      if (matches.length !== 1
+        || !statusCrossChecksWithAcceptedLedger(matches[0], acceptedIds, authoritativeStatuses)) return undefined;
       return normalizeOwnerDocument(allDocuments, matches[0]);
     },
     listEffective: async () => {
-      const allDocuments = await documents();
+      const [allDocuments, acceptedIds, authoritativeStatuses] = await Promise.all([
+        documents(),
+        acceptedDecisionIds(),
+        authoritativeDecisionStatuses(),
+      ]);
       return allDocuments
+        .filter(document => statusCrossChecksWithAcceptedLedger(document, acceptedIds, authoritativeStatuses))
         .map(document => normalizeOwnerDocument(allDocuments, document))
         .filter(document => (
           document.type === "adr"

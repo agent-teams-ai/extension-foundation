@@ -31,13 +31,21 @@ Distributed adapters keep additional infrastructure identities separate:
 Rollback is a forward transition to a fresh generation and higher fence. It
 never revives a prior epoch or decrements authority.
 
+`GraphGeneration` is allocated only from one immutable `AdmittedPlanReceipt`.
+The durable projection records authority scope, `PlanContentDigest`, exact
+provider-binding digest, admission decision and generation together. A retry of
+the same durable candidate retains its generation; every newly allocated
+activation, replacement, disablement, restart, or forward rollback receives a
+higher generation even when admitted content is byte-identical. No generation
+may float to another receipt, scope, provider binding, or inferred provider.
+
 ```mermaid
 stateDiagram-v2
     [*] --> Discovered
     Discovered --> Verified
-    Verified --> Admitted
-    Admitted --> Planned
-    Planned --> Preparing
+    Verified --> Planned
+    Planned --> Admitted
+    Admitted --> Preparing
     Preparing --> Started
     Started --> Ready
     Ready --> Published
@@ -53,7 +61,11 @@ stateDiagram-v2
     Failed --> Draining
 ```
 
-Discovery, verification, admission, and graph compilation are effect-free.
+Discovery, verification, graph compilation, and admission are effect-free.
+The compiler emits an inert admission candidate; successful admission then
+issues `AdmittedPlanReceipt` and its `PlanContentDigest`. The owning product,
+not ordinary extension infrastructure, validates its first graph against its
+own invariants before that receipt can authorize activation.
 `prepare` may allocate only generation-scoped staging resources. No candidate
 receives traffic or canonical mutation authority before the publish commit.
 
@@ -63,8 +75,8 @@ receives traffic or canonical mutation authority before the publish commit.
 | --- | --- | --- |
 | Discover | Parse inert metadata | Source and descriptor identity |
 | Verify | Digest, signature, provenance, schema checks | Verification result |
-| Admit | Product policy and requested capability evaluation | Admission decision and expiry |
-| Plan | Compile complete graph | Plan digest and generation |
+| Plan | Compile complete inert graph candidate with explicit providers | Template and candidate comparison digests; no `PlanContentDigest` or generation |
+| Admit | Product policy, requested capability, provider binding, and product-owned graph validation | `AdmittedPlanReceipt`, `PlanContentDigest`, provider-binding digest, decision and expiry |
 | Prepare | Allocate staging resources | Durable activation intent |
 | Start | Start generation-scoped runtime | Start attempt and host evidence |
 | Ready | Prove actual service readiness | Readiness evidence bound to generation |
@@ -73,10 +85,13 @@ receives traffic or canonical mutation authority before the publish commit.
 | Stop | Release resources in reverse activation order | Cleanup results and debt |
 | Retire | Remove target references according to retention policy | Tombstone and retirement evidence |
 
-The lifecycle coordinator invokes no plugin or provider code inside a product
+Each receipt establishes only the fact named by its phase. Verification does
+not admit; admission does not authorize provider execution; graph construction
+does not activate; readiness does not grant product authorization; publication
+does not prove runtime enforcement. The lifecycle coordinator invokes no plugin or provider code inside a product
 Unit of Work. Durable intent is committed first, dispatch happens after commit,
 and results are accepted only when operation, scope, generation, all applicable
-horizons, and current authority still match.
+deadlines, and current authority still match.
 
 ## Prepare, Commit, And Abort
 
@@ -87,12 +102,13 @@ sequenceDiagram
     participant H as Host Adapter
     participant R as Router
 
-    C->>S: record candidate intent and generation
-    C->>H: prepare/start(candidate, fixed effect and termination horizons)
+    C->>S: validate/admit inert plan by admission deadline; allocate generation
+    C->>S: read current heads, grants, authorization and fence inputs
+    C->>H: prepare/start(explicit providers, provider execution deadline)
     H-->>C: ready evidence or uncertain outcome
-    C->>S: validate current intent, evidence, grants, fixed horizons
+    C->>S: reread authoritative current heads, grants and fences
     alt accepted and ready
-        C->>S: atomic active-pointer compare-and-set
+        C->>S: atomic active-pointer compare-and-set by handoff deadline
         S-->>R: new routing revision
         C->>H: drain old generation
     else failed or stale
@@ -125,12 +141,16 @@ persist idempotency outcomes for an explicit bounded policy, compact them only
 after the retry and reconciliation horizon, and preserve a tombstone sufficient
 to reject stale generations.
 
-The activation fingerprint binds the exact resolved hook bundle and host-adapter
-implementation through an activation-source digest, plus plan, authority scope,
+The activation fingerprint binds the admitted provider identities, exact
+resolved hook bundle and host-adapter implementation through an
+activation-source digest, plus admission receipt, plan, authority scope,
 profile/configuration, independent product-authorization, capability-grant and
-host-policy revisions, all three fixed horizon values, and cleanup policy.
-Functions are never serialized to invent identity. Resolution creates the
-digest before lifecycle admission and snapshots the corresponding hook bindings.
+host-policy revisions, all three fixed deadline values, and cleanup policy.
+Functions are never serialized to invent identity. Before admission, only inert
+provider references and verified executable digests are resolved. Executable
+hook lookup and evaluation occur after admission and only when verification,
+current revocation status, explicit provider binding, product authorization,
+grants, host policy, and the freshly read generation fence intersect.
 The complete caller-owned activation identity is copied and frozen at the same
 boundary. Later caller mutation cannot change idempotency, compare-and-set, or
 publication authority for an admitted flight.
@@ -151,36 +171,35 @@ handle issued by another scope is rejected.
 | Lease/admission versus drain seal | Ordered authority admits before seal or rejects after seal |
 | Old invocation versus cutover | Commit-time fence orders success before barrier or rejects after it |
 | Caller timeout versus success | Caller receives outcome-unknown and may reconcile |
-| Late completion versus effect/publication horizon | Late result is stale and cannot publish |
+| Late completion versus provider or handoff deadline | Late result is stale and cannot publish |
 | Reentrant `A -> B -> A` | Fail synchronously with a causal-cycle diagnostic |
 
-Relative timeout refresh is forbidden. One durable lifecycle intent fixes three
-non-renewable absolute horizons before dispatch:
+Relative timeout refresh is forbidden. One durable lifecycle intent records
+three distinct, non-renewable absolute deadlines; none is inferred from or
+collapsed into a generic operation timeout:
 
-| Horizon | What it bounds | Clock and boundary receipt |
+| Deadline | What it bounds | Clock and boundary receipt |
 | --- | --- | --- |
-| Effect/publication | Starting new effect-capable work and accepting an effect, readiness, or publication result | The product authority clock decides expiry. A publication CAS receipt and every authoritative sink receipt carry the intent, generation, fence and authority timestamp proving commit no later than this horizon. A host-local monotonic watchdog may fail earlier but cannot prove a distributed commit time. |
-| Termination/reconciliation | Drain, forced termination, inspection and reconciliation of candidate or old-generation effects | The product authority clock bounds acceptance of reconciliation progress. Host elapsed time is enforced by an independent monotonic watchdog. Generation-bound exit, task-join, resource-terminal and external-effect reconciliation receipts must be recorded by this horizon; otherwise durable cleanup debt and `restart_required` remain open. |
-| Caller observation | How long one caller waits for a result without changing the shared operation | The caller's monotonic clock proves local detachment. A result envelope received before the horizon proves only observation; expiry returns outcome-unknown and directs the caller to query by intent or operation identity. It never authorizes effects, publication, retry, or cleanup. |
+| Admission/validation | Inert verification, graph construction, product-owned invariant validation, policy evaluation, and issuance of `AdmittedPlanReceipt` | The admission authority clock and decision receipt prove completion by this deadline. Expiry yields no receipt, digest, or generation and leaves current desired and active state unchanged. |
+| Provider execution | Evaluation and execution of explicitly bound provider code, including prepare/start and acceptance of its readiness result | The supervising host's monotonic clock bounds execution; provider receipts bind provider identity, admitted receipt, generation, attempt, and observed completion. Expiry cancels where possible, rejects late results, and opens termination/reconciliation debt when termination is unproven. |
+| Activation/handoff | Final validation and the product-owned active-head compare-and-set that hands routing or effect authority to the ready generation | The product authority clock decides expiry. The CAS and authoritative sink receipts bind intent, admitted receipt, generation, dynamically read fence, and authority timestamp. Expiry forbids handoff even if provider execution completed. |
 
-All three are derived from and bounded by the durable intent. A caller may
-choose an earlier observation horizon and policy may choose an earlier
-host-local termination cap, but no heartbeat, progress event, phase transition,
-retry, adapter hop, queue wait, or cleanup activity extends any horizon. The
-termination horizon may be later than the effect/publication horizon so that a
-failed candidate can be contained and reconciled after effect authority closes.
-`cleanupTimeoutMs` is only an earlier local cap within that termination horizon.
+The deadlines can differ and govern different facts. No heartbeat, progress
+event, phase transition, retry, adapter hop, queue wait, or cleanup activity
+extends any of them. Caller observation and termination/reconciliation use
+separate bounded wait policies; they are not substituted for these authority
+deadlines and cannot authorize admission, provider execution, or handoff.
 
 The disposable spike instead has one activation deadline, a cleanup cap and a
 bounded 100 ms default waiter grace. Those mechanics are useful evidence for
-non-renewal and waiter detachment, but they do not implement the three-horizon
+non-renewal and waiter detachment, but they do not implement the three-deadline
 durable contract.
 
-Each in-process watchdog used to enforce an applicable fixed horizon remains a
+Each in-process watchdog used to enforce an applicable fixed deadline remains a
 referenced event-loop obligation while its result is awaited. Its timer must
 stay referenced: a standalone host must stay alive long enough to record timeout
 or `termination_unproven` evidence before orderly exit. Process custody may use
-stronger external supervision, but never weaker in-process horizon semantics.
+stronger external supervision, but never weaker in-process deadline semantics.
 
 The disposable spike proves waiter detachment and publication CAS. Reentrant
 causal-path detection remains a required Phase 2 fixture; it is not implemented
@@ -218,15 +237,25 @@ single universal DAG. At minimum the admitted model distinguishes:
 - schema lineage, state-space custody and migration-step edges, which derive
   migration.
 
-The compiler validates the complete typed relation set, then emits separate
-immutable `ActivationPlan`, `DrainPlan`, `RetirementPlan` and `MigrationPlan`
-projections with their own digests and diagnostics. An edge may appear in more
-than one projection only by an explicit derivation rule. Activation rollback
-traverses the actually successful activation projection in reverse; modules in
-one reverse level may stop concurrently when their host tier permits it. Drain
-order follows invocation and resource ownership, retirement follows the exact
-discriminated ADR-0010 target, and migration follows custody-authorized schema
-steps. Reversing activation order alone proves none of those other plans.
+The static compiler validates declared typed relations and may emit the
+immutable `ActivationPlan` from admitted readiness bindings. It does not know
+live invocations, routes, pins, leases, resources, cleanup debt, or custody.
+Before each operation, the owning product coordinator reads those facts from
+the authoritative current stores and materializes a separate immutable
+`DrainPlan`, `RetirementPlan`, or `MigrationPlan` with its own digest,
+comparison revisions, and diagnostics. An edge may appear in more than one
+projection only by an explicit derivation rule. Activation rollback traverses
+the actually successful activation projection in reverse; modules in one
+reverse level may stop concurrently when their host tier permits it. Drain
+order follows current invocation and resource ownership, retirement follows
+the exact discriminated ADR-0010 target and current references, and migration
+follows current custody-authorized schema steps. The coordinator revalidates
+all currentness-sensitive facts at the operation's linearization point;
+reversing activation order alone proves none of those other plans.
+
+Separate immutable operation projections remain: `ActivationPlan`,
+`DrainPlan`, `RetirementPlan`, and `MigrationPlan`, even when an explicit
+derivation rule shares a declared edge between them.
 
 ```mermaid
 flowchart LR
@@ -274,7 +303,10 @@ host, or another externally supervised boundary with forced termination.
 
 ## Replacement And Update
 
-V1 uses restart-safe generation replacement, not arbitrary hot unload.
+The accepted UMEQ-016 baseline uses immutable desired-profile revisions,
+distinct candidate generations, and compare-and-set active-head publication;
+it does not promise arbitrary JavaScript unload. Physical termination remains a
+host-specific open decision rather than an accepted restart-first rule.
 
 Installation, desired enablement, active routing, runtime health, state custody,
 and artifact retirement remain independent state planes. Enable or disable
@@ -319,7 +351,9 @@ stateDiagram-v2
     Enabling --> Aborting: failed or superseded
     Aborting --> DisabledClean: cleanup confirmed
     Aborting --> RestartRequired: termination unproven
-    Enabled --> Sealing: disable revision admitted
+    Enabled --> DisableCAS: disable candidate admitted
+    DisableCAS --> Enabled: stale CAS rejected; no seal
+    DisableCAS --> Sealing: active-head CAS wins
     Sealing --> Draining: new admission fenced
     Draining --> Stopping: complete or bounded cutoff
     Stopping --> DisabledClean: termination confirmed
@@ -339,6 +373,13 @@ Dependency impact is compiled before staging:
   grants, and selected built-in loader closure. It remains distinguishable from
   uninstalled, denied, incompatible, failed, quarantined, and restart-required.
 
+Disablement never seals first. After the inert disable candidate is admitted,
+the coordinator rereads the authoritative desired head, active head, current
+generation, route revision, grant revisions, and sink fences and performs the
+required compare-and-set. Only its winning transaction records the new head and
+seal that rejects new work. A stale or losing writer records conflict only; it
+cannot seal admission, revoke grants, drain, stop, or finalize disabled state.
+
 Each activation generation owns a host-created resource scope before any module
 hook runs. It combines one generation-bound abort signal, a tracked task group,
 an invocation registry, LIFO asynchronous disposal, late-acquisition rejection,
@@ -351,8 +392,9 @@ resources created outside host brokers cannot satisfy this contract.
 `cleanup_confirmed` requires closed admission, joined or fenced work, attempted
 disposers, terminal receipts for every effect-capable resource, no accepted late
 acquisition, reconciled ambiguous external effects, and zero generation-owned
-references. The fixed effect/publication and termination/reconciliation
-horizons from the durable intent apply; neither is refreshed between phases.
+references. The provider-execution and activation/handoff deadlines from the
+durable intent apply to their named phases. A separate bounded
+termination/reconciliation cap is never refreshed between cleanup phases.
 
 For trusted in-process code, logical disable can fence brokered calls and
 durable effects but cannot prove JavaScript unload, interrupt synchronous code,
@@ -425,12 +467,24 @@ state merely because schemas or publisher lineage are compatible. Before any
 candidate with persistent state can publish, its separate `MigrationPlan` must
 pass an explicit state migration gate. The gate verifies the exact current and
 proposed installation or activation-source identities, state-space and authority
-scope, publisher and extension lineage, schema transition, plan digest, and one
+scope, publisher and extension lineage, schema transition,
+`AdmittedPlanReceipt`, `PlanContentDigest`, explicit provider binding, and one
 current product- or tenant-owned `StateCustodyAuthorization` for the requested
-attach/rebind/migrate operation. Migration runs under generation fencing and
-records per-step custody and effect receipts; an ambiguous step is reconciled,
-never retried automatically. Failure leaves the candidate unattached and
-unpublished. Compatibility is necessary input, not custody authorization.
+attach/rebind/migrate operation. Migration prepares only a versioned staging
+copy or a product-approved forward/backward-compatible change while the old
+active generation and its valid state remain authoritative. At every step the
+product custody authority rereads the current owner revision, active head,
+graph generation, migration revision, and sink fence inside the fenced
+operation; caller assertions or material cached at planning time are comparison
+inputs only. Per-step receipts bind those observed values. An ambiguous step is
+reconciled, never retried automatically. Only after the replacement is admitted,
+migration receipts and comparison rules pass, and activation/handoff CAS wins
+may the product switch the authoritative state reference and route. Failure
+before that point discards or quarantines staging and leaves the old generation
+and old valid state active; failure after handoff leaves the new generation
+active and records cleanup debt. An irreversible in-place migration that would
+invalidate the old active state before handoff is not admissible. Compatibility
+is necessary input, not custody authorization.
 
 Uninstall stops new activation and removes the exact installation reference
 only through ADR-0010's discriminated retirement plan. It does not automatically
@@ -442,15 +496,23 @@ deletion are separate product-owned, custody-authorized operations.
 Drain has two boundaries:
 
 1. **Admission cutoff:** no new work enters the old module activation generation.
-2. **Commit cutoff:** after the effect/publication horizon or cutover barrier,
-   old work cannot commit fenced durable effects. Drain and reconciliation may
-   continue only until the later termination/reconciliation horizon.
+2. **Commit cutoff:** after the activation/handoff deadline or cutover barrier,
+   old work cannot commit fenced durable effects. Drain and reconciliation use
+   their separately recorded bounded policy.
 
 Stopping a process alone is not correctness evidence. Stale routers and resumed
 processes must fail current generation or grant checks. Local hosts may use an
 in-memory single writer plus persisted revisions. Distributed hosts need a
 linearizable compare-and-set or ordered commit authority. Both implement the
 same observable contract.
+
+Every fenced operation derives its comparison tuple at its linearization point
+from the authoritative current store: current desired and active heads, graph
+generation, route/grant/authorization revisions, custody owner revision, and
+sink fence as applicable. Planned, cached, caller-supplied, or receipt-carried
+values may state expectations but never establish currentness. Any mismatch
+fails closed before sealing, publication, migration mutation, effect commit, or
+retirement finalization.
 
 Distributed atomicity claims remain explicit:
 
@@ -497,10 +559,12 @@ LifecycleIntent
   moduleActivationGeneration
   activationFingerprint
   phase
-  effectPublicationDeadline
-  terminationReconciliationDeadline
-  callerObservationCeiling
-  planDigest
+  admissionValidationDeadline
+  providerExecutionDeadline
+  activationHandoffDeadline
+  planContentDigest
+  admittedPlanReceiptId
+  providerBindingDigest
   productAuthorizationRevision
   grantRevision
   hostPolicyRevision
@@ -519,8 +583,9 @@ LifecycleEvidence
   routeRevision
   sinkFence
   replicaIncarnation
-  effectPublicationDeadline
-  terminationReconciliationDeadline
+  admissionValidationDeadline
+  providerExecutionDeadline
+  activationHandoffDeadline
   phase
   outcome: confirmed | failed | pending | uncertain
   hostEvidenceRef
@@ -529,7 +594,7 @@ LifecycleEvidence
 ```
 
 After coordinator restart, reconciliation compares durable intent, current
-desired and active heads, routing, host-incarnation facts, all fixed horizons,
+desired and active heads, routing, host-incarnation facts, all fixed deadlines,
 pin/reference state and generation ownership. It resumes only proven idempotent
 steps. An uncertain process, provider or external effect is queried and
 reconciled; it is not retried automatically. If the host cannot prove
@@ -565,7 +630,7 @@ security guarantees.
 Controller leases support liveness only. Safety always comes from expected-state
 compare-and-set and sink-enforced fences. After failover, a controller rebuilds
 its decision from durable intent, route head, readiness attestations, outbox
-state and fixed absolute horizons; process memory is never recovery authority.
+state and fixed absolute deadlines; process memory is never recovery authority.
 
 ## Qualification Rehearsal Boundary
 
@@ -575,7 +640,7 @@ Implement now in a disposable qualification spike:
 - `prepare -> start -> ready -> publish`;
 - single-flight concurrent starts;
 - one activation deadline plus bounded cleanup and waiter caps as disposable
-  evidence, not the three-horizon durable contract;
+  evidence, not the three-deadline durable contract;
 - reverse activation-projection abort and stop;
 - active and candidate generations;
 - one atomic in-memory compare-and-set seam;
@@ -592,7 +657,8 @@ Specify but defer production implementation and executable fault injection of:
 - separate typed activation, drain, retirement and migration projections;
 - ADR-0010 staged runtime pins and retirement fencing, including all T0 reuse;
 - durable host-incarnation `restart_required` high-water marks;
-- the three fixed absolute horizons and their authority/host/caller receipts;
+- the three fixed admission/validation, provider-execution, and
+  activation/handoff deadlines and their authority/host receipts;
 - custody-authorized persistent-state migration;
 - crash points around durable intent, dispatch, readiness, publication, drain
   and cleanup;
@@ -616,8 +682,15 @@ qualification rather than enlarging the kernel.
 - Failed candidate leaves active routing unchanged.
 - Successful candidate performs one cutover.
 - Rollback follows reverse successful-activation dependencies.
-- The effect/publication horizon prevents late publication; termination and
-  caller observation have separate non-renewable horizons.
+- Admission expiry produces no receipt or generation, provider-execution expiry
+  rejects late provider results, and activation/handoff expiry prevents
+  publication; termination/reconciliation and caller observation remain
+  separate bounded policies.
+- A disable CAS loser cannot seal, drain, stop, or finalize the active generation.
+- Migration failure before handoff preserves the old generation and its valid
+  authoritative state; irreversible invalidation before handoff is rejected.
+- Every fenced mutation rereads authoritative current fence inputs at its own
+  linearization point and rejects caller-asserted or stale material.
 - A production sink rejects stale generation in the same atomic commit as its
   durable mutation; the spike proves only the in-memory ordering model.
 - Hung cleanup remains bounded and observable.

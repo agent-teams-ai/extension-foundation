@@ -74,7 +74,7 @@ Measure `PlanTemplate` parsing/validation/provider resolution, target execution
 closure, authority-scope binding, runtime-generation allocation, typed topology,
 cycle diagnostics, each derived order, canonical serialization, and hashing
 separately. Repeated equivalent inputs must reproduce `PlanTemplateDigest` and
-`PlanContentDigest` while monotonic candidate/runtime generations and
+post-admission `PlanContentDigest` while monotonic graph generations and
 active-head revisions advance independently. No phase may allocate an `N x N`
 matrix. Long chains must not depend on recursive JavaScript call depth.
 
@@ -119,7 +119,7 @@ not define concurrency.
 
 Stable low-cardinality attributes include host tier, lifecycle phase, outcome,
 diagnostic code, schema version, and product identifier. Module, artifact,
-tenant, project, operation, runtime generation, digest, path, error message, and
+tenant, project, operation, graph generation, digest, path, error message, and
 publisher are evidence or log fields, not unbounded metric labels.
 
 Each product profile declares a telemetry-cardinality budget and tests the

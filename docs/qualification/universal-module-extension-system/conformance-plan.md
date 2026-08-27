@@ -36,6 +36,10 @@ conformance before those semantics can be extracted to Foundation. A separate
 accepted extraction decision must name the exact neutral subset. Package
 admission may still use any evidence basis preserved by ADR-0013, but package
 boundary evidence never substitutes for semantic-intersection evidence.
+Public package publication is a third, separate stage: it requires immutable
+proof from two real independently authored conforming consumers of the exact
+publication candidate. Neither semantic-extraction evidence nor a package
+admission record satisfies that publication proof.
 Products always own authorization, data invariants, persistence, placement and
 stronger security claims. Passing conformance never grants a plugin permission
 to execute.
@@ -48,14 +52,14 @@ the dossier has status `qualified`.
 | Profile | Mandatory proof |
 | --- | --- |
 | `GRAPH-1` | Closed-world closure; duplicate, missing, cycle and ambiguous provider rejection; deterministic plan/digest; exact dependency object; zero effects before admission |
-| `LIFECYCLE-1` | Single activation per operation identity and exact activation fingerprint; selected-provider startup/readiness failure aborts the candidate; explicit null/unbound optional absence; complete hook preflight before effects; explicit readiness; one publication commit point; aggregate sibling failures; reverse activation-plan rollback only before publication; idempotent stop; bounded waiter resources; three non-renewable intent-derived horizons for effect/publication, termination/reconciliation and caller observation with their clock/receipt proofs; cleanup and ambiguous-effect debt; no automatic retry after an unknown external result |
+| `LIFECYCLE-1` | Post-admission plan receipt mapped immutably to graph generation and explicit providers; single activation per operation identity and exact activation fingerprint; selected-provider startup/readiness failure aborts the candidate; product-owned first-graph validation; one publication commit point; disable CAS before seal; old-state-preserving migration; dynamically derived fences; three distinct non-renewable admission/validation, provider-execution and activation/handoff deadlines with their clock/receipt proofs; cleanup and ambiguous-effect debt; no automatic retry after an unknown external result |
 | `GENERATION-1` | Immutable generation identity; monotonic fence; desired-state CAS over both expected desired and active heads; deterministic conflict diagnostics; bounded queue/supersede/reject policy; stale request/write rejection; bounded drain; rollback as a forward generation; durable host-incarnation `restart_required` high-water mark and fresh-host debt closure |
 | `ORDERING-1` | Typed lifecycle/order edges; separately derived and digested activation, drain, discriminated retirement and state-migration plans; projection-specific positive/negative ordering fixtures; no universal-DAG assumption |
 | `RUNTIME-PIN-1` | ADR-0010 staged pin acquisition serialized with retirement; atomic publication promotion; abandonment release after terminal/reconciled effects; crash reconstruction; late-pin rejection; live-route/pin/lease retirement recheck; no T0 runtime reuse before this profile passes |
 | `STATE-MIGRATION-1` | Persistent-state attach/rebind/migrate is blocked before publication unless the exact migration plan and independent custody authorization pass; compatibility alone fails; per-step fenced receipts, crash recovery and ambiguous-step reconciliation |
 | `PROTOCOL-1` | Version negotiation; bounded frames; identity/deadline validation; duplicate/reordered messages; cancellation; malformed peer failure |
 | `PACKAGE-1` | Exact exports; no framework leakage; packed consumer E2E; browser/Node condition checks; API report and compatibility fixtures |
-| `SUPPLY-1` | Digest-pinned artifact; namespace-authorized signature; provenance; dependency closure; install receipt; revocation and rollback evidence |
+| `SUPPLY-1` | Digest-pinned artifact; namespace-authorized signature; provenance; dependency closure; install receipt; manual exact-OCI-digest revocation identity with monotonic authoritative input and fail-closed propagation; rollback evidence |
 | `HOST-T0` | Trusted in-process declaration; deterministic cleanup; no claim of hostile isolation |
 | `HOST-T1` | Worker/process fault containment; crash and tree-cleanup evidence; explicit same-user authority warning |
 | `HOST-T2` | Deny-by-default dedicated-document or Wasm capabilities, quotas, broker enforcement and negative escape fixtures; an ordinary Worker remains `T1` |
@@ -73,7 +77,7 @@ the current rows does.
 | Evidence | Status | Meaning |
 | --- | --- | --- |
 | ID-DAG scheduling primitive | implemented/passed locally | Narrow graph algorithm only, not `GRAPH-1` |
-| In-memory lifecycle/CAS model | implemented/passed locally | One expected-active CAS and one activation deadline only; no dual-head desired update, bounded update arbitration, three-horizon durable intent, durable coordinator or sink fence |
+| In-memory lifecycle/CAS model | implemented/passed locally | One expected-active CAS and one activation deadline only; no dual-head desired update, bounded update arbitration, three-deadline durable intent, durable coordinator or sink fence |
 | Portable strict JSON codec | implemented/passed locally | Canonical JSON subset, safe-integer numeric domain, fatal UTF-8, duplicate-key and request-direction rejection, authority tuple and deadline checks; no method schemas, receiver deadline horizon, N/N-1 negotiation, authenticated channel or operation journal |
 | Process, Node Worker, browser Worker | smoke/passed locally | Placement transport and authority-envelope checks, not isolation conformance |
 | Packed toy consumer | harness/passed locally | Validates the harness shape, not `PACKAGE-1` |
@@ -123,7 +127,7 @@ documentation prose or an in-memory trace cannot close a row.
 | Gate | Required production evidence |
 | --- | --- |
 | Selected binding and readiness | A compiled-plan fixture binds a provider to an optional slot, injects startup and readiness failures, and proves the whole candidate aborts with no fallback or null conversion; only a separately compiled null/unbound fixture admits absence |
-| Three horizons | Durable intent persists the fixed effect/publication, termination/reconciliation and caller-observation ceilings; authority-clock CAS/sink receipts, host monotonic/exit/resource/reconciliation receipts and caller monotonic/result receipts prove each boundary across queueing, retries, crashes and clock faults without renewal |
+| Three lifecycle deadlines | Durable intent persists distinct admission/validation, provider-execution and activation/handoff deadlines; admission-authority, host-monotonic and authority-clock CAS/sink receipts prove each boundary across queueing, retries, crashes and clock faults without renewal or substitution by caller/cleanup waits |
 | Desired-state concurrency | Linearizable comparison of `expectedDesiredHead` and `expectedActiveHead`, fixed queue bounds, explicit durable supersede/reject decisions and byte-stable conflict diagnostics under generated races and crash replay |
 | Restart debt | Persistent host-incarnation high-water marks block admission, publication, staged pins and runtime reuse; process exit alone fails; a fresh-incarnation closure receipt proves all old routes, work, pins, leases, effects and resources reconciled before reopening |
 | Typed ordering | Independent oracles validate separately derived activation, drain, discriminated retirement and migration plans; fixtures demonstrate a case where their valid orders differ and reject use of an activation DAG as a substitute |
@@ -135,6 +139,11 @@ documentation prose or an in-memory trace cannot close a row.
 No production lifecycle profile may be marked passed while any applicable row
 is absent, simulated only in memory, or evidenced solely by the implementation's
 own expected trace.
+
+At a production-host governance gate, only durable independently observable
+evidence from the named production host can mark the host requirement
+`production-proven`. Non-production fixtures, in-memory models, smoke tests,
+planned work, and aspirational documentation cannot satisfy it.
 
 ## Adapter Matrix
 
@@ -157,7 +166,7 @@ a distributed claim requires a linearizable store and sink-enforced fences.
 ## Required Negative Families
 
 1. Graph ambiguity, duplicate IDs, missing providers, hard/soft cycles, descriptor bombs and canonicalization collisions.
-2. Concurrent start/stop/update, dual-head mismatch combinations, queue overflow, explicit supersede/reject, selected optional-provider startup/readiness failure, late readiness, stale candidate, incomplete hook binding, each horizon's expiry, attempted horizon renewal, cancelled waiter cleanup, hung cleanup, post-publication cleanup failure and double publication.
+2. Concurrent start/stop/update, dual-head mismatch combinations, queue overflow, explicit supersede/reject, selected optional-provider startup/readiness failure, late readiness, stale candidate, incomplete hook binding, each lifecycle deadline's expiry, attempted deadline renewal, cancelled waiter cleanup, hung cleanup, post-publication cleanup failure and double publication.
 3. Crash before/after intent, staged-pin acquire/promote/release, readiness, route commit, outbox publish, effect acknowledgement, drain completion, old-generation stop, restart-debt recording/fresh-host closure, migration steps, cleanup reconciliation and each discriminated retirement checkpoint.
 4. Stale generation, stale replica incarnation, process restart with open high-water debt, lost acknowledgement, duplicate operation, ambiguous remote effect and prohibited automatic retry after an unknown effect.
 5. Malformed, oversized, deeply nested, reordered, replayed and unauthenticated protocol frames.

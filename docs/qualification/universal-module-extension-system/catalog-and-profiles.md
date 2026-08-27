@@ -90,13 +90,13 @@ The generated lockfile is immutable input to admission and records:
 - configuration schema version and non-secret fingerprint;
 - requested capability set;
 - product and host compatibility ranges;
-- graph input, `PlanTemplateDigest`, and `PlanContentDigest` values where a
-  triggered private graph exists;
+- graph input and `PlanTemplateDigest` where a triggered private graph exists;
+  post-admission `PlanContentDigest` belongs only to `AdmittedPlanReceipt`;
 - resolution timestamp and freshness evidence;
 - signature over the lock when required by policy.
 
 The lockfile never contains grants, raw secrets, product authorization,
-candidate/runtime generations, active-head revisions, or runtime service
+graph generations, active-head revisions, or runtime service
 instances. Re-resolution is explicit and creates a reviewable diff. Normal
 verification performs no dependency solving and no catalog or registry lookup;
 it verifies the exact authenticated closure already recorded.
@@ -127,8 +127,9 @@ or evaluating the contribution's executable code. It does not select providers,
 grant authority, establish compatibility by itself, or make an artifact active.
 
 MVP resolution uses exact source mappings, explicit capability bindings and
-deterministic closed-world constraints. Unique-provider auto-binding remains
-open under `UMEQ-011` and is not enabled by the Phase 1 recommendation. A general SAT/PubGrub
+deterministic closed-world constraints. `UMEQ-011` is accepted by ADR-0014:
+every provider binding is materialized explicitly, and an apparently unique
+installed provider never auto-binds. A general SAT/PubGrub
 solver remains deferred until real product profiles demonstrate version or
 capability constraints that the small resolver cannot express safely.
 
@@ -182,6 +183,17 @@ also requires an explicit local trust policy for signer authorization,
 provenance, dependencies and revocation; digest equality alone proves identity,
 not permission or safety.
 
+The manual exact-digest profile uses the complete immutable OCI manifest
+descriptor and selected executable child digests as its only revocation subject.
+Its authoritative input is the product-configured authenticated local monotonic
+revocation set defined in [Trust and Security](trust-and-security.md#manual-exact-digest-revocation-profile).
+Every import receipt records the checked revision. Unknown or stale revision
+state fails closed at admission and execution; propagation advances product
+fences and blocks matching digests at affected hosts and sinks. Tags, versions,
+names, URLs and catalog entries are never revocation identity. This profile
+makes no remote freshness or publisher-currentness claim, and remote mutable
+metadata still requires the separately qualified TUF profile.
+
 PostgreSQL full-text search is the first hosted derived search adapter. SQLite
 FTS5 is a candidate local/offline derived adapter. Search results never become
 canonical catalog records.
@@ -206,12 +218,14 @@ sequenceDiagram
     H-->>U: admitted, rejected, or approval required
 ```
 
-Update prepares a new lock and, only in a future triggered runtime graph, a new
-monotonic `CandidateGeneration`. It never mutates the installed identity in
-place. Equivalent normalized plan content retains its `PlanContentDigest`;
-generation is not a hash input. Rollback uses prior content under a new higher
-candidate generation and `ActiveHeadRevision`, subject to current revocation
-and rollback policy.
+Update prepares a new lock and inert plan candidate. Only successful product
+admission issues `AdmittedPlanReceipt` and `PlanContentDigest`; the digest is
+never a lock input or caller-selected identity. A future triggered runtime graph
+then allocates a fresh monotonic `GraphGeneration` bound to that receipt and its
+explicit provider-binding digest. It never mutates installed identity in place.
+Equivalent content can receive the same post-admission digest, but every new
+candidate and rollback uses a higher generation and `ActiveHeadRevision`,
+subject to current revocation and rollback policy.
 
 Catalog and lock evidence describe one target at a time. Relationships among
 services, processes, Workers, and isolated hosts belong to a separate

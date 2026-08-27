@@ -60,9 +60,12 @@ apply only if measured runtime-selection or independent-lifecycle need triggers
 an approved private product graph. They are constraints on later work, not
 evidence that the graph should be built.
 
-1. The complete selected profile is validated before executable extension code
-   is loaded.
-2. Provider selection is explicit and deterministic. Registration order, object
+1. The complete selected profile is validated and admitted before executable
+   extension code is evaluated. The owning product validates its first graph
+   against its product invariants; Foundation cannot do so on its behalf.
+2. Provider selection is explicit and deterministic, and the exact provider
+   authority/installation/contribution/digest binding is carried by the plan
+   receipt and graph generation. Registration order, object
    iteration order, filesystem order, and mutable tags are not semantics.
 3. Single-provider and ordered multi-provider contracts are distinct.
 4. Missing required providers, duplicate single providers, ambiguous selection,
@@ -70,14 +73,17 @@ evidence that the graph should be built.
 5. A module receives an immutable dependency object containing only declared
    direct capabilities. No resolver, parent fallback, global registry, or
    container is exposed.
-6. The plan has canonical serialization, a digest, an authority scope, and a
-   non-reused graph generation.
+6. The plan candidate has canonical serialization and an authority scope.
+   `PlanContentDigest` exists only on the post-admission receipt and is never a
+   caller input. Each non-reused graph generation maps to exactly one such
+   receipt and provider-binding digest.
 7. A graph is composition evidence, not authorization.
 
 ## Lifecycle And Concurrency Invariants
 
 These invariants likewise apply only to a triggered lifecycle runtime. Phase 1
-uses application-owned construction and restart-first recovery; it does not
+uses application-owned construction and reconstruction of the smallest owned
+authority realm for recovery; it does not claim a universal restart rule or
 generalize these research outcomes into a coordinator.
 
 1. Discovery, verification, admission, and graph compilation do not execute
@@ -87,8 +93,10 @@ generalize these research outcomes into a coordinator.
    fingerprint; caller cancellation does not silently cancel shared startup.
    Distinct operation identities are distinct competing candidates even when
    their source and plan match, and publication CAS still admits only one.
-4. Every phase uses one absolute operation deadline. A cleanup cap may shorten
-   the remaining budget but never refresh or extend it.
+4. Admission/validation, provider execution, and activation/handoff have three
+   distinct absolute deadlines. None is collapsed into a generic timeout or
+   refreshed between phases; caller observation and cleanup/reconciliation are
+   separate bounded wait policies.
 5. Publication has one linearization point and atomically selects one active
    graph generation for the authority scope.
 6. Invocation admission binds graph generation, module activation generation,
@@ -101,6 +109,17 @@ generalize these research outcomes into a coordinator.
    or uncertain outcomes. Uncertain effects are reconciled before retry.
 10. Local mutexes and distributed leases may optimize work but do not replace
     revisions, compare-and-set, fences, idempotency, or reconciliation.
+11. Every fenced operation rereads its applicable current heads, generation,
+    revisions, custody owner and sink fence from authoritative state at the
+    linearization point; cached and caller-asserted values establish no fence.
+12. Disablement wins its required compare-and-set before sealing. A stale writer
+    cannot seal, revoke, drain, stop, or finalize disabled state.
+13. Migration preserves the old active generation and valid state until the
+    admitted replacement passes product comparison/fencing rules and handoff.
+14. Artifact verification, plan admission, provider execution, graph
+    construction, activation, product authorization and runtime enforcement
+    remain independent facts. Executable evaluation waits for their complete
+    applicable authority intersection.
 
 ## Trust Invariants
 
@@ -115,6 +134,10 @@ generalize these research outcomes into a coordinator.
   capabilities and mediates every privileged call.
 - Signatures and provenance establish identity and build evidence according to
   policy; they do not prove benign behavior.
+- Manual revocation identifies the complete immutable OCI descriptor and
+  executable child digests, consumes a monotonic authenticated local revocation
+  revision, propagates by advancing product fences, and never uses mutable tags
+  or names as revocation identity.
 - Secrets remain behind `SecretRef` and a product-owned secret broker. Raw
   secrets, ambient environment, cookies, and broad credentials are not module
   dependencies.

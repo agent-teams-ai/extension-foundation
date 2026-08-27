@@ -8,9 +8,11 @@ import test from "node:test";
 import { validateBuiltPackageArtifacts } from "../architecture/checks/package-artifacts.mjs";
 import {
   CONFORMANCE_VERSION,
+  loadAcceptedDecisionIds,
   loadPackagePolicy,
   materializationPlanPath,
   packageAdmissionPath,
+  statusCrossChecksWithAcceptedLedger,
 } from "../architecture/checks/package-policy.mjs";
 import {
   isFilesystemPathInside,
@@ -33,6 +35,31 @@ const acceptedOwner = async id => ({
 });
 const acceptedOwners = async () => [await acceptedOwner("ADR-0099")];
 const noTrackedPackagePaths = async () => [];
+
+test("package owner status is cross-checked against the accepted-decision ledger", async () => {
+  const root = await mkdtemp(join(tmpdir(), "extension-topology-decision-ledger-"));
+  try {
+    await writeFixture(root, "architecture/decisions/accepted-decisions.json", JSON.stringify({
+      schemaVersion: 1,
+      algorithm: "sha256",
+      decisions: [{
+        id: "ADR-0099",
+        path: "docs/decisions/0099-owner.md",
+        immutableDigest: `sha256:${"a".repeat(64)}`,
+      }],
+    }));
+    const acceptedIds = await loadAcceptedDecisionIds(root);
+    const document = status => ({ id: "ADR-0099", metadata: { id: "ADR-0099", type: "adr", status } });
+    assert.equal(statusCrossChecksWithAcceptedLedger(document("accepted"), acceptedIds), true);
+    assert.equal(statusCrossChecksWithAcceptedLedger(document("proposed"), acceptedIds), false);
+    assert.equal(statusCrossChecksWithAcceptedLedger(
+      { id: "ADR-0100", metadata: { id: "ADR-0100", type: "adr", status: "accepted" } },
+      acceptedIds,
+    ), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 async function fixtureMaterializationPlan(_root, entry) {
   const operation = (path, value) => ({

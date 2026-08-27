@@ -80,8 +80,10 @@ The effective accepted direction is:
 - The application composition root, not the feature factory, selects the
   implementation, configuration, and lifetime. No global service locator is
   introduced.
-- A runtime graph is added only after measured runtime-selection or independent-
-  lifecycle need, and remains private to the owning product until later gates.
+- A runtime graph is added only after the exact measured Phase 2 trigger:
+  runtime selection that static configuration cannot meet or independently
+  managed lifecycles needing dependency-aware operation. It remains private to
+  the owning product until later gates.
 - A reusable library core has no module-runtime dependency. A feature-owned
   module adapter may depend on the core. A plugin artifact is an optional
   distribution and trust envelope that can provide several contributions.
@@ -172,7 +174,10 @@ contracts. Self-hosted and direct-digest use must not require Platform.
   mismatch but does not rewrite historical decision metadata.
 - `accepted-decisions.json` is an immutable digest ledger and includes
   superseded ADR-0006 through ADR-0009; the decision index remains authoritative
-  for effective status despite the registry filename.
+  for effective status despite the registry filename. Package ownership
+  validation cross-checks locally parsed ADR status against both the accepted
+  decision history ledger and the canonical decision-index lifecycle;
+  uncross-checkable or disagreeing status metadata fails closed.
 - OD-003 still needs contract-token, runtime-host, ordering, handover,
   compatibility, and evidence choices.
 - OD-002 still owns key custody, signing quorum, freshness, retention, and

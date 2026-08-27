@@ -54,12 +54,16 @@ resolved, or superseded by this dossier.
 
 | Authority | Current status | W11 effect |
 | --- | --- | --- |
-| ADR-0012 | Superseded by ADR-0013 | Preserved historical authority only |
-| ADR-0011 | Proposed | Remains non-operative |
-| ADR-0013 | Accepted cumulative successor | Product-local ownership is effective |
-| ADR-0014 | Accepted | Static-first rehearsal direction is effective |
-| OD-002 and OD-003 | Open | Remain open |
-| UMEQ-009 through UMEQ-018 | Open | Remain open |
+| ADR-0012 | `superseded` | Preserved historical authority only |
+| ADR-0011 | `proposed` | Remains non-operative |
+| ADR-0013 | `accepted` | Cumulative product-local ownership is effective |
+| ADR-0014 | `accepted` | Static-first rehearsal direction is effective |
+| OD-002 and OD-003 | `open` | Remain open |
+| UMEQ-009 through UMEQ-010 | `open` | Remain open |
+| UMEQ-011 | `accepted-existing` | Explicit provider binding is effective through ADR-0014 |
+| UMEQ-012 through UMEQ-015 | `open` | Remain open |
+| UMEQ-016 | `accepted-existing` | Generation replacement baseline is effective through ADR-0014 |
+| UMEQ-017 through UMEQ-018 | `open` | Remain open |
 
 Agents may recommend options, record evidence, and draft non-operative approval
 material. Only the accountable owner may choose product scope, risk appetite,

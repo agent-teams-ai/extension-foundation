@@ -123,7 +123,9 @@ negative results, stale-result rejection, and authority revalidation.
 This phase has no runtime graph, module descriptor grammar, global container,
 service locator, plugin loading, artifact identity, dynamic discovery,
 Foundation package, public SPI, generic lifecycle coordinator, or hot unload.
-Restart the smallest authority realm for update or recovery. Stop or simplify
+For update or recovery in this static rehearsal, reconstruct the smallest
+application-owned authority realm; this does not project a universal restart or
+physical-unload rule onto accepted UMEQ-016. Stop or simplify
 if generic glue exceeds 30% of changed production code or the seam does not
 improve the named product measure.
 
@@ -142,9 +144,7 @@ composition unless the product demonstrates at least one of these needs:
 - the implementation set must change at runtime without a product rebuild and
   static selection cannot meet a named product outcome;
 - multiple independently managed resource lifecycles need dependency-aware
-  start, readiness, failure cleanup, or stop; or
-- direct composition repeatedly causes measured configuration or ownership
-  defects that a bounded graph prototype is expected to remove.
+  start, readiness, failure cleanup, or stop.
 
 If no trigger is met, Phase 2 ends with the static design unchanged. If a
 trigger is met, approve the product-local scope and build the smallest private
@@ -191,12 +191,14 @@ migrations, 2-4 weeks.
 
 ### Separate Gate: Publication
 
-Stable/public publication additionally requires two independently authored
-conforming implementations, packed-artifact consumer tests, public API and
-compatibility review, immutable package admission evidence, explicit SemVer and
-support ownership, release-promotion verification, and an artifact-specific
-publication decision. Repository count, internal extraction, or one shared
-implementation does not satisfy this gate.
+Stable/public publication additionally requires two real independently
+authored conforming consumers of the exact publication candidate,
+independently authored implementations, packed-artifact consumer tests, public
+API and compatibility review, immutable package admission evidence, explicit
+SemVer and support ownership, release-promotion verification, and an
+artifact-specific publication decision. Repository count, internal extraction, or one
+shared implementation does not satisfy this gate. Extraction and admission
+evidence do not substitute for the separate two-consumer publication proof.
 
 Estimated change: 6,000-11,000 incremental LOC and 3-8 weeks, plus ongoing
 release and support cost.
@@ -205,9 +207,9 @@ release and support cost.
 
 | Capability | Earliest explicit trigger and gate | Estimate |
 | --- | --- | --- |
-| Process host | Named executable consumer, accepted production-host decision, UMEQ-009/012 closure, authenticated protocol, custody and termination evidence | 8,000-13,000 LOC, 4-8 weeks |
-| Browser/Electron host | Separate Frontend ownership decision, independent loading value, capability broker, Web/Electron containment and compatibility evidence | 10,000-22,000 LOC, 6-12 weeks |
-| Wasm/Extism host | Funded non-TypeScript or isolation need plus ABI, provenance, broker, quota, lifecycle, and cross-platform containment qualification | Re-estimate after trigger |
+| Process host | Named executable consumer, accepted production-host decision, UMEQ-009/012 closure, authenticated protocol, custody and termination, plus durable independently observable evidence from the named production host | 8,000-13,000 LOC, 4-8 weeks |
+| Browser/Electron host | Separate Frontend ownership decision, independent loading value, capability broker, Web/Electron containment and compatibility, plus durable independently observable evidence from the named production host | 10,000-22,000 LOC, 6-12 weeks |
+| Wasm/Extism host | Funded non-TypeScript or isolation need plus ABI, provenance, broker, quota, lifecycle, cross-platform containment qualification, and durable independently observable evidence from the named production host | Re-estimate after trigger |
 | Plugin artifact distribution | Independent install/update value, admitted host, digest/signature/provenance policy, grants, custody, rollback and uninstall model | 10,000-18,000 LOC, 5-10 weeks |
 | Catalog and managed channels | Independent distribution exists; one PostgreSQL canonical writer; explicit federation route; TUF from first remotely refreshed mutable metadata | Additional 3,500-11,000 LOC plus operations |
 | Distributed or side-by-side lifecycle | Restart misses a numeric SLO; named topology proves fencing, state, capacity, cleanup, rollback, recovery and sink semantics | 10,000-35,000 LOC, multiple months |
