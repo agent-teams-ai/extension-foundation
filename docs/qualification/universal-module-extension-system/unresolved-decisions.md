@@ -116,13 +116,15 @@ contracts and conformance packages.
 
 | Option | Assessment |
 | --- | --- |
-| Internal packages first; publish after two consumers and packed conformance, recommended | 🎯 10/10 · 🛡️ 10/10 · 🧠 5/10 · 2,000-4,000 LOC before publish |
+| Internal packages first; publish after basis-specific evidence and packed conformance, plus two consumers for shared module semantics, recommended | 🎯 10/10 · 🛡️ 10/10 · 🧠 5/10 · 2,000-4,000 LOC before publish |
 | Public fixed-version package train during first product slice | 🎯 5/10 · 🛡️ 7/10 · 🧠 8/10 · 5,000-9,000 LOC |
 | One public monolithic package | 🎯 2/10 · 🛡️ 4/10 · 🧠 5/10 · rejected |
 
 **Evidence:** ADR-0010 already requires two independently authored conforming
-implementations before production SPI. A fixed-version train is a good eventual
-release model, not permission to publish now. **Reversibility:** low after public
+implementations before production SPI; ADR-0013 separately requires two real
+consumers before Foundation owns shared module semantics. Ordinary libraries may
+qualify through another accepted ADR-0013 basis. A fixed-version train is a good
+eventual release model, not permission to publish now. **Reversibility:** low after public
 API. **Impact:** release workload and compatibility obligations. **Approval:**
 product owner through a future publication ADR, only after the accepted evidence
 floor is met.
@@ -180,12 +182,13 @@ satisfied; `UMEQ-012`, `UMEQ-014`, and `UMEQ-015` must be resolved; ADR-0014's
 generation baseline remains effective; packed-package `PACKAGE-1` and public API
 evidence must pass; the immutable package admission record must be verified;
 release promotion must verify stable provider identities, the accepted basis,
-implementation independence, and referenced bytes; separate immutable evidence
-must prove two real independently authored conforming consumers of the
-publication candidate; and the Foundation owner
+implementation independence, and referenced bytes; and the Foundation owner
 must accept artifact-specific package admission and publication decisions.
-Semantic-extraction evidence and package-admission evidence do not substitute
-for that publication-consumer proof.
+For `foundation-module-semantics`, separate immutable evidence must additionally
+prove two real independently authored conforming consumers of the publication
+candidate. Semantic-extraction evidence and package-admission evidence do not
+substitute for that stronger publication-consumer proof; ordinary libraries do
+not inherit it.
 Those release decisions are not additional strategic UMEQ forks.
 `UMEQ-009` is additionally needed before a process release. `UMEQ-017` is
 required before hosted distributed claims. `UMEQ-018` is needed before managed

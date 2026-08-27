@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import test from "node:test";
@@ -276,10 +277,21 @@ interface PublicationConsumerEvidence {
   readonly packageDigest: string;
   readonly conformanceVersion: string;
   readonly implementationId: string;
+  readonly evidenceReference: string;
   readonly evidenceDigest: string;
 }
 
-function derivePublicationConsumerStatus(records: readonly PublicationConsumerEvidence[]): "proven" | "not-proven" {
+type PublicationEvidenceResolver = (reference: string) => Promise<Uint8Array | undefined>;
+
+function canonicalPublicationRepository(value: string): string | null {
+  if (!/^[a-z0-9][a-z0-9_.-]*\/[a-z0-9][a-z0-9_.-]*$/.test(value) || value.endsWith(".git")) return null;
+  return value;
+}
+
+async function derivePublicationConsumerStatus(
+  records: readonly PublicationConsumerEvidence[],
+  resolveEvidence: PublicationEvidenceResolver,
+): Promise<"proven" | "not-proven"> {
   if (records.length !== 2) return "not-proven";
   const [baseline] = records;
   if (!baseline) return "not-proven";
@@ -290,17 +302,29 @@ function derivePublicationConsumerStatus(records: readonly PublicationConsumerEv
     && record.conformanceVersion === baseline.conformanceVersion
   ));
   const validEvidence = records.every(record => (
-    /^[a-z0-9][a-z0-9_.-]*\/[a-z0-9][a-z0-9_.-]*$/.test(record.consumerRepository)
+    canonicalPublicationRepository(record.consumerRepository) !== null
     && /^[0-9a-f]{40}$/.test(record.sourceRevision)
+    && /^@agent-teams\/[a-z0-9][a-z0-9._-]*$/.test(record.packageName)
+    && CONFORMANCE_VERSION.test(record.packageVersion)
     && /^sha256:[0-9a-f]{64}$/.test(record.packageDigest)
     && CONFORMANCE_VERSION.test(record.conformanceVersion)
     && /^[a-z0-9][a-z0-9.-]*$/.test(record.implementationId)
+    && /^evidence:[a-z0-9][a-z0-9./_-]*$/.test(record.evidenceReference)
     && /^sha256:[0-9a-f]{64}$/.test(record.evidenceDigest)
   ));
-  const independentlyOwned = new Set(records.map(record => record.consumerRepository)).size === records.length
+  if (!validEvidence) return "not-proven";
+  const resolvedEvidence = await Promise.all(records.map(async record => {
+    const bytes = await resolveEvidence(record.evidenceReference);
+    return bytes === undefined
+      ? undefined
+      : `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+  }));
+  const evidenceMatches = resolvedEvidence.every((digest, index) => digest === records[index]?.evidenceDigest);
+  const independentlyOwned = new Set(records.map(record => canonicalPublicationRepository(record.consumerRepository))).size === records.length
     && new Set(records.map(record => record.implementationId)).size === records.length
+    && new Set(records.map(record => record.evidenceReference)).size === records.length
     && new Set(records.map(record => record.evidenceDigest)).size === records.length;
-  return exactIdentity && validEvidence && independentlyOwned ? "proven" : "not-proven";
+  return exactIdentity && evidenceMatches && independentlyOwned ? "proven" : "not-proven";
 }
 
 function requirementKey(requirement: GateRequirement): string {
@@ -472,6 +496,16 @@ test("decision ledger is referentially sound and records current implementation 
     "gate:phase-3-module-semantic-package-admission=satisfied",
     "gate:phase-3-package-publication=satisfied",
   ]);
+  const publicationEvidencePayloads = new Map<string, Uint8Array>([
+    ["evidence:agent-runtime/module-kernel", Buffer.from("agent-runtime conformance\n")],
+    ["evidence:orchestrator/module-kernel", Buffer.from("orchestrator conformance\n")],
+  ]);
+  const publicationEvidenceDigest = (reference: string): string => {
+    const bytes = publicationEvidencePayloads.get(reference);
+    assert.ok(bytes, `missing publication evidence fixture ${reference}`);
+    return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+  };
+  const resolvePublicationEvidence: PublicationEvidenceResolver = async reference => publicationEvidencePayloads.get(reference);
   const consumerEvidence: readonly PublicationConsumerEvidence[] = [
     {
       consumerRepository: "agent-teams-ai/agent-runtime",
@@ -481,7 +515,8 @@ test("decision ledger is referentially sound and records current implementation 
       packageDigest: `sha256:${"b".repeat(64)}`,
       conformanceVersion: "1.0.0",
       implementationId: "agent-runtime-module-adapter",
-      evidenceDigest: `sha256:${"c".repeat(64)}`,
+      evidenceReference: "evidence:agent-runtime/module-kernel",
+      evidenceDigest: publicationEvidenceDigest("evidence:agent-runtime/module-kernel"),
     },
     {
       consumerRepository: "agent-teams-ai/agent-teams-orchestrator",
@@ -491,20 +526,36 @@ test("decision ledger is referentially sound and records current implementation 
       packageDigest: `sha256:${"b".repeat(64)}`,
       conformanceVersion: "1.0.0",
       implementationId: "orchestrator-module-adapter",
-      evidenceDigest: `sha256:${"e".repeat(64)}`,
+      evidenceReference: "evidence:orchestrator/module-kernel",
+      evidenceDigest: publicationEvidenceDigest("evidence:orchestrator/module-kernel"),
     },
   ];
-  assert.equal(derivePublicationConsumerStatus(consumerEvidence), "proven");
-  assert.equal(derivePublicationConsumerStatus([consumerEvidence[0]!, consumerEvidence[0]!]), "not-proven");
-  assert.equal(derivePublicationConsumerStatus([
+  assert.equal(await derivePublicationConsumerStatus(consumerEvidence, resolvePublicationEvidence), "proven");
+  assert.equal(await derivePublicationConsumerStatus(
+    [consumerEvidence[0]!, consumerEvidence[0]!],
+    resolvePublicationEvidence,
+  ), "not-proven");
+  assert.equal(await derivePublicationConsumerStatus([
     consumerEvidence[0]!,
     { ...consumerEvidence[1]!, packageDigest: `sha256:${"f".repeat(64)}` },
-  ]), "not-proven");
+  ], resolvePublicationEvidence), "not-proven");
+  assert.equal(await derivePublicationConsumerStatus([
+    consumerEvidence[0]!,
+    { ...consumerEvidence[1]!, consumerRepository: "agent-teams-ai/agent-runtime.git" },
+  ], resolvePublicationEvidence), "not-proven");
+  assert.equal(await derivePublicationConsumerStatus([
+    consumerEvidence[0]!,
+    { ...consumerEvidence[1]!, packageName: "" },
+  ], resolvePublicationEvidence), "not-proven");
+  assert.equal(await derivePublicationConsumerStatus(consumerEvidence, async () => Buffer.from("tampered\n")), "not-proven");
   const semanticStatuses = new Map(publicationStatuses);
   semanticStatuses.set("second-independent-consumer", "proven");
   semanticStatuses.set("cross-consumer-conformance", "passed");
   semanticStatuses.set("foundation-semantic-extraction-decision", "accepted");
-  semanticStatuses.set("publication-independent-consumers", derivePublicationConsumerStatus(consumerEvidence));
+  semanticStatuses.set(
+    "publication-independent-consumers",
+    await derivePublicationConsumerStatus(consumerEvidence, resolvePublicationEvidence),
+  );
   assert.equal(gateIsSatisfied(semanticPublicationGate!.id, ledger, semanticStatuses), true);
   semanticStatuses.delete("publication-independent-consumers");
   assert.equal(gateIsSatisfied(semanticPublicationGate!.id, ledger, semanticStatuses), false);
@@ -531,16 +582,22 @@ test("decision ledger is referentially sound and records current implementation 
     ["lifecycle-semantic-review", "verified"],
     ["production-host-evidence", "production-proven"],
   ]);
-  const manualStatuses = new Map(hostSafetyStatuses).set("manual-digest-revocation-profile", "verified");
-  const managedStatuses = new Map(hostSafetyStatuses)
+  const globallyQualifiedTrustProfiles = new Map(hostSafetyStatuses)
+    .set("manual-digest-revocation-profile", "verified")
     .set("UMEQ-018", "resolved")
     .set("managed-channel-tuf-currentness-profile", "verified");
+  const manualStatuses = new Map(globallyQualifiedTrustProfiles)
+    .set("installation-trust-route-binding", "manual-exact-digest");
+  const managedStatuses = new Map(globallyQualifiedTrustProfiles)
+    .set("installation-trust-route-binding", "managed-channel");
   assert.equal(gateIsSatisfied(installationRouteGate.id, ledger, manualStatuses), true);
   assert.equal(gateIsSatisfied(installationRouteGate.id, ledger, managedStatuses), true);
-  assert.equal(gateIsSatisfied(installationRouteGate.id, ledger, new Map([
-    ...manualStatuses,
-    ...managedStatuses,
-  ])), false, "one installation cannot silently combine manual and managed trust routes");
+  assert.equal(gateIsSatisfied(installationRouteGate.id, ledger, globallyQualifiedTrustProfiles), false);
+  assert.equal(gateIsSatisfied(
+    installationRouteGate.id,
+    ledger,
+    new Map(globallyQualifiedTrustProfiles).set("installation-trust-route-binding", "caller-filtered"),
+  ), false, "caller-selected or missing route evidence cannot choose installation trust");
 
   const authoritativeStatuses = new Map<string, string>([
     ...ledger.entries.map(entry => [entry.id, entry.status] as const),
@@ -776,7 +833,10 @@ test("lifecycle semantics are fail-closed, durable, and explicitly ordered", asy
     /StateCustodyAuthorization/,
     /AdmissionRequestFingerprint[\s\S]{0,500}cannot include an[\s\S]{0,120}admission receipt/i,
     /AuthorityClockCutoff[\s\S]{0,220}clock domain and epoch[\s\S]{0,160}decision revision/i,
-    /ModuleActivationIntent[\s\S]{0,200}moduleId[\s\S]{0,100}moduleActivationGeneration[\s\S]{0,100}attemptId/i,
+    /ModuleActivationIntent[\s\S]{0,120}authorityScope[\s\S]{0,120}candidateGeneration[\s\S]{0,120}runtimeGeneration[\s\S]{0,120}moduleId[\s\S]{0,100}moduleActivationGeneration[\s\S]{0,100}attemptId/i,
+    /LifecycleIntent[\s\S]{0,180}runtimeSetDigest[\s\S]{0,100}expectedRuntimeCount/i,
+    /RuntimeLifecycleIntent[\s\S]{0,160}authorityScope[\s\S]{0,120}runtimeGeneration/i,
+    /DeactivationIntent[\s\S]{0,300}drainDeadline:\s*AuthorityClockCutoff[\s\S]{0,180}terminationReconciliationDeadline:\s*AuthorityClockCutoff/i,
     /separate\s+immutable[\s\S]{0,160}(?:ActivationPlan|activation)[\s\S]{0,160}(?:DrainPlan|drain)[\s\S]{0,160}(?:RetirementPlan|retirement)[\s\S]{0,160}(?:MigrationPlan|migration)/i,
   ], "lifecycle model");
   assertMarkers(lifecycle, [
@@ -812,7 +872,8 @@ test("trust claims distinguish current evidence from future supply-chain work", 
     /manual profile makes no freshness or publisher-currentness claim/i,
     /Managed Channel Currentness Profile[\s\S]{0,900}`UMEQ-018`[\s\S]{0,80}TUF/i,
     /stable `PublisherId`[\s\S]{0,160}signing credential/i,
-    /static route does not invent candidate or runtime generations/i,
+    /ordinary trusted product composition[\s\S]{0,120}outside extension authority/i,
+    /invoke BuiltInModuleInstallation[\s\S]{0,900}current candidate generation, runtime generation, and fence/i,
     /does not contain or qualify production OCI\/ORAS, Cosign\/Sigstore or TUF\s+adapters/i,
     /TUF[\s\S]{0,120}(?:before|required prior to)[\s\S]{0,120}mutable (?:managed )?channels/i,
   ], "trust-phase evidence");
@@ -828,7 +889,7 @@ test("qualified identity and extraction controls remain contiguous and authorita
   assert.deepEqual(numbers, Array.from({ length: numbers.length }, (_, index) => index + 1));
   assert.match(antiPatterns, /AP-080 \| Extract a neutral package without satisfying an accepted ADR-0013 package-admission basis/);
   assert.match(moduleGraph, /`BuiltInModuleInstallation` activation-source identity/);
-  assert.match(moduleGraph, /product authority scope, stable module identity, and immutable implementation\s+digest/);
+  assert.match(moduleGraph, /product\s+authority scope, stable module identity, and immutable implementation\s+digest/);
 });
 
 test("OSS comparison distinguishes immutable evidence from orientation research", async () => {

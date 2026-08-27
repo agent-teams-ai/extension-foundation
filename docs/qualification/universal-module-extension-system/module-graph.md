@@ -81,11 +81,12 @@ Each staged runtime reference pin binds both the candidate generation and the
 exact runtime generation under the shared retirement fence required by
 ADR-0010; candidate abandonment, publication, and runtime retirement never
 infer one identity from the other.
-A built-in module has no
-publisher, artifact, manifest, catalog, or artifact-installation identity. It
-does have a `BuiltInModuleInstallation` activation-source identity bound to the
-product authority scope, stable module identity, and immutable implementation
-digest as required by ADR-0009 and retained by ADR-0010.
+Ordinary product-local Pure DI composition has no extension installation or
+runtime identity. A built-in promoted into extension authority has no publisher,
+artifact, manifest, catalog, or artifact-installation identity, but it does have
+a `BuiltInModuleInstallation` activation-source identity bound to the product
+authority scope, stable module identity, and immutable implementation digest as
+required by ADR-0009 and retained by ADR-0010.
 
 Capability identity is a stable URI-like string owned by the product feature,
 for example `agent-teams.orchestrator/work-placement-proposal`. Under the
@@ -136,11 +137,12 @@ artifact verification and revocation status when applicable, plan admission,
 product-owned graph validation, product authorization, capability grants, host
 policy, and current generation fence all intersect for the same scope and
 immutable digests. A static T0 built-in instead uses the accepted literal Pure
-DI route: trusted build provenance, exact `BuiltInModuleInstallation`, current
-grant bound to the target build and implementation digest, and product/host
-authorization, without fabricating artifact, plan, or runtime-generation facts.
-Moving that built-in into a generation-managed runtime activates the full graph
-route. Approval by any one authority is never enough. Generated TypeScript
+DI route only as ordinary product composition outside extension authority:
+trusted build provenance, a literal factory, owning use case, and normal product
+authorization, without fabricating an installation, grant, plan, or generation.
+Promoting that implementation to `BuiltInModuleInstallation` activates the full
+graph, grant, generation, fence, lifecycle, and retirement route. Approval by
+any one authority is never enough. Generated TypeScript
 handles and dependency types, aggregate
 inventory, reverse-dependency index, diagrams, and diagnostics are disposable
 projections of the serialized declarations and selected profile. Authors do not

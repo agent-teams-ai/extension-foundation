@@ -191,14 +191,17 @@ migrations, 2-4 weeks.
 
 ### Separate Gate: Publication
 
-Stable/public publication additionally requires two real independently
-authored conforming consumers of the exact publication candidate,
-independently authored implementations, packed-artifact consumer tests, public
-API and compatibility review, immutable package admission evidence, explicit
-SemVer and support ownership, release-promotion verification, and an
-artifact-specific publication decision. Repository count, internal extraction, or one
-shared implementation does not satisfy this gate. Extraction and admission
-evidence do not substitute for the separate two-consumer publication proof.
+Every stable/public package requires the evidence selected by its accepted
+ADR-0013 admission basis, independently authored implementation evidence where
+that basis requires it, packed-artifact consumer tests, public API and
+compatibility review, immutable package admission evidence, explicit SemVer and
+support ownership, release-promotion verification, and an artifact-specific
+publication decision. A package classified as `foundation-module-semantics`
+additionally requires two real independently authored conforming consumers of
+the exact publication candidate. Repository count, internal extraction, or one
+shared implementation does not satisfy that stronger semantic gate. Extraction
+and generic package-admission evidence do not substitute for its separate
+two-consumer publication proof.
 
 Estimated change: 6,000-11,000 incremental LOC and 3-8 weeks, plus ongoing
 release and support cost.

@@ -68,6 +68,11 @@ requirementDefinitions:
     authority: qualification-evidence
     detail: trust-and-security.md#managed-channel-currentness-profile
     purpose: executable TUF expiry, rollback, freeze, delegation and publisher-current revocation evidence for remotely refreshed metadata
+  - id: installation-trust-route-binding
+    kind: evidence
+    authority: installation-admission
+    detail: trust-and-security.md#installation-trust-route-binding
+    purpose: immutable per-installation receipt discriminator selecting exactly one qualified trust route without filtering global profile evidence
   - id: second-independent-consumer
     kind: evidence
     authority: qualification-evidence
@@ -276,10 +281,14 @@ implementationGates:
     paths:
       - id: manual-exact-digest
         allOf:
+          - evidence: installation-trust-route-binding
+            requiredStatus: manual-exact-digest
           - gate: manual-exact-digest-installation
             requiredStatus: satisfied
       - id: managed-channel
         allOf:
+          - evidence: installation-trust-route-binding
+            requiredStatus: managed-channel
           - gate: managed-channel-installation
             requiredStatus: satisfied
   - id: process-host-wire-format

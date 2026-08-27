@@ -146,10 +146,13 @@ prevent URL aliases or mirrors of the same bytes from satisfying
 independent evidence more than once. A release promotion gate must additionally
 resolve every slug to a stable source-provider repository ID, prove the selected
 basis and claimed implementation independence, and retrieve and verify the
-referenced bytes before publication. Publication then requires its own immutable
-proof from two real independently authored conforming consumers of the exact
+referenced bytes before publication. Publication then requires immutable
+release-promotion verification and artifact-specific approval. For a package classified as
+`foundation-module-semantics`, publication additionally requires immutable proof
+from two real independently authored conforming consumers of the exact
 candidate; extraction evidence and the package-admission manifest do not
-substitute for that proof.
+substitute for that stronger proof. An ordinary library follows its accepted
+ADR-0013 admission basis and does not acquire the semantic two-consumer gate.
 
 ## Dependency Rules
 

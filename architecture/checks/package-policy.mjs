@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import { lstat, readFile, readdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -260,8 +261,10 @@ function validateAdmission(entry, admission, errors) {
     if (admission.semantic_extraction_decision !== "not-applicable") {
       errors.push(`${entry.id}: ordinary-library admission must mark semantic extraction not-applicable`);
     }
-  } else if (admission.semantic_extraction_decision !== entry.owner_document) {
-    errors.push(`${entry.id}: foundation-module-semantics admission must bind its accepted semantic extraction decision`);
+  } else if (!OWNER_DOCUMENT.test(admission.semantic_extraction_decision)) {
+    errors.push(`${entry.id}: foundation-module-semantics admission must bind an ADR semantic extraction decision`);
+  } else if (admission.semantic_extraction_decision === entry.owner_document) {
+    errors.push(`${entry.id}: semantic extraction decision must be separate from the package owner decision`);
   }
   if (!CONFORMANCE_VERSION.test(admission.conformance_version ?? "")) {
     errors.push(`${entry.id}: admission.conformance_version must be an exact SemVer`);
@@ -373,6 +376,25 @@ export function packagePublicationGateId(admission) {
     : "phase-3-package-publication";
 }
 
+export function packageAdmissionVerificationRequest(entry, admission, admissionRecordDigest) {
+  if (!entry || admission?.package_id !== entry.id || !/^sha256:[0-9a-f]{64}$/.test(admissionRecordDigest ?? "")) {
+    throw new Error(`${entry?.id ?? "unknown-package"}: cannot construct a bound admission verification request`);
+  }
+  return Object.freeze({
+    packageId: entry.id,
+    admissionRecordDigest,
+    requiredGateId: packageAdmissionGateId(admission),
+  });
+}
+
+export function admissionVerificationReceiptMatches(request, receipt) {
+  return hasExactKeys(receipt, ["admissionRecordDigest", "outcome", "packageId", "requiredGateId"])
+    && receipt.packageId === request.packageId
+    && receipt.admissionRecordDigest === request.admissionRecordDigest
+    && receipt.requiredGateId === request.requiredGateId
+    && receipt.outcome === "satisfied";
+}
+
 export async function loadPackagePolicy(root) {
   const catalogPath = join(root, CATALOG_PATH);
   await assertRealParentDirectories(root, CATALOG_PATH);
@@ -389,6 +411,7 @@ export async function loadPackagePolicy(root) {
   const entriesById = new Map();
   const entriesByPath = new Map();
   const admissionsById = new Map();
+  const admissionRecordDigestsById = new Map();
   const admissionDirectoryPath = join(root, PACKAGE_ADMISSION_DIRECTORY);
   let admissionDirectoryAvailable = false;
 
@@ -414,6 +437,7 @@ export async function loadPackagePolicy(root) {
       entriesById,
       entriesByPath,
       admissionsById,
+      admissionRecordDigestsById,
       errors: [`${CATALOG_PATH} must contain exactly version 1 and a packages array`],
     };
   }
@@ -449,9 +473,14 @@ export async function loadPackagePolicy(root) {
         if (!admissionFile.isFile() || admissionFile.isSymbolicLink()) {
           throw new Error("admission evidence must be a regular file, not a symbolic link");
         }
-        const admission = parseStrictJson(await readFile(admissionPath, "utf8"));
+        const admissionBytes = await readFile(admissionPath);
+        const admission = parseStrictJson(admissionBytes.toString("utf8"));
         validateAdmission(entry, admission, errors);
         admissionsById.set(entry.id, admission);
+        admissionRecordDigestsById.set(
+          entry.id,
+          `sha256:${createHash("sha256").update(admissionBytes).digest("hex")}`,
+        );
       } catch (error) {
         errors.push(`${entry.id}: admission evidence is missing or invalid: ${error instanceof Error ? error.message : String(error)}`);
       }
@@ -486,6 +515,7 @@ export async function loadPackagePolicy(root) {
     entriesById,
     entriesByPath,
     admissionsById,
+    admissionRecordDigestsById,
     errors,
   };
 }
@@ -759,4 +789,11 @@ export function packageOwnerFeatures(entry, owner) {
 
 export function packageOwnerSemanticClassification(entry, owner) {
   return packageOwnerDeclaration(entry, owner)?.semanticClassification;
+}
+
+export function isEffectiveAcceptedDecision(document, expectedId) {
+  return document?.id === expectedId
+    && document.type === "adr"
+    && document.status === "accepted"
+    && document.supersededBy?.length === 0;
 }

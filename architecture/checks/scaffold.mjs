@@ -12,6 +12,7 @@ import {
 
 import {
   createDocsOwnerResolver,
+  isEffectiveAcceptedDecision,
   isRecord,
   materializationPlanPath,
   packageOwnerFeatures,
@@ -182,6 +183,13 @@ async function validatePlanAgainstCatalog(root, plan, resolveOwner) {
   if (packageOwnerSemanticClassification(entry, owner)
     !== policy.admissionsById.get(entry.id)?.semantic_classification) {
     throw new Error("scaffold admission semantic classification must equal the accepted owner ADR declaration");
+  }
+  const admission = policy.admissionsById.get(entry.id);
+  if (admission?.semantic_classification === "foundation-module-semantics") {
+    const semanticDecision = await resolveOwner(admission.semantic_extraction_decision);
+    if (!isEffectiveAcceptedDecision(semanticDecision, admission.semantic_extraction_decision)) {
+      throw new Error("scaffold semantic extraction decision must be one separate effective accepted ADR");
+    }
   }
   if (plan.operations.length === 0) throw new Error("scaffold plan must contain materialization operations");
   assertScaffoldOperationPaths(root, entry.path, plan.operations);

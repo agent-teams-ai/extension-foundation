@@ -57,7 +57,10 @@ function validatePackageTopology(options) {
     })),
     listEffectiveOwners: options.listEffectiveOwners ?? acceptedOwners,
     readTrackedPackagePaths: options.readTrackedPackagePaths ?? noTrackedPackagePaths,
-    verifyAdmissionEvidence: options.verifyAdmissionEvidence ?? (async () => true),
+    verifyAdmissionEvidence: options.verifyAdmissionEvidence ?? (async ({ request }) => ({
+      ...request,
+      outcome: "satisfied",
+    })),
   });
 }
 

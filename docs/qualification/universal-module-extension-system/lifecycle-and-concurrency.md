@@ -423,7 +423,11 @@ disposers, terminal receipts for every effect-capable resource, no accepted late
 acquisition, reconciled ambiguous external effects, and zero generation-owned
 references. The provider-execution and activation/handoff deadlines from the
 durable intent apply to their named phases. A separate bounded
-termination/reconciliation cap is never refreshed between cleanup phases.
+termination/reconciliation cap is recorded as an `AuthorityClockCutoff` in the
+applicable activation-cleanup or deactivation intent before dispatch. It is
+never refreshed between cleanup phases or after recovery. Later disablement uses
+a newly authorized deactivation operation and cutoff; it does not inherit or
+reset the historical activation timeout.
 
 For trusted in-process code, logical disable can fence brokered calls and
 durable effects but cannot prove JavaScript unload, interrupt synchronous code,
@@ -607,7 +611,8 @@ LifecycleIntent
   operationId
   authorityScope
   candidateGeneration
-  runtimeGeneration
+  runtimeSetDigest
+  expectedRuntimeCount
   activationFingerprint
   phase
   admissionValidationDeadline: AuthorityClockCutoff
@@ -622,8 +627,19 @@ LifecycleIntent
   expectedDesiredHead
   expectedActiveHead
 
+RuntimeLifecycleIntent
+  key:
+    authorityScope
+    candidateGeneration
+    runtimeGeneration
+  activationSourceIdentity
+  providerBindingDigest
+  stagedPinKind: candidate-owned | referenced-existing
+  phase
+
 ModuleActivationIntent
   key:
+    authorityScope
     candidateGeneration
     runtimeGeneration
     moduleId
@@ -634,13 +650,17 @@ ModuleActivationIntent
   phase
   readinessPolicyRevision
   cleanupPolicyRevision
+  readinessDeadline: AuthorityClockCutoff
+  activationCleanupDeadline: AuthorityClockCutoff
 
 LifecycleEvidence
   operationId
   intentDigest
   authorityScope
   candidateGeneration
-  runtimeGeneration
+  runtimeSetDigest
+  expectedRuntimeCount
+  terminalRuntimeCount
   activationFingerprint
   expectedDesiredHead
   expectedActiveHead
@@ -656,8 +676,21 @@ LifecycleEvidence
   payloadDigest
   observedAt: AuthorityTimestamp
 
+RuntimeLifecycleEvidence
+  key:
+    authorityScope
+    candidateGeneration
+    runtimeGeneration
+  activationSourceIdentity
+  providerBindingDigest
+  stagedPinReceiptRef
+  phase
+  outcome: confirmed | failed | pending | uncertain
+  observedAt: AuthorityTimestamp
+
 ModuleActivationEvidence
   key:
+    authorityScope
     candidateGeneration
     runtimeGeneration
     moduleId
@@ -668,19 +701,54 @@ ModuleActivationEvidence
   cleanupReceiptRef
   outcome: confirmed | failed | pending | uncertain
   observedAt: AuthorityTimestamp
+
+DeactivationIntent
+  key:
+    operationId
+    authorityScope
+    candidateGeneration
+    runtimeGeneration
+    moduleId
+    moduleActivationGeneration
+  drainPlanDigest
+  retirementPlanDigest
+  drainDeadline: AuthorityClockCutoff
+  terminationReconciliationDeadline: AuthorityClockCutoff
+  cleanupPolicyRevision
+
+DeactivationEvidence
+  key: exact DeactivationIntent key
+  intentDigest
+  drainReceiptRef
+  terminationReceiptRef
+  unresolvedEffectReceipts[]
+  outcome: confirmed | failed | pending | uncertain | termination_unproven
+  observedAt: AuthorityTimestamp
 ```
 
 The transition from `AdmissionIntent` to `LifecycleIntent` is atomic with
 issuance of `AdmittedPlanReceipt`, `PlanContentDigest`, provider-binding digest,
 and `CandidateGeneration`; it preserves the original three cutoffs unchanged and
 computes the post-admission `ActivationFingerprint` from those admitted facts.
-Readiness, provider execution, cleanup, and recovery receipts for one module bind
-the complete `ModuleActivationIntent` key. No candidate-level scalar can stand in
-for multiple module attempts.
+The candidate intent binds an immutable runtime-set digest and expected
+cardinality. Every referenced runtime has one `RuntimeLifecycleIntent` row, and
+publication or abandonment requires an exact set match plus terminal evidence
+for every expected row. Readiness, provider execution, activation cleanup, and
+recovery receipts for one module bind the complete authority-scoped
+`ModuleActivationIntent` key. No candidate-level scalar can stand in for
+multiple runtimes or module attempts.
+
+Drain and later retirement use a separate durable `DeactivationIntent`; they do
+not reuse an expired activation timer. Its authority-clock drain and
+termination/reconciliation cutoffs are persisted before sealing or dispatch and
+are copied unchanged into every receipt. Crash recovery derives only the
+remaining interval from those exact cutoffs. It never restarts a duration,
+refreshes a cap, or treats process absence as terminal evidence.
 
 After coordinator restart, reconciliation compares durable intent, current
 desired and active heads, routing, host-incarnation facts, all fixed deadlines,
-pin/reference state and generation ownership. It resumes only proven idempotent
+the exact runtime-set cardinality, pin/reference state and generation ownership.
+It resumes only proven idempotent
 steps. An uncertain process, provider or external effect is queried and
 reconciled; it is not retried automatically. If the host cannot prove
 continuity, it fences the old generation, raises or retains the durable

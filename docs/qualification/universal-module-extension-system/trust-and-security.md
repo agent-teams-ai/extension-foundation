@@ -59,17 +59,16 @@ construction, entitlement, or a grant alone cannot cross the dynamic execution
 boundary. The host resolves and evaluates only the executable named by the
 current admitted provider binding after it rereads all current inputs.
 
-Static T0 built-ins use a separate accepted route: build provenance, literal
-target selection, immutable built-in implementation binding, and the trusted
-product composition root may evaluate a passive factory without inventing a
-runtime graph receipt. That evaluation grants no privileged effect authority.
-Every privileged invocation still requires current product authorization,
-an exact capability grant bound to the current built-in installation and target
-build, host policy, and any applicable AR authorization or containment. The
-static route does not invent candidate or runtime generations. If the owning
-product later places that built-in under an accepted generation-managed runtime,
-the runtime route additionally requires its exact candidate/runtime generations
-and fence. A static built-in cannot silently cross between those routes.
+Ordinary trusted product composition is outside extension authority. Build
+provenance and literal target selection may evaluate a passive product-owned
+factory without inventing an installation, graph receipt, capability grant, or
+runtime generation. The result can act only through the owning use case and its
+normal product authorization; composition metadata grants no privileged effect
+authority. If the product promotes that implementation into an extension
+runtime, it first creates a `BuiltInModuleInstallation` and then uses the full
+admitted graph, generation, grant, fence, lifecycle, and retirement contract.
+The ordinary Pure DI route cannot silently claim or cross into extension
+authority.
 
 | Receipt or decision | Precise fact established | Does not establish |
 | --- | --- | --- |
@@ -225,22 +224,25 @@ execute dynamically loaded provider =
   AND host policy = allow
   AND required containment = ready
 
-invoke statically composed T0 built-in =
+invoke ordinary trusted product composition =
   build provenance and literal target selection = allow
-  AND exact BuiltInModuleInstallation implementation binding
-  AND product authorization = allow
-  AND current product capability grant binds that installation, implementation
-      digest, target build, authority scope, capability set, and grant revision
-  AND (AR authorization = allow when AR owns the capability
-       OR AR plane = explicitly not-applicable)
-  AND host policy = allow
-  AND required containment = ready or explicitly not-applicable by product policy
+  AND product-owned factory is outside extension authority
+  AND owning use case and normal product authorization = allow
+  AND no installation, extension grant, runtime route, or effect authority is inferred
 
-invoke generation-managed built-in =
-  every statically composed built-in authority above
+invoke BuiltInModuleInstallation =
+  exact built-in installation binds authority scope, module identity,
+      implementation digest, and target build
   AND an accepted owning-product runtime decision applies
   AND current admitted plan receipt and exact built-in provider binding
+  AND product authorization = allow
+  AND current product capability grant binds the installation, implementation,
+      authority scope, capability set, and grant revision
+  AND (AR authorization = allow when AR owns the capability
+       OR AR plane = explicitly not-applicable)
   AND current candidate generation, runtime generation, and fence
+  AND host policy = allow
+  AND required containment = ready or explicitly not-applicable by product policy
 ```
 
 Every conjunct is an independent, current decision. A product authorization is
@@ -281,6 +283,24 @@ lookup, rejects confusable names and unauthorized scope aliases, and binds every
 dependency to an approved namespace owner plus exact digest. Search ranking,
 display names and package-manager fallback cannot resolve dependencies. This
 keeps typosquatting and dependency-confusion attacks outside runtime resolution.
+
+### Installation Trust-Route Binding
+
+Manual exact-digest and managed-channel profiles may both be qualified and
+available globally. Exactly one route is selected for each installation by an
+immutable discriminator in that installation's admission receipt:
+`manual-exact-digest` or `managed-channel`. The discriminator is derived from
+the actual source and update mechanism before admission, and the receipt binds
+it to the installation identity, authority scope, descriptor digest closure,
+policy revision, and selected route evidence. A caller cannot supply it, filter
+the globally available profile evidence, or reinterpret the route later.
+
+Every activation, update, invocation lease, and privileged sink joins the
+installation receipt to the evidence required by its recorded route. Missing,
+unknown, contradictory, or differently bound route evidence denies. Changing
+route creates a fresh admission and installation identity; it never mutates the
+old receipt or silently combines manual revocation semantics with managed
+currentness claims.
 
 ## IPC And Capability Broker
 

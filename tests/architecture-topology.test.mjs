@@ -103,7 +103,10 @@ function validatePackageTopology(options) {
     loadMaterializationPlan: options.loadMaterializationPlan ?? fixtureMaterializationPlan,
     listEffectiveOwners: options.listEffectiveOwners ?? (async () => []),
     readTrackedPackagePaths: options.readTrackedPackagePaths ?? noTrackedPackagePaths,
-    verifyAdmissionEvidence: options.verifyAdmissionEvidence ?? (async () => true),
+    verifyAdmissionEvidence: options.verifyAdmissionEvidence ?? (async ({ request }) => ({
+      ...request,
+      outcome: "satisfied",
+    })),
   });
 }
 
@@ -839,6 +842,17 @@ test("package admission fails closed without versioned independent evidence", as
       readTrackedPackagePaths: noTrackedPackagePaths,
     });
     assert.ok(noVerifierErrors.includes("module.example: package admission requires an executable evidence verifier"));
+    const unboundVerifierErrors = await validateRepositoryPackageTopology({
+      root,
+      resolveOwner: acceptedOwner,
+      listEffectiveOwners: async () => [],
+      loadMaterializationPlan: fixtureMaterializationPlan,
+      readTrackedPackagePaths: noTrackedPackagePaths,
+      verifyAdmissionEvidence: async () => true,
+    });
+    assert.ok(unboundVerifierErrors.includes(
+      "module.example: executable evidence verifier returned an unbound or unsatisfied receipt",
+    ));
     await rm(join(root, "architecture/package-admissions/module-dot-example.json"));
     const missingErrors = await validatePackageTopology({ root, resolveOwner: acceptedOwner });
     assert.equal(missingErrors.length, 1);
@@ -891,7 +905,7 @@ test("package admission fails closed without versioned independent evidence", as
 
     const semanticPackage = packageAdmission();
     semanticPackage.semantic_classification = "foundation-module-semantics";
-    semanticPackage.semantic_extraction_decision = "ADR-0099";
+    semanticPackage.semantic_extraction_decision = "ADR-0100";
     await writeFixture(
       root,
       "architecture/package-admissions/module-dot-example.json",
@@ -905,13 +919,67 @@ test("package admission fails closed without versioned independent evidence", as
       "module.example: admission semantic classification must equal the accepted owner ADR declaration",
     ));
     const semanticOwner = async id => {
+      if (id === "ADR-0100") {
+        return {
+          id,
+          type: "adr",
+          status: "accepted",
+          supersededBy: [],
+          packageOwnership: [],
+        };
+      }
       const owner = await acceptedOwner(id);
       owner.packageOwnership[0].semanticClassification = "foundation-module-semantics";
       return owner;
     };
-    assert.equal((await validatePackageTopology({ root, resolveOwner: semanticOwner })).includes(
+    let semanticVerificationRequest;
+    const semanticTopologyErrors = await validatePackageTopology({
+      root,
+      resolveOwner: semanticOwner,
+      verifyAdmissionEvidence: async ({ request }) => {
+        semanticVerificationRequest = request;
+        return { ...request, outcome: "satisfied" };
+      },
+    });
+    assert.equal(semanticTopologyErrors.includes(
       "module.example: admission semantic classification must equal the accepted owner ADR declaration",
     ), false);
+    assert.equal(
+      semanticVerificationRequest?.requiredGateId,
+      "phase-3-module-semantic-package-admission",
+    );
+    assert.match(semanticVerificationRequest?.admissionRecordDigest ?? "", /^sha256:[0-9a-f]{64}$/);
+    const wrongGateReceiptErrors = await validatePackageTopology({
+      root,
+      resolveOwner: semanticOwner,
+      verifyAdmissionEvidence: async ({ request }) => ({
+        ...request,
+        requiredGateId: "phase-3-package-admission",
+        outcome: "satisfied",
+      }),
+    });
+    assert.ok(wrongGateReceiptErrors.includes(
+      "module.example: executable evidence verifier returned an unbound or unsatisfied receipt",
+    ));
+    const sameDecision = structuredClone(semanticPackage);
+    sameDecision.semantic_extraction_decision = "ADR-0099";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(sameDecision)}\n`,
+    );
+    assert.ok((await loadPackagePolicy(root)).errors.includes(
+      "module.example: semantic extraction decision must be separate from the package owner decision",
+    ));
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(semanticPackage)}\n`,
+    );
+    const missingSemanticDecision = async id => (id === "ADR-0100" ? undefined : semanticOwner(id));
+    assert.ok((await validatePackageTopology({ root, resolveOwner: missingSemanticDecision })).includes(
+      "module.example: semantic extraction decision must resolve to one separate effective accepted ADR",
+    ));
 
     const semanticOneConsumer = structuredClone(semanticPackage);
     semanticOneConsumer.admission_basis = "independent-replacement-or-release-lifecycle";

@@ -187,7 +187,12 @@ accepted semantic-extraction decision and machine-verifiable evidence for two
 independent consumers, implementations, and conformance roles. Admission and
 publication gates are derived from the matching admission record, whose
 classification must equal the immutable owner declaration. A package cannot
-select the weaker route only by changing its admission record.
+select the weaker route only by changing its admission record. The semantic
+extraction ADR is separate from the package-owner ADR and must independently
+resolve as effective and accepted. The executable evidence adapter receives a
+request bound to package identity, the exact admission-record byte digest, and
+the derived required gate; it returns a receipt with those same coordinates.
+A bare boolean or receipt for another record or gate fails closed.
 
 The Engineering Foundation owns the source-graph and scaffolding protocols.
 This repository owns its package roles, catalog entries, allowed dependency

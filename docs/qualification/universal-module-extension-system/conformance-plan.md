@@ -213,6 +213,15 @@ count as two consumers. Each consumer record binds:
 - the applicable positive and negative conformance results and their immutable
   evidence digests.
 
+The verifier resolves each referenced evidence object, hashes the observed
+bytes, and compares that digest to the record. Package name and exact version,
+canonical repository identity, source revision, implementation identity,
+evidence reference, and evidence digest must all be non-empty and valid. String
+aliases such as a `.git` repository suffix do not create a second independent
+consumer. The resulting admission receipt is bound to the exact admission-file
+digest and the stronger semantic gate selected from its classification; an
+unbound boolean is not evidence.
+
 The gate compares both records against the same candidate digest and rejects
 missing, duplicated, self-reported-only, mutable, or differently versioned
 evidence. Product-adoption evidence may contribute, but cannot substitute for
