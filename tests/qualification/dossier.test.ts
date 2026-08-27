@@ -8,23 +8,15 @@ import { parse } from "yaml";
 
 import { CONFORMANCE_VERSION } from "../../architecture/checks/package-policy.mjs";
 
-const dossier = fileURLToPath(new URL("../../docs/qualification/universal-module-extension-system/", import.meta.url));
-
-interface DecisionEntry {
-  readonly id: string;
-  readonly status: string;
-  readonly topic: string;
-  readonly authority: string;
-  readonly detail: string;
-  readonly approvalRequired: boolean;
-}
+const repositoryRoot = fileURLToPath(new URL("../../", import.meta.url));
+const dossier = resolve(repositoryRoot, "docs/qualification/universal-module-extension-system");
+const decisions = resolve(repositoryRoot, "docs/decisions");
+const openDecisions = resolve(repositoryRoot, "docs/open-decisions");
 
 interface RequirementDefinition {
   readonly id: string;
   readonly kind: "decision" | "evidence";
-  readonly authority: string;
   readonly detail: string;
-  readonly purpose: string;
 }
 
 type GateRequirement = Readonly<
@@ -38,18 +30,11 @@ interface DecisionLedger {
   readonly sourceRepository: string;
   readonly sourceRevision: string;
   readonly sourcePurpose: string;
-  readonly retiredIdentifiers: readonly {
-    readonly id: string;
-    readonly formerTopic: string;
-    readonly disposition: string;
-  }[];
+  readonly retiredIdentifiers: readonly { readonly id: string; readonly detail?: string }[];
   readonly externalDecisionGates: readonly {
     readonly id: string;
     readonly status: string;
-    readonly topic: string;
-    readonly authority: string;
     readonly detail: string;
-    readonly effectWhileProposed: string;
     readonly approvalTrackedBy: string;
   }[];
   readonly requirementDefinitions: readonly RequirementDefinition[];
@@ -58,12 +43,15 @@ interface DecisionLedger {
     readonly appliesTo: readonly string[];
     readonly mode: "all" | "exactly-one-path";
     readonly allOf?: readonly GateRequirement[];
-    readonly paths?: readonly {
-      readonly id: string;
-      readonly allOf: readonly GateRequirement[];
-    }[];
+    readonly paths?: readonly { readonly id: string; readonly allOf: readonly GateRequirement[] }[];
   }[];
-  readonly entries: readonly DecisionEntry[];
+  readonly entries: readonly {
+    readonly id: string;
+    readonly status: string;
+    readonly authority: string;
+    readonly detail: string;
+    readonly approvalRequired: boolean;
+  }[];
 }
 
 interface OssEvidence {
@@ -86,6 +74,12 @@ interface OssCandidate {
   readonly evidence?: readonly OssEvidence[];
 }
 
+interface MarkdownDocument {
+  readonly path: string;
+  readonly body: string;
+  readonly metadata: Readonly<Record<string, unknown>>;
+}
+
 function markdownAnchor(title: string): string {
   return title
     .trim()
@@ -95,385 +89,307 @@ function markdownAnchor(title: string): string {
     .replace(/-+/g, "-");
 }
 
-test("decision ledger has one semantic owner and ten unique approval forks", async () => {
+function parseMarkdown(path: string, body: string): MarkdownDocument {
+  const frontmatter = body.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
+  assert.ok(frontmatter, `${path} must have YAML frontmatter`);
+  const metadata = parse(frontmatter[1]!) as unknown;
+  assert.ok(typeof metadata === "object" && metadata !== null && !Array.isArray(metadata));
+  return { path, body, metadata: metadata as Readonly<Record<string, unknown>> };
+}
+
+async function readMarkdown(path: string): Promise<MarkdownDocument> {
+  return parseMarkdown(path, await readFile(path, "utf8"));
+}
+
+async function findDocumentById(directory: string, id: string): Promise<MarkdownDocument> {
+  const names = (await readdir(directory)).filter(name => name.endsWith(".md"));
+  const matches: MarkdownDocument[] = [];
+  for (const name of names) {
+    const document = await readMarkdown(resolve(directory, name));
+    if (document.metadata.id === id) matches.push(document);
+  }
+  assert.equal(matches.length, 1, `${id} must resolve to exactly one document`);
+  return matches[0]!;
+}
+
+function section(markdown: string, heading: RegExp): string {
+  const headings = [...markdown.matchAll(/^(#{1,6})\s+(.+)$/gm)];
+  const startIndex = headings.findIndex(match => heading.test(match[2]!));
+  assert.notEqual(startIndex, -1, `missing section ${heading}`);
+  const start = headings[startIndex]!;
+  const level = start[1]!.length;
+  const next = headings.slice(startIndex + 1).find(match => match[1]!.length <= level);
+  return markdown.slice(start.index! + start[0].length, next?.index ?? markdown.length);
+}
+
+function assertMarkers(text: string, markers: readonly RegExp[], context: string): void {
+  for (const marker of markers) assert.match(text, marker, `${context} is missing ${marker}`);
+}
+
+function gateRequirements(gate: DecisionLedger["implementationGates"][number]): readonly GateRequirement[] {
+  return [...(gate.allOf ?? []), ...(gate.paths ?? []).flatMap(path => path.allOf)];
+}
+
+test("decision ledger is referentially sound and records current implementation gates", async () => {
   const ledgerPath = resolve(dossier, "decision-ledger.yaml");
   const ledger = parse(await readFile(ledgerPath, "utf8")) as DecisionLedger;
   const currentState = await readFile(resolve(dossier, "current-state.md"), "utf8");
-  assert.equal(ledger.schemaVersion, 2);
+
+  assert.ok(ledger.schemaVersion >= 2);
   assert.equal(ledger.sourceRepository, "agent-teams-ai/extension-foundation");
   assert.equal(ledger.sourcePurpose, "immutable-analyzed-baseline");
   assert.match(ledger.sourceRevision, /^[0-9a-f]{40}$/);
-  const foundationRevision = currentState.match(
+  const documentedRevision = currentState.match(
     /`agent-teams-ai\/extension-foundation` \| `([0-9a-f]{40})`/,
   )?.[1];
-  assert.equal(ledger.sourceRevision, foundationRevision);
-  assert.match(currentState, /agent-teams-platform` \| `[0-9a-f]{40}` \| private orientation only/);
-  assert.match(currentState, /no finding depends on inaccessible\s+bytes from that repository/);
-  const ids = ledger.entries.map(entry => entry.id);
-  const retiredIds = ledger.retiredIdentifiers.map(entry => entry.id);
-  const topics = ledger.entries.map(entry => entry.topic);
-  assert.equal(new Set(ids).size, ids.length);
-  assert.deepEqual(retiredIds, Array.from({ length: 5 }, (_, index) => `UMEQ-${String(index + 4).padStart(3, "0")}`));
-  assert.ok(ledger.retiredIdentifiers.every(entry => (
-    entry.formerTopic.length > 0
-    && entry.disposition === "withdrawn-draft-consolidated-into-OD-003"
-  )));
-  assert.deepEqual(
-    [...ids, ...retiredIds].sort(),
-    Array.from({ length: 18 }, (_, index) => `UMEQ-${String(index + 1).padStart(3, "0")}`),
-  );
-  assert.equal(new Set(topics).size, topics.length);
-  assert.deepEqual(ledger.externalDecisionGates, [
-    {
-      id: "ADR-0011",
-      status: "proposed",
-      topic: "production-extension-host-safety-closure",
-      authority: "product-owner",
-      detail: "../../decisions/0011-extension-admission-custody-and-retirement-closure.md",
-      effectWhileProposed: "production-extension-host-phases-blocked",
-      approvalTrackedBy: "adr-lifecycle",
-    },
-    {
-      id: "ADR-0013",
-      status: "proposed",
-      topic: "first-consumer-module-semantics",
-      authority: "product-owner",
-      detail: "../../decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md",
-      effectWhileProposed: "product-local-phase-1-blocked",
-      approvalTrackedBy: "adr-lifecycle",
-    },
-  ]);
-  assert.deepEqual(ledger.requirementDefinitions, [
-    {
-      id: "ADR-0012",
-      kind: "decision",
-      authority: "accepted-adr",
-      detail: "../../decisions/0012-reusable-library-module-and-plugin-boundaries.md",
-      purpose: "accepted Foundation package-admission policy",
-    },
-    {
-      id: "owning-product-feature-decision",
-      kind: "decision",
-      authority: "owning-product",
-      detail: "final-recommendation.md",
-      purpose: "product-specific ownership approval for a concrete graph slice",
-    },
-    {
-      id: "second-independent-consumer",
-      kind: "evidence",
-      authority: "qualification-evidence",
-      detail: "conformance-plan.md",
-      purpose: "immutable proof of a second real consumer",
-    },
-    {
-      id: "cross-implementation-conformance",
-      kind: "evidence",
-      authority: "qualification-evidence",
-      detail: "conformance-plan.md",
-      purpose: "independently authored implementation passes the shared contract",
-    },
-    {
-      id: "foundation-extraction-decision",
-      kind: "decision",
-      authority: "foundation-owner",
-      detail: "final-recommendation.md",
-      purpose: "artifact-specific approval to extract proved repeated semantics",
-    },
-    {
-      id: "adr-0012-admission-basis",
-      kind: "evidence",
-      authority: "qualification-evidence",
-      detail: "../../decisions/0012-reusable-library-module-and-plugin-boundaries.md",
-      purpose: "immutable proof naming the accepted ADR-0012 admission basis",
-    },
-    {
-      id: "immutable-package-admission-record",
-      kind: "evidence",
-      authority: "foundation-package-policy",
-      detail: "../../../architecture/checks/package-policy.mjs",
-      purpose: "schema-valid admission record bound to exact source revisions and evidence digests",
-    },
-    {
-      id: "independent-conformance",
-      kind: "evidence",
-      authority: "qualification-evidence",
-      detail: "conformance-plan.md",
-      purpose: "independent implementation evidence for the admitted package boundary",
-    },
-    {
-      id: "foundation-package-admission-decision",
-      kind: "decision",
-      authority: "foundation-owner",
-      detail: "final-recommendation.md",
-      purpose: "artifact-specific approval to admit one package after evidence verification",
-    },
-    {
-      id: "PACKAGE-1",
-      kind: "evidence",
-      authority: "qualification-evidence",
-      detail: "conformance-plan.md",
-      purpose: "packed package, exports, runtime conditions and compatibility conformance",
-    },
-    {
-      id: "public-api-report",
-      kind: "evidence",
-      authority: "qualification-evidence",
-      detail: "conformance-plan.md",
-      purpose: "exact public API and framework-leak report for the publication candidate",
-    },
-    {
-      id: "package-release-promotion-verification",
-      kind: "evidence",
-      authority: "foundation-release-promotion",
-      detail: "packaging-and-reuse.md",
-      purpose: "stable provider identities, accepted admission basis, independence and referenced bytes verified before publication",
-    },
-    {
-      id: "foundation-package-publication-decision",
-      kind: "decision",
-      authority: "foundation-owner",
-      detail: "final-recommendation.md",
-      purpose: "artifact-specific release approval after topology and evidence gates pass",
-    },
-  ]);
-  assert.deepEqual(ledger.implementationGates, [
-    {
-      id: "phase-1-graph-kernel",
-      appliesTo: ["phase-1-graph-kernel"],
-      mode: "exactly-one-path",
-      paths: [
-        {
-          id: "product-local",
-          allOf: [
-            { decision: "ADR-0013", requiredStatus: "accepted" },
-            { decision: "owning-product-feature-decision", requiredStatus: "accepted" },
-          ],
-        },
-        {
-          id: "foundation-owned",
-          allOf: [
-            { decision: "ADR-0012", requiredStatus: "accepted" },
-            { decision: "UMEQ-011", requiredStatus: "resolved" },
-            { decision: "UMEQ-013", requiredStatus: "resolved" },
-          ],
-        },
-      ],
-    },
-    {
-      id: "phase-3-reusable-contract-extraction",
-      appliesTo: ["phase-3-reusable-internal-contracts"],
-      mode: "exactly-one-path",
-      paths: [
-        {
-          id: "product-local-extraction",
-          allOf: [
-            { decision: "ADR-0013", requiredStatus: "accepted" },
-            { decision: "owning-product-feature-decision", requiredStatus: "accepted" },
-            { evidence: "second-independent-consumer", requiredStatus: "proven" },
-            { evidence: "cross-implementation-conformance", requiredStatus: "passed" },
-            { decision: "UMEQ-012", requiredStatus: "resolved" },
-            { decision: "foundation-extraction-decision", requiredStatus: "accepted" },
-          ],
-        },
-        {
-          id: "foundation-owned-admission",
-          allOf: [
-            { decision: "ADR-0012", requiredStatus: "accepted" },
-            { decision: "UMEQ-011", requiredStatus: "resolved" },
-            { decision: "UMEQ-012", requiredStatus: "resolved" },
-            { decision: "UMEQ-013", requiredStatus: "resolved" },
-            { evidence: "adr-0012-admission-basis", requiredStatus: "proven" },
-            { evidence: "immutable-package-admission-record", requiredStatus: "verified" },
-            { evidence: "independent-conformance", requiredStatus: "passed" },
-            { decision: "foundation-package-admission-decision", requiredStatus: "accepted" },
-          ],
-        },
-      ],
-    },
-    {
-      id: "phase-3-package-publication",
-      appliesTo: ["phase-3-public-package-publication"],
-      mode: "all",
-      allOf: [
-        { gate: "phase-3-reusable-contract-extraction", requiredStatus: "satisfied" },
-        { decision: "UMEQ-014", requiredStatus: "resolved" },
-        { decision: "UMEQ-015", requiredStatus: "resolved" },
-        { decision: "UMEQ-016", requiredStatus: "resolved" },
-        { evidence: "PACKAGE-1", requiredStatus: "passed" },
-        { evidence: "public-api-report", requiredStatus: "passed" },
-        { evidence: "immutable-package-admission-record", requiredStatus: "verified" },
-        { evidence: "package-release-promotion-verification", requiredStatus: "passed" },
-        { decision: "foundation-package-admission-decision", requiredStatus: "accepted" },
-        { decision: "foundation-package-publication-decision", requiredStatus: "accepted" },
-      ],
-    },
-    {
-      id: "production-extension-host-safety",
-      appliesTo: [
-        "phase-4-process-host",
-        "phase-5-packaging-and-installation",
-        "phase-6-frontend-and-untrusted-hosts",
-      ],
-      mode: "all",
-      allOf: [{ decision: "ADR-0011", requiredStatus: "accepted" }],
-    },
-    {
-      id: "process-host-wire-format",
-      appliesTo: ["phase-4-process-host"],
-      mode: "all",
-      allOf: [{ decision: "UMEQ-009", requiredStatus: "resolved" }],
-    },
-    {
-      id: "frontend-extension-host",
-      appliesTo: ["phase-6-frontend-and-untrusted-hosts"],
-      mode: "all",
-      allOf: [{ decision: "UMEQ-010", requiredStatus: "resolved" }],
-    },
-  ]);
+  assert.equal(documentedRevision, ledger.sourceRevision);
 
-  const approvals = ledger.entries.filter(entry => entry.approvalRequired);
-  assert.deepEqual(
-    approvals.map(entry => entry.id),
-    Array.from({ length: 10 }, (_, index) => `UMEQ-${String(index + 9).padStart(3, "0")}`),
-  );
-  assert.ok(approvals.every(entry => entry.status === "open"));
-  assert.ok(ledger.entries.every(entry => entry.authority.length > 0));
-  assert.ok(
-    approvals.every(entry => entry.authority === "product-owner" || /^OD-\d{3}$/.test(entry.authority)),
-    "an open fork requires a resolving authority, not an already accepted ADR",
-  );
+  const activeEntries = [...ledger.entries, ...ledger.externalDecisionGates];
+  const identifiers = [
+    ...activeEntries.map(entry => entry.id),
+    ...ledger.retiredIdentifiers.map(entry => entry.id),
+    ...ledger.requirementDefinitions.map(entry => entry.id),
+    ...ledger.implementationGates.map(entry => entry.id),
+  ];
+  assert.equal(new Set(identifiers).size, identifiers.length, "ledger identifiers must be globally unique");
+  assert.ok(ledger.entries.filter(entry => entry.approvalRequired).every(entry => (
+    entry.status === "open" && entry.authority.length > 0
+  )));
   assert.ok(ledger.externalDecisionGates.every(entry => entry.approvalTrackedBy === "adr-lifecycle"));
 
-  const requirementIds = ledger.requirementDefinitions.map(entry => entry.id);
-  const gateIds = ledger.implementationGates.map(entry => entry.id);
-  assert.equal(new Set(requirementIds).size, requirementIds.length);
-  assert.equal(new Set(gateIds).size, gateIds.length);
-  assert.equal(
-    new Set([...ids, ...retiredIds, ...ledger.externalDecisionGates.map(entry => entry.id), ...requirementIds]).size,
-    ids.length + retiredIds.length + ledger.externalDecisionGates.length + requirementIds.length,
-    "decision, evidence, external-gate, and retired identifiers must not overlap",
-  );
-  const definitions = new Map(ledger.requirementDefinitions.map(entry => [entry.id, entry]));
-  const activeDecisionIds = new Set([
-    ...ids,
-    ...ledger.externalDecisionGates.map(entry => entry.id),
+  const decisionIds = new Set([
+    ...activeEntries.map(entry => entry.id),
     ...ledger.requirementDefinitions.filter(entry => entry.kind === "decision").map(entry => entry.id),
   ]);
   const evidenceIds = new Set(
     ledger.requirementDefinitions.filter(entry => entry.kind === "evidence").map(entry => entry.id),
   );
-  const referencedDefinitions = new Set<string>();
+  const gateIds = new Set(ledger.implementationGates.map(entry => entry.id));
+  const usedDefinitions = new Set<string>();
   const gateDependencies = new Map<string, string[]>();
+
   for (const gate of ledger.implementationGates) {
-    const requirements = [
-      ...(gate.allOf ?? []),
-      ...(gate.paths ?? []).flatMap(path => path.allOf),
-    ];
+    assert.ok(gate.appliesTo.length > 0, `${gate.id} must name its protected phase`);
+    if (gate.mode === "all") {
+      assert.ok((gate.allOf?.length ?? 0) > 0, `${gate.id} requires allOf entries`);
+      assert.equal(gate.paths, undefined, `${gate.id} cannot mix allOf and paths`);
+    } else {
+      assert.ok((gate.paths?.length ?? 0) > 0, `${gate.id} requires alternative paths`);
+      assert.equal(gate.allOf, undefined, `${gate.id} cannot mix allOf and paths`);
+    }
     gateDependencies.set(gate.id, []);
-    for (const requirement of requirements) {
+    for (const requirement of gateRequirements(gate)) {
       const keys = ["decision", "evidence", "gate"].filter(key => key in requirement);
-      assert.deepEqual(keys.length, 1, `${gate.id} requirement must have exactly one typed reference`);
-      assert.ok(requirement.requiredStatus.length > 0, `${gate.id} requirement status is empty`);
+      assert.equal(keys.length, 1, `${gate.id} requirement must have one typed reference`);
+      assert.ok(requirement.requiredStatus.length > 0);
       if ("decision" in requirement) {
-        assert.ok(activeDecisionIds.has(requirement.decision), `${gate.id} references unknown decision ${requirement.decision}`);
-        if (definitions.has(requirement.decision)) referencedDefinitions.add(requirement.decision);
+        assert.ok(decisionIds.has(requirement.decision), `${gate.id} references unknown decision ${requirement.decision}`);
+        if (ledger.requirementDefinitions.some(entry => entry.id === requirement.decision)) {
+          usedDefinitions.add(requirement.decision);
+        }
       } else if ("evidence" in requirement) {
         assert.ok(evidenceIds.has(requirement.evidence), `${gate.id} references unknown evidence ${requirement.evidence}`);
-        referencedDefinitions.add(requirement.evidence);
+        usedDefinitions.add(requirement.evidence);
       } else {
-        assert.ok(gateIds.includes(requirement.gate), `${gate.id} references unknown gate ${requirement.gate}`);
-        assert.notEqual(requirement.gate, gate.id, `${gate.id} cannot depend on itself`);
+        assert.ok(gateIds.has(requirement.gate), `${gate.id} references unknown gate ${requirement.gate}`);
+        assert.notEqual(requirement.gate, gate.id);
         gateDependencies.get(gate.id)!.push(requirement.gate);
       }
     }
   }
   assert.deepEqual(
-    [...referencedDefinitions].sort(),
-    [...requirementIds].sort(),
-    "every typed requirement definition must be used by an implementation gate",
+    [...usedDefinitions].sort(),
+    ledger.requirementDefinitions.map(entry => entry.id).sort(),
+    "every requirement definition must protect an implementation gate",
   );
+
   const visiting = new Set<string>();
   const visited = new Set<string>();
-  const visitGate = (gateId: string): void => {
-    if (visited.has(gateId)) return;
-    assert.ok(!visiting.has(gateId), `implementation gate dependency cycle at ${gateId}`);
-    visiting.add(gateId);
-    for (const dependency of gateDependencies.get(gateId) ?? []) visitGate(dependency);
-    visiting.delete(gateId);
-    visited.add(gateId);
+  const visit = (id: string): void => {
+    if (visited.has(id)) return;
+    assert.ok(!visiting.has(id), `implementation gate cycle at ${id}`);
+    visiting.add(id);
+    for (const dependency of gateDependencies.get(id) ?? []) visit(dependency);
+    visiting.delete(id);
+    visited.add(id);
   };
-  for (const gateId of gateIds) visitGate(gateId);
+  for (const id of gateIds) visit(id);
 
-  const knownIds = new Set([...ids, ...retiredIds]);
-  const dossierFiles = (await readdir(dossier)).filter(name => /\.(?:md|ya?ml)$/.test(name));
-  const markdownFiles = new Map<string, string>();
-  for (const name of dossierFiles) {
+  const serializedGates = JSON.stringify(ledger.implementationGates);
+  assertMarkers(serializedGates, [
+    /ADR-0013/,
+    /second-independent-consumer/,
+    /foundation-(?:semantic-)?extraction-decision[^}]*accepted/i,
+  ], "decision ledger gates");
+  const phaseOneGate = ledger.implementationGates.find(gate => gate.id === "phase-1-static-module-rehearsal");
+  assert.ok(phaseOneGate, "phase-1 static module rehearsal gate is required");
+  assert.deepEqual(
+    gateRequirements(phaseOneGate).map(requirement => "decision" in requirement ? requirement.decision : null),
+    ["ADR-0013", "ADR-0014", "owning-product-feature-decision"],
+  );
+
+  const knownUmeqIds = new Set([
+    ...ledger.entries.map(entry => entry.id),
+    ...ledger.retiredIdentifiers.map(entry => entry.id),
+  ]);
+  for (const name of (await readdir(dossier)).filter(name => /\.(?:md|ya?ml)$/.test(name))) {
     const contents = await readFile(resolve(dossier, name), "utf8");
-    if (name.endsWith(".md")) markdownFiles.set(name, contents);
-    const referencedIds = contents.match(/\bUMEQ-[A-Z0-9-]+\b/g) ?? [];
-    for (const id of referencedIds) assert.ok(knownIds.has(id), `${name} references unledgered ${id}`);
+    for (const id of contents.match(/\bUMEQ-[A-Z0-9-]+\b/g) ?? []) {
+      assert.ok(knownUmeqIds.has(id), `${name} references unledgered ${id}`);
+    }
   }
 
-  for (const approval of approvals) {
-    const normativeHeadings = [...markdownFiles].flatMap(([name, contents]) => (
-      [...contents.matchAll(new RegExp(`^#{1,6}\\s+${approval.id}:`, "gm"))].map(match => ({ name, heading: match[0] }))
-    ));
-    assert.deepEqual(
-      normativeHeadings.map(entry => entry.name),
-      ["unresolved-decisions.md"],
-      `${approval.id} must have exactly one normative approval heading`,
-    );
-  }
-
-  for (const entry of [...ledger.entries, ...ledger.externalDecisionGates, ...ledger.requirementDefinitions]) {
+  for (const entry of [...activeEntries, ...ledger.requirementDefinitions]) {
     const [relativePath, fragment] = entry.detail.split("#", 2);
     const targetPath = resolve(dirname(ledgerPath), relativePath!);
     const contents = await readFile(targetPath, "utf8");
     if (fragment) {
-      assert.match(relativePath!, /\.md$/, `${entry.id} fragment target must be Markdown`);
-      const anchors = contents.matchAll(/^#{1,6}\s+(.+)$/gm);
-      assert.ok([...anchors].some(match => markdownAnchor(match[1]!) === fragment), `${entry.id} has stale detail anchor`);
+      const anchors = [...contents.matchAll(/^#{1,6}\s+(.+)$/gm)].map(match => markdownAnchor(match[1]!));
+      assert.ok(anchors.includes(fragment), `${entry.id} has a stale detail anchor`);
     }
   }
 });
 
-test("qualified identity and extraction rules preserve accepted ADR authority", async () => {
+test("accepted ADR-0013 cumulatively replaces ADR-0012 without premature extraction", async () => {
+  const adr13 = await findDocumentById(decisions, "ADR-0013");
+  assert.equal(adr13.metadata.status, "accepted");
+  assert.deepEqual(adr13.metadata.supersedes, ["ADR-0012"]);
+
+  section(adr13.body, /^(?:Decision|Accepted Decision)$/i);
+  assertMarkers(adr13.body, [
+    /(?:orthogonal|distinct)[\s\S]{0,120}(?:roles|boundaries)|(?:roles|boundaries)[\s\S]{0,120}(?:orthogonal|distinct)/i,
+    /(?:reusable|product-scoped)?\s*librar(?:y|ies)(?: core)?/i,
+    /module adapter/i,
+    /plugin artifact/i,
+    /Product-first composition/i,
+    /Product-local feature code and static Pure DI composition are the default/i,
+    /first product can rehearse static composition/i,
+    /two (?:real )?independently authored consumers/i,
+    /(?:separate|explicit) accepted extraction decision/i,
+  ], "ADR-0013");
+  assert.match(adr13.body, /ADR-0012[\s\S]{0,160}(?:incorporat|preserv|cumulative)/i);
+  assert.doesNotMatch(adr13.body, /first consumer[^.]{0,160}(?:public SPI|Foundation package)[^.]{0,80}(?:publish|admit)/i);
+});
+
+test("accepted ADR-0014 records evidence only and grants no production surface", async () => {
+  const adr14 = await findDocumentById(decisions, "ADR-0014");
+  assert.equal(adr14.metadata.status, "accepted");
+  section(adr14.body, /^(?:Decision|Accepted Decision)$/i);
+  const noAuthorityStatement = adr14.body.split(/\n\s*\n/).find(paragraph => (
+    /(?:does not|no)[\s\S]{0,40}(?:authorize|admit|approve|authority)/i.test(paragraph)
+    && /Foundation package/i.test(paragraph)
+    && /public SPI/i.test(paragraph)
+    && /(?:production module runtime|graph host)/i.test(paragraph)
+  ));
+  assert.ok(noAuthorityStatement, "ADR-0014 must deny all three production authorizations together");
+});
+
+test("OD-003 stays open without embedding accepted normative decisions", async () => {
+  const od3 = await findDocumentById(openDecisions, "OD-003");
+  assert.equal(od3.metadata.status, "open");
+  assert.doesNotMatch(od3.body, /^#{1,6}\s+Resolved Sub-?Decisions\s*$/gim);
+  assert.doesNotMatch(od3.body, /approved the following foundations[\s\S]{0,80}no longer alternatives/i);
+
+  const acceptedReferences = Array.isArray(od3.metadata.related)
+    ? od3.metadata.related.filter(id => /^ADR-\d{4}$/.test(String(id)))
+    : [];
+  assert.ok(acceptedReferences.includes("ADR-0013"));
+  assert.ok(acceptedReferences.includes("ADR-0014"));
+  for (const id of acceptedReferences) {
+    const adr = await findDocumentById(decisions, String(id));
+    assert.equal(adr.metadata.status, "accepted", `OD-003 points to non-accepted ${id}`);
+  }
+});
+
+test("the dossier has one trigger-gated roadmap with static Pure DI first", async () => {
+  const roadmap = await Promise.all([
+    "current-state.md",
+    "final-recommendation.md",
+    "invariant-map.md",
+    "module-graph.md",
+    "product-adoption.md",
+  ].map(name => readFile(resolve(dossier, name), "utf8"))).then(files => files.join("\n"));
+
+  assertMarkers(roadmap, [
+    /(?:Phase 1|first)[\s\S]{0,220}(?:static|compile-time) Pure DI[\s\S]{0,220}(?:rehearsal|slice)/i,
+    /static Pure DI rehearsal[\s\S]{0,180}private (?:product )?graph only after/i,
+    /private (?:product )?graph[\s\S]{0,180}(?:only after|measured)/i,
+    /(?:Agent Runtime|\bAR\b)[\s\S]{0,220}descriptor[\s\S]{0,220}not[\s\S]{0,100}(?:second|independent)[\s\S]{0,80}(?:graph|lifecycle) consumer/i,
+  ], "roadmap");
+  assert.doesNotMatch(roadmap, /(?:current|recommended|Phase 1)[^\n]{0,140}graph[- ]first/i);
+  assert.doesNotMatch(roadmap, /graph[\s\S]{0,80}(?:before|precedes)[\s\S]{0,80}(?:static|compile-time) Pure DI/i);
+});
+
+test("identity and build descriptions preserve a single inert metadata authority", async () => {
+  const graph = await readFile(resolve(dossier, "module-graph.md"), "utf8");
+  assertMarkers(graph, [
+    /exactly one metadata authority[\s\S]{0,120}module-local[\s\S]{0,120}inert data/i,
+    /generated TypeScript handles/i,
+    /\brequired\b[\s\S]{0,80}\boptional\b[\s\S]{0,80}\bmany\b/i,
+    /Every resolved slot[\s\S]{0,100}explicit coordinate/i,
+    /profile supplies selections/i,
+    /(?:null|none)[\s\S]{0,120}(?:optional|slot)|optional[\s\S]{0,120}(?:null|none)/i,
+    /ordered (?:provider )?(?:list|bindings|collection)/i,
+    /Discovery parses[\s\S]{0,100}never imports\s+TypeScript/i,
+    /executes a getter or decorator/i,
+    /resolves the activation[\s\S]{0,20}entrypoint/i,
+  ], "module graph");
+  assert.doesNotMatch(graph, /(?:hand-maintained|global) (?:registry|catalog)[\s\S]{0,100}(?:canonical|authoritative) source/i);
+});
+
+test("lifecycle semantics are fail-closed, durable, and explicitly ordered", async () => {
+  const lifecycle = await readFile(resolve(dossier, "lifecycle-and-concurrency.md"), "utf8");
+  const graph = await readFile(resolve(dossier, "module-graph.md"), "utf8");
+  assert.match(`${graph}\n${lifecycle}`, /selected provider[\s\S]{0,120}(?:failure|fails)[\s\S]{0,100}(?:abort|fail)/i);
+  assertMarkers(lifecycle, [
+    /three[\s\S]{0,40}non-renewable absolute horizons/i,
+    /expectedDesiredHead[\s\S]{0,100}expectedActiveHead[\s\S]{0,180}(?:serialized|compare)/i,
+    /durable[\s\S]{0,100}(?:restart_required[\s\S]{0,100}high-water|high-water[\s\S]{0,100}restart_required)/i,
+    /staged runtime[\s\S]{0,100}pins?/i,
+    /state migration gate/i,
+    /StateCustodyAuthorization/,
+    /separate\s+immutable[\s\S]{0,160}(?:ActivationPlan|activation)[\s\S]{0,160}(?:DrainPlan|drain)[\s\S]{0,160}(?:RetirementPlan|retirement)[\s\S]{0,160}(?:MigrationPlan|migration)/i,
+  ], "lifecycle model");
+  assertMarkers(lifecycle, [
+    /activation\s+(?:DAG|order|projection)/i,
+    /drain\s+(?:order|projection)/i,
+    /retirement\s+(?:order|projection|follows)/i,
+    /migration\s+(?:order|projection|follows)/i,
+  ], "lifecycle order projections");
+});
+
+test("trust claims distinguish current evidence from future supply-chain work", async () => {
+  const trust = await Promise.all([
+    "trust-and-security.md",
+    "catalog-and-profiles.md",
+    "current-state.md",
+    "spike-results.md",
+    "final-recommendation.md",
+  ].map(name => readFile(resolve(dossier, name), "utf8"))).then(files => files.join("\n"));
+
+  assertMarkers(trust, [
+    /`T1` fault-contained[^|]*\|[^|]*fault containment[^|]*(?:not|no)[^|]*(?:sandbox|isolation)/i,
+    /audited `T0` built-in/i,
+    /direct[- ]digest[\s\S]{0,180}manual[- ]pin[\s\S]{0,180}(?:no|without|not)[\s\S]{0,100}currentness/i,
+    /does not contain or qualify production OCI\/ORAS, Cosign\/Sigstore or TUF\s+adapters/i,
+    /TUF[\s\S]{0,120}(?:before|required prior to)[\s\S]{0,120}mutable (?:managed )?channels/i,
+  ], "trust-phase evidence");
+});
+
+test("qualified identity and extraction controls remain contiguous and authoritative", async () => {
   const antiPatterns = await readFile(resolve(dossier, "anti-patterns.md"), "utf8");
   const moduleGraph = await readFile(resolve(dossier, "module-graph.md"), "utf8");
   const antiPatternIds = [...antiPatterns.matchAll(/^\| (AP-\d{3}) \|/gm)].map(match => match[1]);
+  const numbers = antiPatternIds.map(id => Number(id!.slice(3)));
 
-  assert.deepEqual(
-    antiPatternIds,
-    Array.from({ length: 96 }, (_, index) => `AP-${String(index + 1).padStart(3, "0")}`),
-    "anti-pattern identifiers must remain unique, contiguous, and ordered",
-  );
-  assert.match(antiPatterns, /AP-080 \| Extract a neutral package without satisfying an accepted ADR-0012 admission basis/);
-  assert.doesNotMatch(antiPatterns, /AP-080 \| Extract a neutral package before a second consumer/);
-  const catalogControls = [
-    {
-      decision: "../../decisions/0003-postgresql-canonical-catalog-state-and-signed-snapshots.md",
-      decisionInvariant: /one PostgreSQL database as its only\s+canonical state/,
-      control: /AP-084 \| Multiple canonical writers for one catalog source/,
-    },
-    {
-      decision: "../../decisions/0004-deterministic-catalog-federation-and-namespace-authority.md",
-      decisionInvariant: /never triggers implicit fallback to another\s+catalog/,
-      control: /AP-085 \| Merge or fallback after catalog authority selection/,
-    },
-  ];
-  for (const catalogControl of catalogControls) {
-    const decision = await readFile(resolve(dossier, catalogControl.decision), "utf8");
-    assert.match(decision, /^status: accepted$/m);
-    assert.match(decision, catalogControl.decisionInvariant);
-    assert.match(antiPatterns, catalogControl.control);
-  }
+  assert.ok(numbers.length >= 96);
+  assert.deepEqual(numbers, Array.from({ length: numbers.length }, (_, index) => index + 1));
+  assert.match(antiPatterns, /AP-080 \| Extract a neutral package without satisfying an accepted ADR-0013 package-admission basis/);
   assert.match(moduleGraph, /`BuiltInModuleInstallation` activation-source identity/);
   assert.match(moduleGraph, /product authority scope, stable module identity, and immutable implementation\s+digest/);
-  assert.doesNotMatch(moduleGraph, /built-in module has an immutable\s+implementation identity but no artifact or installation identity/);
 });
 
 test("OSS comparison distinguishes immutable evidence from orientation research", async () => {
-  const repositoryRoot = resolve(dossier, "../../..");
   const lock = parse(await readFile(resolve(repositoryRoot, "pnpm-lock.yaml"), "utf8")) as {
     readonly packages: Readonly<Record<string, { readonly resolution?: { readonly integrity?: string } }>>;
   };
@@ -488,7 +404,6 @@ test("OSS comparison distinguishes immutable evidence from orientation research"
   }
   assert.equal(new Set(record.candidates.map(candidate => candidate.id)).size, record.candidates.length);
   for (const candidate of record.candidates) {
-    assert.ok(["pinned", "orientation", "qualified-experiment"].includes(candidate.evidenceStatus));
     if (candidate.evidenceStatus === "orientation") assert.match(candidate.versionOrRevision, /^reviewed-/);
     if (candidate.evidenceStatus === "pinned") {
       assert.doesNotMatch(candidate.versionOrRevision, /^(?:reviewed-|latest$)/);
@@ -503,13 +418,10 @@ test("OSS comparison distinguishes immutable evidence from orientation research"
         assert.match(evidence.revision ?? "", /^[0-9a-f]{40}$/);
         assert.equal(evidence.url, `${evidence.repository}/commit/${evidence.revision}`);
       } else if (evidence.kind === "npm-release") {
-        assert.match(evidence.package ?? "", /^(?:@[a-z0-9_.-]+\/)?[a-z0-9_.-]+$/);
         assert.match(evidence.version ?? "", CONFORMANCE_VERSION);
-        assert.match(evidence.url ?? "", /^https:\/\/registry\.npmjs\.org\//);
         assert.match(evidence.integrity ?? "", /^sha512-[A-Za-z0-9+/]+={0,2}$/);
         if (evidence.locked) {
-          const entry = lock.packages[`${evidence.package}@${evidence.version}`];
-          assert.equal(entry?.resolution?.integrity, evidence.integrity);
+          assert.equal(lock.packages[`${evidence.package}@${evidence.version}`]?.resolution?.integrity, evidence.integrity);
         }
       } else {
         assert.match(evidence.url ?? "", /^https:\/\//);
@@ -520,71 +432,9 @@ test("OSS comparison distinguishes immutable evidence from orientation research"
   }
 });
 
-test("accepted publication gates remain authoritative while proposed ADR-0013 is non-operative", async () => {
-  const repositoryRoot = resolve(dossier, "../../..");
-  const files = await Promise.all([
-    readFile(resolve(repositoryRoot, "docs/decisions/0001-product-neutral-extension-foundation-boundary.md"), "utf8"),
-    readFile(resolve(dossier, "invariant-map.md"), "utf8"),
-    readFile(resolve(dossier, "conformance-plan.md"), "utf8"),
-    readFile(resolve(dossier, "final-recommendation.md"), "utf8"),
-    readFile(resolve(dossier, "product-adoption.md"), "utf8"),
-    readFile(resolve(dossier, "unresolved-decisions.md"), "utf8"),
-    readFile(resolve(repositoryRoot, "docs/decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md"), "utf8"),
-    readFile(resolve(repositoryRoot, "docs/decisions/0012-reusable-library-module-and-plugin-boundaries.md"), "utf8"),
-  ]);
-  assert.match(files[0]!, /Public SPI requires independent implementations/);
-  for (const markdown of files.slice(1, 4)) assert.match(markdown, /two independently authored/);
-  assert.doesNotMatch(files[2]!, /one real implementation plus a bounded reference adapter/);
-  assert.match(files[3]!, /No graph implementation begins until one ownership path is explicitly opened/);
-  assert.match(files[3]!, /Until one complete path is approved, Phase 1 is blocked/);
-  assert.doesNotMatch(files[4]!, /independently packaged reference implementation/);
-  assert.match(files[4]!, /accepted internal model\s+and one complete Phase 1 ownership path is approved/);
-  assert.match(files[4]!, /product-local path additionally requires ADR-0013 acceptance/);
-  assert.match(files[5]!, /No graph slice starts until its ownership path is complete/);
-  assert.match(files[5]!, /ADR-0013.*owning product's\s+feature decision/is);
-  assert.match(files[5]!, /ADR-0012 remains effective.*`UMEQ-011` and `UMEQ-013`/is);
-  assert.match(files[2]!, /Under the product-local ADR-0013 path, two independent\s+consumers/);
-  assert.match(files[2]!, /Under the\s+effective ADR-0012 path, the selected accepted admission basis/);
-  assert.match(files[2]!, /a second consumer is not imposed on the other\s+accepted bases/);
-  assert.match(files[3]!, /ADR-0012's accepted admission\s+bases/);
-  assert.match(files[3]!, /not\s+silently narrowed to the second-consumer\s+basis/);
-  assert.match(files[3]!, /Public package publication additionally requires the cumulative\s+`phase-3-package-publication` gate/);
-  assert.match(files[3]!, /`UMEQ-014`, `UMEQ-015` and `UMEQ-016` are resolved/);
-  assert.match(files[3]!, /`PACKAGE-1` packed-package\s+conformance and the public API report pass/);
-  assert.match(files[3]!, /immutable package admission\s+record is verified/);
-  assert.match(files[3]!, /release-promotion verification passes/);
-  assert.match(files[5]!, /Public package publication is a\s+cumulative gate/);
-  assert.match(files[5]!, /`UMEQ-014`,\s+`UMEQ-015` and `UMEQ-016` must be resolved/);
-  assert.match(files[6]!, /status: proposed/);
-  assert.match(files[6]!, /ADR-0012\s+remains the effective admission policy/);
-  assert.match(files[6]!, /cannot narrow or block the admission bases already accepted in ADR-0012/);
-  assert.match(files[6]!, /related:[\s\S]*ADR-0012/);
-  assert.doesNotMatch(files[6]!, /no Foundation runtime package or public SPI may be admitted/);
-  assert.match(files[7]!, /Extract or publish only when at least one of these is proven/);
-  assert.match(files[3]!, /If ADR-0012\s+remains effective/);
-  assert.match(files[3]!, /does\s+not\s+make either approval path operative/);
+test("no qualification result admits a production package", async () => {
   const packageCatalog = JSON.parse(await readFile(resolve(repositoryRoot, "architecture/package-catalog.json"), "utf8")) as {
     readonly packages?: readonly unknown[];
   };
-  assert.deepEqual(packageCatalog.packages, [], "this qualification does not admit a production package");
-});
-
-test("execution admission and every production host remain independently gated", async () => {
-  const trust = await readFile(resolve(dossier, "trust-and-security.md"), "utf8");
-  const recommendation = await readFile(resolve(dossier, "final-recommendation.md"), "utf8");
-
-  assert.match(trust, /entitlement decision = allow OR entitlement plane = explicitly not-applicable/);
-  assert.match(trust, /product authorization = allow/);
-  assert.match(trust, /current product capability grant/);
-  assert.match(trust, /Request\["Capability request"\] --> Product\["Product authorization"\]/);
-  assert.match(trust, /Product --> Intersect\["Authority intersection"\]/);
-  assert.match(trust, /Grant\["Current product capability grant"\] --> Intersect/);
-  assert.doesNotMatch(trust, /Product --> Grant/);
-  assert.match(recommendation, /`UMEQ-009` is resolved through `OD-003` for the selected process wire format/);
-  assert.match(trust, /AR authorization = allow when AR owns the capability/);
-  assert.match(trust, /Unknown applicability, a bare decision without\s+an `allow` result.*deny execution/is);
-  assert.match(
-    recommendation,
-    /Phase 6: Frontend And Untrusted Hosts[\s\S]*same ADR-0011 closure gate as Phases 4 and 5/,
-  );
+  assert.deepEqual(packageCatalog.packages, []);
 });

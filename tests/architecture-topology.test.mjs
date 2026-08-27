@@ -874,7 +874,7 @@ test("package admission fails closed without versioned independent evidence", as
       `${JSON.stringify(unknownBasis)}\n`,
     );
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
-      "module.example: admission.admission_basis must identify one ADR-0012 extraction gate",
+      "module.example: admission.admission_basis must identify one ADR-0013 package-admission basis",
     ]);
 
     const malformedOwner = packageAdmission();
