@@ -8,10 +8,13 @@ import test from "node:test";
 import { validateBuiltPackageArtifacts } from "../architecture/checks/package-artifacts.mjs";
 import {
   CONFORMANCE_VERSION,
+  loadAcceptedDecisionEntries,
   loadAcceptedDecisionIds,
   loadPackagePolicy,
   materializationPlanPath,
+  packageAdmissionGateId,
   packageAdmissionPath,
+  packagePublicationGateId,
   statusCrossChecksWithAcceptedLedger,
 } from "../architecture/checks/package-policy.mjs";
 import {
@@ -30,6 +33,7 @@ const acceptedOwner = async id => ({
     packageId: "module.example",
     packageName: "@agent-teams/example",
     packagePath: "packages/example",
+    semanticClassification: "ordinary-library",
     features: ["example"],
   }],
 });
@@ -49,9 +53,19 @@ test("package owner status is cross-checked against the accepted-decision ledger
       }],
     }));
     const acceptedIds = await loadAcceptedDecisionIds(root);
-    const document = status => ({ id: "ADR-0099", metadata: { id: "ADR-0099", type: "adr", status } });
+    const acceptedEntries = await loadAcceptedDecisionEntries(root);
+    const document = (status, repositoryPath = "docs/decisions/0099-owner.md") => ({
+      id: "ADR-0099",
+      metadata: { id: "ADR-0099", type: "adr", status },
+      repositoryPath,
+    });
     assert.equal(statusCrossChecksWithAcceptedLedger(document("accepted"), acceptedIds), true);
     assert.equal(statusCrossChecksWithAcceptedLedger(document("proposed"), acceptedIds), false);
+    assert.equal(statusCrossChecksWithAcceptedLedger(document("accepted"), acceptedEntries), true);
+    assert.equal(statusCrossChecksWithAcceptedLedger(
+      document("accepted", "docs/decisions/0099-moved.md"),
+      acceptedEntries,
+    ), false);
     assert.equal(statusCrossChecksWithAcceptedLedger(
       { id: "ADR-0100", metadata: { id: "ADR-0100", type: "adr", status: "accepted" } },
       acceptedIds,
@@ -152,13 +166,15 @@ function packageCatalog() {
 
 function packageAdmission() {
   return {
-    schema_version: 3,
+    schema_version: 4,
     admission_basis: "public-spi",
     package_id: "module.example",
     owner_repository: "agent-teams-ai/extension-foundation",
     extraction_decision: "ADR-0099",
     neutrality_claim: "The capability contains no product-owned language or runtime authority.",
     release_policy: "Exact SemVer with immutable packed-artifact evidence.",
+    semantic_classification: "ordinary-library",
+    semantic_extraction_decision: "not-applicable",
     conformance_version: "1.0.0",
     consumer_evidence: [
       {
@@ -873,6 +889,57 @@ test("package admission fails closed without versioned independent evidence", as
     );
     assert.deepEqual((await loadPackagePolicy(root)).errors, []);
 
+    const semanticPackage = packageAdmission();
+    semanticPackage.semantic_classification = "foundation-module-semantics";
+    semanticPackage.semantic_extraction_decision = "ADR-0099";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(semanticPackage)}\n`,
+    );
+    const semanticPolicy = await loadPackagePolicy(root);
+    assert.deepEqual(semanticPolicy.errors, []);
+    assert.equal(packageAdmissionGateId(semanticPolicy.admissionsById.get("module.example")), "phase-3-module-semantic-package-admission");
+    assert.equal(packagePublicationGateId(semanticPolicy.admissionsById.get("module.example")), "phase-3-module-semantic-package-publication");
+    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+      "module.example: admission semantic classification must equal the accepted owner ADR declaration",
+    ));
+    const semanticOwner = async id => {
+      const owner = await acceptedOwner(id);
+      owner.packageOwnership[0].semanticClassification = "foundation-module-semantics";
+      return owner;
+    };
+    assert.equal((await validatePackageTopology({ root, resolveOwner: semanticOwner })).includes(
+      "module.example: admission semantic classification must equal the accepted owner ADR declaration",
+    ), false);
+
+    const semanticOneConsumer = structuredClone(semanticPackage);
+    semanticOneConsumer.admission_basis = "independent-replacement-or-release-lifecycle";
+    semanticOneConsumer.consumer_evidence.splice(1);
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(semanticOneConsumer)}\n`,
+    );
+    assert.deepEqual((await loadPackagePolicy(root)).errors, [
+      "module.example: foundation-module-semantics admission requires two distinct consumer identities",
+      "module.example: foundation-module-semantics admission requires two independently authored implementation identities",
+      "module.example: foundation-module-semantics admission requires product-slice and independent-conformance evidence roles",
+    ]);
+
+    const ordinaryWithSemanticDecision = packageAdmission();
+    ordinaryWithSemanticDecision.semantic_extraction_decision = "ADR-0099";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(ordinaryWithSemanticDecision)}\n`,
+    );
+    assert.deepEqual((await loadPackagePolicy(root)).errors, [
+      "module.example: ordinary-library admission must mark semantic extraction not-applicable",
+    ]);
+    assert.equal(packageAdmissionGateId(ordinaryWithSemanticDecision), "phase-3-package-admission");
+    assert.equal(packagePublicationGateId(ordinaryWithSemanticDecision), "phase-3-package-publication");
+
     const independentIsolation = structuredClone(independentLifecycle);
     independentIsolation.admission_basis = "independent-deployment-or-isolation";
     await writeFixture(
@@ -1245,6 +1312,7 @@ test("topology rejects placeholder implementations and undeclared feature identi
         packageId: "module.example",
         packageName: "@agent-teams/example",
         packagePath: "packages/example",
+        semanticClassification: "ordinary-library",
         features: ["other"],
       }],
     });

@@ -147,7 +147,7 @@ persist idempotency outcomes for an explicit bounded policy, compact them only
 after the retry and reconciliation horizon, and preserve a tombstone sufficient
 to reject stale generations.
 
-The activation fingerprint binds the admitted provider identities, exact
+The post-admission activation fingerprint binds the admitted provider identities, exact
 resolved hook bundle and host-adapter implementation through an
 activation-source digest, plus admission receipt, plan, authority scope,
 profile/configuration, independent product-authorization, capability-grant and
@@ -182,11 +182,18 @@ handle issued by another scope is rejected.
 
 Relative timeout refresh is forbidden. Before verification begins, the product
 persists one idempotent `AdmissionIntent` containing the operation identity,
-authority scope, candidate comparison digest, provider references, and all
-three distinct non-renewable absolute deadlines on authority clocks. A retry with the same
-operation and fingerprint reuses this intent; a changed fingerprint conflicts.
+authority scope, candidate comparison digest, inert provider references, an
+`AdmissionRequestFingerprint`, and all three distinct non-renewable absolute
+deadlines on authority clocks. The request fingerprint covers only immutable
+pre-admission inputs: inert source and plan-template digests, verified executable
+digest references, configuration and policy revisions, provider references,
+authority scope, and the three clock-qualified cutoffs. It cannot include an
+admission receipt, admitted provider binding, candidate generation, evaluated
+hook, or other fact that does not yet exist. A retry with the same operation and
+request fingerprint reuses this intent; a changed fingerprint conflicts.
 Successful admission atomically attaches the receipt, content digest, provider
-binding, and candidate generation to that intent. A crash before admission
+binding, and candidate generation to that intent and computes the distinct
+post-admission `ActivationFingerprint`. A crash before admission
 therefore cannot refresh a deadline or allocate another receipt/generation.
 None of the three deadlines is inferred from or collapsed into a generic
 operation timeout:
@@ -204,6 +211,13 @@ incarnation-local enforcement aid, never the durable deadline. Caller
 observation and termination/reconciliation use
 separate bounded wait policies; they are not substituted for these authority
 deadlines and cannot authorize admission, provider execution, or handoff.
+
+Each persisted deadline is an `AuthorityClockCutoff`, not a bare number. It
+contains authority identity, clock domain and epoch, unit, cutoff value, and the
+decision revision that issued it. Every deadline receipt and `AuthorityTimestamp`
+binds the same clock tuple. A replacement host may derive a local monotonic
+watchdog only from a proven mapping to that tuple; missing or discontinuous clock
+provenance enters reconciliation and never creates a new duration.
 
 The disposable spike instead has one activation deadline, a cleanup cap and a
 bounded 100 ms default waiter grace. Those mechanics are useful evidence for
@@ -583,10 +597,10 @@ AdmissionIntent
   authorityScope
   candidateComparisonDigest
   providerReferences
-  activationFingerprint
-  admissionValidationDeadline
-  providerExecutionDeadline
-  activationHandoffDeadline
+  admissionRequestFingerprint
+  admissionValidationDeadline: AuthorityClockCutoff
+  providerExecutionDeadline: AuthorityClockCutoff
+  activationHandoffDeadline: AuthorityClockCutoff
   status: pending | admitted | expired | rejected
 
 LifecycleIntent
@@ -594,12 +608,11 @@ LifecycleIntent
   authorityScope
   candidateGeneration
   runtimeGeneration
-  moduleActivationGeneration
   activationFingerprint
   phase
-  admissionValidationDeadline
-  providerExecutionDeadline
-  activationHandoffDeadline
+  admissionValidationDeadline: AuthorityClockCutoff
+  providerExecutionDeadline: AuthorityClockCutoff
+  activationHandoffDeadline: AuthorityClockCutoff
   planContentDigest
   admittedPlanReceiptId
   providerBindingDigest
@@ -609,32 +622,61 @@ LifecycleIntent
   expectedDesiredHead
   expectedActiveHead
 
+ModuleActivationIntent
+  key:
+    candidateGeneration
+    runtimeGeneration
+    moduleId
+    moduleActivationGeneration
+    attemptId
+  providerBindingDigest
+  activationFingerprint
+  phase
+  readinessPolicyRevision
+  cleanupPolicyRevision
+
 LifecycleEvidence
   operationId
   intentDigest
   authorityScope
   candidateGeneration
   runtimeGeneration
-  moduleActivationGeneration
   activationFingerprint
   expectedDesiredHead
   expectedActiveHead
   routeRevision
   sinkFence
   replicaIncarnation
-  admissionValidationDeadline
-  providerExecutionDeadline
-  activationHandoffDeadline
+  admissionValidationDeadline: AuthorityClockCutoff
+  providerExecutionDeadline: AuthorityClockCutoff
+  activationHandoffDeadline: AuthorityClockCutoff
   phase
   outcome: confirmed | failed | pending | uncertain
   hostEvidenceRef
   payloadDigest
-  observedAt
+  observedAt: AuthorityTimestamp
+
+ModuleActivationEvidence
+  key:
+    candidateGeneration
+    runtimeGeneration
+    moduleId
+    moduleActivationGeneration
+    attemptId
+  providerBindingDigest
+  readinessReceiptRef
+  cleanupReceiptRef
+  outcome: confirmed | failed | pending | uncertain
+  observedAt: AuthorityTimestamp
 ```
 
 The transition from `AdmissionIntent` to `LifecycleIntent` is atomic with
 issuance of `AdmittedPlanReceipt`, `PlanContentDigest`, provider-binding digest,
-and `CandidateGeneration`; it preserves the original three cutoffs unchanged.
+and `CandidateGeneration`; it preserves the original three cutoffs unchanged and
+computes the post-admission `ActivationFingerprint` from those admitted facts.
+Readiness, provider execution, cleanup, and recovery receipts for one module bind
+the complete `ModuleActivationIntent` key. No candidate-level scalar can stand in
+for multiple module attempts.
 
 After coordinator restart, reconciliation compares durable intent, current
 desired and active heads, routing, host-incarnation facts, all fixed deadlines,

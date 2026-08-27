@@ -14,6 +14,7 @@ import {
   loadPackagePolicy,
   materializationPlanPath,
   packageOwnerFeatures,
+  packageOwnerSemanticClassification,
 } from "./package-policy.mjs";
 import { analyzeSource } from "./source-safety.mjs";
 
@@ -482,11 +483,17 @@ export async function validatePackageTopology({
   const { entriesByPath } = packagePolicy;
   const featuresByEntryId = new Map();
   for (const entry of packagePolicy.entries) {
-    const features = packageOwnerFeatures(entry, await resolveOwner(entry.owner_document));
+    const owner = await resolveOwner(entry.owner_document);
+    const features = packageOwnerFeatures(entry, owner);
     if (features === undefined) {
       errors.push(`${entry.id}: owner_document must be one effective accepted ADR bound to this exact package and its features`);
     } else {
       featuresByEntryId.set(entry.id, new Set(features));
+    }
+    const ownerClassification = packageOwnerSemanticClassification(entry, owner);
+    const admissionClassification = packagePolicy.admissionsById.get(entry.id)?.semantic_classification;
+    if (ownerClassification !== undefined && admissionClassification !== ownerClassification) {
+      errors.push(`${entry.id}: admission semantic classification must equal the accepted owner ADR declaration`);
     }
   }
   try {

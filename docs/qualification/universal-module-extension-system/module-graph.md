@@ -54,6 +54,8 @@ identities separate.
 
 | Identity | Meaning | Changes when |
 | --- | --- | --- |
+| `PublisherIdentity` | Stable publisher authority lineage, independent of signing credentials | Publisher identity or authority transfer changes |
+| `SigningCredentialIdentity` | One key or signer subject authorized for a publisher at an authority revision | Credential rotates, expires, or is revoked |
 | `ArtifactIdentity` | Immutable plugin bytes and provenance | Digest changes |
 | `InstallationIdentity` | One admitted artifact installation or built-in activation source in one authority scope | Installation or built-in implementation binding is recreated |
 | `ContributionIdentity` | One implementation offered by an installation or built-in source | Declared implementation changes incompatibly |
@@ -127,13 +129,19 @@ ExtensionModuleDefinition
 
 The declaration does not contain executable factories, container tokens,
 framework contexts, credentials, permission grants, or mutable runtime state.
-The executable activation factory is a separate target-specific binding. Its
-bytes, import, factory, getter, or provider callback are not evaluated until the
-exact provider binding, artifact verification and revocation status, plan
-admission, product-owned graph validation, product authorization, capability
-grants, host policy, and current generation fence all intersect for the same
-scope and immutable digests. Approval by any one of those authorities is never
-enough. Generated TypeScript handles and dependency types, aggregate
+The executable activation factory is a separate target-specific binding.
+Artifact-backed or generation-managed provider bytes, imports, factories,
+getters, or callbacks are not evaluated until the exact provider binding,
+artifact verification and revocation status when applicable, plan admission,
+product-owned graph validation, product authorization, capability grants, host
+policy, and current generation fence all intersect for the same scope and
+immutable digests. A static T0 built-in instead uses the accepted literal Pure
+DI route: trusted build provenance, exact `BuiltInModuleInstallation`, current
+grant bound to the target build and implementation digest, and product/host
+authorization, without fabricating artifact, plan, or runtime-generation facts.
+Moving that built-in into a generation-managed runtime activates the full graph
+route. Approval by any one authority is never enough. Generated TypeScript
+handles and dependency types, aggregate
 inventory, reverse-dependency index, diagrams, and diagnostics are disposable
 projections of the serialized declarations and selected profile. Authors do not
 repeat the metadata in `defineExtensionModule(...)` or any executable module.

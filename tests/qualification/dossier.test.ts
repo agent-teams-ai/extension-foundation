@@ -203,6 +203,8 @@ function validateDecisionProjections(
 }
 
 function projectedDecisionStatuses(markdown: string): readonly DecisionProjection[] {
+  const statusHeadings = [...markdown.matchAll(/^## (?:Canonical Status To Preserve|Decision Status)\s*$/gmi)];
+  assert.equal(statusHeadings.length, 1, "qualification report must contain exactly one decision status section");
   const table = section(markdown, /^(?:Canonical Status To Preserve|Decision Status)$/i);
   const projections: DecisionProjection[] = [];
   const seen = new Set<string>();
@@ -212,20 +214,24 @@ function projectedDecisionStatuses(markdown: string): readonly DecisionProjectio
     const authority = cells[0]!;
     if (authority === "Authority" || /^-+$/.test(authority.replace(/\s/g, ""))) continue;
     const status = cells[1]!.replaceAll("`", "").trim().toLowerCase();
-    const ids = new Set(authority.match(/(?:ADR|OD|UMEQ)-\d{3,4}/g) ?? []);
-    const ranges = [...authority.matchAll(/(UMEQ-)(\d{3})\s+through\s+UMEQ-(\d{3})/g)];
-    if (/\bthrough\b/i.test(authority)) {
-      assert.equal(ranges.length, 1, `malformed decision projection range: ${authority}`);
-    }
-    for (const range of ranges) {
-      const first = Number(range[2]);
-      const last = Number(range[3]);
+    const singlePattern = /^(?:ADR-\d{4}|OD-\d{3}|UMEQ-\d{3})$/;
+    const listPattern = /^(?:ADR-\d{4}|OD-\d{3}|UMEQ-\d{3})(?: and (?:ADR-\d{4}|OD-\d{3}|UMEQ-\d{3}))+$/;
+    const range = authority.match(/^UMEQ-(\d{3}) through UMEQ-(\d{3})$/);
+    let ids: string[];
+    if (singlePattern.test(authority)) ids = [authority];
+    else if (listPattern.test(authority)) ids = authority.split(" and ");
+    else if (range) {
+      const first = Number(range[1]);
+      const last = Number(range[2]);
       assert.ok(first <= last, `reversed decision projection range: ${authority}`);
+      ids = [];
       for (let number = first; number <= last; number += 1) {
-        ids.add(`${range[1]}${String(number).padStart(3, "0")}`);
+        ids.push(`UMEQ-${String(number).padStart(3, "0")}`);
       }
+    } else {
+      assert.fail(`decision projection row has malformed authority: ${authority}`);
     }
-    assert.ok(ids.size > 0, `decision projection row has no well-formed authority: ${authority}`);
+    assert.equal(new Set(ids).size, ids.length, `duplicate decision projection within row: ${authority}`);
     for (const id of ids) {
       assert.ok(!seen.has(id), `duplicate decision projection for ${id}`);
       seen.add(id);
@@ -252,14 +258,49 @@ function gateIsSatisfied(
   const requirementSatisfied = (requirement: GateRequirement): boolean => {
     if ("decision" in requirement) return statuses.get(requirement.decision) === requirement.requiredStatus;
     if ("evidence" in requirement) return statuses.get(requirement.evidence) === requirement.requiredStatus;
-    return statuses.get(requirement.gate) === requirement.requiredStatus
-      || (requirement.requiredStatus === "satisfied" && gateIsSatisfied(requirement.gate, ledger, statuses, nextVisiting));
+    return requirement.requiredStatus === "satisfied"
+      && gateIsSatisfied(requirement.gate, ledger, statuses, nextVisiting);
   };
   if (gate.mode === "all") return (gate.allOf ?? []).every(requirementSatisfied);
   if (gate.mode === "exactly-one-path") {
     return (gate.paths ?? []).filter(path => path.allOf.every(requirementSatisfied)).length === 1;
   }
   throw new Error(`${gate.id}: unsupported gate mode ${String(gate.mode)}`);
+}
+
+interface PublicationConsumerEvidence {
+  readonly consumerRepository: string;
+  readonly sourceRevision: string;
+  readonly packageName: string;
+  readonly packageVersion: string;
+  readonly packageDigest: string;
+  readonly conformanceVersion: string;
+  readonly implementationId: string;
+  readonly evidenceDigest: string;
+}
+
+function derivePublicationConsumerStatus(records: readonly PublicationConsumerEvidence[]): "proven" | "not-proven" {
+  if (records.length !== 2) return "not-proven";
+  const [baseline] = records;
+  if (!baseline) return "not-proven";
+  const exactIdentity = records.every(record => (
+    record.packageName === baseline.packageName
+    && record.packageVersion === baseline.packageVersion
+    && record.packageDigest === baseline.packageDigest
+    && record.conformanceVersion === baseline.conformanceVersion
+  ));
+  const validEvidence = records.every(record => (
+    /^[a-z0-9][a-z0-9_.-]*\/[a-z0-9][a-z0-9_.-]*$/.test(record.consumerRepository)
+    && /^[0-9a-f]{40}$/.test(record.sourceRevision)
+    && /^sha256:[0-9a-f]{64}$/.test(record.packageDigest)
+    && CONFORMANCE_VERSION.test(record.conformanceVersion)
+    && /^[a-z0-9][a-z0-9.-]*$/.test(record.implementationId)
+    && /^sha256:[0-9a-f]{64}$/.test(record.evidenceDigest)
+  ));
+  const independentlyOwned = new Set(records.map(record => record.consumerRepository)).size === records.length
+    && new Set(records.map(record => record.implementationId)).size === records.length
+    && new Set(records.map(record => record.evidenceDigest)).size === records.length;
+  return exactIdentity && validEvidence && independentlyOwned ? "proven" : "not-proven";
 }
 
 function requirementKey(requirement: GateRequirement): string {
@@ -393,23 +434,30 @@ test("decision ledger is referentially sound and records current implementation 
     "evidence:public-api-report=passed",
     "evidence:immutable-package-admission-record=verified",
     "evidence:package-release-promotion-verification=passed",
-    "evidence:publication-independent-consumers=proven",
     "decision:foundation-package-admission-decision=accepted",
     "decision:foundation-package-publication-decision=accepted",
   ].sort();
   assert.deepEqual((publicationGate.allOf ?? []).map(requirementKey).sort(), expectedPublicationRequirements);
-  const publicationStatuses = new Map(expectedPublicationRequirements.map(key => {
-    const [, idAndStatus] = key.split(":", 2);
-    const separator = idAndStatus!.lastIndexOf("=");
-    return [idAndStatus!.slice(0, separator), idAndStatus!.slice(separator + 1)] as const;
-  }));
+  const publicationStatuses = new Map<string, string>([
+    ["ADR-0013", "accepted"],
+    ["adr-0013-package-admission-basis", "proven"],
+    ["immutable-package-admission-record", "verified"],
+    ["independent-conformance", "passed"],
+    ["foundation-package-admission-decision", "accepted"],
+    ["UMEQ-012", "resolved"],
+    ["UMEQ-014", "resolved"],
+    ["UMEQ-015", "resolved"],
+    ["ADR-0014", "accepted"],
+    ["PACKAGE-1", "passed"],
+    ["public-api-report", "passed"],
+    ["package-release-promotion-verification", "passed"],
+    ["foundation-package-publication-decision", "accepted"],
+  ]);
   assert.equal(gateIsSatisfied(publicationGate.id, ledger, publicationStatuses), true);
-  for (const key of expectedPublicationRequirements) {
-    const [, idAndStatus] = key.split(":", 2);
-    const id = idAndStatus!.slice(0, idAndStatus!.lastIndexOf("="));
+  for (const id of [...publicationStatuses.keys()]) {
     const status = publicationStatuses.get(id)!;
     publicationStatuses.delete(id);
-    assert.equal(gateIsSatisfied(publicationGate.id, ledger, publicationStatuses), false, `${key} must be mandatory`);
+    assert.equal(gateIsSatisfied(publicationGate.id, ledger, publicationStatuses), false, `${id} must be mandatory`);
     publicationStatuses.set(id, status);
   }
 
@@ -420,9 +468,79 @@ test("decision ledger is referentially sound and records current implementation 
     "gate:phase-3-package-admission=satisfied",
   ]);
   assert.deepEqual((semanticPublicationGate?.allOf ?? []).map(requirementKey).sort(), [
+    "evidence:publication-independent-consumers=proven",
     "gate:phase-3-module-semantic-package-admission=satisfied",
     "gate:phase-3-package-publication=satisfied",
   ]);
+  const consumerEvidence: readonly PublicationConsumerEvidence[] = [
+    {
+      consumerRepository: "agent-teams-ai/agent-runtime",
+      sourceRevision: "a".repeat(40),
+      packageName: "@agent-teams/module-kernel",
+      packageVersion: "1.0.0",
+      packageDigest: `sha256:${"b".repeat(64)}`,
+      conformanceVersion: "1.0.0",
+      implementationId: "agent-runtime-module-adapter",
+      evidenceDigest: `sha256:${"c".repeat(64)}`,
+    },
+    {
+      consumerRepository: "agent-teams-ai/agent-teams-orchestrator",
+      sourceRevision: "d".repeat(40),
+      packageName: "@agent-teams/module-kernel",
+      packageVersion: "1.0.0",
+      packageDigest: `sha256:${"b".repeat(64)}`,
+      conformanceVersion: "1.0.0",
+      implementationId: "orchestrator-module-adapter",
+      evidenceDigest: `sha256:${"e".repeat(64)}`,
+    },
+  ];
+  assert.equal(derivePublicationConsumerStatus(consumerEvidence), "proven");
+  assert.equal(derivePublicationConsumerStatus([consumerEvidence[0]!, consumerEvidence[0]!]), "not-proven");
+  assert.equal(derivePublicationConsumerStatus([
+    consumerEvidence[0]!,
+    { ...consumerEvidence[1]!, packageDigest: `sha256:${"f".repeat(64)}` },
+  ]), "not-proven");
+  const semanticStatuses = new Map(publicationStatuses);
+  semanticStatuses.set("second-independent-consumer", "proven");
+  semanticStatuses.set("cross-consumer-conformance", "passed");
+  semanticStatuses.set("foundation-semantic-extraction-decision", "accepted");
+  semanticStatuses.set("publication-independent-consumers", derivePublicationConsumerStatus(consumerEvidence));
+  assert.equal(gateIsSatisfied(semanticPublicationGate!.id, ledger, semanticStatuses), true);
+  semanticStatuses.delete("publication-independent-consumers");
+  assert.equal(gateIsSatisfied(semanticPublicationGate!.id, ledger, semanticStatuses), false);
+
+  const hostSafetyGate = ledger.implementationGates.find(gate => gate.id === "production-extension-host-safety-core");
+  const manualInstallGate = ledger.implementationGates.find(gate => gate.id === "manual-exact-digest-installation");
+  const managedInstallGate = ledger.implementationGates.find(gate => gate.id === "managed-channel-installation");
+  const installationRouteGate = ledger.implementationGates.find(gate => gate.id === "phase-5-installation-trust-route");
+  assert.ok(hostSafetyGate && manualInstallGate && managedInstallGate && installationRouteGate);
+  assert.doesNotMatch(JSON.stringify(hostSafetyGate), /manual-digest-revocation-profile|managed-channel-tuf-currentness-profile/u);
+  assert.deepEqual((manualInstallGate.allOf ?? []).map(requirementKey).sort(), [
+    "evidence:manual-digest-revocation-profile=verified",
+    "gate:production-extension-host-safety-core=satisfied",
+  ]);
+  assert.deepEqual((managedInstallGate.allOf ?? []).map(requirementKey).sort(), [
+    "decision:UMEQ-018=resolved",
+    "evidence:managed-channel-tuf-currentness-profile=verified",
+    "gate:production-extension-host-safety-core=satisfied",
+  ]);
+  assert.deepEqual(installationRouteGate.paths?.map(path => path.id).sort(), ["managed-channel", "manual-exact-digest"]);
+  const hostSafetyStatuses = new Map<string, string>([
+    ["ADR-0011", "accepted"],
+    ["UMEQ-012", "resolved"],
+    ["lifecycle-semantic-review", "verified"],
+    ["production-host-evidence", "production-proven"],
+  ]);
+  const manualStatuses = new Map(hostSafetyStatuses).set("manual-digest-revocation-profile", "verified");
+  const managedStatuses = new Map(hostSafetyStatuses)
+    .set("UMEQ-018", "resolved")
+    .set("managed-channel-tuf-currentness-profile", "verified");
+  assert.equal(gateIsSatisfied(installationRouteGate.id, ledger, manualStatuses), true);
+  assert.equal(gateIsSatisfied(installationRouteGate.id, ledger, managedStatuses), true);
+  assert.equal(gateIsSatisfied(installationRouteGate.id, ledger, new Map([
+    ...manualStatuses,
+    ...managedStatuses,
+  ])), false, "one installation cannot silently combine manual and managed trust routes");
 
   const authoritativeStatuses = new Map<string, string>([
     ...ledger.entries.map(entry => [entry.id, entry.status] as const),
@@ -462,11 +580,23 @@ test("decision ledger is referentially sound and records current implementation 
   );
   assert.throws(
     () => projectedDecisionStatuses("## Decision Status\n\n| Authority | Current status |\n| --- | --- |\n| ADR_0013 | `accepted` |\n"),
-    /no well-formed authority/,
+    /malformed authority/,
   );
   assert.throws(
     () => projectedDecisionStatuses("## Decision Status\n\n| Authority | Current status |\n| --- | --- |\n| UMEQ-018 through UMEQ-017 | `open` |\n"),
     /reversed decision projection range/,
+  );
+  assert.throws(
+    () => projectedDecisionStatuses("## Decision Status\n\n| Authority | Current status |\n| --- | --- |\n| ADR-0013x | `accepted` |\n"),
+    /malformed authority/,
+  );
+  assert.throws(
+    () => projectedDecisionStatuses("## Decision Status\n\n| Authority | Current status |\n| --- | --- |\n| ADR-0013 and ADR-0013 | `accepted` |\n"),
+    /duplicate decision projection within row/,
+  );
+  assert.throws(
+    () => projectedDecisionStatuses("## Decision Status\n\n| Authority | Current status |\n| --- | --- |\n| ADR-0013 | `accepted` |\n\n## Canonical Status To Preserve\n"),
+    /exactly one decision status section/,
   );
 
   const exactPathLedger = {
@@ -638,12 +768,15 @@ test("lifecycle semantics are fail-closed, durable, and explicitly ordered", asy
   const graph = await readFile(resolve(dossier, "module-graph.md"), "utf8");
   assert.match(`${graph}\n${lifecycle}`, /selected provider[\s\S]{0,120}(?:failure|fails)[\s\S]{0,100}(?:abort|fail)/i);
   assertMarkers(lifecycle, [
-    /three[\s\S]{0,50}non-renewable absolute (?:deadlines|horizons)/i,
+    /three[\s\S]{0,50}non-renewable absolute\s+(?:deadlines|horizons)/i,
     /expectedDesiredHead[\s\S]{0,100}expectedActiveHead[\s\S]{0,180}(?:serialized|compare)/i,
     /durable[\s\S]{0,100}(?:restart_required[\s\S]{0,100}high-water|high-water[\s\S]{0,100}restart_required)/i,
     /staged runtime[\s\S]{0,100}pins?/i,
     /state migration gate/i,
     /StateCustodyAuthorization/,
+    /AdmissionRequestFingerprint[\s\S]{0,500}cannot include an[\s\S]{0,120}admission receipt/i,
+    /AuthorityClockCutoff[\s\S]{0,220}clock domain and epoch[\s\S]{0,160}decision revision/i,
+    /ModuleActivationIntent[\s\S]{0,200}moduleId[\s\S]{0,100}moduleActivationGeneration[\s\S]{0,100}attemptId/i,
     /separate\s+immutable[\s\S]{0,160}(?:ActivationPlan|activation)[\s\S]{0,160}(?:DrainPlan|drain)[\s\S]{0,160}(?:RetirementPlan|retirement)[\s\S]{0,160}(?:MigrationPlan|migration)/i,
   ], "lifecycle model");
   assertMarkers(lifecycle, [
@@ -677,6 +810,9 @@ test("trust claims distinguish current evidence from future supply-chain work", 
     /direct[- ]digest[\s\S]{0,180}manual[- ]pin[\s\S]{0,180}(?:no|without|not)[\s\S]{0,100}currentness/i,
     /Manual Exact-Digest Revocation Profile[\s\S]{0,500}monotonic `revocationRevision`/i,
     /manual profile makes no freshness or publisher-currentness claim/i,
+    /Managed Channel Currentness Profile[\s\S]{0,900}`UMEQ-018`[\s\S]{0,80}TUF/i,
+    /stable `PublisherId`[\s\S]{0,160}signing credential/i,
+    /static route does not invent candidate or runtime generations/i,
     /does not contain or qualify production OCI\/ORAS, Cosign\/Sigstore or TUF\s+adapters/i,
     /TUF[\s\S]{0,120}(?:before|required prior to)[\s\S]{0,120}mutable (?:managed )?channels/i,
   ], "trust-phase evidence");

@@ -37,9 +37,13 @@ accepted extraction decision must name the exact neutral subset. Package
 admission may still use any evidence basis preserved by ADR-0013, but package
 boundary evidence never substitutes for semantic-intersection evidence.
 Public package publication is a third, separate stage: it requires immutable
-proof from two real independently authored conforming consumers of the exact
-publication candidate. Neither semantic-extraction evidence nor a package
-admission record satisfies that publication proof.
+packed-artifact, API, compatibility, and promotion evidence. Foundation-owned
+module semantics additionally require proof from two real independently
+authored conforming consumers of the exact publication candidate. Ordinary
+libraries retain the independent release/replacement, deployment/isolation, or
+other package basis accepted by ADR-0013. Neither semantic-extraction evidence
+nor a package admission record substitutes for the publication evidence that is
+applicable to the selected basis.
 Products always own authorization, data invariants, persistence, placement and
 stronger security claims. Passing conformance never grants a plugin permission
 to execute.
@@ -188,10 +192,15 @@ owning feature provides:
 - contract fixtures consumable from a packed artifact;
 - one adversarial fixture proving the extension cannot bypass the owning use case.
 
-## Publication Candidate Consumer Gate
+## Foundation Semantic Publication Candidate Consumer Gate
 
-Public package publication requires immutable evidence from two distinct real
-consumer products using the exact same packed candidate artifact. Two
+Publication of Foundation-owned module semantics requires immutable evidence
+from two distinct real consumer products using the exact same packed candidate
+artifact. Ordinary libraries admitted under independent release/replacement or
+deployment/isolation use their own ADR-0013 basis and do not inherit this
+two-consumer requirement. The immutable accepted owner ADR declares the package
+classification, and CI rejects an admission record that selects a different
+route. Two
 implementations, fixtures, profiles, or workspaces inside one consumer do not
 count as two consumers. Each consumer record binds:
 

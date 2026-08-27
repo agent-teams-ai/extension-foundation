@@ -41,6 +41,7 @@ const acceptedOwner = async id => ({
     packageId: "module.example",
     packageName: "@agent-teams/example",
     packagePath: "packages/example",
+    semanticClassification: "ordinary-library",
     features: ["example"],
   }],
 });
@@ -68,13 +69,15 @@ async function writeFixture(root, path, contents) {
 
 function packageAdmission(packageId = "module.example", extractionDecision = "ADR-0099") {
   return {
-    schema_version: 3,
+    schema_version: 4,
     admission_basis: "public-spi",
     package_id: packageId,
     owner_repository: "agent-teams-ai/extension-foundation",
     extraction_decision: extractionDecision,
     neutrality_claim: "The capability contains no product-owned language or runtime authority.",
     release_policy: "Exact SemVer with immutable packed-artifact evidence.",
+    semantic_classification: "ordinary-library",
+    semantic_extraction_decision: "not-applicable",
     conformance_version: "1.0.0",
     consumer_evidence: [
       {
@@ -163,6 +166,7 @@ package_ownership:
   - package_id: module.example
     package_name: "@agent-teams/example"
     package_path: packages/example
+    semantic_classification: ordinary-library
     features: [example]
 ---
 
@@ -245,7 +249,6 @@ test("repository adapter publishes create-only, applies, and confirms clean reco
       root,
       intentPath: "architecture/scaffolding-intents/example.yaml",
       planPath: "architecture/scaffolding-plans/module-dot-example.json",
-      resolveOwner: acceptedOwner,
     });
     assert.deepEqual(
       JSON.parse(await readFile(join(root, "architecture/scaffolding-plans/module-dot-example.json"), "utf8")),
@@ -256,7 +259,6 @@ test("repository adapter publishes create-only, applies, and confirms clean reco
       root,
       planPath: "architecture/scaffolding-plans/module-dot-example.json",
       expectedPlanDigest: planDigest,
-      resolveOwner: acceptedOwner,
     });
     assert.equal(receipt.outcome, "applied");
 
@@ -274,15 +276,14 @@ test("plan publication cannot overwrite, traverse, or follow a plan-directory sy
       intentPath: "architecture/scaffolding-intents/example.yaml",
       planPath: "architecture/scaffolding-plans/module-dot-example.json",
     };
-    const first = await publishScaffoldPlan({ ...input, resolveOwner: acceptedOwner });
+    const first = await publishScaffoldPlan(input);
     const original = await readFile(join(root, input.planPath), "utf8");
-    const repeated = await publishScaffoldPlan({ ...input, resolveOwner: acceptedOwner });
+    const repeated = await publishScaffoldPlan(input);
     assert.equal(repeated.planDigest, first.planDigest);
     assert.equal(await readFile(join(root, input.planPath), "utf8"), original);
     await assert.rejects(publishScaffoldPlan({
       ...input,
       planPath: "../escaped.json",
-      resolveOwner: acceptedOwner,
     }), /plan path must be architecture\/scaffolding-plans\/module-dot-example\.json/u);
 
     const linkedRoot = await createConsumer();
@@ -292,7 +293,6 @@ test("plan publication cannot overwrite, traverse, or follow a plan-directory sy
       await assert.rejects(publishScaffoldPlan({
         ...input,
         root: linkedRoot,
-        resolveOwner: acceptedOwner,
       }), /symbolic link/u);
     } finally {
       await rm(linkedRoot, { recursive: true, force: true });
@@ -328,7 +328,6 @@ test("plan publication converges after process loss before and after create-only
           root,
           intentPath: "architecture/scaffolding-intents/example.yaml",
           planPath,
-          resolveOwner: acceptedOwner,
         })));
         const { planDigest } = retries[0];
         assert.equal(retries.every(retry => retry.planDigest === planDigest), true);
@@ -343,7 +342,6 @@ test("plan publication converges after process loss before and after create-only
           root,
           planPath,
           expectedPlanDigest: planDigest,
-          resolveOwner: acceptedOwner,
         })).outcome, "applied");
       } finally {
         await rm(root, { recursive: true, force: true });
@@ -369,7 +367,6 @@ test("plan publication removes process-loss temporaries from superseded digests"
       root,
       intentPath: "architecture/scaffolding-intents/example.yaml",
       planPath: "architecture/scaffolding-plans/module-dot-example.json",
-      resolveOwner: acceptedOwner,
     });
     assert.equal(await exists(orphan), false);
   } finally {
@@ -424,7 +421,7 @@ test("scaffolding rejects stale owner authority before publishing files", async 
   }
 });
 
-test("default owner resolution rejects changed immutable ADR path or digest", async () => {
+test("production owner resolution ignores injected resolvers and rejects changed ADR authority", async () => {
   for (const mutation of [
     ledger => { ledger.decisions[0].path = "docs/decisions/relocated-owner.md"; },
     ledger => { ledger.decisions[0].immutableDigest = `sha256:${"a".repeat(64)}`; },
@@ -440,6 +437,7 @@ test("default owner resolution rejects changed immutable ADR path or digest", as
           root,
           intentPath: "architecture/scaffolding-intents/example.yaml",
           planPath: "architecture/scaffolding-plans/module-dot-example.json",
+          resolveOwner: acceptedOwner,
         }),
         /Accepted ADR governance rejected package ownership authority/u,
       );
@@ -477,13 +475,11 @@ test("scaffold output reaches a valid package only after the owner adds its real
       root,
       intentPath: "architecture/scaffolding-intents/example.yaml",
       planPath: "architecture/scaffolding-plans/module-dot-example.json",
-      resolveOwner: acceptedOwner,
     });
     assert.equal((await applyScaffoldPlan({
       root,
       planPath: "architecture/scaffolding-plans/module-dot-example.json",
       expectedPlanDigest: planDigest,
-      resolveOwner: acceptedOwner,
     })).outcome, "applied");
     await writeFixture(root, "packages/example/src/index.ts", 'export { capability } from "./features/example/index.js";\n');
     await writeFixture(root, "packages/example/src/features/example/capability.ts", "export const capability = true;\n");
@@ -559,7 +555,6 @@ test("apply rejects a plan after its catalog identity changes", async () => {
       root,
       intentPath: "architecture/scaffolding-intents/example.yaml",
       planPath: "architecture/scaffolding-plans/module-dot-example.json",
-      resolveOwner: acceptedOwner,
     });
     const catalogPath = join(root, "architecture/package-catalog.json");
     const catalog = JSON.parse(await readFile(catalogPath, "utf8"));
@@ -569,7 +564,6 @@ test("apply rejects a plan after its catalog identity changes", async () => {
       root,
       planPath: "architecture/scaffolding-plans/module-dot-example.json",
       expectedPlanDigest: planDigest,
-      resolveOwner: acceptedOwner,
     }), /differs from the repository-owned package policy/u);
     assert.equal(await exists(join(root, "packages/example")), false);
   } finally {
@@ -587,7 +581,6 @@ test("apply rejects a symbolic-link plan file", async () => {
       root,
       planPath: "architecture/scaffolding-plans/module-dot-example.json",
       expectedPlanDigest: "sha256:missing",
-      resolveOwner: acceptedOwner,
     }), /symbolic link/u);
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -601,7 +594,6 @@ test("apply binds the reviewed plan digest and rejects edited plan bytes", async
       root,
       intentPath: "architecture/scaffolding-intents/example.yaml",
       planPath: "architecture/scaffolding-plans/module-dot-example.json",
-      resolveOwner: acceptedOwner,
     });
     const path = join(root, "architecture/scaffolding-plans/module-dot-example.json");
     const plan = JSON.parse(await readFile(path, "utf8"));
@@ -611,7 +603,6 @@ test("apply binds the reviewed plan digest and rejects edited plan bytes", async
       root,
       planPath: "architecture/scaffolding-plans/module-dot-example.json",
       expectedPlanDigest: planDigest,
-      resolveOwner: acceptedOwner,
     }), /digest/u);
     assert.equal(await exists(join(root, "packages/example")), false);
   } finally {
@@ -626,19 +617,16 @@ test("CLI returns nonzero for rejected apply and unresolved recovery", async () 
       root,
       intentPath: "architecture/scaffolding-intents/example.yaml",
       planPath: "architecture/scaffolding-plans/module-dot-example.json",
-      resolveOwner: acceptedOwner,
     });
     await writeFixture(root, "packages/example/src/index.ts", "export const drift = true;\n");
     assert.equal(await runScaffoldCli({
       root,
       args: ["apply", "architecture/scaffolding-plans/module-dot-example.json", planDigest],
-      resolveOwner: acceptedOwner,
       write: () => undefined,
     }), 2);
     assert.equal(await runScaffoldCli({
       root,
       args: ["recover"],
-      resolveOwner: acceptedOwner,
       recover: async () => ({ outcome: "recovery-required" }),
       write: () => undefined,
     }), 2);
@@ -716,7 +704,6 @@ test("scaffold rejects nested catalog roots before any operation", async () => {
       root,
       intentPath: "architecture/scaffolding-intents/example.yaml",
       planPath: "architecture/scaffolding-plans/module-dot-example.json",
-      resolveOwner: acceptedOwner,
     }), /package path overlaps/u);
     assert.equal(await exists(join(root, "packages/example")), false);
   } finally {

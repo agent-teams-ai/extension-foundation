@@ -64,9 +64,12 @@ target selection, immutable built-in implementation binding, and the trusted
 product composition root may evaluate a passive factory without inventing a
 runtime graph receipt. That evaluation grants no privileged effect authority.
 Every privileged invocation still requires current product authorization,
-grant, candidate/runtime generations and fence, host policy, and any applicable
-AR authorization or containment. A static built-in cannot silently become a
-dynamic provider or bypass those invocation checks.
+an exact capability grant bound to the current built-in installation and target
+build, host policy, and any applicable AR authorization or containment. The
+static route does not invent candidate or runtime generations. If the owning
+product later places that built-in under an accepted generation-managed runtime,
+the runtime route additionally requires its exact candidate/runtime generations
+and fence. A static built-in cannot silently cross between those routes.
 
 | Receipt or decision | Precise fact established | Does not establish |
 | --- | --- | --- |
@@ -91,7 +94,9 @@ Keep these identities distinct and tenant-bound:
 | Plane | Immutable identity | Never authority by itself |
 | --- | --- | --- |
 | Catalog | source authority, opaque entry ID, revision, metadata digest | display name, slug, mutable channel |
-| Artifact | canonical digest, size/media type, signer subject, provenance | URL, filename, tag, signed badge |
+| Publisher | stable `PublisherId` and authority lineage | display name, current signing key, account handle |
+| Signing credential | key or signer subject, issuer and validity bound to one publisher-authority revision | publisher identity, signature presence, mutable key alias |
+| Artifact | canonical digest, size/media type and provenance subject | URL, filename, tag, signer subject, signed badge |
 | Profile | immutable revision, ordered bindings, semantic digest, compiler version | requested permissions, mutable profile head |
 | Installation | tenant, target, generation, installed-tree digest, installer receipt | package path or host-reported presence |
 | Module | installation, module digest, kind and contract revision | module name or import specifier |
@@ -209,8 +214,9 @@ execute dynamically loaded provider =
   AND installation admission = allow
   AND current unexpired AdmittedPlanReceipt matches authority scope,
       PlanContentDigest, and provider-binding digest
-  AND exact provider binding matches installation, contribution, artifact,
-      implementation, and target loader identity
+  AND exact provider binding matches PublisherId, publisher-authority revision,
+      installation, contribution, artifact, implementation, and target loader
+      identity
   AND product authorization = allow
   AND current product capability grant
   AND (AR authorization = allow when AR owns the capability
@@ -219,16 +225,22 @@ execute dynamically loaded provider =
   AND host policy = allow
   AND required containment = ready
 
-invoke static built-in =
+invoke statically composed T0 built-in =
   build provenance and literal target selection = allow
   AND exact BuiltInModuleInstallation implementation binding
   AND product authorization = allow
-  AND current product capability grant
+  AND current product capability grant binds that installation, implementation
+      digest, target build, authority scope, capability set, and grant revision
   AND (AR authorization = allow when AR owns the capability
        OR AR plane = explicitly not-applicable)
-  AND current candidate generation, runtime generation, and fence
   AND host policy = allow
   AND required containment = ready or explicitly not-applicable by product policy
+
+invoke generation-managed built-in =
+  every statically composed built-in authority above
+  AND an accepted owning-product runtime decision applies
+  AND current admitted plan receipt and exact built-in provider binding
+  AND current candidate generation, runtime generation, and fence
 ```
 
 Every conjunct is an independent, current decision. A product authorization is
@@ -251,6 +263,12 @@ remote mutable channel, delegated publisher, automatic update, or
 publisher-currentness claim. A signed release or revocation record beside a
 manual pin remains evidence until the configured authority imports it and does
 not silently upgrade the route to a currentness protocol.
+
+Artifact verification records a stable `PublisherId` separately from the
+signing credential. A current binding at a named authority revision proves that the
+credential was authorized for that publisher when the artifact was signed and
+admitted. Key rotation changes the credential binding, not publisher identity;
+publisher transfer changes authority lineage and requires fresh admission.
 
 OCI tags support discovery only. The installer pulls by digest, hashes raw
 manifest bytes and every descriptor, verifies provenance subject and dependency
@@ -346,6 +364,23 @@ the revision-bound enforcement receipt; distribution or policy storage alone
 is not completion. Removing a digest requires a higher explicit authority
 revision and fresh admission; absence from a later feed never removes the
 revocation.
+
+### Managed Channel Currentness Profile
+
+A remotely refreshed channel, delegated publisher, automatic update, rollout
+cohort, mirror-selected head, or publisher-currentness claim uses a distinct
+managed trust route. Its installation receipt binds the selected TUF root and
+metadata versions, target digest closure, `PublisherId`, publisher-authority
+revision, expiration evaluation time, rollback/freeze high-water marks, and the
+exact delegated role that authorized the target.
+
+The managed route is not satisfied by a manual digest, a signature, a nearby
+revocation file, or the manual revocation profile. Admission fails closed when
+root rotation, delegation, threshold, expiry, rollback, freeze, target/hash, or
+publisher binding cannot be proved against the current trusted metadata. The
+host rechecks currentness before update admission and before a remotely selected
+artifact can replace an active installation. `UMEQ-018` and executable TUF
+conformance must be resolved before this route is production-admissible.
 
 ## Data Classes
 

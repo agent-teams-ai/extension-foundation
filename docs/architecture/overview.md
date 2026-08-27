@@ -181,6 +181,14 @@ computed property access, ambient `globalThis` or `process` access,
 package admission rejects those constructs fail-closed rather than silently
 omitting them.
 
+The accepted owner ADR classifies every package ownership entry as
+`ordinary-library` or `foundation-module-semantics`. The latter binds a separate
+accepted semantic-extraction decision and machine-verifiable evidence for two
+independent consumers, implementations, and conformance roles. Admission and
+publication gates are derived from the matching admission record, whose
+classification must equal the immutable owner declaration. A package cannot
+select the weaker route only by changing its admission record.
+
 The Engineering Foundation owns the source-graph and scaffolding protocols.
 This repository owns its package roles, catalog entries, allowed dependency
 edges, feature names, and owner documents.

@@ -15,6 +15,7 @@ import {
   isRecord,
   materializationPlanPath,
   packageOwnerFeatures,
+  packageOwnerSemanticClassification,
   requireValidPackagePolicy,
 } from "./package-policy.mjs";
 
@@ -160,7 +161,7 @@ export function assertScaffoldOperationPaths(root, packagePath, operations) {
   }
 }
 
-export async function validatePlanAgainstCatalog(root, plan, resolveOwner) {
+async function validatePlanAgainstCatalog(root, plan, resolveOwner) {
   if (!isRecord(plan) || !isRecord(plan.target) || !Array.isArray(plan.operations)) {
     throw new Error("scaffold plan has an invalid shape");
   }
@@ -174,8 +175,13 @@ export async function validatePlanAgainstCatalog(root, plan, resolveOwner) {
     || plan.target.ownerDocument?.id !== entry.owner_document) {
     throw new Error("scaffold target differs from the repository-owned package policy");
   }
-  if (packageOwnerFeatures(entry, await resolveOwner(entry.owner_document)) === undefined) {
+  const owner = await resolveOwner(entry.owner_document);
+  if (packageOwnerFeatures(entry, owner) === undefined) {
     throw new Error("scaffold owner must be one effective accepted ADR bound to the exact package and features");
+  }
+  if (packageOwnerSemanticClassification(entry, owner)
+    !== policy.admissionsById.get(entry.id)?.semantic_classification) {
+    throw new Error("scaffold admission semantic classification must equal the accepted owner ADR declaration");
   }
   if (plan.operations.length === 0) throw new Error("scaffold plan must contain materialization operations");
   assertScaffoldOperationPaths(root, entry.path, plan.operations);
@@ -186,9 +192,9 @@ export async function publishScaffoldPlan({
   root,
   intentPath,
   planPath,
-  resolveOwner = createDocsOwnerResolver(root),
   onPublicationFault = async () => undefined,
 }) {
+  const resolveOwner = createDocsOwnerResolver(root);
   const plan = await validatePlanAgainstCatalog(root, await planScaffoldFromFile({
     consumerRoot: root,
     intentPath,
@@ -276,8 +282,8 @@ export async function applyScaffoldPlan({
   root,
   planPath,
   expectedPlanDigest,
-  resolveOwner = createDocsOwnerResolver(root),
 }) {
+  const resolveOwner = createDocsOwnerResolver(root);
   if (typeof expectedPlanDigest !== "string" || !expectedPlanDigest.startsWith("sha256:")) {
     throw new Error("apply requires the reviewed plan digest printed by the plan command");
   }
@@ -303,7 +309,6 @@ export async function runScaffoldCli({
   root,
   args,
   write = value => console.log(value),
-  resolveOwner = createDocsOwnerResolver(root),
   recover = recoverFilesystemScaffold,
 }) {
   const [command, first, second, ...rest] = args;
@@ -313,7 +318,6 @@ export async function runScaffoldCli({
       root,
       intentPath: first,
       planPath: second,
-      resolveOwner,
     });
     write(JSON.stringify({ outcome: "planned", planPath: second, intentDigest: plan.intentDigest, planDigest }));
     return 0;
@@ -323,7 +327,6 @@ export async function runScaffoldCli({
       root,
       planPath: first,
       expectedPlanDigest: second,
-      resolveOwner,
     });
     write(JSON.stringify(receipt));
     return receiptExitCode(receipt);

@@ -42,6 +42,8 @@ export const ADMISSION_KEYS = Object.freeze([
   "owner_repository",
   "package_id",
   "release_policy",
+  "semantic_classification",
+  "semantic_extraction_decision",
 ]);
 export const CONSUMER_EVIDENCE_KEYS = Object.freeze([
   "conformance_result",
@@ -61,6 +63,10 @@ export const ADMISSION_BASES = Object.freeze([
   "independent-replacement-or-release-lifecycle",
   "public-spi",
   "second-real-consumer",
+]);
+export const SEMANTIC_CLASSIFICATIONS = Object.freeze([
+  "ordinary-library",
+  "foundation-module-semantics",
 ]);
 export const PACKAGE_ID = /^[a-z0-9][a-z0-9.-]*$/;
 export const PACKAGE_PATH = /^packages\/[a-z0-9][a-z0-9-]*(?:\/[a-z0-9][a-z0-9-]*)*$/;
@@ -229,8 +235,8 @@ function validateAdmission(entry, admission, errors) {
     errors.push(`${entry.id}: admission must contain exactly ${ADMISSION_KEYS.join(", ")}`);
     return;
   }
-  if (admission.schema_version !== 3) {
-    errors.push(`${entry.id}: admission.schema_version must equal 3`);
+  if (admission.schema_version !== 4) {
+    errors.push(`${entry.id}: admission.schema_version must equal 4`);
   }
   for (const key of ADMISSION_KEYS.filter(key => !["consumer_evidence", "schema_version"].includes(key))) {
     if (typeof admission[key] !== "string" || admission[key].length === 0) {
@@ -247,6 +253,15 @@ function validateAdmission(entry, admission, errors) {
   }
   if (admission.extraction_decision !== entry.owner_document) {
     errors.push(`${entry.id}: admission.extraction_decision must equal the accepted owner_document`);
+  }
+  if (!SEMANTIC_CLASSIFICATIONS.includes(admission.semantic_classification)) {
+    errors.push(`${entry.id}: admission.semantic_classification must identify ordinary-library or foundation-module-semantics`);
+  } else if (admission.semantic_classification === "ordinary-library") {
+    if (admission.semantic_extraction_decision !== "not-applicable") {
+      errors.push(`${entry.id}: ordinary-library admission must mark semantic extraction not-applicable`);
+    }
+  } else if (admission.semantic_extraction_decision !== entry.owner_document) {
+    errors.push(`${entry.id}: foundation-module-semantics admission must bind its accepted semantic extraction decision`);
   }
   if (!CONFORMANCE_VERSION.test(admission.conformance_version ?? "")) {
     errors.push(`${entry.id}: admission.conformance_version must be an exact SemVer`);
@@ -333,6 +348,29 @@ function validateAdmission(entry, admission, errors) {
     && (implementationIdentities.size < 2 || implementationIdentities.size !== admission.consumer_evidence.length)) {
     errors.push(`${entry.id}: public-spi admission requires two independently authored implementation identities`);
   }
+  if (admission.semantic_classification === "foundation-module-semantics") {
+    if (consumerIdentities.size < 2 || consumerIdentities.size !== admission.consumer_evidence.length) {
+      errors.push(`${entry.id}: foundation-module-semantics admission requires two distinct consumer identities`);
+    }
+    if (implementationIdentities.size < 2 || implementationIdentities.size !== admission.consumer_evidence.length) {
+      errors.push(`${entry.id}: foundation-module-semantics admission requires two independently authored implementation identities`);
+    }
+    if (REQUIRED_EVIDENCE_KINDS.some(kind => !evidenceKinds.has(kind))) {
+      errors.push(`${entry.id}: foundation-module-semantics admission requires product-slice and independent-conformance evidence roles`);
+    }
+  }
+}
+
+export function packageAdmissionGateId(admission) {
+  return admission?.semantic_classification === "foundation-module-semantics"
+    ? "phase-3-module-semantic-package-admission"
+    : "phase-3-package-admission";
+}
+
+export function packagePublicationGateId(admission) {
+  return admission?.semantic_classification === "foundation-module-semantics"
+    ? "phase-3-module-semantic-package-publication"
+    : "phase-3-package-publication";
 }
 
 export async function loadPackagePolicy(root) {
@@ -350,6 +388,7 @@ export async function loadPackagePolicy(root) {
   const entries = [];
   const entriesById = new Map();
   const entriesByPath = new Map();
+  const admissionsById = new Map();
   const admissionDirectoryPath = join(root, PACKAGE_ADMISSION_DIRECTORY);
   let admissionDirectoryAvailable = false;
 
@@ -374,6 +413,7 @@ export async function loadPackagePolicy(root) {
       entries,
       entriesById,
       entriesByPath,
+      admissionsById,
       errors: [`${CATALOG_PATH} must contain exactly version 1 and a packages array`],
     };
   }
@@ -411,6 +451,7 @@ export async function loadPackagePolicy(root) {
         }
         const admission = parseStrictJson(await readFile(admissionPath, "utf8"));
         validateAdmission(entry, admission, errors);
+        admissionsById.set(entry.id, admission);
       } catch (error) {
         errors.push(`${entry.id}: admission evidence is missing or invalid: ${error instanceof Error ? error.message : String(error)}`);
       }
@@ -444,6 +485,7 @@ export async function loadPackagePolicy(root) {
     entries,
     entriesById,
     entriesByPath,
+    admissionsById,
     errors,
   };
 }
@@ -477,6 +519,7 @@ function normalizePackageOwnership(value) {
       || typeof entry.package_id !== "string"
       || typeof entry.package_name !== "string"
       || typeof entry.package_path !== "string"
+      || typeof entry.semantic_classification !== "string"
       || !Array.isArray(entry.features)
       || entry.features.some(feature => typeof feature !== "string")) {
       errors.push(`package_ownership[${index}] has an invalid shape`);
@@ -486,6 +529,7 @@ function normalizePackageOwnership(value) {
     if (!PACKAGE_ID.test(entry.package_id)
       || !PACKAGE_NAME.test(entry.package_name)
       || !PACKAGE_PATH.test(entry.package_path)
+      || !SEMANTIC_CLASSIFICATIONS.includes(entry.semantic_classification)
       || features.length === 0
       || features.some(feature => !FEATURE_NAME.test(feature))
       || new Set(features).size !== features.length) {
@@ -496,6 +540,7 @@ function normalizePackageOwnership(value) {
       packageId: entry.package_id,
       packageName: entry.package_name,
       packagePath: entry.package_path,
+      semanticClassification: entry.semantic_classification,
       features,
     });
   }
@@ -686,7 +731,7 @@ export function createDocsOwnerResolver(root) {
   return catalog.resolve;
 }
 
-export function packageOwnerFeatures(entry, owner) {
+function packageOwnerDeclaration(entry, owner) {
   if (owner?.id !== entry.owner_document
     || owner.type !== "adr"
     || owner.status !== "accepted"
@@ -701,8 +746,17 @@ export function packageOwnerFeatures(entry, owner) {
   )) ?? [];
   if (matches.length !== 1
     || matches[0].features.length === 0
-    || matches[0].features.some(feature => !FEATURE_NAME.test(feature))) {
+    || matches[0].features.some(feature => !FEATURE_NAME.test(feature))
+    || !SEMANTIC_CLASSIFICATIONS.includes(matches[0].semanticClassification)) {
     return undefined;
   }
-  return matches[0].features;
+  return matches[0];
+}
+
+export function packageOwnerFeatures(entry, owner) {
+  return packageOwnerDeclaration(entry, owner)?.features;
+}
+
+export function packageOwnerSemanticClassification(entry, owner) {
+  return packageOwnerDeclaration(entry, owner)?.semanticClassification;
 }

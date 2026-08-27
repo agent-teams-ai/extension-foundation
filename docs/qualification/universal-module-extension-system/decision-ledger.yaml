@@ -63,6 +63,11 @@ requirementDefinitions:
     authority: qualification-evidence
     detail: trust-and-security.md#manual-exact-digest-revocation-profile
     purpose: exact immutable-digest revocation identity, authoritative monotonic input, fail-closed propagation and enforcement receipts
+  - id: managed-channel-tuf-currentness-profile
+    kind: evidence
+    authority: qualification-evidence
+    detail: trust-and-security.md#managed-channel-currentness-profile
+    purpose: executable TUF expiry, rollback, freeze, delegation and publisher-current revocation evidence for remotely refreshed metadata
   - id: second-independent-consumer
     kind: evidence
     authority: qualification-evidence
@@ -121,7 +126,7 @@ requirementDefinitions:
   - id: publication-independent-consumers
     kind: evidence
     authority: qualification-evidence
-    detail: conformance-plan.md#publication-candidate-consumer-gate
+    detail: conformance-plan.md#foundation-semantic-publication-candidate-consumer-gate
     purpose: immutable publication-candidate proof from two real independently authored conforming consumers, separate from extraction and admission evidence
   - id: production-host-evidence
     kind: evidence
@@ -215,8 +220,6 @@ implementationGates:
         requiredStatus: verified
       - evidence: package-release-promotion-verification
         requiredStatus: passed
-      - evidence: publication-independent-consumers
-        requiredStatus: proven
       - decision: foundation-package-admission-decision
         requiredStatus: accepted
       - decision: foundation-package-publication-decision
@@ -230,10 +233,11 @@ implementationGates:
         requiredStatus: satisfied
       - gate: phase-3-package-publication
         requiredStatus: satisfied
-  - id: production-extension-host-safety
+      - evidence: publication-independent-consumers
+        requiredStatus: proven
+  - id: production-extension-host-safety-core
     appliesTo:
       - phase-4-process-host
-      - phase-5-packaging-and-installation
       - phase-6-frontend-and-untrusted-hosts
     mode: all
     allOf:
@@ -243,16 +247,47 @@ implementationGates:
         requiredStatus: resolved
       - evidence: lifecycle-semantic-review
         requiredStatus: verified
-      - evidence: manual-digest-revocation-profile
-        requiredStatus: verified
       - evidence: production-host-evidence
         requiredStatus: production-proven
+  - id: manual-exact-digest-installation
+    appliesTo:
+      - phase-5-manual-exact-digest-installation
+    mode: all
+    allOf:
+      - gate: production-extension-host-safety-core
+        requiredStatus: satisfied
+      - evidence: manual-digest-revocation-profile
+        requiredStatus: verified
+  - id: managed-channel-installation
+    appliesTo:
+      - phase-5-managed-channel-installation
+    mode: all
+    allOf:
+      - gate: production-extension-host-safety-core
+        requiredStatus: satisfied
+      - decision: UMEQ-018
+        requiredStatus: resolved
+      - evidence: managed-channel-tuf-currentness-profile
+        requiredStatus: verified
+  - id: phase-5-installation-trust-route
+    appliesTo:
+      - phase-5-packaging-and-installation
+    mode: exactly-one-path
+    paths:
+      - id: manual-exact-digest
+        allOf:
+          - gate: manual-exact-digest-installation
+            requiredStatus: satisfied
+      - id: managed-channel
+        allOf:
+          - gate: managed-channel-installation
+            requiredStatus: satisfied
   - id: process-host-wire-format
     appliesTo:
       - phase-4-process-host
     mode: all
     allOf:
-      - gate: production-extension-host-safety
+      - gate: production-extension-host-safety-core
         requiredStatus: satisfied
       - decision: UMEQ-009
         requiredStatus: resolved
@@ -261,7 +296,7 @@ implementationGates:
       - phase-6-frontend-and-untrusted-hosts
     mode: all
     allOf:
-      - gate: production-extension-host-safety
+      - gate: production-extension-host-safety-core
         requiredStatus: satisfied
       - decision: UMEQ-010
         requiredStatus: resolved
