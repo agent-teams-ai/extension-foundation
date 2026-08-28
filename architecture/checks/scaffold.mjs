@@ -128,7 +128,7 @@ async function cleanupPublicationTemporaries(destination) {
   }
 }
 
-async function matchingExistingPlan(root, destination, plan, resolveOwner) {
+async function matchingExistingPlan(root, destination, plan, resolveOwner, validatePlan) {
   let existing;
   try {
     existing = await readBoundedJson(root, destination);
@@ -140,7 +140,7 @@ async function matchingExistingPlan(root, destination, plan, resolveOwner) {
   if (existing.planDigest !== plan.planDigest) {
     throw new Error("scaffold plan destination already contains different reviewed evidence");
   }
-  await validatePlanAgainstCatalog(root, existing, resolveOwner);
+  await validatePlan(root, existing, resolveOwner);
   return existing;
 }
 
@@ -170,12 +170,12 @@ function scaffoldTargetMatchesEntry(target, entry) {
     && target.ownerDocument?.id === entry.owner_document;
 }
 
-async function validatePlanAndCatalog(root, plan, resolveOwner) {
+async function validatePlanAndCatalog(root, plan, resolveOwner, loadPackagePolicy) {
   if (!isRecord(plan) || !isRecord(plan.target) || !Array.isArray(plan.operations)) {
     throw new Error("scaffold plan has an invalid shape");
   }
   assertScaffoldPlanDigest(plan);
-  const policy = await requireValidPackagePolicy(root);
+  const policy = await loadPackagePolicy(root);
   const entry = policy.entriesById.get(plan.target.id);
   if (!scaffoldTargetMatchesEntry(plan.target, entry)) {
     throw new Error("scaffold target differs from the repository-owned package policy");
@@ -196,7 +196,7 @@ async function validatePlanAndCatalog(root, plan, resolveOwner) {
       throw new Error("scaffold semantic extraction decision must be one separate effective accepted ADR");
     }
   }
-  const revalidatedPolicy = await requireValidPackagePolicy(root);
+  const revalidatedPolicy = await loadPackagePolicy(root);
   const revalidatedEntry = revalidatedPolicy.entriesById.get(plan.target.id);
   if (!scaffoldTargetMatchesEntry(plan.target, revalidatedEntry)) {
     throw new Error("scaffold target differs from the repository-owned package policy");
@@ -222,26 +222,37 @@ async function validatePlanAndCatalog(root, plan, resolveOwner) {
 }
 
 export async function validatePlanAgainstCatalog(root, plan, resolveOwner) {
-  return (await validatePlanAndCatalog(root, plan, resolveOwner)).plan;
+  return (await validatePlanAndCatalog(root, plan, resolveOwner, requireValidPackagePolicy)).plan;
 }
 
-export async function publishScaffoldPlan({
+async function publishScaffoldPlanWithPolicy({
   root,
   intentPath,
   planPath,
   onPublicationFault = async () => undefined,
-}) {
+}, loadPackagePolicy) {
   const resolveOwner = createDocsOwnerResolver(root);
   const { plan, entry } = await validatePlanAndCatalog(root, await planScaffoldFromFile({
     consumerRoot: root,
     intentPath,
-  }), resolveOwner);
+  }), resolveOwner, loadPackagePolicy);
   if (planPath !== materializationPlanPath(entry)) {
     throw new Error(`plan path must be ${materializationPlanPath(entry)}`);
   }
   const destination = safePlanPath(root, planPath);
   await ensurePlanDirectory(root);
-  const existing = await matchingExistingPlan(root, destination, plan, resolveOwner);
+  const existing = await matchingExistingPlan(
+    root,
+    destination,
+    plan,
+    resolveOwner,
+    (validationRoot, candidate, resolver) => validatePlanAndCatalog(
+      validationRoot,
+      candidate,
+      resolver,
+      loadPackagePolicy,
+    ),
+  );
   if (existing !== undefined) {
     await cleanupPublicationTemporaries(destination);
     return { plan: existing, planDigest: existing.planDigest };
@@ -267,7 +278,18 @@ export async function publishScaffoldPlan({
       destinationLinked = true;
     } catch (error) {
       if (!["EEXIST", "ENOENT"].includes(error?.code)) throw error;
-      const racedPlan = await matchingExistingPlan(root, destination, plan, resolveOwner);
+      const racedPlan = await matchingExistingPlan(
+        root,
+        destination,
+        plan,
+        resolveOwner,
+        (validationRoot, candidate, resolver) => validatePlanAndCatalog(
+          validationRoot,
+          candidate,
+          resolver,
+          loadPackagePolicy,
+        ),
+      );
       if (racedPlan === undefined) throw error;
       publishedPlan = racedPlan;
     }
@@ -313,11 +335,11 @@ export async function publishScaffoldPlan({
   return { plan: publishedPlan, planDigest: publishedPlan.planDigest };
 }
 
-export async function applyScaffoldPlan({
+async function applyScaffoldPlanWithPolicy({
   root,
   planPath,
   expectedPlanDigest,
-}) {
+}, loadPackagePolicy) {
   const resolveOwner = createDocsOwnerResolver(root);
   if (typeof expectedPlanDigest !== "string" || !expectedPlanDigest.startsWith("sha256:")) {
     throw new Error("apply requires the reviewed plan digest printed by the plan command");
@@ -327,11 +349,31 @@ export async function applyScaffoldPlan({
   if (plan.planDigest !== expectedPlanDigest) {
     throw new Error("scaffold plan differs from the reviewed plan digest");
   }
-  const { plan: validated, entry } = await validatePlanAndCatalog(root, plan, resolveOwner);
+  const { plan: validated, entry } = await validatePlanAndCatalog(
+    root,
+    plan,
+    resolveOwner,
+    loadPackagePolicy,
+  );
   if (planPath !== materializationPlanPath(entry)) {
     throw new Error(`plan path must be ${materializationPlanPath(entry)}`);
   }
   return applyFilesystemScaffold(root, validated);
+}
+
+export function createScaffoldPlanCommands({ loadPackagePolicy }) {
+  return {
+    publishScaffoldPlan: options => publishScaffoldPlanWithPolicy(options, loadPackagePolicy),
+    applyScaffoldPlan: options => applyScaffoldPlanWithPolicy(options, loadPackagePolicy),
+  };
+}
+
+export async function publishScaffoldPlan(options) {
+  return publishScaffoldPlanWithPolicy(options, requireValidPackagePolicy);
+}
+
+export async function applyScaffoldPlan(options) {
+  return applyScaffoldPlanWithPolicy(options, requireValidPackagePolicy);
 }
 
 function receiptExitCode(receipt) {

@@ -10,6 +10,12 @@ import {
   validateAdmission,
 } from "./admission-policy.mjs";
 
+export function createAdmissionDirectoryEntriesSource({ readDirectory }) {
+  return async directoryPath => (await readDirectory(directoryPath, { withFileTypes: true }))
+    .map(entry => ({ name: entry.name, isFile: entry.isFile() }))
+    .sort((left, right) => left.name < right.name ? -1 : left.name > right.name ? 1 : 0);
+}
+
 export function createLoadAllowedPackageRoles({ loadPolicyDocument }) {
   return async root => allowedPackageRoles(await loadPolicyDocument(root));
 }

@@ -22,6 +22,10 @@ import {
   ownerEvidenceFromDocsExecution,
 } from "../architecture/checks/package-policy/docs-owner-source.mjs";
 import { createAcceptedDecisionSource } from "../architecture/checks/package-policy/accepted-decision-source.mjs";
+import {
+  createAdmissionDirectoryEntriesSource,
+  createLoadPackagePolicy,
+} from "../architecture/checks/package-policy/repository-policy-source.mjs";
 
 const BASE_SHA = "0836f62a386e253b156271f0b8f7defc969f3580";
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
@@ -161,17 +165,27 @@ test("admission diagnostics retain their position before catalog relationship di
 });
 
 test("orphan admission diagnostics use deterministic binary filename order", async () => {
-  const root = await policyFixture({ version: 1, packages: [] });
-  try {
-    await writeFixture(root, "architecture/package-admissions/zeta.json", "{}\n");
-    await writeFixture(root, "architecture/package-admissions/alpha.json", "{}\n");
-    assert.deepEqual((await loadPackagePolicy(root)).errors, [
-      "architecture/package-admissions/alpha.json: orphan admission evidence is not declared by architecture/package-catalog.json",
-      "architecture/package-admissions/zeta.json: orphan admission evidence is not declared by architecture/package-catalog.json",
-    ]);
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
+  const loadEntries = createAdmissionDirectoryEntriesSource({
+    readDirectory: async () => [
+      { name: "zeta.json", isFile: () => true },
+      { name: "alpha.json", isFile: () => true },
+    ],
+  });
+  const loadPolicy = createLoadPackagePolicy({
+    loadCatalog: async () => ({ version: 1, packages: [] }),
+    loadAllowedRoles: async () => new Set(),
+    loadAdmissionDirectory: async () => ({
+      available: true,
+      entries: await loadEntries("unused"),
+      errors: [],
+      load: async () => assert.fail("an orphan admission must not be loaded"),
+    }),
+  });
+
+  assert.deepEqual((await loadPolicy("unused")).errors, [
+    "architecture/package-admissions/alpha.json: orphan admission evidence is not declared by architecture/package-catalog.json",
+    "architecture/package-admissions/zeta.json: orphan admission evidence is not declared by architecture/package-catalog.json",
+  ]);
 });
 
 test("policy filesystem sources are fresh and preserve JSON/YAML failures", async () => {

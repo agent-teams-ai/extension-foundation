@@ -27,6 +27,7 @@ import {
   ownerEvidenceFromDocsExecution,
 } from "./package-policy/docs-owner-source.mjs";
 import {
+  createAdmissionDirectoryEntriesSource,
   createLoadAllowedPackageRoles,
   createLoadPackagePolicy,
 } from "./package-policy/repository-policy-source.mjs";
@@ -177,6 +178,7 @@ export async function loadAcceptedDecisionIds(root) {
 const defaultLoadAllowedRoles = createLoadAllowedPackageRoles({
   loadPolicyDocument: root => readFile(join(root, SCAFFOLDING_POLICY_PATH), "utf8").then(parseYaml),
 });
+const loadAdmissionDirectoryEntries = createAdmissionDirectoryEntriesSource({ readDirectory: readdir });
 
 async function loadAdmissionDirectory(root) {
   const errors = [];
@@ -192,9 +194,7 @@ async function loadAdmissionDirectory(root) {
     if (error?.code === "ENOENT") return { available: false, entries: [], errors };
     throw error;
   }
-  const entries = (await readdir(directoryPath, { withFileTypes: true }))
-    .map(entry => ({ name: entry.name, isFile: entry.isFile() }))
-    .sort((left, right) => left.name < right.name ? -1 : left.name > right.name ? 1 : 0);
+  const entries = await loadAdmissionDirectoryEntries(directoryPath);
   return {
     available: true,
     entries,

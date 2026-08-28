@@ -16,11 +16,13 @@ import {
 import {
   applyScaffoldPlan,
   assertScaffoldOperationPaths,
+  createScaffoldPlanCommands,
   publishScaffoldPlan,
   runScaffoldCli,
   validatePlanAgainstCatalog,
 } from "../architecture/checks/scaffold.mjs";
 import { validateBuiltPackageArtifacts } from "../architecture/checks/package-artifacts.mjs";
+import { requireValidPackagePolicy } from "../architecture/checks/package-policy.mjs";
 import { validatePackageTopology as validateRepositoryPackageTopology } from "../architecture/checks/package-topology.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -620,34 +622,55 @@ test("catalog validation fully revalidates identity after owner resolution", asy
   }
 });
 
-test("catalog validation fully revalidates admission semantics after owner resolution", async () => {
-  const root = await createConsumer();
-  try {
-    const plan = await planScaffoldFromFile({
-      consumerRoot: root,
-      intentPath: "architecture/scaffolding-intents/example.yaml",
+test("real plan publication and application reject admission semantic mutation after owner resolution", async t => {
+  for (const command of ["publishScaffoldPlan", "applyScaffoldPlan"]) {
+    await t.test(command, async () => {
+      const root = await createConsumer();
+      const planPath = "architecture/scaffolding-plans/module-dot-example.json";
+      try {
+        let plan;
+        if (command === "applyScaffoldPlan") {
+          plan = await planScaffoldFromFile({
+            consumerRoot: root,
+            intentPath: "architecture/scaffolding-intents/example.yaml",
+          });
+          await writeFixture(root, planPath, `${JSON.stringify(plan, null, 2)}\n`);
+        }
+        let policyReads = 0;
+        const loadPackagePolicy = async policyRoot => {
+          policyReads += 1;
+          if (policyReads === 2) {
+            const admissionPath = join(root, "architecture/package-admissions/module-dot-example.json");
+            const admission = JSON.parse(await readFile(admissionPath, "utf8"));
+            admission.semantic_classification = "foundation-module-semantics";
+            admission.semantic_extraction_decision = "ADR-0098";
+            await writeFile(admissionPath, `${JSON.stringify(admission)}\n`);
+          }
+          return requireValidPackagePolicy(policyRoot);
+        };
+        const commands = createScaffoldPlanCommands({ loadPackagePolicy });
+        const invocation = command === "publishScaffoldPlan"
+          ? commands.publishScaffoldPlan({
+            root,
+            intentPath: "architecture/scaffolding-intents/example.yaml",
+            planPath,
+          })
+          : commands.applyScaffoldPlan({
+            root,
+            planPath,
+            expectedPlanDigest: plan.planDigest,
+          });
+
+        await assert.rejects(invocation, /semantic classification/u);
+        assert.equal(policyReads, 2);
+        assert.equal(await exists(join(root, "packages/example")), false);
+        if (command === "publishScaffoldPlan") {
+          assert.equal(await exists(join(root, planPath)), false);
+        }
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
     });
-    const mutateAdmissionBeforeSecondPolicyRead = async id => {
-      const owner = await acceptedOwner(id);
-      const packageOwnership = owner.packageOwnership;
-      Object.defineProperty(owner, "packageOwnership", { get() {
-        const admissionPath = join(root, "architecture/package-admissions/module-dot-example.json");
-        const admission = JSON.parse(readFileSync(admissionPath, "utf8"));
-        admission.semantic_classification = "foundation-module-semantics";
-        admission.semantic_extraction_decision = "ADR-0098";
-        writeFileSync(admissionPath, `${JSON.stringify(admission)}\n`);
-        return packageOwnership;
-      } });
-      return owner;
-    };
-    await assert.rejects(
-      validatePlanAgainstCatalog(root, plan, mutateAdmissionBeforeSecondPolicyRead),
-      /semantic classification/u,
-    );
-    assert.equal(await exists(join(root, "packages/example")), false);
-    assert.equal(await exists(join(root, "architecture/scaffolding-plans/module-dot-example.json")), false);
-  } finally {
-    await rm(root, { recursive: true, force: true });
   }
 });
 
