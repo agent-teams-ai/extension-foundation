@@ -10,6 +10,9 @@ import test from "node:test";
 const execFileAsync = promisify(execFile);
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 const foundationCli = fileURLToPath(new URL("./cli.js", import.meta.resolve("@agent-teams/engineering-foundation")));
+const skipExpensiveIntegration = process.env.PACKAGE_POLICY_TEST_MODE === "fast"
+  ? "skipped in package-policy fast mode"
+  : false;
 const governedFiles = [
   "architecture/checks/package-artifacts.mjs",
   "architecture/checks/package-policy.mjs",
@@ -73,12 +76,12 @@ async function withMutation(path, source, expectedRule) {
   }
 }
 
-test("official checker accepts the stable package-policy boundary", async () => {
+test("official checker accepts the stable package-policy boundary", { skip: skipExpensiveIntegration }, async () => {
   const report = await runChecker(repositoryRoot);
   assert.equal(report.summary.errors, 0, JSON.stringify(report));
 });
 
-test("official checker rejects forbidden pure dependencies", async t => {
+test("official checker rejects forbidden pure dependencies", { skip: skipExpensiveIntegration }, async t => {
   for (const [name, dependency, rule] of [
     ["Node", "node:fs/promises", "architecture.source-dependencies.forbidden-builtin-dependency"],
     ["YAML", "yaml", "architecture.source-dependencies.forbidden-package-dependency"],
@@ -93,7 +96,7 @@ test("official checker rejects forbidden pure dependencies", async t => {
   }
 });
 
-test("official checker rejects consumer deep imports and production test imports", async () => {
+test("official checker rejects consumer deep imports and production test imports", { skip: skipExpensiveIntegration }, async () => {
   await withMutation(
     "architecture/checks/package-artifacts.mjs",
     'import "./package-policy/catalog-policy.mjs";\n',

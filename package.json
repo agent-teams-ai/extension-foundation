@@ -15,8 +15,8 @@
     "url": "git+https://github.com/agent-teams-ai/extension-foundation.git"
   },
   "scripts": {
-    "architecture:check": "pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && node --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/package-policy-characterization.test.mjs tests/package-policy-source-boundaries.test.mjs tests/scaffolding.test.mjs",
-    "architecture:check:fast": "pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && node --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/package-policy-characterization.test.mjs tests/package-policy-source-boundaries.test.mjs tests/scaffolding.test.mjs",
+    "architecture:check": "pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && node --import=\"data:text/javascript,process.env.PACKAGE_POLICY_TEST_MODE='full'\" --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/package-policy-characterization.test.mjs tests/package-policy-source-boundaries.test.mjs tests/scaffolding.test.mjs",
+    "architecture:check:fast": "pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && node --import=\"data:text/javascript,process.env.PACKAGE_POLICY_TEST_MODE='fast'\" --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/package-policy-characterization.test.mjs tests/package-policy-source-boundaries.test.mjs tests/scaffolding.test.mjs",
     "architecture:package-artifacts:check": "node architecture/checks/package-artifacts.mjs",
     "architecture:scaffold:apply": "node architecture/checks/scaffold.mjs apply",
     "architecture:scaffold:plan": "node architecture/checks/scaffold.mjs plan",

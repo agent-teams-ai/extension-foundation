@@ -23,6 +23,9 @@ import {
 const BASE_SHA = "0836f62a386e253b156271f0b8f7defc969f3580";
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 const execFileAsync = promisify(execFile);
+const skipExpensiveIntegration = process.env.PACKAGE_POLICY_TEST_MODE === "fast"
+  ? "skipped in package-policy fast mode"
+  : false;
 
 async function writeFixture(root, path, contents) {
   const target = join(root, path);
@@ -211,7 +214,7 @@ test("Docs envelopes, supersession, duplicates, and per-instance caching are cha
   assert.throws(() => ownerEvidenceFromDocsExecution({ envelope: { outcome: "success" } }), TypeError);
 });
 
-test("production CLIs preserve process output and exit codes", async () => {
+test("production CLIs preserve process output and exit codes", { skip: skipExpensiveIntegration }, async () => {
   for (const [path, expected] of [
     ["architecture/checks/package-topology.mjs", "Package topology check passed.\n"],
     ["architecture/checks/package-artifacts.mjs", "Built package artifact check passed.\n"],
@@ -226,7 +229,7 @@ test("production CLIs preserve process output and exit codes", async () => {
   );
 });
 
-test("topology and artifact CLIs preserve validation failure output and exit 1", async () => {
+test("topology and artifact CLIs preserve validation failure output and exit 1", { skip: skipExpensiveIntegration }, async () => {
   const root = await mkdtemp(join(repositoryRoot, ".package-policy-cli-"));
   try {
     await cp(join(repositoryRoot, "architecture/checks"), join(root, "architecture/checks"), { recursive: true });
