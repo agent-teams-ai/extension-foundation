@@ -699,12 +699,13 @@ test("decision ledger is referentially sound and records current implementation 
   );
   const phaseOneGate = ledger.implementationGates.find(gate => gate.id === "phase-1-static-module-authoring");
   assert.ok(phaseOneGate, "phase-1 static authoring gate is required");
-  assert.ok(gateRequirements(phaseOneGate).some(requirement => (
+  assert.equal(gateRequirements(phaseOneGate).some(requirement => (
     "evidence" in requirement && requirement.evidence === "module-authoring-governance-successor"
-  )));
-  const governanceSuccessor = ledger.requirementDefinitions.find(entry => entry.id === "module-authoring-governance-successor");
-  assert.equal(governanceSuccessor?.kind, "evidence");
-  assert.equal(governanceSuccessor?.currentStatus, "missing");
+  )), false);
+  assert.equal(
+    ledger.requirementDefinitions.some(entry => entry.id === "module-authoring-governance-successor"),
+    false,
+  );
   assert.ok(gateRequirements(phaseOneGate).some(requirement => (
     "evidence" in requirement && requirement.evidence === "static-authoring-trigger"
   )));

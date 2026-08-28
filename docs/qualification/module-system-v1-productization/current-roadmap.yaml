@@ -2,14 +2,17 @@ schemaVersion: 1
 id: module-system-v1-current-roadmap
 status: draft-qualification
 projectionKind: non-authoritative-qualification-recommendation
+projectionRecency: latest
+authority: accepted-adrs-and-owning-product-decisions
 recommendedBaselineForFutureDecision: product-owned-pure-di
-supersedesQualificationRecommendation:
+earlierQualificationInputs:
   - ../universal-module-extension-system/final-recommendation.md
   - ../universal-module-extension-system/nightly/10-architecture-and-loc-roadmap.md
 levels:
   - id: L0
     capability: product-owned-pure-di
-    status: demonstrated-product-pure-di-source-architecture
+    verdict: GO_PRODUCT_SOURCE_TOPOLOGY
+    status: demonstrated-exact-source-named-call-topology
     demonstratedBy: agent-runtime@7be998237a4c262bee9c4198d554b43cd2757ac6
     effect: retain-as-current-baseline
   - id: L1
@@ -21,7 +24,6 @@ levels:
       - product-owner-approved-benchmark-protocol
       - measured-authoring-or-drift-problem
       - executable-product-owned-runtime-wiring-evidence
-      - accepted-product-owner-governance-successor
     effectWhileOpen: no-new-authoring-contract
   - id: L2
     capability: private-selection-graph
@@ -74,6 +76,11 @@ aiNavigationBenchmark:
     - diagnostic-quality
     - generated-drift
 stopCriteria:
+  - id: first-two-slices-framework-glue-over-30-percent
+    appliesTo: [L1, L2, L3, L4, L5]
+    observableEvidence: more-than-30-percent-of-changed-production-code-is-generic-framework-glue
+    effect: stop-or-move-back
+    exception: safety-requirement-with-explicit-evidence
   - id: no-measured-authoring-problem
     appliesTo: [L1]
     observableEvidence: direct-composition-meets-future-product-owned-benchmark

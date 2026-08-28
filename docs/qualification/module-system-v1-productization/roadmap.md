@@ -8,16 +8,18 @@ summary: Defines reversible, independently gated steps from Pure DI through any 
 
 # Qualification Roadmap Recommendation
 
-The machine-readable projection of this recommendation is
-[`current-roadmap.yaml`](current-roadmap.yaml). Neither file is implementation
-authority. Only an accepted owning-product decision may authorize a step.
+The latest machine-readable, non-authoritative projection of this recommendation
+is [`current-roadmap.yaml`](current-roadmap.yaml). Neither file is implementation
+authority. Accepted ADRs and owning-product decisions remain authoritative, and
+only an accepted owning-product decision may authorize a product step.
 
 ## Step 0: Preserve The Baseline
 
 Keep product-owned typed ports, literal imports, pure factories, and explicit
-composition roots. Agent Runtime `493c6c3` demonstrates this baseline with
-Codex Setup and Claude Code Setup as separate capabilities sharing one bounded
-host lifetime. Correct qualification custody and source verification before
+composition roots. At Agent Runtime `7be9982`, exact custody and named-call
+topology show declared capability/member names, direct feature-factory calls
+before one host-factory return, and named host dependency properties, without
+asserting that references carry values. Correct qualification custody and source verification before
 using the dossier for another decision. The package-policy correction remains
 an external prerequisite owned by its separate task.
 
@@ -68,9 +70,10 @@ comparison of:
 2. schema-first inert JSON plus generated nominal handles; and
 3. handwritten JSON plus typed factory.
 
-An approved governance successor is required before a new grammar is adopted.
-No candidate is preselected. Generated output is a projection, not a second
-authority, and clean regeneration must be byte-identical.
+ADR-0014 is the accepted product-local authoring authority under ADR-0013; this
+qualification recommendation adds no successor gate. No candidate is
+preselected. Generated output is a projection, not a second authority, and
+clean regeneration must be byte-identical.
 
 Planning estimate only: `800-2,000 changed physical LOC`, counted across the
 private candidate, generated projections, diagnostics, fixtures, and
@@ -136,3 +139,8 @@ authoring spike returns to Pure DI; a failed graph returns to static bindings; a
 failed lifecycle adapter returns to the product coordinator; a failed host does
 not change product contracts. Framework types never cross those rollback
 boundaries.
+
+Moving back or stopping is required when the first two product slices spend
+more than 30% of their changed production code on generic framework glue. A
+safety requirement can justify that cost only with explicit evidence. This is a
+stop condition, not an advisory metric.

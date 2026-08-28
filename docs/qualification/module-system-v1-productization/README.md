@@ -23,16 +23,18 @@ The gate evaluates six independently triggered levels:
 
 The [research manifest](research-manifest.yaml) pins the source revisions and
 hosted jobs. The [consumer source evidence](consumer-source-evidence.yaml) is
-executable candidate evidence over exact local Git trees, blobs, AST exports,
-searches, and composition order. It is not remote attestation or product
+executable candidate evidence over exact local Git trees, blobs,
+exported-symbol syntax, searches, and narrow named-call topology. It is not
+semantic dataflow proof, remote attestation, or product
 approval. The
 [evidence ledger](evidence-ledger.yaml) remains fail-closed:
 unknown or disputed claims are not promoted to decisions.
 
-The current follow-up admits only `L0` source architecture: Agent Runtime
-`493c6c3` demonstrates product-owned Pure DI for separate Codex Setup and
-Claude Code Setup capabilities. Runtime behavior is not inferred from source
-inspection. Static authoring remains a measurement candidate, while runtime
+The current follow-up records `GO_PRODUCT_SOURCE_TOPOLOGY` only: at Agent Runtime
+`7be9982`, exact named declarations and imports accompany direct lexical
+feature-factory calls before one direct host-factory return with named host
+dependency properties. No reference-value relationship or runtime behavior is
+inferred. Static authoring remains a measurement candidate, while runtime
 selection, lifecycle coordination, process hosting, shared extraction, and a
 public SPI remain no-go.
 

@@ -12,7 +12,7 @@ summary: Separates exact source-record candidates from authoring, selection, lif
 
 | Level | Verdict | Meaning |
 | --- | --- | --- |
-| `L0` Product-owned Pure DI | `GO_PRODUCT_SOURCE_EVIDENCE` | Agent Runtime exact production source demonstrates typed ports, literal composition, owner-local factories, and a product handle. Runtime behavior is not promoted. Frontend remains candidate-only evidence. |
+| `L0` Product-owned Pure DI | `GO_PRODUCT_SOURCE_TOPOLOGY` | At Agent Runtime `7be9982`, exact Git custody and narrow named-call topology show declared capability/member names, literal feature-factory imports and direct calls before one direct host-factory return, and named host dependency properties. No reference-value relationship or runtime behavior is proved. Frontend remains candidate-only evidence. |
 | `L1` Static authoring | `NO_GO_MEASUREMENT_CANDIDATE` | Agent Runtime has a repeated setup-inspection workflow and Frontend has a same-seam case worth measuring, but neither has the required product decision, benchmark, or proved authoring problem. |
 | `L2` Private selection graph | `NO_GO` | No inspected product must change a provider set without rebuild or static configuration. |
 | `L3` Lifecycle coordinator | `NO_GO` | No inspected candidate owns multiple independently managed resources requiring dependency-aware readiness, drain, or rollback. |
@@ -36,22 +36,23 @@ flowchart LR
 ```
 
 Agent Runtime supplies exact production source for Codex Setup and Claude Code
-Setup through one default composition root. They are sibling capabilities with
-different contracts, not interchangeable implementations of one extension
-slot. The verifier does not execute their common host or promote its lifecycle
-behavior. Frontend Recent Projects supplies a restricted syntactic record of two fixed source
-contributions behind one feature-owned port and root. Orchestrator Host
+Setup. The verifier establishes only named declarations, imports, direct lexical
+feature-factory calls before one direct host-factory return, and named host
+dependency properties. It does not establish that a reference carries a value,
+execute the host, or prove runtime behavior. Frontend Recent Projects supplies a
+literal named-topology record of two fixed source constructions, one consumer
+construction using that list, and one facade publication. Orchestrator Host
 Discovery has a typed port and tests but no committed production adapter at the
 inspected revision.
 
-The exact local Git objects, exported symbols, negative searches, restricted
-Frontend contribution grammar, and restricted Agent Runtime capability-root
-grammar are checked by
+The exact local Git objects, exported symbols, negative searches, narrow
+Frontend literal-provider topology, and narrow Agent Runtime named-call
+topology are checked by
 `pnpm qualification:product-sources:check`. The command verifies a local mirror
 and its configured origin string; it does not authenticate remote publication
 or prove independent ownership or product approval. The records therefore
 remain `candidate-source-records`: they can demonstrate the inspected Agent
-Runtime `L0` source architecture, but cannot authorize a new product grammar,
+Runtime `L0` named-call topology, but cannot authorize a new product grammar,
 shared extraction, or publication decision.
 
 ## Why The Levels Stay Separate
@@ -66,10 +67,11 @@ closure, readiness, generations, routing, recovery, or public contracts.
 
 ## Governance Boundary
 
-ADR-0013 and ADR-0014 overlap on concrete authoring grammar and ownership. An
-approved successor is required before adopting a new declaration/profile
-contract. It does not block existing Pure DI or a product-local measurement
-rehearsal that adds no new grammar.
+ADR-0013 assigns private module semantics to the first product, and ADR-0014 is
+the accepted product-local authoring authority under that assignment. They do
+not conflict, and qualification evidence adds no successor gate. Product-local
+adoption still requires the owning-product decisions and measured triggers that
+the accepted ADRs specify.
 
 The package-policy consumer-identity defect remains externally owned: two IDs
 from one repository can still satisfy its present independence calculation.

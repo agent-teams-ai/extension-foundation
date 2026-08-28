@@ -14,7 +14,8 @@ related:
 
 Static imports and Pure DI were the nightly recommendation; the later
 [productization roadmap](../../module-system-v1-productization/current-roadmap.yaml)
-is the current sequencing authority.
+is the latest non-authoritative qualification projection. Accepted ADRs and
+owning-product decisions remain authority.
 The deferred graph and host items below are explicit later gates, not a parallel
 graph-first roadmap.
 

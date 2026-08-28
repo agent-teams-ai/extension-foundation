@@ -31,7 +31,8 @@ approves ownership, scope, success measures, and deletion criteria.
 
 This static-first direction was the nightly recommendation; the later
 [productization roadmap](../../module-system-v1-productization/current-roadmap.yaml)
-is the current sequencing authority.
+is the latest non-authoritative qualification projection. Accepted ADRs and
+owning-product decisions remain authority.
 Earlier graph-first conclusions remain preserved historical research rather
 than an alternative roadmap.
 

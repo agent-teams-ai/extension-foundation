@@ -47,8 +47,10 @@ This was the W11 implementation recommendation and is now historical input to
 the later [current productization roadmap](../module-system-v1-productization/current-roadmap.yaml).
 The earlier graph-first roadmap remains useful qualification research: its DAG,
 lifecycle, fencing, host, and packaging evidence constrains later work if a
-real trigger appears, but it is superseded as implementation sequencing. It is
-not a competing recommendation and does not authorize a Foundation runtime.
+real trigger appears. It is an earlier qualification input to the latest
+non-authoritative recommendation,
+not implementation authority, and does not authorize
+a Foundation runtime.
 
 ## Boundaries That Apply Now
 

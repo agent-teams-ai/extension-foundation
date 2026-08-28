@@ -81,7 +81,8 @@ The effective accepted direction is:
 - Extension code is not invoked inside a product Unit of Work.
 - The W11 recommendation was a product-owned static `T0` rehearsal. The later
   [productization roadmap](../module-system-v1-productization/current-roadmap.yaml)
-  is the current sequencing authority and retains Pure DI as `L0`.
+  is the latest non-authoritative qualification projection and retains Pure DI
+  as `L0`; accepted ADRs and owning-product decisions remain authority.
 - A static Pure DI rehearsal comes first; private product graph only after the
   exact measured runtime-selection or independent-lifecycle trigger is
   demonstrated.
@@ -192,8 +193,8 @@ contracts. Self-hosted and direct-digest use must not require Platform.
   offline operating parameters.
 - The package catalog has no admitted implementation slice.
 - The historical graph-first roadmap and graph/lifecycle dossier remain useful
-  bounded research, but are superseded as implementation sequencing by W11's
-  static-first recommendation.
+  bounded research. W11 and the later productization roadmap are qualification
+  recommendations; they do not alter accepted authority or implementation order.
 - No admitted production graph/lifecycle conformance suite exists yet. This
   dossier adds only disposable qualification evidence under
   `tests/qualification`; promotion requires a separate implementation change.

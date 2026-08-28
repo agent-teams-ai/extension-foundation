@@ -1,4 +1,5 @@
-schemaVersion: 1
+schemaVersion: 2
+proofMode: source-custody-named-topology
 capturedAt: 2026-08-28
 status: candidate-source-records
 verification:
@@ -10,10 +11,11 @@ products:
     repository: agent-teams-ai/agent-runtime
     commit: 7be998237a4c262bee9c4198d554b43cd2757ac6
     tree: ce00f6188fc2b9a174b48fe2412c0d417615fe49
-    claim: Exact production source records show two closed, required sibling setup capability bundles, synchronous fail-fast composition before access-handle publication, owner-local factories, and a product-owned access handle; L0 source architecture is demonstrated while the separate runtime evidence in Agent Runtime PR 52 remains non-promotional and L1-L5 remain unadmitted.
+    claim: Exact production source records show the named access-handle capability/member declarations, literal feature-factory imports, direct lexical feature-factory calls preceding one direct host-factory return, and the named host dependency properties. This is named-call topology only; it does not show that any reference carries a value or prove runtime behavior, and L1-L5 remain unadmitted.
     files:
       - { path: packages/apps/embedded-runtime/src/contracts/runtime-access.ts, blob: b5153a2ea3a1e7a213f631671bb274e038b116bc, symbols: [CodexRuntimeSetupQueries, ClaudeCodeRuntimeSetupQueries, RuntimeAccessHandle] }
       - { path: packages/apps/embedded-runtime/src/composition/agent-runtime-host.ts, blob: 87a88173defab7a4201df9314b40bd5f46268a5d, symbols: [AgentRuntimeHost, createAgentRuntimeHost, createDefaultAgentRuntimeHost] }
+      - { path: packages/apps/embedded-runtime/package.json, blob: 9f7545fed7b707ffdfa0d321e37cca68cfadb9f7, symbols: [] }
       - { path: packages/apps/embedded-runtime/src/application/build-codex-setup-view.ts, blob: fbfcaa4dc6728fb5f1956cc7b910f9e1d66808fa, symbols: [createBuildCodexSetupView] }
       - { path: packages/apps/embedded-runtime/src/application/build-claude-code-setup-view.ts, blob: 702c93f60fe5b73854b3b217e5420931c2792aa8, symbols: [createBuildClaudeCodeSetupView] }
       - { path: packages/contexts/agent-execution/package.json, blob: bad369b10d4230ae7dc6a1761cd6ff438ec2aee7, symbols: [] }
@@ -38,27 +40,31 @@ products:
         - packages/contexts/runtime-configuration/src
         - packages/contexts/runtime-security/src
       matches: 0
-    composition:
-      kind: product-capability-root
+    topology:
+      kind: agent-runtime-named-calls
       root: packages/apps/embedded-runtime/src/composition/agent-runtime-host.ts
       rootFactory: createDefaultAgentRuntimeHost
       hostFactory: createAgentRuntimeHost
       consumerManifest: packages/apps/embedded-runtime/package.json
       contract:
         source: packages/apps/embedded-runtime/src/contracts/runtime-access.ts
-        moduleSpecifier: ../contracts/runtime-access.js
         interface: RuntimeAccessHandle
-        capabilities: [claudeCodeSetup, codexSetup]
+        capabilityMembers:
+          claudeCodeSetup: [inspect]
+          codexSetup: [inspect]
       featureFactories:
-        - { symbol: createRuntimeInstallationDiscoveryFeature, source: packages/contexts/agent-execution/src/features/runtime-installation-discovery/composition/feature-module-factory.ts, barrel: packages/contexts/agent-execution/src/composition.ts, manifest: packages/contexts/agent-execution/package.json, moduleSpecifier: "@agent-teams/agent-execution/composition", hostDependencies: [claudeCodeSetup.discoverClaudeCodeInstallations, codexSetup.discoverCodexInstallations] }
-        - { symbol: createCodexConfigurationInspectionFeature, source: packages/contexts/runtime-configuration/src/features/codex-configuration-inspection/composition/feature-module-factory.ts, barrel: packages/contexts/runtime-configuration/src/composition.ts, manifest: packages/contexts/runtime-configuration/package.json, moduleSpecifier: "@agent-teams/runtime-configuration/composition", hostDependencies: [codexSetup.inspectCodexConfiguration] }
-        - { symbol: createClaudeCodeConfigurationInspectionFeature, source: packages/contexts/runtime-configuration/src/features/claude-code-configuration-inspection/composition/feature-module-factory.ts, barrel: packages/contexts/runtime-configuration/src/composition.ts, manifest: packages/contexts/runtime-configuration/package.json, moduleSpecifier: "@agent-teams/runtime-configuration/composition", hostDependencies: [claudeCodeSetup.inspectClaudeCodeConfiguration] }
-        - { symbol: createSetupInspectionAuthorizationFeature, source: packages/contexts/runtime-security/src/features/setup-source-inspection-authorization/composition/feature-module-factory.ts, barrel: packages/contexts/runtime-security/src/composition.ts, manifest: packages/contexts/runtime-security/package.json, moduleSpecifier: "@agent-teams/runtime-security/composition", hostDependencies: [claudeCodeSetup.authorizeClaudeCodeSetupInspection, codexSetup.authorizeSetupInspection] }
+        - { symbol: createRuntimeInstallationDiscoveryFeature, source: packages/contexts/agent-execution/src/features/runtime-installation-discovery/composition/feature-module-factory.ts, barrel: packages/contexts/agent-execution/src/composition.ts, manifest: packages/contexts/agent-execution/package.json, moduleSpecifier: "@agent-teams/agent-execution/composition" }
+        - { symbol: createCodexConfigurationInspectionFeature, source: packages/contexts/runtime-configuration/src/features/codex-configuration-inspection/composition/feature-module-factory.ts, barrel: packages/contexts/runtime-configuration/src/composition.ts, manifest: packages/contexts/runtime-configuration/package.json, moduleSpecifier: "@agent-teams/runtime-configuration/composition" }
+        - { symbol: createClaudeCodeConfigurationInspectionFeature, source: packages/contexts/runtime-configuration/src/features/claude-code-configuration-inspection/composition/feature-module-factory.ts, barrel: packages/contexts/runtime-configuration/src/composition.ts, manifest: packages/contexts/runtime-configuration/package.json, moduleSpecifier: "@agent-teams/runtime-configuration/composition" }
+        - { symbol: createSetupInspectionAuthorizationFeature, source: packages/contexts/runtime-security/src/features/setup-source-inspection-authorization/composition/feature-module-factory.ts, barrel: packages/contexts/runtime-security/src/composition.ts, manifest: packages/contexts/runtime-security/package.json, moduleSpecifier: "@agent-teams/runtime-security/composition" }
+      hostDependencies:
+        claudeCodeSetup: [authorizeClaudeCodeSetupInspection, discoverClaudeCodeInstallations, inspectClaudeCodeConfiguration, planClaudeCodeSetupInspection]
+        codexSetup: [authorizeSetupInspection, discoverCodexInstallations, inspectCodexConfiguration, planCodexSetupInspection]
   orchestrator:
     repository: agent-teams-ai/agent-teams-orchestrator
     commit: 4c5f55366ed8c83f97374b66c8e9f84059c47382
     tree: 8b386fe943ad182943797cfc1d1ba06c86706452
-    claim: Host Discovery has a typed source port and tests but no committed production source adapter or runtime graph trigger.
+    claim: Exact custody lists the named Host Discovery port, use-case factory, test, and README, and the declared negative search has zero matches. This record makes no topology, adapter-absence, runtime, or behavior claim.
     files:
       - { path: packages/platform/local-host-control/src/features/host-discovery/application/ports/host-discovery-source.ts, blob: cfad3d6789a9572c22a94f3a48d6866905c62f9b, symbols: [HostDiscoverySource] }
       - { path: packages/platform/local-host-control/src/features/host-discovery/application/discover-local-host.ts, blob: 884b971811ec6ab222b47e8838a71a3a38c746b5, symbols: [createHostDiscovery] }
@@ -68,11 +74,13 @@ products:
       pattern: ModuleGraph|RuntimeModule|ServiceLocator|ModuleRegistry|PluginRegistry
       paths: [packages/platform/local-host-control/src]
       matches: 0
+    topology:
+      kind: custody-negative-search-only
   frontend:
     repository: 777genius/agent-teams-ai
     commit: 85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd
     tree: c90d17b20ee7d459664bef313a178f5d30a3af9c
-    claim: Recent Projects is a bounded static multi-contribution candidate with two literal source adapters and one feature-owned composition root.
+    claim: Exact custody and named topology show exact port, consumer, and provider imports; one literal ordered provider construction; one consumer construction naming that list; and one facade publication. They do not prove provider execution, use-case flow, presenter values, normalizer behavior, or output correctness.
     files:
       - { path: tsconfig.json, blob: 133603d150f3826948b39b2965fd1ca83672c798, symbols: [] }
       - { path: src/features/recent-projects/core/application/ports/RecentProjectsSourcePort.ts, blob: cba0360701d3a6dfcbcb571129869baa8397faa1, symbols: [RecentProjectsSourcePort] }
@@ -85,8 +93,8 @@ products:
       pattern: ModuleGraph|RuntimeModule|ServiceLocator|ModuleRegistry|PluginRegistry
       paths: [src/features/recent-projects]
       matches: 0
-    composition:
-      kind: ordered-contributions
+    topology:
+      kind: frontend-literal-provider-list
       root: src/features/recent-projects/main/composition/createRecentProjectsFeature.ts
       factory: createRecentProjectsFeature
       moduleResolution:
@@ -94,7 +102,6 @@ products:
       port:
         symbol: RecentProjectsSourcePort
         source: src/features/recent-projects/core/application/ports/RecentProjectsSourcePort.ts
-        moduleSpecifier: "@features/recent-projects/core/application/ports/RecentProjectsSourcePort"
       consumer:
         symbol: ListDashboardRecentProjectsUseCase
         source: src/features/recent-projects/core/application/use-cases/ListDashboardRecentProjectsUseCase.ts
@@ -102,8 +109,10 @@ products:
       orderedProviders:
         - { symbol: ClaudeRecentProjectsSourceAdapter, source: src/features/recent-projects/main/adapters/output/sources/ClaudeRecentProjectsSourceAdapter.ts }
         - { symbol: CodexSessionFileRecentProjectsSourceAdapter, source: src/features/recent-projects/main/adapters/output/sources/CodexSessionFileRecentProjectsSourceAdapter.ts }
+      facadeMember: listDashboardRecentProjects
 limitations:
   - Blob and negative-search evidence proves only the exact committed revisions above.
   - Absence of a named framework type does not by itself prove architectural quality.
   - Worker reports are corroboration only and are not source authority.
-  - Local mirror verification proves exact checked-out Git objects and restricted syntactic composition shapes, not runtime use, authenticated remote publication, independent ownership, or product approval.
+  - The source-custody-named-topology proof mode checks only exact Git objects, exported-symbol syntax, exact negative-search counts, and the declared narrow named-call topology.
+  - It does not prove semantic dataflow, that references carry values, runtime behavior, authorization, lifecycle, fail-fast behavior, output correctness, provider execution, authenticated remote publication, independent ownership, product approval, or promotion readiness.

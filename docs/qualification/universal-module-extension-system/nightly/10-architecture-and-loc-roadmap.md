@@ -15,7 +15,8 @@ related:
 W11 static imports and Pure DI were the nightly recommendation. This document
 is preserved historical research; the later
 [productization roadmap](../../module-system-v1-productization/current-roadmap.yaml)
-is the current sequencing authority.
+is the latest non-authoritative qualification projection. Accepted ADRs and
+owning-product decisions remain authority.
 
 ## Phase 0: Governance Alignment
 

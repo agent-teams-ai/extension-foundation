@@ -43,12 +43,6 @@ requirementDefinitions:
     authority: owning-product
     detail: final-recommendation.md
     purpose: product-specific ownership approval for one static module rehearsal
-  - id: module-authoring-governance-successor
-    kind: evidence
-    authority: qualification-evidence
-    detail: ../module-system-v1-productization/executive-verdict.md#governance-boundary
-    currentStatus: missing
-    purpose: records that no accepted product-owner successor resolving the ADR-0013/ADR-0014 ownership overlap exists yet
   - id: static-authoring-trigger
     kind: evidence
     authority: owning-product
@@ -182,8 +176,6 @@ implementationGates:
         requiredStatus: satisfied
       - evidence: static-authoring-trigger
         requiredStatus: measured
-      - evidence: module-authoring-governance-successor
-        requiredStatus: accepted-product-owner-successor-recorded
   - id: private-runtime-graph
     appliesTo:
       - later-private-runtime-graph

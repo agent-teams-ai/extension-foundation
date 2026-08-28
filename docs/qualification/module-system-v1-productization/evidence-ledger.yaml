@@ -3,7 +3,7 @@ campaignId: module-system-v1-productization-2026-08-28
 status: review-ready
 claims:
   - id: effective-authority
-    classification: contradicted
+    classification: proved
     sources:
       - docs/decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
       - docs/decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md
@@ -14,10 +14,10 @@ claims:
       - module-v1-api-critic-governance-r1
     result: >-
       Accepted ADR-0013 assigns private module semantics to the first product,
-      while accepted ADR-0014 normatively fixes part of that product grammar.
-      New authoring adoption requires an approved successor; direct Pure DI is
-      unaffected.
-    reversalCondition: An accepted superseding ADR changes ownership or sequencing.
+      and accepted ADR-0014 is the product-local authoring authority under that
+      assignment. Qualification evidence adds no successor gate. An accepted
+      owning-product decision is still required where ADR-0013 or ADR-0014 says so.
+    reversalCondition: An accepted superseding ADR changes ownership or authoring policy.
   - id: existing-spike-coverage
     classification: partially-proved
     sources:
@@ -40,18 +40,19 @@ claims:
     classification: level-separated
     sources:
       - repository: agent-teams-ai/agent-runtime
-        revision: 493c6c37e247f021fc110c5fc624b72f1502d743
+        revision: 7be998237a4c262bee9c4198d554b43cd2757ac6
       - docs/qualification/module-system-v1-productization/consumer-source-evidence.yaml
     evidence:
       - local-exact-mirror-verification
       - hosted-follow-up-reports-corroboration-only
     result: >-
-      Agent Runtime demonstrates L0 product-owned Pure DI through exact
-      production source: Codex Setup and Claude Code Setup are sibling
-      capabilities with separate contracts, literal composition, owner-local
-      factories, and a typed product handle. Runtime behavior is not promoted by
-      source inspection. L1 remains a no-go measurement candidate; L2-L5 remain
-      no-go.
+      Agent Runtime demonstrates exact L0 named-call topology: declared
+      capability/member names and literal exact feature-factory imports accompany
+      direct lexical feature-factory calls before one direct host-factory return
+      containing the named host dependency properties. This does not establish
+      that references carry values or prove runtime behavior. The verdict is
+      GO_PRODUCT_SOURCE_TOPOLOGY; L1 remains a no-go measurement candidate and
+      L2-L5 remain no-go.
     reversalCondition: >-
       Revoke L0 if exact source verification fails or ambient resolution enters
       product contracts. Reopen L1 only after a product-owned decision and
@@ -86,9 +87,12 @@ claims:
       - module-v1-admission-minimalism-r1
       - module-v1-admission-evolution-r1
     result: >-
-      Frontend Recent Projects has two exact same-contract production adapters
-      and one ordered composition root. It may measure whether authoring would
-      help, but it has no product decision, benchmark, grammar, or exit evidence.
+      Frontend Recent Projects exact custody and named topology show exact port,
+      consumer, and provider imports, a literal ordered provider construction,
+      one consumer construction naming that list, and one facade publication.
+      No provider execution or use-case dataflow is proved. It may measure whether
+      authoring would help, but it has no product decision, benchmark, grammar, or
+      exit evidence.
     reversalCondition: >-
       Product evidence removes the candidate, or a Frontend-owned decision and
       benchmark prove a concrete authoring problem that justifies an L1 comparison.
@@ -101,11 +105,13 @@ claims:
     evidence:
       - local-exact-mirror-verification
     result: >-
-      Exact commit, tree, blob, AST exports, negative searches, a restricted
-      Frontend contribution grammar, and a restricted Agent Runtime capability-root
-      grammar are reproducible against the three configured local mirrors. This
-      is not runtime-use proof, independence, remote attestation, or product
-      decision authority.
+      The source-custody-named-topology mode reproduces exact repository, commit,
+      tree, blob, exported-symbol syntax, negative searches, restricted resolution,
+      Frontend literal-provider topology, Agent Runtime named-call topology, and
+      Orchestrator custody-only evidence against the three configured local mirrors.
+      It proves no semantic dataflow, reference values, runtime behavior,
+      authorization, lifecycle, fail-fast behavior, output correctness, provider
+      execution, independence, remote attestation, or product decision authority.
     reversalCondition: The verifier, exact Git objects, configured origin, alias resolution, or restricted factory-shape evidence fails.
   - id: authoring-api
     classification: conditional
@@ -128,7 +134,7 @@ claims:
   - id: private-runtime-graph
     classification: no-go
     sources:
-      - agent-teams-ai/agent-runtime@493c6c37e247f021fc110c5fc624b72f1502d743
+      - agent-teams-ai/agent-runtime@7be998237a4c262bee9c4198d554b43cd2757ac6
       - agent-teams-ai/agent-teams-orchestrator@4c5f55366ed8c83f97374b66c8e9f84059c47382
       - 777genius/agent-teams-ai@85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd
     evidence:
@@ -188,8 +194,8 @@ jobs:
   - { id: module-v1-audit-decisions-r1, role: effective-decision-audit, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
   - { id: module-v1-audit-spikes-r1, role: existing-spike-gap-audit, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
   - { id: module-v1-audit-package-policy-r1, role: package-policy-evidence-boundary, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
-  - { id: module-v1-audit-agent-runtime-r1, role: product-consumer-admission, sourceRevision: 25b2b7f383347466fa74fdd5586c485f5181d8d9, status: invalidated-dirty-nested-clone }
-  - { id: module-v1-audit-agent-runtime-r2, role: product-consumer-admission, sourceRevision: 25b2b7f383347466fa74fdd5586c485f5181d8d9, status: completed }
+  - { id: module-v1-audit-agent-runtime-r1, role: product-consumer-admission, sourceRevision: 25b2b7f383347466fa74fdd5586c485f5181d8d9, status: invalidated-dirty-nested-clone, lineage: historical-evidence-superseded-by-current-product-source-records }
+  - { id: module-v1-audit-agent-runtime-r2, role: product-consumer-admission, sourceRevision: 25b2b7f383347466fa74fdd5586c485f5181d8d9, status: completed, lineage: historical-evidence-superseded-by-current-product-source-records }
   - { id: module-v1-audit-orchestrator-r1, role: product-consumer-admission, sourceRevision: 4c5f55366ed8c83f97374b66c8e9f84059c47382, status: completed }
   - { id: module-v1-audit-frontend-r1, role: product-consumer-admission, sourceRevision: 85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd, status: completed }
   - { id: module-v1-tiebreak-ownership-a-r1, role: ownership-tie-break, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
@@ -201,8 +207,8 @@ jobs:
   - { id: module-v1-api-schema-factory-r1, role: authoring-api-advocate-a, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
   - { id: module-v1-api-ts-builder-r1, role: authoring-api-advocate-b, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
   - { id: module-v1-api-json-handles-r1, role: authoring-api-advocate-c, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
-  - { id: module-v1-tie-ar-admission-a-r1, role: agent-runtime-admission-tie-break, sourceRevision: 25b2b7f383347466fa74fdd5586c485f5181d8d9, status: completed }
-  - { id: module-v1-tie-ar-admission-b-r1, role: agent-runtime-admission-tie-break, sourceRevision: 25b2b7f383347466fa74fdd5586c485f5181d8d9, status: completed }
+  - { id: module-v1-tie-ar-admission-a-r1, role: agent-runtime-admission-tie-break, sourceRevision: 25b2b7f383347466fa74fdd5586c485f5181d8d9, status: completed, lineage: historical-evidence-superseded-by-current-product-source-records }
+  - { id: module-v1-tie-ar-admission-b-r1, role: agent-runtime-admission-tie-break, sourceRevision: 25b2b7f383347466fa74fdd5586c485f5181d8d9, status: completed, lineage: historical-evidence-superseded-by-current-product-source-records }
   - { id: module-v1-api-critic-typescript-r1, role: authoring-api-typescript-critic, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
   - { id: module-v1-api-critic-ai-dx-r1, role: authoring-api-ai-dx-critic, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
   - { id: module-v1-api-critic-governance-r1, role: authoring-api-governance-critic, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
@@ -232,6 +238,7 @@ jobs:
   - { id: module-v1-final-security-r1, role: exact-head-security-review, sourceRevision: external-pr-head, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: pending-final-exact-head-review }
   - { id: module-v1-final-product-r1, role: exact-head-product-review, sourceRevision: external-pr-head, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: pending-final-exact-head-review }
 followUpReports:
+  lineage: historical-evidence-superseded-by-current-product-source-records
   status: corroboration-only-not-portable-evidence
   decisionAuthority: false
   custody:

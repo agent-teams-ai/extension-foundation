@@ -53,6 +53,9 @@ async function main() {
   }
   const result = await verifyProductSourceEvidence(evidence, repositories);
   process.stdout.write(`${JSON.stringify({
+    schemaVersion: result.schemaVersion,
+    proofMode: result.proofMode,
+    limits: result.limits,
     status: result.status,
     products: result.reports.map(report => ({
       product: report.product,
@@ -61,7 +64,7 @@ async function main() {
       tree: report.tree,
       files: report.files.length,
       negativeMatches: report.negativeSearch.matches,
-      composition: report.composition,
+      topology: report.topology,
     })),
   }, null, 2)}\n`);
 }

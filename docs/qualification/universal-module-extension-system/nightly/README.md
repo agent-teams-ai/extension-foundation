@@ -26,7 +26,8 @@ work if measured runtime-selection or independent-lifecycle need appears, but
 they are not a competing roadmap. No report, package, or current Git SHA is
 production-qualified by this index. The later
 [productization roadmap](../../module-system-v1-productization/current-roadmap.yaml)
-is the current sequencing authority.
+is the latest non-authoritative qualification projection. Accepted ADRs and
+owning-product decisions remain authority.
 
 ## Reports
 

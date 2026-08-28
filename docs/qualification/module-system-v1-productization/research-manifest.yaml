@@ -21,7 +21,7 @@ baseline:
 products:
   agentRuntime:
     repository: agent-teams-ai/agent-runtime
-    revision: 493c6c37e247f021fc110c5fc624b72f1502d743
+    revision: 7be998237a4c262bee9c4198d554b43cd2757ac6
   orchestrator:
     repository: agent-teams-ai/agent-teams-orchestrator
     revision: 4c5f55366ed8c83f97374b66c8e9f84059c47382
@@ -78,6 +78,7 @@ redTeam:
     but the app-server goal replayed the prior result and produced no edits.
     Those attempt-2 wrappers are retained as lineage, not counted as new reviews.
 followUp:
+  lineage: historical-evidence-superseded-by-current-product-source-records
   extensionRevision: e1a3492e56aff33a1569d12b28e0ee3762cd8ba5
   agentRuntimeRevision: 493c6c37e247f021fc110c5fc624b72f1502d743
   attemptSuffix: followup-a5
@@ -96,9 +97,9 @@ followUp:
       - production-selection-or-lifecycle-runtime
 verdicts:
   L0PureDi:
-    agentRuntime: demonstrated-product-pure-di-source-architecture
+    agentRuntime: demonstrated-exact-source-named-call-topology
     orchestrator: typed-port-evidence-only
-    frontend: restricted-syntactic-composition-candidate
+    frontend: literal-named-topology-candidate
   L1StaticAuthoring:
     agentRuntime: no-go-measurement-candidate
     orchestrator: no-go
