@@ -21,20 +21,17 @@ The gate evaluates six independently triggered levels:
 5. process or WASM placement; and
 6. shared Foundation extraction.
 
-The [research manifest](research-manifest.yaml) pins the source revisions and
-hosted jobs. The [consumer source evidence](consumer-source-evidence.yaml) is
-executable candidate evidence over exact local Git trees, blobs,
-exported-symbol syntax, searches, and narrow named-call topology. It is not
-semantic dataflow proof, remote attestation, or product
-approval. The
+The [consumer source evidence](consumer-source-evidence.yaml) is the canonical
+source lock. It records executable candidate custody over exact local Git
+origins, commits, trees, and selected regular-file blobs. It does not interpret
+source, prove topology or semantics, attest remote publication, or grant product
+approval. The [research manifest](research-manifest.yaml) links to that lock and
+classifies historical hosted jobs as non-portable corroboration. The
 [evidence ledger](evidence-ledger.yaml) remains fail-closed:
 unknown or disputed claims are not promoted to decisions.
 
-The current follow-up records `GO_PRODUCT_SOURCE_TOPOLOGY` only: at Agent Runtime
-`7be9982`, exact named declarations and imports accompany direct lexical
-feature-factory calls before one direct host-factory return with named host
-dependency properties. No reference-value relationship or runtime behavior is
-inferred. Static authoring remains a measurement candidate, while runtime
+The current follow-up records `SOURCE_CUSTODY_BASELINE_RECORDED` only. Static
+authoring remains a measurement candidate, while runtime
 selection, lifecycle coordination, process hosting, shared extraction, and a
 public SPI remain no-go.
 

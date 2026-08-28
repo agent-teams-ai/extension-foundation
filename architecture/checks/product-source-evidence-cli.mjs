@@ -1,70 +1,61 @@
 #!/usr/bin/env node
 
-import { execFile } from "node:child_process";
-import { readFile, realpath } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { promisify } from "node:util";
+import { readFile, stat } from "node:fs/promises";
+import { isAbsolute, resolve } from "node:path";
 
 import { parse } from "yaml";
 
 import { verifyProductSourceEvidence } from "./product-source-evidence.mjs";
 
-const execFileAsync = promisify(execFile);
-const DEFAULT_MIRRORS = Object.freeze({
-  agentRuntime: "agent-runtime",
-  frontend: "old-agent-teams-frontend",
-  orchestrator: "agent-teams-orchestrator",
-});
+const MAX_EVIDENCE_BYTES = 1024 * 1024;
 
 function usage() {
-  return "usage: product-source-evidence-cli.mjs EVIDENCE.yaml [--repository product=/absolute/path]";
+  return "usage: product-source-evidence-cli.mjs EVIDENCE.yaml --repository product=/absolute/path [--repository ...]";
 }
 
 function parseArguments(argv) {
-  if (argv.length === 0) throw new Error(usage());
-  const evidencePath = resolve(argv[0]);
+  const normalized = argv[1] === "--" ? [argv[0], ...argv.slice(2)] : argv;
+  if (normalized.length < 3) throw new Error(usage());
+  const evidencePath = resolve(normalized[0]);
   const repositories = {};
-  for (let index = 1; index < argv.length; index += 1) {
-    if (argv[index] !== "--repository" || index + 1 >= argv.length) throw new Error(usage());
-    const assignment = argv[index + 1];
+  for (let index = 1; index < normalized.length; index += 2) {
+    if (normalized[index] !== "--repository" || index + 1 >= normalized.length) throw new Error(usage());
+    const assignment = normalized[index + 1];
     const separator = assignment.indexOf("=");
     if (separator <= 0 || separator === assignment.length - 1) throw new Error(usage());
-    repositories[assignment.slice(0, separator)] = resolve(assignment.slice(separator + 1));
-    index += 1;
+    const product = assignment.slice(0, separator);
+    const repository = assignment.slice(separator + 1);
+    if (Object.hasOwn(repositories, product)) throw new Error(`duplicate repository mapping for ${product}`);
+    if (!isAbsolute(repository)) throw new Error(`repository mapping for ${product} must be an absolute path`);
+    repositories[product] = repository;
   }
+  if (Object.keys(repositories).length === 0) throw new Error(usage());
   return { evidencePath, repositories };
-}
-
-async function discoverOrganizationRoot() {
-  const { stdout } = await execFileAsync("git", [
-    "rev-parse",
-    "--path-format=absolute",
-    "--git-common-dir",
-  ], { encoding: "utf8" });
-  return dirname(dirname(await realpath(stdout.trim())));
 }
 
 async function main() {
   const { evidencePath, repositories } = parseArguments(process.argv.slice(2));
-  const evidence = parse(await readFile(evidencePath, "utf8"));
-  const organizationRoot = await discoverOrganizationRoot();
-  for (const [product, directory] of Object.entries(DEFAULT_MIRRORS)) {
-    repositories[product] ??= resolve(organizationRoot, directory);
+  const metadata = await stat(evidencePath);
+  if (!metadata.isFile() || metadata.size > MAX_EVIDENCE_BYTES) {
+    throw new Error(`evidence file must be a regular file no larger than ${MAX_EVIDENCE_BYTES} bytes`);
   }
+  const evidence = parse(await readFile(evidencePath, "utf8"), { maxAliasCount: 0, strict: true });
   const result = await verifyProductSourceEvidence(evidence, repositories);
   process.stdout.write(`${JSON.stringify({
     schemaVersion: result.schemaVersion,
     proofMode: result.proofMode,
+    claimKind: result.claimKind,
     limits: result.limits,
     status: result.status,
+    verificationAuthority: result.verificationAuthority,
+    promotionAuthority: result.promotionAuthority,
     products: result.reports.map(report => ({
       product: report.product,
       repository: report.repository,
       commit: report.commit,
       tree: report.tree,
       files: report.files.length,
-      negativeMatches: report.negativeSearch.matches,
-      topology: report.topology,
+      totalBlobBytes: report.totalBlobBytes,
     })),
   }, null, 2)}\n`);
 }

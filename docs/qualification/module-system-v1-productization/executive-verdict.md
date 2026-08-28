@@ -12,7 +12,7 @@ summary: Separates exact source-record candidates from authoring, selection, lif
 
 | Level | Verdict | Meaning |
 | --- | --- | --- |
-| `L0` Product-owned Pure DI | `GO_PRODUCT_SOURCE_TOPOLOGY` | At Agent Runtime `7be9982`, exact Git custody and narrow named-call topology show declared capability/member names, literal feature-factory imports and direct calls before one direct host-factory return, and named host dependency properties. No reference-value relationship or runtime behavior is proved. Frontend remains candidate-only evidence. |
+| `L0` Product-owned Pure DI | `SOURCE_CUSTODY_BASELINE_RECORDED` | The canonical lock records exact Git origin, commit, tree, and selected regular-file blobs for three candidate product sources. It proves no product topology or behavior and grants no promotion authority. |
 | `L1` Static authoring | `NO_GO_MEASUREMENT_CANDIDATE` | Agent Runtime has a repeated setup-inspection workflow and Frontend has a same-seam case worth measuring, but neither has the required product decision, benchmark, or proved authoring problem. |
 | `L2` Private selection graph | `NO_GO` | No inspected product must change a provider set without rebuild or static configuration. |
 | `L3` Lifecycle coordinator | `NO_GO` | No inspected candidate owns multiple independently managed resources requiring dependency-aware readiness, drain, or rollback. |
@@ -35,25 +35,18 @@ flowchart LR
     Factory --> UseCase["Owning use case"]
 ```
 
-Agent Runtime supplies exact production source for Codex Setup and Claude Code
-Setup. The verifier establishes only named declarations, imports, direct lexical
-feature-factory calls before one direct host-factory return, and named host
-dependency properties. It does not establish that a reference carries a value,
-execute the host, or prove runtime behavior. Frontend Recent Projects supplies a
-literal named-topology record of two fixed source constructions, one consumer
-construction using that list, and one facade publication. Orchestrator Host
-Discovery has a typed port and tests but no committed production adapter at the
-inspected revision.
+The canonical source lock selects files from Agent Runtime, Frontend, and
+Orchestrator as candidate product evidence. The verifier does not read or
+interpret their contents. Any semantic or topology interpretation belongs to
+the owning product and is non-authoritative reference material here.
 
-The exact local Git objects, exported symbols, negative searches, narrow
-Frontend literal-provider topology, and narrow Agent Runtime named-call
-topology are checked by
-`pnpm qualification:product-sources:check`. The command verifies a local mirror
+The exact local Git origin, commit, tree, and declared regular-file blobs are
+checked by `pnpm qualification:product-sources:check --` followed by explicit
+`--repository product=/absolute/path` mappings for every product. The command verifies a local mirror
 and its configured origin string; it does not authenticate remote publication
 or prove independent ownership or product approval. The records therefore
-remain `candidate-source-records`: they can demonstrate the inspected Agent
-Runtime `L0` named-call topology, but cannot authorize a new product grammar,
-shared extraction, or publication decision.
+remain `candidate-source-records`: they record a source-custody baseline but
+cannot authorize a product grammar, shared extraction, or publication decision.
 
 ## Why The Levels Stay Separate
 

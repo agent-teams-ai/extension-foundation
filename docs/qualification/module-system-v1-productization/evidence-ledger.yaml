@@ -46,13 +46,10 @@ claims:
       - local-exact-mirror-verification
       - hosted-follow-up-reports-corroboration-only
     result: >-
-      Agent Runtime demonstrates exact L0 named-call topology: declared
-      capability/member names and literal exact feature-factory imports accompany
-      direct lexical feature-factory calls before one direct host-factory return
-      containing the named host dependency properties. This does not establish
-      that references carry values or prove runtime behavior. The verdict is
-      GO_PRODUCT_SOURCE_TOPOLOGY; L1 remains a no-go measurement candidate and
-      L2-L5 remain no-go.
+      The canonical lock records exact Git custody for selected Agent Runtime
+      files. It does not interpret source or establish topology, values, or
+      runtime behavior. The verdict is SOURCE_CUSTODY_BASELINE_RECORDED; L1
+      remains a no-go measurement candidate and L2-L5 remain no-go.
     reversalCondition: >-
       Revoke L0 if exact source verification fails or ambient resolution enters
       product contracts. Reopen L1 only after a product-owned decision and
@@ -87,10 +84,9 @@ claims:
       - module-v1-admission-minimalism-r1
       - module-v1-admission-evolution-r1
     result: >-
-      Frontend Recent Projects exact custody and named topology show exact port,
-      consumer, and provider imports, a literal ordered provider construction,
-      one consumer construction naming that list, and one facade publication.
-      No provider execution or use-case dataflow is proved. It may measure whether
+      The canonical lock records exact Git custody for selected Frontend files.
+      It does not interpret imports, constructions, publication, provider
+      execution, or use-case dataflow. The source may help an owning product measure whether
       authoring would help, but it has no product decision, benchmark, grammar, or
       exit evidence.
     reversalCondition: >-
@@ -105,14 +101,13 @@ claims:
     evidence:
       - local-exact-mirror-verification
     result: >-
-      The source-custody-named-topology mode reproduces exact repository, commit,
-      tree, blob, exported-symbol syntax, negative searches, restricted resolution,
-      Frontend literal-provider topology, Agent Runtime named-call topology, and
-      Orchestrator custody-only evidence against the three configured local mirrors.
+      The exact-git-source-custody mode reproduces exact origin, commit, tree,
+      and declared regular-file blob identities against three explicitly mapped
+      local mirrors. It performs no source interpretation.
       It proves no semantic dataflow, reference values, runtime behavior,
       authorization, lifecycle, fail-fast behavior, output correctness, provider
       execution, independence, remote attestation, or product decision authority.
-    reversalCondition: The verifier, exact Git objects, configured origin, alias resolution, or restricted factory-shape evidence fails.
+    reversalCondition: The verifier, exact Git objects, configured origin, bounds, or portable-path evidence fails.
   - id: authoring-api
     classification: conditional
     sources:
@@ -183,7 +178,7 @@ claims:
       latest-attempt aliasing, platform-qualified live-source reads, and
       owner-only storage passes the full local gate. Historical corpus custody
       remains honestly unproven.
-      V1 can invalidate evidence but cannot authorize promotion; final
+      V2 can invalidate evidence but cannot authorize promotion; final
       independent exact-head review remains external PR evidence.
     reversalCondition: Integrated exact-head checks or review find unresolved fail-open behavior.
 jobs:
@@ -216,13 +211,13 @@ jobs:
   - id: module-v1-fix-lifecycle-r1
     role: lifecycle-remediation
     sourceRevision: ded182f0f04953107868c5e84039fdc420f12ecc
-    status: integrated-remediation
+    status: non-portable-corroboration
     integratedRevision: 3c31341ee0483e8535532b51b5d91fb1cc64a512
     acceptance: focused-and-full-local-gates-passed
   - id: module-v1-fix-custody-r1
     role: evidence-custody-remediation
     sourceRevision: ded182f0f04953107868c5e84039fdc420f12ecc
-    status: integrated-remediation
+    status: non-portable-corroboration
     integratedRevision: d82a57b6589543655922f8c6271f8e453a806676
     acceptance: focused-and-full-local-gates-passed
   - { id: module-v1-redteam-lifecycle-r1, role: red-team-lifecycle, sourceRevision: c9a01739a3a0906bfd52d8573a76e9d0058568ca, status: completed-attempt-2, resultSha256: d44e636e8d7512115b468d5bc28e16845a62faa6f80bab789cd751283b38326e }

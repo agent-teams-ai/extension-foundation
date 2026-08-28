@@ -15,6 +15,7 @@ baseline:
   exactEvidenceHardeningRevision: f2a3e33c6369412ab3b3926f4b5b738111250409
   integratedQualificationRevision: f2a3e33c6369412ab3b3926f4b5b738111250409
   redTeamReviewedRevision: c9a01739a3a0906bfd52d8573a76e9d0058568ca
+  historicalRevisionPortability: non-portable-corroboration-unreachable-from-repository-refs
   finalReviewedRevision: external-pr-head-evidence-required
   branch: research/module-system-v1-productization
   stackedOn: research/universal-module-extension-qualification
@@ -61,7 +62,7 @@ evidencePolicy:
   workerVoteIsDecisionAuthority: false
   exactCommittedProductEvidenceRequired: true
   acceptedAdrChangesRequireProductOwnerApproval: true
-  custodyV1CanAuthorizePromotion: false
+  custodyV2CanAuthorizePromotion: false
   productClaimsRequireTreeAndBlobEvidence: true
   sharedExtractionRequiresIndependentProviderOwnership: true
 evidenceArtifacts:
@@ -85,7 +86,7 @@ followUp:
   reportedHostedReviews: 8
   evidenceStatus: corroboration-only-not-portable
   decisionAuthority: false
-  result: l0-demonstrated-l1-through-l5-no-go
+  result: source-custody-baseline-recorded-l1-through-l5-no-go
   syntheticScope:
     rejected:
       - static-profile-disablement
@@ -97,9 +98,9 @@ followUp:
       - production-selection-or-lifecycle-runtime
 verdicts:
   L0PureDi:
-    agentRuntime: demonstrated-exact-source-named-call-topology
+    agentRuntime: exact-source-custody-recorded
     orchestrator: typed-port-evidence-only
-    frontend: literal-named-topology-candidate
+    frontend: exact-source-custody-recorded
   L1StaticAuthoring:
     agentRuntime: no-go-measurement-candidate
     orchestrator: no-go

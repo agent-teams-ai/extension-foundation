@@ -29,14 +29,13 @@ files do not satisfy these triggers.
 
 | Product | Revision | Result |
 | --- | --- | --- |
-| Agent Runtime | `7be998237a4c262bee9c4198d554b43cd2757ac6` | Exact source custody and named-call topology demonstrated; `GO_PRODUCT_SOURCE_TOPOLOGY`; `L1-L5_NO_GO` |
+| Agent Runtime | `7be998237a4c262bee9c4198d554b43cd2757ac6` | Exact source custody recorded; `SOURCE_CUSTODY_BASELINE_RECORDED`; `L1-L5_NO_GO` |
 | Orchestrator | `4c5f55366ed8c83f97374b66c8e9f84059c47382` | Typed-port evidence only; `L1-L5_NO_GO` |
-| Frontend | `85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd` | Literal named-topology candidate; `L1_NO_GO_MEASUREMENT_CANDIDATE`; `L2-L5_NO_GO` |
+| Frontend | `85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd` | Exact source custody recorded; `L1_NO_GO_MEASUREMENT_CANDIDATE`; `L2-L5_NO_GO` |
 
 The machine-readable records are intentionally
 `candidate-source-records`. Their verifier binds local mirrors to exact commit,
-tree, blob, exported-symbol syntax, negative-search, restricted import
-resolution, and narrow named-call topology. It does not prove semantic
+tree, and declared regular-file blob identities. It does not inspect source or prove semantic
 dataflow, reference values, runtime use, independent ownership, or authorize a
 product decision or shared extraction.
 
@@ -45,11 +44,10 @@ product decision or shared extraction.
 Codex Setup and Claude Code Setup are two sibling product capabilities exposed
 through one `RuntimeAccessHandle`. They have different inputs, outputs,
 diagnostics, policy, and configuration semantics; they are not alternative
-providers for one common slot. The restricted verifier proves only the declared
-capability/member names, literal exact feature-factory imports, direct lexical
-feature-factory calls preceding one direct `createAgentRuntimeHost` return, and
-the names of the host dependency properties. This demonstrates the `L0` source
-topology. It does not show that any reference carries a value or prove
+providers for one common slot. Those files remain candidate, product-owned
+reference material. The verifier does not interpret declarations, imports,
+calls, or dependency properties and therefore proves no product topology. It
+does not show that any reference carries a value or prove
 execution, fail-fast behavior, publication, disposal, cancellation, or other
 runtime behavior.
 
@@ -71,11 +69,9 @@ documentation rather than executable consumer evidence.
 
 ### Frontend
 
-Recent Projects has two fixed source adapters behind one feature-owned port and
-composition root. The local verifier checks exact blobs, restricted path
-resolution from the captured `tsconfig.json`, exact port imports and provider
-declarations, one literal ordered provider construction, one consumer
-construction using that literal list, and one facade publication:
+Recent Projects has product-owned source that may inform a future owning-product
+measurement. The local verifier checks only exact Git custody for selected
+files; it does not verify the following product-specific interpretation:
 
 1. `ClaudeRecentProjectsSourceAdapter`;
 2. `CodexSessionFileRecentProjectsSourceAdapter`.
@@ -92,7 +88,6 @@ are excluded.
 
 The products share explicit dependencies and product-owned composition, but not
 one identity grammar, binding semantics, lifecycle, diagnostics, or failure
-contract. Agent Runtime now demonstrates only that exact-source named-call
-topology baseline.
+contract. Foundation records only an exact-source custody baseline.
 The common result across products remains an architectural pattern, not a
 runtime package or public SPI.

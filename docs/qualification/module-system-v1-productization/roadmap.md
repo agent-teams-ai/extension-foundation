@@ -16,10 +16,10 @@ only an accepted owning-product decision may authorize a product step.
 ## Step 0: Preserve The Baseline
 
 Keep product-owned typed ports, literal imports, pure factories, and explicit
-composition roots. At Agent Runtime `7be9982`, exact custody and named-call
-topology show declared capability/member names, direct feature-factory calls
-before one host-factory return, and named host dependency properties, without
-asserting that references carry values. Correct qualification custody and source verification before
+composition roots. The canonical lock records exact Git custody for candidate
+files at the pinned product revisions, without interpreting source or asserting
+topology, semantics, or runtime behavior. Product-specific verification belongs
+to the owning product. Correct qualification custody and source verification before
 using the dossier for another decision. The package-policy correction remains
 an external prerequisite owned by its separate task.
 

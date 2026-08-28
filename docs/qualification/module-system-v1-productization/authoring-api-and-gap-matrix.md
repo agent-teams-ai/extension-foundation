@@ -54,8 +54,8 @@ qualified as such.
 
 | Requirement | Status | Evidence or consequence |
 | --- | --- | --- |
-| Product-owned direct Pure DI | `source-topology-demonstrated` | Agent Runtime exact custody and named-call topology show declared names, direct lexical feature-factory calls before one direct host-factory return, and named host dependency properties; value relationships and runtime behavior remain unproved |
-| At least one real static multi-contribution seam | `evidence-candidate` | Local-mirror verification checks Frontend custody, exact imports, a literal ordered provider list, one consumer construction, and one facade publication; executable product-owned wiring evidence is still missing |
+| Product-owned direct Pure DI | `source-custody-recorded` | The canonical lock records exact Git custody only; product topology and behavior require owning-product verification |
+| At least one real static multi-contribution seam | `evidence-candidate` | Frontend source is held as candidate reference material; executable product-owned wiring evidence is still missing |
 | Repeated authoring workflow | `measurement-candidate` | Agent Runtime Codex and Claude Code setup paths repeat a composition pattern but have different contracts and are not one multi-provider slot |
 | Completed `L1` authoring rehearsal | `missing` | Agent Runtime and Frontend justify measurement only; no product decision, approved benchmark, grammar, or exit evidence exists |
 | Orchestrator product rehearsal | `missing` | No production adapter or application root |
@@ -71,7 +71,7 @@ qualified as such.
 | Shared cross-consumer semantics | `missing` | Products share a pattern, not the same contract |
 | Public SPI prerequisites | `missing` | No independent implementations of a publication candidate |
 | Package admission independence | `contradicted` | Current checker can count two IDs from one repository; its correction is an external task, and shared extraction remains closed |
-| Product-source reproducibility | `candidate` | Exact repository/commit/tree/blob/export/search checks pass all three local mirrors; Frontend literal-provider and Agent Runtime named-call topology checks also pass. Semantic dataflow, runtime use, provider execution, independent ownership, and remote attestation remain absent |
+| Product-source reproducibility | `candidate` | Exact origin/commit/tree/declared-blob checks pass all three local mirrors. Source interpretation, semantic dataflow, runtime use, provider execution, independent ownership, and remote attestation remain absent |
 | Evidence custody integrity | `partially proved` | Trusted manifest digest, bounded capture, latest-attempt aliasing, platform-qualified source checks, and focused tests pass; final exact-head review is pending |
 
 ## Why No New Spike Was Added

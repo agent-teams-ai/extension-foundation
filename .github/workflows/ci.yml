@@ -75,8 +75,7 @@ jobs:
           ORCHESTRATOR_SOURCE: ${{ github.workspace }}/.product-sources/agent-teams-orchestrator
           FRONTEND_SOURCE: ${{ github.workspace }}/.product-sources/frontend
         run: >-
-          node architecture/checks/product-source-evidence-cli.mjs
-          docs/qualification/module-system-v1-productization/consumer-source-evidence.yaml
+          pnpm qualification:product-sources:check --
           --repository agentRuntime="$AGENT_RUNTIME_SOURCE"
           --repository orchestrator="$ORCHESTRATOR_SOURCE"
           --repository frontend="$FRONTEND_SOURCE"

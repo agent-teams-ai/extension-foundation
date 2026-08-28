@@ -11,9 +11,15 @@ earlierQualificationInputs:
 levels:
   - id: L0
     capability: product-owned-pure-di
-    verdict: GO_PRODUCT_SOURCE_TOPOLOGY
-    status: demonstrated-exact-source-named-call-topology
-    demonstratedBy: agent-runtime@7be998237a4c262bee9c4198d554b43cd2757ac6
+    verdict: SOURCE_CUSTODY_BASELINE_RECORDED
+    status: candidate-source-records
+    proofMode: exact-git-source-custody
+    promotionAuthority: false
+    sourceLock: consumer-source-evidence.yaml
+    limitations:
+      - verifies-only-exact-local-git-origin-commit-tree-and-declared-regular-file-blob-identities
+      - no-source-interpretation-symbol-topology-semantics-dataflow-or-runtime-proof
+      - no-remote-publication-independence-product-approval-or-promotion-proof
     effect: retain-as-current-baseline
   - id: L1
     capability: static-module-authoring
