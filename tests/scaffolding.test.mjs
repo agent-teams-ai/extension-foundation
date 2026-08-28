@@ -96,6 +96,7 @@ compositions:
         contractVersion: 1
     targetRoles:
       - foundation-component
+      - integration-adapter
     authorityVerifiers:
       - id: foundation.markdown-yaml-owner
         contractVersion: 1
@@ -446,6 +447,62 @@ test("apply rejects a plan after its catalog identity changes", async () => {
     assert.equal(await exists(join(root, "packages/example")), false);
   } finally {
     await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("plan and apply fully revalidate catalog identity after owner resolution", async t => {
+  const mutations = {
+    id: "module.changed",
+    path: "packages/changed",
+    package_name: "@agent-teams/changed",
+    role: "integration-adapter",
+    owner_document: "ADR-0098",
+  };
+  for (const operation of ["plan", "apply"]) {
+    for (const [field, value] of Object.entries(mutations)) {
+      await t.test(`${operation}:${field}`, async () => {
+        const root = await createConsumer();
+        try {
+          let planDigest;
+          if (operation === "apply") {
+            ({ planDigest } = await publishScaffoldPlan({
+              root,
+              intentPath: "architecture/scaffolding-intents/example.yaml",
+              planPath: "architecture/scaffolding-plans/module-dot-example.json",
+              resolveOwner: acceptedOwner,
+            }));
+          }
+          const mutateDuringResolution = async id => {
+            const catalogPath = join(root, "architecture/package-catalog.json");
+            const catalog = JSON.parse(await readFile(catalogPath, "utf8"));
+            catalog.packages[0][field] = value;
+            await writeFile(catalogPath, `${JSON.stringify(catalog)}\n`);
+            return acceptedOwner(id);
+          };
+          const action = operation === "plan"
+            ? publishScaffoldPlan({
+                root,
+                intentPath: "architecture/scaffolding-intents/example.yaml",
+                planPath: "architecture/scaffolding-plans/module-dot-example.json",
+                resolveOwner: mutateDuringResolution,
+              })
+            : applyScaffoldPlan({
+                root,
+                planPath: "architecture/scaffolding-plans/module-dot-example.json",
+                expectedPlanDigest: planDigest,
+                resolveOwner: mutateDuringResolution,
+              });
+          await assert.rejects(action, /differs from the repository-owned package policy/u);
+          assert.equal(await exists(join(root, "packages/example")), false);
+          assert.equal(
+            await exists(join(root, "architecture/scaffolding-plans/module-dot-example.json")),
+            operation === "apply",
+          );
+        } finally {
+          await rm(root, { recursive: true, force: true });
+        }
+      });
+    }
   }
 });
 
