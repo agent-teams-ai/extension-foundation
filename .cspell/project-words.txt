@@ -38,6 +38,7 @@ product-neutral
 predeclared
 recalibrated
 reentrancy
+requalification
 prebuilds
 replayable
 replayability

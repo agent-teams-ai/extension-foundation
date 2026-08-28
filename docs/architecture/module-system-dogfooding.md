@@ -171,8 +171,10 @@ and attempt, never relabeled as a retry.
 Each registration issues a one-use `LaunchAuthorization`. The external launch
 gate atomically records its consumption before the build or evaluation sandbox
 can execute candidate-controlled code. Missing, reused, mismatched, or expired
-authorization blocks launch. The harness cannot start an unregistered attempt
-and register it after observing the outcome.
+authorization blocks launch. Authorization expiry is never later than campaign
+expiry. Process release atomically revalidates both, and campaign expiry closes
+the generation fence even when retirement has not run. The harness cannot start
+an unregistered attempt and register it after observing the outcome.
 
 ### Bootstrap without recursive authority
 
@@ -382,6 +384,9 @@ authorization containing:
 - one product-owned capability seam and the exact product outcome being tested;
 - every proposed treatment semantic, its `L0`-`L4` classification, trigger
   evidence, and accepted level-specific owning-product decision;
+- immutable calibration-only protocol, evaluation, and sandbox-policy
+  coordinates that can bind registrations, launches, and receipts but can never
+  become campaign `ProtocolRevision` or `E0` coordinates;
 - the draft evaluator design, sandbox and evidence technologies, forbidden
   resources, calibration owner, estimate owner, and stop rule.
 
@@ -405,6 +410,9 @@ of the following in one immutable campaign decision:
   disposable resources;
 - the evidence store, immutable locator scheme, access policy, and projection
   rebuild procedure;
+- immutable artifacts and configurations for the qualified registrar, launch
+  gate, receipt writer and store, sandbox enforcer, and runtime reconciler, plus
+  the exact Phase 2 qualification evidence for those bytes;
 - an exact immutable dossier revision used as supporting evidence;
 - an accepted ownership and governance successor before introducing any new
   authoring grammar.
@@ -425,7 +433,7 @@ cannot substitute for campaign admission.
 | Evidence writer and reader | Persist immutable raw receipts under a monotonic finality model and reconstruct disposable projections | Candidate, harness, and evaluator cannot rewrite terminal facts |
 | Admitted evaluator adapters | Apply every and only the sealed product-approved deterministic or stochastic track | Each admitted track produces its own verdict and owns no product decision |
 | Disposable fixtures and deliberate mutants | Prove the harness detects registered failure classes | Calibration only; never counted as an independent consumer |
-| Evidence report | Presents traceable inputs, failures, exclusions, and verdicts to reviewers | Derived and rebuildable; never an authority source |
+| Evidence report | Presents traceable inputs, failures, exclusions, and verdicts to reviewers using escaped inert projections | Derived and rebuildable; raw candidate bytes remain separate untrusted objects and never become active report content |
 
 These are responsibilities, not a prescribed package topology. The owning
 product places them according to its accepted feature standard. Implementations
@@ -438,7 +446,8 @@ look similar.
    prohibition on treatment work and promotional evidence.
 2. Verify the discovery evidence and exact `B0` candidate are reproducible.
 3. Verify every proposed treatment semantic is within an admitted `L0`-`L4`
-   level. Calibration drafts have no `E0` identity or evidence authority.
+   level. Calibration-only coordinates are immutable and externally traceable,
+   but have no campaign `E0` identity, promotional authority, or reuse path.
 4. Record the exact forbidden product paths, credentials, networks, and process
    capabilities for containment tests.
 5. Produce a technology-specific implementation estimate covering changed
@@ -460,13 +469,16 @@ without creating treatment code.
    receipt, and product-type leakage.
 
 Exit only when the measured problem remains reproducible and the seam is narrow,
-observable, and reversible. A changed baseline requires a new campaign decision;
-an unmeasured convenience abstraction is a no-go.
+observable, and reversible. A changed baseline invalidates the calibration
+authorization and requires new pre-admission discovery, `B0`, and repetition of
+Phases 0 and 1. An unmeasured convenience abstraction is a no-go.
 
 #### Phase 2 - Candidate-independent harness
 
 1. Implement attempt registration, one-use launch authorization, append-only
-   receipts, and rebuildable read projections outside candidate authority.
+   receipts, and rebuildable read projections outside candidate authority. Every
+   calibration registration, launch, and receipt binds the immutable
+   calibration-only protocol, evaluation, and sandbox-policy coordinates.
 2. Linearize authorization consumption, campaign-generation fencing, and process
    creation. Persist an enforcer-owned runtime identity and hard deadline before
    releasing candidate-controlled code.
@@ -475,9 +487,13 @@ an unmeasured convenience abstraction is a no-go.
 4. Run build and evaluation adapters with `B0` and deliberate mutants only.
 5. Exercise crash, timeout, cancellation, containment denial, receipt mutation,
    deletion, conflicting duplicates, crash durability, orphan reconciliation,
-   and restart behavior before treatment execution.
+   campaign-expiry races, malicious output rendering, and restart behavior before
+   treatment execution.
 6. Demonstrate that no `N-1` candidate is needed to build, launch, evaluate,
    recover evidence, or clean up the campaign.
+7. Produce a qualification manifest binding immutable digests and configurations
+   for the registrar, launch gate, receipt writer and store, sandbox enforcer,
+   runtime reconciler, and all negative-test evidence.
 
 Exit only when all registered negative cases fail closed and a destroyed
 projection can be rebuilt from immutable receipts. Mutation, deletion, or
@@ -485,14 +501,16 @@ conflicting terminal receipts must be rejected or detectably invalidate the
 claim. Calibration output cannot support promotion. Only after this exit may the
 product authorizer mint the immutable `ProtocolRevision`, freeze `B0`, and issue
 the final `E0` and campaign decision. Any later change requires a new immutable
-campaign decision before treatment registration.
+calibration authorization and complete Phase 2 rerun before campaign readmission.
+Calibration coordinates are never promoted or reused as campaign coordinates.
 
 #### Phase 3 - Treatment build and protocol seal
 
 1. Validate the complete campaign admission checklist, effective role
-   separation, and sealed `ProtocolRevision`, `B0`, and final `E0` before
-   accepting any treatment registration. Any change creates a new coordinate
-   and requires re-admission.
+   separation, sealed `ProtocolRevision`, `B0`, final `E0`, and exact qualified
+   harness artifacts and configurations before accepting any treatment
+   registration. Any harness change requires new calibration authorization,
+   Phase 2 qualification, and campaign re-admission.
 2. Preregister the admitted treatment source family and each
    `BuildAttemptIdentity` before a build starts, without revealing sealed corpus
    or outcomes to the candidate producer.
@@ -510,36 +528,48 @@ locators.
 
 #### Phase 4 - Sealed campaign execution
 
-1. Preregister every execution attempt against its exact artifact, `E0`, and
-   `ExperimentalUnit`.
-2. Atomically consume its one-use authorization before process creation or
+1. Before registrations begin, the evidence custodian persists the immutable
+   roster of every attempt slot expected by `E0`, including experimental unit,
+   assignment, pair, and order.
+2. Preregister every execution attempt against one exact roster slot, artifact,
+   `E0`, and `ExperimentalUnit`.
+3. Atomically consume its one-use authorization before process creation or
    candidate-controlled code. Process creation revalidates the current campaign
-   generation fence and the attested effective grants before release.
-3. Run baseline and treatment in fresh, non-sharing disposable workspaces with
+   generation fence, campaign expiry, authorization expiry, and attested
+   effective grants before release. Campaign expiry automatically closes the
+   fence.
+4. Run baseline and treatment in fresh, non-sharing disposable workspaces with
    fallback disabled.
-4. Record terminal receipts or explicit missing or unknown observations by the
-   sealed deadline. Retried attempts keep the original experimental unit.
-5. Reconcile registered attempts with enforcer-owned live runtime identities on
+5. Record terminal receipts or explicit non-registration, missing, or unknown
+   observations for every roster slot by the sealed deadline. Retried attempts
+   keep the original experimental unit.
+6. Reconcile registered attempts with enforcer-owned live runtime identities on
    restart and terminate unmatched or expired sandboxes.
-6. Do not expose interim outcome-correlated data to the candidate producer,
+7. Do not expose interim outcome-correlated data to the candidate producer,
    product sponsor, product authorizer, or independent reviewer. Only an
    `E0`-registered stopping rule may preserve a promotional claim.
 
-Exit only when every registration has a terminal or explicit unknown record and
-all artifact, sandbox, and evaluator bindings verify. Any unresolved mismatch
-fails the registered claim.
+Exit only when every expected roster slot resolves either to an explicit
+non-registration observation or to a registered attempt with a terminal or
+explicit unknown record, and all artifact, sandbox, and evaluator bindings
+verify. Any unresolved mismatch fails the registered claim.
 
 #### Phase 5 - Evaluation and independent review
 
 1. Apply every admitted evaluation track under `E0`; when both deterministic and
    stochastic tracks are admitted, keep their analyses and verdicts separate.
-2. Account for retries, attrition, exclusions, multiplicity, treatment lineage,
-   and any prior evaluation revisions exactly as preregistered.
+2. Reconcile the complete expected roster against registered, non-registered,
+   missing, unknown, excluded, and terminal slots, then account for retries,
+   attrition, multiplicity, treatment lineage, and prior evaluation revisions
+   exactly as preregistered.
 3. Apply the monotonic receipt finality rule. The deadline classification remains
    the analytic result; late receipts are appended as late and cannot rewrite it.
    Conflicting terminal receipts invalidate the claim and require a new report
    revision.
-4. Generate a read-only evidence report from immutable receipts.
+4. Generate a read-only evidence report from immutable receipts. Candidate output
+   remains opaque untrusted bytes; projections use context-specific escaping and
+   non-active content types, disable outbound access, and expose raw objects only
+   through safe downloads.
 5. Have the independent reviewer accept or reject only the registered claim and
    record unresolved limitations.
 
@@ -575,6 +605,7 @@ ADR-0013.
 | Scenario | Required result |
 | --- | --- |
 | Missing, reused, mismatched, expired, or revoked launch authorization | Candidate code never starts; an external denial observation is retained |
+| Campaign expires after authorization consumption but before process release | Expiry closes the generation fence; process creation is denied and the denial is retained |
 | Concurrent consumers race for one authorization | Exactly one consumption wins; all other launches are denied before process creation |
 | Campaign stop races with a consumed but unstarted launch | The generation fence prevents process creation and records a terminal denial or unknown disposition |
 | Crash after authorization consumption but before confirmed process start | Recovery reconciles the persisted runtime identity, terminates any orphan, and records missing or unknown at deadline |
@@ -585,6 +616,7 @@ ADR-0013.
 | Treatment has missing or ambiguous build lineage | Execution is rejected before launch |
 | Sandbox grants undeclared file, mount, network, environment, subprocess, or credential access | Pre-release attestation blocks launch; runtime confinement loss triggers emergency termination and credential revocation |
 | Candidate can read the sealed corpus, outcomes, evidence credentials, or real projects | Campaign is invalid and cannot support promotion |
+| An expected `E0` slot is never registered | An explicit non-registration or unknown observation remains in attrition accounting and cannot disappear from the report |
 | Retry is relabeled as an independent replication | Registration is rejected or analysis treats it as the original experimental unit |
 | `E0` input or analysis changes after sealing | A new `E0` and valid unseen assignment are required; prior results are not pooled |
 | Incompatible roles share effective or transitive administrative control | Evidence is calibration-only and cannot support promotion |
@@ -593,6 +625,7 @@ ADR-0013.
 | Read projection is deleted or corrupted | Projection rebuilds from immutable receipts without changing terminal facts |
 | Raw receipt is mutated, deleted, lost before durable commit, or conflicts with another terminal receipt | Integrity verification rejects the mutation or invalidates the claim; projections cannot choose a preferred terminal |
 | Terminal receipt arrives after an `E0` deadline | It is retained as late evidence but cannot change the registered analytic outcome |
+| Candidate output contains HTML, script, terminal controls, links, or spreadsheet formulas | Reports render only escaped inert data with outbound access disabled; raw bytes require a safe download path |
 | A decision or review role requests discretionary stop after interim outcome-correlated data | Stop is recorded with actor, reason, and evidence snapshot and the campaign becomes non-promotional |
 | `N-1` candidate is unavailable | Candidate-independent build, evaluation, evidence recovery, and cleanup still work |
 
@@ -600,8 +633,8 @@ ADR-0013.
 
 The evidence custodian exposes a rebuildable campaign view with, at minimum:
 
-- counts of registered, denied, consumed, started, terminal, missing, and unknown
-  build and execution attempts;
+- counts of expected, registered, non-registered, denied, consumed, started,
+  terminal, missing, and unknown build and execution attempts;
 - orphan registrations, reused authorization attempts, receipt verification
   failures, artifact-lineage failures, live-orphan runtimes, and forced
   terminations;
@@ -620,7 +653,8 @@ credentials.
 #### Stop and rollback procedure
 
 Stopping a campaign is an authority action, not a candidate callback. An orderly
-stop performs these steps:
+stop performs these steps. Campaign expiry starts the same fence closure
+automatically even when the retirement workflow is delayed:
 
 1. Advance the campaign generation fence, stop issuing authorizations, revoke
    issued authorizations, and block consumed-but-unstarted launches.
@@ -684,6 +718,11 @@ A future implementation conforms to this proposal only when:
 - an accepted revision of this architecture and product calibration authorization
   precede candidate-independent harness work, while an immutable campaign
   decision precedes every treatment registration, build, or execution;
+- calibration registrations, launches, and receipts bind immutable
+  calibration-only coordinates that cannot be promoted or reused as campaign
+  coordinates;
+- campaign admission binds the exact Phase 2-qualified evidence-critical harness
+  artifacts and configurations, and any change requires requalification;
 - every treatment semantic is classified and remains within its admitted
   `L0`-`L4` level and accepted product trigger;
 - product ports, DTOs, domain types, and application use cases expose no module
@@ -701,6 +740,10 @@ A future implementation conforms to this proposal only when:
   or detectable missing or unknown observation;
 - no build or execution starts without atomically consuming its one-use external
   launch authorization;
+- each launch authorization expires no later than its campaign, and process
+  release atomically revalidates both expiries;
+- every `E0`-expected attempt slot remains visible as a registered terminal or
+  unknown attempt or an explicit non-registration observation;
 - campaign stop and process creation are linearized through a generation fence,
   and recovery reconciles every persisted runtime identity;
 - every candidate-controlled build and execution receipt binds the sandbox
@@ -717,6 +760,8 @@ A future implementation conforms to this proposal only when:
 - fallback cannot hide a failed or unknown treatment outcome;
 - all raw inputs needed to rebuild a verdict remain under immutable custody for
   the verdict's stated validity period;
+- candidate-controlled output remains opaque untrusted data and every report
+  projection renders it with context-specific inert handling;
 - dogfooding, product runtime use, and Foundation extraction remain separate
   decisions;
 - generated indexes and reports remain disposable projections, not additional
