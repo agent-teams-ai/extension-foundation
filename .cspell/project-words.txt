@@ -63,3 +63,5 @@ worktree
 worktrees
 overfitting
 unblinding
+disjointness
+recomputable
