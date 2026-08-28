@@ -153,6 +153,7 @@ Every campaign keeps the following coordinates distinct:
 | `AttemptIdentity` | One non-reused artifact execution, optionally linked to a prior attempt without becoming a new experimental unit |
 | `LaunchAuthorization` | One-use custodian-issued capability bound to one registered attempt and exact sandbox policy |
 | `BuildReceipt` | Externally captured build result with an optional verified output artifact |
+| `BuildConsistencyReceipt` | Authenticated post-build equality result comparing one actual treatment build with its pre-build admission coordinates and closed source lineage |
 | `EvidenceReceipt` | Externally captured binding between registered evaluator inputs, execution, raw output, and terminal result |
 | `CampaignAdmissionManifest` | Immutable pre-decision payload containing every proposed campaign coordinate and roster but excluding its own authorization envelope |
 | `DossierConsistencyReceipt` | Authenticated independent equality result binding the exact admission manifest, dossier tree, product source trees, and `B0` provenance |
@@ -178,7 +179,7 @@ support promotion. Results from different evaluator revisions are not pooled.
 
 Before any treatment-source preparation, the product authorizer records one
 immutable `TreatmentEvaluationCommitment`. It binds the exact repository,
-commit, and tree from which `B0` was built; the allowlisted treatment-delta
+clean commit, and tree from which clean `B0` inputs were built; the allowlisted treatment-delta
 surface; estimand; analysis; exclusions; retry, attrition, lineage, and
 multiplicity handling; thresholds; stop rules; and an independently held corpus
 commitment or fixed selection rule. The final `E0` may reveal and instantiate
@@ -193,8 +194,13 @@ Before a build starts, the evidence custodian registers a
 repository, commit, and tree, allowlisted source delta, source inputs, sealed
 recipe, and toolchain, with an expected `BuildReceipt`. The receipt binds those
 inputs, the observed delta, terminal build result and, on success, the optional
-verified `T1`. Build failure or product-base drift therefore remains visible
-before an artifact exists.
+verified `T1`. An independently operated qualified consistency verifier then
+emits one append-only `BuildConsistencyReceipt` that binds the immutable campaign
+admission, source-preparation closure, treatment slot, build attempt and actual
+build receipt and records every expected-versus-observed repository, commit,
+tree, source, delta, recipe and toolchain comparison. A missing, foreign, stale,
+or unequal comparison blocks `T1` execution. Build failure or product-base drift
+therefore remains visible before an artifact exists.
 
 Before artifact execution, the custodian registers an `AttemptIdentity` against
 the exact `ProtocolRevision`, `B0` or verified `T1`, `E0`, and
@@ -331,9 +337,9 @@ Every receipt binds:
 
 Each build receipt additionally binds:
 
-- repository, clean commit and tree, submodules, and lockfile digests; if a
-  dirty input is exceptionally admitted, an immutable archive digest and
-  retrievable locator for every modified and untracked byte;
+- repository, clean commit and tree, submodules, and lockfile digests. Campaign
+  `B0` and every treatment build input must be clean; a dirty source tree is
+  inadmissible even when an archive digest could be produced;
 - dependency resolution, sealed build recipe, builder identity, and toolchain
   or container digest;
 - terminal build state and, when produced, artifact media type, digest, size,
@@ -500,6 +506,20 @@ denied, or unknown no-source disposition. Expiry, scope violation, a changed
 digest, a roster mismatch, or source bytes existing outside the admitted window
 closes the preparation fence and makes the slot inadmissible.
 
+Source preparation has its own stop and retirement transition and does not depend
+on campaign admission or Phase 6. On withdrawal, expiry, containment failure, or
+an abandoned root, the accountable source-preparation owner advances the
+preparation fence, revokes authoring credentials and unconsumed authorizations,
+reconciles every persisted authoring runtime identity, and records each unresolved
+slot as denied, missing, or unknown without rewriting prior facts. Workspaces and
+containment remain quarantined while a runtime is unknown. Cleanup is permitted
+only after the custody authority proves the exact runtime terminated or is
+absent. The custodian then appends a source-preparation retirement tombstone that
+binds the root, all lineages, authorizations, slot dispositions, revocations,
+reconciliation evidence, retained objects, cleanup outcome, owner, and
+authoritative terminal time. An abandoned or retired root can never be admitted
+or reopened; later work requires a new root and pre-source commitment.
+
 Successful preparation closes only through the custody transaction authority.
 At one authoritative-time linearization point it advances the preparation
 generation fence, prevents any further authorization in the source-family root
@@ -573,7 +593,8 @@ either invalidates admission. Together they contain all of the following:
   sandbox enforcer, runtime reconciler, build and evaluation adapters, evaluator
   runner and oracle, report renderer, source-preparation registrar, launch gate,
   sandbox enforcer and closure gate, and consistency verifier, plus the exact
-  Phase 2 qualification evidence for those bytes;
+  Phase 2 qualification evidence for those bytes, including the complete
+  content-addressed qualification corpus roster and corpus digests;
 - an exact immutable dossier revision used as supporting evidence and an
   authenticated `DossierConsistencyReceipt`. The receipt binds the verifier
   principal and credential; verifier artifact, configuration, and toolchain
@@ -583,16 +604,27 @@ either invalidates admission. Together they contain all of the following:
   commit and tree; `B0` artifact, build receipt, and provenance; the exact
   treatment product-base repository, commit, and tree plus allowlisted source
   deltas; complete source-family lineages, preparation authorizations, closure
-  receipt, and treatment rosters; and the exact equality result. For
+  receipt, treatment rosters, and the expected repository, commit, tree, source,
+  delta, recipe, and toolchain coordinates for every future treatment build; and
+  the exact admission-time equality result. For
   every mandatory join declared by the protocol, the receipt enumerates expected
   and observed repository identity, commit, and tree values from the dossier,
   measurement authorization, discovery evidence, `B0` build provenance, source
-  preparation receipts, and treatment build receipts.
+  preparation receipts, and source-family closure. Treatment `BuildReceipt`s do
+  not yet exist and are not admission prerequisites. Their actual values are
+  checked later by one authenticated `BuildConsistencyReceipt` per build against
+  these immutable expected coordinates before any `T1` execution.
   Every relied-upon product state must be equal across those records; an absent
   join, source outside the allowlisted delta, unresolved placeholder, foreign or
   missing receipt, or unequal value is a no-go;
 - evidence that any new authoring grammar remains product-local under ADR-0014
   and its accepted level-specific owning-product decision.
+
+The consistency verifier also compares the complete content-addressed Phase 2
+qualification corpus roster in `HarnessQualificationRevision` with the complete
+final `E0` corpus roster. Admission requires a retained zero-intersection result.
+Opaque commitments without independently verifiable item identities are
+insufficient for this disjointness check.
 
 Missing or mutable prerequisites are a no-go. A planning issue, draft ADR,
 mutable branch, calibration authorization, or candidate-owned configuration
@@ -676,7 +708,8 @@ Phases 0 and 1. An unmeasured convenience abstraction is a no-go.
    against a dedicated qualification corpus that is disjoint from the final
    campaign holdout. Seal a no-treatment evaluator qualification binding the
    exact proposed final runner, oracle implementation, scoring configuration, and
-   report renderer. The final `E0` may reference only these qualified artifacts
+   report renderer plus the complete content-addressed qualification-corpus roster
+   and corpus digests. The final `E0` may reference only these qualified artifacts
    and configurations, while its independently held corpus and assignment are
    sealed later in campaign admission. Qualification results remain
    non-promotional.
@@ -697,7 +730,8 @@ Phases 0 and 1. An unmeasured convenience abstraction is a no-go.
    component: registrar, launch gate, receipt writer and store, sandbox enforcer,
    runtime reconciler, build and evaluation adapters, evaluator runner and oracle,
    report renderer, source-preparation registrar, launch gate, sandbox enforcer
-   and closure gate, consistency verifier, and all negative-test evidence.
+   and closure gate, consistency verifier, the complete content-addressed
+   qualification-corpus roster, and all negative-test evidence.
 10. Prove each registration, authorization consumption, terminal append, and
    reconciliation binds externally verified identities and digests for the
    participating components through that revision. Every restarted component
@@ -747,14 +781,21 @@ coordinates.
    binds the exact product base, source digest, observed delta, recipe, toolchain,
    actual grants, and output identity; any unrelated product change fails the
    build gate.
-5. Run the source and packed-artifact leakage audits against every produced
+5. Before accepting an artifact for execution, require the qualified independent
+   consistency verifier to append a `BuildConsistencyReceipt` comparing the
+   actual `BuildReceipt` with the immutable campaign admission, expected build
+   coordinates, source-family closure and treatment-slot mapping. Missing,
+   unequal, foreign, stale or unqualified verification blocks execution and is
+   retained as an explicit non-executable observation.
+6. Run the source and packed-artifact leakage audits against every produced
    `T1`; reject it before execution on any forbidden dependency or export.
-6. Verify provenance and immutable custody, then materialize a content-addressed,
+7. Verify provenance and immutable custody, then materialize a content-addressed,
    read-only snapshot or opened object whose runtime identity cannot change
    between verification and execution.
 
 Exit only when every treatment slot has a no-source or build disposition, every
-executable treatment has one unambiguous build lineage, every no-source, failed,
+executable treatment has one unambiguous build lineage and authenticated passing
+`BuildConsistencyReceipt`, every no-source, failed,
 or unknown no-artifact slot remains mapped to non-executable `E0` observations,
 and the sealed evaluator and exact runtime artifacts are retrievable by immutable
 locators.
@@ -868,9 +909,11 @@ ADR-0013.
 | A later preparation authorization omits prior lineage, exceeds preregistered multiplicity, or changes the selection rule | Every related round remains retained and the campaign is inadmissible under that lineage |
 | A successor lineage is omitted from its source-family root or a favorable lineage is admitted while an earlier lineage or disposition is excluded | The complete root remains in attrition and multiplicity accounting; selective admission fails closed |
 | A related authorization races with preparation closure, or an authorization or slot is absent from the closure receipt | The single durable ordering authority admits either issuance or closure, never both; any incomplete, stale, or mismatched closure receipt blocks campaign admission |
+| Source preparation is withdrawn, expires, or is abandoned before campaign admission while an authoring runtime is missing or unknown | Its own fence closes, credentials and launch authority are revoked, the exact runtime and workspace remain quarantined until termination or absence is proven, and an immutable source-retirement tombstone is retained without requiring campaign admission |
 | Preparation-to-treatment mapping is missing, duplicated, or not one-to-one | Campaign admission fails; every expected slot remains visible as an explicit no-source or invalid observation |
 | Dossier consistency receipt is missing, foreign, stale, forged, produced by an unqualified verifier, or binds different dossier, product source, manifest, or `B0` provenance | Campaign admission fails closed and the mismatch is retained |
 | A mandatory repository, commit, or tree join is absent or unequal across dossier, measurement, discovery, and `B0` provenance | The consistency verifier records the expected and observed mismatch and campaign admission fails |
+| Phase 2 qualification corpus identity is absent, opaque, or intersects the final `E0` corpus | Campaign admission fails; qualification and final-holdout disjointness must be independently recomputable from complete content-addressed rosters |
 | Authoritative time is unavailable, uncertain beyond policy, rolls backward, jumps forward, or differs after restart | Registration, release, and receipt classification use admitted transactional time rules or fail closed; no later interpretation can reclassify the event |
 | Concurrent consumers race for one authorization | Exactly one consumption wins; all other launches are denied before process creation |
 | Campaign stop races with a consumed but unstarted launch | The generation fence prevents process creation and records a terminal denial or unknown disposition |
@@ -879,7 +922,9 @@ ADR-0013.
 | An attempt is analytically `unknown` while its runtime termination is unproven | Exact containment and workspace remain quarantined and retirement cannot complete until authoritative reconciliation proves termination or absence |
 | Duplicate registration or replayed request | Idempotent lookup returns the original identity; no second execution is authorized |
 | Build fails before producing an artifact | Terminal `BuildReceipt` records failure and no synthetic `T1` is created |
+| Campaign `B0` or treatment build input is dirty despite matching repository, commit, and tree coordinates | Build or admission fails; archive digests cannot make dirty campaign inputs equivalent to the committed clean source state |
 | Treatment source or build uses a different product repository, commit, tree, or a change outside its allowlisted delta | Source or build admission fails; no `T1` is created or executed |
+| Treatment `BuildReceipt` is missing its consistency receipt or differs from admission-time expected build coordinates or source closure | The artifact remains non-executable; the mismatch is retained and cannot be repaired by changing the sealed admission |
 | An expected treatment build slot is omitted before registration | Its immutable roster slot resolves to explicit non-registration or unknown and remains in attrition accounting |
 | A build slot lacks an execution mapping or produces no artifact | The admitted treatment-to-build-to-execution join retains explicit non-executable observations; the variant remains in attrition analysis |
 | Artifact bytes or resolution target change after verification | Execution uses the already verified immutable object or fails before process creation |
@@ -920,7 +965,10 @@ The evidence custodian exposes a rebuildable campaign view with, at minimum:
   revocation evidence;
 - source-family root, every preparation lineage, fence generation, closure
   receipt, actual grants, imported objects, every related authorization and slot
-  disposition, and any rejected post-closure issuance;
+  disposition, any rejected post-closure issuance, and any independent
+  source-preparation retirement and quarantine state;
+- expected admission-time treatment build coordinates and every post-build
+  `BuildConsistencyReceipt` equality result;
 - quarantined unresolved runtimes, authoritative reconciliation state, cleanup
   backlog, and elapsed time after campaign stop;
 - exact protocol, evaluator, artifact, sandbox-policy,
@@ -1027,7 +1075,7 @@ A future implementation conforms to this proposal only when:
   gives every expected source slot one retained terminal disposition before
   campaign admission;
 - an immutable pre-source evaluation commitment binds the exact `B0` product
-  repository, commit, and tree, allowed treatment delta, estimand, evaluator
+  repository, clean commit, and tree, allowed treatment delta, estimand, evaluator
   semantics, attrition and multiplicity handling, thresholds, stops, and held
   corpus selection before any treatment source is authored;
 - each source-preparation receipt proves an admitted clean-workspace start and
@@ -1045,6 +1093,9 @@ A future implementation conforms to this proposal only when:
   transition that is totally ordered with related authorization issuance,
   freezes every authorization, slot, disposition, and source digest, and cannot
   be reopened or omitted from campaign admission;
+- withdrawn, expired, or abandoned source preparation can close and retire before
+  campaign admission, retains all slot dispositions and a retirement tombstone,
+  and never cleans an unresolved runtime or reopens the source-family root;
 - calibration registrations, launches, and receipts bind immutable
   calibration-only coordinates that cannot be promoted or reused as campaign
   coordinates;
@@ -1052,6 +1103,9 @@ A future implementation conforms to this proposal only when:
   authorize product use, or produce promotional evidence;
 - campaign admission binds the exact Phase 2-qualified evidence-critical harness
   artifacts and configurations, and any change requires requalification;
+- `HarnessQualificationRevision` binds the complete content-addressed
+  qualification corpus roster, and admission retains a recomputable
+  zero-intersection result against the complete final `E0` corpus roster;
 - every campaign-reusable evidence-critical component excludes candidate-producer
   control throughout authoring, build, qualification, and operation and has
   independently verified provenance;
@@ -1063,6 +1117,9 @@ A future implementation conforms to this proposal only when:
   enumerates expected and observed values for
   every mandatory repository, commit, and tree join, and all equality checks
   pass;
+- admission seals expected coordinates for every future treatment build without
+  requiring not-yet-existing build receipts, and each actual build later receives
+  an authenticated passing `BuildConsistencyReceipt` before execution;
 - every treatment semantic is classified and remains within its admitted
   `L0`-`L4` level and accepted product trigger;
 - product ports, DTOs, domain types, and application use cases expose no module
@@ -1091,6 +1148,8 @@ A future implementation conforms to this proposal only when:
   enforcer, policy, actual grants, and enforcement outcome;
 - every treatment build receipt proves the exact `B0` product base and only its
   allowlisted source delta before producing `T1`;
+- campaign `B0` and treatment build inputs are clean; matching Git coordinates
+  never admit uncommitted or untracked bytes;
 - effective grants match the registered policy before candidate code is released,
   and runtime confinement loss triggers emergency termination;
 - each treatment execution binds one unambiguous producing build attempt and
