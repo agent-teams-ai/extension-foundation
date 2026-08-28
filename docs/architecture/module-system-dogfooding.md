@@ -47,12 +47,13 @@ each role to an auditable principal and credential identity.
 
 | Role | Owns | Must not own in the same campaign |
 | --- | --- | --- |
-| Product sponsor | Capability seam, product outcome, behavioral-oracle semantics, acceptance policy, thresholds, campaign admission, and later product decisions | Treatment production, evidence evaluation, or evidence review |
-| Candidate producer | Treatment implementation and declared build inputs | Harness operation, evidence custody, evaluation, review, or product admission |
-| Harness operator | Sealed execution of the registered protocol | Candidate production, evidence custody, evaluation, review, or product admission |
-| Evidence custodian | Attempt registration, append-only receipts, raw outputs, provenance, and retrieval | Candidate production, harness operation, evaluation, review, or product admission |
-| Independent evaluator | Application of a sealed product-approved oracle or rubric and registered analysis | Oracle semantics, treatment implementation, harness operation, evidence custody, review, or product rollout |
-| Independent reviewer | Acceptance or rejection of the evidence claim supported by one campaign | Sponsorship, implementation, execution, custody, evaluation, or product adoption |
+| Product sponsor | Capability seam, product outcome, behavioral-oracle semantics, and proposed acceptance policy and thresholds | Treatment production, evaluation, evidence review, or product authorization |
+| Product authorizer | Campaign admission, expiry, and any later product-use or extraction decision | Sponsorship, treatment production, harness operation, evidence custody, evaluation, or evidence review |
+| Candidate producer | Treatment implementation and declared build inputs | Harness operation, evidence custody, evaluation, review, or product authorization |
+| Harness operator | Sealed execution of the registered protocol | Candidate production, evidence custody, evaluation, review, or product authorization |
+| Evidence custodian | Attempt registration, append-only receipts, raw outputs, provenance, and retrieval | Candidate production, harness operation, evaluation, review, or product authorization |
+| Independent evaluator | Application of a sealed product-approved oracle or rubric and registered analysis | Oracle semantics, treatment implementation, harness operation, evidence custody, review, or product authorization |
+| Independent reviewer | Acceptance or rejection of the evidence claim supported by one campaign | Sponsorship, authorization, implementation, execution, custody, or evaluation |
 
 Calibration may combine roles, but its output cannot support promotion. A
 campaign used for an architectural or product claim enforces the incompatible
@@ -72,8 +73,7 @@ flowchart LR
     Product["Owning product use case"] --> Port["Product-owned capability port"]
     Baseline["Baseline adapter"] -- "implements" --> Port
     Treatment["Treatment adapter"] -- "implements" --> Port
-    Treatment --> CandidateAPI["Candidate-neutral API"]
-    Candidate["Candidate semantic kernel"] -- "implements" --> CandidateAPI
+    Treatment --> Candidate["Candidate-specific ordinary library"]
 
     Evaluation["External registered evaluator"] --> Surface["Product-approved evaluation surface"]
     Surface --> Product
@@ -82,10 +82,12 @@ flowchart LR
 
 Product domain and application code never import a candidate container,
 context, resolver, harness, receipt, or lifecycle type. The treatment adapter
-depends on both the product port and the candidate-neutral API. The candidate
-semantic kernel imports neither product ports, product DTOs, product domain
-types, nor evaluator types. The evaluator invokes only an external
-product-approved surface and does not import the production implementation.
+depends on the product port and translates it to the candidate's own private
+ordinary-library API. That candidate library imports neither product ports,
+product DTOs, product domain types, nor evaluator types. This proposal creates
+no cross-candidate API or Foundation-owned SPI. The evaluator invokes only an
+external product-approved surface and does not import the production
+implementation.
 
 ### Scope owned by a later acceptance decision
 
@@ -117,8 +119,10 @@ Every campaign keeps the following coordinates distinct:
 | `TreatmentArtifact` | Candidate implementation under evaluation, also called `T1` |
 | `EvaluationRevision` | Immutable evaluator inputs, execution rules, analysis, and stop rules, also called `E0` |
 | `ExperimentalUnit` | The entity whose outcome contributes once to the registered analysis |
-| `AttemptIdentity` | One non-reused execution, optionally linked to a prior attempt without becoming a new experimental unit |
-| `EvidenceReceipt` | Externally captured binding between registered inputs, execution, raw output, and terminal result |
+| `BuildAttemptIdentity` | One preregistered build of exact source, recipe, and toolchain inputs; its output artifact is optional |
+| `AttemptIdentity` | One non-reused artifact execution, optionally linked to a prior attempt without becoming a new experimental unit |
+| `BuildReceipt` | Externally captured build result with an optional verified output artifact |
+| `EvidenceReceipt` | Externally captured binding between registered evaluator inputs, execution, raw output, and terminal result |
 
 These names do not define a public schema. Serialization and storage remain
 campaign-local until independent consumers justify shared extraction.
@@ -127,26 +131,37 @@ campaign-local until independent consumers justify shared extraction.
 content digests and retrievable locators for its corpus, runner, oracle or
 rubric, model identity, prompts, context, settings, tools, permissions, budgets,
 assignment order, pair identities, analysis, exclusions, thresholds, and stop
-rules. Changing any treatment factor creates a new evaluation revision. Results
-from different revisions are not pooled.
+rules. Changing an evaluator input or analysis rule creates a new `E0`; changing
+candidate bytes creates a new `T1`. A preregistered protocol may compare more
+than one `T1` under the same sealed `E0`. Results from different evaluator
+revisions are not pooled.
 
-Before execution, the evidence custodian registers an `AttemptIdentity` against
-the exact `ProtocolRevision`, `B0` or `T1`, `E0`, and `ExperimentalUnit`, with an
-expected terminal receipt. Every registered attempt ends as succeeded, failed,
-timed out, crashed, abandoned, or invalid. A retry links to its predecessor and
-does not increase the registered sample size unless the product-approved
-analysis explicitly defines a new experimental unit.
+Before a build starts, the evidence custodian registers a
+`BuildAttemptIdentity` against the exact `ProtocolRevision`, source inputs,
+sealed recipe, and toolchain, with an expected `BuildReceipt`. The receipt binds
+the terminal build result and, on success, the optional verified `T1`. Build
+failure therefore remains visible before an artifact exists.
+
+Before artifact execution, the custodian registers an `AttemptIdentity` against
+the exact `ProtocolRevision`, `B0` or verified `T1`, `E0`, and
+`ExperimentalUnit`, with an expected `EvidenceReceipt`. A retry of either kind
+links to its predecessor and does not increase the registered sample size
+unless the product-approved analysis explicitly defines a new experimental
+unit.
 
 ### Bootstrap without recursive authority
 
 ```mermaid
 flowchart LR
-    Toolchain["Pinned candidate-independent toolchain"] --> Build["Sealed build recipe"]
-    Build --> Verify["External digest and provenance verification"]
-    Verify --> Sandbox["Disposable deny-by-default campaign"]
-    Baseline["Independent B0 artifact"] --> Sandbox
-    Evaluation["Sealed E0 evaluator"] --> Sandbox
-    Sandbox --> Evidence["Append-only external evidence"]
+    Inputs["Pinned source inputs + sealed recipe"] --> BuildSandbox["Deny-by-default build sandbox"]
+    Toolchain["Candidate-independent toolchain"] --> BuildSandbox
+    Custody["External attempt registration"] --> BuildSandbox
+    BuildSandbox --> Verify["External artifact verification"]
+    Verify --> EvalSandbox["Deny-by-default evaluation sandbox"]
+    Baseline["Independent B0 artifact"] --> EvalSandbox
+    Evaluation["Sealed E0 evaluator"] --> EvalSandbox
+    Custody --> EvalSandbox
+    EvalSandbox --> Evidence["Append-only external evidence"]
     Evidence --> Review["Independent evidence review"]
     Review --> Decision["Separate product-owned decision"]
 ```
@@ -166,10 +181,14 @@ self-certification.
 ### First dogfood capability
 
 This document selects no capability. The criteria below are necessary but not
-sufficient. Before a treatment exists, the owning product must satisfy the
-applicable prerequisites in the productization dossier, including measuring the
-authoring or drift problem through existing composition without introducing the
-abstraction being justified. An accepted product decision is then required.
+sufficient. Before a treatment exists, the owning product measures the authoring
+or drift problem through existing composition without introducing the
+abstraction being justified. A product decision must then name and own every
+admission prerequisite. It may cite dossier evidence at an exact immutable
+revision, but mutable dossier fields never become authority. A candidate that
+introduces a new authoring grammar also requires an accepted product decision
+that resolves its ownership and governance consistently with ADR-0013 and
+ADR-0014.
 
 An admitted capability must be:
 
@@ -214,8 +233,11 @@ Any stochastic campaign must preregister its primary estimand, experimental
 unit, pairing and randomization schedule, analysis method, sample-size or power
 justification, non-inferiority or effect rule, multiplicity handling, attrition
 and retry handling, fresh-context and carryover controls, and confidence rule.
-Model, prompt, context, tools, permissions, budgets, transcripts, and tool events
-are bound to `E0` and each receipt.
+Outcome assessment is masked where practical. Otherwise `E0` requires objective
+scoring or a registered justification and bias control. `E0` binds the model,
+prompt, context, tools, permissions, budgets, and capture and retention rules;
+terminal receipts bind immutable digests and locators for resulting transcripts
+and tool events.
 
 Deterministic and stochastic tracks produce separate verdicts. Neither can waive
 the other's failure. A separate source audit checks that public types and
@@ -223,19 +245,25 @@ dependency direction remain framework-neutral.
 
 ### Evidence custody
 
-The external custodian preregisters every expected attempt and records an
-append-only terminal receipt. Missing receipts remain detectable abandoned or
-invalid attempts rather than disappearing from the denominator.
+The external custodian preregisters every expected build and execution attempt
+and records append-only terminal receipts. If no receipt arrives by the sealed
+deadline, the custodian records a separate missing or unknown observation.
+Absence alone is never reclassified as abandoned or invalid, and `E0` owns its
+attrition and analysis treatment.
 
-Each receipt binds:
+Each build receipt binds:
 
 - repository, clean commit and tree, submodules, and lockfile digests; if a
   dirty input is exceptionally admitted, an immutable archive digest and
   retrievable locator for every modified and untracked byte;
 - dependency resolution, sealed build recipe, builder identity, and toolchain
   or container digest;
-- artifact media type, digest, size, provenance, and immutable retrievable
-  locator;
+- terminal build state and, when produced, artifact media type, digest, size,
+  provenance, and immutable retrievable locator.
+
+Each execution receipt binds:
+
+- the verified baseline or treatment artifact;
 - protocol and evaluation content digests and immutable locators;
 - experimental unit, pair, assignment order, predecessor attempt, and attempt
   identity;
@@ -270,11 +298,11 @@ product-owned decision and architecture.
 
 | Threat | Required treatment |
 | --- | --- |
-| Candidate self-certification | Candidate producer, harness, custody, evaluator, reviewer, and sponsor remain auditable and separated as defined above |
+| Candidate self-certification | Candidate producer, harness, custody, evaluator, reviewer, sponsor, and authorizer remain auditable and separated as defined above |
 | Recursive bootstrap | Candidate-independent build and evaluation path remains sufficient and tested for every generation |
-| Omitted failed attempt | External preregistration requires one detectable terminal receipt for every attempt |
+| Omitted failed attempt | External preregistration requires a terminal receipt or detectable missing or unknown observation for every build and execution attempt |
 | Artifact substitution | Immutable locator, digest, provenance, and verification at every use |
-| Evaluator drift | `E0` binds every treatment factor, model identity, assignment, and analysis input |
+| Evaluator drift | `E0` binds every evaluator input, model identity, assignment, and analysis rule |
 | Framework leakage | Export and dependency-direction audit outside black-box scoring |
 | Build or process escape | Deny-by-default containment from the first candidate-controlled build or executable treatment |
 
@@ -288,11 +316,15 @@ If an owning product later admits a campaign, the sequence is:
 
 1. Measure the problem through the current Pure DI baseline without introducing
    the candidate abstraction.
-2. Accept a product decision naming the seam, outcome, rationale, protocol,
-   baseline, evaluator, thresholds, owners, and expiry.
-3. Seal `B0`, `T1`, and `E0`, then preregister expected attempts externally.
+2. Accept a product decision naming every prerequisite, the seam, outcome,
+   rationale, protocol, baseline, evaluator, thresholds, owners, and expiry. If
+   the candidate introduces a grammar, accept its ownership and governance
+   decision first.
+3. Seal `B0` and `E0`, preregister the treatment build, build it inside
+   containment, and externally verify the resulting `T1`.
 4. Calibrate the harness against baseline-only runs and deliberate mutants.
-5. Execute baseline and treatment only in disposable containment.
+5. Preregister artifact-execution attempts, then execute baseline and treatment
+   only in disposable containment.
 6. Have an independent reviewer accept or reject only the registered evidence
    claim.
 7. Use that result only as input to a later product decision. It authorizes no
@@ -305,10 +337,10 @@ If an owning product later admits a campaign, the sequence is:
 
 An admitted product protocol names an exact expiry and review owner. Before any
 attempt exists, an unowned or expired proposal may be withdrawn through the
-product's approved process. Once an attempt is registered, its immutable
-coordinates, terminal or abandoned state, receipts, raw failures, and a
-retirement tombstone are retained. Failed or missing attempts are never deleted
-or rewritten to simplify later evidence.
+product's approved process. Once a build or execution attempt is registered, its
+immutable coordinates, terminal receipt or missing or unknown observation, raw
+failures, and a retirement tombstone are retained. Failed or missing attempts
+are never deleted or rewritten to simplify later evidence.
 
 This proposed architecture creates no campaign, candidate, artifact, or
 authorization. Product-specific protocols and attempt records belong in the
@@ -324,12 +356,12 @@ A future implementation conforms to this proposal only when:
 - the semantic kernel compiles and tests without loading itself as a module;
 - an ordinary candidate-independent path can build and evaluate every
   generation without a prior candidate;
-- sponsor, candidate production, harness operation, evidence custody,
-  evaluation, evidence review, and later product authorization have auditable
-  principal and credential separation;
+- sponsor, authorizer, candidate production, harness operation, evidence
+  custody, evaluation, and evidence review have auditable principal and
+  credential separation;
 - baseline and every evaluator input are frozen before treatment admission;
-- every attempt is preregistered and has a detectable terminal or abandoned
-  state;
+- every build and execution attempt is preregistered and has a terminal receipt
+  or detectable missing or unknown observation;
 - deterministic and stochastic verdicts remain independent;
 - fallback cannot hide a failed or unknown treatment outcome;
 - dogfooding, product runtime use, and Foundation extraction remain separate
