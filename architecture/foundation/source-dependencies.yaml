@@ -12,12 +12,12 @@ boundaries:
       - architecture/checks
     entrypoints:
       - architecture/checks/package-artifacts.mjs
-      - architecture/checks/package-policy.mjs
       - architecture/checks/package-topology.mjs
       - architecture/checks/scaffold.mjs
       - architecture/checks/source-safety.mjs
     allow:
-      boundaries: []
+      boundaries:
+        - repository.package-policy
       builtins:
         - node:child_process
         - node:fs
@@ -32,6 +32,50 @@ boundaries:
         - typescript
         - yaml
       runtimeReferences: []
+  - id: repository.package-policy
+    dependencyMode: development
+    roots:
+      - architecture/checks/package-policy.mjs
+    entrypoints:
+      - architecture/checks/package-policy.mjs
+    allow:
+      boundaries:
+        - repository.package-policy-pure
+        - repository.package-policy-sources
+      builtins:
+        - node:fs/promises
+        - node:path
+      packages:
+        - "@agent-teams/docs-protocol"
+        - yaml
+      runtimeReferences: []
+  - id: repository.package-policy-pure
+    dependencyMode: development
+    roots:
+      - architecture/checks/package-policy/catalog-policy.mjs
+      - architecture/checks/package-policy/ownership-policy.mjs
+    entrypoints:
+      - architecture/checks/package-policy/catalog-policy.mjs
+      - architecture/checks/package-policy/ownership-policy.mjs
+    allow:
+      boundaries: []
+      builtins: []
+      packages: []
+      runtimeReferences: []
+  - id: repository.package-policy-sources
+    dependencyMode: development
+    roots:
+      - architecture/checks/package-policy/docs-owner-source.mjs
+      - architecture/checks/package-policy/repository-policy-source.mjs
+    entrypoints:
+      - architecture/checks/package-policy/docs-owner-source.mjs
+      - architecture/checks/package-policy/repository-policy-source.mjs
+    allow:
+      boundaries:
+        - repository.package-policy-pure
+      builtins: []
+      packages: []
+      runtimeReferences: []
   - id: repository.tests
     dependencyMode: development
     roots:
@@ -40,10 +84,14 @@ boundaries:
       - tests/architecture-topology.test.mjs
       - tests/docs-protocol-qualification.test.mjs
       - tests/document-authoring.test.mjs
+      - tests/package-policy-characterization.test.mjs
+      - tests/package-policy-source-boundaries.test.mjs
       - tests/scaffolding.test.mjs
     allow:
       boundaries:
         - repository.architecture-checks
+        - repository.package-policy
+        - repository.package-policy-sources
       packages:
         - "@agent-teams/docs-protocol"
         - "@agent-teams/engineering-foundation"
