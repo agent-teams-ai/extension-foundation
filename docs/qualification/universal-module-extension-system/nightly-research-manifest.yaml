@@ -1,0 +1,335 @@
+schemaVersion: 1
+campaignId: umeq-nightly-2026-08-26
+status: completed-no-go
+purpose: >-
+  Falsify, refine, or qualify the proposed universal module and extension
+  architecture using primary-source research, executable spikes, independent
+  criticism, red-team analysis, and evidence-bound arbitration.
+baseline:
+  repository: agent-teams-ai/extension-foundation
+  pullRequest: 17
+  baseRevision: 78850cbc57a1a688913a3694ca6f0efde34ab192
+  qualificationRevision: 733d2fa030e8aec72c15dbba35a4e083a50b6bd2
+  branch: research/universal-module-extension-nightly-evidence
+execution:
+  runtime: subscription-runtime-hosted
+  model: gpt-5.6-sol
+  reasoningEffort: xhigh
+  serviceTier: mixed
+  localSubagentsAllowed: false
+  baseDistinctWorkers: 124
+  adaptiveMaximumDistinctWorkers: 140
+  actualDistinctResearchJobs: 140
+  maximumParallelWorkers: 12
+  canonicalAdrsMutable: false
+  productionPackagesMutable: false
+  notes:
+    - Logical review roles may exceed the distinct-worker count because selected
+      primary researchers are continued into non-overlapping critic roles.
+    - Additional workers are admitted only for unresolved contradictions,
+      missing primary evidence, failed spikes, or P0/P1 findings.
+    - W1 through W9 used the default service tier. W10 and W11 used the fast
+      service tier after the user changed the execution policy.
+    - Operational capture, remediation, and exact-SHA review jobs are excluded
+      from the 140 research-job count.
+evidencePolicy:
+  primarySourcesRequiredPerRecommendation: 2
+  immutableSourceIdentityRequired: true
+  versionAndLicenseVerificationRequired: true
+  executableClaimsNeedSpikeOrHypothesisLabel: true
+  opinionWithoutEvidenceIsDecisionAuthority: false
+  workerVoteIsDecisionAuthority: false
+  acceptedAdrChangesRequireProductOwnerApproval: true
+  severitiesBlockingSynthesis:
+    - P0
+    - P1
+  resultSchema:
+    required:
+      - claim
+      - sources
+      - observedVersions
+      - applicability
+      - benefits
+      - failureModes
+      - counterexamples
+      - rejectedPatterns
+      - confidence
+      - recommendedDecision
+      - conditionsToReverse
+      - unresolvedQuestions
+      - evidenceLimitations
+waves:
+  - id: W0
+    title: Baseline and provenance
+    workerCount: 0
+    dependsOn: []
+    outputs:
+      - exact repository and PR evidence
+      - clean isolated branch
+      - machine-readable campaign manifest
+  - id: W1
+    title: Fundamental modularity
+    workerCount: 10
+    dependsOn: [W0]
+    tracks:
+      - id: parnas-information-hiding
+        workers: 2
+      - id: baldwin-clark-design-rules
+        workers: 1
+      - id: ddd-modules-and-bounded-contexts
+        workers: 2
+      - id: clean-hexagonal-onion
+        workers: 1
+      - id: rep-ccp-crp-adp-sdp
+        workers: 1
+      - id: dependency-injection-principles
+        workers: 1
+      - id: evolutionary-fitness-functions
+        workers: 1
+      - id: distributed-architecture-boundaries
+        workers: 1
+  - id: W2
+    title: Real-world systems
+    workerCount: 20
+    dependsOn: [W0]
+    tracks:
+      - deepseek-harness-and-cordis
+      - vscode
+      - theia
+      - intellij-platform
+      - eclipse-osgi
+      - backstage
+      - jupyterlab-lumino
+      - spring-modulith
+      - fastify-avvio
+      - nestjs-modules
+      - nx-project-graph
+      - kubernetes-controllers
+      - terraform-go-plugin
+      - extism-wasmtime-wasi
+      - dapr-and-wasmcloud
+      - rollup-and-vite
+      - erlang-otp
+      - envoy-extensions
+      - browser-electron-extension-hosts
+      - modularity-dart-and-related-precedents
+  - id: W3
+    title: Cordis qualification
+    workerCount: 13
+    dependsOn: [W1, W2]
+    researchWorkers: 8
+    spikeWorkers: 5
+    questions:
+      - npm tarball versus DeepSeek vendor source provenance
+      - release and breaking-change history
+      - license dependencies install scripts and maintainership
+      - Node 24 TypeScript 7 ESM and bundler compatibility
+      - Context Fiber effects and cleanup semantics
+      - DeepSeek production usage and hardening workarounds
+      - replaceability without public API leakage
+      - comparison with Effect Avvio and native resource primitives
+    spikes:
+      - native-versus-cordis-trace-parity
+      - partial-startup-reverse-cleanup
+      - repeated-activation-resource-leaks
+      - deadline-cancellation-hung-cleanup
+      - packed-consumer-and-type-leakage
+  - id: W4
+    title: Module API and dependency graph
+    workerCount: 16
+    dependsOn: [W1, W2]
+    researchWorkers: 12
+    spikeWorkers: 4
+    apiCandidates:
+      - inert-descriptor-and-activation-factory
+      - typed-functional-builder
+      - schema-first-generated-descriptor
+      - class-and-decorator
+      - effect-layers
+      - cordis-context-services
+    requiredScenarios:
+      - required-one
+      - optional-one
+      - ordered-many
+      - explicit-provider-binding
+      - compatibility-family-and-version
+      - scope-and-lifetime
+      - cycle-and-ambiguity-diagnostics
+      - static-import-versus-runtime-capability-edge
+      - process-and-wasm-serializability
+      - reusable-core-without-module-runtime
+  - id: W5
+    title: Dependency injection landscape
+    workerCount: 8
+    dependsOn: [W1, W4]
+    candidates:
+      - native-typed-factories
+      - awilix
+      - inversify
+      - tsyringe-and-typedi
+      - effect-layers
+      - cordis-context
+      - nest-container
+      - compile-time-di
+  - id: W6
+    title: Product decision forks
+    workerCount: 20
+    dependsOn: [W1, W2]
+    method: one-advocate-and-one-challenger-per-fork
+    forks:
+      - UMEQ-009
+      - UMEQ-010
+      - UMEQ-011
+      - UMEQ-012
+      - UMEQ-013
+      - UMEQ-014
+      - UMEQ-015
+      - UMEQ-016
+      - UMEQ-017
+      - UMEQ-018
+  - id: W7
+    title: Module Federation 2 and frontend loading
+    workerCount: 10
+    dependsOn: [W2, W4]
+    researchWorkers: 8
+    spikeWorkers: 2
+    candidates:
+      - webpack-module-federation
+      - rspack-module-federation-2
+      - native-esm-and-import-maps
+      - systemjs
+      - vite-federation
+    scenarios:
+      - digest-pinned-remote
+      - react-singleton-conflict
+      - csp-and-origin-policy
+      - offline-cache
+      - rollback
+      - ssr
+      - electron-and-web-placement
+      - self-hosted-deployment
+  - id: W8
+    title: Plugin security and distribution
+    workerCount: 8
+    dependsOn: [W2]
+    tracks:
+      - oci-oras-cosign
+      - tuf
+      - slsa-in-toto-and-npm-provenance
+      - identity-separation
+      - permissions-versus-grants
+      - revocation-freeze-and-rollback
+      - process-wasm-browser-containment
+      - state-custody-uninstall-and-deletion
+  - id: W9
+    title: Independent criticism
+    logicalRoleCount: 28
+    newWorkerBudget: 19
+    continuationRoleCount: 9
+    dependsOn: [W1, W2, W3, W4, W5, W6, W7, W8]
+    domains:
+      - fundamental-modularity
+      - module-api-and-graph
+      - cordis-native-and-di
+      - process-and-wasm-hosts
+      - frontend-and-module-federation
+      - plugin-supply-chain-and-updates
+      - product-decisions-and-distributed-guarantees
+    rolesPerDomain:
+      - real-world-operator
+      - security-critic
+      - minimalism-and-framework-critic
+      - long-term-evolution-critic
+  - id: W10
+    title: Red team
+    logicalRoleCount: 8
+    newWorkerBudget: 8
+    continuationRoleCount: 0
+    dependsOn: [W9]
+    attacks:
+      - malicious-plugin
+      - stale-generation-and-ambiguous-cleanup
+      - dependency-confusion
+      - incompatible-update
+      - cross-tenant-capability-substitution
+      - resource-leaks
+      - framework-lock-in
+      - overengineering-and-poor-ai-dx
+  - id: W11
+    title: Final arbitration
+    logicalRoleCount: 8
+    newWorkerBudget: 8
+    continuationRoleCount: 0
+    dependsOn: [W9, W10]
+    roles:
+      - architecture-integrator-a
+      - architecture-integrator-b
+      - security-adjudicator
+      - distributed-systems-adjudicator
+      - typescript-api-adjudicator
+      - product-mvp-adjudicator
+      - contradiction-auditor
+      - evidence-provenance-auditor
+adaptiveWorkers:
+  budget: 16
+  admissionReasons:
+    - unresolved-strong-contradiction
+    - missing-primary-source
+    - failed-or-inconclusive-spike
+    - p0-or-p1-remediation-review
+    - exact-evidence-provenance-dispute
+  forbiddenReasons:
+    - increase-vote-count
+    - repeat-an-identical-prompt
+    - confirm-a-preferred-answer
+promotionGates:
+  researchSynthesis:
+    requires:
+      - all primary waves terminal or explicitly failed with replacement evidence
+      - all source identities pinned
+      - every recommendation has two independent primary sources
+      - all executable claims have spike evidence or hypothesis labels
+  finalRecommendation:
+    requires:
+      - all seven domains have four critic roles
+      - red-team complete
+      - no unresolved P0 or P1
+      - contradiction audit complete
+      - evidence provenance audit complete
+  decisionPromotion:
+    requires:
+      - product-owner review
+      - separate ADR change
+      - no automatic merge from this campaign
+deliverables:
+  - executive-report
+  - principles-matrix
+  - oss-lessons-and-anti-patterns
+  - cordis-verdict
+  - module-api-comparison
+  - dependency-graph-and-di-decision
+  - module-federation-2-verdict
+  - umeq-decision-matrix
+  - security-and-lifecycle-threat-model
+  - architecture-and-loc-roadmap
+  - approval-ready-adr-list
+  - deferred-decision-list
+completion:
+  completedAt: 2026-08-26T15:56:00Z
+  custodyAccountingStatus: unproven
+  synthesisVerdict: NO-GO
+  promotionCriteriaSatisfied: false
+  acceptedAdrChanges: 0
+  productionPackagesCreated: 0
+  reason: >-
+    The evidence supports only a product-local static trusted rehearsal after
+    product-owner approval. It does not support a generic Foundation runtime,
+    public SPI, or dynamic or untrusted plugin platform now.
+evidenceCustody:
+  verificationStatus: unproven
+  promotionStatus: closed
+  reason: >-
+    The reported archive, manifest digest, counts, object accounting, alias
+    identity, and integrity result are not semantically verified from committed
+    bytes by this repository. Historical reports are not promotion evidence.
+  publishForbidden: true

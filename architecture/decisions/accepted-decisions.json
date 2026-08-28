@@ -56,6 +56,16 @@
       "id": "ADR-0012",
       "path": "docs/decisions/0012-reusable-library-module-and-plugin-boundaries.md",
       "immutableDigest": "sha256:e7ccb534d6deea3da4546807e1e26902aaabaae2a7a384128e97a6a46aff9f36"
+    },
+    {
+      "id": "ADR-0013",
+      "path": "docs/decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md",
+      "immutableDigest": "sha256:6f155e4a3d181bce02aa7c4d555f985eb479abf474c5284c76f9b10265b2966a"
+    },
+    {
+      "id": "ADR-0014",
+      "path": "docs/decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md",
+      "immutableDigest": "sha256:d1524a899f1b5424ca7503891064271a976c2d8c1c60d6724d0641c93460fff0"
     }
   ]
 }

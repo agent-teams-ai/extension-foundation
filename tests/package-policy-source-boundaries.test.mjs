@@ -16,6 +16,9 @@ const skipExpensiveIntegration = process.env.PACKAGE_POLICY_TEST_MODE === "fast"
 const governedFiles = [
   "architecture/checks/package-artifacts.mjs",
   "architecture/checks/package-policy.mjs",
+  "architecture/checks/package-policy/accepted-decision-policy.mjs",
+  "architecture/checks/package-policy/accepted-decision-source.mjs",
+  "architecture/checks/package-policy/admission-policy.mjs",
   "architecture/checks/package-policy/catalog-policy.mjs",
   "architecture/checks/package-policy/docs-owner-source.mjs",
   "architecture/checks/package-policy/ownership-policy.mjs",
@@ -23,6 +26,7 @@ const governedFiles = [
   "architecture/checks/package-topology.mjs",
   "architecture/checks/scaffold.mjs",
   "architecture/checks/source-safety.mjs",
+  "architecture/checks/strict-json.mjs",
   "tests/architecture-topology.test.mjs",
   "tests/docs-protocol-qualification.test.mjs",
   "tests/document-authoring.test.mjs",

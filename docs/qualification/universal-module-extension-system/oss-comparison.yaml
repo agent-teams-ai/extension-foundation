@@ -1,0 +1,203 @@
+schemaVersion: 1
+qualification: universal-module-extension-system
+reviewedAt: 2026-08-25
+candidates:
+  - id: deepseek-cordis
+    evidenceStatus: pinned
+    category: in-process-composition
+    versionOrRevision: "@deepseek-ai/cordis@4.0.1 / deepseek-harness@b150a551b8d465e31e418e1b2eaf5e79bbb7d28e"
+    evidence:
+      - kind: npm-release
+        package: "@deepseek-ai/cordis"
+        version: 4.0.1
+        url: "https://registry.npmjs.org/@deepseek-ai/cordis/-/cordis-4.0.1.tgz"
+        integrity: "sha512-YBdskTU2Po1kru3GgcUWUbkTsPMA9LkSQDAY8rBkFJeajdgcQad3QPJZE26JyK99Xb6HaASvoXg2DSUTeN/0Nw=="
+        locked: true
+      - kind: git-commit
+        repository: "https://github.com/deepseek-ai/deepseek-harness"
+        revision: b150a551b8d465e31e418e1b2eaf5e79bbb7d28e
+        url: "https://github.com/deepseek-ai/deepseek-harness/commit/b150a551b8d465e31e418e1b2eaf5e79bbb7d28e"
+    adopt: private-adapter-candidate
+    usefulFor: scoped resource ownership and effect cleanup
+    missing: closed-world compile, readiness, generations, atomic cutover, bounded drain, durable recovery, hostile-code isolation
+  - id: vscode
+    evidenceStatus: pinned
+    category: product-extension-host
+    versionOrRevision: "62e4ec989dc0bb317b431d9d23a36019ef3c0d5b"
+    evidence:
+      - kind: git-commit
+        repository: "https://github.com/microsoft/vscode"
+        revision: 62e4ec989dc0bb317b431d9d23a36019ef3c0d5b
+        url: "https://github.com/microsoft/vscode/commit/62e4ec989dc0bb317b431d9d23a36019ef3c0d5b"
+    adopt: patterns-only
+    usefulFor: extension-host placement, contribution points, activation, remote hosts
+    missing: product-neutral DDD authority and durable lifecycle semantics
+  - id: theia
+    evidenceStatus: orientation
+    category: product-extension-host
+    versionOrRevision: reviewed-2026-08-25
+    adopt: patterns-only
+    usefulFor: VS Code compatibility, frontend/backend placement, declarative contributions
+    missing: our authority, fencing, and closed-world profile guarantees
+  - id: backstage
+    evidenceStatus: pinned
+    category: application-modularity
+    versionOrRevision: "de92faeb4a375af5bd4f7a84311e702736e98964"
+    evidence:
+      - kind: git-commit
+        repository: "https://github.com/backstage/backstage"
+        revision: de92faeb4a375af5bd4f7a84311e702736e98964
+        url: "https://github.com/backstage/backstage/commit/de92faeb4a375af5bd4f7a84311e702736e98964"
+    adopt: patterns-only
+    usefulFor: product-owned extension points, composable frontend surfaces, package ownership
+    missing: untrusted isolation and generation lifecycle
+  - id: lumino-jupyterlab
+    evidenceStatus: pinned
+    category: frontend-modularity
+    versionOrRevision: "d9b39db2c6d609af334729eeba2ab9376a11c0a7"
+    evidence:
+      - kind: git-commit
+        repository: "https://github.com/jupyterlab/lumino"
+        revision: d9b39db2c6d609af334729eeba2ab9376a11c0a7
+        url: "https://github.com/jupyterlab/lumino/commit/d9b39db2c6d609af334729eeba2ab9376a11c0a7"
+    adopt: patterns-only
+    usefulFor: tokens, commands, widgets, activation and disposal ownership
+    missing: durable recovery and security boundary
+  - id: fastify-avvio
+    evidenceStatus: orientation
+    category: startup-graph
+    versionOrRevision: "reviewed-2026-08-25 (avvio@9.3.0)"
+    evidence:
+      - kind: npm-release
+        package: avvio
+        version: 9.3.0
+        url: "https://registry.npmjs.org/avvio/-/avvio-9.3.0.tgz"
+        integrity: "sha512-g2tQ7LE7oOSqDfwEm3M+ZCMTJc7KiZCdJ4UwyZJb5ckTKyYu50OYmvv0mCFXPuYXoM4zkSt8zM9XQ9KCvxA74A=="
+    adopt: patterns-and-test-oracle
+    usefulFor: encapsulation, deterministic boot, ready and close ordering
+    missing: generations, replaceable graph, durable intents, hostile isolation
+  - id: dagrejs-graphlib
+    evidenceStatus: pinned
+    category: graph-test-oracle
+    versionOrRevision: "@dagrejs/graphlib@4.0.5"
+    evidence:
+      - kind: npm-release
+        package: "@dagrejs/graphlib"
+        version: 4.0.5
+        url: "https://registry.npmjs.org/@dagrejs/graphlib/-/graphlib-4.0.5.tgz"
+        integrity: "sha512-7xrBTqIts3o+PMUZX97wSc+7TUbW+/rULzGNCTP6yooNVDXbzw4Wutg/H/xOutTB/c/k0YqOAavgPh4/Zk9PFA=="
+        locked: true
+    adopt: qualification-test-oracle-only
+    usefulFor: independent cycle-validity differential and topological-validity checks
+    missing: capability versions, provider binding, lifecycle, authority, isolation and recovery
+  - id: osgi
+    evidenceStatus: orientation
+    category: dynamic-module-system
+    versionOrRevision: reviewed-2026-08-25
+    adopt: lifecycle-lessons-only
+    usefulFor: explicit wiring, service dynamics, bundle identity and lifecycle vocabulary
+    missing: TypeScript fit; dynamic resolution complexity conflicts with closed-world baseline
+  - id: intellij-platform
+    evidenceStatus: orientation
+    category: desktop-plugin-platform
+    versionOrRevision: reviewed-2026-08-25
+    adopt: lifecycle-lessons-only
+    usefulFor: extension points, compatibility ranges, unload constraints, restart-safe updates
+    missing: product-neutral runtime and portable host model
+  - id: terraform-go-plugin
+    evidenceStatus: orientation
+    category: process-plugin-protocol
+    versionOrRevision: reviewed-2026-08-25
+    adopt: protocol-patterns-only
+    usefulFor: handshake, version negotiation, process isolation and reattach lessons
+    missing: browser support and product lifecycle authority
+  - id: kubernetes
+    evidenceStatus: orientation
+    category: distributed-control-plane
+    versionOrRevision: reviewed-2026-08-25
+    adopt: reconciliation-patterns-only
+    usefulFor: desired versus observed state, generations, finalizers and liveness leases; sink fencing remains separate
+    missing: lightweight local composition; not a library dependency candidate
+  - id: effect
+    evidenceStatus: orientation
+    category: typed-runtime
+    versionOrRevision: "reviewed-2026-08-25 (effect@3.22.1)"
+    evidence:
+      - kind: npm-release
+        package: effect
+        version: 3.22.1
+        url: "https://registry.npmjs.org/effect/-/effect-3.22.1.tgz"
+        integrity: "sha512-TNoXushmPOBAjJlthF5d2QwnX2xBPEtcNJr5XKNKbRLbDvBcOYkXlYDfvGfSA0zriwLFuCll5MDtNMAdZL17PQ=="
+    adopt: no-baseline-dependency
+    usefulFor: scoped resources, layers and interruption vocabulary
+    missing: closed-world plugin trust and durable product-owned lifecycle; high model adoption cost
+  - id: awilix-inversify-nest
+    evidenceStatus: orientation
+    category: dependency-injection
+    versionOrRevision: "reviewed-2026-08-25 (awilix@13.0.5 / inversify@8.2.3 / @nestjs/core@11.2.1)"
+    evidence:
+      - kind: npm-release
+        package: awilix
+        version: 13.0.5
+        url: "https://registry.npmjs.org/awilix/-/awilix-13.0.5.tgz"
+        integrity: "sha512-ORtca6suBdYA1FyTzqHEZDvEuUwo3lPDDBRm7GrzHgi6STESzJKdBtpqfTzObdMj1NGQUWX6k26E3EbQaGJX5Q=="
+      - kind: npm-release
+        package: inversify
+        version: 8.2.3
+        url: "https://registry.npmjs.org/inversify/-/inversify-8.2.3.tgz"
+        integrity: "sha512-OmTj/HB/lEV6WFaeHXBDXdUYWwtadF8QTbyEKT7LUZMzOkw5xF+Nrm1GTjIhBOrAUN4K65vtqKgxRWlSHzQH7w=="
+      - kind: npm-release
+        package: "@nestjs/core"
+        version: 11.2.1
+        url: "https://registry.npmjs.org/@nestjs/core/-/core-11.2.1.tgz"
+        integrity: "sha512-M5PWFU8NdRTgX9Po49d7TQKg7f5t8GAVUa/Esy4tmaMWcKugTzg3ZzpJfD3LEPMuRHjfs6+8pQYgtuP2uz3rDw=="
+    adopt: composition-root-only-candidates
+    usefulFor: object construction and scoped registrations
+    missing: graph authority, lifecycle authority, isolation and stable public protocol
+  - id: vite-rollup
+    evidenceStatus: orientation
+    category: build-time-extension
+    versionOrRevision: reviewed-2026-08-25
+    adopt: build-tooling-only
+    usefulFor: ordered hooks, plugin containers, virtual modules and build-time contributions
+    missing: runtime trust, durable recovery and business authority
+  - id: extism-wasi-wasmtime
+    evidenceStatus: qualified-experiment
+    category: wasm-host
+    versionOrRevision: "@extism/extism@1.0.3"
+    evidence:
+      - kind: npm-release
+        package: "@extism/extism"
+        version: 1.0.3
+        url: "https://registry.npmjs.org/@extism/extism/-/extism-1.0.3.tgz"
+        integrity: "sha512-kHwJwNP19c2q6tN2VYez/Bvv/mvx5J+UEyVbHJKAQ8+l9Z+MJ7TTjBw/GwDQcieXlLtPDNphugeH8ChKKfVtQg=="
+        locked: true
+      - kind: artifact-digest
+        url: "https://github.com/extism/plugins/releases/download/v1.1.1/count_vowels.wasm"
+        digest: "sha256:72dfe2c69d8e5ac50886b7961664af6cccbbdcabeb45ce48270db2242778ce25"
+        command: "pnpm qualification:extism:experiment"
+    observedLatest: "extism-runtime@1.30.0 / @extism/extism@2.0.0-rc13"
+    experimentArtifact: "extism/plugins@v1.1.1/count_vowels.wasm"
+    experimentIntegrity: "sha256:72dfe2c69d8e5ac50886b7961664af6cccbbdcabeb45ce48270db2242778ce25"
+    adopt: post-mvp-qualification
+    usefulFor: language-neutral capability-constrained computation
+    missing: first-slice maturity evidence, product SPI and OS defense-in-depth
+  - id: browser-electron-hosts
+    evidenceStatus: orientation
+    category: frontend-isolation
+    versionOrRevision: reviewed-2026-08-25
+    adopt: separate-host-adapters
+    usefulFor: Worker, sandboxed iframe, Electron utility process and preload broker patterns
+    missing: one portable hostile-code guarantee across all placements
+  - id: modularity-dart-777genius
+    evidenceStatus: pinned
+    category: module-topology
+    versionOrRevision: "cherrypick-agency/modularity_dart@be9a2674f3a8ce7f0807d7b46e74dd6e8f283fe5; 777genius/modularity unavailable"
+    evidence:
+      - kind: git-commit
+        repository: "https://github.com/cherrypick-agency/modularity_dart"
+        revision: be9a2674f3a8ce7f0807d7b46e74dd6e8f283fe5
+        url: "https://github.com/cherrypick-agency/modularity_dart/commit/be9a2674f3a8ce7f0807d7b46e74dd6e8f283fe5"
+    adopt: patterns-only
+    usefulFor: explicit identities, declarative imports/exports, non-transitive visibility, startup coalescing and graph visualization
+    missing: TypeScript evidence, closed-world provider ambiguity checks, secure isolation and durable recovery

@@ -83,11 +83,36 @@ accepted ADR binds the exact package ID, name, path, and feature names. A
 package is admitted in one reviewed change that adds its catalog entry,
 deterministic scaffold plan and output, value-level `src/features/<feature>/`
 implementation, explicit feature entrypoint, and executable structural evidence
-under `test/features/<feature>/`. These checks prove topology and execution, not
-business completeness; the admitting ADR and review evidence establish that the
-slice is semantically real. Reserving empty packages or
-root-level `domain`, `application`, `contracts`, or `adapters` directories is
-not allowed.
+under `test/features/<feature>/`. The same change must include a versioned
+`architecture/package-admissions/<encoded-package-id>.json` record that binds
+the accepted extraction decision, one explicit ADR-0013 package-admission basis, exact
+source commits, conformance results, implementation identities, and
+digest-bearing evidence references. A second-consumer basis requires two real
+consumer identities. A public-SPI basis requires two independently authored
+implementation identities. Independent replacement/release or
+deployment/isolation lifecycles may justify a package with one evidence record;
+they do not imply that its exports are a public extension SPI. Repository
+identities are canonical lowercase `owner/repository` values and reject
+transport/path aliases such as `.git` or trailing dots. Local evidence paths
+must remain under `docs/` and use exactly one digest fragment. External HTTPS
+locations are compared by their canonical URL, and independent evidence records
+must have distinct SHA-256 locations and digests; aliases, one location with
+conflicting claimed digests, or mirrors of the same bytes cannot satisfy a gate
+twice.
+
+These checks prove topology and evidence syntax, not business completeness or
+the referenced evidence bytes. Package admission does not prove Foundation
+ownership of module declarations, graph semantics, lifecycle, or diagnostics;
+ADR-0013 separately requires two real independently authored consumers,
+cross-consumer conformance, and an accepted semantic-extraction decision. A
+non-empty catalog therefore fails closed until
+an executable admission verifier is supplied. That verifier must resolve each
+repository slug through its provider to a stable repository ID, prove the
+selected admission basis and any claimed implementation independence, and hash
+the evidence bytes before admission. Publication re-verifies the immutable
+receipt. The admitting ADR and review evidence establish that the slice is
+semantically real. Reserving empty packages or root-level
+`domain`, `application`, `contracts`, or `adapters` directories is not allowed.
 
 Feature-specific contracts and adapters stay inside their owning feature.
 Only product-neutral contracts with an independent release lifecycle may
@@ -162,6 +187,19 @@ computed property access, ambient `globalThis` or `process` access,
 `process.getBuiltinModule`, and TypeScript path or project-reference edges,
 package admission rejects those constructs fail-closed rather than silently
 omitting them.
+
+The accepted owner ADR classifies every package ownership entry as
+`ordinary-library` or `foundation-module-semantics`. The latter binds a separate
+accepted semantic-extraction decision and machine-verifiable evidence for two
+independent consumers, implementations, and conformance roles. Admission and
+publication gates are derived from the matching admission record, whose
+classification must equal the immutable owner declaration. A package cannot
+select the weaker route only by changing its admission record. The semantic
+extraction ADR is separate from the package-owner ADR and must independently
+resolve as effective and accepted. The executable evidence adapter receives a
+request bound to package identity, the exact admission-record byte digest, and
+the derived required gate; it returns a receipt with those same coordinates.
+A bare boolean or receipt for another record or gate fails closed.
 
 The Engineering Foundation owns the source-graph and scaffolding protocols.
 This repository owns its package roles, catalog entries, allowed dependency

@@ -23,7 +23,7 @@ function compareBinary(left, right) {
   return left < right ? -1 : left > right ? 1 : 0;
 }
 
-function hasExactKeys(value, expected) {
+export function hasExactKeys(value, expected) {
   return isRecord(value)
     && Object.keys(value).sort(compareBinary).join("|") === [...expected].sort(compareBinary).join("|");
 }
@@ -59,21 +59,34 @@ export function pathsOverlap(left, right) {
   return left === right || left.startsWith(`${right}/`) || right.startsWith(`${left}/`);
 }
 
-export function materializationPlanPath(entry) {
-  const encodedId = [...entry.id].map(character => {
+export function encodedPackageId(entry) {
+  return [...entry.id].map(character => {
     if (character === ".") return "-dot-";
     if (character === "-") return "-dash-";
     return character;
   }).join("");
-  return `${MATERIALIZATION_PLAN_DIRECTORY}/${encodedId}.json`;
+}
+
+export function materializationPlanPath(entry) {
+  return `${MATERIALIZATION_PLAN_DIRECTORY}/${encodedPackageId(entry)}.json`;
 }
 
 export function catalogPolicy(catalog, allowedRoles) {
   const errors = [];
+  const diagnosticGroups = [];
   const entries = [];
   const entriesById = new Map();
   const entriesByPath = new Map();
-  const result = { allowedRoles, catalog, entries, entriesById, entriesByPath, errors };
+  const result = {
+    allowedRoles,
+    catalog,
+    entries,
+    entriesById,
+    entriesByPath,
+    errors,
+    diagnosticGroups,
+    rootValid: false,
+  };
 
   if (!hasExactKeys(catalog, CATALOG_ROOT_KEYS)
     || catalog.version !== 1
@@ -81,26 +94,33 @@ export function catalogPolicy(catalog, allowedRoles) {
     errors.push(`${CATALOG_PATH} must contain exactly version 1 and a packages array`);
     return result;
   }
+  result.rootValid = true;
 
   const seen = { id: new Set(), path: new Set(), package_name: new Set() };
   for (const entry of catalog.packages) {
     if (!hasExactKeys(entry, CATALOG_ENTRY_KEYS)
       || CATALOG_ENTRY_KEYS.some(key => typeof entry[key] !== "string" || entry[key].length === 0)) {
-      errors.push(`${CATALOG_PATH}: every entry must contain exactly ${CATALOG_ENTRY_KEYS.join(", ")}`);
+      const entryErrors = [`${CATALOG_PATH}: every entry must contain exactly ${CATALOG_ENTRY_KEYS.join(", ")}`];
+      errors.push(...entryErrors);
+      diagnosticGroups.push({ entry: undefined, entryErrors, relationErrors: [] });
       continue;
     }
-    if (!PACKAGE_ID.test(entry.id)) errors.push(`${entry.id}: package id is invalid`);
-    if (!allowedRoles.has(entry.role)) errors.push(`${entry.id}: unknown role ${entry.role}`);
-    if (!PACKAGE_PATH.test(entry.path)) errors.push(`${entry.id}: path must be a normalized directory under packages/`);
-    if (!PACKAGE_NAME.test(entry.package_name)) errors.push(`${entry.id}: package_name must use the @agent-teams scope`);
-    if (!OWNER_DOCUMENT.test(entry.owner_document)) errors.push(`${entry.id}: owner_document must be an ADR identity`);
+    const entryErrors = [];
+    const relationErrors = [];
+    if (!PACKAGE_ID.test(entry.id)) entryErrors.push(`${entry.id}: package id is invalid`);
+    if (!allowedRoles.has(entry.role)) entryErrors.push(`${entry.id}: unknown role ${entry.role}`);
+    if (!PACKAGE_PATH.test(entry.path)) entryErrors.push(`${entry.id}: path must be a normalized directory under packages/`);
+    if (!PACKAGE_NAME.test(entry.package_name)) entryErrors.push(`${entry.id}: package_name must use the @agent-teams scope`);
+    if (!OWNER_DOCUMENT.test(entry.owner_document)) entryErrors.push(`${entry.id}: owner_document must be an ADR identity`);
     for (const field of Object.keys(seen)) {
-      if (seen[field].has(entry[field])) errors.push(`${entry.id}: duplicate ${field} ${entry[field]}`);
+      if (seen[field].has(entry[field])) relationErrors.push(`${entry.id}: duplicate ${field} ${entry[field]}`);
       seen[field].add(entry[field]);
     }
     for (const existing of entries) {
-      if (pathsOverlap(entry.path, existing.path)) errors.push(`${entry.id}: package path overlaps ${existing.id}`);
+      if (pathsOverlap(entry.path, existing.path)) relationErrors.push(`${entry.id}: package path overlaps ${existing.id}`);
     }
+    errors.push(...entryErrors, ...relationErrors);
+    diagnosticGroups.push({ entry, entryErrors, relationErrors });
     entries.push(entry);
     entriesById.set(entry.id, entry);
     entriesByPath.set(entry.path, entry);

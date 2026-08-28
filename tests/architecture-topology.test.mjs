@@ -1,12 +1,22 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import { validateBuiltPackageArtifacts } from "../architecture/checks/package-artifacts.mjs";
-import { materializationPlanPath } from "../architecture/checks/package-policy.mjs";
+import {
+  CONFORMANCE_VERSION,
+  loadAcceptedDecisionEntries,
+  loadAcceptedDecisionIds,
+  loadPackagePolicy,
+  materializationPlanPath,
+  packageAdmissionGateId,
+  packageAdmissionPath,
+  packagePublicationGateId,
+  statusCrossChecksWithAcceptedLedger,
+} from "../architecture/checks/package-policy.mjs";
 import {
   isFilesystemPathInside,
   validatePackageTopology as validateRepositoryPackageTopology,
@@ -23,11 +33,47 @@ const acceptedOwner = async id => ({
     packageId: "module.example",
     packageName: "@agent-teams/example",
     packagePath: "packages/example",
+    semanticClassification: "ordinary-library",
     features: ["example"],
   }],
 });
 const acceptedOwners = async () => [await acceptedOwner("ADR-0099")];
 const noTrackedPackagePaths = async () => [];
+
+test("package owner status is cross-checked against the accepted-decision ledger", async () => {
+  const root = await mkdtemp(join(tmpdir(), "extension-topology-decision-ledger-"));
+  try {
+    await writeFixture(root, "architecture/decisions/accepted-decisions.json", JSON.stringify({
+      schemaVersion: 1,
+      algorithm: "sha256",
+      decisions: [{
+        id: "ADR-0099",
+        path: "docs/decisions/0099-owner.md",
+        immutableDigest: `sha256:${"a".repeat(64)}`,
+      }],
+    }));
+    const acceptedIds = await loadAcceptedDecisionIds(root);
+    const acceptedEntries = await loadAcceptedDecisionEntries(root);
+    const document = (status, repositoryPath = "docs/decisions/0099-owner.md") => ({
+      id: "ADR-0099",
+      metadata: { id: "ADR-0099", type: "adr", status },
+      repositoryPath,
+    });
+    assert.equal(statusCrossChecksWithAcceptedLedger(document("accepted"), acceptedIds), true);
+    assert.equal(statusCrossChecksWithAcceptedLedger(document("proposed"), acceptedIds), false);
+    assert.equal(statusCrossChecksWithAcceptedLedger(document("accepted"), acceptedEntries), true);
+    assert.equal(statusCrossChecksWithAcceptedLedger(
+      document("accepted", "docs/decisions/0099-moved.md"),
+      acceptedEntries,
+    ), false);
+    assert.equal(statusCrossChecksWithAcceptedLedger(
+      { id: "ADR-0100", metadata: { id: "ADR-0100", type: "adr", status: "accepted" } },
+      acceptedIds,
+    ), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 async function fixtureMaterializationPlan(_root, entry) {
   const operation = (path, value) => ({
@@ -57,6 +103,10 @@ function validatePackageTopology(options) {
     loadMaterializationPlan: options.loadMaterializationPlan ?? fixtureMaterializationPlan,
     listEffectiveOwners: options.listEffectiveOwners ?? (async () => []),
     readTrackedPackagePaths: options.readTrackedPackagePaths ?? noTrackedPackagePaths,
+    verifyAdmissionEvidence: options.verifyAdmissionEvidence ?? (async ({ request }) => ({
+      ...request,
+      outcome: "satisfied",
+    })),
   });
 }
 
@@ -115,6 +165,41 @@ function packageCatalog() {
       owner_document: "ADR-0099",
     }],
   });
+}
+
+function packageAdmission() {
+  return {
+    schema_version: 4,
+    admission_basis: "public-spi",
+    package_id: "module.example",
+    owner_repository: "agent-teams-ai/extension-foundation",
+    extraction_decision: "ADR-0099",
+    neutrality_claim: "The capability contains no product-owned language or runtime authority.",
+    release_policy: "Exact SemVer with immutable packed-artifact evidence.",
+    semantic_classification: "ordinary-library",
+    semantic_extraction_decision: "not-applicable",
+    conformance_version: "1.0.0",
+    consumer_evidence: [
+      {
+        consumer_id: "consumer.alpha",
+        implementation_id: "implementation.alpha",
+        consumer_repository: "agent-teams-ai/consumer-alpha",
+        evidence_kind: "product-slice",
+        source_revision: "1111111111111111111111111111111111111111",
+        conformance_result: "passed",
+        evidence_reference: `docs/evidence/consumer-alpha.json#sha256=${"a".repeat(64)}`,
+      },
+      {
+        consumer_id: "consumer.beta",
+        implementation_id: "implementation.beta",
+        consumer_repository: "agent-teams-ai/consumer-beta",
+        evidence_kind: "independent-conformance",
+        source_revision: "2222222222222222222222222222222222222222",
+        conformance_result: "passed",
+        evidence_reference: `docs/evidence/consumer-beta.json#sha256=${"b".repeat(64)}`,
+      },
+    ],
+  };
 }
 
 function packageTsconfig(compilerOptions = {}) {
@@ -187,6 +272,13 @@ function sourcePolicy({ packageBoundary = false } = {}) {
 
 async function writeArchitecture(root, { catalog = '{"version":1,"packages":[]}', packageBoundary = false } = {}) {
   await writeFixture(root, "architecture/package-catalog.json", `${catalog}\n`);
+  for (const entry of JSON.parse(catalog).packages ?? []) {
+    const admission = { ...packageAdmission(), package_id: entry.id, extraction_decision: entry.owner_document };
+    const encodedId = [...entry.id].map(character => (
+      character === "." ? "-dot-" : character === "-" ? "-dash-" : character
+    )).join("");
+    await writeFixture(root, `architecture/package-admissions/${encodedId}.json`, `${JSON.stringify(admission)}\n`);
+  }
   await writeFixture(root, "architecture/foundation/scaffolding.yaml", `schemaVersion: 1
 compositions:
   - id: fixture
@@ -624,20 +716,542 @@ test("topology fails closed on dependency forms the shared source graph does not
       "packages/example/tsconfig.json: config differs from the reviewed Foundation materialization plan",
       "packages/example/tsconfig.json: compilerOptions.paths is prohibited until the shared source graph models it",
     ]);
+
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      'export async function loadCapability() { return import("node:fs"); }\n',
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "packages/example/src/features/example/capability.ts: dynamic module loading is prohibited until the shared source graph models it",
+      "packages/example/tsconfig.json: config differs from the reviewed Foundation materialization plan",
+      "packages/example/tsconfig.json: compilerOptions.paths is prohibited until the shared source graph models it",
+    ]);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
 });
 
-test("catalog root rejects unknown fields", async () => {
+test("catalog root rejects unknown and duplicate fields", async () => {
   const root = await mkdtemp(join(tmpdir(), "extension-topology-catalog-shape-"));
   try {
     await writeArchitecture(root, { catalog: '{"version":1,"packages":[],"future":true}' });
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
       "architecture/package-catalog.json must contain exactly version 1 and a packages array",
     ]);
+    await writeFixture(
+      root,
+      "architecture/package-catalog.json",
+      '{"version":1,"version":1,"packages":[]}\n',
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "package policy: DUPLICATE_JSON_KEY:version",
+    ]);
   } finally {
     await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("package catalog authority cannot be a symbolic link", {
+  skip: process.platform === "win32" ? "file symlink creation requires elevated Windows privileges" : false,
+}, async () => {
+  const root = await mkdtemp(join(tmpdir(), "extension-topology-catalog-link-"));
+  const outside = await mkdtemp(join(tmpdir(), "extension-topology-catalog-outside-"));
+  try {
+    await writeArchitecture(root);
+    await writeFixture(outside, "catalog.json", `${packageCatalog()}\n`);
+    await rm(join(root, "architecture/package-catalog.json"));
+    await symlink(
+      join(outside, "catalog.json"),
+      join(root, "architecture/package-catalog.json"),
+      "file",
+    );
+
+    await assert.rejects(
+      loadPackagePolicy(root),
+      /package catalog must be a real regular file, not a symbolic link/u,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+    await rm(outside, { recursive: true, force: true });
+  }
+});
+
+test("package catalog authority cannot traverse a symbolic-link directory", async () => {
+  const root = await mkdtemp(join(tmpdir(), "extension-topology-catalog-parent-link-"));
+  const outside = await mkdtemp(join(tmpdir(), "extension-topology-catalog-parent-outside-"));
+  try {
+    await writeArchitecture(outside);
+    await symlink(
+      join(outside, "architecture"),
+      join(root, "architecture"),
+      process.platform === "win32" ? "junction" : "dir",
+    );
+
+    await assert.rejects(
+      loadPackagePolicy(root),
+      /authority path ancestors must be real directories, not symbolic links/u,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+    await rm(outside, { recursive: true, force: true });
+  }
+});
+
+test("workspace package selectors use shell-neutral quoting", async () => {
+  const manifest = JSON.parse(await readFile(join(repositoryRoot, "package.json"), "utf8"));
+  for (const script of [manifest.scripts["packages:check"], manifest.scripts.typecheck]) {
+    assert.match(script, /--filter "\.\/packages\/\*\*"/u);
+    assert.doesNotMatch(script, /--filter '\.\/packages\/\*\*'/u);
+  }
+});
+
+test("invalid package identities fail before admission evidence is read", async () => {
+  const root = await mkdtemp(join(tmpdir(), "extension-topology-invalid-package-id-"));
+  const invalidEntry = {
+    id: "../probe",
+    role: "foundation-component",
+    path: "packages/example",
+    package_name: "@agent-teams/example",
+    owner_document: "ADR-0099",
+  };
+  const catalog = JSON.stringify({ version: 1, packages: [invalidEntry] });
+  try {
+    await writeArchitecture(root, { catalog });
+    await writeFixture(root, packageAdmissionPath(invalidEntry), '{"broken":true,"broken":false}\n');
+
+    const policy = await loadPackagePolicy(root);
+    assert.deepEqual(policy.errors, [
+      "../probe: package id is invalid",
+      "architecture/package-admissions/-dot--dot-: orphan admission evidence is not declared by architecture/package-catalog.json",
+    ]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("package admission fails closed without versioned independent evidence", async () => {
+  const root = await mkdtemp(join(tmpdir(), "extension-topology-admission-"));
+  try {
+    await writeArchitecture(root, { catalog: packageCatalog(), packageBoundary: true });
+    const noVerifierErrors = await validateRepositoryPackageTopology({
+      root,
+      resolveOwner: acceptedOwner,
+      listEffectiveOwners: async () => [],
+      loadMaterializationPlan: fixtureMaterializationPlan,
+      readTrackedPackagePaths: noTrackedPackagePaths,
+    });
+    assert.ok(noVerifierErrors.includes("module.example: package admission requires an executable evidence verifier"));
+    const unboundVerifierErrors = await validateRepositoryPackageTopology({
+      root,
+      resolveOwner: acceptedOwner,
+      listEffectiveOwners: async () => [],
+      loadMaterializationPlan: fixtureMaterializationPlan,
+      readTrackedPackagePaths: noTrackedPackagePaths,
+      verifyAdmissionEvidence: async () => true,
+    });
+    assert.ok(unboundVerifierErrors.includes(
+      "module.example: executable evidence verifier returned an unbound or unsatisfied receipt",
+    ));
+    await rm(join(root, "architecture/package-admissions/module-dot-example.json"));
+    const missingErrors = await validatePackageTopology({ root, resolveOwner: acceptedOwner });
+    assert.equal(missingErrors.length, 1);
+    assert.match(missingErrors[0], /admission evidence is missing or invalid/);
+
+    const duplicateAdmissionKey = JSON.stringify(packageAdmission()).replace(
+      '"package_id":"module.example"',
+      '"package_id":"module.example","package_id":"module.shadow"',
+    );
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${duplicateAdmissionKey}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: admission evidence is missing or invalid: DUPLICATE_JSON_KEY:package_id",
+    ]);
+
+    const oneConsumer = packageAdmission();
+    oneConsumer.consumer_evidence.pop();
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(oneConsumer)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: public-spi admission requires at least two evidence records",
+    ]);
+
+    const duplicateEvidenceRole = packageAdmission();
+    duplicateEvidenceRole.consumer_evidence[1].evidence_kind = "product-slice";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(duplicateEvidenceRole)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: admission requires product-slice and independent-conformance evidence roles",
+    ]);
+
+    const independentLifecycle = packageAdmission();
+    independentLifecycle.admission_basis = "independent-replacement-or-release-lifecycle";
+    independentLifecycle.consumer_evidence.splice(1);
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(independentLifecycle)}\n`,
+    );
+    assert.deepEqual((await loadPackagePolicy(root)).errors, []);
+
+    const semanticPackage = packageAdmission();
+    semanticPackage.semantic_classification = "foundation-module-semantics";
+    semanticPackage.semantic_extraction_decision = "ADR-0100";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(semanticPackage)}\n`,
+    );
+    const semanticPolicy = await loadPackagePolicy(root);
+    assert.deepEqual(semanticPolicy.errors, []);
+    assert.equal(packageAdmissionGateId(semanticPolicy.admissionsById.get("module.example")), "phase-3-module-semantic-package-admission");
+    assert.equal(packagePublicationGateId(semanticPolicy.admissionsById.get("module.example")), "phase-3-module-semantic-package-publication");
+    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+      "module.example: admission semantic classification must equal the accepted owner ADR declaration",
+    ));
+    const semanticOwner = async id => {
+      if (id === "ADR-0100") {
+        return {
+          id,
+          type: "adr",
+          status: "accepted",
+          supersededBy: [],
+          packageOwnership: [],
+        };
+      }
+      const owner = await acceptedOwner(id);
+      owner.packageOwnership[0].semanticClassification = "foundation-module-semantics";
+      return owner;
+    };
+    let semanticVerificationRequest;
+    const semanticTopologyErrors = await validatePackageTopology({
+      root,
+      resolveOwner: semanticOwner,
+      verifyAdmissionEvidence: async ({ request }) => {
+        semanticVerificationRequest = request;
+        return { ...request, outcome: "satisfied" };
+      },
+    });
+    assert.equal(semanticTopologyErrors.includes(
+      "module.example: admission semantic classification must equal the accepted owner ADR declaration",
+    ), false);
+    assert.equal(
+      semanticVerificationRequest?.requiredGateId,
+      "phase-3-module-semantic-package-admission",
+    );
+    assert.match(semanticVerificationRequest?.admissionRecordDigest ?? "", /^sha256:[0-9a-f]{64}$/);
+    const wrongGateReceiptErrors = await validatePackageTopology({
+      root,
+      resolveOwner: semanticOwner,
+      verifyAdmissionEvidence: async ({ request }) => ({
+        ...request,
+        requiredGateId: "phase-3-package-admission",
+        outcome: "satisfied",
+      }),
+    });
+    assert.ok(wrongGateReceiptErrors.includes(
+      "module.example: executable evidence verifier returned an unbound or unsatisfied receipt",
+    ));
+    const sameDecision = structuredClone(semanticPackage);
+    sameDecision.semantic_extraction_decision = "ADR-0099";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(sameDecision)}\n`,
+    );
+    assert.ok((await loadPackagePolicy(root)).errors.includes(
+      "module.example: semantic extraction decision must be separate from the package owner decision",
+    ));
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(semanticPackage)}\n`,
+    );
+    const missingSemanticDecision = async id => (id === "ADR-0100" ? undefined : semanticOwner(id));
+    assert.ok((await validatePackageTopology({ root, resolveOwner: missingSemanticDecision })).includes(
+      "module.example: semantic extraction decision must resolve to one separate effective accepted ADR",
+    ));
+
+    const semanticOneConsumer = structuredClone(semanticPackage);
+    semanticOneConsumer.admission_basis = "independent-replacement-or-release-lifecycle";
+    semanticOneConsumer.consumer_evidence.splice(1);
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(semanticOneConsumer)}\n`,
+    );
+    assert.deepEqual((await loadPackagePolicy(root)).errors, [
+      "module.example: foundation-module-semantics admission requires two distinct consumer identities",
+      "module.example: foundation-module-semantics admission requires two independently authored implementation identities",
+      "module.example: foundation-module-semantics admission requires product-slice and independent-conformance evidence roles",
+    ]);
+
+    const ordinaryWithSemanticDecision = packageAdmission();
+    ordinaryWithSemanticDecision.semantic_extraction_decision = "ADR-0099";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(ordinaryWithSemanticDecision)}\n`,
+    );
+    assert.deepEqual((await loadPackagePolicy(root)).errors, [
+      "module.example: ordinary-library admission must mark semantic extraction not-applicable",
+    ]);
+    assert.equal(packageAdmissionGateId(ordinaryWithSemanticDecision), "phase-3-package-admission");
+    assert.equal(packagePublicationGateId(ordinaryWithSemanticDecision), "phase-3-package-publication");
+
+    const independentIsolation = structuredClone(independentLifecycle);
+    independentIsolation.admission_basis = "independent-deployment-or-isolation";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(independentIsolation)}\n`,
+    );
+    assert.deepEqual((await loadPackagePolicy(root)).errors, []);
+
+    const secondConsumer = packageAdmission();
+    secondConsumer.admission_basis = "second-real-consumer";
+    secondConsumer.consumer_evidence[1].evidence_kind = "product-slice";
+    secondConsumer.consumer_evidence[1].implementation_id = secondConsumer.consumer_evidence[0].implementation_id;
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(secondConsumer)}\n`,
+    );
+    assert.deepEqual((await loadPackagePolicy(root)).errors, []);
+
+    const unknownBasis = packageAdmission();
+    unknownBasis.admission_basis = "self-reported-neutrality";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(unknownBasis)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: admission.admission_basis must identify one ADR-0013 package-admission basis",
+    ]);
+
+    const malformedOwner = packageAdmission();
+    malformedOwner.owner_repository = null;
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(malformedOwner)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: admission.owner_repository must be a non-empty string",
+      "module.example: admission.owner_repository must be a canonical lowercase owner/repository identity",
+    ]);
+
+    const sameConsumerImplementations = packageAdmission();
+    sameConsumerImplementations.consumer_evidence[1].consumer_repository = sameConsumerImplementations.consumer_evidence[0].consumer_repository;
+    sameConsumerImplementations.consumer_evidence[1].consumer_id = sameConsumerImplementations.consumer_evidence[0].consumer_id;
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(sameConsumerImplementations)}\n`,
+    );
+    assert.deepEqual((await loadPackagePolicy(root)).errors, []);
+
+    const duplicateSecondConsumer = structuredClone(sameConsumerImplementations);
+    duplicateSecondConsumer.admission_basis = "second-real-consumer";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(duplicateSecondConsumer)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: second-real-consumer admission requires two distinct consumer identities",
+    ]);
+
+    const duplicateImplementation = structuredClone(sameConsumerImplementations);
+    duplicateImplementation.consumer_evidence[1].implementation_id = duplicateImplementation.consumer_evidence[0].implementation_id;
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(duplicateImplementation)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: public-spi admission requires two independently authored implementation identities",
+    ]);
+
+    const caseAliasedConsumer = packageAdmission();
+    caseAliasedConsumer.consumer_evidence[1].consumer_repository = "AGENT-TEAMS-AI/CONSUMER-ALPHA";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(caseAliasedConsumer)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: consumer_evidence[1].consumer_repository must be a canonical lowercase owner/repository identity",
+    ]);
+
+    const aliasedFoundation = packageAdmission();
+    aliasedFoundation.consumer_evidence[0].consumer_repository = "Agent-Teams-AI/Extension-Foundation";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(aliasedFoundation)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: consumer_evidence[0].consumer_repository must be a canonical lowercase owner/repository identity",
+    ]);
+
+    for (const repository of [
+      "agent-teams-ai/extension-foundation.git",
+      "agent-teams-ai/extension-foundation.",
+    ]) {
+      const transportAlias = packageAdmission();
+      transportAlias.consumer_evidence[0].consumer_repository = repository;
+      await writeFixture(
+        root,
+        "architecture/package-admissions/module-dot-example.json",
+        `${JSON.stringify(transportAlias)}\n`,
+      );
+      assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+        "module.example: consumer_evidence[0].consumer_repository must be a canonical lowercase owner/repository identity",
+      ]);
+    }
+
+    const duplicateTransportAlias = packageAdmission();
+    duplicateTransportAlias.consumer_evidence[1].consumer_repository = "agent-teams-ai/consumer-alpha.git";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(duplicateTransportAlias)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: consumer_evidence[1].consumer_repository must be a canonical lowercase owner/repository identity",
+    ]);
+
+    const externalAlias = packageAdmission();
+    externalAlias.consumer_evidence[0].evidence_reference = `https://example.com/evidence/alpha.json#sha256=${"a".repeat(64)}`;
+    externalAlias.consumer_evidence[1].evidence_reference = `https://EXAMPLE.com:443/evidence/./alpha.json#sha256=${"a".repeat(64)}`;
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(externalAlias)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: evidence must use distinct immutable references",
+    ]);
+
+    for (const location of ["docs/evidence/shared.json", "https://example.com/evidence/shared.json"]) {
+      const oneLocationDifferentDigests = packageAdmission();
+      oneLocationDifferentDigests.consumer_evidence[0].evidence_reference = `${location}#sha256=${"a".repeat(64)}`;
+      oneLocationDifferentDigests.consumer_evidence[1].evidence_reference = `${location}#sha256=${"b".repeat(64)}`;
+      await writeFixture(
+        root,
+        "architecture/package-admissions/module-dot-example.json",
+        `${JSON.stringify(oneLocationDifferentDigests)}\n`,
+      );
+      assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+        "module.example: evidence must use distinct immutable references",
+      ]);
+    }
+
+    const mirroredEvidence = packageAdmission();
+    mirroredEvidence.consumer_evidence[0].evidence_reference = `https://one.example/evidence.json#sha256=${"a".repeat(64)}`;
+    mirroredEvidence.consumer_evidence[1].evidence_reference = `https://two.example/evidence.json#sha256=${"a".repeat(64)}`;
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(mirroredEvidence)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: evidence must use distinct immutable references",
+    ]);
+
+    for (const reference of [
+      `docs/../../outside-alpha.json#sha256=${"a".repeat(64)}`,
+      `docs/../outside-alpha.json#sha256=${"a".repeat(64)}`,
+      `docs/evidence\\outside-alpha.json#sha256=${"a".repeat(64)}`,
+      `docs/evidence/consumer-alpha.json#alias#sha256=${"a".repeat(64)}`,
+      `docs/evidence/consumer-alpha.json\u0000#sha256=${"a".repeat(64)}`,
+    ]) {
+      const traversal = packageAdmission();
+      traversal.consumer_evidence[0].evidence_reference = reference;
+      await writeFixture(
+        root,
+        "architecture/package-admissions/module-dot-example.json",
+        `${JSON.stringify(traversal)}\n`,
+      );
+      assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+        "module.example: consumer_evidence[0].evidence_reference must use a contained docs path or HTTPS URL with a sha256 fragment",
+      ]);
+    }
+
+    const wrongDecision = packageAdmission();
+    wrongDecision.extraction_decision = "ADR-0100";
+    await writeFixture(
+      root,
+      "architecture/package-admissions/module-dot-example.json",
+      `${JSON.stringify(wrongDecision)}\n`,
+    );
+    assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+      "module.example: admission.extraction_decision must equal the accepted owner_document",
+    ]);
+
+    for (const version of ["01.0.0", "1.0.0-01", "1.0.0-..", "1.0", "1.0.0\n", "1.0.0\r"]) {
+      const invalidVersion = packageAdmission();
+      invalidVersion.conformance_version = version;
+      await writeFixture(
+        root,
+        "architecture/package-admissions/module-dot-example.json",
+        `${JSON.stringify(invalidVersion)}\n`,
+      );
+      assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
+        "module.example: admission.conformance_version must be an exact SemVer",
+      ]);
+    }
+
+    for (const version of ["0.0.0", "1.2.3-alpha.1", "1.2.3+build.7", "1.2.3-rc.1+build.7"]) {
+      assert.equal(CONFORMANCE_VERSION.test(version), true, version);
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("package admission rejects orphan manifests outside the catalog", async () => {
+  const root = await mkdtemp(join(tmpdir(), "extension-topology-orphan-admission-"));
+  try {
+    await writeArchitecture(root, { catalog: packageCatalog(), packageBoundary: true });
+    await writeFixture(root, "architecture/package-admissions/orphan.json", `${JSON.stringify(packageAdmission())}\n`);
+    const policy = await loadPackagePolicy(root);
+    assert.ok(policy.errors.includes(
+      "architecture/package-admissions/orphan.json: orphan admission evidence is not declared by architecture/package-catalog.json",
+    ));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("package admission rejects symbolic-link directories before reading evidence", async () => {
+  const root = await mkdtemp(join(tmpdir(), "extension-topology-admission-directory-link-"));
+  const outside = await mkdtemp(join(tmpdir(), "extension-topology-admission-directory-outside-"));
+  try {
+    await writeArchitecture(root);
+    await writeFixture(outside, "orphan.json", `${JSON.stringify(packageAdmission())}\n`);
+    await symlink(
+      outside,
+      join(root, "architecture/package-admissions"),
+      process.platform === "win32" ? "junction" : "dir",
+    );
+    assert.deepEqual((await loadPackagePolicy(root)).errors, [
+      "architecture/package-admissions: admission evidence directory must be a real directory, not a symbolic link",
+    ]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+    await rm(outside, { recursive: true, force: true });
   }
 });
 
@@ -766,6 +1380,7 @@ test("topology rejects placeholder implementations and undeclared feature identi
         packageId: "module.example",
         packageName: "@agent-teams/example",
         packagePath: "packages/example",
+        semanticClassification: "ordinary-library",
         features: ["other"],
       }],
     });

@@ -1,4 +1,5 @@
 import { FEATURE_NAME, PACKAGE_ID, PACKAGE_NAME, PACKAGE_PATH, isRecord } from "./catalog-policy.mjs";
+import { SEMANTIC_CLASSIFICATIONS } from "./admission-policy.mjs";
 
 function compareBinary(left, right) {
   return left < right ? -1 : left > right ? 1 : 0;
@@ -14,6 +15,7 @@ function normalizePackageOwnership(value) {
       || typeof entry.package_id !== "string"
       || typeof entry.package_name !== "string"
       || typeof entry.package_path !== "string"
+      || typeof entry.semantic_classification !== "string"
       || !Array.isArray(entry.features)
       || entry.features.some(feature => typeof feature !== "string")) {
       errors.push(`package_ownership[${index}] has an invalid shape`);
@@ -23,6 +25,7 @@ function normalizePackageOwnership(value) {
     if (!PACKAGE_ID.test(entry.package_id)
       || !PACKAGE_NAME.test(entry.package_name)
       || !PACKAGE_PATH.test(entry.package_path)
+      || !SEMANTIC_CLASSIFICATIONS.includes(entry.semantic_classification)
       || features.length === 0
       || features.some(feature => !FEATURE_NAME.test(feature))
       || new Set(features).size !== features.length) {
@@ -33,6 +36,7 @@ function normalizePackageOwnership(value) {
       packageId: entry.package_id,
       packageName: entry.package_name,
       packagePath: entry.package_path,
+      semanticClassification: entry.semantic_classification,
       features,
     });
   }
@@ -63,7 +67,7 @@ export function normalizeOwnerEvidence(documents, document) {
   };
 }
 
-export function packageOwnerFeatures(entry, owner) {
+export function packageOwnerPolicy(entry, owner) {
   if (owner?.id !== entry.owner_document
     || owner.type !== "adr"
     || owner.status !== "accepted"
@@ -78,8 +82,17 @@ export function packageOwnerFeatures(entry, owner) {
   )) ?? [];
   if (matches.length !== 1
     || matches[0].features.length === 0
-    || matches[0].features.some(feature => !FEATURE_NAME.test(feature))) {
+    || matches[0].features.some(feature => !FEATURE_NAME.test(feature))
+    || !SEMANTIC_CLASSIFICATIONS.includes(matches[0].semanticClassification)) {
     return undefined;
   }
-  return matches[0].features;
+  return matches[0];
+}
+
+export function packageOwnerFeatures(entry, owner) {
+  return packageOwnerPolicy(entry, owner)?.features;
+}
+
+export function packageOwnerSemanticClassification(entry, owner) {
+  return packageOwnerPolicy(entry, owner)?.semanticClassification;
 }

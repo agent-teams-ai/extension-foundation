@@ -1,0 +1,50 @@
+#!/usr/bin/env node
+import { resolve } from "node:path";
+
+import {
+  assertSafeEvidencePath,
+  captureEvidence,
+  ObjectStore,
+  readSafeJson,
+  validateManifest,
+  verifyManifest,
+} from "./evidence-custody.mjs";
+
+function usage() {
+  return "usage: evidence-custody <capture CONFIG.json | verify MANIFEST.json OBJECT_ROOT [--require-promotion]>";
+}
+
+class InvalidJsonInputError extends Error {}
+
+async function readJson(path) {
+  try {
+    return await readSafeJson(resolve(path));
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error;
+    throw new InvalidJsonInputError();
+  }
+}
+
+const [, , command, ...arguments_] = process.argv;
+try {
+  if (command === "capture" && arguments_.length === 1) {
+    const result = await captureEvidence(await readJson(arguments_[0]));
+    process.stdout.write(`${JSON.stringify({ manifestPath: result.manifestPath, manifestSha256: result.manifestSha256 })}\n`);
+  } else if (command === "verify" && (arguments_.length === 2 || (arguments_.length === 3 && arguments_[2] === "--require-promotion"))) {
+    const manifest = await readJson(arguments_[0]);
+    const validation = validateManifest(manifest);
+    const verification = await verifyManifest(manifest, {
+      store: new ObjectStore(assertSafeEvidencePath(resolve(arguments_[1]), "object root")),
+    });
+    process.stdout.write(`${JSON.stringify({ validation, verification }, null, 2)}\n`);
+    const requirePromotion = arguments_[2] === "--require-promotion";
+    if (!verification.integrityValid || (requirePromotion && !verification.promotionAllowed)) process.exitCode = 1;
+  } else {
+    process.stderr.write(`${usage()}\n`);
+    process.exitCode = 2;
+  }
+} catch (error) {
+  if (!(error instanceof InvalidJsonInputError)) throw error;
+  process.stdout.write(`${JSON.stringify({ ok: false, error: { code: "INVALID_JSON", message: "input must be valid JSON" } })}\n`);
+  process.exitCode = 1;
+}

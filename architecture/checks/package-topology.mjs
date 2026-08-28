@@ -8,12 +8,15 @@ import { readScaffoldPlanFile } from "@agent-teams/engineering-foundation/scaffo
 import { parse as parseYaml } from "yaml";
 
 import {
+  admissionVerificationReceiptMatches,
   createDocsOwnerCatalog,
   hasCanonicalPackageRootExports,
+  isEffectiveAcceptedDecision,
   isRecord,
   loadPackagePolicy,
   materializationPlanPath,
-  packageOwnerFeatures,
+  packageAdmissionVerificationRequest,
+  packageOwnerPolicy,
 } from "./package-policy.mjs";
 import { analyzeSource } from "./source-safety.mjs";
 
@@ -435,6 +438,7 @@ export async function validatePackageTopology({
   root,
   resolveOwner,
   listEffectiveOwners,
+  verifyAdmissionEvidence,
   loadMaterializationPlan = readFoundationMaterializationPlan,
   readTrackedPackagePaths = createGitTrackedPackagePathReader(root),
 }) {
@@ -451,6 +455,29 @@ export async function validatePackageTopology({
     return [`package policy: ${error instanceof Error ? error.message : String(error)}`];
   }
   if (packagePolicy.errors.length !== 0) return packagePolicy.errors;
+  for (const entry of packagePolicy.entries) {
+    const admission = packagePolicy.admissionsById.get(entry.id);
+    const admissionRecordDigest = packagePolicy.admissionRecordDigestsById.get(entry.id);
+    let request;
+    try {
+      request = packageAdmissionVerificationRequest(entry, admission, admissionRecordDigest);
+    } catch (error) {
+      errors.push(`${entry.id}: admission verification request is invalid: ${error instanceof Error ? error.message : String(error)}`);
+      continue;
+    }
+    if (verifyAdmissionEvidence === undefined) {
+      errors.push(`${entry.id}: package admission requires an executable evidence verifier`);
+      continue;
+    }
+    try {
+      const receipt = await verifyAdmissionEvidence({ root, entry, admission, request });
+      if (!admissionVerificationReceiptMatches(request, receipt)) {
+        errors.push(`${entry.id}: executable evidence verifier returned an unbound or unsatisfied receipt`);
+      }
+    } catch (error) {
+      errors.push(`${entry.id}: executable evidence verifier failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
 
   let sourcePolicy;
   try {
@@ -468,11 +495,28 @@ export async function validatePackageTopology({
   const { entriesByPath } = packagePolicy;
   const featuresByEntryId = new Map();
   for (const entry of packagePolicy.entries) {
-    const features = packageOwnerFeatures(entry, await resolveOwner(entry.owner_document));
-    if (features === undefined) {
+    const owner = await resolveOwner(entry.owner_document);
+    const ownerPolicy = packageOwnerPolicy(entry, owner);
+    if (ownerPolicy === undefined) {
       errors.push(`${entry.id}: owner_document must be one effective accepted ADR bound to this exact package and its features`);
     } else {
-      featuresByEntryId.set(entry.id, new Set(features));
+      featuresByEntryId.set(entry.id, new Set(ownerPolicy.features));
+    }
+    const ownerClassification = ownerPolicy?.semanticClassification;
+    const admissionClassification = packagePolicy.admissionsById.get(entry.id)?.semantic_classification;
+    if (ownerClassification !== undefined && admissionClassification !== ownerClassification) {
+      errors.push(`${entry.id}: admission semantic classification must equal the accepted owner ADR declaration`);
+    }
+    if (admissionClassification === "foundation-module-semantics") {
+      const decisionId = packagePolicy.admissionsById.get(entry.id)?.semantic_extraction_decision;
+      try {
+        const decision = await resolveOwner(decisionId);
+        if (!isEffectiveAcceptedDecision(decision, decisionId)) {
+          errors.push(`${entry.id}: semantic extraction decision must resolve to one separate effective accepted ADR`);
+        }
+      } catch (error) {
+        errors.push(`${entry.id}: semantic extraction decision could not be resolved: ${error instanceof Error ? error.message : String(error)}`);
+      }
     }
   }
   try {

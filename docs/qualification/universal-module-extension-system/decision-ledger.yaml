@@ -1,0 +1,390 @@
+schemaVersion: 2
+qualification: universal-module-extension-system
+sourceRepository: agent-teams-ai/extension-foundation
+sourceRevision: 78850cbc57a1a688913a3694ca6f0efde34ab192
+sourcePurpose: immutable-analyzed-baseline
+retiredIdentifiers:
+  - id: UMEQ-004
+    formerTopic: native-module-graph-kernel
+    disposition: withdrawn-draft-consolidated-into-OD-003
+  - id: UMEQ-005
+    formerTopic: generation-lifecycle-coordinator
+    disposition: withdrawn-draft-consolidated-into-OD-003
+  - id: UMEQ-006
+    formerTopic: trusted-and-isolated-host-tiers
+    disposition: withdrawn-draft-consolidated-into-OD-003
+  - id: UMEQ-007
+    formerTopic: restart-safe-update-baseline
+    disposition: withdrawn-draft-consolidated-into-OD-003
+  - id: UMEQ-008
+    formerTopic: extism-wasm-host
+    disposition: withdrawn-draft-consolidated-into-OD-003
+externalDecisionGates:
+  - id: ADR-0011
+    status: proposed
+    topic: production-extension-host-safety-closure
+    authority: product-owner
+    detail: ../../decisions/0011-extension-admission-custody-and-retirement-closure.md
+    effectWhileProposed: production-extension-host-phases-blocked
+    approvalTrackedBy: adr-lifecycle
+requirementDefinitions:
+  - id: ADR-0013
+    kind: decision
+    authority: accepted-adr
+    detail: ../../decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
+    purpose: cumulative static-first ownership and extraction policy
+  - id: ADR-0014
+    kind: decision
+    authority: accepted-adr
+    detail: ../../decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md
+    purpose: accepted product-local authoring, composition and generation guardrails
+  - id: owning-product-feature-decision
+    kind: decision
+    authority: owning-product
+    detail: final-recommendation.md
+    purpose: product-specific ownership approval for one static module rehearsal
+  - id: private-runtime-graph-trigger
+    kind: evidence
+    authority: owning-product
+    detail: final-recommendation.md#phase-2-measure-need-add-a-private-product-graph-only-if-triggered
+    purpose: exact measured Phase 2 private-graph trigger, not artifact, descriptor, fixture, or extraction evidence
+  - id: owning-product-runtime-decision
+    kind: decision
+    authority: owning-product
+    detail: unresolved-decisions.md#umeq-013-trusted-module-runtime
+    purpose: product approval for one private trigger-scoped runtime graph
+  - id: lifecycle-semantic-review
+    kind: evidence
+    authority: qualification-evidence
+    detail: lifecycle-and-concurrency.md
+    purpose: verified post-admission digest, admitted-plan-to-generation mapping, provider binding, deadline, CAS-before-seal, migration-preservation, dynamic-fence and authority-intersection semantics
+  - id: manual-digest-revocation-profile
+    kind: evidence
+    authority: qualification-evidence
+    detail: trust-and-security.md#manual-exact-digest-revocation-profile
+    purpose: exact immutable-digest revocation identity, authoritative monotonic input, fail-closed propagation and enforcement receipts
+  - id: managed-channel-tuf-currentness-profile
+    kind: evidence
+    authority: qualification-evidence
+    detail: trust-and-security.md#managed-channel-currentness-profile
+    purpose: executable TUF expiry, rollback, freeze, delegation and publisher-current revocation evidence for remotely refreshed metadata
+  - id: installation-trust-route-binding
+    kind: evidence
+    authority: installation-admission
+    detail: trust-and-security.md#installation-trust-route-binding
+    purpose: immutable per-installation receipt discriminator selecting exactly one qualified trust route without filtering global profile evidence
+  - id: second-independent-consumer
+    kind: evidence
+    authority: qualification-evidence
+    detail: conformance-plan.md
+    purpose: immutable proof of a second real independently authored consumer
+  - id: cross-consumer-conformance
+    kind: evidence
+    authority: qualification-evidence
+    detail: conformance-plan.md
+    purpose: executable conformance across the independently authored consumers
+  - id: foundation-semantic-extraction-decision
+    kind: decision
+    authority: foundation-owner
+    detail: final-recommendation.md
+    purpose: separate artifact-specific approval for the proved product-neutral semantic intersection
+  - id: adr-0013-package-admission-basis
+    kind: evidence
+    authority: qualification-evidence
+    detail: ../../decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
+    purpose: immutable proof naming one preserved package-admission basis
+  - id: immutable-package-admission-record
+    kind: evidence
+    authority: foundation-package-policy
+    detail: ../../../architecture/checks/package-policy.mjs
+    purpose: schema-valid admission record bound to exact source revisions and evidence digests
+  - id: independent-conformance
+    kind: evidence
+    authority: qualification-evidence
+    detail: conformance-plan.md
+    purpose: independent implementation evidence applicable to the admitted package boundary
+  - id: foundation-package-admission-decision
+    kind: decision
+    authority: foundation-owner
+    detail: final-recommendation.md
+    purpose: artifact-specific approval to admit one package after evidence verification
+  - id: PACKAGE-1
+    kind: evidence
+    authority: qualification-evidence
+    detail: conformance-plan.md
+    purpose: packed package, exports, runtime conditions and compatibility conformance
+  - id: public-api-report
+    kind: evidence
+    authority: qualification-evidence
+    detail: conformance-plan.md
+    purpose: exact public API and framework-leak report for the publication candidate
+  - id: package-release-promotion-verification
+    kind: evidence
+    authority: foundation-release-promotion
+    detail: packaging-and-reuse.md
+    purpose: stable provider identities, accepted admission basis, independence and referenced bytes verified before publication
+  - id: foundation-package-publication-decision
+    kind: decision
+    authority: foundation-owner
+    detail: final-recommendation.md
+    purpose: artifact-specific release approval after topology and evidence gates pass
+  - id: publication-independent-consumers
+    kind: evidence
+    authority: qualification-evidence
+    detail: conformance-plan.md#foundation-semantic-publication-candidate-consumer-gate
+    purpose: immutable publication-candidate proof from two real independently authored conforming consumers, separate from extraction and admission evidence
+  - id: production-host-evidence
+    kind: evidence
+    authority: qualification-evidence
+    detail: conformance-plan.md#unproved-production-gates
+    purpose: durable independently observable evidence from the named production host; local fixtures, in-memory models, smoke tests, plans, and aspirational prose are excluded
+implementationGates:
+  - id: phase-1-static-module-rehearsal
+    appliesTo:
+      - phase-1-static-module-rehearsal
+    mode: all
+    allOf:
+      - decision: ADR-0013
+        requiredStatus: accepted
+      - decision: ADR-0014
+        requiredStatus: accepted
+      - decision: owning-product-feature-decision
+        requiredStatus: accepted
+  - id: private-runtime-graph
+    appliesTo:
+      - later-private-runtime-graph
+    mode: all
+    allOf:
+      - gate: phase-1-static-module-rehearsal
+        requiredStatus: satisfied
+      - evidence: private-runtime-graph-trigger
+        requiredStatus: measured
+      - decision: owning-product-runtime-decision
+        requiredStatus: accepted
+      - decision: UMEQ-013
+        requiredStatus: resolved
+      - evidence: lifecycle-semantic-review
+        requiredStatus: verified
+  - id: foundation-semantic-extraction
+    appliesTo:
+      - foundation-module-semantic-extraction
+    mode: all
+    allOf:
+      - decision: ADR-0013
+        requiredStatus: accepted
+      - evidence: second-independent-consumer
+        requiredStatus: proven
+      - evidence: cross-consumer-conformance
+        requiredStatus: passed
+      - decision: foundation-semantic-extraction-decision
+        requiredStatus: accepted
+  - id: phase-3-package-admission
+    appliesTo:
+      - phase-3-reusable-internal-packages
+    mode: all
+    allOf:
+      - decision: ADR-0013
+        requiredStatus: accepted
+      - evidence: adr-0013-package-admission-basis
+        requiredStatus: proven
+      - evidence: immutable-package-admission-record
+        requiredStatus: verified
+      - evidence: independent-conformance
+        requiredStatus: passed
+      - decision: foundation-package-admission-decision
+        requiredStatus: accepted
+  - id: phase-3-module-semantic-package-admission
+    appliesTo:
+      - phase-3-foundation-module-semantic-package-admission
+    mode: all
+    allOf:
+      - gate: foundation-semantic-extraction
+        requiredStatus: satisfied
+      - gate: phase-3-package-admission
+        requiredStatus: satisfied
+  - id: phase-3-package-publication
+    appliesTo:
+      - phase-3-public-package-publication
+    mode: all
+    allOf:
+      - gate: phase-3-package-admission
+        requiredStatus: satisfied
+      - decision: UMEQ-012
+        requiredStatus: resolved
+      - decision: UMEQ-014
+        requiredStatus: resolved
+      - decision: UMEQ-015
+        requiredStatus: resolved
+      - decision: ADR-0014
+        requiredStatus: accepted
+      - evidence: PACKAGE-1
+        requiredStatus: passed
+      - evidence: public-api-report
+        requiredStatus: passed
+      - evidence: immutable-package-admission-record
+        requiredStatus: verified
+      - evidence: package-release-promotion-verification
+        requiredStatus: passed
+      - decision: foundation-package-admission-decision
+        requiredStatus: accepted
+      - decision: foundation-package-publication-decision
+        requiredStatus: accepted
+  - id: phase-3-module-semantic-package-publication
+    appliesTo:
+      - phase-3-foundation-module-semantic-package-publication
+    mode: all
+    allOf:
+      - gate: phase-3-module-semantic-package-admission
+        requiredStatus: satisfied
+      - gate: phase-3-package-publication
+        requiredStatus: satisfied
+      - evidence: publication-independent-consumers
+        requiredStatus: proven
+  - id: production-extension-host-safety-core
+    appliesTo:
+      - phase-4-process-host
+      - phase-6-frontend-and-untrusted-hosts
+    mode: all
+    allOf:
+      - decision: ADR-0011
+        requiredStatus: accepted
+      - decision: UMEQ-012
+        requiredStatus: resolved
+      - evidence: lifecycle-semantic-review
+        requiredStatus: verified
+      - evidence: production-host-evidence
+        requiredStatus: production-proven
+  - id: manual-exact-digest-installation
+    appliesTo:
+      - phase-5-manual-exact-digest-installation
+    mode: all
+    allOf:
+      - gate: production-extension-host-safety-core
+        requiredStatus: satisfied
+      - evidence: manual-digest-revocation-profile
+        requiredStatus: verified
+  - id: managed-channel-installation
+    appliesTo:
+      - phase-5-managed-channel-installation
+    mode: all
+    allOf:
+      - gate: production-extension-host-safety-core
+        requiredStatus: satisfied
+      - decision: UMEQ-018
+        requiredStatus: resolved
+      - evidence: managed-channel-tuf-currentness-profile
+        requiredStatus: verified
+  - id: phase-5-installation-trust-route
+    appliesTo:
+      - phase-5-packaging-and-installation
+    mode: exactly-one-path
+    paths:
+      - id: manual-exact-digest
+        allOf:
+          - evidence: installation-trust-route-binding
+            requiredStatus: manual-exact-digest
+          - gate: manual-exact-digest-installation
+            requiredStatus: satisfied
+      - id: managed-channel
+        allOf:
+          - evidence: installation-trust-route-binding
+            requiredStatus: managed-channel
+          - gate: managed-channel-installation
+            requiredStatus: satisfied
+  - id: process-host-wire-format
+    appliesTo:
+      - phase-4-process-host
+    mode: all
+    allOf:
+      - gate: production-extension-host-safety-core
+        requiredStatus: satisfied
+      - decision: UMEQ-009
+        requiredStatus: resolved
+  - id: frontend-extension-host
+    appliesTo:
+      - phase-6-frontend-and-untrusted-hosts
+    mode: all
+    allOf:
+      - gate: production-extension-host-safety-core
+        requiredStatus: satisfied
+      - decision: UMEQ-010
+        requiredStatus: resolved
+entries:
+  - id: UMEQ-001
+    status: accepted-existing
+    topic: product-neutral-foundation
+    authority: ADR-0001
+    detail: ../../decisions/0001-product-neutral-extension-foundation-boundary.md
+    approvalRequired: false
+  - id: UMEQ-002
+    status: accepted-existing
+    topic: extension-safety-floor
+    authority: ADR-0010
+    detail: ../../decisions/0010-extension-safety-floor-and-retirement-closure.md
+    approvalRequired: false
+  - id: UMEQ-003
+    status: accepted-existing
+    topic: product-first-library-module-plugin-boundaries
+    authority: ADR-0013
+    detail: ../../decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
+    approvalRequired: false
+  - id: UMEQ-009
+    status: open
+    topic: public-process-protocol-wire-format
+    authority: OD-003
+    detail: unresolved-decisions.md#umeq-009-process-wire-format
+    approvalRequired: true
+  - id: UMEQ-010
+    status: open
+    topic: frontend-contribution-and-isolation-model
+    authority: product-owner
+    detail: unresolved-decisions.md#umeq-010-frontend-extension-model
+    approvalRequired: true
+  - id: UMEQ-011
+    status: accepted-existing
+    topic: explicit-provider-binding
+    authority: ADR-0014
+    detail: ../../decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md
+    approvalRequired: false
+  - id: UMEQ-012
+    status: open
+    topic: public-contract-and-compatibility-model
+    authority: OD-003
+    detail: unresolved-decisions.md#umeq-012-contract-source-and-compatibility-model
+    approvalRequired: true
+  - id: UMEQ-013
+    status: open
+    topic: private-trusted-module-runtime
+    authority: OD-003
+    detail: unresolved-decisions.md#umeq-013-trusted-module-runtime
+    approvalRequired: true
+  - id: UMEQ-014
+    status: open
+    topic: package-module-formats
+    authority: product-owner
+    detail: unresolved-decisions.md#umeq-014-package-module-formats
+    approvalRequired: true
+  - id: UMEQ-015
+    status: open
+    topic: package-publication-topology
+    authority: product-owner
+    detail: unresolved-decisions.md#umeq-015-package-publication-topology
+    approvalRequired: true
+  - id: UMEQ-016
+    status: accepted-existing
+    topic: generation-based-update-baseline
+    authority: ADR-0014
+    detail: ../../decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md
+    approvalRequired: false
+  - id: UMEQ-017
+    status: open
+    topic: distributed-cutover-guarantee
+    authority: OD-003
+    detail: unresolved-decisions.md#umeq-017-distributed-cutover-guarantee
+    approvalRequired: true
+  - id: UMEQ-018
+    status: open
+    topic: managed-update-metadata
+    authority: OD-002
+    detail: unresolved-decisions.md#umeq-018-managed-update-metadata
+    approvalRequired: true
