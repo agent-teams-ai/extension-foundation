@@ -8,6 +8,7 @@ import { parse } from "yaml";
 import { verifyProductSourceEvidence } from "./product-source-evidence.mjs";
 
 const MAX_EVIDENCE_BYTES = 1024 * 1024;
+const READ_CHUNK_BYTES = 64 * 1024;
 
 function usage() {
   return "usage: product-source-evidence-cli.mjs EVIDENCE.yaml --repository product=/absolute/path [--repository ...]";
@@ -38,16 +39,29 @@ async function main() {
   const handle = await open(evidencePath, "r");
   let source = "";
   try {
-    const metadata = await handle.stat();
-    if (!metadata.isFile() || metadata.size > MAX_EVIDENCE_BYTES) {
+    const before = await handle.stat();
+    if (!before.isFile() || before.size > MAX_EVIDENCE_BYTES) {
       throw new Error(`evidence file must be a regular file no larger than ${MAX_EVIDENCE_BYTES} bytes`);
     }
-    const buffer = Buffer.allocUnsafe(MAX_EVIDENCE_BYTES + 1);
-    const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
-    if (bytesRead > MAX_EVIDENCE_BYTES) {
+    const buffer = Buffer.alloc(MAX_EVIDENCE_BYTES + 1);
+    let totalBytesRead = 0;
+    while (totalBytesRead < buffer.length) {
+      const length = Math.min(READ_CHUNK_BYTES, buffer.length - totalBytesRead);
+      const { bytesRead } = await handle.read(buffer, totalBytesRead, length, totalBytesRead);
+      if (bytesRead === 0) break;
+      totalBytesRead += bytesRead;
+    }
+    const after = await handle.stat();
+    const changedWhileReading = before.size !== after.size
+      || before.mtimeMs !== after.mtimeMs
+      || before.ctimeMs !== after.ctimeMs;
+    if (!after.isFile()
+      || totalBytesRead > MAX_EVIDENCE_BYTES
+      || totalBytesRead !== after.size
+      || changedWhileReading) {
       throw new Error(`evidence file must be a regular file no larger than ${MAX_EVIDENCE_BYTES} bytes`);
     }
-    source = buffer.subarray(0, bytesRead).toString("utf8");
+    source = buffer.subarray(0, totalBytesRead).toString("utf8");
   } finally {
     await handle.close();
   }

@@ -30,9 +30,9 @@ reviewers.
 | Evidence | Baseline `{}` and incompatible object-role reuse were accepted | Baseline is closed and structured; object kind, provenance path, and custody role are bound exactly |
 | Operations | Product dossier reported a completed status before final review | Current productization documents remain active and the manifest remains `review-ready` pending final exact-head review |
 | Product | Frontend was promoted to Static V1 GO from self-asserted file records | Downgraded it to a no-go measurement candidate and retained only exact Git source custody in Foundation |
-| Product | Agent Runtime was recorded before its Codex and Claude Code production paths landed | The historical `493c6c3` lineage was superseded by the exact current source lock at `7be9982`; recorded `SOURCE_CUSTODY_BASELINE_RECORDED` while keeping `L1-L5` closed |
+| Product | Agent Runtime was recorded before later candidate sources landed | The historical `493c6c3` lineage was superseded by exact source custody at `7be9982`; Foundation makes no product-semantic claim and does not admit any level |
 | Product | Codex and Claude Code could be mistaken for interchangeable providers | Removed Foundation's product-specific interpretation; the owning product must verify any such claim |
-| Testing | Claude Code lacks the direct default-root test shape already present for Codex | Recorded a non-blocking Agent Runtime follow-up; Foundation makes no topology verdict |
+| Testing | A historical hosted report alleged unequal product test coverage | Retained the report as non-authoritative corroboration only; Foundation makes no topology or coverage verdict |
 | Scope | Synthetic module scenarios could be mistaken for product demand | Rejected new profile, provider-failure, graph-shape, desired-state, durable-crash, and process-host fixtures until a real owner admits the level |
 | AI DX | Candidate C was preselected without product evidence | No declarative candidate is preselected; handwritten typed factories and Pure DI remain the baseline |
 | Lock-in | Cordis criteria conflicted across documents | Replaced the fixed LOC percentage with one multi-factor scorecard; Cordis remains a private resource-adapter candidate only |

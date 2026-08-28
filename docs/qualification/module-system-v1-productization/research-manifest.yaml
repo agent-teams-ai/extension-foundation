@@ -100,7 +100,7 @@ followUp:
 verdicts:
   L0PureDi:
     agentRuntime: exact-source-custody-recorded
-    orchestrator: typed-port-evidence-only
+    orchestrator: exact-source-custody-recorded
     frontend: exact-source-custody-recorded
   L1StaticAuthoring:
     agentRuntime: no-go-measurement-candidate

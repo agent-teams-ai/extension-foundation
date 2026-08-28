@@ -16,7 +16,7 @@ additional trigger is level-specific:
 
 | Level | Additional evidence required |
 | --- | --- |
-| `L1` Static authoring | Two same-seam implementations or contributions plus measured authoring, drift, or zero-evaluation discovery cost |
+| `L1` Static authoring | Owning-product decision, approved benchmark, measured authoring or drift problem, and executable product-owned evidence |
 | `L2` Selection graph | Provider set or binding must change without rebuild; static configuration is insufficient |
 | `L3` Lifecycle | Independently managed resources need dependency-aware start, readiness, drain, rollback, or recovery |
 | `L4` Process host | Named placement or containment requirement and a product-owned protocol boundary |

@@ -19,45 +19,34 @@ Keep product-owned typed ports, literal imports, pure factories, and explicit
 composition roots. The canonical lock records exact Git custody for candidate
 files at the pinned product revisions, without interpreting source or asserting
 topology, semantics, or runtime behavior. Product-specific verification belongs
-to the owning product. Correct qualification custody and source verification before
-using the dossier for another decision. The package-policy correction remains
-an external prerequisite owned by its separate task.
+to the owning product. Qualification custody and source verification must be
+correct before using the dossier for another decision. The package-policy correction remains a
+separate external task for package admission and publication; it is not a
+semantic-extraction prerequisite.
 
 ## Step 1: Measure One Product Candidate
 
-A product-owned decision may measure Frontend Recent Projects or the repeated
-Agent Runtime setup-inspection wiring without adding a module framework. It
-must name the owner, product outcome, fixed contributions or sibling
-capabilities, any seam-owned ordering authority, exclusions, deletion criteria,
-and benchmark tasks. Codex and Claude Code must not be modeled as providers of
-one slot.
+An owning-product decision may nominate one product-local candidate for
+measurement without adding a module framework. It must name the owner, product
+outcome, selected binding, any product-owned ordering authority, exclusions,
+deletion criteria, and benchmark tasks. Qualification source custody does not
+establish those product semantics.
 
 Before any run, the owning product must approve a benchmark protocol containing
 the pinned task corpus, expected outcomes, model/tool versions, repetitions,
 thresholds, error taxonomy, output schema, and stop/delete rule. The future
 protocol may record elapsed time, files opened, incorrect edits, diagnostic
-quality, and generated drift. The Frontend Recent Projects
-provider-contribution seam may ask an engineer or agent to:
+quality, and generated drift. The generic benchmark may ask an engineer or
+agent to:
 
 - find the owner and composition root;
-- add or remove one provider;
-- change contribution order;
-- trace a provider into the owning use case.
+- change one product-owned binding;
+- trace that binding into the owning use case; and
+- diagnose a missing required dependency.
 
-The Agent Runtime setup-inspection sibling-capability seam may instead ask an
-engineer or agent to:
-
-- find the owner and composition root;
-- add or remove one sibling capability;
-- wire a capability explicitly to its host dependency;
-- trace a capability through the host and its access handle; and
-- verify deterministic failure when a required sibling capability is missing.
-
-Missing or ambiguous provider slots and optional-capability disablement are
-excluded until a real product seam owns those semantics. A missing required
-Agent Runtime sibling remains in scope only to benchmark its deterministic
-failure. The measurement must not introduce the abstraction it is intended to
-justify.
+Ordering, optionality, multiplicity, and provider terminology remain excluded
+until the owning product explicitly defines them. The measurement must not
+introduce the abstraction it is intended to justify.
 
 If direct composition remains clear, stop at `L0`.
 

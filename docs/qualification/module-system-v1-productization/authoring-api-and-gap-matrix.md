@@ -55,20 +55,20 @@ qualified as such.
 | Requirement | Status | Evidence or consequence |
 | --- | --- | --- |
 | Product-owned direct Pure DI | `source-custody-recorded` | The canonical lock records exact Git custody only; product topology and behavior require owning-product verification |
-| At least one real static multi-contribution seam | `evidence-candidate` | Frontend source is held as candidate reference material; executable product-owned wiring evidence is still missing |
-| Repeated authoring workflow | `measurement-candidate` | Agent Runtime Codex and Claude Code setup paths repeat a composition pattern but have different contracts and are not one multi-provider slot |
-| Completed `L1` authoring rehearsal | `missing` | Agent Runtime and Frontend justify measurement only; no product decision, approved benchmark, grammar, or exit evidence exists |
-| Orchestrator product rehearsal | `missing` | No production adapter or application root |
-| Product-owned authoring decision | `missing` | No inspected product accepts a module declaration/profile grammar |
+| At least one real static multi-contribution seam | `evidence-candidate` | Pinned product sources are candidate reference material only; no portable executable evidence proves a qualifying seam |
+| Repeated authoring workflow | `measurement-candidate` | No portable product-owned benchmark proves repeated authoring cost or drift |
+| Completed `L1` authoring rehearsal | `missing` | No owning-product decision, approved benchmark, grammar, executable outcome, or exit evidence exists |
+| Orchestrator product rehearsal | `missing` | No portable owning-product evidence admits a rehearsal |
+| Product-owned authoring decision | `missing` | No portable owning-product decision accepts a module declaration/profile grammar |
 | Product-local authoring ownership | `accepted` | ADR-0013 assigns private semantics to the first product; ADR-0014 is the accepted product-local authoring authority under it, with no qualification-invented successor gate |
-| Runtime-selection trigger beyond static configuration | `not-applicable` | Closed static provider sets already meet current outcomes |
-| Independent module lifecycle trigger | `missing` | No named product resource topology requires a lifecycle coordinator |
-| Required/optional/many production semantics | `partially proved` | Fixed many-contribution products exist; one shared grammar does not |
+| Runtime-selection trigger beyond static configuration | `missing` | No portable owning-product evidence admits runtime selection |
+| Independent module lifecycle trigger | `missing` | No portable owning-product evidence admits dependency-aware lifecycle coordination |
+| Required/optional/many production semantics | `partially proved` | Synthetic qualification evidence exists; no product grammar is admitted |
 | Deterministic graph compilation | `partially proved` | Disposable synthetic tests only; not a production grammar |
 | Generation replacement and recovery | `partially proved` | Disposable evidence only; commit `7632385` closes reviewed identity/correlation defects but no product runtime is admitted |
-| Cordis lifecycle equivalence | `not applicable` | No product has the runtime or independently managed lifecycle trigger required to run a further comparison |
+| Cordis lifecycle equivalence | `not applicable` | No portable product evidence admits the runtime or independently managed lifecycle trigger required for a comparison |
 | Literal loader zero evaluation | `not applicable` | No admitted deferred executable loading target |
-| Shared cross-consumer semantics | `missing` | Products share a pattern, not the same contract |
+| Shared cross-consumer semantics | `missing` | No portable evidence proves two independent implementations of one semantic contract |
 | Public SPI prerequisites | `missing` | No independent implementations of a publication candidate |
 | Package admission independence | `contradicted` | Current checker can count two IDs from one repository; its correction is an external task, and shared extraction remains closed |
 | Product-source reproducibility | `candidate` | Exact origin/commit/tree/declared-blob checks pass all three local mirrors. Source interpretation, semantic dataflow, runtime use, provider execution, independent ownership, and remote attestation remain absent |
@@ -77,9 +77,9 @@ qualified as such.
 ## Why No New Spike Was Added
 
 The gate permits a new spike only for a missing or contradicted requirement that
-an admitted product must resolve now. No product currently needs a descriptor
-compiler or runtime graph. Existing committed product code already proves the
-static baseline more directly than another synthetic fixture.
+an admitted product must resolve now. No portable owning-product evidence admits
+a descriptor compiler or runtime graph. The accepted ADR baseline already keeps
+static Pure DI product-local; exact source custody cannot prove a stronger need.
 
 A static compiler spike would be premature until an owning product measures an
 authoring problem and accepts a grammar. A selection-graph spike requires a

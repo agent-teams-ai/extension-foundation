@@ -129,8 +129,12 @@ async function runGit(repositoryRoot, args) {
 
 function normalizeGitHubRepository(remote) {
   const value = remote.trim().replace(/\.git$/u, "");
-  const scp = /^git@github\.com:([^/]+\/[^/]+)$/u.exec(value);
-  if (scp !== null) return scp[1];
+  const scp = /^([^@]+)@([^:]+):([^/]+\/[^/]+)$/u.exec(value);
+  if (scp !== null) {
+    return scp[1] === "git" && scp[2].toLowerCase() === "github.com"
+      ? scp[3]
+      : undefined;
+  }
   try {
     const url = new URL(value);
     if (!GITHUB_PROTOCOLS.has(url.protocol)
@@ -138,7 +142,7 @@ function normalizeGitHubRepository(remote) {
       || url.search.length > 0
       || url.hash.length > 0
       || (url.protocol === "https:" && (url.username.length > 0 || url.password.length > 0))
-      || (url.protocol === "ssh:" && url.username !== "git")) {
+      || (url.protocol === "ssh:" && (url.username !== "git" || url.password.length > 0))) {
       return undefined;
     }
     return url.pathname.replace(/^\//u, "");
@@ -182,7 +186,7 @@ export async function verifyProductSourceRecord(product, recordValue, repository
   const remote = (await runGit(topLevel, ["remote", "get-url", "origin"])).trim();
   const observedRepository = normalizeGitHubRepository(remote);
   if (observedRepository?.toLowerCase() !== repository.toLowerCase()) {
-    fail("E-REPOSITORY", `${product} origin identifies ${observedRepository ?? remote}, expected ${repository}`);
+    fail("E-REPOSITORY", `${product} origin does not identify expected GitHub repository ${repository}`);
   }
   const resolvedCommit = (await runGit(topLevel, ["rev-parse", "--verify", `${commit}^{commit}`])).trim();
   if (resolvedCommit !== commit) fail("E-COMMIT", `${product} resolved ${resolvedCommit}, expected ${commit}`);

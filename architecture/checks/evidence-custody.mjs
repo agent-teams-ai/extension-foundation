@@ -105,6 +105,7 @@ const DEFAULT_RESOURCE_LIMITS = Object.freeze({
   maxManifestClaims: 512,
   maxManifestExceptions: 1_024,
   maxReferencesPerEntry: 1_024,
+  maxObservationMs: 10_000,
 });
 const execFileAsync = promisify(execFile);
 
@@ -457,6 +458,8 @@ async function boundedObservation(executable, arguments_, label, limits, cwd, en
       cwd,
       encoding: "utf8",
       maxBuffer: limits.maxFileBytes,
+      timeout: limits.maxObservationMs,
+      killSignal: "SIGKILL",
       windowsHide: true,
       ...(environment === undefined ? {} : { env: environment }),
     });
@@ -465,6 +468,9 @@ async function boundedObservation(executable, arguments_, label, limits, cwd, en
     }
     return stdout;
   } catch (error) {
+    if (error?.killed === true) {
+      throw new Error(`${label} observation timed out`);
+    }
     if (String(error?.message).includes("maxBuffer")) {
       throw new Error(`${label} observation exceeds byte limit`);
     }
@@ -505,12 +511,37 @@ function repositoryIdentity(packageManifest) {
     ? packageManifest.repository
     : packageManifest?.repository?.url;
   if (typeof repository !== "string") throw new Error("repository package manifest must declare its GitHub repository URL");
-  const normalized = repository.replace(/\/$/u, "").replace(/\.git$/u, "");
-  const match = normalized.match(/github\.com[/:]([^/]+\/[^/]+)$/u);
-  if (match === null || !REPOSITORY_ID.test(match[1])) {
+  const value = repository.trim();
+  const normalizePath = path => path.replace(/^\/+|\/$/gu, "").replace(/\.git$/u, "");
+  const scp = /^([^@]+)@([^:]+):(.+)$/u.exec(value);
+  if (scp !== null) {
+    const identity = normalizePath(scp[3]);
+    if (scp[1] === "git" && scp[2].toLowerCase() === "github.com" && REPOSITORY_ID.test(identity)) {
+      return identity;
+    }
     throw new Error("repository package manifest must identify a lowercase owner/repository");
   }
-  return match[1];
+  try {
+    const url = new URL(value);
+    const https = url.protocol === "https:" || url.protocol === "git+https:";
+    const ssh = url.protocol === "ssh:" || url.protocol === "git+ssh:";
+    const credentialsValid = https
+      ? url.username.length === 0 && url.password.length === 0
+      : url.username === "git" && url.password.length === 0;
+    const identity = normalizePath(url.pathname);
+    if ((https || ssh)
+      && credentialsValid
+      && url.hostname.toLowerCase() === "github.com"
+      && url.port.length === 0
+      && url.search.length === 0
+      && url.hash.length === 0
+      && REPOSITORY_ID.test(identity)) {
+      return identity;
+    }
+  } catch {
+    // The stable diagnostic below intentionally omits the untrusted URL.
+  }
+  throw new Error("repository package manifest must identify a lowercase owner/repository");
 }
 
 async function pnpmPackageVersion(entrypoint, limits) {

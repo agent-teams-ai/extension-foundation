@@ -13,11 +13,11 @@ summary: Separates exact source-record candidates from authoring, selection, lif
 | Level | Verdict | Meaning |
 | --- | --- | --- |
 | `L0` Product-owned Pure DI | `SOURCE_CUSTODY_BASELINE_RECORDED` | The canonical lock records exact Git origin, commit, tree, and selected regular-file blobs for three candidate product sources. It proves no product topology or behavior and grants no promotion authority. |
-| `L1` Static authoring | `NO_GO_MEASUREMENT_CANDIDATE` | Agent Runtime has a repeated setup-inspection workflow and Frontend has a same-seam case worth measuring, but neither has the required product decision, benchmark, or proved authoring problem. |
-| `L2` Private selection graph | `NO_GO` | No inspected product must change a provider set without rebuild or static configuration. |
-| `L3` Lifecycle coordinator | `NO_GO` | No inspected candidate owns multiple independently managed resources requiring dependency-aware readiness, drain, or rollback. |
-| `L4` Process or WASM host | `NO_GO` | No admitted module candidate has a proved placement or isolation requirement. |
-| `L5` Shared Foundation API | `NO_GO` | Two products have not independently implemented the same semantics or executable conformance. |
+| `L1` Static authoring | `NO_GO_MEASUREMENT_CANDIDATE` | Pinned Agent Runtime and Frontend sources are nominated only as inputs to a future owning-product measurement; no portable evidence proves an authoring problem. |
+| `L2` Private selection graph | `NO_GO` | No portable owning-product evidence admits runtime selection beyond static composition. |
+| `L3` Lifecycle coordinator | `NO_GO` | No portable owning-product evidence admits dependency-aware readiness, drain, or rollback. |
+| `L4` Process or WASM host | `NO_GO` | No portable owning-product evidence admits placement or isolation. |
+| `L5` Shared Foundation API | `NO_GO` | No portable evidence proves two independent implementations of the same semantics with executable conformance. |
 | Public SPI or runtime package | `NO_GO` | Existing decisions deliberately withhold these surfaces. |
 
 This dossier is qualification evidence, not an accepted product decision. It

@@ -116,9 +116,9 @@ test("roadmap keeps authoring, selection, lifecycle, process hosting, and extrac
   assert.equal(roadmap.levels.find(level => level.id === "L0")?.verdict, "SOURCE_CUSTODY_BASELINE_RECORDED");
   assert.equal(roadmap.levels.find(level => level.id === "L1")?.status, "no-go-measurement-candidate");
   assert.equal(roadmap.aiNavigationBenchmark.status, "product-owned-protocol-required");
-  assert.ok(roadmap.levels.find(level => level.id === "L5")?.prerequisites?.includes(
+  assert.equal(roadmap.levels.find(level => level.id === "L5")?.prerequisites?.includes(
     "package-admission-independence-defect-corrected-by-owning-task",
-  ));
+  ), false);
   assert.deepEqual(roadmap.aiNavigationBenchmark.requiredDimensions, [
     "find-owner-and-composition-root",
     "change-one-product-owned-binding",
@@ -141,9 +141,12 @@ test("roadmap keeps authoring, selection, lifecycle, process hosting, and extrac
     exception: "safety-requirement-with-explicit-evidence",
   });
   const roadmapDocument = await readFile(resolve(dossier, "roadmap.md"), "utf8");
+  const admissionDocument = await readFile(resolve(dossier, "consumer-admission.md"), "utf8");
   assert.match(roadmapDocument, /Moving back or stopping is required[\s\S]{0,160}more than 30%[\s\S]{0,160}generic framework glue/u);
   assert.match(roadmapDocument, /safety requirement can justify that cost only with explicit evidence/u);
   assert.match(roadmapDocument, /stop condition, not an advisory metric/u);
+  assert.match(roadmapDocument, /not a\s+semantic-extraction prerequisite/u);
+  assert.match(admissionDocument, /Owning-product decision, approved benchmark, measured authoring or drift problem, and executable product-owned evidence/u);
 });
 
 test("accepted ADR-0014 operates under ADR-0013 without an invented successor gate", async () => {
@@ -183,11 +186,15 @@ test("every current product projection uses one exact pinned revision", async ()
     };
     readonly products: Record<string, { readonly revision: string }>;
     readonly followUp: { readonly lineage: string; readonly agentRuntimeRevision: string };
+    readonly verdicts: {
+      readonly L0PureDi: { readonly orchestrator: string };
+    };
   };
   assert.equal(manifest.baseline.pullRequest, 22);
   assert.equal(manifest.baseline.baseRevision, "fe15d6ae35275bb4c5456bd56645f60aa14684e1");
   assert.equal(manifest.baseline.stackedOn, "none");
   assert.equal(manifest.baseline.historicalFoundationPullRequest, 17);
+  assert.equal(manifest.verdicts.L0PureDi.orchestrator, "exact-source-custody-recorded");
   const expected = Object.fromEntries(Object.entries(evidence.products).map(([product, record]) => [product, record.commit]));
   assert.deepEqual(
     Object.fromEntries(Object.entries(manifest.products).map(([product, record]) => [product, record.revision])),
@@ -353,4 +360,17 @@ test("Cordis remains a scorecard-qualified adapter without a fixed LOC threshold
   assert.match(admission, /L1-L5_NO_GO/u);
   assert.match(roadmap, /No LOC\s+percentage decides adoption/u);
   assert.doesNotMatch(oss, /75%|25%/u);
+});
+
+test("qualification prose does not promote source custody into product semantics", async () => {
+  const [authoring, verdict, roadmap, recommendation] = await Promise.all([
+    readFile(resolve(dossier, "authoring-api-and-gap-matrix.md"), "utf8"),
+    readFile(resolve(dossier, "executive-verdict.md"), "utf8"),
+    readFile(resolve(dossier, "roadmap.md"), "utf8"),
+    readFile(resolve(universal, "final-recommendation.md"), "utf8"),
+  ]);
+  assert.doesNotMatch(authoring, /repeat a composition pattern|No production adapter or application root/u);
+  assert.doesNotMatch(verdict, /has a repeated setup-inspection workflow|same-seam case/u);
+  assert.doesNotMatch(roadmap, /provider-contribution seam|sibling-capability seam/u);
+  assert.match(recommendation, /ADR-0013 requires stop or rollback[\s\S]{0,180}exceeds 30%/u);
 });

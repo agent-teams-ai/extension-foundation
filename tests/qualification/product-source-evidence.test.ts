@@ -141,9 +141,13 @@ test("exact tree, blob, origin, and repository mappings fail closed", async () =
       verifyProductSourceEvidence(duplicate, { fixture: root, duplicate: root }),
       /E-INDEPENDENCE/u,
     );
+    await git(root, ["remote", "set-url", "origin", "git@GitHub.com:Example/Product.git"]);
+    await verifyProductSourceEvidence(evidence, { fixture: root });
     await git(root, ["remote", "set-url", "origin", "https://github.com/example/other.git"]);
     await assert.rejects(verifyProductSourceEvidence(evidence, { fixture: root }), /E-REPOSITORY/u);
     await git(root, ["remote", "set-url", "origin", "file://github.com/example/product.git"]);
+    await assert.rejects(verifyProductSourceEvidence(evidence, { fixture: root }), /E-REPOSITORY/u);
+    await git(root, ["remote", "set-url", "origin", "ssh://git:secret@github.com/example/product.git"]);
     await assert.rejects(verifyProductSourceEvidence(evidence, { fixture: root }), /E-REPOSITORY/u);
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -241,7 +245,8 @@ test("CLI requires explicit absolute repository mappings and emits custody-only 
   const root = await mkdtemp(join(tmpdir(), "exact-git-cli-"));
   try {
     const evidencePath = join(root, "evidence.yaml");
-    await writeFile(evidencePath, JSON.stringify(await fixture(root)));
+    const evidence = await fixture(root);
+    await writeFile(evidencePath, JSON.stringify(evidence));
     await assert.rejects(execFileAsync(process.execPath, ["architecture/checks/product-source-evidence-cli.mjs", evidencePath], { cwd: process.cwd() }), /usage/u);
     await assert.rejects(execFileAsync(process.execPath, ["architecture/checks/product-source-evidence-cli.mjs", evidencePath, "--repository", "fixture=relative"], { cwd: process.cwd() }), /absolute path/u);
     const oversizedPath = join(root, "oversized.yaml");
@@ -252,6 +257,32 @@ test("CLI requires explicit absolute repository mappings and emits custody-only 
       "--repository",
       `fixture=${root}`,
     ], { cwd: process.cwd() }), /no larger than 1048576 bytes/u);
+    const multiChunkPath = join(root, "multi-chunk.yaml");
+    await writeFile(multiChunkPath, `${JSON.stringify(evidence)}${" ".repeat(70 * 1024)}`);
+    const multiChunk = await execFileAsync(process.execPath, [
+      "architecture/checks/product-source-evidence-cli.mjs",
+      multiChunkPath,
+      "--repository",
+      `fixture=${root}`,
+    ], { cwd: process.cwd(), encoding: "utf8" });
+    assert.equal(JSON.parse(multiChunk.stdout).proofMode, PRODUCT_SOURCE_PROOF_MODE);
+
+    const secret = "sentinel-origin-secret";
+    await git(root, ["remote", "set-url", "origin", `https://user:${secret}@github.com/example/product.git`]);
+    await assert.rejects(execFileAsync(process.execPath, [
+      "architecture/checks/product-source-evidence-cli.mjs",
+      evidencePath,
+      "--repository",
+      `fixture=${root}`,
+    ], { cwd: process.cwd(), encoding: "utf8" }), (error: unknown) => {
+      const stderr = typeof error === "object" && error !== null && "stderr" in error
+        ? String(error.stderr)
+        : String(error);
+      assert.match(stderr, /E-REPOSITORY/u);
+      assert.equal(stderr.includes(secret), false);
+      return true;
+    });
+    await git(root, ["remote", "set-url", "origin", "https://github.com/example/product.git"]);
     const result = await execFileAsync(process.execPath, [
       "architecture/checks/product-source-evidence-cli.mjs",
       evidencePath,

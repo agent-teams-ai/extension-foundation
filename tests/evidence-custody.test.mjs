@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { delimiter, dirname, join } from "node:path";
 import { promisify } from "node:util";
 import test from "node:test";
 
@@ -1094,6 +1094,69 @@ test("capture requires a canonical clean repository root", async t => {
     ...paths,
     repositoryRoot: nested,
   }), /canonical Git worktree root/u);
+});
+
+test("capture accepts only explicit credential-free GitHub repository URLs", async t => {
+  for (const repository of [
+    "file://github.com/agent-teams-ai/extension-foundation.git",
+    "https://evilgithub.com/agent-teams-ai/extension-foundation.git",
+    "https://user:sentinel-secret@github.com/agent-teams-ai/extension-foundation.git",
+  ]) {
+    const root = await temporaryDirectory(t);
+    const paths = await writeCaptureFixture(root, [{ attempts: [] }]);
+    const manifestPath = join(paths.repositoryRoot, "package.json");
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    manifest.repository = { type: "git", url: repository };
+    await writeFile(manifestPath, `${JSON.stringify(manifest)}\n`);
+    await execFileAsync("git", ["-C", paths.repositoryRoot, "add", "package.json"]);
+    await execFileAsync("git", ["-C", paths.repositoryRoot, "commit", "--quiet", "-m", "test: invalid repository identity"]);
+    await assert.rejects(captureEvidence({
+      campaignId: "invalid-repository-identity",
+      jobIds: [JOB_ID],
+      ...paths,
+    }), error => {
+      assert.match(error.message, /lowercase owner\/repository/u);
+      assert.equal(error.message.includes("sentinel-secret"), false);
+      return true;
+    });
+  }
+
+  const root = await temporaryDirectory(t);
+  const paths = await writeCaptureFixture(root, [{ attempts: [] }]);
+  const manifestPath = join(paths.repositoryRoot, "package.json");
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  manifest.repository.url = "git+https://GitHub.com/agent-teams-ai/extension-foundation.git";
+  await writeFile(manifestPath, `${JSON.stringify(manifest)}\n`);
+  await execFileAsync("git", ["-C", paths.repositoryRoot, "add", "package.json"]);
+  await execFileAsync("git", ["-C", paths.repositoryRoot, "commit", "--quiet", "-m", "test: case-insensitive GitHub host"]);
+  const result = await captureEvidence({ campaignId: "valid-repository-identity", jobIds: [JOB_ID], ...paths });
+  assert.equal(result.manifest.baseline.repository, "agent-teams-ai/extension-foundation");
+});
+
+test("capture bounds repository observation subprocesses", { skip: process.platform === "win32" }, async t => {
+  const root = await temporaryDirectory(t);
+  const repositoryRoot = await createRepositoryFixture(root);
+  const bin = join(root, "bin");
+  await mkdir(bin);
+  const fakeGit = join(bin, "git");
+  await writeFile(fakeGit, "#!/usr/bin/env node\nsetInterval(() => {}, 1000);\n");
+  await chmod(fakeGit, 0o755);
+  const priorPath = process.env.PATH;
+  process.env.PATH = `${bin}${delimiter}${priorPath ?? ""}`;
+  try {
+    await assert.rejects(captureEvidence({
+      campaignId: "bounded-observation",
+      repositoryRoot,
+      jobIds: [JOB_ID],
+      runtimeRoot: root,
+      jobConfigRoot: root,
+      outputRoot: join(root, "evidence"),
+      resourceLimits: { maxObservationMs: 50 },
+    }), /Git top-level observation timed out/u);
+  } finally {
+    if (priorPath === undefined) delete process.env.PATH;
+    else process.env.PATH = priorPath;
+  }
 });
 
 test("capture derives its baseline without Git replacement refs", async t => {

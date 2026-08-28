@@ -130,9 +130,11 @@ Foundation package, public SPI, generic lifecycle coordinator, or hot unload.
 For update or recovery in this static rehearsal, reconstruct the smallest
 application-owned authority realm; this does not project a universal restart or
 physical-unload rule onto accepted UMEQ-016. Stop or simplify if the seam does
-not improve the named product measure. A glue ratio is advisory until the
-owning decision defines its production, generated, configuration, and test LOC
-numerator and denominator.
+not improve the named product measure. ADR-0013 requires stop or rollback when
+generic framework glue exceeds 30% of changed production code across the first
+two slices, unless explicit safety evidence justifies the cost. The owning
+decision must define the production-code numerator and denominator before the
+measurement; generated, configuration, and test LOC are reported separately.
 
 Exit evidence: both built-ins run through the same product-owned port; selection
 is explicit and deterministic; no provider runs in a Unit of Work; product

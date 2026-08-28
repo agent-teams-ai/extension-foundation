@@ -53,7 +53,6 @@ levels:
     prerequisites:
       - authenticated-distinct-repository-identities
       - independently-attested-implementation-ownership
-      - package-admission-independence-defect-corrected-by-owning-task
     effectWhileOpen: keep-semantics-product-local
 aiNavigationBenchmark:
   status: product-owned-protocol-required
