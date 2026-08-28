@@ -13,6 +13,7 @@ DeepSeek
 digest-pinned
 dogfood
 dogfooding
+estimand
 Extism
 exfiltration
 GHCR
