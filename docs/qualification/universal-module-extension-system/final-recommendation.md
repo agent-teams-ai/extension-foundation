@@ -70,10 +70,10 @@ not a competing recommendation and does not authorize a Foundation runtime.
 
 The qualification established useful but bounded evidence:
 
-- The W11 corpus recommends only a product-local static trusted rehearsal and
-  records immutable custody under manifest
-  `4302a0b02f1b54f876a5824919e5e195594843ce778e74aa59852d65363fd8fe`.
-  Its integrity passed, while `promotionAllowed=false` remains authoritative.
+- The W11 corpus recommends only a product-local static trusted rehearsal.
+  Its reported archive, manifest digest, counts, alias bindings, and integrity
+  result are unproven because no committed semantic verifier binds them to
+  committed bytes. The corpus supplies no promotion authority.
 - Synthetic graph spikes demonstrated deterministic DAG compilation, invalid
   graph rejection, stable diagnostics, and a 10,000-node budget. They did not
   demonstrate that a real product needs a graph.

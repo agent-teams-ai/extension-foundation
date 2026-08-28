@@ -44,14 +44,14 @@ production-qualified by this index.
 
 ## Evidence Custody
 
-- Research jobs: `140`; terminal attempts: `161`.
-- Immutable objects: `994`; explicit missing-history exceptions: `28`.
-- Manifest: `4302a0b02f1b54f876a5824919e5e195594843ce778e74aa59852d65363fd8fe`.
-- Evidence tool: `dff2a416003eb99acdb87de961dab380ff651e0f`.
-- Archive SHA-256: `6c42f205ba8e2301dc1c999a65224ee8e0752445e4c5a40d31dc3a47e09011ed`.
-- Verification: `integrityValid=true`, `promotionAllowed=false`.
+Custody of the historical worker corpus is **unproven**. The repository does
+not commit the reported archive and has no semantic verifier that binds its
+reported manifest digest, counts, wrapper identities, or integrity result to
+committed bytes. Those historical reports must not be inferred to establish
+artifact identity or a passing custody gate.
 
-The archive is stored in restricted GitHub Draft Release
-`research-evidence-umeq-2026-08-26`. It must not be published: raw worker
-outputs are review evidence, not public product documentation. `G-PROMOTION`
-remains intentionally closed until product-owner review and a separate ADR.
+The externally reported archive must not be published: raw worker outputs are
+review evidence, not public product documentation. `G-PROMOTION` remains
+closed until custody is proved, claim sources and successful executable
+attestations are bound, the product owner reviews the result, and a separate
+ADR is accepted.

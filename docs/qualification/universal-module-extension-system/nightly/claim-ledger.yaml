@@ -1,22 +1,20 @@
 schemaVersion: 1
 ledgerId: qualification.universal-module-extension-system.nightly.retained-claims
 status: non-operative
-custodyGate: worker-corpus-captured-non-promotable
+custodyGate: unproven-non-promotable
 workerCorpus:
-  evidenceToolRevision: dff2a416003eb99acdb87de961dab380ff651e0f
-  manifestSha256: 4302a0b02f1b54f876a5824919e5e195594843ce778e74aa59852d65363fd8fe
-  capturedJobs: 140
-  capturedAttempts: 161
-  capturedObjects: 994
-  integrityValid: true
-  promotionAllowed: false
-  coverage: worker configs, wrappers, progress, events, logs, journals, and decoded summaries
+  verificationStatus: unproven
+  promotionStatus: closed
+  limitation: >-
+    No committed semantic verifier binds the reported archive, manifest digest,
+    counts, wrapper identities, or integrity result to committed bytes. The
+    historical worker-corpus report therefore supplies no promotion evidence.
   exclusions:
     - primary-source snapshots are not independently archived claim by claim
     - spike artifacts referenced below are not objects in the worker-corpus manifest
     - publisher independence is not established
 promotionRule: >-
-  Worker-corpus custody is complete, but no claim is promotion eligible until
+  Worker-corpus custody remains unproven, and no claim is promotion eligible until
   source and executable references are bound into a claim-level manifest,
   independent publisher or reproduction evidence is established where
   required, the product owner reviews the result, and a separate ADR is accepted.

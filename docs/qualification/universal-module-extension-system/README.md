@@ -67,10 +67,12 @@ research pass. It does not mean every requirement inside it is implemented or
 passed, and it does not qualify the current repository revision for production.
 [Conformance Plan](conformance-plan.md#current-evidence-status) contains
 the explicit human-reviewed status table for planned, implemented and passed
-evidence. The nightly worker corpus now has a machine-produced immutable
-evidence manifest, but its promotion gate remains intentionally closed. Corpus
-integrity does not replace product-owner approval, primary-source independence,
-executable closure, or a separate ADR.
+evidence. Historical nightly custody remains unproven because the reported
+archive and manifest are not committed with a semantic verifier. Reported
+counts, hashes, alias identities, and integrity results supply no promotion
+evidence. Product-owner approval, bound primary-source independence,
+successfully attested executable closure, and a separate ADR also remain
+required.
 
 The [decision ledger](decision-ledger.yaml) is the machine-readable navigation
 source. It links to full rationale and never duplicates normative decisions.
@@ -98,24 +100,29 @@ pnpm evidence:custody:test
 Capture includes each allowed job's configuration, current result alias,
 progress, events, log, attempt journals and exactly decoded
 `lastOutputSummary` bytes. Missing or unknown historical bytes become explicit
-exceptions. They are never reconstructed. Verification reports custody,
+exceptions. They are never reconstructed. Duplicate JSON keys are rejected.
+Verification reports custody,
 terminal-state, alias, path, source-independence, hypothesis, draft-scope,
 synthesis and promotion gates independently; worker counts never satisfy a
 source or voting requirement.
 
-Attempt entries from every journal are combined before current-alias binding;
-duplicate attempt numbers are rejected as ambiguous. Identical bytes observed
-under different provenance are also rejected instead of silently collapsing
-their source path or evidence kind. A future generalized custody service may
-model multiple provenance occurrences explicitly, but this bounded research
-tool remains fail-closed.
+Attempt entries from every journal are combined before current-alias binding.
+The mutable alias binds only when its recognized versioned wrapper identifies
+the same job, latest attempt count, and terminal status; otherwise identity is
+reported as unproven. Duplicate attempt numbers are rejected as ambiguous.
+Identical bytes observed under different provenance are also rejected instead
+of silently collapsing their source path or evidence kind. Promotion-eligible
+claims require both two explicit publisher-to-source bindings over eligible
+primary-source kinds and stored successful attestations for every executable
+result. A future generalized custody service may model multiple provenance
+occurrences explicitly, but this bounded research tool remains fail-closed.
 
 After capture, verification treats the stored object's SHA-256 digest and byte
 size as authoritative; checking whether a mutable source path still exists is a
 separate, explicit live-source audit. Source paths in the manifest are portable
-relative metadata, and the current alias is bound to the latest captured attempt
-wrapper in the immutable object store. The store root must be exclusively owned
-by the custody process. Publication revalidates root and parent directory
+relative metadata, and a proven current alias is bound to the latest captured
+attempt wrapper in the immutable object store. The store root must be
+exclusively owned by the custody process. Publication revalidates root and parent directory
 identity and fails closed on a detected swap, but Node's path-based filesystem
 APIs cannot make this a security boundary against a hostile same-user process.
 The default `verify` command reports success for an intact portable NO-GO bundle;

@@ -316,8 +316,7 @@ deliverables:
   - deferred-decision-list
 completion:
   completedAt: 2026-08-26T15:56:00Z
-  terminalResearchJobs: 140
-  terminalAttempts: 161
+  custodyAccountingStatus: unproven
   synthesisVerdict: NO-GO
   promotionCriteriaSatisfied: false
   acceptedAdrChanges: 0
@@ -327,20 +326,10 @@ completion:
     product-owner approval. It does not support a generic Foundation runtime,
     public SPI, or dynamic or untrusted plugin platform now.
 evidenceCustody:
-  evidenceToolRevision: dff2a416003eb99acdb87de961dab380ff651e0f
-  manifestSha256: 4302a0b02f1b54f876a5824919e5e195594843ce778e74aa59852d65363fd8fe
-  capturedJobs: 140
-  capturedAttempts: 161
-  capturedObjects: 994
-  explicitExceptions: 28
-  integrityValid: true
-  promotionAllowed: false
-  failedGates: [G-PROMOTION]
-  archive:
-    provider: github-draft-release
-    releaseId: 377251766
-    tag: research-evidence-umeq-2026-08-26
-    draft: true
-    asset: umeq-nightly-2026-08-26-evidence-dff2a41.tar.zst
-    assetSha256: 6c42f205ba8e2301dc1c999a65224ee8e0752445e4c5a40d31dc3a47e09011ed
-    publishForbidden: true
+  verificationStatus: unproven
+  promotionStatus: closed
+  reason: >-
+    The reported archive, manifest digest, counts, object accounting, alias
+    identity, and integrity result are not semantically verified from committed
+    bytes by this repository. Historical reports are not promotion evidence.
+  publishForbidden: true

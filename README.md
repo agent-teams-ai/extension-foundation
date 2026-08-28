@@ -11,7 +11,7 @@ domain language, feature-owned extension points, authority, state, and host.
 
 Architecture foundation only. No public runtime SPI or production package has
 been materialized yet. A package is created only after a real product slice and
-one admission basis accepted by ADR-0012 is proved: a second consumer, an
+one admission basis governed by ADR-0013 is proved: a second consumer, an
 independent replacement or release lifecycle, independent deployment or
 isolation, or a public SPI with two implementations and conformance evidence.
 

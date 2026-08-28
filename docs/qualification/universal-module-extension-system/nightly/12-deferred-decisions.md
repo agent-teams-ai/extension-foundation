@@ -63,10 +63,10 @@ migration, and release policy remain reviewed work. Future plugin artifact
 contributions map through product-owned adapters to product ports and become
 runtime modules only after the runtime graph trigger is met.
 
-Worker-corpus custody is complete under manifest
-`4302a0b02f1b54f876a5824919e5e195594843ce778e74aa59852d65363fd8fe`:
-`integrityValid=true` and `promotionAllowed=false`. Claim-level primary-source
-and executable closure, independent publisher/reproduction evidence,
+Worker-corpus custody remains unproven. No committed semantic verifier binds
+the reported archive, manifest digest, counts, wrapper identities, or integrity
+result to committed bytes. Claim-level primary-source and successfully attested
+executable closure, independent publisher or reproduction evidence,
 product-owner review, and separate decisions remain gates. Deferred production
 mechanisms need not be implemented merely to document their absence as blockers.
 

@@ -11,6 +11,8 @@ import {
 } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
+import { parseStrictJson } from "./strict-json.mjs";
+
 const SHA256 = /^[a-f0-9]{64}$/u;
 const JOB_ID = /^modres-w(?:[1-9]|10|11)-[a-z0-9][a-z0-9-]*-\d{8}-r\d+$/u;
 const CAMPAIGN_ID = /^[a-z0-9][a-z0-9.-]{0,127}$/u;
@@ -24,13 +26,27 @@ const CLASSIFICATIONS = new Set([
   "unsupported",
   "contradicted",
 ]);
+const PRIMARY_SOURCE_EVIDENCE_KINDS = new Set(["decision-record", "primary-source"]);
 const EXECUTABLE_EVIDENCE_KINDS = new Set(["executable-test-result", "reproduction-result"]);
 const MANIFEST_FIELDS = new Set(["schemaVersion", "campaignId", "baseline", "objects", "jobs", "attempts", "continuations", "claims", "exceptions", "promotion"]);
 const OBJECT_FIELDS = new Set(["sha256", "bytes", "mediaType", "kind", "sourcePath", "capturedAt"]);
 const JOB_FIELDS = new Set(["jobId", "wave", "jobConfigObject", "attemptIds", "currentAlias", "capturedObjects"]);
 const ATTEMPT_FIELDS = new Set(["attemptId", "jobId", "attemptNumber", "status", "predecessorAttemptId", "continuationOf", "startedAt", "finishedAt", "outputSummaryObject", "wrapperObject", "transcriptObjects"]);
 const CONTINUATION_FIELDS = new Set(["attemptId", "continuationOf"]);
-const CLAIM_FIELDS = new Set(["claimId", "text", "classification", "applicability", "primarySourceObjects", "executableEvidenceObjects", "publisherIndependence", "hypothesis", "promotionEligible"]);
+const CLAIM_FIELDS = new Set([
+  "claimId",
+  "text",
+  "classification",
+  "applicability",
+  "primarySourceObjects",
+  "executableEvidenceObjects",
+  "publisherIndependence",
+  "executableEvidenceAttestations",
+  "hypothesis",
+  "promotionEligible",
+]);
+const PUBLISHER_BINDING_FIELDS = new Set(["sourceObject", "publisher"]);
+const EXECUTABLE_ATTESTATION_FIELDS = new Set(["evidenceObject", "attestationObject", "publisher", "status"]);
 const EXCEPTION_FIELDS = new Set(["exceptionId", "kind", "detail"]);
 const PROMOTION_FIELDS = new Set(["draftScope", "synthesisVerdict", "workerAccounting", "manifestGates", "productOwnerReview", "separateAdrChange", "p0P1ExecutableClosure"]);
 const GATES = [
@@ -65,8 +81,54 @@ function rejectAdditionalProperties(value, allowed, path, errors) {
 
 function portableSourcePath(value) {
   if (typeof value !== "string" || value.length === 0 || value.includes("\0") || value.includes("\\")) return false;
-  if (isAbsolute(value) || value.startsWith("/") || /^[A-Za-z]:\//u.test(value) || value.split("#", 1)[0].split("/").includes("..")) return false;
-  return !value.split("#", 1)[0].split("/").some(part => part === "" || part === ".");
+  const components = value.split("#");
+  if (components.length > 2) return false;
+  const [filesystemPath, fragment] = components;
+  if (isAbsolute(filesystemPath) || filesystemPath.startsWith("/") || /^[A-Za-z]:\//u.test(filesystemPath)) return false;
+  const safeSegments = candidate => candidate.length > 0 && !candidate.split("/").some(part => part === "" || part === "." || part === "..");
+  return safeSegments(filesystemPath) && (fragment === undefined || safeSegments(fragment));
+}
+
+function parseCustodyJson(text) {
+  try {
+    return parseStrictJson(text);
+  } catch (error) {
+    if (!String(error?.message).startsWith("DUPLICATE_JSON_KEY:")) throw error;
+    const duplicate = new SyntaxError("input must not contain duplicate JSON keys");
+    duplicate.code = "DUPLICATE_JSON_KEY";
+    throw duplicate;
+  }
+}
+
+function wrapperStatusMatches(wrapperStatus, attemptStatus) {
+  if (new Set(["completed", "done"]).has(wrapperStatus) && new Set(["completed", "done"]).has(attemptStatus)) return true;
+  return wrapperStatus === attemptStatus;
+}
+
+function proveWrapperBinding(bytes, { jobId, attemptNumber, status }) {
+  let wrapper;
+  try {
+    wrapper = parseCustodyJson(bytes.toString("utf8"));
+  } catch (error) {
+    if (error?.code === "DUPLICATE_JSON_KEY") throw error;
+    return { proven: false, reason: "the mutable wrapper is not valid unambiguous JSON" };
+  }
+  if (!record(wrapper) || wrapper.schemaVersion !== 1) {
+    return { proven: false, reason: "the mutable wrapper has no recognized versioned identity schema" };
+  }
+  if (wrapper.taskId !== jobId || wrapper.runId !== jobId) {
+    return { proven: false, reason: "the mutable wrapper does not identify the captured job" };
+  }
+  const attemptClaims = Array.isArray(wrapper.evidence)
+    ? wrapper.evidence.filter(entry => typeof entry === "string" && entry.startsWith("attempt_count:"))
+    : [];
+  if (attemptClaims.length !== 1 || attemptClaims[0] !== `attempt_count:${attemptNumber}`) {
+    return { proven: false, reason: "the mutable wrapper does not identify the latest captured attempt" };
+  }
+  if (!TERMINAL.has(wrapper.status) || !wrapperStatusMatches(wrapper.status, status)) {
+    return { proven: false, reason: "the mutable wrapper does not attest the latest attempt terminal status" };
+  }
+  return { proven: true };
 }
 
 function provenanceJobId(sourcePath) {
@@ -524,7 +586,50 @@ export function validateManifest(manifest) {
         if (!SHA256.test(digest ?? "")) errors.push(`${path}.${field} must contain lowercase SHA-256`);
       });
     }
-    validateUniqueArray(claim.publisherIndependence, `${path}.publisherIndependence`, errors, publisher => requiredString(publisher, `${path}.publisherIndependence[]`, errors));
+    requiredArray(claim.publisherIndependence, `${path}.publisherIndependence`, errors);
+    const boundSources = new Set();
+    const boundPublishers = new Set();
+    for (const [bindingIndex, binding] of arrayOrEmpty(claim.publisherIndependence).entries()) {
+      const bindingPath = `${path}.publisherIndependence[${bindingIndex}]`;
+      if (!record(binding)) { errors.push(`${bindingPath} must be an object`); continue; }
+      rejectAdditionalProperties(binding, PUBLISHER_BINDING_FIELDS, bindingPath, errors);
+      if (!SHA256.test(binding.sourceObject ?? "")) errors.push(`${bindingPath}.sourceObject must be lowercase SHA-256`);
+      requiredString(binding.publisher, `${bindingPath}.publisher`, errors);
+      if (boundSources.has(binding.sourceObject)) errors.push(`${path}.publisherIndependence must bind each source exactly once`);
+      boundSources.add(binding.sourceObject);
+      if (typeof binding.publisher === "string") {
+        const publisher = normalizedPublisher(binding.publisher);
+        if (publisher.length === 0) errors.push(`${bindingPath}.publisher must identify a publisher after normalization`);
+        if (boundPublishers.has(publisher)) errors.push(`${path}.publisherIndependence must contain distinct publishers`);
+        boundPublishers.add(publisher);
+      }
+    }
+    const primarySources = new Set(arrayOrEmpty(claim.primarySourceObjects));
+    if (primarySources.size !== boundSources.size || [...primarySources].some(digest => !boundSources.has(digest))) {
+      errors.push(`${path}.publisherIndependence must exactly bind every primary source object`);
+    }
+    requiredArray(claim.executableEvidenceAttestations, `${path}.executableEvidenceAttestations`, errors);
+    const attestedEvidence = new Set();
+    for (const [attestationIndex, attestation] of arrayOrEmpty(claim.executableEvidenceAttestations).entries()) {
+      const attestationPath = `${path}.executableEvidenceAttestations[${attestationIndex}]`;
+      if (!record(attestation)) { errors.push(`${attestationPath} must be an object`); continue; }
+      rejectAdditionalProperties(attestation, EXECUTABLE_ATTESTATION_FIELDS, attestationPath, errors);
+      for (const field of ["evidenceObject", "attestationObject"]) {
+        if (!SHA256.test(attestation[field] ?? "")) errors.push(`${attestationPath}.${field} must be lowercase SHA-256`);
+      }
+      requiredString(attestation.publisher, `${attestationPath}.publisher`, errors);
+      if (typeof attestation.publisher === "string" && normalizedPublisher(attestation.publisher).length === 0) {
+        errors.push(`${attestationPath}.publisher must identify a publisher after normalization`);
+      }
+      if (attestation.status !== "passed") errors.push(`${attestationPath}.status must be passed`);
+      if (attestation.evidenceObject === attestation.attestationObject) errors.push(`${attestationPath} must use a distinct attestation object`);
+      if (attestedEvidence.has(attestation.evidenceObject)) errors.push(`${path}.executableEvidenceAttestations must attest each result exactly once`);
+      attestedEvidence.add(attestation.evidenceObject);
+    }
+    const executableEvidence = new Set(arrayOrEmpty(claim.executableEvidenceObjects));
+    if (executableEvidence.size !== attestedEvidence.size || [...executableEvidence].some(digest => !attestedEvidence.has(digest))) {
+      errors.push(`${path}.executableEvidenceAttestations must exactly attest every executable evidence object`);
+    }
     if (!CLASSIFICATIONS.has(claim.classification)) errors.push(`${path}.classification is invalid`);
     if (typeof claim.hypothesis !== "boolean" || typeof claim.promotionEligible !== "boolean") errors.push(`${path} boolean labels are required`);
     if (claim.hypothesis && claim.promotionEligible) errors.push(`${path} hypotheses cannot be promotion eligible`);
@@ -565,6 +670,7 @@ function referencedDigests(manifest) {
   }
   for (const claim of manifest.claims) {
     for (const digest of [...claim.primarySourceObjects, ...claim.executableEvidenceObjects]) values.add(digest);
+    for (const attestation of claim.executableEvidenceAttestations) values.add(attestation.attestationObject);
   }
   return values;
 }
@@ -578,6 +684,21 @@ async function defaultPathExists(path) {
     if (error?.code === "ENOENT") return false;
     throw error;
   }
+}
+
+function executionAttestationFailure(document, evidenceObject, publisher) {
+  if (!record(document)) return "attestation must be a JSON object";
+  const fields = Object.keys(document).sort();
+  if (fields.length !== 4 || fields.join(",") !== "evidenceObject,publisher,schemaVersion,status") {
+    return "attestation must contain only evidenceObject, publisher, schemaVersion, and status";
+  }
+  if (document.schemaVersion !== 1) return "attestation schemaVersion must be 1";
+  if (document.evidenceObject !== evidenceObject) return "attestation does not bind the executable evidence object";
+  if (typeof document.publisher !== "string" || normalizedPublisher(document.publisher) !== normalizedPublisher(publisher)) {
+    return "attestation does not bind the declared publisher";
+  }
+  if (document.status !== "passed") return "attestation does not record a successful result";
+  return undefined;
 }
 
 export async function verifyManifest(manifest, { store, auditLiveSources = false, sourceRoot, pathExists = defaultPathExists } = {}) {
@@ -624,6 +745,10 @@ export async function verifyManifest(manifest, { store, auditLiveSources = false
       try {
         const currentBytes = await secureRead(store.root, store.objectPath(job.currentAlias));
         if (sha256(currentBytes) !== job.currentAlias) failures["G-ALIAS"].push(`${job.jobId} alias bytes changed after capture`);
+        if (latest !== undefined) {
+          const binding = proveWrapperBinding(currentBytes, latest);
+          if (!binding.proven) failures["G-ALIAS"].push(`${job.jobId} alias binding is unproven: ${binding.reason}`);
+        }
       } catch (error) {
         failures["G-ALIAS"].push(`${job.jobId} alias is unreadable: ${error.message}`);
       }
@@ -638,14 +763,48 @@ export async function verifyManifest(manifest, { store, auditLiveSources = false
   }
   for (const claim of manifest.claims ?? []) {
     const sourceDigests = new Set(claim.primarySourceObjects);
-    const publishers = new Set(claim.publisherIndependence.map(normalizedPublisher));
-    const sourceSatisfied = sourceDigests.size >= 2 && publishers.size >= 2 && [...sourceDigests].every(digest => objectMap.has(digest));
-    const executableSatisfied = claim.executableEvidenceObjects.length > 0 && claim.executableEvidenceObjects.every(digest => EXECUTABLE_EVIDENCE_KINDS.has(objectMap.get(digest)?.kind));
+    const publishers = new Set(claim.publisherIndependence.map(binding => normalizedPublisher(binding.publisher)));
+    const boundSourceDigests = new Set(claim.publisherIndependence.map(binding => binding.sourceObject));
+    const sourceKindsAllowed = [...sourceDigests].every(digest => PRIMARY_SOURCE_EVIDENCE_KINDS.has(objectMap.get(digest)?.kind));
+    const sourceSatisfied = sourceDigests.size >= 2 &&
+      publishers.size >= 2 &&
+      boundSourceDigests.size === sourceDigests.size &&
+      [...sourceDigests].every(digest => boundSourceDigests.has(digest) && objectMap.has(digest)) &&
+      sourceKindsAllowed;
+    let attestationsSatisfied = claim.executableEvidenceAttestations.length === claim.executableEvidenceObjects.length;
+    for (const attestation of claim.executableEvidenceAttestations) {
+      const attestationRecord = objectMap.get(attestation.attestationObject);
+      if (attestation.status !== "passed" || attestationRecord?.kind !== "execution-attestation") {
+        attestationsSatisfied = false;
+        failures["G-SOURCE"].push(`${claim.claimId} lacks a successful execution attestation for ${attestation.evidenceObject}`);
+        continue;
+      }
+      if (store === undefined) {
+        attestationsSatisfied = false;
+        failures["G-SOURCE"].push(`${claim.claimId} execution attestation ${attestation.attestationObject} is unproven without object bytes`);
+        continue;
+      }
+      try {
+        const attestationBytes = await secureRead(store.root, store.objectPath(attestation.attestationObject));
+        const document = parseCustodyJson(attestationBytes.toString("utf8"));
+        const failure = executionAttestationFailure(document, attestation.evidenceObject, attestation.publisher);
+        if (failure !== undefined) {
+          attestationsSatisfied = false;
+          failures["G-SOURCE"].push(`${claim.claimId} execution attestation ${attestation.attestationObject}: ${failure}`);
+        }
+      } catch (error) {
+        attestationsSatisfied = false;
+        failures["G-SOURCE"].push(`${claim.claimId} execution attestation ${attestation.attestationObject} is invalid: ${error.message}`);
+      }
+    }
+    const executableKindsAllowed = claim.executableEvidenceObjects.every(digest => EXECUTABLE_EVIDENCE_KINDS.has(objectMap.get(digest)?.kind));
+    const executableSatisfied = claim.executableEvidenceObjects.length > 0 && executableKindsAllowed && attestationsSatisfied;
     for (const digest of [...claim.primarySourceObjects, ...claim.executableEvidenceObjects]) if (!objectMap.has(digest)) failures["G-SOURCE"].push(`${claim.claimId} references missing evidence ${digest}`);
-    if (claim.promotionEligible && !sourceSatisfied && !executableSatisfied) failures["G-SOURCE"].push(claim.claimId);
+    if (claim.promotionEligible && (!sourceSatisfied || !executableSatisfied)) failures["G-SOURCE"].push(`${claim.claimId} requires both bound independent primary sources and successfully attested executable evidence`);
     if (!executableSatisfied && !claim.hypothesis && ["inference", "hypothesis"].includes(claim.classification)) failures["G-HYPOTHESIS"].push(claim.claimId);
     if (claim.primarySourceObjects.some(digest => objectMap.get(digest)?.kind === "worker-report")) failures["G-SOURCE"].push(`${claim.claimId} treats a worker report as primary`);
-    if (claim.executableEvidenceObjects.some(digest => !EXECUTABLE_EVIDENCE_KINDS.has(objectMap.get(digest)?.kind))) failures["G-SOURCE"].push(`${claim.claimId} has non-executable evidence kind`);
+    if (!sourceKindsAllowed && claim.primarySourceObjects.length > 0) failures["G-SOURCE"].push(`${claim.claimId} has an ineligible primary-source evidence kind`);
+    if (!executableKindsAllowed) failures["G-SOURCE"].push(`${claim.claimId} has non-executable evidence kind`);
     if (claim.primarySourceObjects.length !== sourceDigests.size || claim.publisherIndependence.length !== publishers.size) failures["G-SOURCE"].push(`${claim.claimId} lacks distinct sources or publishers`);
     if (claim.promotionEligible && ["unsupported", "contradicted"].includes(claim.classification)) failures["G-SYNTHESIS"].push(`${claim.claimId} is an unsupported positive claim`);
   }
@@ -753,10 +912,12 @@ export async function captureEvidence({
       log: join(jobRoot, `${jobId}.log`),
     };
     const captured = {};
+    const capturedBytes = {};
     const jobCapturedObjects = new Set();
     for (const [kind, path] of Object.entries(expected)) {
       try {
-        captured[kind] = await add(await secureRead(kind === "jobConfig" ? safeConfigRoot : safeRuntimeRoot, path), {
+        capturedBytes[kind] = await secureRead(kind === "jobConfig" ? safeConfigRoot : safeRuntimeRoot, path);
+        captured[kind] = await add(capturedBytes[kind], {
           kind: kind === "wrapper" ? "worker-report" : kind,
           sourcePath: sourceLabel(kind === "jobConfig" ? safeConfigRoot : safeRuntimeRoot, path, kind === "jobConfig" ? "job-config" : "runtime"),
         });
@@ -778,8 +939,12 @@ export async function captureEvidence({
       const journalDigest = await add(journalFile.bytes, { kind: "attempt-journal", sourcePath: journalLabel });
       jobCapturedObjects.add(journalDigest);
       let journal;
-      try { journal = JSON.parse(journalFile.bytes.toString("utf8")); }
-      catch { exceptions.push({ exceptionId: `${jobId}:journal:${journalDigest}:invalid`, kind: "unknown-historical-bytes", detail: "Attempt journal is not valid JSON and was preserved only as raw bytes" }); continue; }
+      try { journal = parseCustodyJson(journalFile.bytes.toString("utf8")); }
+      catch (error) {
+        if (error?.code === "DUPLICATE_JSON_KEY") throw error;
+        exceptions.push({ exceptionId: `${jobId}:journal:${journalDigest}:invalid`, kind: "unknown-historical-bytes", detail: "Attempt journal is not valid JSON and was preserved only as raw bytes" });
+        continue;
+      }
       if (!Array.isArray(journal.attempts)) throw new Error(`attempt journal ${journalLabel} must contain an attempts array`);
       for (const entry of journal.attempts) {
         if (!record(entry) || !Number.isSafeInteger(entry.attemptNumber) || entry.attemptNumber < 1) {
@@ -793,7 +958,26 @@ export async function captureEvidence({
       }
     }
     journalEntries.sort((left, right) => left.entry.attemptNumber - right.entry.attemptNumber);
-    const currentAttemptNumber = journalEntries.at(-1)?.entry.attemptNumber;
+    const currentEntry = journalEntries.at(-1)?.entry;
+    const currentAttemptNumber = currentEntry?.attemptNumber;
+    let wrapperBindingProven = false;
+    if (capturedBytes.wrapper !== undefined && currentEntry !== undefined) {
+      const binding = proveWrapperBinding(capturedBytes.wrapper, { jobId, attemptNumber: currentEntry.attemptNumber, status: currentEntry.status });
+      wrapperBindingProven = binding.proven;
+      if (!binding.proven) {
+        exceptions.push({
+          exceptionId: `${jobId}:alias-binding:unproven`,
+          kind: "unproven-historical-identity",
+          detail: `${binding.reason}; the mutable wrapper bytes were preserved but not assigned to an attempt`,
+        });
+      }
+    } else if (capturedBytes.wrapper !== undefined) {
+      exceptions.push({
+        exceptionId: `${jobId}:alias-binding:unproven`,
+        kind: "unproven-historical-identity",
+        detail: "No captured attempt can prove the mutable wrapper identity; the bytes were preserved but not assigned to an attempt",
+      });
+    }
     for (const { entry, journalDigest, journalLabel } of journalEntries) {
         const attemptId = `${jobId}:attempt:${entry.attemptNumber}`;
         const summary = typeof entry.lastOutputSummary === "string" ? Buffer.from(entry.lastOutputSummary, "utf8") : undefined;
@@ -805,11 +989,13 @@ export async function captureEvidence({
           jobCapturedObjects.add(summaryDigest);
         }
         const isCurrentAttempt = entry.attemptNumber === currentAttemptNumber;
-        if (!isCurrentAttempt || captured.wrapper === undefined) {
+        if (!isCurrentAttempt || captured.wrapper === undefined || !wrapperBindingProven) {
           exceptions.push({
             exceptionId: `${attemptId}:wrapper:missing`,
             kind: "missing-historical-bytes",
-            detail: "Only the current mutable wrapper was available; an earlier wrapper was not inferred",
+            detail: isCurrentAttempt && captured.wrapper !== undefined
+              ? "The mutable wrapper identity was unproven; no attempt wrapper was inferred"
+              : "Only the current mutable wrapper was available; an earlier wrapper was not inferred",
           });
         }
         attempts.push({
@@ -822,7 +1008,7 @@ export async function captureEvidence({
           startedAt: entry.startedAt ?? "unknown",
           finishedAt: entry.finishedAt ?? "unknown",
           outputSummaryObject: summaryDigest,
-          wrapperObject: isCurrentAttempt ? (captured.wrapper ?? null) : null,
+          wrapperObject: isCurrentAttempt && wrapperBindingProven ? captured.wrapper : null,
           transcriptObjects: [journalDigest],
         });
         attemptIds.push(attemptId);
@@ -919,14 +1105,14 @@ export async function loadManifest(path) {
   const safePath = assertSafeEvidencePath(path, "manifest input");
   const bytes = await secureRead(dirname(safePath), safePath);
   scanSecrets(bytes, path);
-  return JSON.parse(bytes.toString("utf8"));
+  return parseCustodyJson(bytes.toString("utf8"));
 }
 
 export async function readSafeJson(path, label = "JSON input") {
   const safePath = assertSafeEvidencePath(path, label);
   const bytes = await secureRead(dirname(safePath), safePath);
   scanSecrets(bytes, safePath);
-  return JSON.parse(bytes.toString("utf8"));
+  return parseCustodyJson(bytes.toString("utf8"));
 }
 
 export { GATES, REQUIRED_FILES };

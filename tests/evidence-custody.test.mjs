@@ -247,15 +247,37 @@ test("job capturedObjects exactly accounts for portable provenance in sorted ord
   }
 });
 
-test("portable source paths reject drive-absolute and other unsafe metadata in runtime and schema", async () => {
+test("portable source paths and fragments agree in runtime and schema", async () => {
   const schema = JSON.parse(await readFile(join(import.meta.dirname, "..", "architecture", "evidence-custody-manifest.schema.json"), "utf8"));
   const schemaPattern = new RegExp(schema.$defs.object.properties.sourcePath.pattern, "u");
-  for (const sourcePath of ["C:/host/file", "z:/host/file", "/host/file", "host\\file", "host/../file", "host//file", "host/./file", "host\0file"]) {
+  for (const sourcePath of [
+    `job-config/${JOB_ID}/job.json`,
+    `job-config/${JOB_ID}/job.json#fragment`,
+    `job-config/${JOB_ID}/job.json#attempts/1/lastOutputSummary`,
+  ]) {
+    const manifest = validManifest();
+    manifest.objects[0].sourcePath = sourcePath;
+    assert.equal(validateManifest(manifest).valid, true, `runtime rejected ${JSON.stringify(sourcePath)}`);
+    assert.equal(schemaPattern.test(sourcePath), true, `schema rejected ${JSON.stringify(sourcePath)}`);
+  }
+  for (const sourcePath of ["C:/host/file", "z:/host/file", "/host/file", "host\\file", "host/../file", "host//file", "host/./file", "host\0file", "research/#", "research/file#fragment/../x", "research/file#fragment//x", "research/file#fragment#x"]) {
     const manifest = validManifest();
     manifest.objects[0].sourcePath = sourcePath;
     assert.equal(validateManifest(manifest).valid, false, `runtime accepted ${JSON.stringify(sourcePath)}`);
     assert.equal(schemaPattern.test(sourcePath), false, `schema accepted ${JSON.stringify(sourcePath)}`);
   }
+});
+
+test("qualification records keep unverifiable historical custody claims unproven", async () => {
+  const qualificationRoot = join(import.meta.dirname, "..", "docs", "qualification", "universal-module-extension-system");
+  const records = await Promise.all([
+    readFile(join(qualificationRoot, "nightly-research-manifest.yaml"), "utf8"),
+    readFile(join(qualificationRoot, "nightly", "claim-ledger.yaml"), "utf8"),
+    readFile(join(qualificationRoot, "nightly", "README.md"), "utf8"),
+  ]);
+  const custodyClaims = records.join("\n");
+  assert.match(custodyClaims, /verificationStatus: unproven|custody is \*\*unproven\*\*/u);
+  assert.doesNotMatch(custodyClaims, /(?:evidenceToolRevision|manifestSha256|assetSha256|capturedJobs|capturedAttempts|capturedObjects|integrityValid:\s*true|integrityValid=true|Research jobs:\s*`\d+`|(?:Manifest|Archive SHA-256):\s*`[a-f0-9]{64}`)/u);
 });
 
 test("lineage requires exact membership, adjacent predecessors, and acyclic earlier continuations", () => {
@@ -283,12 +305,121 @@ test("lineage requires exact membership, adjacent predecessors, and acyclic earl
   assert.ok(validateManifest(cycle).errors.some(error => error.includes("cyclic continuation")));
 });
 
-test("source and executable claims require distinct resolved identities and allowed kinds", async () => {
+test("source and executable claims require bound publishers, attestations, and allowed kinds", async () => {
   const manifest = validManifest();
-  manifest.claims.push({ claimId: "claim", text: "claim", classification: "observed", applicability: "test", primarySourceObjects: [manifest.objects[0].sha256, manifest.objects[0].sha256], executableEvidenceObjects: [manifest.objects[0].sha256], publisherIndependence: [" Publisher ", "publisher"], hypothesis: false, promotionEligible: true });
+  manifest.claims.push({
+    claimId: "claim",
+    text: "claim",
+    classification: "observed",
+    applicability: "test",
+    primarySourceObjects: [manifest.objects[0].sha256, manifest.objects[0].sha256],
+    executableEvidenceObjects: [manifest.objects[0].sha256],
+    publisherIndependence: [
+      { sourceObject: manifest.objects[0].sha256, publisher: " Publisher " },
+      { sourceObject: manifest.objects[0].sha256, publisher: "publisher" },
+    ],
+    executableEvidenceAttestations: [],
+    hypothesis: false,
+    promotionEligible: true,
+  });
   const result = await verifyManifest(manifest);
   assert.equal(result.gates["G-SOURCE"].pass, false);
   assert.match(result.gates["G-CUSTODY"].failures.join("\n"), /unique items/u);
+});
+
+test("promotion claims cannot substitute executable evidence for primary sources or invent source kinds", async () => {
+  const attestationDigest = "b".repeat(64);
+  const executableOnly = validManifest();
+  executableOnly.objects[0].kind = "executable-test-result";
+  executableOnly.objects.push(objectRecord(attestationDigest, { kind: "execution-attestation", sourcePath: "research/attestation.json" }));
+  executableOnly.claims.push({
+    claimId: "executable-only",
+    text: "Executable evidence cannot replace primary sources",
+    classification: "observed",
+    applicability: "test",
+    primarySourceObjects: [],
+    executableEvidenceObjects: [executableOnly.objects[0].sha256],
+    publisherIndependence: [],
+    executableEvidenceAttestations: [{ evidenceObject: executableOnly.objects[0].sha256, attestationObject: attestationDigest, publisher: "test-runner", status: "passed" }],
+    hypothesis: false,
+    promotionEligible: true,
+  });
+  const executableOnlyResult = await verifyManifest(executableOnly);
+  assert.equal(executableOnlyResult.gates["G-SOURCE"].pass, false);
+  assert.match(executableOnlyResult.gates["G-SOURCE"].failures.join("\n"), /requires both bound independent primary sources/u);
+
+  const arbitrarySources = validManifest();
+  const secondSource = "c".repeat(64);
+  arbitrarySources.objects[0].kind = "log";
+  arbitrarySources.objects.push(objectRecord(secondSource, { kind: "progress", sourcePath: "research/progress.json" }));
+  arbitrarySources.claims.push({
+    claimId: "invented-sources",
+    text: "Arbitrary custody objects are not primary sources",
+    classification: "observed",
+    applicability: "test",
+    primarySourceObjects: [arbitrarySources.objects[0].sha256, secondSource],
+    executableEvidenceObjects: [],
+    publisherIndependence: [
+      { sourceObject: arbitrarySources.objects[0].sha256, publisher: "invented-a" },
+      { sourceObject: secondSource, publisher: "invented-b" },
+    ],
+    executableEvidenceAttestations: [],
+    hypothesis: false,
+    promotionEligible: true,
+  });
+  const arbitraryResult = await verifyManifest(arbitrarySources);
+  assert.equal(arbitraryResult.gates["G-SOURCE"].pass, false);
+  assert.match(arbitraryResult.gates["G-SOURCE"].failures.join("\n"), /ineligible primary-source evidence kind/u);
+});
+
+test("executable evidence requires a stored successful attestation", async t => {
+  const root = await temporaryDirectory(t);
+  const store = new ObjectStore(root);
+  const wrapperBytes = Buffer.from(JSON.stringify({ schemaVersion: 1, status: "done", taskId: JOB_ID, runId: JOB_ID, evidence: ["attempt_count:1"] }));
+  const wrapper = await store.publish(wrapperBytes);
+  const evidenceBytes = Buffer.from("executable result");
+  const evidence = await store.publish(evidenceBytes);
+  const firstSourceBytes = Buffer.from("primary source a");
+  const secondSourceBytes = Buffer.from("primary source b");
+  const firstSource = await store.publish(firstSourceBytes);
+  const secondSource = await store.publish(secondSourceBytes);
+
+  for (const { name, status, publisher, expected } of [
+    { name: "failed", status: "failed", publisher: "test-runner", expected: false },
+    { name: "foreign-publisher", status: "passed", publisher: "foreign-runner", expected: false },
+    { name: "passed", status: "passed", publisher: "test-runner", expected: true },
+  ]) {
+    const attestationBytes = Buffer.from(JSON.stringify({ schemaVersion: 1, evidenceObject: evidence.sha256, publisher, status }));
+    const attestation = await store.publish(attestationBytes);
+    const manifest = validManifest(wrapper.sha256);
+    manifest.objects[0] = objectRecord(wrapper.sha256, { bytes: wrapperBytes.length, sourcePath: `job-config/${JOB_ID}/job.json` });
+    manifest.objects.push(
+      objectRecord(evidence.sha256, { bytes: evidenceBytes.length, kind: "reproduction-result", sourcePath: "research/result.txt" }),
+      objectRecord(attestation.sha256, { bytes: attestationBytes.length, kind: "execution-attestation", sourcePath: `research/attestation-${name}.json` }),
+      objectRecord(firstSource.sha256, { bytes: firstSourceBytes.length, kind: "primary-source", sourcePath: "research/source-a.txt" }),
+      objectRecord(secondSource.sha256, { bytes: secondSourceBytes.length, kind: "primary-source", sourcePath: "research/source-b.txt" }),
+    );
+    manifest.claims.push({
+      claimId: `attestation-${name}`,
+      text: "Executable result",
+      classification: "observed",
+      applicability: "test",
+      primarySourceObjects: [firstSource.sha256, secondSource.sha256],
+      executableEvidenceObjects: [evidence.sha256],
+      publisherIndependence: [
+        { sourceObject: firstSource.sha256, publisher: "publisher-a" },
+        { sourceObject: secondSource.sha256, publisher: "publisher-b" },
+      ],
+      executableEvidenceAttestations: [{ evidenceObject: evidence.sha256, attestationObject: attestation.sha256, publisher: "test-runner", status: "passed" }],
+      hypothesis: false,
+      promotionEligible: true,
+    });
+    assert.equal(validateManifest(manifest).valid, true);
+    const result = await verifyManifest(manifest, { store });
+    assert.equal(result.gates["G-SOURCE"].pass, expected);
+    if (name === "failed") assert.match(result.gates["G-SOURCE"].failures.join("\n"), /successful result/u);
+    if (name === "foreign-publisher") assert.match(result.gates["G-SOURCE"].failures.join("\n"), /declared publisher/u);
+  }
 });
 
 test("runtime validation closes shapes and matches digest, wave, safe-integer, and enum constraints", () => {
@@ -313,7 +444,10 @@ test("runtime validation enforces required unique digest arrays and unconditiona
     manifest => { manifest.jobs[0].capturedObjects.push(manifest.jobs[0].capturedObjects[0]); },
     manifest => { manifest.jobs[0].capturedObjects = ["not-a-digest"]; },
     manifest => { manifest.attempts[0].transcriptObjects.push(manifest.attempts[0].transcriptObjects[0]); },
-    manifest => { manifest.claims = [{ claimId: "c", text: "t", classification: "observed", applicability: "a", primarySourceObjects: ["bad"], executableEvidenceObjects: [], publisherIndependence: [], hypothesis: false, promotionEligible: false }]; },
+    manifest => { manifest.claims = [{ claimId: "c", text: "t", classification: "observed", applicability: "a", primarySourceObjects: ["bad"], executableEvidenceObjects: [], publisherIndependence: [], executableEvidenceAttestations: [], hypothesis: false, promotionEligible: false }]; },
+    manifest => { manifest.claims = [{ claimId: "c", text: "t", classification: "observed", applicability: "a", primarySourceObjects: [manifest.objects[0].sha256], executableEvidenceObjects: [], publisherIndependence: ["unbound-publisher"], executableEvidenceAttestations: [], hypothesis: false, promotionEligible: false }]; },
+    manifest => { manifest.claims = [{ claimId: "c", text: "t", classification: "observed", applicability: "a", primarySourceObjects: [], executableEvidenceObjects: [manifest.objects[0].sha256], publisherIndependence: [], executableEvidenceAttestations: [], hypothesis: false, promotionEligible: false }]; },
+    manifest => { manifest.claims = [{ claimId: "c", text: "t", classification: "observed", applicability: "a", primarySourceObjects: [], executableEvidenceObjects: [manifest.objects[0].sha256], publisherIndependence: [], executableEvidenceAttestations: [{ evidenceObject: manifest.objects[0].sha256, attestationObject: "b".repeat(64), publisher: "test-runner", status: "failed" }], hypothesis: false, promotionEligible: false }]; },
     manifest => { manifest.objects.push({ ...manifest.objects[0], kind: "rewritten-kind", sourcePath: "different/source.json" }); },
   ]) {
     const manifest = validManifest();
@@ -367,6 +501,23 @@ test("CLI reports syntactically malformed JSON without stack traces or host path
   });
 });
 
+test("CLI rejects duplicate JSON keys before manifest validation", async t => {
+  const root = await temporaryDirectory(t);
+  const manifestPath = join(root, "duplicate-key.json");
+  const serialized = JSON.stringify(validManifest()).replace('"status":"completed"', '"status":"running","status":"completed"');
+  await writeFile(manifestPath, serialized);
+  const cli = join(import.meta.dirname, "..", "architecture", "checks", "evidence-custody-cli.mjs");
+  await assert.rejects(execFileAsync(process.execPath, [cli, "verify", manifestPath, join(root, "objects")]), error => {
+    assert.equal(error.code, 1);
+    assert.equal(error.stderr, "");
+    assert.deepEqual(JSON.parse(error.stdout), {
+      ok: false,
+      error: { code: "INVALID_JSON", message: "input must be valid JSON" },
+    });
+    return true;
+  });
+});
+
 test("publication fails closed when its parent directory identity changes", async t => {
   const root = await temporaryDirectory(t);
   const storeRoot = join(root, "store");
@@ -398,7 +549,11 @@ test("worker reports are not primary sources and unsupported inference needs a h
     applicability: "campaign only",
     primarySourceObjects: [manifest.objects[0].sha256, manifest.objects[0].sha256],
     executableEvidenceObjects: [],
-    publisherIndependence: ["publisher-a", "publisher-b"],
+    publisherIndependence: [
+      { sourceObject: manifest.objects[0].sha256, publisher: "publisher-a" },
+      { sourceObject: manifest.objects[0].sha256, publisher: "publisher-b" },
+    ],
+    executableEvidenceAttestations: [],
     hypothesis: false,
     promotionEligible: true,
   });
@@ -417,6 +572,7 @@ test("an honestly labeled hypothesis is non-promotable", async () => {
     primarySourceObjects: [],
     executableEvidenceObjects: [],
     publisherIndependence: [],
+    executableEvidenceAttestations: [],
     hypothesis: true,
     promotionEligible: false,
   });
@@ -431,7 +587,13 @@ test("an honestly labeled hypothesis is non-promotable", async () => {
 test("CLI verifies a portable NO-GO bundle without admitting promotion", async t => {
   const root = await temporaryDirectory(t);
   const store = new ObjectStore(join(root, "objects"));
-  const bytes = Buffer.from("evidence");
+  const bytes = Buffer.from(JSON.stringify({
+    schemaVersion: 1,
+    status: "done",
+    taskId: JOB_ID,
+    runId: JOB_ID,
+    evidence: ["attempt_count:1"],
+  }));
   const published = await store.publish(bytes);
   const manifest = validManifest(published.sha256);
   manifest.objects[0] = objectRecord(published.sha256, { bytes: bytes.length, sourcePath: `job-config/${JOB_ID}/job.json` });
@@ -479,7 +641,13 @@ test("capture preserves required runtime bytes and decodes lastOutputSummary", a
   await mkdir(dirname(journalPath), { recursive: true });
   await mkdir(join(configRoot, JOB_ID), { recursive: true });
   await writeFile(join(configRoot, JOB_ID, "job.json"), '{"schemaVersion":1}\n');
-  await writeFile(join(jobRoot, `${JOB_ID}.latest-result.json`), '{"status":"done"}\n');
+  await writeFile(join(jobRoot, `${JOB_ID}.latest-result.json`), JSON.stringify({
+    schemaVersion: 1,
+    status: "done",
+    taskId: JOB_ID,
+    runId: JOB_ID,
+    evidence: ["attempt_count:1"],
+  }));
   await writeFile(join(jobRoot, `${JOB_ID}.progress.json`), '{"status":"completed"}\n');
   await writeFile(join(jobRoot, `${JOB_ID}.events.jsonl`), '{"event":"done"}\n');
   await writeFile(join(jobRoot, `${JOB_ID}.log`), "completed\n");
@@ -513,7 +681,7 @@ test("capture preserves required runtime bytes and decodes lastOutputSummary", a
   assert.equal(result.manifest.exceptions.length, 0);
 });
 
-async function writeCaptureFixture(root, journalDocuments, { commonBytes = false, wrapper = true } = {}) {
+async function writeCaptureFixture(root, journalDocuments, { commonBytes = false, wrapper = true, wrapperDocument } = {}) {
   const runtimeRoot = join(root, "runtime");
   const configRoot = join(root, "configs");
   const jobRoot = join(runtimeRoot, JOB_ID);
@@ -521,7 +689,18 @@ async function writeCaptureFixture(root, journalDocuments, { commonBytes = false
   await mkdir(jobRoot, { recursive: true });
   const contents = commonBytes ? "{}" : undefined;
   await writeFile(join(configRoot, JOB_ID, "job.json"), contents ?? '{"config":true}');
-  if (wrapper) await writeFile(join(jobRoot, `${JOB_ID}.latest-result.json`), contents ?? '{"wrapper":true}');
+  const latestAttempt = journalDocuments
+    .flatMap(document => document.attempts ?? [])
+    .sort((left, right) => left.attemptNumber - right.attemptNumber)
+    .at(-1);
+  const defaultWrapper = {
+    schemaVersion: 1,
+    status: latestAttempt?.status === "completed" ? "done" : latestAttempt?.status,
+    taskId: JOB_ID,
+    runId: JOB_ID,
+    evidence: [`attempt_count:${latestAttempt?.attemptNumber ?? 0}`],
+  };
+  if (wrapper) await writeFile(join(jobRoot, `${JOB_ID}.latest-result.json`), contents ?? JSON.stringify(wrapperDocument ?? defaultWrapper));
   await writeFile(join(jobRoot, `${JOB_ID}.progress.json`), contents ?? '{"progress":true}');
   await writeFile(join(jobRoot, `${JOB_ID}.events.jsonl`), contents ?? '{"event":true}');
   await writeFile(join(jobRoot, `${JOB_ID}.log`), contents ?? "complete");
@@ -542,6 +721,36 @@ test("capture fails closed when identical bytes have conflicting provenance", as
     jobIds: [JOB_ID],
     ...paths,
   }), /conflicting provenance for captured object/u);
+});
+
+test("capture rejects duplicate keys in attempt journals", async t => {
+  const root = await temporaryDirectory(t);
+  const paths = await writeCaptureFixture(root, [{ attempts: [] }]);
+  const journalPath = join(paths.runtimeRoot, JOB_ID, "state", "attempt-journal", "journal-0.json");
+  await writeFile(journalPath, '{"attempts":[],"attempts":[{"attemptNumber":1}]}');
+  await assert.rejects(captureEvidence({
+    campaignId: "fixture-campaign",
+    baseline: {},
+    jobIds: [JOB_ID],
+    ...paths,
+  }), /duplicate JSON keys/u);
+});
+
+test("mutable wrappers with a stale attempt or foreign job remain unproven", async t => {
+  const entry = { attemptNumber: 2, status: "completed", startedAt: "start", finishedAt: "finish" };
+  for (const [name, wrapperDocument] of [
+    ["stale", { schemaVersion: 1, status: "done", taskId: JOB_ID, runId: JOB_ID, evidence: ["attempt_count:1"] }],
+    ["foreign", { schemaVersion: 1, status: "done", taskId: `${JOB_ID}-foreign`, runId: `${JOB_ID}-foreign`, evidence: ["attempt_count:2"] }],
+  ]) {
+    const root = await temporaryDirectory(t);
+    const paths = await writeCaptureFixture(root, [{ attempts: [entry] }], { wrapperDocument });
+    const result = await captureEvidence({ campaignId: `fixture-${name}`, baseline: {}, jobIds: [JOB_ID], ...paths });
+    assert.equal(result.manifest.attempts[0].wrapperObject, null);
+    assert.ok(result.manifest.exceptions.some(exception => exception.exceptionId.endsWith(":alias-binding:unproven")));
+    const verification = await verifyManifest(result.manifest, { store: result.store });
+    assert.equal(verification.gates["G-ALIAS"].pass, false);
+    assert.equal(verification.integrityValid, false);
+  }
 });
 
 test("multiple journals bind the wrapper only to the globally latest attempt", async t => {

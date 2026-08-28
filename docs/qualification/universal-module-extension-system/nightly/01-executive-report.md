@@ -111,30 +111,18 @@ The T0 rehearsal avoids those surfaces; it does not close their blockers.
 
 ## W11 Result Custody Snapshot
 
-These portable labels identify wrapper bytes that are now included in immutable
-campaign manifest
-`4302a0b02f1b54f876a5824919e5e195594843ce778e74aa59852d65363fd8fe`.
+The historical `latest-result` files are mutable aliases. The committed
+documentation has no semantic verifier or committed archive that can prove the
+reported wrapper digests, corpus counts, manifest identity, alias-to-attempt
+bindings, or integrity result. Historical custody is therefore **unproven**;
+none of those reports supplies promotion evidence.
 
-| Result path | SHA-256 |
-| --- | --- |
-| `runtime/modres-w11-architecture-integrator-a-20260826-r1/modres-w11-architecture-integrator-a-20260826-r1.latest-result.json` | `de12e9f076f2bb0a6749c6ddf2f651ae04df29b82c76abce3cdb01438c3a2abe` |
-| `runtime/modres-w11-architecture-integrator-b-20260826-r1/modres-w11-architecture-integrator-b-20260826-r1.latest-result.json` | `987b7f5b6b7722706ba233eb7824dd4e31bb0a35bdbdccd4ba20821aaec1805e` |
-| `runtime/modres-w11-contradiction-auditor-20260826-r1/modres-w11-contradiction-auditor-20260826-r1.latest-result.json` | `3bd415f98164e38bdc85f205bad621e7de3c9dcee10337888db7beb506feec3c` |
-| `runtime/modres-w11-distributed-systems-adjudicator-20260826-r1/modres-w11-distributed-systems-adjudicator-20260826-r1.latest-result.json` | `2cd218735ea97958e892158602597f11a17a9ac350962fa2de0867276f6ae5c4` |
-| `runtime/modres-w11-evidence-provenance-auditor-20260826-r1/modres-w11-evidence-provenance-auditor-20260826-r1.latest-result.json` | `cab0f81885f421855334b991018cbe9d4d16f8f77e7534f06f48d367ca4a67bc` |
-| `runtime/modres-w11-product-mvp-adjudicator-20260826-r1/modres-w11-product-mvp-adjudicator-20260826-r1.latest-result.json` | `268bc012d6a5da27c824eb8c485d9b9594b14aadccc2b8044e860063add0b610` |
-| `runtime/modres-w11-security-adjudicator-20260826-r1/modres-w11-security-adjudicator-20260826-r1.latest-result.json` | `0f65982746bef8f7d36a3684656baa3313dfe3a0322084de65b83b9b2647f8ce` |
-| `runtime/modres-w11-typescript-api-adjudicator-20260826-r1/modres-w11-typescript-api-adjudicator-20260826-r1.latest-result.json` | `fc57ea098624f04f5406a3a0b34c09699416a7b46dec44f5ca2308c392968cc4` |
-
-The TypeScript adjudicator alias changed during this documentation lane from
-`2770f2ff32a11b514dabbbafc64b11513948c8def4cd44f460427cf9113d7a5e`,
-through `8501ee4eb4dc218b35a1f137f59bf72beb78e63fe3d5d67ad0211ff6c0df5003`,
-to the hash above. This directly demonstrates why `latest-result` alone is not
-immutable custody. Lane C subsequently captured 140 jobs, 161 terminal attempts,
-994 immutable objects, and 28 explicit missing-history exceptions. Verification
-returned `integrityValid=true` and `promotionAllowed=false`; primary-source
-independence, claim-level executable closure, product-owner review, and a
-separate ADR remain outside this corpus capture.
+Current custody tooling binds only a recognized versioned wrapper whose job,
+attempt count, and terminal status match the latest captured journal attempt.
+When historical bytes lack that identity, the tool records an unproven binding
+instead of assigning the wrapper to an attempt. Primary-source independence,
+successful executable attestation, product-owner review, and a separate ADR
+also remain required.
 
 See the existing [final recommendation](../final-recommendation.md),
 [decision ledger](../decision-ledger.yaml), and
