@@ -518,21 +518,28 @@ denied, or unknown no-source disposition. Expiry, scope violation, a changed
 digest, a roster mismatch, or source bytes existing outside the admitted window
 closes the preparation fence and makes the slot inadmissible.
 
-Source preparation has its own stop and retirement transition and does not depend
-on campaign admission or Phase 6. On withdrawal, expiry, containment failure, or
-an abandoned root, the authorization-bound source-preparation retirement owner
-uses its scoped credential to request one durable terminal transition. The
-custody transaction authority atomically advances the preparation fence, marks
-the root `retired`, revokes authoring credentials and unconsumed authorizations,
-reconciles every persisted authoring runtime identity, and records each unresolved
-slot as denied, missing, or unknown without rewriting prior facts. Workspaces and
-containment remain quarantined while a runtime is unknown. Cleanup is permitted
-only after the custody authority proves the exact runtime terminated or is
-absent. The custodian then appends a source-preparation retirement tombstone that
-binds the root, all lineages, authorizations, slot dispositions, revocations,
-reconciliation evidence, retained objects, cleanup outcome, owner, and
-authoritative terminal time. An abandoned or retired root can never be admitted
+Source preparation has an evidence lifecycle and an independent resource-
+retirement lifecycle; neither depends on campaign admission or Phase 6. On
+withdrawal, expiry, containment failure, or abandonment while the evidence
+lifecycle is still `open`, the authorization-bound source-preparation retirement
+owner uses its scoped credential to request one durable abandonment transition.
+The custody transaction authority atomically advances the preparation fence,
+marks the evidence root `abandoned`, revokes authoring credentials and unconsumed
+authorizations, and records each unresolved slot as denied, missing, or unknown
+without rewriting prior facts. An abandoned evidence root can never be admitted
 or reopened; later work requires a new root and pre-source commitment.
+
+Resource retirement may begin after either evidence abandonment or successful
+evidence closure, including when campaign admission later fails. It reconciles
+every persisted authoring runtime identity, while workspaces and containment
+remain quarantined whenever a runtime is unknown. Cleanup is permitted only
+after the custody authority proves the exact runtime terminated or is absent.
+The custodian then appends one source-preparation retirement tombstone that binds
+the immutable evidence terminal state and receipt, root, all lineages,
+authorizations, slot dispositions, revocations, reconciliation evidence,
+retained objects, cleanup outcome, owner, and authoritative retirement time.
+Retirement never rewrites a closed root, makes it admissible, or deletes evidence
+required to rebuild a later admission failure or campaign verdict.
 
 Successful preparation closes only through the custody transaction authority.
 At one authoritative-time linearization point it advances the preparation
@@ -540,10 +547,12 @@ generation fence, atomically marks the root `closed`, prevents any further
 authorization in the source-family root from being issued, verifies one terminal
 receipt for every slot in every related authorization, and emits an authenticated
 durable `SourcePreparationClosureReceipt`. Related authorization issuance,
-successful closure, and retirement use the same durable terminal-state ordering
-authority. Issuance succeeds only while the root is `open`; exactly one of
-`closed` or `retired` can win, and recovery idempotently completes the winning
-transition without emitting the other terminal outcome. The closure receipt binds the
+successful closure, and abandonment use the same durable evidence-lifecycle
+ordering authority. Issuance succeeds only while the root is `open`; exactly one
+of `closed` or `abandoned` can win, and recovery idempotently completes the
+winning evidence transition without emitting the other terminal outcome. The
+independent resource-retirement lifecycle may then complete from either terminal
+evidence state. The closure receipt binds the
 source-family root, every lineage, closed generation, every authorization and
 slot roster, every terminal disposition and source digest, product base and
 allowed deltas, actual-grant and import evidence, the applicable successor,
@@ -943,8 +952,9 @@ ADR-0013.
 | A preparation slot is omitted, added, substituted, reused, or resolves to changed source bytes | The preparation fence closes; the mismatch is retained and campaign admission fails |
 | A later preparation authorization omits prior lineage, exceeds preregistered multiplicity, or changes the selection rule | Every related round remains retained and the campaign is inadmissible under that lineage |
 | A successor lineage is omitted from its source-family root or a favorable lineage is admitted while an earlier lineage or disposition is excluded | The complete root remains in attrition and multiplicity accounting; selective admission fails closed |
-| Related authorization issuance, successful preparation closure, and source retirement race | One durable terminal-state authority admits issuance only while open and lets exactly one of closure or retirement win; recovery cannot emit both outcomes |
+| Related authorization issuance, successful preparation closure, and source abandonment race | One durable evidence-lifecycle authority admits issuance only while open and lets exactly one of closure or abandonment win; recovery cannot emit both outcomes |
 | Source preparation is withdrawn, expires, or is abandoned before campaign admission while an authoring runtime is missing or unknown | Its own fence closes, credentials and launch authority are revoked, the exact runtime and workspace remain quarantined until termination or absence is proven, and an immutable source-retirement tombstone is retained without requiring campaign admission |
+| Source evidence closes successfully but campaign admission later fails | The closure receipt and failed-admission evidence remain immutable; the owner-bound resource-retirement lifecycle revokes residual authority, reconciles runtimes, preserves quarantine until absence is proven, and appends its tombstone without changing the root from `closed` |
 | Preparation-to-treatment mapping is missing, duplicated, or not one-to-one | Campaign admission fails; every expected slot remains visible as an explicit no-source or invalid observation |
 | Dossier consistency receipt is missing, foreign, stale, forged, produced by an unqualified verifier, or binds different dossier, product source, manifest, or `B0` provenance | Campaign admission fails closed and the mismatch is retained |
 | Discovery or Phase 1 uses a dirty or incompletely manifested input despite matching repository, commit, and tree coordinates | Its result remains diagnostic; it cannot select `B0`, satisfy the trigger, or support admission |
@@ -1148,9 +1158,12 @@ A future implementation conforms to this proposal only when:
   campaign admission through an authorization-bound owner and scoped credential,
   retains all slot dispositions and a retirement tombstone, and never cleans an
   unresolved runtime or reopens the source-family root;
-- authorization issuance, successful source closure, and source retirement share
-  one durable terminal-state ordering authority, and exactly one of closure or
-  retirement can win;
+- authorization issuance, successful source closure, and source abandonment
+  share one durable evidence-lifecycle ordering authority, and exactly one of
+  closure or abandonment can win;
+- resource retirement is an independent owner-bound lifecycle that may complete
+  after either evidence outcome, including failed admission after closure, and
+  cannot rewrite the evidence terminal state or clean an unresolved runtime;
 - calibration registrations, launches, and receipts bind immutable
   calibration-only coordinates that cannot be promoted or reused as campaign
   coordinates;
