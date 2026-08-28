@@ -55,10 +55,18 @@ each role to an auditable principal and credential identity.
 | Independent evaluator | Application of a sealed product-approved oracle or rubric and registered analysis | Oracle semantics, treatment implementation, harness operation, evidence custody, review, or product authorization |
 | Independent reviewer | Acceptance or rejection of the evidence claim supported by one campaign | Sponsorship, authorization, implementation, execution, custody, or evaluation |
 
-Calibration may combine roles, but its output cannot support promotion. Neither
-the future candidate producer nor any principal in its effective control domain
-may access the final campaign corpus, holdout assignment, oracle outcomes, or
-interim results during measurement or calibration. Campaign admission binds
+Calibration may combine roles only for disposable outputs that cannot support a
+campaign. Any execution-, scoring-, custody-, or report-affecting component
+eligible for a campaign `HarnessQualificationRevision` must, from authoring and
+build through qualification and operation, exclude the candidate producer and
+its effective control domain. Independently verified source and build provenance
+binds that exclusion. A component touched under combined-role calibration is
+non-reusable and must be rebuilt and qualified again under campaign-compatible
+role separation.
+
+Neither the future candidate producer nor any principal in its effective control
+domain may access the final campaign corpus, holdout assignment, oracle outcomes,
+or interim results during measurement or calibration. Campaign admission binds
 historical non-access evidence. A campaign used for an architectural or product
 claim enforces the incompatible role combinations above with separate principals
 or workload identities, separate credentials, and auditable handoffs. Labels
@@ -222,9 +230,10 @@ or drift problem through existing composition without introducing the
 abstraction being justified. A product decision must then name and own every
 admission prerequisite. It may cite dossier evidence at an exact immutable
 revision, but mutable dossier fields never become authority. A candidate that
-introduces a new authoring grammar also requires an accepted governance
-successor that explicitly resolves the ownership conflict between ADR-0013 and
-ADR-0014. An ordinary campaign or product-use decision is insufficient.
+introduces a new authoring grammar must remain within ADR-0014's accepted
+product-local ownership and the exact level-specific owning-product decision.
+The campaign neither creates a successor governance gate nor authorizes shared
+Foundation extraction.
 
 An admitted capability must be:
 
@@ -417,12 +426,35 @@ The authoritative time is owned by the durable custody transaction authority;
 sandbox-host wall clocks are diagnostic only and cannot extend an expiry or
 reclassify a receipt.
 
+#### Blinded treatment-source preparation
+
+After Phase 2 exits, the product authorizer may issue a narrow, expiring source
+preparation authorization under the already accepted level-specific
+owning-product decision. It binds the allowed treatment semantics, source
+family, candidate producer, inputs, forbidden resources, expiry, and a fresh
+source-preparation generation fence. It permits source authoring only. It cannot
+allocate campaign coordinates, register or build a `T1`, execute candidate
+code, access the final corpus or assignment, observe qualification or campaign
+outcomes, support a promotional claim, authorize product use, or imply
+Foundation extraction.
+
+The candidate producer receives only blinded, outcome-independent authoring
+inputs. The evidence custodian records the resulting exact source digests and
+all expected source slots, including failed or missing preparation, without
+revealing the final holdout. Expiry or scope violation closes the preparation
+fence. The source becomes eligible for a campaign only when a later immutable
+campaign decision commits the complete source roster; it becomes a `T1` only
+after an admitted build produces and verifies the artifact.
+
 #### Campaign admission checklist
 
-After Phase 2 and before any treatment work, the product authorizer records all
-of the following in one immutable campaign decision:
+After Phase 2 and any separately authorized blinded source preparation, but
+before treatment registration, build, or execution, the product authorizer
+records all of the following in one immutable campaign decision:
 
 - the exact calibration authorization and its results;
+- the exact source-preparation authorization, fence history, and complete source
+  disposition roster;
 - immutable `ProtocolRevision` and `B0` coordinates;
 - the committed treatment source family and immutable `TreatmentSlotIdentity`
   roster, including each exact source, recipe, toolchain, and complete mapping to
@@ -440,8 +472,10 @@ of the following in one immutable campaign decision:
   authority role;
 - a stop-authority matrix binding exactly one accountable owner and scoped
   credential to registered analytic stop, discretionary abort, automatic expiry,
-  and emergency containment stop; any transition not registered by `E0` is
-  non-promotional;
+  and emergency containment stop; the independent evaluator owns and signs an
+  outcome-dependent analytic determination under `E0`, while custody validates
+  only its identity, registration, and integrity; any transition not registered
+  by `E0` is non-promotional;
 - the build and execution sandbox enforcer, deny-by-default policy, and allowed
   disposable resources;
 - the evidence store, immutable locator scheme, access policy, and projection
@@ -451,9 +485,13 @@ of the following in one immutable campaign decision:
   sandbox enforcer, runtime reconciler, build and evaluation adapters, evaluator
   runner and oracle, and report renderer, plus the exact Phase 2 qualification
   evidence for those bytes;
-- an exact immutable dossier revision used as supporting evidence;
-- an accepted ownership and governance successor before introducing any new
-  authoring grammar.
+- an exact immutable dossier revision used as supporting evidence, together with
+  a passing receipt-bound consistency and source-custody gate at that revision;
+  every relied-upon product source revision must match the measurement
+  authorization, discovery evidence, and `B0`, while an unresolved placeholder,
+  missing receipt, or mismatch is a no-go;
+- evidence that any new authoring grammar remains product-local under ADR-0014
+  and its accepted level-specific owning-product decision.
 
 Missing or mutable prerequisites are a no-go. A planning issue, draft ADR,
 mutable branch, calibration authorization, or candidate-owned configuration
@@ -513,18 +551,24 @@ Phases 0 and 1. An unmeasured convenience abstraction is a no-go.
 
 #### Phase 2 - Candidate-independent harness
 
-1. Implement attempt registration, one-use launch authorization, append-only
+1. Before qualification execution, preregister a complete expected negative-case
+   roster covering every row of the negative verification matrix. Each entry
+   binds its phase, owner, qualified component identities, inputs, expected
+   result, and required terminal disposition. Missing, unknown, or retrospectively
+   excluded entries fail qualification and cannot be waived for campaign
+   admission.
+2. Implement attempt registration, one-use launch authorization, append-only
    receipts, and rebuildable read projections outside candidate authority. Every
    calibration registration, launch, and receipt binds the immutable
    calibration-only protocol, evaluation, and sandbox-policy coordinates.
-2. Linearize authorization consumption, calibration-generation fencing, and
+3. Linearize authorization consumption, calibration-generation fencing, and
    process creation against the authorized durable time source. A calibration
    launch token expires no later than its calibration authorization. Persist an
    enforcer-owned runtime identity, qualified-component attestations, and hard
    deadline before releasing candidate-controlled code.
-3. Attest effective file, mount, network, environment, subprocess, and credential
+4. Attest effective file, mount, network, environment, subprocess, and credential
    grants against the registered policy before candidate-controlled code runs.
-4. Run build and evaluation adapters with `B0` and deliberate mutants only,
+5. Run build and evaluation adapters with `B0` and deliberate mutants only,
    against a dedicated qualification corpus that is disjoint from the final
    campaign holdout. Seal a no-treatment evaluator qualification binding the
    exact proposed final runner, oracle implementation, scoring configuration, and
@@ -532,36 +576,40 @@ Phases 0 and 1. An unmeasured convenience abstraction is a no-go.
    and configurations, while its independently held corpus and assignment are
    sealed later in campaign admission. Qualification results remain
    non-promotional.
-5. Exercise crash, timeout, cancellation, containment denial, receipt mutation,
+6. Exercise crash, timeout, cancellation, containment denial, receipt mutation,
    deletion, conflicting duplicates, crash durability, orphan reconciliation,
    campaign-expiry races, malicious output rendering, and restart behavior before
    treatment execution.
-6. Demonstrate that no `N-1` candidate is needed to build, launch, evaluate,
+7. Demonstrate that no `N-1` candidate is needed to build, launch, evaluate,
    recover evidence, or clean up the campaign.
-7. Produce a `HarnessQualificationRevision` binding immutable digests and
+8. Produce a `HarnessQualificationRevision` binding immutable digests and
    configurations for every execution-, scoring-, custody-, and report-affecting
    component: registrar, launch gate, receipt writer and store, sandbox enforcer,
    runtime reconciler, build and evaluation adapters, evaluator runner and oracle,
    report renderer, and all negative-test evidence.
-8. Prove each registration, authorization consumption, terminal append, and
+9. Prove each registration, authorization consumption, terminal append, and
    reconciliation binds externally verified identities and digests for the
    participating components through that revision. Every restarted component
    re-attests before serving; unavailable or mismatched attestation closes the
    calibration fence.
 
-Exit only when all registered negative cases fail closed and a destroyed
-projection can be rebuilt from immutable receipts. Mutation, deletion, or
-conflicting terminal receipts must be rejected or detectably invalidate the
-claim. Calibration output cannot support promotion. Only after this exit may the
-product authorizer commit the treatment source family and
-`TreatmentSlotIdentity` roster, mint the immutable `ProtocolRevision`, freeze
-`B0`, seal the independently held final corpus and assignment, and issue the
-final `E0` and campaign decision. The final `E0` references only evaluator
-artifacts and configurations qualified by the exact
+Exit only when the complete preregistered negative-case roster has a verified
+passing disposition, every negative case fails closed, and a destroyed projection
+can be rebuilt from immutable receipts. Missing, unknown, or retrospectively
+excluded qualification cases are a no-go. Mutation, deletion, or conflicting
+terminal receipts must be rejected or detectably invalidate the claim.
+Calibration output cannot support promotion. Only after this exit may the product
+authorizer issue the bounded blinded source-preparation authorization.
+After that preparation closes, the authorizer may commit its complete exact
+source roster as the `TreatmentSlotIdentity` roster, mint the immutable
+`ProtocolRevision`, freeze `B0`, seal the independently held final corpus and
+assignment, and issue the final `E0` and campaign decision. The final `E0`
+references only evaluator artifacts and configurations qualified by the exact
 `HarnessQualificationRevision`. Any later change to the harness, evaluator,
 report path, treatment roster, or final holdout requires new calibration or
-campaign coordinates as applicable and campaign readmission. Calibration
-coordinates are never promoted or reused as campaign coordinates.
+campaign coordinates as applicable and campaign readmission. Calibration and
+source-preparation coordinates are never promoted or reused as campaign
+coordinates.
 
 #### Phase 3 - Treatment build and protocol seal
 
@@ -737,11 +785,14 @@ credentials.
 
 Stopping a campaign is an authority action, not a candidate callback. The
 admitted stop-authority matrix determines the only credential and accountable
-owner allowed to initiate each transition. A registered analytic trigger is
-validated by the evidence custodian and executed by the launch gate; expiry is
-automatic; a discretionary abort is non-promotional. An orderly stop performs
-these steps. Campaign expiry starts the same fence closure automatically even
-when the retirement workflow is delayed:
+owner allowed to initiate each transition. For an outcome-dependent registered
+analytic trigger, the independent evaluator applies the sealed `E0` rule and
+issues an authenticated stop determination. The evidence custodian validates
+only the determination's evaluator identity, `E0` registration, signature,
+freshness, and integrity; the launch gate executes the validated transition.
+Expiry is automatic; a discretionary abort is non-promotional. An orderly stop
+performs these steps. Campaign expiry starts the same fence closure
+automatically even when the retirement workflow is delayed:
 
 1. Advance the campaign generation fence, stop issuing authorizations, revoke
    issued authorizations and candidate-visible credentials, and block
@@ -811,11 +862,23 @@ A future implementation conforms to this proposal only when:
 - an accepted revision of this architecture and product calibration authorization
   precede candidate-independent harness work, while an immutable campaign
   decision precedes every treatment registration, build, or execution;
+- blinded treatment-source preparation starts only after Phase 2 under its own
+  expiring authorization and generation fence, cannot access final holdout or
+  outcomes, and every expected source slot has an explicit disposition before
+  campaign admission;
 - calibration registrations, launches, and receipts bind immutable
   calibration-only coordinates that cannot be promoted or reused as campaign
   coordinates;
 - campaign admission binds the exact Phase 2-qualified evidence-critical harness
   artifacts and configurations, and any change requires requalification;
+- every campaign-reusable evidence-critical component excludes candidate-producer
+  control throughout authoring, build, qualification, and operation and has
+  independently verified provenance;
+- a complete preregistered negative-case roster covers every required matrix row,
+  and missing, unknown, or retrospectively excluded entries block admission;
+- the cited dossier revision has a passing receipt-bound consistency and
+  source-custody gate, and all relied-upon product source revisions reconcile to
+  the measurement authorization, discovery evidence, and `B0`;
 - every treatment semantic is classified and remains within its admitted
   `L0`-`L4` level and accepted product trigger;
 - product ports, DTOs, domain types, and application use cases expose no module
