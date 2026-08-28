@@ -226,6 +226,8 @@ test("restricted TypeScript path resolution rejects unsupported or ambiguous con
     { compilerOptions: { moduleSuffixes: [".native", ""], paths: { "@src/*": ["./src/*"] } } },
     { compilerOptions: { paths: { "@src/*": ["/src/*"] } } },
     { compilerOptions: { paths: { "@src/*": ["./src/*", "./generated/*"] } } },
+    { compilerOptions: { paths: { "@src/*/nested/*": ["./src/*"] } } },
+    { compilerOptions: { paths: { "@src/*": ["./src/*/nested/*"] } } },
   ];
   for (const [index, config] of variants.entries()) {
     const root = await mkdtemp(join(tmpdir(), `source-custody-resolution-${index}-`));

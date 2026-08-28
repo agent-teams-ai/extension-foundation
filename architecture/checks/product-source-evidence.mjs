@@ -335,7 +335,7 @@ function resolveImportPath(importerPath, specifier, resolution, sourcesByPath, p
       const [prefix, suffix] = mapping.pattern.split("*");
       if (!specifier.startsWith(prefix) || !specifier.endsWith(suffix)) continue;
       const captured = specifier.slice(prefix.length, specifier.length - suffix.length);
-      matches.push(mapping.target.slice(2).replace("*", captured));
+      matches.push(mapping.target.slice(2).replaceAll("*", captured));
     }
     if (matches.length !== 1) {
       fail("E-RESOLUTION", `${product} import ${specifier} must match exactly one restricted path target`);

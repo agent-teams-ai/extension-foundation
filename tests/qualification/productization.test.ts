@@ -337,7 +337,8 @@ test("source claims stay within the restricted lexical verifier", async () => {
 });
 
 test("complete Linux CI verifies exact product sources without changing intrinsic local checks", async () => {
-  const workflow = await readFile(resolve(root, ".github", "workflows", "ci.yml"), "utf8");
+  const workflow = (await readFile(resolve(root, ".github", "workflows", "ci.yml"), "utf8"))
+    .replace(/\r\n?/gu, "\n");
   const packageDocument = JSON.parse(await readFile(resolve(root, "package.json"), "utf8")) as {
     readonly scripts: Record<string, string>;
   };
