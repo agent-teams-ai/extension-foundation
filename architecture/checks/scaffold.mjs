@@ -209,6 +209,9 @@ export async function publishScaffoldPlan({
   }), resolveOwner);
   const policy = await requireValidPackagePolicy(root);
   const entry = policy.entriesById.get(plan.target.id);
+  if (!scaffoldTargetMatchesEntry(plan.target, entry)) {
+    throw new Error("scaffold target differs from the repository-owned package policy");
+  }
   if (entry === undefined || planPath !== materializationPlanPath(entry)) {
     throw new Error(`plan path must be ${entry === undefined ? "the catalog-owned materialization path" : materializationPlanPath(entry)}`);
   }
@@ -303,6 +306,9 @@ export async function applyScaffoldPlan({
   const validated = await validatePlanAgainstCatalog(root, plan, resolveOwner);
   const policy = await requireValidPackagePolicy(root);
   const entry = policy.entriesById.get(validated.target.id);
+  if (!scaffoldTargetMatchesEntry(validated.target, entry)) {
+    throw new Error("scaffold target differs from the repository-owned package policy");
+  }
   if (entry === undefined || planPath !== materializationPlanPath(entry)) {
     throw new Error(`plan path must be ${entry === undefined ? "the catalog-owned materialization path" : materializationPlanPath(entry)}`);
   }

@@ -472,25 +472,33 @@ test("plan and apply fully revalidate catalog identity after owner resolution", 
               resolveOwner: acceptedOwner,
             }));
           }
-          const mutateDuringResolution = async id => {
-            const catalogPath = join(root, "architecture/package-catalog.json");
-            const catalog = JSON.parse(await readFile(catalogPath, "utf8"));
-            catalog.packages[0][field] = value;
-            await writeFile(catalogPath, `${JSON.stringify(catalog)}\n`);
-            return acceptedOwner(id);
+          const mutateAfterSecondPolicyRead = async id => {
+            const owner = await acceptedOwner(id);
+            const packageOwnership = owner.packageOwnership;
+            let validations = 0;
+            Object.defineProperty(owner, "packageOwnership", { get() {
+              if (++validations !== 2) return packageOwnership;
+              const { readFileSync, writeFileSync } = process.getBuiltinModule("node:fs");
+              const catalogPath = join(root, "architecture/package-catalog.json");
+              const catalog = JSON.parse(readFileSync(catalogPath, "utf8"));
+              catalog.packages[0][field] = value;
+              writeFileSync(catalogPath, `${JSON.stringify(catalog)}\n`);
+              return packageOwnership;
+            } });
+            return owner;
           };
           const action = operation === "plan"
             ? publishScaffoldPlan({
                 root,
                 intentPath: "architecture/scaffolding-intents/example.yaml",
                 planPath: "architecture/scaffolding-plans/module-dot-example.json",
-                resolveOwner: mutateDuringResolution,
+                resolveOwner: mutateAfterSecondPolicyRead,
               })
             : applyScaffoldPlan({
                 root,
                 planPath: "architecture/scaffolding-plans/module-dot-example.json",
                 expectedPlanDigest: planDigest,
-                resolveOwner: mutateDuringResolution,
+                resolveOwner: mutateAfterSecondPolicyRead,
               });
           await assert.rejects(action, /differs from the repository-owned package policy/u);
           assert.equal(await exists(join(root, "packages/example")), false);

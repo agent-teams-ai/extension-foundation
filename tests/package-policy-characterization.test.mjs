@@ -9,6 +9,7 @@ import test from "node:test";
 
 import {
   hasCanonicalPackageRootExports,
+  loadAllowedPackageRoles,
   loadPackagePolicy,
   packageExportTargets,
   packageOwnerFeatures,
@@ -26,6 +27,13 @@ const execFileAsync = promisify(execFile);
 const skipExpensiveIntegration = process.env.PACKAGE_POLICY_TEST_MODE === "fast"
   ? "skipped in package-policy fast mode"
   : false;
+
+test("policy facade loaders retain async non-constructible signatures", () => {
+  for (const loader of [loadAllowedPackageRoles, loadPackagePolicy]) {
+    assert.equal(loader.constructor.name, "AsyncFunction");
+    assert.throws(() => Reflect.construct(loader, []), TypeError);
+  }
+});
 
 async function writeFixture(root, path, contents) {
   const target = join(root, path);

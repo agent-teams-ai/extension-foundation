@@ -46,11 +46,11 @@ const defaultLoadPackagePolicy = createLoadPackagePolicy({
   loadAllowedRoles: defaultLoadAllowedRoles,
 });
 
-export function loadAllowedPackageRoles(root) {
+export async function loadAllowedPackageRoles(root) {
   return defaultLoadAllowedRoles(root);
 }
 
-export function loadPackagePolicy(root) {
+export async function loadPackagePolicy(root) {
   return defaultLoadPackagePolicy(root);
 }
 
