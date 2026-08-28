@@ -48,7 +48,7 @@ each role to an auditable principal and credential identity.
 | Role | Owns | Must not own in the same campaign |
 | --- | --- | --- |
 | Product sponsor | Capability seam, product outcome, behavioral-oracle semantics, and proposed acceptance policy and thresholds | Treatment production, evaluation, evidence review, or product authorization |
-| Product authorizer | Campaign admission, expiry, and any later product-use or extraction decision | Sponsorship, treatment production, harness operation, evidence custody, evaluation, or evidence review |
+| Product authorizer | Campaign admission, expiry, and any later product-use decision | Sponsorship, treatment production, harness operation, evidence custody, evaluation, or evidence review |
 | Candidate producer | Treatment implementation and declared build inputs | Harness operation, evidence custody, evaluation, review, or product authorization |
 | Harness operator | Sealed execution of the registered protocol | Candidate production, evidence custody, evaluation, review, or product authorization |
 | Evidence custodian | Attempt registration, append-only receipts, raw outputs, provenance, and retrieval | Candidate production, harness operation, evaluation, review, or product authorization |
@@ -60,6 +60,11 @@ campaign used for an architectural or product claim enforces the incompatible
 role combinations above with separate principals or workload identities,
 separate credentials, and auditable handoffs. Labels inside one process or
 account are not separation.
+
+Foundation extraction has no role in a dogfooding campaign. If ADR-0013's
+independent-consumer and conformance gates are later satisfied, a separate
+accepted extraction decision names its authority. The product authorizer cannot
+authorize Foundation extraction.
 
 No shared module-system owner exists at this level. The first owning product
 owns private identities, grammar, composition behavior, diagnostics, and any
@@ -132,9 +137,12 @@ content digests and retrievable locators for its corpus, runner, oracle or
 rubric, model identity, prompts, context, settings, tools, permissions, budgets,
 assignment order, pair identities, analysis, exclusions, thresholds, and stop
 rules. Changing an evaluator input or analysis rule creates a new `E0`; changing
-candidate bytes creates a new `T1`. A preregistered protocol may compare more
-than one `T1` under the same sealed `E0`. Results from different evaluator
-revisions are not pooled.
+candidate bytes creates a new `T1`. A protocol may compare a preregistered family
+of `T1` artifacts under one sealed `E0` only when the treatment sources and build
+registrations are committed before the sealed corpus or any interim outcome is
+revealed to the candidate producer. Outcome-informed candidate changes require
+both a new `T1` and a fresh `E0`. Results from different evaluator revisions are
+not pooled.
 
 Before a build starts, the evidence custodian registers a
 `BuildAttemptIdentity` against the exact `ProtocolRevision`, source inputs,
@@ -186,9 +194,9 @@ or drift problem through existing composition without introducing the
 abstraction being justified. A product decision must then name and own every
 admission prerequisite. It may cite dossier evidence at an exact immutable
 revision, but mutable dossier fields never become authority. A candidate that
-introduces a new authoring grammar also requires an accepted product decision
-that resolves its ownership and governance consistently with ADR-0013 and
-ADR-0014.
+introduces a new authoring grammar also requires an accepted governance
+successor that explicitly resolves the ownership conflict between ADR-0013 and
+ADR-0014. An ordinary campaign or product-use decision is insufficient.
 
 An admitted capability must be:
 
@@ -251,7 +259,17 @@ deadline, the custodian records a separate missing or unknown observation.
 Absence alone is never reclassified as abandoned or invalid, and `E0` owns its
 attrition and analysis treatment.
 
-Each build receipt binds:
+Every receipt binds:
+
+- its build or execution attempt identity, `ProtocolRevision`, predecessor
+  attempt, and registration, start, and completion timestamps;
+- sandbox enforcer identity, normalized policy or configuration digest, actual
+  file, mount, network, environment, subprocess, and credential grants, and the
+  enforcement outcome;
+- raw output, terminal state, and current authorization or revocation
+  observation when applicable.
+
+Each build receipt additionally binds:
 
 - repository, clean commit and tree, submodules, and lockfile digests; if a
   dirty input is exceptionally admitted, an immutable archive digest and
@@ -261,14 +279,12 @@ Each build receipt binds:
 - terminal build state and, when produced, artifact media type, digest, size,
   provenance, and immutable retrievable locator.
 
-Each execution receipt binds:
+Each execution receipt additionally binds:
 
 - the verified baseline or treatment artifact;
 - protocol and evaluation content digests and immutable locators;
-- experimental unit, pair, assignment order, predecessor attempt, and attempt
-  identity;
-- raw output, normalized result, terminal state, timestamps, and current
-  authorization or revocation observation when applicable.
+- experimental unit, pair, assignment order, and normalized result;
+- immutable digests and locators for retained transcripts and tool events.
 
 A local path, mutable tag, source claim, or hash without retrievable immutable
 custody is corroboration only. Artifact identity is reverified at registration,
@@ -303,6 +319,7 @@ product-owned decision and architecture.
 | Omitted failed attempt | External preregistration requires a terminal receipt or detectable missing or unknown observation for every build and execution attempt |
 | Artifact substitution | Immutable locator, digest, provenance, and verification at every use |
 | Evaluator drift | `E0` binds every evaluator input, model identity, assignment, and analysis rule |
+| Adaptive benchmark overfitting | Treatment family is committed before unblinding; outcome-informed changes require a fresh `E0` |
 | Framework leakage | Export and dependency-direction audit outside black-box scoring |
 | Build or process escape | Deny-by-default containment from the first candidate-controlled build or executable treatment |
 
@@ -320,9 +337,11 @@ If an owning product later admits a campaign, the sequence is:
    rationale, protocol, baseline, evaluator, thresholds, owners, and expiry. If
    the candidate introduces a grammar, accept its ownership and governance
    decision first.
-3. Seal `B0` and `E0`, preregister the treatment build, build it inside
+3. Preregister the treatment sources and build attempt, build inside
    containment, and externally verify the resulting `T1`.
-4. Calibrate the harness against baseline-only runs and deliberate mutants.
+4. Seal `B0`, the preregistered `T1` family, and `E0` before the sealed corpus or
+   outcomes are exposed to the candidate producer. Calibrate the harness against
+   baseline-only runs and deliberate mutants without unblinding the producer.
 5. Preregister artifact-execution attempts, then execute baseline and treatment
    only in disposable containment.
 6. Have an independent reviewer accept or reject only the registered evidence
@@ -362,6 +381,8 @@ A future implementation conforms to this proposal only when:
 - baseline and every evaluator input are frozen before treatment admission;
 - every build and execution attempt is preregistered and has a terminal receipt
   or detectable missing or unknown observation;
+- every candidate-controlled build and execution receipt binds the sandbox
+  enforcer, policy, actual grants, and enforcement outcome;
 - deterministic and stochastic verdicts remain independent;
 - fallback cannot hide a failed or unknown treatment outcome;
 - dogfooding, product runtime use, and Foundation extraction remain separate
