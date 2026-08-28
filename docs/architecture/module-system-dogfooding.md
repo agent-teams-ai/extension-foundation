@@ -61,6 +61,13 @@ role combinations above with separate principals or workload identities,
 separate credentials, and auditable handoffs. Labels inside one process or
 account are not separation.
 
+Independence is evaluated over effective and transitive administrative control,
+including the human or organization, workflow administrator, and credential
+issuer. Workload identities controlled by the same effective principal do not
+establish independence. The campaign evidence binds authenticated role
+identities, control domains, and handoffs to the exact protocol, attempts,
+review, and decision.
+
 Foundation extraction has no role in a dogfooding campaign. If ADR-0013's
 independent-consumer and conformance gates are later satisfied, a separate
 accepted extraction decision names its authority. The product authorizer cannot
@@ -126,6 +133,7 @@ Every campaign keeps the following coordinates distinct:
 | `ExperimentalUnit` | The entity whose outcome contributes once to the registered analysis |
 | `BuildAttemptIdentity` | One preregistered build of exact source, recipe, and toolchain inputs; its output artifact is optional |
 | `AttemptIdentity` | One non-reused artifact execution, optionally linked to a prior attempt without becoming a new experimental unit |
+| `LaunchAuthorization` | One-use custodian-issued capability bound to one registered attempt and exact sandbox policy |
 | `BuildReceipt` | Externally captured build result with an optional verified output artifact |
 | `EvidenceReceipt` | Externally captured binding between registered evaluator inputs, execution, raw output, and terminal result |
 
@@ -141,8 +149,11 @@ candidate bytes creates a new `T1`. A protocol may compare a preregistered famil
 of `T1` artifacts under one sealed `E0` only when the treatment sources and build
 registrations are committed before the sealed corpus or any interim outcome is
 revealed to the candidate producer. Outcome-informed candidate changes require
-both a new `T1` and a fresh `E0`. Results from different evaluator revisions are
-not pooled.
+both a new `T1` and a fresh `E0` with a previously unseen independently reserved
+corpus or assignment. `E0` lineage binds prior evaluations and the registered
+cross-revision selection and multiplicity rule. If a fresh holdout or valid
+adaptive-analysis protocol is unavailable, the result is exploratory and cannot
+support promotion. Results from different evaluator revisions are not pooled.
 
 Before a build starts, the evidence custodian registers a
 `BuildAttemptIdentity` against the exact `ProtocolRevision`, source inputs,
@@ -153,9 +164,15 @@ failure therefore remains visible before an artifact exists.
 Before artifact execution, the custodian registers an `AttemptIdentity` against
 the exact `ProtocolRevision`, `B0` or verified `T1`, `E0`, and
 `ExperimentalUnit`, with an expected `EvidenceReceipt`. A retry of either kind
-links to its predecessor and does not increase the registered sample size
-unless the product-approved analysis explicitly defines a new experimental
-unit.
+links to its predecessor and retains the original `ExperimentalUnit`. A genuine
+independently randomized replication is registered as a new experimental unit
+and attempt, never relabeled as a retry.
+
+Each registration issues a one-use `LaunchAuthorization`. The external launch
+gate atomically records its consumption before the build or evaluation sandbox
+can execute candidate-controlled code. Missing, reused, mismatched, or expired
+authorization blocks launch. The harness cannot start an unregistered attempt
+and register it after observing the outcome.
 
 ### Bootstrap without recursive authority
 
@@ -263,6 +280,7 @@ Every receipt binds:
 
 - its build or execution attempt identity, `ProtocolRevision`, predecessor
   attempt, and registration, start, and completion timestamps;
+- consumed `LaunchAuthorization` identity and external launch-gate receipt;
 - sandbox enforcer identity, normalized policy or configuration digest, actual
   file, mount, network, environment, subprocess, and credential grants, and the
   enforcement outcome;
@@ -281,7 +299,9 @@ Each build receipt additionally binds:
 
 Each execution receipt additionally binds:
 
-- the verified baseline or treatment artifact;
+- the verified baseline or treatment artifact; treatment execution also binds
+  the exact producing `BuildAttemptIdentity` and immutable `BuildReceipt`, and
+  fails closed when that lineage is missing or ambiguous;
 - protocol and evaluation content digests and immutable locators;
 - experimental unit, pair, assignment order, and normalized result;
 - immutable digests and locators for retained transcripts and tool events.
@@ -316,10 +336,10 @@ product-owned decision and architecture.
 | --- | --- |
 | Candidate self-certification | Candidate producer, harness, custody, evaluator, reviewer, sponsor, and authorizer remain auditable and separated as defined above |
 | Recursive bootstrap | Candidate-independent build and evaluation path remains sufficient and tested for every generation |
-| Omitted failed attempt | External preregistration requires a terminal receipt or detectable missing or unknown observation for every build and execution attempt |
+| Omitted failed attempt | Build and evaluation sandboxes consume a one-use externally logged authorization before candidate code can run |
 | Artifact substitution | Immutable locator, digest, provenance, and verification at every use |
 | Evaluator drift | `E0` binds every evaluator input, model identity, assignment, and analysis rule |
-| Adaptive benchmark overfitting | Treatment family is committed before unblinding; outcome-informed changes require a fresh `E0` |
+| Adaptive benchmark overfitting | Treatment family is committed before unblinding; outcome-informed changes require an unseen holdout or remain non-promotional |
 | Framework leakage | Export and dependency-direction audit outside black-box scoring |
 | Build or process escape | Deny-by-default containment from the first candidate-controlled build or executable treatment |
 
@@ -340,10 +360,12 @@ If an owning product later admits a campaign, the sequence is:
 3. Preregister the treatment sources and build attempt, build inside
    containment, and externally verify the resulting `T1`.
 4. Seal `B0`, the preregistered `T1` family, and `E0` before the sealed corpus or
-   outcomes are exposed to the candidate producer. Calibrate the harness against
-   baseline-only runs and deliberate mutants without unblinding the producer.
-5. Preregister artifact-execution attempts, then execute baseline and treatment
-   only in disposable containment.
+   outcomes are exposed to the candidate producer. Reserve any adaptive holdout
+   independently. Calibrate the harness against baseline-only runs and
+   deliberate mutants without unblinding the producer.
+5. Preregister artifact-execution attempts and issue one-use launch
+   authorizations, then execute baseline and treatment only in disposable
+   containment.
 6. Have an independent reviewer accept or reject only the registered evidence
    claim.
 7. Use that result only as input to a later product decision. It authorizes no
@@ -377,12 +399,19 @@ A future implementation conforms to this proposal only when:
   generation without a prior candidate;
 - sponsor, authorizer, candidate production, harness operation, evidence
   custody, evaluation, and evidence review have auditable principal and
-  credential separation;
+  credential separation over their effective and transitive administrative
+  control;
 - baseline and every evaluator input are frozen before treatment admission;
 - every build and execution attempt is preregistered and has a terminal receipt
   or detectable missing or unknown observation;
+- no build or execution starts without atomically consuming its one-use external
+  launch authorization;
 - every candidate-controlled build and execution receipt binds the sandbox
   enforcer, policy, actual grants, and enforcement outcome;
+- each treatment execution binds one unambiguous producing build attempt and
+  receipt;
+- outcome-informed treatment changes use an unseen holdout with registered
+  lineage and selection accounting or remain non-promotional;
 - deterministic and stochastic verdicts remain independent;
 - fallback cannot hide a failed or unknown treatment outcome;
 - dogfooding, product runtime use, and Foundation extraction remain separate
