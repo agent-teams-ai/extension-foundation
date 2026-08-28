@@ -145,6 +145,7 @@ Every campaign keeps the following coordinates distinct:
 | `ExperimentalUnit` | The entity whose outcome contributes once to the registered analysis |
 | `SourcePreparationSlotIdentity` | One immutable, preregistered source-authoring slot created before source work; its terminal source is optional |
 | `SourcePreparationReceipt` | One authenticated durable start-to-terminal record for an expected source slot, ending in an exact source digest or explicit failed, missing, denied, or unknown no-source disposition |
+| `SourcePreparationClosureReceipt` | One authenticated durable fence transition that closes an entire preparation lineage and freezes every related authorization, slot, disposition, and source digest before campaign admission |
 | `TreatmentSlotIdentity` | One campaign slot mapped one-to-one from a source-preparation slot, linking an optional exact source and build inputs to all expected no-source, no-artifact, and execution observations |
 | `BuildAttemptIdentity` | One preregistered build of exact source, recipe, and toolchain inputs; its output artifact is optional |
 | `AttemptIdentity` | One non-reused artifact execution, optionally linked to a prior attempt without becoming a new experimental unit |
@@ -463,8 +464,25 @@ clean-state attestation, and authoritative-time start and terminal events. Its
 terminal result is the exact source digest or an explicit failed, missing,
 denied, or unknown no-source disposition. Expiry, scope violation, a changed
 digest, a roster mismatch, or source bytes existing outside the admitted window
-closes the preparation fence and makes the slot inadmissible. A later campaign
-admission maps every preparation slot one-to-one to exactly one
+closes the preparation fence and makes the slot inadmissible.
+
+Successful preparation closes only through the custody transaction authority.
+At one authoritative-time linearization point it advances the preparation
+generation fence, prevents any further authorization in the lineage from being
+issued, verifies one terminal receipt for every slot in every related
+authorization, and emits an authenticated durable
+`SourcePreparationClosureReceipt`. Issuance of a
+related authorization and lineage closure use the same durable ordering
+authority, so exactly one can win their race. The closure receipt binds the
+lineage, closed generation, every authorization and slot roster, every terminal
+disposition and source digest, the applicable selection and multiplicity rules,
+custodian identity, qualified closure-gate artifact and configuration, and
+authoritative closure time. A missing, stale, mismatched, or superseded closure
+receipt blocks campaign admission. Reopening a closed lineage is forbidden;
+further source work requires a new lineage and cannot be silently added to the
+prior campaign.
+
+A later campaign admission maps every preparation slot one-to-one to exactly one
 `TreatmentSlotIdentity`; a no-source slot remains an explicit non-buildable `E0`
 observation and cannot disappear. A produced source becomes eligible for a
 campaign only through that mapping and becomes a `T1` only after an admitted
@@ -482,7 +500,8 @@ either invalidates admission. Together they contain all of the following:
 - the exact calibration authorization and its results;
 - the complete source-preparation lineage, every related authorization and fence
   history, the preregistered selection and multiplicity rules, every immutable
-  slot roster, and one terminal `SourcePreparationReceipt` per expected slot;
+  slot roster, one terminal `SourcePreparationReceipt` per expected slot, and
+  the exact authenticated `SourcePreparationClosureReceipt` that froze them;
 - immutable `ProtocolRevision` and `B0` coordinates;
 - the committed treatment source family and immutable `TreatmentSlotIdentity`
   roster, including a receipt-bound bijection from every preparation slot, each
@@ -512,16 +531,17 @@ either invalidates admission. Together they contain all of the following:
 - one `HarnessQualificationRevision` binding immutable artifacts and
   configurations for the registrar, launch gate, receipt writer and store,
   sandbox enforcer, runtime reconciler, build and evaluation adapters, evaluator
-  runner and oracle, report renderer, source-preparation registrar, and
-  consistency verifier, plus the exact Phase 2 qualification evidence for those
-  bytes;
+  runner and oracle, report renderer, source-preparation registrar and closure
+  gate, and consistency verifier, plus the exact Phase 2 qualification evidence
+  for those bytes;
 - an exact immutable dossier revision used as supporting evidence and an
   authenticated `DossierConsistencyReceipt`. The receipt binds the verifier
   principal and credential; verifier artifact, configuration, and toolchain
   digests; `CampaignAdmissionManifest` digest; dossier commit, tree, and file
   manifest; measurement authorization and discovery records; every relied-upon
   product commit and tree; `B0` artifact, build receipt, and provenance; complete
-  source-preparation and treatment rosters; and the exact equality result. For
+  source-preparation authorizations, closure receipt, and treatment rosters; and
+  the exact equality result. For
   every mandatory join declared by the protocol, the receipt enumerates expected
   and observed repository identity, commit, and tree values from the dossier,
   measurement authorization, discovery evidence, and `B0` build provenance.
@@ -541,6 +561,7 @@ cannot substitute for campaign admission.
 | --- | --- | --- |
 | Protocol record | Holds campaign-specific coordinates, role bindings, thresholds, expiry, and stop rules | Data only; not a module declaration or shared Foundation schema |
 | Consistency verifier adapter | Verifies the exact proposed admission manifest against dossier, product source, source roster, and `B0` provenance and signs the result | Independent from candidate production and evidence custody; qualified bytes only |
+| Source-preparation registrar and closure gate | Registers the complete slot lineage and atomically closes its fence before campaign admission | Uses authoritative durable ordering; cannot author treatment source or decide campaign admission |
 | Baseline adapter | Implements the existing product-owned port with `B0` behavior | Remains the default product composition |
 | Treatment adapter | Implements the same port and translates to the candidate's private ordinary-library API | Removable without changing the port, use case, or domain model |
 | Attempt registrar and launch gate | Preregisters attempts and linearizes authorization consumption, campaign stop, and the process-start fence | Runs outside candidate authority and before candidate-controlled code |
@@ -640,10 +661,12 @@ excluded qualification cases are a no-go. Mutation, deletion, or conflicting
 terminal receipts must be rejected or detectably invalidate the claim.
 Calibration output cannot support promotion. Only after this exit may the product
 authorizer issue the bounded blinded source-preparation authorization.
-After that preparation closes, the authorizer may commit its complete
-receipt-bound source-slot bijection as the `TreatmentSlotIdentity` roster, mint
-the immutable `ProtocolRevision`, freeze `B0`, seal the independently held final
-corpus and assignment, and issue the final `E0` and campaign decision. The final `E0`
+After the custody transaction authority atomically closes that preparation
+lineage and emits its authenticated `SourcePreparationClosureReceipt`, the
+authorizer may commit its complete receipt-bound source-slot bijection as the
+`TreatmentSlotIdentity` roster, mint the immutable `ProtocolRevision`, freeze
+`B0`, seal the independently held final corpus and assignment, and issue the
+final `E0` and campaign decision. The final `E0`
 references only evaluator artifacts and configurations qualified by the exact
 `HarnessQualificationRevision`. Any later change to the harness, evaluator,
 report path, treatment roster, or final holdout requires new calibration or
@@ -773,6 +796,7 @@ ADR-0013.
 | Source preparation presents preexisting or late bytes, or its receipt lacks authorization, generation, producer, workspace, registrar, input, or authoritative-time bindings | The slot is inadmissible and remains a no-source observation; campaign admission fails on any attempted reuse |
 | A preparation slot is omitted, added, substituted, reused, or resolves to changed source bytes | The preparation fence closes; the mismatch is retained and campaign admission fails |
 | A later preparation authorization omits prior lineage, exceeds preregistered multiplicity, or changes the selection rule | Every related round remains retained and the campaign is inadmissible under that lineage |
+| A related authorization races with preparation closure, or an authorization or slot is absent from the closure receipt | The single durable ordering authority admits either issuance or closure, never both; any incomplete, stale, or mismatched closure receipt blocks campaign admission |
 | Preparation-to-treatment mapping is missing, duplicated, or not one-to-one | Campaign admission fails; every expected slot remains visible as an explicit no-source or invalid observation |
 | Dossier consistency receipt is missing, foreign, stale, forged, produced by an unqualified verifier, or binds different dossier, product source, manifest, or `B0` provenance | Campaign admission fails closed and the mismatch is retained |
 | A mandatory repository, commit, or tree join is absent or unequal across dossier, measurement, discovery, and `B0` provenance | The consistency verifier records the expected and observed mismatch and campaign admission fails |
@@ -821,6 +845,8 @@ The evidence custodian exposes a rebuildable campaign view with, at minimum:
 - calibration-generation fence state, admitted authoritative-time observations,
   uncertainty failures, participating component attestations, and credential
   revocation evidence;
+- source-preparation lineage, fence generation, closure receipt, every related
+  authorization and slot disposition, and any rejected post-closure issuance;
 - cleanup backlog and elapsed time after campaign stop;
 - exact protocol, evaluator, artifact, sandbox-policy,
   `HarnessQualificationRevision`, and evidence-revision digests for every
@@ -895,8 +921,9 @@ withdrawn through the product's approved process. Once a source-preparation slot
 campaign manifest or roster, build attempt, or execution attempt is registered,
 its complete lineage, immutable coordinates, terminal receipt or missing or
 unknown observation, and every raw object and authorization,
-source-preparation receipt, dossier consistency receipt, sandbox, evaluation,
-review, and decision event required to rebuild its verdict are retained with a
+source-preparation receipt, source-preparation closure receipt, dossier
+consistency receipt, sandbox, evaluation, review, and decision event required to
+rebuild its verdict are retained with a
 retirement tombstone even when no build or execution attempt ever starts.
 Verdict validity cannot outlive the shortest referenced retention period. Later
 evidence expiry or destruction appends a tombstone and never rewrites the prior
@@ -926,6 +953,10 @@ A future implementation conforms to this proposal only when:
 - source-preparation lineage, multiplicity, and selection rules are preregistered,
   and every related authorization and disposition remains in campaign attrition
   and retained evidence even when no later attempt starts;
+- successful source preparation closes through one authenticated durable fence
+  transition that is totally ordered with related authorization issuance,
+  freezes every authorization, slot, disposition, and source digest, and cannot
+  be reopened or omitted from campaign admission;
 - calibration registrations, launches, and receipts bind immutable
   calibration-only coordinates that cannot be promoted or reused as campaign
   coordinates;
@@ -937,8 +968,9 @@ A future implementation conforms to this proposal only when:
 - a complete preregistered negative-case roster covers every required matrix row,
   and missing, unknown, or retrospectively excluded entries block admission;
 - an independently operated, qualified consistency verifier signs a receipt over
-  the exact admission manifest, dossier tree, product source trees, source-slot
-  bijection, and `B0` provenance, enumerates expected and observed values for
+  the exact admission manifest, dossier tree, product source trees,
+  source-preparation closure receipt, source-slot bijection, and `B0` provenance,
+  enumerates expected and observed values for
   every mandatory repository, commit, and tree join, and all equality checks
   pass;
 - every treatment semantic is classified and remains within its admitted
