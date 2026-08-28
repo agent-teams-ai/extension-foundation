@@ -13,11 +13,13 @@ GHCR
 Graphlib
 journaled
 linearizable
+linearizability
 Lumino
 Modulith
 OpenCode
 ORAS
 product-neutral
+prebuilds
 replaceability
 self-hosted
 SemVer
