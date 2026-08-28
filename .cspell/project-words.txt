@@ -25,6 +25,7 @@ inodes
 inspectable
 journaled
 lifecycles
+lockfiles
 linearizable
 linearization
 linearizability
