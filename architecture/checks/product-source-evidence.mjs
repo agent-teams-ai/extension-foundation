@@ -27,6 +27,7 @@ const REPOSITORY = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u;
 const PORTABLE_COMPONENT = /^[A-Za-z0-9._@+ -]+$/u;
 const WINDOWS_RESERVED = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/iu;
 const REGULAR_FILE_MODES = new Set(["100644", "100755"]);
+const GITHUB_PROTOCOLS = new Set(["https:", "ssh:"]);
 
 export class ProductSourceEvidenceError extends Error {
   constructor(code, message) {
@@ -118,7 +119,7 @@ async function runGit(repositoryRoot, args) {
     });
     return result.stdout;
   } catch (error) {
-    const code = error?.killed === true || typeof error?.signal === "string" ? "E-TIMEOUT" : "E-GIT";
+    const code = error?.killed === true ? "E-TIMEOUT" : "E-GIT";
     const detail = typeof error?.stderr === "string" && error.stderr.trim().length > 0
       ? error.stderr.trim()
       : error instanceof Error ? error.message : String(error);
@@ -132,7 +133,15 @@ function normalizeGitHubRepository(remote) {
   if (scp !== null) return scp[1];
   try {
     const url = new URL(value);
-    return url.hostname.toLowerCase() === "github.com" ? url.pathname.replace(/^\//u, "") : undefined;
+    if (!GITHUB_PROTOCOLS.has(url.protocol)
+      || url.hostname.toLowerCase() !== "github.com"
+      || url.search.length > 0
+      || url.hash.length > 0
+      || (url.protocol === "https:" && (url.username.length > 0 || url.password.length > 0))
+      || (url.protocol === "ssh:" && url.username !== "git")) {
+      return undefined;
+    }
+    return url.pathname.replace(/^\//u, "");
   } catch {
     return undefined;
   }
@@ -148,6 +157,10 @@ async function exactRegularBlob(repositoryRoot, commit, path, expectedBlob, prod
     fail("E-MODE", `${product}:${path} must be a regular Git blob, observed ${match[1]} ${match[2]}`);
   }
   if (match[3] !== expectedBlob) fail("E-BLOB", `${product}:${path} blob is ${match[3]}, expected ${expectedBlob}`);
+  const objectType = (await runGit(repositoryRoot, ["cat-file", "-t", match[3]])).trim();
+  if (objectType !== "blob") {
+    fail("E-MODE", `${product}:${path} must reference a blob object, observed ${objectType}`);
+  }
   const sizeText = (await runGit(repositoryRoot, ["cat-file", "-s", match[3]])).trim();
   const bytes = Number(sizeText);
   if (!Number.isSafeInteger(bytes) || bytes < 0) fail("E-GIT", `${product}:${path} returned invalid blob size ${sizeText}`);
@@ -168,7 +181,7 @@ export async function verifyProductSourceRecord(product, recordValue, repository
   const topLevel = (await runGit(repositoryRoot, ["rev-parse", "--show-toplevel"])).trim();
   const remote = (await runGit(topLevel, ["remote", "get-url", "origin"])).trim();
   const observedRepository = normalizeGitHubRepository(remote);
-  if (observedRepository !== repository) {
+  if (observedRepository?.toLowerCase() !== repository.toLowerCase()) {
     fail("E-REPOSITORY", `${product} origin identifies ${observedRepository ?? remote}, expected ${repository}`);
   }
   const resolvedCommit = (await runGit(topLevel, ["rev-parse", "--verify", `${commit}^{commit}`])).trim();
@@ -236,8 +249,9 @@ export async function verifyProductSourceEvidence(evidenceValue, repositoryRoots
   for (const product of productNames) {
     const repositoryRoot = requireString(repositoryRoots[product], `repositoryRoots.${product}`);
     const report = await verifyProductSourceRecord(product, products[product], repositoryRoot);
-    if (repositories.has(report.repository)) fail("E-INDEPENDENCE", `multiple product keys cannot reuse repository ${report.repository}`);
-    repositories.add(report.repository);
+    const repositoryIdentity = report.repository.toLowerCase();
+    if (repositories.has(repositoryIdentity)) fail("E-INDEPENDENCE", `multiple product keys cannot reuse repository ${report.repository}`);
+    repositories.add(repositoryIdentity);
     reports.push(report);
   }
   return Object.freeze({

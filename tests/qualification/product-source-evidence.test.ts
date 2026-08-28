@@ -130,7 +130,20 @@ test("exact tree, blob, origin, and repository mappings fail closed", async () =
     await assert.rejects(verifyProductSourceEvidence(wrongBlob, { fixture: root }), /E-BLOB/u);
     await assert.rejects(verifyProductSourceEvidence(evidence, {}), /E-REPOSITORY/u);
     await assert.rejects(verifyProductSourceEvidence(evidence, { fixture: root, inferredSibling: root }), /E-REPOSITORY/u);
+    const duplicate = structuredClone(evidence) as typeof evidence & {
+      products: Record<string, ProductRecord>;
+    };
+    duplicate.products.duplicate = {
+      ...structuredClone(duplicate.products.fixture),
+      repository: "Example/Product",
+    };
+    await assert.rejects(
+      verifyProductSourceEvidence(duplicate, { fixture: root, duplicate: root }),
+      /E-INDEPENDENCE/u,
+    );
     await git(root, ["remote", "set-url", "origin", "https://github.com/example/other.git"]);
+    await assert.rejects(verifyProductSourceEvidence(evidence, { fixture: root }), /E-REPOSITORY/u);
+    await git(root, ["remote", "set-url", "origin", "file://github.com/example/product.git"]);
     await assert.rejects(verifyProductSourceEvidence(evidence, { fixture: root }), /E-REPOSITORY/u);
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -162,6 +175,33 @@ test("gitlinks cannot masquerade as reviewed files", async () => {
     const tree = await git(root, ["rev-parse", `${commit}^{tree}`]);
     const gitlink = envelope({ repository: "example/product", commit, tree, files: [{ path: "linked-product", blob: target }] });
     await assert.rejects(verifyProductSourceEvidence(gitlink, { fixture: root }), /E-MODE.*160000 commit/u);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("a forged regular-file tree entry cannot point at a non-blob object", async () => {
+  const root = await mkdtemp(join(tmpdir(), "exact-git-forged-tree-"));
+  try {
+    const evidence = await fixture(root);
+    const realTree = evidence.products.fixture.tree;
+    const rawTreePath = join(root, "forged-tree.raw");
+    await writeFile(rawTreePath, Buffer.concat([
+      Buffer.from("100644 forged.ts\0"),
+      Buffer.from(realTree, "hex"),
+    ]));
+    const forgedTree = await git(root, ["hash-object", "-t", "tree", "-w", "--literally", rawTreePath]);
+    const forgedCommit = await git(root, ["commit-tree", forgedTree, "-m", "test: forged tree entry"]);
+    const forged = envelope({
+      repository: "example/product",
+      commit: forgedCommit,
+      tree: forgedTree,
+      files: [{ path: "forged.ts", blob: realTree }],
+    });
+    await assert.rejects(
+      verifyProductSourceEvidence(forged, { fixture: root }),
+      /E-MODE.*must reference a blob object, observed tree/u,
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -204,6 +244,14 @@ test("CLI requires explicit absolute repository mappings and emits custody-only 
     await writeFile(evidencePath, JSON.stringify(await fixture(root)));
     await assert.rejects(execFileAsync(process.execPath, ["architecture/checks/product-source-evidence-cli.mjs", evidencePath], { cwd: process.cwd() }), /usage/u);
     await assert.rejects(execFileAsync(process.execPath, ["architecture/checks/product-source-evidence-cli.mjs", evidencePath, "--repository", "fixture=relative"], { cwd: process.cwd() }), /absolute path/u);
+    const oversizedPath = join(root, "oversized.yaml");
+    await writeFile(oversizedPath, Buffer.alloc(1024 * 1024 + 1, "x"));
+    await assert.rejects(execFileAsync(process.execPath, [
+      "architecture/checks/product-source-evidence-cli.mjs",
+      oversizedPath,
+      "--repository",
+      `fixture=${root}`,
+    ], { cwd: process.cwd() }), /no larger than 1048576 bytes/u);
     const result = await execFileAsync(process.execPath, [
       "architecture/checks/product-source-evidence-cli.mjs",
       evidencePath,

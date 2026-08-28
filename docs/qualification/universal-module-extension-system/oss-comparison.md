@@ -21,10 +21,11 @@ construction; product plugin platforms solve contribution discovery and host
 placement; control planes solve durable reconciliation. Combining any of them
 without one explicit authority would create duplicate graphs and lifecycles.
 
-The recommended first kernel therefore remains a small native TypeScript
-closed-world compiler plus product-owned lifecycle coordination. Existing OSS
-is used behind private adapters, as test oracles, and as operational patterns.
-This is a recommendation under `OD-003`, not an accepted dependency decision.
+If a product later admits the relevant level, the leading qualification
+candidate is a small native TypeScript closed-world compiler with product-owned
+lifecycle coordination. Existing OSS may be used behind private adapters, as
+test oracles, and as operational patterns. No implementation is selected while
+the product trigger and owning decision required by ADR-0013 remain absent.
 
 The conclusion is layer-specific, not a claim that one custom platform must
 replace all OSS:

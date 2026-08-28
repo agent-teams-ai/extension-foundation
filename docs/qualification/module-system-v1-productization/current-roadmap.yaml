@@ -59,22 +59,11 @@ aiNavigationBenchmark:
   status: product-owned-protocol-required
   authority: none-until-owning-product-approves-protocol
   executionMode: test-only-no-production-grammar
-  productSeams:
-    - product: frontend
-      seam: recent-projects-provider-contributions
-      tasks:
-        - find-owner-and-composition-root
-        - add-or-remove-provider
-        - change-contribution-order
-        - trace-provider-to-use-case
-    - product: agent-runtime
-      seam: setup-inspection-sibling-capabilities
-      tasks:
-        - find-owner-and-composition-root
-        - add-or-remove-sibling-capability
-        - wire-explicit-capability-to-host-dependency
-        - trace-capability-through-host-and-access-handle
-        - verify-deterministic-failure-for-missing-required-sibling-capability
+  requiredDimensions:
+    - find-owner-and-composition-root
+    - change-one-product-owned-binding
+    - trace-binding-to-use-case
+    - diagnose-missing-required-dependency
   metrics:
     - elapsed-time
     - files-opened

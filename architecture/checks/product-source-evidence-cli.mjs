@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFile, stat } from "node:fs/promises";
+import { open } from "node:fs/promises";
 import { isAbsolute, resolve } from "node:path";
 
 import { parse } from "yaml";
@@ -35,11 +35,23 @@ function parseArguments(argv) {
 
 async function main() {
   const { evidencePath, repositories } = parseArguments(process.argv.slice(2));
-  const metadata = await stat(evidencePath);
-  if (!metadata.isFile() || metadata.size > MAX_EVIDENCE_BYTES) {
-    throw new Error(`evidence file must be a regular file no larger than ${MAX_EVIDENCE_BYTES} bytes`);
+  const handle = await open(evidencePath, "r");
+  let source = "";
+  try {
+    const metadata = await handle.stat();
+    if (!metadata.isFile() || metadata.size > MAX_EVIDENCE_BYTES) {
+      throw new Error(`evidence file must be a regular file no larger than ${MAX_EVIDENCE_BYTES} bytes`);
+    }
+    const buffer = Buffer.allocUnsafe(MAX_EVIDENCE_BYTES + 1);
+    const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
+    if (bytesRead > MAX_EVIDENCE_BYTES) {
+      throw new Error(`evidence file must be a regular file no larger than ${MAX_EVIDENCE_BYTES} bytes`);
+    }
+    source = buffer.subarray(0, bytesRead).toString("utf8");
+  } finally {
+    await handle.close();
   }
-  const evidence = parse(await readFile(evidencePath, "utf8"), { maxAliasCount: 0, strict: true });
+  const evidence = parse(source, { maxAliasCount: 0, strict: true });
   const result = await verifyProductSourceEvidence(evidence, repositories);
   process.stdout.write(`${JSON.stringify({
     schemaVersion: result.schemaVersion,

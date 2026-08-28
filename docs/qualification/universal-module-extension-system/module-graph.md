@@ -525,7 +525,7 @@ diagram is not another source of truth.
 
 | Option | Assessment | Decision |
 | --- | --- | --- |
-| Native minimal kernel | Smallest semantic overlap and best diagnostics control | Recommended for V1 |
+| Native minimal kernel | Smallest semantic overlap and best diagnostics control | Qualification candidate after product trigger |
 | Cordis directly | Ambient context and lifecycle become product-visible | Reject |
 | Cordis private adapter | Useful only if conformance and a multi-factor scorecard show a net benefit without a second lifecycle | Qualification candidate |
 | Effect Layers | Strong scoped-resource reference, but public type and execution-model coupling is high | Design reference only |

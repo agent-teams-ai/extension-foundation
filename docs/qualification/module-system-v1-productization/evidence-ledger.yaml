@@ -7,11 +7,6 @@ claims:
     sources:
       - docs/decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
       - docs/decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md
-    evidence:
-      - module-v1-audit-decisions-r1
-      - module-v1-tiebreak-ownership-a-r1
-      - module-v1-tiebreak-ownership-b-r1
-      - module-v1-api-critic-governance-r1
     result: >-
       Accepted ADR-0013 assigns private module semantics to the first product,
       and accepted ADR-0014 is the product-local authoring authority under that
@@ -23,12 +18,6 @@ claims:
     sources:
       - docs/qualification/universal-module-extension-system/spike-results.md
       - tests/qualification/spikes.test.ts
-    evidence:
-      - module-v1-pr17-architecture-review-r1
-      - module-v1-pr17-correctness-review-r1
-      - module-v1-pr17-lifecycle-review-r1
-      - module-v1-audit-spikes-r1
-      - module-v1-fix-lifecycle-r1
     result: >-
       Existing disposable graph, lifecycle, recovery, host, and Cordis evidence
       is substantial but does not establish a product grammar, production graph,
@@ -44,15 +33,14 @@ claims:
       - docs/qualification/module-system-v1-productization/consumer-source-evidence.yaml
     evidence:
       - local-exact-mirror-verification
-      - hosted-follow-up-reports-corroboration-only
     result: >-
       The canonical lock records exact Git custody for selected Agent Runtime
       files. It does not interpret source or establish topology, values, or
       runtime behavior. The verdict is SOURCE_CUSTODY_BASELINE_RECORDED; L1
       remains a no-go measurement candidate and L2-L5 remain no-go.
     reversalCondition: >-
-      Revoke L0 if exact source verification fails or ambient resolution enters
-      product contracts. Reopen L1 only after a product-owned decision and
+      Revoke L0 if exact source verification fails. Reopen L1 only after a
+      product-owned decision and
       approved benchmark prove an authoring or drift problem; higher levels
       retain their independent product triggers.
   - id: orchestrator-consumer-admission
@@ -62,15 +50,11 @@ claims:
         revision: 4c5f55366ed8c83f97374b66c8e9f84059c47382
       - docs/qualification/module-system-v1-productization/consumer-source-evidence.yaml
     evidence:
-      - module-v1-audit-orchestrator-r1
-      - module-v1-admission-operations-r1
-      - module-v1-admission-security-r1
-      - module-v1-admission-minimalism-r1
-      - module-v1-admission-evolution-r1
+      - local-exact-mirror-verification
     result: >-
-      Host Discovery has a typed port and tests but no production source adapter,
-      second contribution, or application composition root at the exact revision.
-    reversalCondition: A committed product slice supplies the missing production owner, implementations, root, and outcome evidence.
+      Exact Git custody is recorded for selected Orchestrator blobs. No portable
+      product-owned evidence admits L1-L5.
+    reversalCondition: An owning-product decision and executable evidence admit a named level.
   - id: frontend-consumer-admission
     classification: no-go-measurement-candidate
     sources:
@@ -78,17 +62,13 @@ claims:
         revision: 85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd
       - docs/qualification/module-system-v1-productization/consumer-source-evidence.yaml
     evidence:
-      - module-v1-audit-frontend-r1
-      - module-v1-admission-operations-r1
-      - module-v1-admission-security-r1
-      - module-v1-admission-minimalism-r1
-      - module-v1-admission-evolution-r1
+      - local-exact-mirror-verification
     result: >-
       The canonical lock records exact Git custody for selected Frontend files.
       It does not interpret imports, constructions, publication, provider
-      execution, or use-case dataflow. The source may help an owning product measure whether
-      authoring would help, but it has no product decision, benchmark, grammar, or
-      exit evidence.
+      execution, or use-case dataflow. The source may seed an owning-product
+      measurement, but no portable evidence establishes an authoring need,
+      product grammar, or exit condition.
     reversalCondition: >-
       Product evidence removes the candidate, or a Frontend-owned decision and
       benchmark prove a concrete authoring problem that justifies an L1 comparison.
@@ -112,14 +92,6 @@ claims:
     classification: conditional
     sources:
       - docs/qualification/module-system-v1-productization/authoring-api-and-gap-matrix.md
-    evidence:
-      - module-v1-api-schema-factory-r1
-      - module-v1-api-ts-builder-r1
-      - module-v1-api-json-handles-r1
-      - module-v1-api-critic-typescript-r1
-      - module-v1-api-critic-ai-dx-r1
-      - module-v1-api-critic-governance-r1
-      - module-v1-api-critic-operations-r1
     result: >-
       Handwritten typed factories and static Pure DI remain the selected baseline.
       No declarative framework is preselected. A measured declaration, profile,
@@ -132,47 +104,25 @@ claims:
       - agent-teams-ai/agent-runtime@7be998237a4c262bee9c4198d554b43cd2757ac6
       - agent-teams-ai/agent-teams-orchestrator@4c5f55366ed8c83f97374b66c8e9f84059c47382
       - 777genius/agent-teams-ai@85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd
-    evidence:
-      - module-v1-audit-agent-runtime-r2
-      - module-v1-audit-orchestrator-r1
-      - module-v1-audit-frontend-r1
-      - module-v1-admission-operations-r1
-      - module-v1-admission-security-r1
-      - module-v1-admission-minimalism-r1
-      - module-v1-admission-evolution-r1
-    result: No inspected product proves runtime selection that static composition cannot satisfy.
+    result: No portable product-owned evidence admits runtime selection beyond static composition.
     reversalCondition: One product proves selection must change without rebuild and accepts its own private selection-graph decision.
   - id: lifecycle-coordinator
     classification: no-go
     sources:
       - docs/qualification/module-system-v1-productization/current-roadmap.yaml
-    evidence:
-      - module-v1-audit-spikes-r1
-      - module-v1-redteam-lifecycle-r1
-    result: No inspected product candidate has independently managed resources requiring dependency-aware lifecycle coordination.
+    result: No portable product-owned evidence admits dependency-aware lifecycle coordination.
     reversalCondition: A named product proves bounded readiness, drain, rollback, or recovery cannot remain in its existing owner.
   - id: shared-foundation-extraction
     classification: no-go
     sources:
       - docs/decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
-    evidence:
-      - module-v1-audit-agent-runtime-r2
-      - module-v1-audit-orchestrator-r1
-      - module-v1-audit-frontend-r1
-      - module-v1-admission-operations-r1
-      - module-v1-admission-security-r1
-      - module-v1-admission-minimalism-r1
-      - module-v1-admission-evolution-r1
-    result: Products share a composition pattern, not one independently implemented semantic contract with cross-consumer conformance.
+    result: No portable evidence proves two independent implementations of one semantic contract with cross-consumer conformance.
     reversalCondition: Two products independently implement the same candidate and pass executable cross-consumer conformance under a separate extraction decision.
   - id: evidence-custody-integrity
     classification: partially-proved
     sources:
       - architecture/checks/evidence-custody.mjs
       - architecture/evidence-custody-manifest.schema.json
-    evidence:
-      - module-v1-pr17-evidence-review-r1
-      - module-v1-fix-custody-r1
     result: >-
       Current hardening for trusted manifest identity, bounded capture,
       latest-attempt aliasing, platform-qualified live-source reads, and
@@ -181,6 +131,11 @@ claims:
       V2 can invalidate evidence but cannot authorize promotion; final
       independent exact-head review remains external PR evidence.
     reversalCondition: Integrated exact-head checks or review find unresolved fail-open behavior.
+jobEvidencePolicy:
+  decisionAuthority: false
+  portableArtifactLocator: unavailable
+  classification: corroboration-only
+  effect: job records cannot prove claims or authorize promotion
 jobs:
   - { id: module-v1-pr17-architecture-review-r1, role: exact-head-architecture-review, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
   - { id: module-v1-pr17-correctness-review-r1, role: exact-head-correctness-review, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }

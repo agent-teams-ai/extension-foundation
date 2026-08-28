@@ -29,8 +29,8 @@ files do not satisfy these triggers.
 
 | Product | Revision | Result |
 | --- | --- | --- |
-| Agent Runtime | `7be998237a4c262bee9c4198d554b43cd2757ac6` | Exact source custody recorded; `SOURCE_CUSTODY_BASELINE_RECORDED`; `L1-L5_NO_GO` |
-| Orchestrator | `4c5f55366ed8c83f97374b66c8e9f84059c47382` | Typed-port evidence only; `L1-L5_NO_GO` |
+| Agent Runtime | `7be998237a4c262bee9c4198d554b43cd2757ac6` | Exact source custody recorded; `SOURCE_CUSTODY_BASELINE_RECORDED`; `L1_NO_GO_MEASUREMENT_CANDIDATE`; `L2-L5_NO_GO` |
+| Orchestrator | `4c5f55366ed8c83f97374b66c8e9f84059c47382` | Exact source custody recorded; `L1-L5_NO_GO` |
 | Frontend | `85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd` | Exact source custody recorded; `L1_NO_GO_MEASUREMENT_CANDIDATE`; `L2-L5_NO_GO` |
 
 The machine-readable records are intentionally
@@ -41,53 +41,26 @@ product decision or shared extraction.
 
 ### Agent Runtime
 
-Codex Setup and Claude Code Setup are two sibling product capabilities exposed
-through one `RuntimeAccessHandle`. They have different inputs, outputs,
-diagnostics, policy, and configuration semantics; they are not alternative
-providers for one common slot. Those files remain candidate, product-owned
-reference material. The verifier does not interpret declarations, imports,
-calls, or dependency properties and therefore proves no product topology. It
-does not show that any reference carries a value or prove
-execution, fail-fast behavior, publication, disposal, cancellation, or other
-runtime behavior.
-
-The two named capability fields and their dependency property names occur in the
-same direct host-factory return. That syntax does not connect values or prove
-shared lifetime, runtime selection, independent module lifecycle, process
-placement, or shared Foundation semantics.
-Claude Code has product E2E evidence but lacks a test that
-traverses the default root in the same direct form as Codex; this is a
-non-blocking confidence gap owned by Agent Runtime, not an admission reason for
-`L1` or a Foundation runtime.
+Foundation records custody for the selected exact Git blobs only. Their product
+meaning, ownership, wiring, runtime behavior, and relationship to one another
+remain Agent Runtime concerns and are not interpreted here. No Agent Runtime
+module-system level is admitted by this record.
 
 ### Orchestrator
 
-Host Discovery has a typed source port and deterministic tests. At the exact
-revision it has no committed production source adapter, second contribution,
-or application root. Work Completion and other candidates remain product
-documentation rather than executable consumer evidence.
+Foundation records custody for the selected exact Git blobs only. Orchestrator
+must supply its own executable evidence and accepted decision before any product
+semantics or module-system level can be admitted.
 
 ### Frontend
 
-Recent Projects has product-owned source that may inform a future owning-product
-measurement. The local verifier checks only exact Git custody for selected
-files; it does not verify the following product-specific interpretation:
-
-1. `ClaudeRecentProjectsSourceAdapter`;
-2. `CodexSessionFileRecentProjectsSourceAdapter`.
-
-This is candidate evidence for deciding whether a measurement is worthwhile;
-it does not inspect use-case execution, Promise flow, presenter values,
-normalizer behavior, output correctness, or provider execution. The product still needs executable
-product-owned wiring evidence, an accountable owner, approved benchmark
-protocol, root-owned ordering decision, deletion criteria, and product
-approval. Hosted routing, Token Usage, and the broad legacy Extensions adapter
-are excluded.
+Foundation records custody for the selected exact Git blobs only. Frontend may
+use those pinned sources when designing a product-owned measurement, but this
+dossier establishes no provider topology, execution, ordering, output, or
+authoring need. `L1` remains a measurement candidate rather than an admission.
 
 ## Cross-Consumer Result
 
-The products share explicit dependencies and product-owned composition, but not
-one identity grammar, binding semantics, lifecycle, diagnostics, or failure
-contract. Foundation records only an exact-source custody baseline.
-The common result across products remains an architectural pattern, not a
-runtime package or public SPI.
+Foundation records only an exact-source custody baseline. It proves no shared
+product semantics, identity grammar, binding contract, lifecycle, or failure
+contract. Shared extraction, a runtime package, and public SPI remain closed.

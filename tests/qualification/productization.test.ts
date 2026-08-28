@@ -94,11 +94,7 @@ test("roadmap keeps authoring, selection, lifecycle, process hosting, and extrac
     readonly levels: readonly { readonly id: string; readonly verdict?: string; readonly status: string; readonly prerequisites?: readonly string[] }[];
     readonly aiNavigationBenchmark: {
       readonly status: string;
-      readonly productSeams: readonly {
-        readonly product: string;
-        readonly seam: string;
-        readonly tasks: readonly string[];
-      }[];
+      readonly requiredDimensions: readonly string[];
     };
     readonly stopCriteria: readonly {
       readonly id: string;
@@ -123,22 +119,11 @@ test("roadmap keeps authoring, selection, lifecycle, process hosting, and extrac
   assert.ok(roadmap.levels.find(level => level.id === "L5")?.prerequisites?.includes(
     "package-admission-independence-defect-corrected-by-owning-task",
   ));
-  assert.deepEqual(roadmap.aiNavigationBenchmark.productSeams.map(({ product }) => product), [
-    "frontend",
-    "agent-runtime",
-  ]);
-  assert.deepEqual(roadmap.aiNavigationBenchmark.productSeams[0]?.tasks, [
+  assert.deepEqual(roadmap.aiNavigationBenchmark.requiredDimensions, [
     "find-owner-and-composition-root",
-    "add-or-remove-provider",
-    "change-contribution-order",
-    "trace-provider-to-use-case",
-  ]);
-  assert.deepEqual(roadmap.aiNavigationBenchmark.productSeams[1]?.tasks, [
-    "find-owner-and-composition-root",
-    "add-or-remove-sibling-capability",
-    "wire-explicit-capability-to-host-dependency",
-    "trace-capability-through-host-and-access-handle",
-    "verify-deterministic-failure-for-missing-required-sibling-capability",
+    "change-one-product-owned-binding",
+    "trace-binding-to-use-case",
+    "diagnose-missing-required-dependency",
   ]);
   assert.ok(roadmap.stopCriteria.every(criterion => (
     criterion.appliesTo.length > 0
@@ -190,9 +175,19 @@ test("every current product projection uses one exact pinned revision", async ()
     readonly products: Record<string, { readonly commit: string }>;
   };
   const manifest = parse(await readFile(resolve(dossier, "research-manifest.yaml"), "utf8")) as {
+    readonly baseline: {
+      readonly pullRequest: number;
+      readonly baseRevision: string;
+      readonly stackedOn: string;
+      readonly historicalFoundationPullRequest: number;
+    };
     readonly products: Record<string, { readonly revision: string }>;
     readonly followUp: { readonly lineage: string; readonly agentRuntimeRevision: string };
   };
+  assert.equal(manifest.baseline.pullRequest, 22);
+  assert.equal(manifest.baseline.baseRevision, "fe15d6ae35275bb4c5456bd56645f60aa14684e1");
+  assert.equal(manifest.baseline.stackedOn, "none");
+  assert.equal(manifest.baseline.historicalFoundationPullRequest, 17);
   const expected = Object.fromEntries(Object.entries(evidence.products).map(([product, record]) => [product, record.commit]));
   assert.deepEqual(
     Object.fromEntries(Object.entries(manifest.products).map(([product, record]) => [product, record.revision])),
@@ -222,6 +217,8 @@ test("source claims stay within exact Git custody", async () => {
   assert.equal(evidence.claim.kind, "exact-git-source-custody");
   assert.equal(evidence.verification.promotionAuthority, false);
   assert.ok(evidence.limitations.some(limit => limit.includes("does not interpret source text")));
+  const admission = await readFile(resolve(dossier, "consumer-admission.md"), "utf8");
+  assert.match(admission, /Agent Runtime[^\n]+L1_NO_GO_MEASUREMENT_CANDIDATE[^\n]+L2-L5_NO_GO/u);
 });
 
 test("complete Linux CI verifies exact product sources without changing intrinsic local checks", async () => {
@@ -269,8 +266,20 @@ test("performance evidence remains diagnostic until a calibrated gate exists", a
 
 test("evidence ledger local source paths remain reachable", async () => {
   const ledger = parse(await readFile(resolve(dossier, "evidence-ledger.yaml"), "utf8")) as {
+    readonly jobEvidencePolicy: {
+      readonly decisionAuthority: boolean;
+      readonly portableArtifactLocator: string;
+      readonly classification: string;
+      readonly effect: string;
+    };
     readonly claims: readonly { readonly sources?: readonly string[] }[];
   };
+  assert.deepEqual(ledger.jobEvidencePolicy, {
+    decisionAuthority: false,
+    portableArtifactLocator: "unavailable",
+    classification: "corroboration-only",
+    effect: "job records cannot prove claims or authorize promotion",
+  });
   const localSources = ledger.claims.flatMap(claim => claim.sources ?? [])
     .filter(source => /^(?:architecture|docs|tests)\//u.test(source));
   assert.ok(localSources.length > 0);
@@ -342,7 +351,6 @@ test("Cordis remains a scorecard-qualified adapter without a fixed LOC threshold
   assert.match(authoring, /No declarative candidate is preselected/u);
   assert.match(admission, /SOURCE_CUSTODY_BASELINE_RECORDED/u);
   assert.match(admission, /L1-L5_NO_GO/u);
-  assert.match(admission, /Hosted\s+routing[\s\S]{0,80}excluded/u);
   assert.match(roadmap, /No LOC\s+percentage decides adoption/u);
   assert.doesNotMatch(oss, /75%|25%/u);
 });

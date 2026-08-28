@@ -7,8 +7,8 @@ purpose: >-
   conditional spikes only where an admitted consumer exposes a real gap.
 baseline:
   repository: agent-teams-ai/extension-foundation
-  pullRequest: 17
-  baseRevision: 0836f62a386e253b156271f0b8f7defc969f3580
+  pullRequest: 22
+  baseRevision: fe15d6ae35275bb4c5456bd56645f60aa14684e1
   originalQualificationRevision: 859e6d808bb1113133a21484aa590f671bb6795d
   lifecycleRemediationRevision: 3c31341ee0483e8535532b51b5d91fb1cc64a512
   evidenceCustodyRemediationRevision: d82a57b6589543655922f8c6271f8e453a806676
@@ -18,7 +18,8 @@ baseline:
   historicalRevisionPortability: non-portable-corroboration-unreachable-from-repository-refs
   finalReviewedRevision: external-pr-head-evidence-required
   branch: research/module-system-v1-productization
-  stackedOn: research/universal-module-extension-qualification
+  stackedOn: none
+  historicalFoundationPullRequest: 17
 products:
   agentRuntime:
     repository: agent-teams-ai/agent-runtime
