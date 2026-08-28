@@ -52,6 +52,7 @@ each role to an auditable principal and credential identity.
 | Candidate producer | Treatment implementation and declared build inputs | Harness operation, evidence custody, evaluation, review, or product authorization |
 | Harness operator | Sealed execution of the registered protocol | Sponsorship, candidate production, evidence custody, evaluation, review, or product authorization |
 | Evidence custodian | Attempt registration, append-only receipts, raw outputs, provenance, and retrieval | Sponsorship, candidate production, harness operation, evaluation, review, or product authorization |
+| Independent consistency verifier | Exact dossier, product-source, source-roster, and `B0` provenance equality; authenticated consistency receipt | Sponsorship, authorization, candidate production, harness operation, evidence custody, evaluation, or review |
 | Independent evaluator | Application of a sealed product-approved oracle or rubric and registered analysis | Oracle semantics, treatment implementation, harness operation, evidence custody, review, or product authorization |
 | Independent reviewer | Acceptance or rejection of the evidence claim supported by one campaign | Sponsorship, authorization, implementation, execution, custody, or evaluation |
 
@@ -142,12 +143,16 @@ Every campaign keeps the following coordinates distinct:
 | `TreatmentArtifact` | Candidate implementation under evaluation, also called `T1` |
 | `EvaluationRevision` | Immutable evaluator inputs, execution rules, analysis, and stop rules, also called `E0` |
 | `ExperimentalUnit` | The entity whose outcome contributes once to the registered analysis |
-| `TreatmentSlotIdentity` | One preregistered treatment variant linking exact source and build inputs to all expected execution dispositions, including the no-artifact case |
+| `SourcePreparationSlotIdentity` | One immutable, preregistered source-authoring slot created before source work; its terminal source is optional |
+| `SourcePreparationReceipt` | One externally retained terminal source digest or explicit failed, missing, or unknown no-source disposition for an expected preparation slot |
+| `TreatmentSlotIdentity` | One campaign slot mapped one-to-one from a source-preparation slot, linking an optional exact source and build inputs to all expected no-source, no-artifact, and execution observations |
 | `BuildAttemptIdentity` | One preregistered build of exact source, recipe, and toolchain inputs; its output artifact is optional |
 | `AttemptIdentity` | One non-reused artifact execution, optionally linked to a prior attempt without becoming a new experimental unit |
 | `LaunchAuthorization` | One-use custodian-issued capability bound to one registered attempt and exact sandbox policy |
 | `BuildReceipt` | Externally captured build result with an optional verified output artifact |
 | `EvidenceReceipt` | Externally captured binding between registered evaluator inputs, execution, raw output, and terminal result |
+| `CampaignAdmissionManifest` | Immutable pre-decision payload containing every proposed campaign coordinate and roster but excluding its own authorization envelope |
+| `DossierConsistencyReceipt` | Authenticated independent equality result binding the exact admission manifest, dossier tree, product source trees, and `B0` provenance |
 | `HarnessQualificationRevision` | Immutable manifest of every execution-, scoring-, custody-, and report-affecting artifact and configuration qualified before treatment work |
 
 These names do not define a public schema. Serialization and storage remain
@@ -431,34 +436,44 @@ reclassify a receipt.
 After Phase 2 exits, the product authorizer may issue a narrow, expiring source
 preparation authorization under the already accepted level-specific
 owning-product decision. It binds the allowed treatment semantics, source
-family, candidate producer, inputs, forbidden resources, expiry, and a fresh
-source-preparation generation fence. It permits source authoring only. It cannot
+family, candidate producer, inputs, forbidden resources, expiry, a fresh
+source-preparation generation fence, and the complete immutable roster of
+`SourcePreparationSlotIdentity` values before any source authoring starts. No
+slot may be added, deleted, substituted, or reused after authorization. The
+authorization permits source authoring only. It cannot
 allocate campaign coordinates, register or build a `T1`, execute candidate
 code, access the final corpus or assignment, observe qualification or campaign
 outcomes, support a promotional claim, authorize product use, or imply
 Foundation extraction.
 
 The candidate producer receives only blinded, outcome-independent authoring
-inputs. The evidence custodian records the resulting exact source digests and
-all expected source slots, including failed or missing preparation, without
-revealing the final holdout. Expiry or scope violation closes the preparation
-fence. The source becomes eligible for a campaign only when a later immutable
-campaign decision commits the complete source roster; it becomes a `T1` only
-after an admitted build produces and verifies the artifact.
+inputs. Before work, the evidence custodian registers every authorized source
+slot. It then retains exactly one `SourcePreparationReceipt` per slot containing
+the terminal exact source digest or an explicit failed, missing, or unknown
+no-source disposition. Expiry, scope violation, a changed digest, or a roster
+mismatch closes the preparation fence. A later campaign admission maps every
+preparation slot one-to-one to exactly one `TreatmentSlotIdentity`; a no-source
+slot remains an explicit non-buildable `E0` observation and cannot disappear. A
+produced source becomes eligible for a campaign only through that mapping and
+becomes a `T1` only after an admitted build produces and verifies the artifact.
 
 #### Campaign admission checklist
 
 After Phase 2 and any separately authorized blinded source preparation, but
-before treatment registration, build, or execution, the product authorizer
-records all of the following in one immutable campaign decision:
+before treatment registration, build, or execution, the sponsor prepares an
+immutable `CampaignAdmissionManifest`. The independent consistency verifier
+checks it and issues a `DossierConsistencyReceipt`. The product authorizer then
+records one immutable decision binding the exact manifest and receipt. Changing
+either invalidates admission. Together they contain all of the following:
 
 - the exact calibration authorization and its results;
-- the exact source-preparation authorization, fence history, and complete source
-  disposition roster;
+- the exact source-preparation authorization, fence history, complete immutable
+  slot roster, and one terminal `SourcePreparationReceipt` per expected slot;
 - immutable `ProtocolRevision` and `B0` coordinates;
 - the committed treatment source family and immutable `TreatmentSlotIdentity`
-  roster, including each exact source, recipe, toolchain, and complete mapping to
-  expected execution slots before the final holdout is revealed;
+  roster, including a receipt-bound bijection from every preparation slot, each
+  optional exact source, recipe, toolchain, and complete mapping to no-source,
+  build, and execution observations before the final holdout is revealed;
 - the admitted deterministic and stochastic tracks, exact immutable `E0`,
   evaluator owner, acceptance thresholds, exclusions, expiry, retention, and
   stop rules;
@@ -483,13 +498,17 @@ records all of the following in one immutable campaign decision:
 - one `HarnessQualificationRevision` binding immutable artifacts and
   configurations for the registrar, launch gate, receipt writer and store,
   sandbox enforcer, runtime reconciler, build and evaluation adapters, evaluator
-  runner and oracle, and report renderer, plus the exact Phase 2 qualification
-  evidence for those bytes;
-- an exact immutable dossier revision used as supporting evidence, together with
-  a passing receipt-bound consistency and source-custody gate at that revision;
-  every relied-upon product source revision must match the measurement
-  authorization, discovery evidence, and `B0`, while an unresolved placeholder,
-  missing receipt, or mismatch is a no-go;
+  runner and oracle, report renderer, source-preparation registrar, and
+  consistency verifier, plus the exact Phase 2 qualification evidence for those
+  bytes;
+- an exact immutable dossier revision used as supporting evidence and an
+  authenticated `DossierConsistencyReceipt`. The receipt binds the verifier
+  principal and credential; verifier artifact, configuration, and toolchain
+  digests; `CampaignAdmissionManifest` digest; dossier commit, tree, and file
+  manifest; measurement authorization and discovery records; every relied-upon
+  product commit and tree; `B0` artifact, build receipt, and provenance; complete
+  source-preparation and treatment rosters; and the exact equality result. An
+  unresolved placeholder, foreign or missing receipt, or mismatch is a no-go;
 - evidence that any new authoring grammar remains product-local under ADR-0014
   and its accepted level-specific owning-product decision.
 
@@ -502,6 +521,7 @@ cannot substitute for campaign admission.
 | Deliverable | Responsibility | Boundary |
 | --- | --- | --- |
 | Protocol record | Holds campaign-specific coordinates, role bindings, thresholds, expiry, and stop rules | Data only; not a module declaration or shared Foundation schema |
+| Consistency verifier adapter | Verifies the exact proposed admission manifest against dossier, product source, source roster, and `B0` provenance and signs the result | Independent from candidate production and evidence custody; qualified bytes only |
 | Baseline adapter | Implements the existing product-owned port with `B0` behavior | Remains the default product composition |
 | Treatment adapter | Implements the same port and translates to the candidate's private ordinary-library API | Removable without changing the port, use case, or domain model |
 | Attempt registrar and launch gate | Preregisters attempts and linearizes authorization consumption, campaign stop, and the process-start fence | Runs outside candidate authority and before candidate-controlled code |
@@ -586,7 +606,8 @@ Phases 0 and 1. An unmeasured convenience abstraction is a no-go.
    configurations for every execution-, scoring-, custody-, and report-affecting
    component: registrar, launch gate, receipt writer and store, sandbox enforcer,
    runtime reconciler, build and evaluation adapters, evaluator runner and oracle,
-   report renderer, and all negative-test evidence.
+   report renderer, source-preparation registrar, consistency verifier, and all
+   negative-test evidence.
 9. Prove each registration, authorization consumption, terminal append, and
    reconciliation binds externally verified identities and digests for the
    participating components through that revision. Every restarted component
@@ -600,10 +621,10 @@ excluded qualification cases are a no-go. Mutation, deletion, or conflicting
 terminal receipts must be rejected or detectably invalidate the claim.
 Calibration output cannot support promotion. Only after this exit may the product
 authorizer issue the bounded blinded source-preparation authorization.
-After that preparation closes, the authorizer may commit its complete exact
-source roster as the `TreatmentSlotIdentity` roster, mint the immutable
-`ProtocolRevision`, freeze `B0`, seal the independently held final corpus and
-assignment, and issue the final `E0` and campaign decision. The final `E0`
+After that preparation closes, the authorizer may commit its complete
+receipt-bound source-slot bijection as the `TreatmentSlotIdentity` roster, mint
+the immutable `ProtocolRevision`, freeze `B0`, seal the independently held final
+corpus and assignment, and issue the final `E0` and campaign decision. The final `E0`
 references only evaluator artifacts and configurations qualified by the exact
 `HarnessQualificationRevision`. Any later change to the harness, evaluator,
 report path, treatment roster, or final holdout requires new calibration or
@@ -618,12 +639,13 @@ coordinates.
    harness artifacts and configurations before accepting any treatment
    registration. Any harness change requires new calibration authorization,
    Phase 2 qualification, and campaign re-admission.
-2. Validate the admitted immutable `TreatmentSlotIdentity` roster and its total
-   build-to-execution mapping before the first build registration. The final
-   corpus and outcomes remain unavailable to the candidate producer.
-3. Preregister one `BuildAttemptIdentity` for each started treatment slot.
-   Reconcile every expected slot to explicit non-registration, success, failure,
-   or unknown; no variant may disappear before registration.
+2. Validate the admitted immutable preparation-to-treatment bijection and total
+   no-source-to-build-to-execution mapping before the first build registration.
+   The final corpus and outcomes remain unavailable to the candidate producer.
+3. Preregister one `BuildAttemptIdentity` for each source-present treatment slot.
+   Retain an explicit no-source `E0` observation for every non-buildable slot.
+   Reconcile every expected buildable slot to explicit non-registration, success,
+   failure, or unknown; no variant may disappear before registration.
 4. Consume the build authorization, build in containment, and record success,
    failure, or unknown outcome even when no artifact exists.
 5. Run the source and packed-artifact leakage audits against every produced
@@ -632,10 +654,11 @@ coordinates.
    read-only snapshot or opened object whose runtime identity cannot change
    between verification and execution.
 
-Exit only when every treatment slot has a build disposition, every executable
-treatment has one unambiguous build lineage, every failed or unknown no-artifact
-slot remains mapped to non-executable `E0` observations, and the sealed evaluator
-and exact runtime artifacts are retrievable by immutable locators.
+Exit only when every treatment slot has a no-source or build disposition, every
+executable treatment has one unambiguous build lineage, every no-source, failed,
+or unknown no-artifact slot remains mapped to non-executable `E0` observations,
+and the sealed evaluator and exact runtime artifacts are retrievable by immutable
+locators.
 
 #### Phase 4 - Sealed campaign execution
 
@@ -704,8 +727,9 @@ Exit with a bounded evidence verdict, not a runtime or extraction decision.
 4. The harness operator reconciles every in-flight runtime to a terminal,
    forcibly terminated, missing, or unknown disposition.
 5. The evidence custodian retains a complete manifest and immutable custody for
-   every raw object and authorization, sandbox, evaluation, review, and decision
-   event needed to rebuild the verdict, plus the retirement tombstone.
+   every raw object and authorization, source-preparation receipt, dossier
+   consistency receipt, sandbox, evaluation, review, and decision event needed
+   to rebuild the verdict, plus the retirement tombstone.
 6. Remove disposable workspaces only after evidence capture and keep an owned,
    observable cleanup backlog for failures.
 7. Remove the treatment adapter without modifying the product port, use case, or
@@ -726,6 +750,10 @@ ADR-0013.
 | Missing, reused, mismatched, expired, or revoked launch authorization | Candidate code never starts; an external denial observation is retained |
 | Campaign expires after authorization consumption but before process release | Expiry closes the generation fence; process creation is denied and the denial is retained |
 | Calibration expires after authorization consumption but before process release | Calibration expiry closes its separate generation fence; process creation is denied and cannot produce qualification evidence |
+| Source preparation starts before Phase 2 exit, without its authorization, after expiry, or across a closed preparation fence | Source work is inadmissible, the slot records a denied or unknown disposition, and no resulting bytes may enter a campaign |
+| A preparation slot is omitted, added, substituted, reused, or resolves to changed source bytes | The preparation fence closes; the mismatch is retained and campaign admission fails |
+| Preparation-to-treatment mapping is missing, duplicated, or not one-to-one | Campaign admission fails; every expected slot remains visible as an explicit no-source or invalid observation |
+| Dossier consistency receipt is missing, foreign, stale, forged, produced by an unqualified verifier, or binds different dossier, product source, manifest, or `B0` provenance | Campaign admission fails closed and the mismatch is retained |
 | Authoritative time is unavailable, uncertain beyond policy, rolls backward, jumps forward, or differs after restart | Registration, release, and receipt classification use admitted transactional time rules or fail closed; no later interpretation can reclassify the event |
 | Concurrent consumers race for one authorization | Exactly one consumption wins; all other launches are denied before process creation |
 | Campaign stop races with a consumed but unstarted launch | The generation fence prevents process creation and records a terminal denial or unknown disposition |
@@ -843,8 +871,9 @@ An admitted product protocol names an exact expiry and review owner. Before any
 attempt exists, an unowned or expired proposal may be withdrawn through the
 product's approved process. Once a build or execution attempt is registered, its
 immutable coordinates, terminal receipt or missing or unknown observation, and
-every raw object and authorization, sandbox, evaluation, review, and decision
-event required to rebuild its verdict are retained with a retirement tombstone.
+every raw object and authorization, source-preparation receipt, dossier
+consistency receipt, sandbox, evaluation, review, and decision event required to
+rebuild its verdict are retained with a retirement tombstone.
 Verdict validity cannot outlive the shortest referenced retention period. Later
 evidence expiry or destruction appends a tombstone and never rewrites the prior
 record. Failed or missing attempts are never deleted or rewritten to simplify
@@ -864,7 +893,8 @@ A future implementation conforms to this proposal only when:
   decision precedes every treatment registration, build, or execution;
 - blinded treatment-source preparation starts only after Phase 2 under its own
   expiring authorization and generation fence, cannot access final holdout or
-  outcomes, and every expected source slot has an explicit disposition before
+  outcomes, preregisters its complete immutable slot roster before authoring, and
+  gives every expected source slot one retained terminal disposition before
   campaign admission;
 - calibration registrations, launches, and receipts bind immutable
   calibration-only coordinates that cannot be promoted or reused as campaign
@@ -876,9 +906,9 @@ A future implementation conforms to this proposal only when:
   independently verified provenance;
 - a complete preregistered negative-case roster covers every required matrix row,
   and missing, unknown, or retrospectively excluded entries block admission;
-- the cited dossier revision has a passing receipt-bound consistency and
-  source-custody gate, and all relied-upon product source revisions reconcile to
-  the measurement authorization, discovery evidence, and `B0`;
+- an independently operated, qualified consistency verifier signs a receipt over
+  the exact admission manifest, dossier tree, product source trees, source-slot
+  bijection, and `B0` provenance, and all equality checks pass;
 - every treatment semantic is classified and remains within its admitted
   `L0`-`L4` level and accepted product trigger;
 - product ports, DTOs, domain types, and application use cases expose no module
@@ -887,9 +917,9 @@ A future implementation conforms to this proposal only when:
 - an ordinary candidate-independent path can build and evaluate every
   generation without a prior candidate;
 - sponsor, authorizer, candidate production, harness operation, evidence
-  custody, evaluation, and evidence review have auditable principal and
-  credential separation over their effective and transitive administrative
-  control;
+  custody, consistency verification, evaluation, and evidence review have
+  auditable principal and credential separation over their effective and
+  transitive administrative control;
 - baseline and every evaluator input are frozen before treatment registration or
   build, and calibration drafts never reuse an `E0` identity;
 - every build and execution attempt is preregistered and has a terminal receipt
