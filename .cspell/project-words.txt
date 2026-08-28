@@ -28,6 +28,7 @@ lifecycles
 linearizable
 linearization
 linearizability
+linearizes
 Lumino
 miscorrelated
 Modulith
@@ -53,6 +54,7 @@ Theia
 typosquatting
 UMEQ
 unredacted
+unstarted
 WASI
 Wasmtime
 watchlist
