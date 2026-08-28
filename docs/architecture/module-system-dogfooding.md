@@ -136,6 +136,7 @@ Every campaign keeps the following coordinates distinct:
 | `LaunchAuthorization` | One-use custodian-issued capability bound to one registered attempt and exact sandbox policy |
 | `BuildReceipt` | Externally captured build result with an optional verified output artifact |
 | `EvidenceReceipt` | Externally captured binding between registered evaluator inputs, execution, raw output, and terminal result |
+| `HarnessQualificationRevision` | Immutable manifest of every execution-, scoring-, custody-, and report-affecting artifact and configuration qualified before treatment work |
 
 These names do not define a public schema. Serialization and storage remain
 campaign-local until independent consumers justify shared extraction.
@@ -171,10 +172,14 @@ and attempt, never relabeled as a retry.
 Each registration issues a one-use `LaunchAuthorization`. The external launch
 gate atomically records its consumption before the build or evaluation sandbox
 can execute candidate-controlled code. Missing, reused, mismatched, or expired
-authorization blocks launch. Authorization expiry is never later than campaign
-expiry. Process release atomically revalidates both, and campaign expiry closes
-the generation fence even when retirement has not run. The harness cannot start
-an unregistered attempt and register it after observing the outcome.
+authorization blocks launch. Campaign authorizations expire no later than the
+campaign; calibration authorizations expire no later than the calibration
+window. Each authority has its own generation fence. Process release atomically
+revalidates the applicable fence and expiries at an admitted authoritative-time
+linearization point. Unavailable time or uncertainty outside the admitted bound
+fails closed. Expiry closes the corresponding fence even when retirement has not
+run. The harness cannot start an unregistered attempt and register it after
+observing the outcome.
 
 ### Bootstrap without recursive authority
 
@@ -360,12 +365,19 @@ reusable campaign service.
 
 #### Pre-admission discovery
 
-Before campaign implementation or treatment code, the owning product observes
-its existing Pure DI composition using already approved instrumentation. This
-discovery names the measured problem, narrow capability seam, reproducible
-baseline measurements, exact `B0` candidate, and proposed outcome. It introduces
-no module-system abstraction, campaign harness, candidate, or new execution
-authority.
+Before campaign implementation or treatment code, the owning product may inspect
+existing operational telemetry from its Pure DI composition using already
+approved instrumentation. Passive observations may form a hypothesis and name a
+candidate seam, but cannot become trigger measurements or select a favorable
+`B0`, corpus, outcome, or threshold after results are known.
+
+Before any deliberate discovery run, the product authorizer records a narrow,
+expiring measurement authorization. It preregisters the benchmark protocol,
+baseline selection rule, measured outcome, corpus or sampling rule, exclusions,
+analysis, threshold, retention, and stop rule. Only then may deliberate discovery
+measure the problem, reproduce the baseline, and identify the exact proposed
+`B0`. This work introduces no module-system abstraction, campaign harness,
+candidate, or new treatment execution authority.
 
 The product also classifies every proposed treatment semantic as `L0`, `L1`,
 `L2`, `L3`, or `L4` under the productization roadmap. Each level above `L0` must
@@ -379,20 +391,27 @@ Before Phase 0, the product authorizer records a narrow, expiring calibration
 authorization containing:
 
 - the accepted revision of this architecture;
-- the discovery evidence, measured problem, exact `B0`, and current Pure DI
-  baseline, captured without the candidate abstraction;
+- the exact measurement authorization and its preregistered protocol, discovery
+  evidence, measured problem, exact `B0`, and current Pure DI baseline, captured
+  without the candidate abstraction;
 - one product-owned capability seam and the exact product outcome being tested;
 - every proposed treatment semantic, its `L0`-`L4` classification, trigger
   evidence, and accepted level-specific owning-product decision;
 - immutable calibration-only protocol, evaluation, and sandbox-policy
   coordinates that can bind registrations, launches, and receipts but can never
   become campaign `ProtocolRevision` or `E0` coordinates;
+- a calibration generation fence, authoritative durable time source, maximum
+  uncertainty, calibration expiry, and the transactional linearization points
+  used for authorization consumption, process release, and receipt arrival;
 - the draft evaluator design, sandbox and evidence technologies, forbidden
   resources, calibration owner, estimate owner, and stop rule.
 
 This authorization permits baseline reproduction, candidate-independent harness
 work, and deliberate mutants only. It cannot allocate an `E0`, register, build,
 or execute `T1`, support a promotional claim, or authorize product use.
+The authoritative time is owned by the durable custody transaction authority;
+sandbox-host wall clocks are diagnostic only and cannot extend an expiry or
+reclassify a receipt.
 
 #### Campaign admission checklist
 
@@ -404,15 +423,20 @@ of the following in one immutable campaign decision:
 - the proposed treatment family, admitted deterministic and stochastic tracks,
   exact immutable `E0`, evaluator owner, acceptance thresholds, exclusions,
   expiry, retention, and stop rules;
+- the campaign generation fence, authoritative durable time source, maximum
+  uncertainty, and transactional linearization points for every expiry and
+  deadline decision;
 - named principals, credentials, and effective control domains for every
   authority role;
 - the build and execution sandbox enforcer, deny-by-default policy, and allowed
   disposable resources;
 - the evidence store, immutable locator scheme, access policy, and projection
   rebuild procedure;
-- immutable artifacts and configurations for the qualified registrar, launch
-  gate, receipt writer and store, sandbox enforcer, and runtime reconciler, plus
-  the exact Phase 2 qualification evidence for those bytes;
+- one `HarnessQualificationRevision` binding immutable artifacts and
+  configurations for the registrar, launch gate, receipt writer and store,
+  sandbox enforcer, runtime reconciler, build and evaluation adapters, evaluator
+  runner and oracle, and report renderer, plus the exact Phase 2 qualification
+  evidence for those bytes;
 - an exact immutable dossier revision used as supporting evidence;
 - an accepted ownership and governance successor before introducing any new
   authoring grammar.
@@ -479,30 +503,46 @@ Phases 0 and 1. An unmeasured convenience abstraction is a no-go.
    receipts, and rebuildable read projections outside candidate authority. Every
    calibration registration, launch, and receipt binds the immutable
    calibration-only protocol, evaluation, and sandbox-policy coordinates.
-2. Linearize authorization consumption, campaign-generation fencing, and process
-   creation. Persist an enforcer-owned runtime identity and hard deadline before
-   releasing candidate-controlled code.
+2. Linearize authorization consumption, calibration-generation fencing, and
+   process creation against the authorized durable time source. A calibration
+   launch token expires no later than its calibration authorization. Persist an
+   enforcer-owned runtime identity, qualified-component attestations, and hard
+   deadline before releasing candidate-controlled code.
 3. Attest effective file, mount, network, environment, subprocess, and credential
    grants against the registered policy before candidate-controlled code runs.
-4. Run build and evaluation adapters with `B0` and deliberate mutants only.
+4. Run build and evaluation adapters with `B0` and deliberate mutants only. Seal
+   a no-treatment evaluator qualification that binds the exact proposed final
+   `E0` runner, oracle, scoring configuration, corpus coordinates, and report
+   renderer. The final `E0` may reference only these qualified artifacts and
+   configurations; qualification results remain non-promotional.
 5. Exercise crash, timeout, cancellation, containment denial, receipt mutation,
    deletion, conflicting duplicates, crash durability, orphan reconciliation,
    campaign-expiry races, malicious output rendering, and restart behavior before
    treatment execution.
 6. Demonstrate that no `N-1` candidate is needed to build, launch, evaluate,
    recover evidence, or clean up the campaign.
-7. Produce a qualification manifest binding immutable digests and configurations
-   for the registrar, launch gate, receipt writer and store, sandbox enforcer,
-   runtime reconciler, and all negative-test evidence.
+7. Produce a `HarnessQualificationRevision` binding immutable digests and
+   configurations for every execution-, scoring-, custody-, and report-affecting
+   component: registrar, launch gate, receipt writer and store, sandbox enforcer,
+   runtime reconciler, build and evaluation adapters, evaluator runner and oracle,
+   report renderer, and all negative-test evidence.
+8. Prove each registration, authorization consumption, terminal append, and
+   reconciliation binds externally verified identities and digests for the
+   participating components through that revision. Every restarted component
+   re-attests before serving; unavailable or mismatched attestation closes the
+   calibration fence.
 
 Exit only when all registered negative cases fail closed and a destroyed
 projection can be rebuilt from immutable receipts. Mutation, deletion, or
 conflicting terminal receipts must be rejected or detectably invalidate the
 claim. Calibration output cannot support promotion. Only after this exit may the
 product authorizer mint the immutable `ProtocolRevision`, freeze `B0`, and issue
-the final `E0` and campaign decision. Any later change requires a new immutable
-calibration authorization and complete Phase 2 rerun before campaign readmission.
-Calibration coordinates are never promoted or reused as campaign coordinates.
+the final `E0` and campaign decision. The final `E0` references only evaluator
+artifacts and configurations qualified by the exact
+`HarnessQualificationRevision`. Any later change to the harness, evaluator, or
+report path requires new calibration coordinates, a complete Phase 2 rerun, and
+campaign readmission. Calibration coordinates are never promoted or reused as
+campaign coordinates.
 
 #### Phase 3 - Treatment build and protocol seal
 
@@ -511,14 +551,18 @@ Calibration coordinates are never promoted or reused as campaign coordinates.
    harness artifacts and configurations before accepting any treatment
    registration. Any harness change requires new calibration authorization,
    Phase 2 qualification, and campaign re-admission.
-2. Preregister the admitted treatment source family and each
-   `BuildAttemptIdentity` before a build starts, without revealing sealed corpus
-   or outcomes to the candidate producer.
-3. Consume the build authorization, build in containment, and record success,
+2. Before the first build registration, freeze an immutable roster of every
+   expected build slot in the admitted treatment family. Each slot binds admitted
+   source inputs, recipe, toolchain, and intended treatment identity without
+   revealing sealed corpus or outcomes to the candidate producer.
+3. Preregister one `BuildAttemptIdentity` for each started build slot. Reconcile
+   every expected slot to explicit non-registration, success, failure, or unknown;
+   no variant may disappear before registration.
+4. Consume the build authorization, build in containment, and record success,
    failure, or unknown outcome even when no artifact exists.
-4. Run the source and packed-artifact leakage audits against every produced
+5. Run the source and packed-artifact leakage audits against every produced
    `T1`; reject it before execution on any forbidden dependency or export.
-5. Verify provenance and immutable custody, then materialize a content-addressed,
+6. Verify provenance and immutable custody, then materialize a content-addressed,
    read-only snapshot or opened object whose runtime identity cannot change
    between verification and execution.
 
@@ -535,9 +579,10 @@ locators.
    `E0`, and `ExperimentalUnit`.
 3. Atomically consume its one-use authorization before process creation or
    candidate-controlled code. Process creation revalidates the current campaign
-   generation fence, campaign expiry, authorization expiry, and attested
-   effective grants before release. Campaign expiry automatically closes the
-   fence.
+   generation fence, campaign expiry, authorization expiry, authoritative time,
+   participating qualified-component attestations, and effective grants before
+   release. Campaign expiry automatically closes the fence. Any time source or
+   attestation mismatch fails closed.
 4. Run baseline and treatment in fresh, non-sharing disposable workspaces with
    fallback disabled.
 5. Record terminal receipts or explicit non-registration, missing, or unknown
@@ -562,8 +607,9 @@ verify. Any unresolved mismatch fails the registered claim.
    missing, unknown, excluded, and terminal slots, then account for retries,
    attrition, multiplicity, treatment lineage, and prior evaluation revisions
    exactly as preregistered.
-3. Apply the monotonic receipt finality rule. The deadline classification remains
-   the analytic result; late receipts are appended as late and cannot rewrite it.
+3. Apply the monotonic receipt finality rule at the registered authoritative-time
+   linearization point. The deadline classification remains the analytic result;
+   late receipts are appended as late and cannot rewrite it.
    Conflicting terminal receipts invalidate the claim and require a new report
    revision.
 4. Generate a read-only evidence report from immutable receipts. Candidate output
@@ -582,14 +628,18 @@ Exit with a bounded evidence verdict, not a runtime or extraction decision.
 2. The evidence custodian revokes issued authorizations; the launch gate and
    harness operator fence consumed-but-unstarted launches and prove new process
    creation is denied.
-3. The harness operator reconciles every in-flight runtime to a terminal,
+3. Revoke every candidate-visible credential at terminal disposition or stop,
+   before raw evidence becomes readable. Such credentials expire no later than
+   their attempt and campaign. Receipts retain only credential identity, scope,
+   and revocation evidence, never secret material.
+4. The harness operator reconciles every in-flight runtime to a terminal,
    forcibly terminated, missing, or unknown disposition.
-4. The evidence custodian retains a complete manifest and immutable custody for
+5. The evidence custodian retains a complete manifest and immutable custody for
    every raw object and authorization, sandbox, evaluation, review, and decision
    event needed to rebuild the verdict, plus the retirement tombstone.
-5. Remove disposable workspaces only after evidence capture and keep an owned,
+6. Remove disposable workspaces only after evidence capture and keep an owned,
    observable cleanup backlog for failures.
-6. Remove the treatment adapter without modifying the product port, use case, or
+7. Remove the treatment adapter without modifying the product port, use case, or
    domain model when the campaign ends.
 
 Exit only after revocation and launch denial are verified, every in-flight
@@ -606,12 +656,15 @@ ADR-0013.
 | --- | --- |
 | Missing, reused, mismatched, expired, or revoked launch authorization | Candidate code never starts; an external denial observation is retained |
 | Campaign expires after authorization consumption but before process release | Expiry closes the generation fence; process creation is denied and the denial is retained |
+| Calibration expires after authorization consumption but before process release | Calibration expiry closes its separate generation fence; process creation is denied and cannot produce qualification evidence |
+| Authoritative time is unavailable, uncertain beyond policy, rolls backward, jumps forward, or differs after restart | Registration, release, and receipt classification use admitted transactional time rules or fail closed; no later interpretation can reclassify the event |
 | Concurrent consumers race for one authorization | Exactly one consumption wins; all other launches are denied before process creation |
 | Campaign stop races with a consumed but unstarted launch | The generation fence prevents process creation and records a terminal denial or unknown disposition |
 | Crash after authorization consumption but before confirmed process start | Recovery reconciles the persisted runtime identity, terminates any orphan, and records missing or unknown at deadline |
 | Crash after process start but before terminal receipt | Recovery finds the live runtime; no automatic outcome-changing retry occurs and deadline finality is preserved |
 | Duplicate registration or replayed request | Idempotent lookup returns the original identity; no second execution is authorized |
 | Build fails before producing an artifact | Terminal `BuildReceipt` records failure and no synthetic `T1` is created |
+| An expected treatment build slot is omitted before registration | Its immutable roster slot resolves to explicit non-registration or unknown and remains in attrition accounting |
 | Artifact bytes or resolution target change after verification | Execution uses the already verified immutable object or fails before process creation |
 | Treatment has missing or ambiguous build lineage | Execution is rejected before launch |
 | Sandbox grants undeclared file, mount, network, environment, subprocess, or credential access | Pre-release attestation blocks launch; runtime confinement loss triggers emergency termination and credential revocation |
@@ -619,6 +672,7 @@ ADR-0013.
 | An expected `E0` slot is never registered | An explicit non-registration or unknown observation remains in attrition accounting and cannot disappear from the report |
 | Retry is relabeled as an independent replication | Registration is rejected or analysis treats it as the original experimental unit |
 | `E0` input or analysis changes after sealing | A new `E0` and valid unseen assignment are required; prior results are not pooled |
+| Evaluator, oracle, adapter, renderer, or harness component changes after qualification or on restart | Re-attestation fails, the fence closes, and Phase 2 plus campaign admission must be repeated |
 | Incompatible roles share effective or transitive administrative control | Evidence is calibration-only and cannot support promotion |
 | Candidate, adapter, or public product surface leaks framework, receipt, evaluator, or product-domain types | Source or packed-artifact gate fails |
 | Treatment failure triggers hidden baseline fallback | Attempt fails; fallback cannot contribute a successful score |
@@ -626,6 +680,7 @@ ADR-0013.
 | Raw receipt is mutated, deleted, lost before durable commit, or conflicts with another terminal receipt | Integrity verification rejects the mutation or invalidates the claim; projections cannot choose a preferred terminal |
 | Terminal receipt arrives after an `E0` deadline | It is retained as late evidence but cannot change the registered analytic outcome |
 | Candidate output contains HTML, script, terminal controls, links, or spreadsheet formulas | Reports render only escaped inert data with outbound access disabled; raw bytes require a safe download path |
+| Candidate echoes a sandbox credential into raw output | The secret is never copied into receipts or reports; the credential is revoked before raw evidence access and the exposure test remains auditable by non-secret identity |
 | A decision or review role requests discretionary stop after interim outcome-correlated data | Stop is recorded with actor, reason, and evidence snapshot and the campaign becomes non-promotional |
 | `N-1` candidate is unavailable | Candidate-independent build, evaluation, evidence recovery, and cleanup still work |
 
@@ -641,9 +696,13 @@ The evidence custodian exposes a rebuildable campaign view with, at minimum:
 - containment denials and differences between registered and actual grants;
 - campaign-generation fence state, consumed-but-unstarted launches, late or
   conflicting receipts, and each stop actor, reason, and evidence snapshot;
+- calibration-generation fence state, admitted authoritative-time observations,
+  uncertainty failures, participating component attestations, and credential
+  revocation evidence;
 - cleanup backlog and elapsed time after campaign stop;
-- exact protocol, evaluator, artifact, sandbox-policy, and evidence-revision
-  digests for every reported verdict.
+- exact protocol, evaluator, artifact, sandbox-policy,
+  `HarnessQualificationRevision`, and evidence-revision digests for every
+  reported verdict.
 
 Telemetry and projections are diagnostics only. They cannot create attempts,
 change terminal facts, waive a gate, or authorize execution. Raw evidence follows
@@ -657,7 +716,8 @@ stop performs these steps. Campaign expiry starts the same fence closure
 automatically even when the retirement workflow is delayed:
 
 1. Advance the campaign generation fence, stop issuing authorizations, revoke
-   issued authorizations, and block consumed-but-unstarted launches.
+   issued authorizations and candidate-visible credentials, and block
+   consumed-but-unstarted launches.
 2. Reconcile every persisted runtime identity. Already started, still-contained
    sandboxes may run only until the sealed deadline and resource policy.
 3. Record unresolved in-flight attempts as missing or unknown; do not rewrite or
@@ -676,13 +736,18 @@ the campaign non-promotional. Emergency stop never waits for the scored deadline
 #### Planning estimate
 
 For one admitted product-local campaign, the first implementation is expected to
-change approximately `2,500-6,500` lines including focused tests and fixtures:
+change approximately `3,700-9,400` lines including focused tests and fixtures:
 
-- campaign records and product-local adapters: `500-1,200` lines;
-- registrar, launch gate, receipts, and projections: `600-1,400` lines;
-- containment adapters and enforcement evidence: `400-1,000` lines;
-- evaluator adapters and report projection: `300-800` lines;
-- fault injection, mutants, restart, and packed-artifact tests: `700-2,100`
+- measurement, calibration, campaign records, and product-local adapters:
+  `600-1,400` lines;
+- registrar, launch gate, durable time, receipts, and projections: `900-2,000`
+  lines;
+- containment, credential, attestation, and reconciliation adapters:
+  `700-1,800` lines;
+- evaluator qualification, adapters, and inert report projection: `500-1,200`
+  lines;
+- fault injection, mutants, time, restart, and packed-artifact tests:
+  `1,000-3,000`
   lines.
 
 This is a planning range, not scope authority. Re-estimate after a product owns
