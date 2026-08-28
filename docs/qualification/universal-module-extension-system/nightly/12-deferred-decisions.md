@@ -12,7 +12,9 @@ related:
 
 # Deferred Decisions
 
-Static imports and Pure DI are the sole current implementation recommendation.
+Static imports and Pure DI were the nightly recommendation; the later
+[productization roadmap](../../module-system-v1-productization/current-roadmap.yaml)
+is the current sequencing authority.
 The deferred graph and host items below are explicit later gates, not a parallel
 graph-first roadmap.
 
@@ -47,7 +49,7 @@ graph-first roadmap.
 | Foundation extraction | Real executable second consumer, semantic reconciliation, neutral intersection, independent expectations, conformance, ownership/version/migration review, separate decision |
 | Public SPI | Independent implementations, compatibility and release fixtures, immutable admission, governance, support |
 | Community modules | Public gates plus grants, revocation, T2/T3 containment, custody, uninstall, recovery, moderation |
-| Cordis | 25% net deletion and complete private lifecycle parity in a real resource-heavy consumer |
+| Cordis | Multi-factor scorecard win and complete private lifecycle parity in a real resource-heavy consumer |
 | Extism/WASI | Funded non-TS or isolation need, ABI, broker, quotas, provenance, lifecycle, cross-platform containment |
 | Module Federation | Frontend-owned independent deployment need and complete pre-execution Web/Electron closure |
 | Process host | ADR-0011-equivalent closure, named consumer, UMEQ-009/012 resolution, authenticated protocol |

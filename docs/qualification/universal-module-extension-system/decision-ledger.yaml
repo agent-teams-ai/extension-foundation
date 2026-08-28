@@ -43,11 +43,27 @@ requirementDefinitions:
     authority: owning-product
     detail: final-recommendation.md
     purpose: product-specific ownership approval for one static module rehearsal
+  - id: module-authoring-governance-successor
+    kind: evidence
+    authority: qualification-evidence
+    detail: ../module-system-v1-productization/executive-verdict.md#governance-boundary
+    currentStatus: missing
+    purpose: records that no accepted product-owner successor resolving the ADR-0013/ADR-0014 ownership overlap exists yet
+  - id: static-authoring-trigger
+    kind: evidence
+    authority: owning-product
+    detail: ../module-system-v1-productization/current-roadmap.yaml
+    purpose: predeclared benchmark proving measured authoring, drift, or zero-evaluation discovery cost beyond direct Pure DI
   - id: private-runtime-graph-trigger
     kind: evidence
     authority: owning-product
     detail: final-recommendation.md#phase-2-measure-need-add-a-private-product-graph-only-if-triggered
-    purpose: exact measured Phase 2 private-graph trigger, not artifact, descriptor, fixture, or extraction evidence
+    purpose: exact measured runtime-selection trigger that static build or configuration cannot satisfy
+  - id: independent-lifecycle-trigger
+    kind: evidence
+    authority: owning-product
+    detail: ../module-system-v1-productization/current-roadmap.yaml
+    purpose: exact resource topology proving dependency-aware readiness, drain, rollback, or recovery is required
   - id: owning-product-runtime-decision
     kind: decision
     authority: owning-product
@@ -83,6 +99,13 @@ requirementDefinitions:
     authority: qualification-evidence
     detail: conformance-plan.md
     purpose: executable conformance across the independently authored consumers
+  - id: independent-consumer-provider-verification
+    kind: evidence
+    authority: qualification-evidence
+    detail: ../module-system-v1-productization/authoring-api-and-gap-matrix.md
+    purpose: authenticated repository and independently attested implementation ownership that cannot be satisfied by two IDs from one repository
+    selfReportedStatusAccepted: false
+    currentStatus: missing
   - id: foundation-semantic-extraction-decision
     kind: decision
     authority: foundation-owner
@@ -139,9 +162,9 @@ requirementDefinitions:
     detail: conformance-plan.md#unproved-production-gates
     purpose: durable independently observable evidence from the named production host; local fixtures, in-memory models, smoke tests, plans, and aspirational prose are excluded
 implementationGates:
-  - id: phase-1-static-module-rehearsal
+  - id: phase-0-static-composition-rehearsal
     appliesTo:
-      - phase-1-static-module-rehearsal
+      - phase-0-product-owned-pure-di-measurement
     mode: all
     allOf:
       - decision: ADR-0013
@@ -150,12 +173,23 @@ implementationGates:
         requiredStatus: accepted
       - decision: owning-product-feature-decision
         requiredStatus: accepted
+  - id: phase-1-static-module-authoring
+    appliesTo:
+      - phase-1-static-module-authoring
+    mode: all
+    allOf:
+      - gate: phase-0-static-composition-rehearsal
+        requiredStatus: satisfied
+      - evidence: static-authoring-trigger
+        requiredStatus: measured
+      - evidence: module-authoring-governance-successor
+        requiredStatus: accepted-product-owner-successor-recorded
   - id: private-runtime-graph
     appliesTo:
       - later-private-runtime-graph
     mode: all
     allOf:
-      - gate: phase-1-static-module-rehearsal
+      - gate: phase-0-static-composition-rehearsal
         requiredStatus: satisfied
       - evidence: private-runtime-graph-trigger
         requiredStatus: measured
@@ -163,6 +197,17 @@ implementationGates:
         requiredStatus: accepted
       - decision: UMEQ-013
         requiredStatus: resolved
+  - id: lifecycle-coordinator
+    appliesTo:
+      - later-product-lifecycle-coordinator
+    mode: all
+    allOf:
+      - gate: phase-0-static-composition-rehearsal
+        requiredStatus: satisfied
+      - evidence: independent-lifecycle-trigger
+        requiredStatus: measured
+      - decision: owning-product-runtime-decision
+        requiredStatus: accepted
       - evidence: lifecycle-semantic-review
         requiredStatus: verified
   - id: foundation-semantic-extraction
@@ -176,6 +221,8 @@ implementationGates:
         requiredStatus: proven
       - evidence: cross-consumer-conformance
         requiredStatus: passed
+      - evidence: independent-consumer-provider-verification
+        requiredStatus: authenticated-independent-ownership-verified
       - decision: foundation-semantic-extraction-decision
         requiredStatus: accepted
   - id: phase-3-package-admission

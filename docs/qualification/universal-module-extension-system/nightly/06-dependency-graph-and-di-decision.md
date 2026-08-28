@@ -44,7 +44,8 @@ trigger. Before implementation, one accepted governance
 path must resolve ownership. The private graph must bound input size, reject
 duplicate and missing identities and cycles, materialize exact bindings, produce
 deterministic complete diagnostics, seal source-to-factory identity, and remain
-replaceable. Generic glue must not exceed the rehearsal's 30% stop threshold.
+replaceable. Generic glue must be recorded separately under a predeclared
+counting method and justified by a named product outcome.
 
 The provisional implementation direction is a minimal native private kernel.
 Cordis and a native/Cordis hybrid remain rejected. The runtime graph remains

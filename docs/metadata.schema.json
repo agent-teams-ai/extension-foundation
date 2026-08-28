@@ -103,7 +103,7 @@
     },
     {
       "if": {"properties": {"type": {"const": "qualification"}}, "required": ["type"]},
-      "then": {"properties": {"status": {"const": "qualified"}}}
+      "then": {"properties": {"status": {"enum": ["active", "qualified"]}}}
     }
   ]
 }

@@ -3,7 +3,7 @@ id: qualification.universal-module-extension-system.final-recommendation
 type: qualification
 status: qualified
 owner: architecture
-summary: Recommends product-local static Pure DI first and gates any runtime graph, Foundation extraction, publication, or plugin platform on measured need.
+summary: Preserves the historical W11 product-local rehearsal recommendation; current productization qualification does not authorize it.
 related:
   - ADR-0001
   - ADR-0010
@@ -14,9 +14,9 @@ related:
   - OD-003
 ---
 
-# Final Recommendation
+# Historical W11 Recommendation
 
-## Current Recommendation
+## Former Recommendation
 
 Start with one product-owned, trusted `T0` feature seam composed through static
 imports and Pure DI. The feature exports a pure `FeatureModuleFactory`; the
@@ -43,8 +43,9 @@ factory more than once when the application explicitly needs distinct
 instances, but lifetime remains an application decision rather than a product
 identity or module-scope convention.
 
-This is the only current implementation recommendation. The earlier
-graph-first roadmap remains useful historical qualification research: its DAG,
+This was the W11 implementation recommendation and is now historical input to
+the later [current productization roadmap](../module-system-v1-productization/current-roadmap.yaml).
+The earlier graph-first roadmap remains useful qualification research: its DAG,
 lifecycle, fencing, host, and packaging evidence constrains later work if a
 real trigger appears, but it is superseded as implementation sequencing. It is
 not a competing recommendation and does not authorize a Foundation runtime.
@@ -75,7 +76,8 @@ The qualification established useful but bounded evidence:
   result are unproven because no committed semantic verifier binds them to
   committed bytes. The corpus supplies no promotion authority.
 - Synthetic graph spikes demonstrated deterministic DAG compilation, invalid
-  graph rejection, stable diagnostics, and a 10,000-node budget. They did not
+  graph rejection, stable diagnostics, and 10,000-node chain stack safety with
+  non-gating timing samples. They did not
   demonstrate that a real product needs a graph.
 - Lifecycle spikes exposed bounded-waiting, cleanup, cancellation, fencing,
   and crash-recovery constraints. They do not qualify a production lifecycle
@@ -125,9 +127,10 @@ service locator, plugin loading, artifact identity, dynamic discovery,
 Foundation package, public SPI, generic lifecycle coordinator, or hot unload.
 For update or recovery in this static rehearsal, reconstruct the smallest
 application-owned authority realm; this does not project a universal restart or
-physical-unload rule onto accepted UMEQ-016. Stop or simplify
-if generic glue exceeds 30% of changed production code or the seam does not
-improve the named product measure.
+physical-unload rule onto accepted UMEQ-016. Stop or simplify if the seam does
+not improve the named product measure. A glue ratio is advisory until the
+owning decision defines its production, generated, configuration, and test LOC
+numerator and denominator.
 
 Exit evidence: both built-ins run through the same product-owned port; selection
 is explicit and deterministic; no provider runs in a Unit of Work; product
@@ -152,7 +155,7 @@ product graph that addresses the measured need. Keep descriptors, graph
 semantics, diagnostics, and lifecycle policy in the owning product. Use explicit
 bindings and closed dependency objects; expose no resolver or global container.
 Compare against the static baseline and delete the graph if it fails the named
-measure or exceeds the 30% glue threshold.
+measure. Record framework glue separately using a predeclared counting method.
 
 Estimated measurement: 100-300 LOC/instrumentation, 2-5 working days. Triggered
 private graph prototype: 2,000-5,000 LOC including differential and failure
@@ -226,18 +229,18 @@ behavior and requires multiple quarters plus continuing operations and support.
 | Risk | Control |
 | --- | --- |
 | Static feature factory becomes an ambient container | Pure factory inputs; application root owns selection/config/lifetime; source checks reject lookup APIs |
-| Historical graph research is mistaken for the active roadmap | Label it superseded historical research and link to this document as the sole current recommendation |
+| Historical graph research is mistaken for an accepted roadmap | Keep this evidence historical and require an owning-product decision before execution |
 | Foundation becomes a product shared kernel | Product-local first; separate extraction decision; no product models in Foundation |
 | A graph is built because a spike exists | Require a measured Phase 2 trigger and comparison against the static baseline |
 | Extraction is treated as file movement | Review semantic reconciliation, ownership, compatibility, versioning, migration, and release policy |
 | Public API freezes before evidence | Separate extraction, admission, and publication gates |
 | Plugin distribution is mistaken for runtime composition | Map contributions through product adapters to product ports; add runtime modules only for measured graph/lifecycle need |
 
-## Decision
+## Historical Decision
 
-Proceed only with Phase 0 and, after its approvals, the Phase 1 product-local
-static Pure DI rehearsal. Generalize to a private product graph only after a
-measured Phase 2 trigger. A second real consumer, Foundation extraction,
-publication, process/browser/Wasm hosting, and plugin distribution are separate
-decisions with separate evidence. No current package or Git SHA is promoted by
-this recommendation.
+The W11 recommendation proposed Phase 0 and a later product-local static Pure
+DI rehearsal. It is preserved as historical evidence only. The later
+[`current-roadmap.yaml`](../module-system-v1-productization/current-roadmap.yaml)
+is a non-authoritative qualification projection that starts with measurement;
+only an accepted owning-product decision can authorize execution. No package or
+Git SHA is promoted by either qualification record.

@@ -3,7 +3,7 @@ export const maxFrameBytes = 64 * 1024;
 const maxJsonDepth = 32;
 const maxJsonNodes = 4_096;
 const envelopeKeys = new Set([
-  "protocol", "requestId", "operationId", "authorityScope", "extensionInstanceId",
+  "protocol", "requestId", "operationId", "dispatchNonce", "authorityScope", "extensionInstanceId",
   "graphGeneration", "moduleActivationGeneration", "hostIncarnation", "senderId",
   "audience", "absoluteDeadline", "kind", "payload",
 ]);
@@ -18,6 +18,7 @@ const exactIntegerWireFields = new Set([
 const canonicalNonNegativeInteger = /^(?:0|[1-9]\d*)$/;
 const forbiddenKeys = new Set(["__proto__", "constructor", "prototype"]);
 const identifierPattern = /^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$/;
+let dispatchSequence = 0;
 
 function normalizeJson(value, depth, budget) {
   if (depth > maxJsonDepth || budget.count++ >= maxJsonNodes) throw new Error("JSON_LIMIT_EXCEEDED");
@@ -171,6 +172,7 @@ export function validateEnvelope(value) {
   if (frame.protocol !== protocolName) throw new Error("UNSUPPORTED_PROTOCOL");
   requireIdentifier(frame, "requestId");
   requireIdentifier(frame, "operationId");
+  requireIdentifier(frame, "dispatchNonce");
   requireIdentifier(frame, "authorityScope");
   requireIdentifier(frame, "extensionInstanceId");
   requireIdentifier(frame, "hostIncarnation");
@@ -202,23 +204,125 @@ export function validateAuthorizedEnvelope(value, authority) {
   return request;
 }
 
-export function validateResponseEnvelope(value, authority, request, expectedKind) {
-  if (!responseKinds.has(expectedKind)) throw new Error("INVALID_EXPECTED_RESPONSE_KIND");
-  const response = validateAuthorizedEnvelope(value, authority);
-  if (response.requestId !== request.requestId) throw new Error("RESPONSE_REQUEST_MISMATCH");
-  if (response.operationId !== request.operationId) throw new Error("RESPONSE_OPERATION_MISMATCH");
-  if (response.graphGeneration !== request.graphGeneration) {
-    throw new Error("RESPONSE_GRAPH_GENERATION_MISMATCH");
-  }
-  if (response.moduleActivationGeneration !== request.moduleActivationGeneration) {
-    throw new Error("RESPONSE_MODULE_ACTIVATION_GENERATION_MISMATCH");
-  }
-  if (response.hostIncarnation !== request.hostIncarnation) {
-    throw new Error("RESPONSE_HOST_INCARNATION_MISMATCH");
-  }
-  if (response.absoluteDeadline !== request.absoluteDeadline) throw new Error("RESPONSE_DEADLINE_MISMATCH");
-  if (response.kind !== expectedKind) throw new Error("UNEXPECTED_RESPONSE_KIND");
-  return response;
+function dispatchIdentity(request) {
+  return [
+    request.authorityScope,
+    request.extensionInstanceId,
+    request.graphGeneration,
+    request.moduleActivationGeneration,
+    request.hostIncarnation,
+    request.requestId,
+    request.operationId,
+  ].join("\u0000");
+}
+
+function issueDispatchNonce() {
+  dispatchSequence += 1;
+  return `dispatch-${dispatchSequence.toString(36)}-${Date.now().toString(36)}`;
+}
+
+export function createDispatchTracker() {
+  const dispatchReceipts = new WeakMap();
+  const pendingDispatches = new Map();
+  let closed = false;
+
+  const assertOpen = () => {
+    if (closed) throw new Error("DISPATCH_TRACKER_CLOSED");
+  };
+
+  const cancelDispatch = receipt => {
+    const dispatch = receipt && typeof receipt === "object" ? dispatchReceipts.get(receipt) : undefined;
+    if (!dispatch || pendingDispatches.get(dispatch.identity) !== receipt) return false;
+    pendingDispatches.delete(dispatch.identity);
+    dispatchReceipts.delete(receipt);
+    return true;
+  };
+
+  const createDispatch = (value, authority, expectedResponseKind) => {
+    assertOpen();
+    if (!responseKinds.has(expectedResponseKind)) throw new Error("INVALID_EXPECTED_RESPONSE_KIND");
+    const request = validateAuthorizedEnvelope(value, authority);
+    if (!requestKinds.has(request.kind)) throw new Error("INVALID_REQUEST_KIND");
+    const identity = dispatchIdentity(request);
+    if (pendingDispatches.has(identity)) throw new Error("DISPATCH_ALREADY_PENDING");
+    const dispatchedRequest = validateEnvelope({
+      ...request,
+      dispatchNonce: issueDispatchNonce(),
+    });
+    const receipt = Object.freeze({
+      requestId: dispatchedRequest.requestId,
+      operationId: dispatchedRequest.operationId,
+      dispatchNonce: dispatchedRequest.dispatchNonce,
+      authorityScope: dispatchedRequest.authorityScope,
+      extensionInstanceId: dispatchedRequest.extensionInstanceId,
+      graphGeneration: dispatchedRequest.graphGeneration,
+      moduleActivationGeneration: dispatchedRequest.moduleActivationGeneration,
+      hostIncarnation: dispatchedRequest.hostIncarnation,
+      senderId: dispatchedRequest.senderId,
+      audience: dispatchedRequest.audience,
+      absoluteDeadline: dispatchedRequest.absoluteDeadline,
+    });
+    dispatchReceipts.set(receipt, Object.freeze({
+      identity,
+      requestKind: dispatchedRequest.kind,
+      expectedResponseKind,
+      requestPayload: JSON.stringify(dispatchedRequest.payload),
+    }));
+    pendingDispatches.set(identity, receipt);
+    return Object.freeze({ request: dispatchedRequest, receipt });
+  };
+
+  const validateResponseEnvelope = (value, authority, receipt) => {
+    assertOpen();
+    const dispatch = receipt && typeof receipt === "object" ? dispatchReceipts.get(receipt) : undefined;
+    if (!dispatch || pendingDispatches.get(dispatch.identity) !== receipt) {
+      throw new Error("INVALID_DISPATCH_RECEIPT");
+    }
+    if (Number.isSafeInteger(authority.now) && authority.now >= receipt.absoluteDeadline) {
+      cancelDispatch(receipt);
+    }
+    const response = validateAuthorizedEnvelope(value, authority);
+    if (response.requestId !== receipt.requestId) throw new Error("RESPONSE_REQUEST_MISMATCH");
+    if (response.operationId !== receipt.operationId) throw new Error("RESPONSE_OPERATION_MISMATCH");
+    if (response.dispatchNonce !== receipt.dispatchNonce) throw new Error("RESPONSE_DISPATCH_NONCE_MISMATCH");
+    if (response.authorityScope !== receipt.authorityScope) throw new Error("RESPONSE_AUTHORITY_SCOPE_MISMATCH");
+    if (response.extensionInstanceId !== receipt.extensionInstanceId) {
+      throw new Error("RESPONSE_EXTENSION_INSTANCE_MISMATCH");
+    }
+    if (response.graphGeneration !== receipt.graphGeneration) {
+      throw new Error("RESPONSE_GRAPH_GENERATION_MISMATCH");
+    }
+    if (response.moduleActivationGeneration !== receipt.moduleActivationGeneration) {
+      throw new Error("RESPONSE_MODULE_ACTIVATION_GENERATION_MISMATCH");
+    }
+    if (response.hostIncarnation !== receipt.hostIncarnation) {
+      throw new Error("RESPONSE_HOST_INCARNATION_MISMATCH");
+    }
+    if (response.senderId !== receipt.audience || response.audience !== receipt.senderId) {
+      throw new Error("RESPONSE_ENDPOINT_DIRECTION_MISMATCH");
+    }
+    if (response.absoluteDeadline !== receipt.absoluteDeadline) throw new Error("RESPONSE_DEADLINE_MISMATCH");
+    if (response.kind !== dispatch.expectedResponseKind) throw new Error("UNEXPECTED_RESPONSE_KIND");
+    cancelDispatch(receipt);
+    return response;
+  };
+
+  const close = () => {
+    if (closed) return 0;
+    closed = true;
+    const abandonedCount = pendingDispatches.size;
+    for (const receipt of pendingDispatches.values()) dispatchReceipts.delete(receipt);
+    pendingDispatches.clear();
+    return abandonedCount;
+  };
+
+  return Object.freeze({
+    createDispatch,
+    validateResponseEnvelope,
+    cancelDispatch,
+    close,
+    get pendingCount() { return pendingDispatches.size; },
+  });
 }
 
 export function handlePortableWorkerFrame(value, authority) {

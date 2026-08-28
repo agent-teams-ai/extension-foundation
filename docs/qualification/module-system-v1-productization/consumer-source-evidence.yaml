@@ -1,0 +1,109 @@
+schemaVersion: 1
+capturedAt: 2026-08-28
+status: candidate-source-records
+verification:
+  command: pnpm qualification:product-sources:check
+  authority: exact-local-mirror-only
+  promotionAuthority: false
+products:
+  agentRuntime:
+    repository: agent-teams-ai/agent-runtime
+    commit: 7be998237a4c262bee9c4198d554b43cd2757ac6
+    tree: ce00f6188fc2b9a174b48fe2412c0d417615fe49
+    claim: Exact production source records show two closed, required sibling setup capability bundles, synchronous fail-fast composition before access-handle publication, owner-local factories, and a product-owned access handle; L0 source architecture is demonstrated while the separate runtime evidence in Agent Runtime PR 52 remains non-promotional and L1-L5 remain unadmitted.
+    files:
+      - { path: packages/apps/embedded-runtime/src/contracts/runtime-access.ts, blob: b5153a2ea3a1e7a213f631671bb274e038b116bc, symbols: [CodexRuntimeSetupQueries, ClaudeCodeRuntimeSetupQueries, RuntimeAccessHandle] }
+      - { path: packages/apps/embedded-runtime/src/composition/agent-runtime-host.ts, blob: 87a88173defab7a4201df9314b40bd5f46268a5d, symbols: [AgentRuntimeHost, createAgentRuntimeHost, createDefaultAgentRuntimeHost] }
+      - { path: packages/apps/embedded-runtime/src/application/build-codex-setup-view.ts, blob: fbfcaa4dc6728fb5f1956cc7b910f9e1d66808fa, symbols: [createBuildCodexSetupView] }
+      - { path: packages/apps/embedded-runtime/src/application/build-claude-code-setup-view.ts, blob: 702c93f60fe5b73854b3b217e5420931c2792aa8, symbols: [createBuildClaudeCodeSetupView] }
+      - { path: packages/contexts/agent-execution/package.json, blob: bad369b10d4230ae7dc6a1761cd6ff438ec2aee7, symbols: [] }
+      - { path: packages/contexts/agent-execution/src/composition.ts, blob: 564b96c3dd370110ebbe6bd58979534dd653138e, symbols: [createRuntimeInstallationDiscoveryFeature] }
+      - { path: packages/contexts/agent-execution/src/features/runtime-installation-discovery/composition/feature-module-factory.ts, blob: f6028501af86cdf76068e24e02b572aadb12096e, symbols: [createRuntimeInstallationDiscoveryFeature] }
+      - { path: packages/contexts/runtime-configuration/package.json, blob: 91f40292d034dcdbcd44fdedbc2568673b32c041, symbols: [] }
+      - { path: packages/contexts/runtime-configuration/src/composition.ts, blob: 139557b986e607d2d016c40bf1e008ca487427bc, symbols: [createCodexConfigurationInspectionFeature, createClaudeCodeConfigurationInspectionFeature] }
+      - { path: packages/contexts/runtime-configuration/src/features/codex-configuration-inspection/composition/feature-module-factory.ts, blob: 1e92c79ba9126642d422e61b22358c3e38b88da2, symbols: [createCodexConfigurationInspectionFeature] }
+      - { path: packages/contexts/runtime-configuration/src/features/claude-code-configuration-inspection/composition/feature-module-factory.ts, blob: 94c178135ee6944fd6ec2610fa599e9033c75967, symbols: [createClaudeCodeConfigurationInspectionFeature] }
+      - { path: packages/contexts/runtime-security/package.json, blob: 62e991eab12117baf8765fd9fcd3f4536e02cbbc, symbols: [] }
+      - { path: packages/contexts/runtime-security/src/composition.ts, blob: d8ec6020e9df0446a2e642c55de21a9171322ba3, symbols: [createSetupInspectionAuthorizationFeature] }
+      - { path: packages/contexts/runtime-security/src/features/setup-source-inspection-authorization/composition/feature-module-factory.ts, blob: 5bc43f51530cca579604fc4f2696d278c8e4ca88, symbols: [createSetupInspectionAuthorizationFeature] }
+      - { path: packages/apps/embedded-runtime/tests/capability-bundle-contract.test.ts, blob: 9d81242912f160ad875502333074b272c05acd2a, symbols: [] }
+      - { path: packages/apps/embedded-runtime/tests/codex-setup.e2e.test.ts, blob: c63f1ca2c72b12e8e325859113e85421722e81f4, symbols: [] }
+      - { path: packages/apps/embedded-runtime/tests/claude-code-setup.e2e.test.ts, blob: 431df824eb69f3d0567b96f6714080c60a7f88f2, symbols: [] }
+      - { path: packages/apps/embedded-runtime/tests/public-api.test.ts, blob: 3de6a14a7ce463c47346bb991f201dc2a990323f, symbols: [] }
+    negativeSearch:
+      pattern: ModuleGraph|RuntimeModule|ServiceLocator|ModuleRegistry|PluginRegistry
+      paths:
+        - packages/apps/embedded-runtime/src
+        - packages/contexts/agent-execution/src
+        - packages/contexts/runtime-configuration/src
+        - packages/contexts/runtime-security/src
+      matches: 0
+    composition:
+      kind: product-capability-root
+      root: packages/apps/embedded-runtime/src/composition/agent-runtime-host.ts
+      rootFactory: createDefaultAgentRuntimeHost
+      hostFactory: createAgentRuntimeHost
+      consumerManifest: packages/apps/embedded-runtime/package.json
+      contract:
+        source: packages/apps/embedded-runtime/src/contracts/runtime-access.ts
+        moduleSpecifier: ../contracts/runtime-access.js
+        interface: RuntimeAccessHandle
+        capabilities: [claudeCodeSetup, codexSetup]
+      featureFactories:
+        - { symbol: createRuntimeInstallationDiscoveryFeature, source: packages/contexts/agent-execution/src/features/runtime-installation-discovery/composition/feature-module-factory.ts, barrel: packages/contexts/agent-execution/src/composition.ts, manifest: packages/contexts/agent-execution/package.json, moduleSpecifier: "@agent-teams/agent-execution/composition", hostDependencies: [claudeCodeSetup.discoverClaudeCodeInstallations, codexSetup.discoverCodexInstallations] }
+        - { symbol: createCodexConfigurationInspectionFeature, source: packages/contexts/runtime-configuration/src/features/codex-configuration-inspection/composition/feature-module-factory.ts, barrel: packages/contexts/runtime-configuration/src/composition.ts, manifest: packages/contexts/runtime-configuration/package.json, moduleSpecifier: "@agent-teams/runtime-configuration/composition", hostDependencies: [codexSetup.inspectCodexConfiguration] }
+        - { symbol: createClaudeCodeConfigurationInspectionFeature, source: packages/contexts/runtime-configuration/src/features/claude-code-configuration-inspection/composition/feature-module-factory.ts, barrel: packages/contexts/runtime-configuration/src/composition.ts, manifest: packages/contexts/runtime-configuration/package.json, moduleSpecifier: "@agent-teams/runtime-configuration/composition", hostDependencies: [claudeCodeSetup.inspectClaudeCodeConfiguration] }
+        - { symbol: createSetupInspectionAuthorizationFeature, source: packages/contexts/runtime-security/src/features/setup-source-inspection-authorization/composition/feature-module-factory.ts, barrel: packages/contexts/runtime-security/src/composition.ts, manifest: packages/contexts/runtime-security/package.json, moduleSpecifier: "@agent-teams/runtime-security/composition", hostDependencies: [claudeCodeSetup.authorizeClaudeCodeSetupInspection, codexSetup.authorizeSetupInspection] }
+  orchestrator:
+    repository: agent-teams-ai/agent-teams-orchestrator
+    commit: 4c5f55366ed8c83f97374b66c8e9f84059c47382
+    tree: 8b386fe943ad182943797cfc1d1ba06c86706452
+    claim: Host Discovery has a typed source port and tests but no committed production source adapter or runtime graph trigger.
+    files:
+      - { path: packages/platform/local-host-control/src/features/host-discovery/application/ports/host-discovery-source.ts, blob: cfad3d6789a9572c22a94f3a48d6866905c62f9b, symbols: [HostDiscoverySource] }
+      - { path: packages/platform/local-host-control/src/features/host-discovery/application/discover-local-host.ts, blob: 884b971811ec6ab222b47e8838a71a3a38c746b5, symbols: [createHostDiscovery] }
+      - { path: packages/platform/local-host-control/tests/features/host-discovery/host-discovery.test.mjs, blob: 96378c0a4d787666836bd6b5f664f7ea574a527e, symbols: [] }
+      - { path: packages/platform/local-host-control/src/features/host-discovery/README.md, blob: 032f5f45f4f0e0e69e1b974422f9a4725e0c9ac9, symbols: [] }
+    negativeSearch:
+      pattern: ModuleGraph|RuntimeModule|ServiceLocator|ModuleRegistry|PluginRegistry
+      paths: [packages/platform/local-host-control/src]
+      matches: 0
+  frontend:
+    repository: 777genius/agent-teams-ai
+    commit: 85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd
+    tree: c90d17b20ee7d459664bef313a178f5d30a3af9c
+    claim: Recent Projects is a bounded static multi-contribution candidate with two literal source adapters and one feature-owned composition root.
+    files:
+      - { path: tsconfig.json, blob: 133603d150f3826948b39b2965fd1ca83672c798, symbols: [] }
+      - { path: src/features/recent-projects/core/application/ports/RecentProjectsSourcePort.ts, blob: cba0360701d3a6dfcbcb571129869baa8397faa1, symbols: [RecentProjectsSourcePort] }
+      - { path: src/features/recent-projects/core/application/use-cases/ListDashboardRecentProjectsUseCase.ts, blob: ce15307e529a4a1f172f58f0c49051d2af5b7582, symbols: [ListDashboardRecentProjectsUseCase] }
+      - { path: src/features/recent-projects/main/adapters/output/sources/ClaudeRecentProjectsSourceAdapter.ts, blob: faefffb617072d4eefea41f3273cfc2122f788e3, symbols: [ClaudeRecentProjectsSourceAdapter] }
+      - { path: src/features/recent-projects/main/adapters/output/sources/CodexSessionFileRecentProjectsSourceAdapter.ts, blob: 220034dd5e4ca50a21901f2bd9d95b9ace7c7454, symbols: [CodexSessionFileRecentProjectsSourceAdapter] }
+      - { path: src/features/recent-projects/main/composition/createRecentProjectsFeature.ts, blob: d447e8d4bfe2812520a0146cd6ae030b9b7a4cfb, symbols: [createRecentProjectsFeature] }
+      - { path: test/features/recent-projects/core/application/ListDashboardRecentProjectsUseCase.test.ts, blob: ec0f2bed162e8927ec2eaab4a10fb6dfa1169125, symbols: [] }
+    negativeSearch:
+      pattern: ModuleGraph|RuntimeModule|ServiceLocator|ModuleRegistry|PluginRegistry
+      paths: [src/features/recent-projects]
+      matches: 0
+    composition:
+      kind: ordered-contributions
+      root: src/features/recent-projects/main/composition/createRecentProjectsFeature.ts
+      factory: createRecentProjectsFeature
+      moduleResolution:
+        source: tsconfig.json
+      port:
+        symbol: RecentProjectsSourcePort
+        source: src/features/recent-projects/core/application/ports/RecentProjectsSourcePort.ts
+        moduleSpecifier: "@features/recent-projects/core/application/ports/RecentProjectsSourcePort"
+      consumer:
+        symbol: ListDashboardRecentProjectsUseCase
+        source: src/features/recent-projects/core/application/use-cases/ListDashboardRecentProjectsUseCase.ts
+        dependency: sources
+      orderedProviders:
+        - { symbol: ClaudeRecentProjectsSourceAdapter, source: src/features/recent-projects/main/adapters/output/sources/ClaudeRecentProjectsSourceAdapter.ts }
+        - { symbol: CodexSessionFileRecentProjectsSourceAdapter, source: src/features/recent-projects/main/adapters/output/sources/CodexSessionFileRecentProjectsSourceAdapter.ts }
+limitations:
+  - Blob and negative-search evidence proves only the exact committed revisions above.
+  - Absence of a named framework type does not by itself prove architectural quality.
+  - Worker reports are corroboration only and are not source authority.
+  - Local mirror verification proves exact checked-out Git objects and restricted syntactic composition shapes, not runtime use, authenticated remote publication, independent ownership, or product approval.

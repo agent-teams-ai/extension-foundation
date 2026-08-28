@@ -86,7 +86,8 @@ resource ownership.
 
 **Evidence:** Cordis reliably owns scoped effects, but the trivial qualification
 adapter does not prove meaningful code deletion and would overlap lifecycle
-authority. The 25% threshold remains a real-consumer kill criterion. **Reversibility:**
+authority. A predeclared multi-factor scorecard remains the real-consumer kill
+criterion. **Reversibility:**
 high because contracts exclude framework types. **Impact:** Foundation
 extraction and runtime admission, not the private product-local rehearsal.
 **Approval:** required through `OD-003` plus an accepted owning-product runtime

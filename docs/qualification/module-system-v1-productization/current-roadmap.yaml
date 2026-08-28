@@ -1,0 +1,100 @@
+schemaVersion: 1
+id: module-system-v1-current-roadmap
+status: draft-qualification
+projectionKind: non-authoritative-qualification-recommendation
+recommendedBaselineForFutureDecision: product-owned-pure-di
+supersedesQualificationRecommendation:
+  - ../universal-module-extension-system/final-recommendation.md
+  - ../universal-module-extension-system/nightly/10-architecture-and-loc-roadmap.md
+levels:
+  - id: L0
+    capability: product-owned-pure-di
+    status: demonstrated-product-pure-di-source-architecture
+    demonstratedBy: agent-runtime@7be998237a4c262bee9c4198d554b43cd2757ac6
+    effect: retain-as-current-baseline
+  - id: L1
+    capability: static-module-authoring
+    status: no-go-measurement-candidate
+    candidateProducts: [agent-runtime, frontend]
+    prerequisites:
+      - owning-product-decision
+      - product-owner-approved-benchmark-protocol
+      - measured-authoring-or-drift-problem
+      - executable-product-owned-runtime-wiring-evidence
+      - accepted-product-owner-governance-successor
+    effectWhileOpen: no-new-authoring-contract
+  - id: L2
+    capability: private-selection-graph
+    status: no-go
+    trigger: provider-selection-must-change-without-rebuild
+    effectWhileOpen: retain-static-bindings
+  - id: L3
+    capability: lifecycle-coordinator
+    status: no-go
+    trigger: independently-managed-resources-require-bounded-lifecycle
+    effectWhileOpen: retain-product-owned-lifetime
+  - id: L4
+    capability: process-or-wasm-host
+    status: no-go
+    trigger: named-placement-or-containment-requirement
+    effectWhileOpen: no-process-module-host
+  - id: L5
+    capability: shared-foundation-api
+    status: no-go
+    trigger: two-independent-products-pass-cross-consumer-conformance
+    prerequisites:
+      - authenticated-distinct-repository-identities
+      - independently-attested-implementation-ownership
+      - package-admission-independence-defect-corrected-by-owning-task
+    effectWhileOpen: keep-semantics-product-local
+aiNavigationBenchmark:
+  status: product-owned-protocol-required
+  authority: none-until-owning-product-approves-protocol
+  executionMode: test-only-no-production-grammar
+  productSeams:
+    - product: frontend
+      seam: recent-projects-provider-contributions
+      tasks:
+        - find-owner-and-composition-root
+        - add-or-remove-provider
+        - change-contribution-order
+        - trace-provider-to-use-case
+    - product: agent-runtime
+      seam: setup-inspection-sibling-capabilities
+      tasks:
+        - find-owner-and-composition-root
+        - add-or-remove-sibling-capability
+        - wire-explicit-capability-to-host-dependency
+        - trace-capability-through-host-and-access-handle
+        - verify-deterministic-failure-for-missing-required-sibling-capability
+  metrics:
+    - elapsed-time
+    - files-opened
+    - incorrect-edits
+    - diagnostic-quality
+    - generated-drift
+stopCriteria:
+  - id: no-measured-authoring-problem
+    appliesTo: [L1]
+    observableEvidence: direct-composition-meets-future-product-owned-benchmark
+    effect: no-go-retain-L0
+  - id: no-runtime-selection-trigger
+    appliesTo: [L2]
+    observableEvidence: rebuild-or-static-configuration-meets-product-outcome
+    effect: no-go-retain-static-bindings
+  - id: no-independent-lifecycle-trigger
+    appliesTo: [L3]
+    observableEvidence: resources-share-one-product-owned-lifetime
+    effect: no-go-retain-product-coordinator
+  - id: no-placement-or-containment-trigger
+    appliesTo: [L4]
+    observableEvidence: in-process-trusted-placement-meets-requirement
+    effect: no-go-no-process-host
+  - id: fewer-than-two-independent-consumers
+    appliesTo: [L5]
+    observableEvidence: repository-provider-or-conformance-independence-missing
+    effect: no-go-keep-product-local
+  - id: framework-authority-leak
+    appliesTo: [L1, L2, L3, L4, L5]
+    observableEvidence: framework-types-or-service-locator-enter-product-contracts
+    effect: reject-candidate

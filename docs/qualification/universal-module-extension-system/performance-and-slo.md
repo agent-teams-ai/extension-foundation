@@ -136,11 +136,13 @@ Secrets and user content are redacted before export.
 
 Stop or simplify a candidate when:
 
-- generic framework glue exceeds 30% of changed production code in the first
-  two product slices;
+- generic framework glue grows without a predeclared counting method or a named
+  product benefit in the first two product slices;
 - one feature change repeatedly requires Foundation changes;
 - an adapter introduces a second graph or lifecycle state machine;
-- Cordis or another adapter saves less than 25% equivalent owned runtime code;
+- Cordis or another adapter loses the predeclared semantic, lifecycle,
+  maintainability, provenance, complexity, performance, and reversibility
+  scorecard;
 - public declarations leak framework types;
 - startup, memory, or diagnostics regress without a capability benefit;
 - a feature is delayed for hypothetical extensibility with no second consumer.

@@ -26,13 +26,17 @@ linearizable
 linearization
 linearizability
 Lumino
+miscorrelated
 Modulith
 OpenCode
 ORAS
 product-neutral
+predeclared
 recalibrated
 reentrancy
 prebuilds
+replayable
+replayability
 replaceability
 restartless
 sandboxed

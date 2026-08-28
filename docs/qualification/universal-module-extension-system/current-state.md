@@ -15,6 +15,11 @@ related:
 
 # Current State
 
+This file records the exact state of the earlier universal qualification pass.
+For newer product revisions and current admission verdicts, use the
+[Module System V1 Productization Gate](../module-system-v1-productization/README.md).
+The historical filename is retained so existing evidence links stay stable.
+
 ## Repository Inputs
 
 The audit captured the following immutable historical repository revisions
@@ -74,9 +79,12 @@ The effective accepted direction is:
   capability grants, custody authorization, and runtime enforcement are
   independent decisions.
 - Extension code is not invoked inside a product Unit of Work.
-- The only current implementation recommendation is a product-owned static
-  `T0` rehearsal using static imports, Pure DI, explicit materialized selection,
-  and a pure `FeatureModuleFactory`.
+- The W11 recommendation was a product-owned static `T0` rehearsal. The later
+  [productization roadmap](../module-system-v1-productization/current-roadmap.yaml)
+  is the current sequencing authority and retains Pure DI as `L0`.
+- A static Pure DI rehearsal comes first; private product graph only after the
+  exact measured runtime-selection or independent-lifecycle trigger is
+  demonstrated.
 - The application composition root, not the feature factory, selects the
   implementation, configuration, and lifetime. No global service locator is
   introduced.

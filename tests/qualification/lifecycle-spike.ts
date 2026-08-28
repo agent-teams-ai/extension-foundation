@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { performance } from "node:perf_hooks";
 import { setTimeout as delay } from "node:timers/promises";
 import { types as nodeTypes } from "node:util";
@@ -15,6 +16,17 @@ export interface LifecycleTrace {
 }
 
 export interface ActivationContext {
+  readonly activationIdentity: string;
+  readonly authorityScope: string;
+  readonly generation: number;
+  readonly moduleId: string;
+  readonly phase: "activation" | "cleanup";
+  readonly signal: AbortSignal;
+}
+
+interface ActivationContextSeed {
+  readonly coordinatorIncarnation: string;
+  readonly authorityScope: string;
   readonly generation: number;
   readonly phase: "activation" | "cleanup";
   readonly signal: AbortSignal;
@@ -123,6 +135,29 @@ function errorMessage(error: unknown): string {
   } catch {
     return "UNREADABLE_ERROR";
   }
+}
+
+function assertNonEmptyIdentityString(value: unknown, errorCode: string): asserts value is string {
+  if (typeof value !== "string" || value.length === 0) throw new Error(errorCode);
+}
+
+function moduleActivationContext(seed: ActivationContextSeed, moduleId: string): ActivationContext {
+  assertNonEmptyIdentityString(seed.authorityScope, "INVALID_AUTHORITY_SCOPE");
+  assertNonEmptyIdentityString(seed.coordinatorIncarnation, "INVALID_COORDINATOR_INCARNATION");
+  if (!Number.isSafeInteger(seed.generation) || seed.generation < 1) {
+    throw new Error("INVALID_ACTIVATION_GENERATION");
+  }
+  assertNonEmptyIdentityString(moduleId, "INVALID_MODULE_ID");
+  return Object.freeze({
+    ...seed,
+    moduleId,
+    activationIdentity: JSON.stringify([
+      seed.authorityScope,
+      seed.coordinatorIncarnation,
+      seed.generation,
+      moduleId,
+    ]),
+  });
 }
 
 class AttributedLifecycleError extends Error {
@@ -486,6 +521,7 @@ export function inertHooks(hooks: CommonModuleHooks = {}): ModuleHooks {
 }
 
 export class GenerationLifecycle {
+  readonly #coordinatorIncarnation: string;
   readonly #authorityScope: string;
   readonly #clock: MonotonicClock;
   readonly #flights = new Map<string, Flight>();
@@ -503,10 +539,16 @@ export class GenerationLifecycle {
   #active: ActiveGraph | undefined;
   #cutovers = 0;
 
-  constructor(authorityScope: string, clock: MonotonicClock = defaultClock) {
-    if (authorityScope.length === 0) throw new Error("INVALID_AUTHORITY_SCOPE");
+  constructor(
+    authorityScope: string,
+    clock: MonotonicClock = defaultClock,
+    coordinatorIncarnation: string = randomUUID(),
+  ) {
+    assertNonEmptyIdentityString(authorityScope, "INVALID_AUTHORITY_SCOPE");
+    assertNonEmptyIdentityString(coordinatorIncarnation, "INVALID_COORDINATOR_INCARNATION");
     this.#authorityScope = authorityScope;
     this.#clock = clock;
+    this.#coordinatorIncarnation = coordinatorIncarnation;
   }
 
   get activeGeneration(): number {
@@ -733,7 +775,9 @@ export class GenerationLifecycle {
       this.#clock,
     );
     const cleanupController = new AbortController();
-    const cleanupContext: ActivationContext = Object.freeze({
+    const cleanupContext: ActivationContextSeed = Object.freeze({
+      coordinatorIncarnation: this.#coordinatorIncarnation,
+      authorityScope: this.#authorityScope,
       generation,
       phase: "cleanup",
       signal: cleanupController.signal,
@@ -862,7 +906,9 @@ export class GenerationLifecycle {
     const cleanupCandidates = new Set<string>();
     const unsettledHookModules = new Set<string>();
     const activationController = new AbortController();
-    const activationContext: ActivationContext = Object.freeze({
+    const activationContext: ActivationContextSeed = Object.freeze({
+      coordinatorIncarnation: this.#coordinatorIncarnation,
+      authorityScope: this.#authorityScope,
       generation,
       phase: "activation",
       signal: activationController.signal,
@@ -925,13 +971,14 @@ export class GenerationLifecycle {
             if (activationController.signal.aborted) return { localTraces };
             const module = hooks.get(moduleId);
             if (!module) throw new Error(`MISSING_HOOKS:${moduleId}`);
+            const context = moduleActivationContext(activationContext, moduleId);
             if (phase === "prepare") {
               await runBeforeDeadline(
                 () => {
                   assertActivationAdmitted();
                   cleanupCandidates.add(moduleId);
                   localTraces.push({ phase, moduleId, generation, outcome: "started" });
-                  return invokeTracked(moduleId, () => module.prepare?.(activationContext));
+                  return invokeTracked(moduleId, () => module.prepare?.(context));
                 },
                 activationDeadline,
                 this.#clock,
@@ -942,7 +989,7 @@ export class GenerationLifecycle {
                 () => {
                   assertActivationAdmitted();
                   localTraces.push({ phase, moduleId, generation, outcome: "started" });
-                  return invokeTracked(moduleId, () => module.start?.(activationContext));
+                  return invokeTracked(moduleId, () => module.start?.(context));
                 },
                 activationDeadline,
                 this.#clock,
@@ -956,7 +1003,7 @@ export class GenerationLifecycle {
                 const ready = await runBeforeDeadline(
                   () => {
                     assertActivationAdmitted();
-                    return invokeTracked(moduleId, () => module.ready(activationContext));
+                    return invokeTracked(moduleId, () => module.ready(context));
                   },
                   activationDeadline,
                   this.#clock,
@@ -1006,7 +1053,9 @@ export class GenerationLifecycle {
       errors.push(...failures);
       const cleanupDeadline = boundedDeadlineBudget(activationDeadline, cleanupTimeoutMs, this.#clock);
       const cleanupController = new AbortController();
-      const cleanupContext: ActivationContext = Object.freeze({
+      const cleanupContext: ActivationContextSeed = Object.freeze({
+        coordinatorIncarnation: this.#coordinatorIncarnation,
+        authorityScope: this.#authorityScope,
         generation,
         phase: "cleanup",
         signal: cleanupController.signal,
@@ -1038,7 +1087,9 @@ export class GenerationLifecycle {
       try {
         const cleanupDeadline = boundedDeadlineBudget(activationDeadline, cleanupTimeoutMs, this.#clock);
         const cleanupController = new AbortController();
-        const cleanupContext: ActivationContext = Object.freeze({
+        const cleanupContext: ActivationContextSeed = Object.freeze({
+          coordinatorIncarnation: this.#coordinatorIncarnation,
+          authorityScope: this.#authorityScope,
           generation: previous.generation,
           phase: "cleanup",
           signal: cleanupController.signal,
@@ -1086,7 +1137,7 @@ export class GenerationLifecycle {
   async #stopBatches(
     plan: CompiledGraph,
     hooks: ReadonlyMap<string, ModuleHooks>,
-    context: ActivationContext,
+    context: ActivationContextSeed,
     cleanupDeadline: DeadlineBudget,
     traces: LifecycleTrace[],
     errors: Error[],
@@ -1104,6 +1155,7 @@ export class GenerationLifecycle {
           }
           const moduleHooks = hooks.get(moduleId);
           if (!moduleHooks) throw new Error(`MISSING_HOOKS:${moduleId}`);
+          const moduleContext = moduleActivationContext(context, moduleId);
           if (moduleHooks.stop === undefined
             && (moduleHooks.prepare !== undefined
               || moduleHooks.start !== undefined
@@ -1111,7 +1163,7 @@ export class GenerationLifecycle {
             throw new Error(`MISSING_STOP_EVIDENCE:${moduleId}`);
           }
           await runBeforeDeadline(
-            () => moduleHooks.stop?.(context),
+            () => moduleHooks.stop?.(moduleContext),
             cleanupDeadline,
             this.#clock,
             () => controller.abort(`CLEANUP_TIMEOUT:${moduleId}`),

@@ -6,6 +6,7 @@ if (!["prepare", "start", "blocking-start", "stop"].includes(phase)) throw new E
 
 const authorityScope = "tenant:test/project:test";
 const lifecycle = new GenerationLifecycle(authorityScope);
+const lifecycleDeadlineMs = 500;
 const compile = id => {
   const result = compileGraph([{ id, requires: [] }]);
   if (!result.ok) throw new Error(JSON.stringify(result.diagnostics));
@@ -25,15 +26,22 @@ const request = (operationId, plan, hooks) => ({
   },
   plan,
   hooks,
-  absoluteDeadline: lifecycle.deadlineAfter(20),
-  cleanupTimeoutMs: 20,
+  absoluteDeadline: lifecycle.deadlineAfter(lifecycleDeadlineMs),
+  cleanupTimeoutMs: 50,
 });
 const never = () => new Promise(() => undefined);
+let enteredPhase;
+const enterAndNeverSettle = requestedPhase => {
+  enteredPhase = requestedPhase;
+  return never();
+};
 
 let result;
 if (phase === "stop") {
   const oldPlan = compile("old");
-  await lifecycle.activate(request("old", oldPlan, new Map([["old", inertHooks({ stop: never })]])));
+  await lifecycle.activate(request("old", oldPlan, new Map([["old", inertHooks({
+    stop: () => enterAndNeverSettle("stop"),
+  })]])));
   const candidatePlan = compile("candidate");
   result = await lifecycle.activate(
     request(
@@ -51,7 +59,8 @@ if (phase === "stop") {
       plan,
       new Map([["candidate", inertHooks({
         start: () => {
-          const deadline = Date.now() + 100;
+          enteredPhase = "blocking-start";
+          const deadline = Date.now() + lifecycleDeadlineMs + 100;
           while (Date.now() < deadline) {
             // Deliberately block the event loop to qualify cooperative T0 deadlines.
           }
@@ -67,10 +76,10 @@ if (phase === "stop") {
     request(
       `hung-${phase}`,
       plan,
-      new Map([["candidate", inertHooks({ [phase]: never })]]),
+      new Map([["candidate", inertHooks({ [phase]: () => enterAndNeverSettle(phase) })]]),
     ),
     { absoluteDeadline: lifecycle.deadlineAfter(1_000) },
   );
 }
 
-process.stdout.write(`${JSON.stringify(result)}\n`);
+process.stdout.write(`${JSON.stringify({ requestedPhase: phase, enteredPhase, result })}\n`);

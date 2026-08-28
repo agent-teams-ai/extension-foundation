@@ -1,0 +1,114 @@
+schemaVersion: 1
+campaignId: module-system-v1-productization-2026-08-28
+status: review-ready
+purpose: >-
+  Decide the next permitted module-system level using exact committed product
+  evidence, reproducible qualification evidence, independent criticism, and
+  conditional spikes only where an admitted consumer exposes a real gap.
+baseline:
+  repository: agent-teams-ai/extension-foundation
+  pullRequest: 17
+  baseRevision: 0836f62a386e253b156271f0b8f7defc969f3580
+  originalQualificationRevision: 859e6d808bb1113133a21484aa590f671bb6795d
+  lifecycleRemediationRevision: 3c31341ee0483e8535532b51b5d91fb1cc64a512
+  evidenceCustodyRemediationRevision: d82a57b6589543655922f8c6271f8e453a806676
+  exactEvidenceHardeningRevision: f2a3e33c6369412ab3b3926f4b5b738111250409
+  integratedQualificationRevision: f2a3e33c6369412ab3b3926f4b5b738111250409
+  redTeamReviewedRevision: c9a01739a3a0906bfd52d8573a76e9d0058568ca
+  finalReviewedRevision: external-pr-head-evidence-required
+  branch: research/module-system-v1-productization
+  stackedOn: research/universal-module-extension-qualification
+products:
+  agentRuntime:
+    repository: agent-teams-ai/agent-runtime
+    revision: 493c6c37e247f021fc110c5fc624b72f1502d743
+  orchestrator:
+    repository: agent-teams-ai/agent-teams-orchestrator
+    revision: 4c5f55366ed8c83f97374b66c8e9f84059c47382
+  frontend:
+    repository: 777genius/agent-teams-ai
+    revision: 85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd
+execution:
+  runtime: subscription-runtime-hosted
+  authPool: /var/data/codex-home/live-codex-auth
+  model: gpt-5.6-sol
+  reasoningEffort: xhigh
+  serviceTier: fast
+  maximumParallelWorkers: 9
+  adaptiveMaximumJobs: 40
+  maximumJobsCounts: distinct-job-ids
+  workerAccounting:
+    distinctJobIdsAllocated: 40
+    ledgeredDistinctJobIds: 40
+    reservedExactHeadReviewerIds:
+      - module-v1-final-architecture-r1
+      - module-v1-final-lifecycle-r1
+      - module-v1-final-security-r1
+      - module-v1-final-product-r1
+    attemptExecutions:
+      observedManagedRunEnvelopesBeforeFinalReview: 62
+      countingAuthority: subscription-runtime-managed-run-registry
+      finalExactHeadAttempts: external-pr-evidence-required
+  localSubagentsAllowed: false
+  productionCodeMutable: false
+  acceptedAdrsMutable: false
+evidencePolicy:
+  plansCountAsConsumers: false
+  documentationCountAsConsumers: false
+  packagePolicyCountsAsRuntimeEvidence: false
+  existingSpikesMustBeAuditedFirst: true
+  newSpikesRequireMissingOrContradictedEvidence: true
+  workerVoteIsDecisionAuthority: false
+  exactCommittedProductEvidenceRequired: true
+  acceptedAdrChangesRequireProductOwnerApproval: true
+  custodyV1CanAuthorizePromotion: false
+  productClaimsRequireTreeAndBlobEvidence: true
+  sharedExtractionRequiresIndependentProviderOwnership: true
+evidenceArtifacts:
+  consumerSources: consumer-source-evidence.yaml
+  redTeamFindings: red-team-findings.md
+  evidenceLedger: evidence-ledger.yaml
+  currentRoadmap: current-roadmap.yaml
+redTeam:
+  reviewedRevision: c9a01739a3a0906bfd52d8573a76e9d0058568ca
+  independentAreas: 8
+  result: remediation-integrated-awaiting-final-exact-head-review
+  replayNote: >-
+    Completed reports were continued once after their objectives were changed,
+    but the app-server goal replayed the prior result and produced no edits.
+    Those attempt-2 wrappers are retained as lineage, not counted as new reviews.
+followUp:
+  extensionRevision: e1a3492e56aff33a1569d12b28e0ee3762cd8ba5
+  agentRuntimeRevision: 493c6c37e247f021fc110c5fc624b72f1502d743
+  attemptSuffix: followup-a5
+  reportedHostedReviews: 8
+  evidenceStatus: corroboration-only-not-portable
+  decisionAuthority: false
+  result: l0-demonstrated-l1-through-l5-no-go
+  syntheticScope:
+    rejected:
+      - static-profile-disablement
+      - selected-optional-provider-failure
+      - wide-dense-graph-determinism
+      - production-authoring-grammar
+      - desired-state-control-plane
+      - durable-process-crash-harness
+      - production-selection-or-lifecycle-runtime
+verdicts:
+  L0PureDi:
+    agentRuntime: demonstrated-product-pure-di-source-architecture
+    orchestrator: typed-port-evidence-only
+    frontend: restricted-syntactic-composition-candidate
+  L1StaticAuthoring:
+    agentRuntime: no-go-measurement-candidate
+    orchestrator: no-go
+    frontend: no-go-measurement-candidate
+  L2PrivateSelectionGraph:
+    agentRuntime: no-go
+    orchestrator: no-go
+    frontend: no-go
+  L3LifecycleCoordinator: no-go
+  L4ProcessOrWasmHost: no-go
+  L5SharedExtraction: no-go
+roadmapProjection: current-roadmap.yaml
+stopCriteriaRecommendation: current-roadmap.yaml#stopCriteria

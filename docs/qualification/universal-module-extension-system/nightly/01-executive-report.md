@@ -18,8 +18,8 @@ related:
 <!-- cspell:words modres -->
 
 This dossier is research, not decision authority. It changes no accepted ADR,
-open decision, package admission, or implementation status. The worker corpus
-has passed immutable custody verification, but `G-PROMOTION` remains closed;
+open decision, package admission, or implementation status. Historical worker
+corpus custody remains unproven and `G-PROMOTION` remains closed;
 recommendations below therefore cannot promote a decision or implementation.
 
 ## Verdict
@@ -29,7 +29,9 @@ plugin platform are **NO-GO now**. The only conditional next step is one
 product-local, statically composed, trusted T0 rehearsal after the product owner
 approves ownership, scope, success measures, and deletion criteria.
 
-This static-first direction is the sole current implementation recommendation.
+This static-first direction was the nightly recommendation; the later
+[productization roadmap](../../module-system-v1-productization/current-roadmap.yaml)
+is the current sequencing authority.
 Earlier graph-first conclusions remain preserved historical research rather
 than an alternative roadmap.
 
@@ -62,8 +64,8 @@ provides an ambient container or global service locator.
    Unit of Work.
 6. Positive, negative, stale-result, configuration, authority, cleanup, and
    owner-navigation tests pass. Production, test, configuration, documentation,
-   and generic-glue LOC are recorded separately; stop if generic glue exceeds
-   30% of changed production code.
+   and generic-glue LOC are recorded separately under a predeclared counting
+   method; stop if the named product outcome does not improve.
 
 ## Decision Status
 
@@ -124,9 +126,9 @@ instead of assigning the wrapper to an attempt. Primary-source independence,
 successful executable attestation, product-owner review, and a separate ADR
 also remain required.
 
-See the existing [final recommendation](../final-recommendation.md),
+See the historical [W11 recommendation](../final-recommendation.md),
 [decision ledger](../decision-ledger.yaml), and
-[unresolved decisions](../unresolved-decisions.md). The final recommendation is
-the current roadmap; the ledger and unresolved-decision material preserve
-pre-W11 authority and qualification context where not yet updated by their
-owners.
+[unresolved decisions](../unresolved-decisions.md). The later productization
+roadmap is also qualification evidence, not implementation authority. The
+ledger and unresolved-decision material preserve pre-W11 qualification context
+where not yet updated by their owners.

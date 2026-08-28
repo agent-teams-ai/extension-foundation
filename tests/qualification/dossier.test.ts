@@ -18,6 +18,7 @@ interface RequirementDefinition {
   readonly id: string;
   readonly kind: "decision" | "evidence";
   readonly detail: string;
+  readonly currentStatus?: string;
 }
 
 type GateRequirement = Readonly<
@@ -551,6 +552,10 @@ test("decision ledger is referentially sound and records current implementation 
   const semanticStatuses = new Map(publicationStatuses);
   semanticStatuses.set("second-independent-consumer", "proven");
   semanticStatuses.set("cross-consumer-conformance", "passed");
+  semanticStatuses.set(
+    "independent-consumer-provider-verification",
+    "authenticated-independent-ownership-verified",
+  );
   semanticStatuses.set("foundation-semantic-extraction-decision", "accepted");
   semanticStatuses.set(
     "publication-independent-consumers",
@@ -686,11 +691,32 @@ test("decision ledger is referentially sound and records current implementation 
     /second-independent-consumer/,
     /foundation-(?:semantic-)?extraction-decision[^}]*accepted/i,
   ], "decision ledger gates");
-  const phaseOneGate = ledger.implementationGates.find(gate => gate.id === "phase-1-static-module-rehearsal");
-  assert.ok(phaseOneGate, "phase-1 static module rehearsal gate is required");
+  const phaseZeroGate = ledger.implementationGates.find(gate => gate.id === "phase-0-static-composition-rehearsal");
+  assert.ok(phaseZeroGate, "phase-0 static composition rehearsal gate is required");
   assert.deepEqual(
-    gateRequirements(phaseOneGate).map(requirement => "decision" in requirement ? requirement.decision : null),
+    gateRequirements(phaseZeroGate).map(requirement => "decision" in requirement ? requirement.decision : null),
     ["ADR-0013", "ADR-0014", "owning-product-feature-decision"],
+  );
+  const phaseOneGate = ledger.implementationGates.find(gate => gate.id === "phase-1-static-module-authoring");
+  assert.ok(phaseOneGate, "phase-1 static authoring gate is required");
+  assert.ok(gateRequirements(phaseOneGate).some(requirement => (
+    "evidence" in requirement && requirement.evidence === "module-authoring-governance-successor"
+  )));
+  const governanceSuccessor = ledger.requirementDefinitions.find(entry => entry.id === "module-authoring-governance-successor");
+  assert.equal(governanceSuccessor?.kind, "evidence");
+  assert.equal(governanceSuccessor?.currentStatus, "missing");
+  assert.ok(gateRequirements(phaseOneGate).some(requirement => (
+    "evidence" in requirement && requirement.evidence === "static-authoring-trigger"
+  )));
+  const semanticExtractionGate = ledger.implementationGates.find(gate => gate.id === "foundation-semantic-extraction");
+  assert.ok(semanticExtractionGate, "foundation semantic extraction gate is required");
+  assert.ok(
+    gateRequirements(semanticExtractionGate).some(requirement => (
+      "evidence" in requirement
+      && requirement.evidence === "independent-consumer-provider-verification"
+      && requirement.requiredStatus === "authenticated-independent-ownership-verified"
+    )),
+    "shared extraction must independently verify consumer/provider ownership",
   );
 
   const knownUmeqIds = new Set([

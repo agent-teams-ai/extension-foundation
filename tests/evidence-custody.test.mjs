@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rename, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
@@ -15,11 +15,30 @@ import {
   scanSecrets,
   sha256,
   validateManifest,
-  verifyManifest,
+  verifyManifest as verifyManifestRaw,
 } from "../architecture/checks/evidence-custody.mjs";
+import { parseStrictJson } from "../architecture/checks/strict-json.mjs";
 
 const JOB_ID = "modres-w7-example-20260826-r1";
 const execFileAsync = promisify(execFile);
+
+async function createRepositoryFixture(root) {
+  const repositoryRoot = join(root, "repository");
+  await mkdir(repositoryRoot, { recursive: true });
+  await writeFile(join(repositoryRoot, "package.json"), `${JSON.stringify({
+    name: "fixture",
+    private: true,
+    packageManager: "pnpm@11.18.0",
+    repository: { type: "git", url: "git+https://github.com/agent-teams-ai/extension-foundation.git" },
+  })}\n`);
+  await writeFile(join(repositoryRoot, "pnpm-lock.yaml"), "lockfileVersion: '9.0'\n");
+  await execFileAsync("git", ["init", "--quiet", repositoryRoot]);
+  await execFileAsync("git", ["-C", repositoryRoot, "config", "user.email", "fixture@example.invalid"]);
+  await execFileAsync("git", ["-C", repositoryRoot, "config", "user.name", "Fixture"]);
+  await execFileAsync("git", ["-C", repositoryRoot, "add", "package.json", "pnpm-lock.yaml"]);
+  await execFileAsync("git", ["-C", repositoryRoot, "commit", "--quiet", "-m", "test: fixture"]);
+  return repositoryRoot;
+}
 
 async function temporaryDirectory(t) {
   const root = await mkdtemp(join(tmpdir(), "evidence-custody-"));
@@ -42,19 +61,45 @@ function objectRecord(digest, overrides = {}) {
   };
 }
 
-function validManifest(digest = "a".repeat(64)) {
+function baselineRecord() {
   return {
-    schemaVersion: 1,
+    derivation: "canonical-repository-observation-v1",
+    repository: "agent-teams-ai/extension-foundation",
+    commit: "e69ac5544ee64d497e56c060f75e8ba6eaae1ceb",
+    tree: "d70ac93c303c0138d475ac9bf4950f3d3198e41f",
+    lockfileSha256: "e".repeat(64),
+    clean: true,
+    platform: "test-platform",
+    nodeVersion: "24.18.0",
+    pnpmVersion: "11.18.0",
+    capturedAt: "2026-08-26T00:00:00.000Z",
+  };
+}
+
+function validManifest(digest = "a".repeat(64)) {
+  const aliasDigest = digest === "b".repeat(64) ? "f".repeat(64) : "b".repeat(64);
+  const summaryDigest = digest === "c".repeat(64) ? "f".repeat(64) : "c".repeat(64);
+  const journalDigest = digest === "d".repeat(64) ? "f".repeat(64) : "d".repeat(64);
+  return {
+    schemaVersion: 2,
     campaignId: "campaign-1",
-    baseline: { commit: "e69ac5544ee64d497e56c060f75e8ba6eaae1ceb" },
-    objects: [objectRecord(digest, { sourcePath: `job-config/${JOB_ID}/job.json` })],
+    baseline: baselineRecord(),
+    objects: [
+      objectRecord(digest, { kind: "jobConfig", sourcePath: `job-config/${JOB_ID}/job.json` }),
+      objectRecord(aliasDigest, { kind: "worker-report", sourcePath: `runtime/${JOB_ID}/${JOB_ID}.latest-result.json` }),
+      objectRecord(summaryDigest, {
+        kind: "decoded-output-summary",
+        sourcePath: `runtime/${JOB_ID}/state/attempt-journal/journal.json#attempts/1/lastOutputSummary`,
+      }),
+      objectRecord(journalDigest, { kind: "attempt-journal", sourcePath: `runtime/${JOB_ID}/state/attempt-journal/journal.json` }),
+    ],
     jobs: [{
       jobId: JOB_ID,
       wave: "W7",
       jobConfigObject: digest,
       attemptIds: [`${JOB_ID}:attempt:1`],
-      currentAlias: digest,
-      capturedObjects: [digest],
+      currentAlias: aliasDigest,
+      capturedObjects: [digest, aliasDigest, summaryDigest, journalDigest].sort(),
     }],
     attempts: [{
       attemptId: `${JOB_ID}:attempt:1`,
@@ -65,9 +110,9 @@ function validManifest(digest = "a".repeat(64)) {
       continuationOf: null,
       startedAt: "2026-08-26T00:00:00.000Z",
       finishedAt: "2026-08-26T00:01:00.000Z",
-      outputSummaryObject: digest,
-      wrapperObject: digest,
-      transcriptObjects: [digest],
+      outputSummaryObject: summaryDigest,
+      wrapperObject: aliasDigest,
+      transcriptObjects: [journalDigest],
     }],
     continuations: [],
     claims: [],
@@ -82,6 +127,59 @@ function validManifest(digest = "a".repeat(64)) {
       p0P1ExecutableClosure: false,
     },
   };
+}
+
+async function storedManifest(store) {
+  const bytes = {
+    config: Buffer.from('{"config":true}'),
+    alias: Buffer.from(JSON.stringify({
+      schemaVersion: 1,
+      status: "done",
+      taskId: JOB_ID,
+      runId: JOB_ID,
+      evidence: ["attempt_count:1"],
+    })),
+    summary: Buffer.from("summary"),
+    journal: Buffer.from(JSON.stringify({ attempts: [{
+      attemptNumber: 1,
+      status: "completed",
+      startedAt: "2026-08-26T00:00:00.000Z",
+      finishedAt: "2026-08-26T00:01:00.000Z",
+      lastOutputSummary: "summary",
+    }] })),
+  };
+  const published = Object.fromEntries(await Promise.all(Object.entries(bytes).map(async ([key, value]) => [key, await store.publish(value)])));
+  const manifest = validManifest(published.config.sha256);
+  manifest.objects = [
+    objectRecord(published.config.sha256, { bytes: bytes.config.length, kind: "jobConfig", sourcePath: `job-config/${JOB_ID}/job.json` }),
+    objectRecord(published.alias.sha256, { bytes: bytes.alias.length, kind: "worker-report", sourcePath: `runtime/${JOB_ID}/${JOB_ID}.latest-result.json` }),
+    objectRecord(published.summary.sha256, {
+      bytes: bytes.summary.length,
+      kind: "decoded-output-summary",
+      sourcePath: `runtime/${JOB_ID}/state/attempt-journal/journal.json#attempts/1/lastOutputSummary`,
+    }),
+    objectRecord(published.journal.sha256, { bytes: bytes.journal.length, kind: "attempt-journal", sourcePath: `runtime/${JOB_ID}/state/attempt-journal/journal.json` }),
+  ];
+  manifest.jobs[0].jobConfigObject = published.config.sha256;
+  manifest.jobs[0].currentAlias = published.alias.sha256;
+  manifest.jobs[0].capturedObjects = Object.values(published).map(value => value.sha256).sort();
+  manifest.attempts[0].wrapperObject = published.alias.sha256;
+  manifest.attempts[0].outputSummaryObject = published.summary.sha256;
+  manifest.attempts[0].transcriptObjects = [published.journal.sha256];
+  return { manifest, published, bytes };
+}
+
+function trustedManifestOptions(manifest, options = {}) {
+  const manifestBytes = Buffer.from(`${deterministicJson(manifest)}\n`, "utf8");
+  return {
+    ...options,
+    manifestBytes,
+    expectedManifestSha256: sha256(manifestBytes),
+  };
+}
+
+async function verifyTrustedManifest(manifest, options = {}) {
+  return verifyManifestRaw(manifest, trustedManifestOptions(manifest, options));
 }
 
 test("explicit allowlist rejects glob admission and duplicates", () => {
@@ -100,6 +198,29 @@ test("deterministic JSON documents and enforces its smaller supported domain", (
   assert.throws(() => deterministicJson(cyclic), /cycle/u);
 });
 
+test("strict JSON enforces depth, node, and string limits before JSON.parse", () => {
+  const originalParse = JSON.parse;
+  let parseCalls = 0;
+  JSON.parse = (...arguments_) => {
+    parseCalls += 1;
+    return originalParse(...arguments_);
+  };
+  try {
+    for (const [text, limits, expected] of [
+      ["[[[]]]", { maxDepth: 1, maxNodes: 100, maxStringLength: 100 }, /depth limit/u],
+      ["[0,0]", { maxDepth: 10, maxNodes: 2, maxStringLength: 100 }, /node limit/u],
+      ['"oversized"', { maxDepth: 10, maxNodes: 10, maxStringLength: 4 }, /string limit/u],
+    ]) {
+      assert.throws(() => parseStrictJson(text, limits), expected);
+      assert.equal(parseCalls, 0, "resource rejection must precede JSON.parse");
+    }
+    assert.deepEqual(parseStrictJson('["ok"]', { maxDepth: 1, maxNodes: 2, maxStringLength: 2 }), ["ok"]);
+    assert.equal(parseCalls, 1);
+  } finally {
+    JSON.parse = originalParse;
+  }
+});
+
 test("object publication is idempotent and verifies hash and size", async t => {
   const root = await temporaryDirectory(t);
   const store = new ObjectStore(root);
@@ -108,6 +229,10 @@ test("object publication is idempotent and verifies hash and size", async t => {
   const second = await store.publish(bytes);
   assert.deepEqual(second, first);
   assert.equal(await readFile(first.path, "utf8"), "evidence");
+  if (process.platform !== "win32") {
+    assert.equal((await stat(root)).mode & 0o077, 0, "object store root must be owner-only");
+    assert.equal((await stat(first.path)).mode & 0o077, 0, "stored objects must be owner-only");
+  }
 });
 
 test("concurrent create publishes one immutable object", async t => {
@@ -141,6 +266,7 @@ test("object store rejects symlink shards and source capture rejects symlinks", 
 
   const runtimeRoot = join(root, "runtime");
   const configRoot = join(root, "configs");
+  const repositoryRoot = await createRepositoryFixture(root);
   await mkdir(join(runtimeRoot, JOB_ID), { recursive: true });
   await mkdir(join(configRoot, JOB_ID), { recursive: true });
   const actual = join(outside, "job.json");
@@ -148,7 +274,7 @@ test("object store rejects symlink shards and source capture rejects symlinks", 
   await symlink(actual, join(configRoot, JOB_ID, "job.json"));
   await assert.rejects(captureEvidence({
     campaignId: "attack",
-    baseline: {},
+    repositoryRoot,
     jobIds: [JOB_ID],
     runtimeRoot,
     jobConfigRoot: configRoot,
@@ -176,11 +302,86 @@ test("manifest validator rejects invalid lineage", () => {
   assert.ok(result.errors.some(error => error.includes("predecessorAttemptId does not resolve")));
 });
 
-test("verifier reports stale aliases and missing object records", async () => {
+test("manifest baseline and object roles are exact and fail closed", () => {
+  const missingBaseline = validManifest();
+  missingBaseline.baseline = {};
+  assert.match(validateManifest(missingBaseline).errors.join("\n"), /baseline\.repository/u);
+
+  const reusedRole = validManifest();
+  reusedRole.jobs[0].currentAlias = reusedRole.jobs[0].jobConfigObject;
+  reusedRole.attempts[0].wrapperObject = reusedRole.jobs[0].jobConfigObject;
+  const errors = validateManifest(reusedRole).errors.join("\n");
+  assert.match(errors, /must reference worker-report bytes/u);
+  assert.match(errors, /incompatible custody roles/u);
+
+  const arbitraryAttemptIdentity = validManifest();
+  arbitraryAttemptIdentity.attempts[0].attemptId = "caller-selected-attempt";
+  arbitraryAttemptIdentity.jobs[0].attemptIds = ["caller-selected-attempt"];
+  assert.match(validateManifest(arbitraryAttemptIdentity).errors.join("\n"), /derived from jobId and attemptNumber/u);
+});
+
+test("custody V2 explicitly rejects V1 manifests and declared capture identity", async t => {
   const manifest = validManifest();
-  manifest.jobs[0].currentAlias = "b".repeat(64);
-  manifest.jobs[0].jobConfigObject = "c".repeat(64);
-  const result = await verifyManifest(manifest);
+  manifest.schemaVersion = 1;
+  assert.match(validateManifest(manifest).errors.join("\n"), /schemaVersion 1 is unsupported/u);
+  const root = await temporaryDirectory(t);
+  const manifestPath = join(root, "v1.json");
+  await writeFile(manifestPath, JSON.stringify(manifest));
+  const cli = join(import.meta.dirname, "..", "architecture", "checks", "evidence-custody-cli.mjs");
+  await assert.rejects(execFileAsync(process.execPath, [
+    cli,
+    "verify",
+    manifestPath,
+    join(root, "objects"),
+    sha256(await readFile(manifestPath)),
+  ]), error => {
+    const report = JSON.parse(error.stdout);
+    assert.match(report.validation.errors.join("\n"), /schemaVersion 1 is unsupported/u);
+    return error.code === 1;
+  });
+  await assert.rejects(captureEvidence({
+    campaignId: "legacy",
+    baseline: baselineRecord(),
+    repositoryRoot: "/not-consulted",
+    jobIds: [JOB_ID],
+    runtimeRoot: "/not-consulted",
+    jobConfigRoot: "/not-consulted",
+    outputRoot: "/not-consulted",
+  }), /caller-declared V1 baselines are unsupported/u);
+  await assert.rejects(captureEvidence({
+    campaignId: "unbacked-lineage",
+    repositoryRoot: "/not-consulted",
+    jobIds: [JOB_ID],
+    runtimeRoot: "/not-consulted",
+    jobConfigRoot: "/not-consulted",
+    outputRoot: "/not-consulted",
+    continuations: [],
+  }), /caller-declared continuations are unsupported/u);
+});
+
+test("manifest verification requires externally supplied exact manifest identity", async () => {
+  const manifest = validManifest();
+  const unanchored = await verifyManifestRaw(manifest);
+  assert.equal(unanchored.integrityValid, false);
+  assert.match(unanchored.gates["G-CUSTODY"].failures.join("\n"), /trusted expected SHA-256/u);
+  assert.match(unanchored.gates["G-CUSTODY"].failures.join("\n"), /object store is required/u);
+  assert.match(unanchored.gates["G-ALIAS"].failures.join("\n"), /object store is required/u);
+
+  const options = trustedManifestOptions(manifest);
+  const relabeled = await verifyManifestRaw(manifest, {
+    ...options,
+    expectedManifestSha256: "f".repeat(64),
+  });
+  assert.equal(relabeled.integrityValid, false);
+  assert.match(relabeled.gates["G-CUSTODY"].failures.join("\n"), /do not match/u);
+});
+
+test("verifier reports missing object records even when alias lineage matches", async () => {
+  const manifest = validManifest();
+  manifest.jobs[0].currentAlias = "e".repeat(64);
+  manifest.attempts[0].wrapperObject = "e".repeat(64);
+  manifest.jobs[0].jobConfigObject = "f".repeat(64);
+  const result = await verifyTrustedManifest(manifest);
   assert.equal(result.gates["G-ALIAS"].pass, false);
   assert.equal(result.gates["G-CUSTODY"].pass, false);
   assert.match(result.gates["G-CUSTODY"].failures.join("\n"), /missing object record/u);
@@ -189,46 +390,109 @@ test("verifier reports stale aliases and missing object records", async () => {
 test("verifier hash and size checks every declared object, including unreferenced records", async t => {
   const root = await temporaryDirectory(t);
   const store = new ObjectStore(root);
-  const bytes = Buffer.from("evidence");
-  const published = await store.publish(bytes);
-  const manifest = validManifest(published.sha256);
-  manifest.objects[0] = objectRecord(published.sha256, {
-    bytes: bytes.length,
-    sourcePath: `job-config/${JOB_ID}/job.json`,
-  });
+  const { manifest } = await storedManifest(store);
   const unreferenced = sha256("unreferenced");
   manifest.objects.push(objectRecord(unreferenced, { bytes: 12, sourcePath: "research/unreferenced.json" }));
 
-  const missing = await verifyManifest(manifest, { store });
+  const missing = await verifyTrustedManifest(manifest, { store });
   assert.equal(missing.integrityValid, false);
   assert.match(missing.gates["G-CUSTODY"].failures.join("\n"), new RegExp(unreferenced, "u"));
 
   const corruptPath = store.objectPath(unreferenced);
   await mkdir(dirname(corruptPath), { recursive: true });
   await writeFile(corruptPath, "wrong bytes!");
-  const corrupt = await verifyManifest(manifest, { store });
+  const corrupt = await verifyTrustedManifest(manifest, { store });
   assert.equal(corrupt.integrityValid, false);
   assert.match(corrupt.gates["G-CUSTODY"].failures.join("\n"), /corrupt object/u);
+});
+
+test("verification reparses stored journals instead of trusting manifest attempt fields", async t => {
+  const root = await temporaryDirectory(t);
+  const store = new ObjectStore(root);
+  const { manifest: original } = await storedManifest(store);
+  assert.equal((await verifyTrustedManifest(original, { store })).integrityValid, true);
+
+  for (const mutate of [
+    manifest => { manifest.attempts[0].status = "failed"; },
+    manifest => { manifest.attempts[0].startedAt = "tampered-start"; },
+    manifest => { manifest.attempts[0].finishedAt = "tampered-finish"; },
+    manifest => { manifest.attempts[0].outputSummaryObject = null; },
+    manifest => {
+      const attempt = manifest.attempts[0];
+      attempt.attemptNumber = 2;
+      attempt.attemptId = `${JOB_ID}:attempt:2`;
+      manifest.jobs[0].attemptIds = [attempt.attemptId];
+      manifest.objects.find(object => object.sha256 === attempt.outputSummaryObject).sourcePath =
+        `runtime/${JOB_ID}/state/attempt-journal/journal.json#attempts/2/lastOutputSummary`;
+    },
+  ]) {
+    const manifest = structuredClone(original);
+    mutate(manifest);
+    assert.equal(validateManifest(manifest).valid, true);
+    const verification = await verifyTrustedManifest(manifest, { store });
+    assert.equal(verification.integrityValid, false);
+    assert.match(verification.gates["G-CUSTODY"].failures.join("\n"), /stored (?:attempt-journal|journal)/u);
+  }
 });
 
 test("portable verification trusts stored objects and live-source audit is explicit", async t => {
   const root = await temporaryDirectory(t);
   const store = new ObjectStore(root);
-  const bytes = Buffer.from("evidence");
-  const published = await store.publish(bytes);
-  const manifest = validManifest(published.sha256);
-  manifest.objects[0] = objectRecord(published.sha256, { bytes: bytes.length, sourcePath: `runtime/${JOB_ID}/retired/source.json` });
-  assert.equal((await verifyManifest(manifest, { store })).gates["G-PATH"].pass, true);
-  assert.equal((await verifyManifest(manifest, { store, auditLiveSources: true, sourceRoot: root })).gates["G-PATH"].pass, false);
-  manifest.objects[0].sourcePath = "/host-specific/source.json";
-  assert.equal((await verifyManifest(manifest, { store })).gates["G-PATH"].pass, false);
+  const { manifest } = await storedManifest(store);
+  const sourceBytes = Buffer.from("evidence");
+  const source = await store.publish(sourceBytes);
+  manifest.objects.push(objectRecord(source.sha256, { bytes: sourceBytes.length, sourcePath: "research/portable-source.json" }));
+  assert.equal((await verifyTrustedManifest(manifest, { store })).gates["G-PATH"].pass, true);
+  assert.equal((await verifyTrustedManifest(manifest, { store, auditLiveSources: true, sourceRoot: root })).gates["G-PATH"].pass, false);
+  manifest.objects.at(-1).sourcePath = "/host-specific/source.json";
+  assert.equal((await verifyTrustedManifest(manifest, { store })).gates["G-PATH"].pass, false);
+});
+
+test("live-source audit verifies bytes and rejects symlinked ancestors", async t => {
+  const root = await temporaryDirectory(t);
+  const store = new ObjectStore(join(root, "store"));
+  const manifest = validManifest();
+  const sourceRoot = join(root, "live");
+  const sourceBytes = Buffer.from("exact live evidence");
+  const source = await store.publish(sourceBytes);
+  manifest.objects = [objectRecord(source.sha256, {
+    bytes: sourceBytes.length,
+    kind: "primary-source",
+    sourcePath: "research/source.json",
+  })];
+  manifest.jobs = [];
+  manifest.attempts = [];
+  await mkdir(join(sourceRoot, "research"), { recursive: true });
+  await writeFile(join(sourceRoot, "research", "source.json"), sourceBytes);
+  assert.equal((await verifyTrustedManifest(manifest, {
+    store,
+    auditLiveSources: true,
+    sourceRoot,
+  })).gates["G-PATH"].pass, true);
+
+  await writeFile(join(sourceRoot, "research", "source.json"), "changed");
+  assert.equal((await verifyTrustedManifest(manifest, {
+    store,
+    auditLiveSources: true,
+    sourceRoot,
+  })).gates["G-PATH"].pass, false);
+
+  const outside = join(root, "outside");
+  await mkdir(outside);
+  await writeFile(join(outside, "source.json"), sourceBytes);
+  await rm(join(sourceRoot, "research"), { recursive: true });
+  await symlink(outside, join(sourceRoot, "research"), "dir");
+  const symlinked = await verifyTrustedManifest(manifest, { store, auditLiveSources: true, sourceRoot });
+  assert.equal(symlinked.gates["G-PATH"].pass, false);
+  assert.match(symlinked.gates["G-PATH"].failures.join("\n"), /live source verification failed/u);
 });
 
 test("job capturedObjects exactly accounts for portable provenance in sorted order", () => {
-  const secondDigest = "b".repeat(64);
+  const secondDigest = "e".repeat(64);
   const complete = validManifest();
-  complete.objects.push(objectRecord(secondDigest, { sourcePath: `runtime/${JOB_ID}/state/attempt-journal/journal.json` }));
+  complete.objects.push(objectRecord(secondDigest, { kind: "progress", sourcePath: `runtime/${JOB_ID}/${JOB_ID}.progress.json` }));
   complete.jobs[0].capturedObjects.push(secondDigest);
+  complete.jobs[0].capturedObjects.sort();
   assert.equal(validateManifest(complete).valid, true);
 
   for (const mutate of [
@@ -249,20 +513,26 @@ test("job capturedObjects exactly accounts for portable provenance in sorted ord
 
 test("portable source paths and fragments agree in runtime and schema", async () => {
   const schema = JSON.parse(await readFile(join(import.meta.dirname, "..", "architecture", "evidence-custody-manifest.schema.json"), "utf8"));
+  assert.equal(schema.$id.endsWith(".v2.json"), true);
+  assert.equal(schema.properties.schemaVersion.const, 2);
+  assert.equal(schema.properties.objects.maxItems, 1024);
+  assert.equal(schema.properties.claims.maxItems, 512);
+  assert.equal(schema.$defs.boundedString.maxLength, 65_536);
+  assert.equal(schema.$defs.object.properties.sourcePath.maxLength, 65_536);
   const schemaPattern = new RegExp(schema.$defs.object.properties.sourcePath.pattern, "u");
   for (const sourcePath of [
-    `job-config/${JOB_ID}/job.json`,
-    `job-config/${JOB_ID}/job.json#fragment`,
-    `job-config/${JOB_ID}/job.json#attempts/1/lastOutputSummary`,
+    "research/source.json",
+    "research/source.json#fragment",
+    "research/source.json#attempts/1/lastOutputSummary",
   ]) {
     const manifest = validManifest();
-    manifest.objects[0].sourcePath = sourcePath;
+    manifest.objects.push(objectRecord("e".repeat(64), { sourcePath }));
     assert.equal(validateManifest(manifest).valid, true, `runtime rejected ${JSON.stringify(sourcePath)}`);
     assert.equal(schemaPattern.test(sourcePath), true, `schema rejected ${JSON.stringify(sourcePath)}`);
   }
   for (const sourcePath of ["C:/host/file", "z:/host/file", "/host/file", "host\\file", "host/../file", "host//file", "host/./file", "host\0file", "research/#", "research/file#fragment/../x", "research/file#fragment//x", "research/file#fragment#x"]) {
     const manifest = validManifest();
-    manifest.objects[0].sourcePath = sourcePath;
+    manifest.objects.push(objectRecord("e".repeat(64), { sourcePath }));
     assert.equal(validateManifest(manifest).valid, false, `runtime accepted ${JSON.stringify(sourcePath)}`);
     assert.equal(schemaPattern.test(sourcePath), false, `schema accepted ${JSON.stringify(sourcePath)}`);
   }
@@ -281,12 +551,23 @@ test("qualification records keep unverifiable historical custody claims unproven
 });
 
 test("lineage requires exact membership, adjacent predecessors, and acyclic earlier continuations", () => {
-  const secondDigest = "b".repeat(64);
+  const secondDigest = "e".repeat(64);
   const base = validManifest();
-  base.objects.push(objectRecord(secondDigest));
+  base.objects.push(objectRecord(secondDigest, { kind: "worker-report", sourcePath: `runtime/${JOB_ID}/${JOB_ID}.latest-result.json` }));
+  base.jobs[0].capturedObjects.push(secondDigest);
+  base.jobs[0].capturedObjects.sort();
   base.jobs[0].attemptIds.push(`${JOB_ID}:attempt:2`);
   base.jobs[0].currentAlias = secondDigest;
-  base.attempts.push({ ...base.attempts[0], attemptId: `${JOB_ID}:attempt:2`, attemptNumber: 2, predecessorAttemptId: base.attempts[0].attemptId, wrapperObject: secondDigest });
+  base.attempts.push({
+    ...base.attempts[0],
+    attemptId: `${JOB_ID}:attempt:2`,
+    attemptNumber: 2,
+    predecessorAttemptId: base.attempts[0].attemptId,
+    outputSummaryObject: null,
+    wrapperObject: secondDigest,
+  });
+  assert.match(validateManifest(base).errors.join("\n"), /allowed only for the latest attempt/u);
+  base.attempts[0].wrapperObject = null;
   assert.equal(validateManifest(base).valid, true);
 
   const duplicate = structuredClone(base);
@@ -322,15 +603,16 @@ test("source and executable claims require bound publishers, attestations, and a
     hypothesis: false,
     promotionEligible: true,
   });
-  const result = await verifyManifest(manifest);
+  const result = await verifyTrustedManifest(manifest);
   assert.equal(result.gates["G-SOURCE"].pass, false);
   assert.match(result.gates["G-CUSTODY"].failures.join("\n"), /unique items/u);
 });
 
 test("promotion claims cannot substitute executable evidence for primary sources or invent source kinds", async () => {
-  const attestationDigest = "b".repeat(64);
+  const executableDigest = "e".repeat(64);
+  const attestationDigest = "f".repeat(64);
   const executableOnly = validManifest();
-  executableOnly.objects[0].kind = "executable-test-result";
+  executableOnly.objects.push(objectRecord(executableDigest, { kind: "executable-test-result", sourcePath: "research/executable.json" }));
   executableOnly.objects.push(objectRecord(attestationDigest, { kind: "execution-attestation", sourcePath: "research/attestation.json" }));
   executableOnly.claims.push({
     claimId: "executable-only",
@@ -338,45 +620,95 @@ test("promotion claims cannot substitute executable evidence for primary sources
     classification: "observed",
     applicability: "test",
     primarySourceObjects: [],
-    executableEvidenceObjects: [executableOnly.objects[0].sha256],
+    executableEvidenceObjects: [executableDigest],
     publisherIndependence: [],
-    executableEvidenceAttestations: [{ evidenceObject: executableOnly.objects[0].sha256, attestationObject: attestationDigest, publisher: "test-runner", status: "passed" }],
+    executableEvidenceAttestations: [{ evidenceObject: executableDigest, attestationObject: attestationDigest, publisher: "test-runner", status: "passed" }],
     hypothesis: false,
     promotionEligible: true,
   });
-  const executableOnlyResult = await verifyManifest(executableOnly);
+  const executableOnlyResult = await verifyTrustedManifest(executableOnly);
   assert.equal(executableOnlyResult.gates["G-SOURCE"].pass, false);
-  assert.match(executableOnlyResult.gates["G-SOURCE"].failures.join("\n"), /requires both bound independent primary sources/u);
+  assert.match(executableOnlyResult.gates["G-SOURCE"].failures.join("\n"), /requires both authenticated independent primary sources/u);
 
   const arbitrarySources = validManifest();
-  const secondSource = "c".repeat(64);
-  arbitrarySources.objects[0].kind = "log";
-  arbitrarySources.objects.push(objectRecord(secondSource, { kind: "progress", sourcePath: "research/progress.json" }));
+  const firstSource = "e".repeat(64);
+  const secondSource = "f".repeat(64);
+  arbitrarySources.objects.push(
+    objectRecord(firstSource, { kind: "log", sourcePath: "research/log.txt" }),
+    objectRecord(secondSource, { kind: "progress", sourcePath: "research/progress.json" }),
+  );
   arbitrarySources.claims.push({
     claimId: "invented-sources",
     text: "Arbitrary custody objects are not primary sources",
     classification: "observed",
     applicability: "test",
-    primarySourceObjects: [arbitrarySources.objects[0].sha256, secondSource],
+    primarySourceObjects: [firstSource, secondSource],
     executableEvidenceObjects: [],
     publisherIndependence: [
-      { sourceObject: arbitrarySources.objects[0].sha256, publisher: "invented-a" },
+      { sourceObject: firstSource, publisher: "invented-a" },
       { sourceObject: secondSource, publisher: "invented-b" },
     ],
     executableEvidenceAttestations: [],
     hypothesis: false,
     promotionEligible: true,
   });
-  const arbitraryResult = await verifyManifest(arbitrarySources);
+  const arbitraryResult = await verifyTrustedManifest(arbitrarySources);
   assert.equal(arbitraryResult.gates["G-SOURCE"].pass, false);
   assert.match(arbitraryResult.gates["G-SOURCE"].failures.join("\n"), /ineligible primary-source evidence kind/u);
 });
 
-test("executable evidence requires a stored successful attestation", async t => {
+test("non-promotable positive claims still cannot treat publisher metadata as authenticated", async () => {
+  const manifest = validManifest();
+  const first = "e".repeat(64);
+  const second = "f".repeat(64);
+  manifest.objects.push(
+    objectRecord(first, { kind: "primary-source", sourcePath: "research/primary-a.json" }),
+    objectRecord(second, { kind: "primary-source", sourcePath: "research/primary-b.json" }),
+  );
+  manifest.claims.push({
+    claimId: "structurally-custodied-only",
+    text: "Stored source bytes do not authenticate their publishers",
+    classification: "observed",
+    applicability: "qualification only",
+    primarySourceObjects: [first, second],
+    executableEvidenceObjects: [],
+    publisherIndependence: [
+      { sourceObject: first, publisher: "publisher-a" },
+      { sourceObject: second, publisher: "publisher-b" },
+    ],
+    executableEvidenceAttestations: [],
+    hypothesis: false,
+    promotionEligible: false,
+  });
+  const result = await verifyTrustedManifest(manifest);
+  assert.equal(result.gates["G-SOURCE"].pass, false);
+  assert.match(result.gates["G-SOURCE"].failures.join("\n"), /positive claim/u);
+});
+
+test("source-free positive claims fail the V2 source gate", async () => {
+  const manifest = validManifest();
+  manifest.claims.push({
+    claimId: "source-free-authority",
+    text: "The candidate is approved",
+    classification: "decision-authority",
+    applicability: "qualification only",
+    primarySourceObjects: [],
+    executableEvidenceObjects: [],
+    publisherIndependence: [],
+    executableEvidenceAttestations: [],
+    hypothesis: false,
+    promotionEligible: false,
+  });
+  const result = await verifyTrustedManifest(manifest);
+  assert.equal(result.gates["G-SOURCE"].pass, false);
+  assert.match(result.gates["G-SOURCE"].failures.join("\n"), /authenticated source receipt/u);
+  assert.equal(result.integrityValid, false);
+});
+
+test("V2 executable evidence remains unauthenticated even when stored JSON says passed", async t => {
   const root = await temporaryDirectory(t);
   const store = new ObjectStore(root);
-  const wrapperBytes = Buffer.from(JSON.stringify({ schemaVersion: 1, status: "done", taskId: JOB_ID, runId: JOB_ID, evidence: ["attempt_count:1"] }));
-  const wrapper = await store.publish(wrapperBytes);
+  const { manifest: baseManifest } = await storedManifest(store);
   const evidenceBytes = Buffer.from("executable result");
   const evidence = await store.publish(evidenceBytes);
   const firstSourceBytes = Buffer.from("primary source a");
@@ -387,12 +719,11 @@ test("executable evidence requires a stored successful attestation", async t => 
   for (const { name, status, publisher, expected } of [
     { name: "failed", status: "failed", publisher: "test-runner", expected: false },
     { name: "foreign-publisher", status: "passed", publisher: "foreign-runner", expected: false },
-    { name: "passed", status: "passed", publisher: "test-runner", expected: true },
+    { name: "passed", status: "passed", publisher: "test-runner", expected: false },
   ]) {
     const attestationBytes = Buffer.from(JSON.stringify({ schemaVersion: 1, evidenceObject: evidence.sha256, publisher, status }));
     const attestation = await store.publish(attestationBytes);
-    const manifest = validManifest(wrapper.sha256);
-    manifest.objects[0] = objectRecord(wrapper.sha256, { bytes: wrapperBytes.length, sourcePath: `job-config/${JOB_ID}/job.json` });
+    const manifest = structuredClone(baseManifest);
     manifest.objects.push(
       objectRecord(evidence.sha256, { bytes: evidenceBytes.length, kind: "reproduction-result", sourcePath: "research/result.txt" }),
       objectRecord(attestation.sha256, { bytes: attestationBytes.length, kind: "execution-attestation", sourcePath: `research/attestation-${name}.json` }),
@@ -415,10 +746,11 @@ test("executable evidence requires a stored successful attestation", async t => 
       promotionEligible: true,
     });
     assert.equal(validateManifest(manifest).valid, true);
-    const result = await verifyManifest(manifest, { store });
+    const result = await verifyTrustedManifest(manifest, { store });
     assert.equal(result.gates["G-SOURCE"].pass, expected);
     if (name === "failed") assert.match(result.gates["G-SOURCE"].failures.join("\n"), /successful result/u);
     if (name === "foreign-publisher") assert.match(result.gates["G-SOURCE"].failures.join("\n"), /declared publisher/u);
+    if (name === "passed") assert.match(result.gates["G-SOURCE"].failures.join("\n"), /unauthenticated/u);
   }
 });
 
@@ -461,7 +793,7 @@ test("malformed manifest shapes return a structured fail-closed report and CLI e
   manifest.jobs = {};
   manifest.attempts = null;
   manifest.promotion = [];
-  const report = await verifyManifest(manifest);
+  const report = await verifyTrustedManifest(manifest);
   assert.equal(report.valid, false);
   assert.equal(report.integrityValid, false);
   assert.equal(report.promotionAllowed, false);
@@ -469,13 +801,14 @@ test("malformed manifest shapes return a structured fail-closed report and CLI e
   const malformedEntries = validManifest();
   malformedEntries.attempts = [null];
   malformedEntries.continuations = [null];
-  assert.equal((await verifyManifest(malformedEntries)).integrityValid, false);
+  assert.equal((await verifyTrustedManifest(malformedEntries)).integrityValid, false);
 
   const root = await temporaryDirectory(t);
   const manifestPath = join(root, "malformed.json");
   await writeFile(manifestPath, JSON.stringify(manifest));
   const cli = join(import.meta.dirname, "..", "architecture", "checks", "evidence-custody-cli.mjs");
-  await assert.rejects(execFileAsync(process.execPath, [cli, "verify", manifestPath, join(root, "objects")]), error => {
+  const manifestDigest = sha256(await readFile(manifestPath));
+  await assert.rejects(execFileAsync(process.execPath, [cli, "verify", manifestPath, join(root, "objects"), manifestDigest]), error => {
     const cliReport = JSON.parse(error.stdout);
     assert.equal(cliReport.verification.integrityValid, false);
     assert.match(cliReport.validation.errors.join("\n"), /jobs must be an array/u);
@@ -488,7 +821,7 @@ test("CLI reports syntactically malformed JSON without stack traces or host path
   const manifestPath = join(root, "syntactically-malformed.json");
   await writeFile(manifestPath, '{"schemaVersion":');
   const cli = join(import.meta.dirname, "..", "architecture", "checks", "evidence-custody-cli.mjs");
-  await assert.rejects(execFileAsync(process.execPath, [cli, "verify", manifestPath, join(root, "objects")]), error => {
+  await assert.rejects(execFileAsync(process.execPath, [cli, "verify", manifestPath, join(root, "objects"), sha256(await readFile(manifestPath))]), error => {
     assert.equal(error.code, 1);
     assert.equal(error.stderr, "");
     assert.deepEqual(JSON.parse(error.stdout), {
@@ -507,7 +840,7 @@ test("CLI rejects duplicate JSON keys before manifest validation", async t => {
   const serialized = JSON.stringify(validManifest()).replace('"status":"completed"', '"status":"running","status":"completed"');
   await writeFile(manifestPath, serialized);
   const cli = join(import.meta.dirname, "..", "architecture", "checks", "evidence-custody-cli.mjs");
-  await assert.rejects(execFileAsync(process.execPath, [cli, "verify", manifestPath, join(root, "objects")]), error => {
+  await assert.rejects(execFileAsync(process.execPath, [cli, "verify", manifestPath, join(root, "objects"), sha256(await readFile(manifestPath))]), error => {
     assert.equal(error.code, 1);
     assert.equal(error.stderr, "");
     assert.deepEqual(JSON.parse(error.stdout), {
@@ -534,30 +867,31 @@ test("publication fails closed when its parent directory identity changes", asyn
 test("worker accounting never becomes voting authority", async () => {
   const manifest = validManifest();
   manifest.promotion.workerAccounting = { countsAsVotes: true, workers: 140 };
-  const result = await verifyManifest(manifest);
+  const result = await verifyTrustedManifest(manifest);
   assert.equal(result.gates["G-SOURCE"].pass, false);
   assert.match(result.gates["G-CUSTODY"].failures.join("\n"), /countsAsVotes must be false|workers is not allowed/u);
 });
 
 test("worker reports are not primary sources and unsupported inference needs a hypothesis label", async () => {
   const manifest = validManifest();
-  manifest.objects[0].kind = "worker-report";
+  const reportDigest = "e".repeat(64);
+  manifest.objects.push(objectRecord(reportDigest, { kind: "worker-report", sourcePath: "research/worker-report.json" }));
   manifest.claims.push({
     claimId: "claim-1",
     text: "A correlated worker conclusion",
     classification: "inference",
     applicability: "campaign only",
-    primarySourceObjects: [manifest.objects[0].sha256, manifest.objects[0].sha256],
+    primarySourceObjects: [reportDigest, reportDigest],
     executableEvidenceObjects: [],
     publisherIndependence: [
-      { sourceObject: manifest.objects[0].sha256, publisher: "publisher-a" },
-      { sourceObject: manifest.objects[0].sha256, publisher: "publisher-b" },
+      { sourceObject: reportDigest, publisher: "publisher-a" },
+      { sourceObject: reportDigest, publisher: "publisher-b" },
     ],
     executableEvidenceAttestations: [],
     hypothesis: false,
     promotionEligible: true,
   });
-  const result = await verifyManifest(manifest);
+  const result = await verifyTrustedManifest(manifest);
   assert.equal(result.gates["G-SOURCE"].pass, false);
   assert.equal(result.gates["G-HYPOTHESIS"].pass, false);
 });
@@ -576,36 +910,32 @@ test("an honestly labeled hypothesis is non-promotable", async () => {
     hypothesis: true,
     promotionEligible: false,
   });
-  const result = await verifyManifest(manifest);
+  const result = await verifyTrustedManifest(manifest);
   assert.equal(result.gates["G-SOURCE"].pass, true);
   assert.equal(result.gates["G-HYPOTHESIS"].pass, true);
   assert.equal(result.gates["G-PROMOTION"].pass, false);
-  assert.equal(result.integrityValid, true);
+  assert.equal(result.integrityValid, false);
   assert.equal(result.promotionAllowed, false);
 });
 
 test("CLI verifies a portable NO-GO bundle without admitting promotion", async t => {
   const root = await temporaryDirectory(t);
   const store = new ObjectStore(join(root, "objects"));
-  const bytes = Buffer.from(JSON.stringify({
-    schemaVersion: 1,
-    status: "done",
-    taskId: JOB_ID,
-    runId: JOB_ID,
-    evidence: ["attempt_count:1"],
-  }));
-  const published = await store.publish(bytes);
-  const manifest = validManifest(published.sha256);
-  manifest.objects[0] = objectRecord(published.sha256, { bytes: bytes.length, sourcePath: `job-config/${JOB_ID}/job.json` });
+  const { manifest } = await storedManifest(store);
   const manifestPath = join(root, "manifest.json");
   await writeFile(manifestPath, `${JSON.stringify(manifest)}\n`);
   const cli = join(import.meta.dirname, "..", "architecture", "checks", "evidence-custody-cli.mjs");
+  const manifestDigest = sha256(await readFile(manifestPath));
 
-  const portable = await execFileAsync(process.execPath, [cli, "verify", manifestPath, store.root]);
+  const portable = await execFileAsync(process.execPath, [cli, "verify", manifestPath, store.root, manifestDigest]);
   const report = JSON.parse(portable.stdout);
   assert.equal(report.verification.integrityValid, true);
   assert.equal(report.verification.promotionAllowed, false);
-  await assert.rejects(execFileAsync(process.execPath, [cli, "verify", manifestPath, store.root, "--require-promotion"]), error => error.code === 1);
+  await assert.rejects(execFileAsync(process.execPath, [cli, "verify", manifestPath, store.root, manifestDigest, "--require-promotion"]), error => {
+    assert.equal(error.code, 2);
+    assert.match(error.stderr, /usage: evidence-custody/u);
+    return true;
+  });
 });
 
 test("secret scanning detects common credentials without echoing the secret", () => {
@@ -631,8 +961,25 @@ test("auth roots and CODEX_HOME are rejected before reads", () => {
   }
 });
 
+test("canonical auth-root checks reject a permitted-looking symlink ancestor", async t => {
+  const root = await temporaryDirectory(t);
+  const privateState = join(root, "private-state");
+  const allowed = join(root, "allowed-link");
+  await mkdir(privateState);
+  await symlink(privateState, allowed);
+  const prior = process.env.CODEX_HOME;
+  process.env.CODEX_HOME = privateState;
+  try {
+    await assert.rejects(new ObjectStore(join(allowed, "evidence")).initialize(), /CODEX_HOME/u);
+  } finally {
+    if (prior === undefined) delete process.env.CODEX_HOME;
+    else process.env.CODEX_HOME = prior;
+  }
+});
+
 test("capture preserves required runtime bytes and decodes lastOutputSummary", async t => {
   const root = await temporaryDirectory(t);
+  const repositoryRoot = await createRepositoryFixture(root);
   const runtimeRoot = join(root, "runtime");
   const configRoot = join(root, "configs");
   const outputRoot = join(root, "evidence");
@@ -661,11 +1008,27 @@ test("capture preserves required runtime bytes and decodes lastOutputSummary", a
 
   const result = await captureEvidence({
     campaignId: "fixture-campaign",
-    baseline: { commit: "e69ac5544ee64d497e56c060f75e8ba6eaae1ceb" },
+    repositoryRoot,
     jobIds: [JOB_ID],
     runtimeRoot,
     jobConfigRoot: configRoot,
     outputRoot,
+    capturedAt: "2026-08-26T01:00:00.000Z",
+  });
+  const [{ stdout: commit }, { stdout: tree }] = await Promise.all([
+    execFileAsync("git", ["-C", repositoryRoot, "rev-parse", "HEAD"]),
+    execFileAsync("git", ["-C", repositoryRoot, "rev-parse", "HEAD^{tree}"]),
+  ]);
+  assert.deepEqual(result.manifest.baseline, {
+    derivation: "canonical-repository-observation-v1",
+    repository: "agent-teams-ai/extension-foundation",
+    commit: commit.trim(),
+    tree: tree.trim(),
+    lockfileSha256: sha256(await readFile(join(repositoryRoot, "pnpm-lock.yaml"))),
+    clean: true,
+    platform: `${process.platform}/${process.arch}`,
+    nodeVersion: process.versions.node,
+    pnpmVersion: "11.18.0",
     capturedAt: "2026-08-26T01:00:00.000Z",
   });
   assert.equal(validateManifest(result.manifest).valid, true);
@@ -682,6 +1045,7 @@ test("capture preserves required runtime bytes and decodes lastOutputSummary", a
 });
 
 async function writeCaptureFixture(root, journalDocuments, { commonBytes = false, wrapper = true, wrapperDocument } = {}) {
+  const repositoryRoot = await createRepositoryFixture(root);
   const runtimeRoot = join(root, "runtime");
   const configRoot = join(root, "configs");
   const jobRoot = join(runtimeRoot, JOB_ID);
@@ -709,15 +1073,69 @@ async function writeCaptureFixture(root, journalDocuments, { commonBytes = false
     await mkdir(dirname(path), { recursive: true });
     await writeFile(path, JSON.stringify(document));
   }
-  return { runtimeRoot, jobConfigRoot: configRoot, outputRoot: join(root, "evidence") };
+  return { repositoryRoot, runtimeRoot, jobConfigRoot: configRoot, outputRoot: join(root, "evidence") };
 }
+
+test("capture requires a canonical clean repository root", async t => {
+  const root = await temporaryDirectory(t);
+  const paths = await writeCaptureFixture(root, [{ attempts: [] }]);
+  await writeFile(join(paths.repositoryRoot, "untracked.txt"), "dirty");
+  await assert.rejects(captureEvidence({
+    campaignId: "dirty-baseline",
+    jobIds: [JOB_ID],
+    ...paths,
+  }), /must be clean at capture/u);
+  await rm(join(paths.repositoryRoot, "untracked.txt"));
+  const nested = join(paths.repositoryRoot, "nested");
+  await mkdir(nested);
+  await assert.rejects(captureEvidence({
+    campaignId: "noncanonical-baseline",
+    jobIds: [JOB_ID],
+    ...paths,
+    repositoryRoot: nested,
+  }), /canonical Git worktree root/u);
+});
+
+test("capture derives its baseline without Git replacement refs", async t => {
+  const root = await temporaryDirectory(t);
+  const paths = await writeCaptureFixture(root, [{ attempts: [{
+    attemptNumber: 1,
+    status: "completed",
+    startedAt: "start",
+    finishedAt: "finish",
+  }] }]);
+  const { stdout: originalCommitOutput } = await execFileAsync(
+    "git",
+    ["-C", paths.repositoryRoot, "rev-parse", "HEAD"],
+  );
+  const { stdout: originalTreeOutput } = await execFileAsync(
+    "git",
+    ["-C", paths.repositoryRoot, "rev-parse", "HEAD^{tree}"],
+  );
+  await writeFile(join(paths.repositoryRoot, "forged.txt"), "replacement tree\n");
+  await execFileAsync("git", ["-C", paths.repositoryRoot, "add", "forged.txt"]);
+  await execFileAsync("git", ["-C", paths.repositoryRoot, "commit", "--quiet", "-m", "test: forged replacement"]);
+  const { stdout: replacementCommitOutput } = await execFileAsync(
+    "git",
+    ["-C", paths.repositoryRoot, "rev-parse", "HEAD"],
+  );
+  await execFileAsync("git", ["-C", paths.repositoryRoot, "reset", "--hard", "--quiet", originalCommitOutput.trim()]);
+  await execFileAsync("git", ["-C", paths.repositoryRoot, "replace", originalCommitOutput.trim(), replacementCommitOutput.trim()]);
+
+  const result = await captureEvidence({
+    campaignId: "replace-safe-baseline",
+    jobIds: [JOB_ID],
+    ...paths,
+  });
+  assert.equal(result.manifest.baseline.commit, originalCommitOutput.trim());
+  assert.equal(result.manifest.baseline.tree, originalTreeOutput.trim());
+});
 
 test("capture fails closed when identical bytes have conflicting provenance", async t => {
   const root = await temporaryDirectory(t);
   const paths = await writeCaptureFixture(root, [{ attempts: [] }], { commonBytes: true });
   await assert.rejects(captureEvidence({
     campaignId: "fixture-campaign",
-    baseline: {},
     jobIds: [JOB_ID],
     ...paths,
   }), /conflicting provenance for captured object/u);
@@ -730,10 +1148,103 @@ test("capture rejects duplicate keys in attempt journals", async t => {
   await writeFile(journalPath, '{"attempts":[],"attempts":[{"attemptNumber":1}]}');
   await assert.rejects(captureEvidence({
     campaignId: "fixture-campaign",
-    baseline: {},
     jobIds: [JOB_ID],
     ...paths,
   }), /duplicate JSON keys/u);
+});
+
+test("capture enforces bounded files, aggregate bytes, and JSON complexity", async t => {
+  for (const [name, resourceLimits, expected] of [
+    ["file-size", { maxFileBytes: 2 }, /byte limit|file-size limit/u],
+    ["file-count", { maxFiles: 3 }, /file-count limit/u],
+    ["aggregate", { maxTotalBytes: 16 }, /aggregate byte limit/u],
+    ["json-depth", { maxJsonDepth: 1 }, /JSON depth limit/u],
+    ["json-nodes", { maxJsonNodes: 2 }, /JSON node limit/u],
+    ["json-string", { maxJsonStringLength: 8 }, /JSON string limit/u],
+  ]) {
+    const root = await temporaryDirectory(t);
+    const paths = await writeCaptureFixture(root, [{ attempts: [{
+      attemptNumber: 1,
+      status: "completed",
+      startedAt: "start",
+      finishedAt: "finish",
+    }] }]);
+    await assert.rejects(captureEvidence({
+      campaignId: `fixture-${name}`,
+      jobIds: [JOB_ID],
+      resourceLimits,
+      ...paths,
+    }), expected);
+  }
+});
+
+test("capture applies tightened limits to final manifest validation", async t => {
+  const root = await temporaryDirectory(t);
+  const paths = await writeCaptureFixture(root, [{ attempts: [{
+    attemptNumber: 1,
+    status: "completed",
+    startedAt: "start",
+    finishedAt: "finish",
+  }] }]);
+  const claim = claimId => ({
+    claimId,
+    text: "unproven",
+    classification: "hypothesis",
+    applicability: "test",
+    primarySourceObjects: [],
+    executableEvidenceObjects: [],
+    publisherIndependence: [],
+    executableEvidenceAttestations: [],
+    hypothesis: true,
+    promotionEligible: false,
+  });
+  await assert.rejects(captureEvidence({
+    campaignId: "fixture-final-limits",
+    jobIds: [JOB_ID],
+    claims: [claim("one"), claim("two")],
+    resourceLimits: { maxManifestClaims: 1 },
+    ...paths,
+  }), /claims exceeds the 1-item limit/u);
+});
+
+test("capture caps recursive directory traversal", async t => {
+  const root = await temporaryDirectory(t);
+  const paths = await writeCaptureFixture(root, [{ attempts: [] }]);
+  const nested = join(paths.runtimeRoot, JOB_ID, "state", "attempt-journal", "nested");
+  await mkdir(nested, { recursive: true });
+  await writeFile(join(nested, "extra.json"), '{"extra":true}');
+  await assert.rejects(captureEvidence({
+    campaignId: "fixture-directories",
+    jobIds: [JOB_ID],
+    resourceLimits: { maxDirectories: 1 },
+    ...paths,
+  }), /directory-count limit/u);
+  await assert.rejects(captureEvidence({
+    campaignId: "fixture-directory-entries",
+    jobIds: [JOB_ID],
+    resourceLimits: { maxDirectoryEntries: 1 },
+    ...paths,
+  }), /directory-entry limit/u);
+});
+
+test("manifest collection bounds fail before lineage expansion", () => {
+  const manifest = validManifest();
+  manifest.attempts.push({ ...manifest.attempts[0], attemptId: `${JOB_ID}:attempt:2`, attemptNumber: 2 });
+  const result = validateManifest(manifest, { maxManifestAttempts: 1 });
+  assert.equal(result.valid, false);
+  assert.deepEqual(result.errors, ["attempts exceeds the 1-item limit"]);
+
+  const references = validManifest();
+  references.jobs[0].attemptIds.push(`${JOB_ID}:attempt:2`);
+  const referenceResult = validateManifest(references, { maxReferencesPerEntry: 1 });
+  assert.equal(referenceResult.valid, false);
+  assert.match(referenceResult.errors.join("\n"), /attemptIds exceeds the 1-item limit/u);
+
+  const strings = validManifest();
+  assert.match(validateManifest(strings, { maxJsonStringLength: 4 }).errors.join("\n"), /JSON string limit exceeded/u);
+
+  const bytes = validManifest();
+  assert.match(validateManifest(bytes, { maxFileBytes: 4 }).errors.join("\n"), /file limit/u);
 });
 
 test("mutable wrappers with a stale attempt or foreign job remain unproven", async t => {
@@ -744,10 +1255,10 @@ test("mutable wrappers with a stale attempt or foreign job remain unproven", asy
   ]) {
     const root = await temporaryDirectory(t);
     const paths = await writeCaptureFixture(root, [{ attempts: [entry] }], { wrapperDocument });
-    const result = await captureEvidence({ campaignId: `fixture-${name}`, baseline: {}, jobIds: [JOB_ID], ...paths });
+    const result = await captureEvidence({ campaignId: `fixture-${name}`, jobIds: [JOB_ID], ...paths });
     assert.equal(result.manifest.attempts[0].wrapperObject, null);
     assert.ok(result.manifest.exceptions.some(exception => exception.exceptionId.endsWith(":alias-binding:unproven")));
-    const verification = await verifyManifest(result.manifest, { store: result.store });
+    const verification = await verifyTrustedManifest(result.manifest, { store: result.store });
     assert.equal(verification.gates["G-ALIAS"].pass, false);
     assert.equal(verification.integrityValid, false);
   }
@@ -757,26 +1268,52 @@ test("multiple journals bind the wrapper only to the globally latest attempt", a
   const root = await temporaryDirectory(t);
   const entry = attemptNumber => ({ attemptNumber, status: "completed", startedAt: `start-${attemptNumber}`, finishedAt: `finish-${attemptNumber}`, lastOutputSummary: `summary-${attemptNumber}` });
   const paths = await writeCaptureFixture(root, [{ attempts: [entry(1)] }, { attempts: [entry(2)] }]);
-  const result = await captureEvidence({ campaignId: "fixture-campaign", baseline: {}, jobIds: [JOB_ID], ...paths });
+  const result = await captureEvidence({ campaignId: "fixture-campaign", jobIds: [JOB_ID], ...paths });
   const [first, second] = result.manifest.attempts;
   assert.equal(first.wrapperObject, null);
   assert.equal(second.wrapperObject, result.manifest.jobs[0].currentAlias);
   assert.ok(result.manifest.exceptions.some(exception => exception.exceptionId === `${first.attemptId}:wrapper:missing`));
   assert.equal(result.manifest.exceptions.some(exception => exception.exceptionId === `${second.attemptId}:wrapper:missing`), false);
-  assert.equal((await verifyManifest(result.manifest, { store: result.store })).integrityValid, true);
+  assert.equal((await verifyTrustedManifest(result.manifest, { store: result.store })).integrityValid, true);
+});
+
+test("stored journals are the only authority for continuation lineage", async t => {
+  const root = await temporaryDirectory(t);
+  const entry = attemptNumber => ({
+    attemptNumber,
+    status: "completed",
+    startedAt: `start-${attemptNumber}`,
+    finishedAt: `finish-${attemptNumber}`,
+    ...(attemptNumber === 2 ? { continuationOf: 1 } : {}),
+  });
+  const paths = await writeCaptureFixture(root, [{ attempts: [entry(1), entry(2)] }]);
+  const result = await captureEvidence({ campaignId: "fixture-continuation", jobIds: [JOB_ID], ...paths });
+  assert.deepEqual(result.manifest.continuations, [{
+    attemptId: `${JOB_ID}:attempt:2`,
+    continuationOf: `${JOB_ID}:attempt:1`,
+  }]);
+  assert.equal((await verifyTrustedManifest(result.manifest, { store: result.store })).integrityValid, true);
+
+  const unbacked = structuredClone(result.manifest);
+  unbacked.attempts[1].continuationOf = null;
+  unbacked.continuations = [];
+  assert.equal(validateManifest(unbacked).valid, true);
+  const verification = await verifyTrustedManifest(unbacked, { store: result.store });
+  assert.equal(verification.integrityValid, false);
+  assert.match(verification.gates["G-CUSTODY"].failures.join("\n"), /continuationOf does not match stored attempt-journal bytes/u);
 });
 
 test("overlapping journals are rejected as ambiguous and missing current wrappers fail closed portably", async t => {
   const root = await temporaryDirectory(t);
   const entry = { attemptNumber: 1, status: "completed", startedAt: "start", finishedAt: "finish" };
   const ambiguous = await writeCaptureFixture(root, [{ attempts: [entry], journal: 1 }, { attempts: [entry], journal: 2 }]);
-  await assert.rejects(captureEvidence({ campaignId: "fixture-campaign", baseline: {}, jobIds: [JOB_ID], ...ambiguous }), /ambiguous attempt 1/u);
+  await assert.rejects(captureEvidence({ campaignId: "fixture-campaign", jobIds: [JOB_ID], ...ambiguous }), /ambiguous attempt 1/u);
 
   const missingRoot = await temporaryDirectory(t);
   const missing = await writeCaptureFixture(missingRoot, [{ attempts: [entry] }], { wrapper: false });
-  const result = await captureEvidence({ campaignId: "fixture-campaign", baseline: {}, jobIds: [JOB_ID], ...missing });
+  const result = await captureEvidence({ campaignId: "fixture-campaign", jobIds: [JOB_ID], ...missing });
   const wrapperExceptions = result.manifest.exceptions.filter(exception => exception.exceptionId.includes(":wrapper:missing"));
   assert.equal(wrapperExceptions.length, 2);
   assert.ok(wrapperExceptions.every(exception => !exception.detail.includes(missingRoot)));
-  assert.equal((await verifyManifest(result.manifest, { store: result.store })).integrityValid, false);
+  assert.equal((await verifyTrustedManifest(result.manifest, { store: result.store })).integrityValid, false);
 });

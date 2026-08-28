@@ -1,19 +1,25 @@
 import { createHash } from "node:crypto";
+import { execFile } from "node:child_process";
 import { constants } from "node:fs";
 import {
+  chmod,
   link,
   lstat,
   mkdir,
   open,
+  opendir,
   readdir,
   realpath,
   rm,
 } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { promisify } from "node:util";
 
 import { parseStrictJson } from "./strict-json.mjs";
 
 const SHA256 = /^[a-f0-9]{64}$/u;
+const GIT_OBJECT_ID = /^[a-f0-9]{40}$/u;
+const REPOSITORY_ID = /^[a-z0-9][a-z0-9-]*(?:\/[a-z0-9][a-z0-9._-]*)$/u;
 const JOB_ID = /^modres-w(?:[1-9]|10|11)-[a-z0-9][a-z0-9-]*-\d{8}-r\d+$/u;
 const CAMPAIGN_ID = /^[a-z0-9][a-z0-9.-]{0,127}$/u;
 const WAVE = /^W(?:[1-9]|10|11)$/u;
@@ -26,9 +32,22 @@ const CLASSIFICATIONS = new Set([
   "unsupported",
   "contradicted",
 ]);
+const POSITIVE_CLAIM_CLASSIFICATIONS = new Set(["observed", "inference", "decision-authority"]);
 const PRIMARY_SOURCE_EVIDENCE_KINDS = new Set(["decision-record", "primary-source"]);
 const EXECUTABLE_EVIDENCE_KINDS = new Set(["executable-test-result", "reproduction-result"]);
 const MANIFEST_FIELDS = new Set(["schemaVersion", "campaignId", "baseline", "objects", "jobs", "attempts", "continuations", "claims", "exceptions", "promotion"]);
+const BASELINE_FIELDS = new Set([
+  "derivation",
+  "repository",
+  "commit",
+  "tree",
+  "lockfileSha256",
+  "clean",
+  "platform",
+  "nodeVersion",
+  "pnpmVersion",
+  "capturedAt",
+]);
 const OBJECT_FIELDS = new Set(["sha256", "bytes", "mediaType", "kind", "sourcePath", "capturedAt"]);
 const JOB_FIELDS = new Set(["jobId", "wave", "jobConfigObject", "attemptIds", "currentAlias", "capturedObjects"]);
 const ATTEMPT_FIELDS = new Set(["attemptId", "jobId", "attemptNumber", "status", "predecessorAttemptId", "continuationOf", "startedAt", "finishedAt", "outputSummaryObject", "wrapperObject", "transcriptObjects"]);
@@ -69,6 +88,25 @@ const SECRET_PATTERNS = [
   { id: "authorization-header", expression: /\bAuthorization\s*:\s*(?:Bearer|Basic)\s+[A-Za-z0-9+/_=.-]{12,}/iu },
   { id: "credential-assignment", expression: /\b(?:api[_-]?key|(?:access|auth)[_-]?token|token|client[_-]?secret|password)\s*[=:]\s*["']?[A-Za-z0-9+/_=.-]{16,}/iu },
 ];
+const DEFAULT_RESOURCE_LIMITS = Object.freeze({
+  maxFileBytes: 8 * 1024 * 1024,
+  maxTotalBytes: 64 * 1024 * 1024,
+  maxFiles: 512,
+  maxDirectories: 256,
+  maxDirectoryEntries: 2_048,
+  maxDirectoryDepth: 12,
+  maxJsonDepth: 64,
+  maxJsonNodes: 200_000,
+  maxJsonStringLength: 65_536,
+  maxManifestObjects: 1_024,
+  maxManifestJobs: 256,
+  maxManifestAttempts: 1_024,
+  maxManifestContinuations: 1_024,
+  maxManifestClaims: 512,
+  maxManifestExceptions: 1_024,
+  maxReferencesPerEntry: 1_024,
+});
+const execFileAsync = promisify(execFile);
 
 function record(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -89,9 +127,52 @@ function portableSourcePath(value) {
   return safeSegments(filesystemPath) && (fragment === undefined || safeSegments(fragment));
 }
 
-function parseCustodyJson(text) {
+function assertJsonLimits(value, {
+  maxJsonDepth,
+  maxJsonNodes,
+  maxJsonStringLength,
+} = DEFAULT_RESOURCE_LIMITS) {
+  const pending = [{ value, depth: 0 }];
+  let nodes = 0;
+  while (pending.length > 0) {
+    const current = pending.pop();
+    nodes += 1;
+    const stringTooLong = typeof current.value === "string" && current.value.length > maxJsonStringLength;
+    if (nodes > maxJsonNodes || current.depth > maxJsonDepth || stringTooLong) {
+      const message = nodes > maxJsonNodes
+        ? "JSON node limit exceeded"
+        : current.depth > maxJsonDepth
+          ? "JSON depth limit exceeded"
+          : "JSON string limit exceeded";
+      const error = new SyntaxError(message);
+      error.code = "JSON_RESOURCE_LIMIT";
+      throw error;
+    }
+    if (current.value === null || typeof current.value !== "object") continue;
+    if (Array.isArray(current.value)) {
+      for (const child of current.value) pending.push({ value: child, depth: current.depth + 1 });
+      continue;
+    }
+    for (const [key, child] of Object.entries(current.value)) {
+      if (key.length > maxJsonStringLength) {
+        const error = new SyntaxError("JSON string limit exceeded");
+        error.code = "JSON_RESOURCE_LIMIT";
+        throw error;
+      }
+      pending.push({ value: child, depth: current.depth + 1 });
+    }
+  }
+}
+
+function parseCustodyJson(text, limits = DEFAULT_RESOURCE_LIMITS) {
   try {
-    return parseStrictJson(text);
+    const value = parseStrictJson(text, {
+      maxDepth: limits.maxJsonDepth,
+      maxNodes: limits.maxJsonNodes,
+      maxStringLength: limits.maxJsonStringLength,
+    });
+    assertJsonLimits(value, limits);
+    return value;
   } catch (error) {
     if (!String(error?.message).startsWith("DUPLICATE_JSON_KEY:")) throw error;
     const duplicate = new SyntaxError("input must not contain duplicate JSON keys");
@@ -105,10 +186,22 @@ function wrapperStatusMatches(wrapperStatus, attemptStatus) {
   return wrapperStatus === attemptStatus;
 }
 
-function proveWrapperBinding(bytes, { jobId, attemptNumber, status }) {
+function journalContinuationAttemptId(jobId, entry, journalLabel) {
+  const continuationOf = entry.continuationOf;
+  if (continuationOf === undefined || continuationOf === null) return null;
+  if (Number.isSafeInteger(continuationOf) && continuationOf > 0) {
+    return `${jobId}:attempt:${continuationOf}`;
+  }
+  if (typeof continuationOf === "string" && continuationOf.match(new RegExp(`^${jobId}:attempt:[1-9][0-9]*$`, "u"))) {
+    return continuationOf;
+  }
+  throw new Error(`attempt journal ${journalLabel} contains invalid continuation lineage`);
+}
+
+function proveWrapperBinding(bytes, { jobId, attemptNumber, status }, limits = DEFAULT_RESOURCE_LIMITS) {
   let wrapper;
   try {
-    wrapper = parseCustodyJson(bytes.toString("utf8"));
+    wrapper = parseCustodyJson(bytes.toString("utf8"), limits);
   } catch (error) {
     if (error?.code === "DUPLICATE_JSON_KEY") throw error;
     return { proven: false, reason: "the mutable wrapper is not valid unambiguous JSON" };
@@ -144,6 +237,27 @@ function normalizedPublisher(value) {
 function contained(root, candidate) {
   const relation = relative(root, candidate);
   return relation === "" || (!isAbsolute(relation) && relation !== ".." && !relation.startsWith(`..${sep}`));
+}
+
+function normalizeResourceLimits(overrides = {}) {
+  if (!record(overrides)) throw new Error("resourceLimits must be an object");
+  const limits = { ...DEFAULT_RESOURCE_LIMITS };
+  for (const [key, value] of Object.entries(overrides)) {
+    if (!Object.hasOwn(DEFAULT_RESOURCE_LIMITS, key)) throw new Error(`unknown resource limit: ${key}`);
+    if (!Number.isSafeInteger(value) || value < 1 || value > DEFAULT_RESOURCE_LIMITS[key]) {
+      throw new Error(`${key} must be a positive safe integer no greater than ${DEFAULT_RESOURCE_LIMITS[key]}`);
+    }
+    limits[key] = value;
+  }
+  return Object.freeze(limits);
+}
+
+function accountResource(budget, bytes, label, limits) {
+  budget.files += 1;
+  budget.bytes += bytes.length;
+  if (budget.files > limits.maxFiles) throw new Error(`capture file-count limit exceeded at ${label}`);
+  if (bytes.length > limits.maxFileBytes) throw new Error(`capture file-size limit exceeded at ${label}`);
+  if (budget.bytes > limits.maxTotalBytes) throw new Error(`capture aggregate byte limit exceeded at ${label}`);
 }
 
 export function sha256(bytes) {
@@ -215,6 +329,37 @@ function assertPermittedRoot(path, label) {
   return normalized;
 }
 
+async function canonicalCandidate(path) {
+  let existing = resolve(path);
+  const missing = [];
+  while (true) {
+    try {
+      const canonical = await realpath(existing);
+      return resolve(canonical, ...missing.reverse());
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+      const parent = dirname(existing);
+      if (parent === existing) throw error;
+      missing.push(existing.slice(parent.length + (parent.endsWith(sep) ? 0 : 1)));
+      existing = parent;
+    }
+  }
+}
+
+async function assertCanonicalPermittedRoot(path, label) {
+  const normalized = assertPermittedRoot(path, label);
+  const canonical = await canonicalCandidate(normalized);
+  assertPermittedRoot(canonical, label);
+  const configuredCodexHome = process.env.CODEX_HOME;
+  if (configuredCodexHome !== undefined) {
+    const canonicalCodexHome = await canonicalCandidate(configuredCodexHome);
+    if (contained(canonicalCodexHome, canonical)) {
+      throw new Error(`${label} must not target an auth root or CODEX_HOME`);
+    }
+  }
+  return normalized;
+}
+
 export function assertSafeEvidencePath(path, label = "evidence path") {
   return assertPermittedRoot(path, label);
 }
@@ -232,12 +377,13 @@ async function assertDirectoryChain(root, directory) {
       metadata = await lstat(current);
     } catch (error) {
       if (error?.code !== "ENOENT") throw error;
-      await mkdir(current).catch(createError => {
+      await mkdir(current, { mode: 0o700 }).catch(createError => {
         if (createError?.code !== "EEXIST") throw createError;
       });
       metadata = await lstat(current);
     }
     if (metadata.isSymbolicLink() || !metadata.isDirectory()) throw new Error(`unsafe directory component: ${current}`);
+    if (process.platform !== "win32") await chmod(current, 0o700);
   }
 }
 
@@ -262,8 +408,11 @@ async function syncDirectory(directory) {
   }
 }
 
-async function secureRead(root, path) {
-  const absoluteRoot = resolve(root);
+async function secureRead(root, path, {
+  maxFileBytes = DEFAULT_RESOURCE_LIMITS.maxFileBytes,
+  requireStableCtime = true,
+} = {}) {
+  const absoluteRoot = await assertCanonicalPermittedRoot(root, "source root");
   const absolutePath = resolve(path);
   if (!contained(absoluteRoot, absolutePath)) throw new Error(`source path escapes configured root: ${path}`);
   const rootMetadata = await lstat(absoluteRoot);
@@ -273,15 +422,205 @@ async function secureRead(root, path) {
   if (!contained(canonicalRoot, canonicalParent)) throw new Error(`source path traverses a symbolic link: ${path}`);
   const before = await lstat(absolutePath);
   if (before.isSymbolicLink() || !before.isFile()) throw new Error(`source must be a regular non-symlink file: ${path}`);
+  if (before.size > maxFileBytes) throw new Error(`source exceeds byte limit: ${path}`);
   const handle = await open(absolutePath, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
   try {
     const after = await handle.stat();
     if (!after.isFile() || before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size) {
       throw new Error(`source changed while opening: ${path}`);
     }
-    return await handle.readFile();
+    const chunks = [];
+    let totalBytes = 0;
+    while (totalBytes <= maxFileBytes) {
+      const remaining = maxFileBytes + 1 - totalBytes;
+      const chunk = Buffer.allocUnsafe(Math.min(64 * 1024, remaining));
+      const { bytesRead } = await handle.read(chunk, 0, chunk.length, totalBytes);
+      if (bytesRead === 0) break;
+      chunks.push(chunk.subarray(0, bytesRead));
+      totalBytes += bytesRead;
+    }
+    if (totalBytes > maxFileBytes) throw new Error(`source exceeds byte limit: ${path}`);
+    const final = await handle.stat();
+    if (after.dev !== final.dev || after.ino !== final.ino || after.size !== final.size
+      || after.mtimeMs !== final.mtimeMs || (requireStableCtime && after.ctimeMs !== final.ctimeMs)) {
+      throw new Error(`source changed while reading: ${path}`);
+    }
+    return Buffer.concat(chunks, totalBytes);
   } finally {
     await handle.close();
+  }
+}
+
+async function boundedObservation(executable, arguments_, label, limits, cwd, environment) {
+  try {
+    const { stdout } = await execFileAsync(executable, arguments_, {
+      cwd,
+      encoding: "utf8",
+      maxBuffer: limits.maxFileBytes,
+      windowsHide: true,
+      ...(environment === undefined ? {} : { env: environment }),
+    });
+    if (Buffer.byteLength(stdout, "utf8") > limits.maxFileBytes) {
+      throw new Error(`${label} observation exceeds byte limit`);
+    }
+    return stdout;
+  } catch (error) {
+    if (String(error?.message).includes("maxBuffer")) {
+      throw new Error(`${label} observation exceeds byte limit`);
+    }
+    throw new Error(`${label} observation failed`, { cause: error });
+  }
+}
+
+async function gitObservation(repositoryRoot, arguments_, label, limits) {
+  const environment = Object.fromEntries(Object.entries({
+    PATH: process.env.PATH,
+    SystemRoot: process.env.SystemRoot,
+    WINDIR: process.env.WINDIR,
+    COMSPEC: process.env.COMSPEC,
+    PATHEXT: process.env.PATHEXT,
+    TMPDIR: process.env.TMPDIR,
+    TMP: process.env.TMP,
+    TEMP: process.env.TEMP,
+    HOME: process.env.HOME,
+    GIT_CONFIG_NOSYSTEM: "1",
+    GIT_CONFIG_GLOBAL: process.platform === "win32" ? "NUL" : "/dev/null",
+    GIT_NO_REPLACE_OBJECTS: "1",
+    GIT_OPTIONAL_LOCKS: "0",
+    GIT_TERMINAL_PROMPT: "0",
+    LC_ALL: "C",
+  }).filter(([, value]) => value !== undefined));
+  return boundedObservation(
+    "git",
+    ["--no-replace-objects", "-c", "core.fsmonitor=false", "-C", repositoryRoot, ...arguments_],
+    label,
+    limits,
+    repositoryRoot,
+    environment,
+  );
+}
+
+function repositoryIdentity(packageManifest) {
+  const repository = typeof packageManifest?.repository === "string"
+    ? packageManifest.repository
+    : packageManifest?.repository?.url;
+  if (typeof repository !== "string") throw new Error("repository package manifest must declare its GitHub repository URL");
+  const normalized = repository.replace(/\/$/u, "").replace(/\.git$/u, "");
+  const match = normalized.match(/github\.com[/:]([^/]+\/[^/]+)$/u);
+  if (match === null || !REPOSITORY_ID.test(match[1])) {
+    throw new Error("repository package manifest must identify a lowercase owner/repository");
+  }
+  return match[1];
+}
+
+async function pnpmPackageVersion(entrypoint, limits) {
+  try {
+    const executable = await realpath(entrypoint);
+    const packageManifestPath = resolve(dirname(executable), "..", "package.json");
+    const packageBytes = await secureRead(dirname(packageManifestPath), packageManifestPath, limits);
+    const packageManifest = parseCustodyJson(packageBytes.toString("utf8"), limits);
+    if (!record(packageManifest) || packageManifest.name !== "pnpm") return undefined;
+    if (typeof packageManifest.version !== "string" || packageManifest.version.length === 0) {
+      throw new Error("installed pnpm package must declare its version");
+    }
+    return packageManifest.version;
+  } catch (error) {
+    if (error?.code === "ENOENT") return undefined;
+    throw error;
+  }
+}
+
+async function observedPnpmVersion(limits, repositoryRoot) {
+  const entrypoints = [
+    process.env.npm_execpath,
+    join(dirname(process.execPath), process.platform === "win32" ? "pnpm.cmd" : "pnpm"),
+  ].filter(value => typeof value === "string" && value.length > 0);
+  for (const entrypoint of entrypoints) {
+    const version = await pnpmPackageVersion(entrypoint, limits);
+    if (version !== undefined) return version;
+  }
+  const environment = Object.fromEntries(Object.entries({
+    PATH: process.env.PATH,
+    SystemRoot: process.env.SystemRoot,
+    WINDIR: process.env.WINDIR,
+    COMSPEC: process.env.COMSPEC,
+    PATHEXT: process.env.PATHEXT,
+    TMPDIR: process.env.TMPDIR,
+    TMP: process.env.TMP,
+    TEMP: process.env.TEMP,
+    HOME: process.env.HOME,
+    COREPACK_HOME: process.env.COREPACK_HOME,
+  }).filter(([, value]) => value !== undefined));
+  const version = (await boundedObservation(
+    process.platform === "win32" ? "pnpm.cmd" : "pnpm",
+    ["--version"],
+    "pnpm version",
+    limits,
+    repositoryRoot,
+    environment,
+  )).trim();
+  if (!/^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$/u.test(version)) {
+    throw new Error("active pnpm must report one exact version");
+  }
+  return version;
+}
+
+async function deriveBaseline(repositoryRoot, capturedAt, limits, budget) {
+  const configuredRoot = await assertCanonicalPermittedRoot(repositoryRoot, "repository root");
+  const canonicalRoot = await realpath(configuredRoot);
+  const metadata = await lstat(canonicalRoot);
+  if (metadata.isSymbolicLink() || !metadata.isDirectory()) throw new Error("repository root must be a real directory");
+  const observedTopLevel = (await gitObservation(canonicalRoot, ["rev-parse", "--show-toplevel"], "Git top-level", limits)).trim();
+  if (await realpath(observedTopLevel) !== canonicalRoot) {
+    throw new Error("repositoryRoot must be the canonical Git worktree root");
+  }
+  await gitObservation(canonicalRoot, ["ls-files", "--error-unmatch", "--", "package.json", "pnpm-lock.yaml"], "tracked baseline files", limits);
+  const packageBytes = await secureRead(canonicalRoot, join(canonicalRoot, "package.json"), limits);
+  const lockfileBytes = await secureRead(canonicalRoot, join(canonicalRoot, "pnpm-lock.yaml"), limits);
+  if (budget !== undefined) {
+    accountResource(budget, packageBytes, "repository package.json", limits);
+    accountResource(budget, lockfileBytes, "repository pnpm-lock.yaml", limits);
+  }
+  const packageManifest = parseCustodyJson(packageBytes.toString("utf8"), limits);
+  if (!record(packageManifest)) throw new Error("repository package.json must contain a JSON object");
+  const packageManager = packageManifest.packageManager;
+  const packageManagerMatch = typeof packageManager === "string" ? packageManager.match(/^pnpm@(.+)$/u) : null;
+  if (packageManagerMatch === null || packageManagerMatch[1].length === 0) {
+    throw new Error("repository package.json must pin pnpm in packageManager");
+  }
+  const [commit, tree, status, pnpmVersion] = await Promise.all([
+    gitObservation(canonicalRoot, ["rev-parse", "--verify", "HEAD^{commit}"], "Git commit", limits),
+    gitObservation(canonicalRoot, ["rev-parse", "--verify", "HEAD^{tree}"], "Git tree", limits),
+    gitObservation(canonicalRoot, ["status", "--porcelain=v1", "--untracked-files=all", "--ignore-submodules=none"], "Git status", limits),
+    observedPnpmVersion(limits, canonicalRoot),
+  ]);
+  if (status.length !== 0) throw new Error("repository root must be clean at capture");
+  const pinnedPnpmVersion = packageManagerMatch[1].split("+", 1)[0];
+  if (pnpmVersion !== pinnedPnpmVersion) {
+    throw new Error(`active pnpm ${pnpmVersion} does not match repository pin ${pinnedPnpmVersion}`);
+  }
+  const baseline = {
+    derivation: "canonical-repository-observation-v1",
+    repository: repositoryIdentity(packageManifest),
+    commit: commit.trim(),
+    tree: tree.trim(),
+    lockfileSha256: sha256(lockfileBytes),
+    clean: true,
+    platform: `${process.platform}/${process.arch}`,
+    nodeVersion: process.versions.node,
+    pnpmVersion,
+    capturedAt,
+  };
+  if (!GIT_OBJECT_ID.test(baseline.commit) || !GIT_OBJECT_ID.test(baseline.tree)) {
+    throw new Error("repository must use 40-character Git object IDs for custody V2");
+  }
+  return { baseline, repositoryRoot: canonicalRoot };
+}
+
+async function assertBaselineRemainsCurrent(repositoryRoot, baseline, limits) {
+  const current = await deriveBaseline(repositoryRoot, baseline.capturedAt, limits);
+  if (deterministicJson(current.baseline) !== deterministicJson(baseline)) {
+    throw new Error("repository baseline changed during capture");
   }
 }
 
@@ -316,7 +655,10 @@ export class ObjectStore {
   }
 
   async initialize() {
-    await mkdir(this.root, { recursive: true });
+    await assertCanonicalPermittedRoot(this.root, "object store");
+    await mkdir(this.root, { recursive: true, mode: 0o700 });
+    if (process.platform !== "win32") await chmod(this.root, 0o700);
+    await assertCanonicalPermittedRoot(this.root, "object store");
     await assertDirectoryChain(this.root, join(this.root, "objects", "sha256"));
   }
 
@@ -343,7 +685,10 @@ export class ObjectStore {
 
   async verify(digest, bytes) {
     const path = this.objectPath(digest);
-    const stored = await secureRead(this.root, path);
+    // Removing a concurrent publisher's temporary hard link may change ctime
+    // for this inode. The digest and exact-byte comparison below are the
+    // content-addressed object's integrity authority.
+    const stored = await secureRead(this.root, path, { requireStableCtime: false });
     if (stored.length !== bytes.length || sha256(stored) !== digest || !stored.equals(bytes)) {
       throw new Error(`content-address collision or corruption at ${path}`);
     }
@@ -363,7 +708,7 @@ export class ObjectStore {
       if (error?.code !== "ENOENT") throw error;
     }
     const temporary = join(directory, temporaryName(digest));
-    const handle = await open(temporary, "wx", 0o444);
+    const handle = await open(temporary, "wx", 0o400);
     let linked = false;
     try {
       await handle.writeFile(bytes);
@@ -423,9 +768,13 @@ function arrayOrEmpty(value) {
   return Array.isArray(value) ? value : [];
 }
 
-function validateUniqueArray(value, path, errors, validateEntry) {
+function validateUniqueArray(value, path, errors, validateEntry, maxItems = DEFAULT_RESOURCE_LIMITS.maxReferencesPerEntry) {
   requiredArray(value, path, errors);
   if (!Array.isArray(value)) return;
+  if (value.length > maxItems) {
+    errors.push(`${path} exceeds the ${maxItems}-item limit`);
+    return;
+  }
   const seen = new Set();
   for (const entry of value) {
     validateEntry?.(entry);
@@ -434,14 +783,90 @@ function validateUniqueArray(value, path, errors, validateEntry) {
   }
 }
 
-export function validateManifest(manifest) {
+function manifestCollectionLimitErrors(manifest, limits) {
+  const errors = [];
+  const topLevel = [
+    ["objects", Math.min(limits.maxManifestObjects, limits.maxFiles)],
+    ["jobs", limits.maxManifestJobs],
+    ["attempts", limits.maxManifestAttempts],
+    ["continuations", limits.maxManifestContinuations],
+    ["claims", limits.maxManifestClaims],
+    ["exceptions", limits.maxManifestExceptions],
+  ];
+  for (const [field, maximum] of topLevel) {
+    const value = manifest?.[field];
+    if (Array.isArray(value) && value.length > maximum) errors.push(`${field} exceeds the ${maximum}-item limit`);
+  }
+  let totalObjectBytes = 0;
+  for (const object of arrayOrEmpty(manifest?.objects)) {
+    if (!Number.isSafeInteger(object?.bytes) || object.bytes < 0) continue;
+    if (object.bytes > limits.maxFileBytes) errors.push(`objects contains an entry exceeding the ${limits.maxFileBytes}-byte file limit`);
+    totalObjectBytes += object.bytes;
+    if (!Number.isSafeInteger(totalObjectBytes) || totalObjectBytes > limits.maxTotalBytes) {
+      errors.push(`objects exceeds the ${limits.maxTotalBytes}-byte aggregate limit`);
+      break;
+    }
+  }
+  if (errors.length > 0) return errors;
+  for (const [index, job] of arrayOrEmpty(manifest?.jobs).entries()) {
+    for (const field of ["attemptIds", "capturedObjects"]) {
+      if (Array.isArray(job?.[field]) && job[field].length > limits.maxReferencesPerEntry) {
+        errors.push(`jobs[${index}].${field} exceeds the ${limits.maxReferencesPerEntry}-item limit`);
+      }
+    }
+  }
+  for (const [index, attempt] of arrayOrEmpty(manifest?.attempts).entries()) {
+    if (Array.isArray(attempt?.transcriptObjects) && attempt.transcriptObjects.length > limits.maxReferencesPerEntry) {
+      errors.push(`attempts[${index}].transcriptObjects exceeds the ${limits.maxReferencesPerEntry}-item limit`);
+    }
+  }
+  for (const [index, claim] of arrayOrEmpty(manifest?.claims).entries()) {
+    for (const field of [
+      "primarySourceObjects",
+      "executableEvidenceObjects",
+      "publisherIndependence",
+      "executableEvidenceAttestations",
+    ]) {
+      if (Array.isArray(claim?.[field]) && claim[field].length > limits.maxReferencesPerEntry) {
+        errors.push(`claims[${index}].${field} exceeds the ${limits.maxReferencesPerEntry}-item limit`);
+      }
+    }
+  }
+  return errors;
+}
+
+export function validateManifest(manifest, resourceLimits = {}) {
+  const limits = normalizeResourceLimits(resourceLimits);
   const errors = [];
   if (!record(manifest)) return { valid: false, errors: ["manifest must be an object"] };
+  try {
+    assertJsonLimits(manifest, limits);
+  } catch (error) {
+    return { valid: false, errors: [error.message] };
+  }
+  const collectionErrors = manifestCollectionLimitErrors(manifest, limits);
+  if (collectionErrors.length > 0) return { valid: false, errors: collectionErrors };
   rejectAdditionalProperties(manifest, MANIFEST_FIELDS, "manifest", errors);
-  if (manifest.schemaVersion !== 1) errors.push("schemaVersion must be 1");
+  if (manifest.schemaVersion === 1) errors.push("schemaVersion 1 is unsupported; schemaVersion 2 is required");
+  else if (manifest.schemaVersion !== 2) errors.push("schemaVersion must be 2");
   requiredString(manifest.campaignId, "campaignId", errors);
   if (!CAMPAIGN_ID.test(manifest.campaignId ?? "")) errors.push("campaignId must be a safe lowercase path component");
   if (!record(manifest.baseline)) errors.push("baseline must be an object");
+  else {
+    rejectAdditionalProperties(manifest.baseline, BASELINE_FIELDS, "baseline", errors);
+    for (const field of ["derivation", "repository", "commit", "tree", "lockfileSha256", "platform", "nodeVersion", "pnpmVersion", "capturedAt"]) {
+      requiredString(manifest.baseline[field], `baseline.${field}`, errors);
+    }
+    if (manifest.baseline.derivation !== "canonical-repository-observation-v1") {
+      errors.push("baseline.derivation must identify the V2 canonical repository observation");
+    }
+    if (!REPOSITORY_ID.test(manifest.baseline.repository ?? "")) errors.push("baseline.repository must be an owner/repository identifier");
+    for (const field of ["commit", "tree"]) {
+      if (!GIT_OBJECT_ID.test(manifest.baseline[field] ?? "")) errors.push(`baseline.${field} must be a lowercase 40-character Git object ID`);
+    }
+    if (!SHA256.test(manifest.baseline.lockfileSha256 ?? "")) errors.push("baseline.lockfileSha256 must be lowercase SHA-256");
+    if (manifest.baseline.clean !== true) errors.push("baseline.clean must be true");
+  }
   for (const field of ["objects", "jobs", "attempts", "continuations", "claims", "exceptions"]) {
     requiredArray(manifest[field], field, errors);
   }
@@ -466,14 +891,14 @@ export function validateManifest(manifest) {
     if (!record(job)) { errors.push(`${path} must be an object`); continue; }
     rejectAdditionalProperties(job, JOB_FIELDS, path, errors);
     for (const field of ["jobId", "wave"]) requiredString(job[field], `${path}.${field}`, errors);
-    validateUniqueArray(job.attemptIds, `${path}.attemptIds`, errors, attemptId => requiredString(attemptId, `${path}.attemptIds[]`, errors));
+    validateUniqueArray(job.attemptIds, `${path}.attemptIds`, errors, attemptId => requiredString(attemptId, `${path}.attemptIds[]`, errors), limits.maxReferencesPerEntry);
     if (!JOB_ID.test(job.jobId ?? "")) errors.push(`${path}.jobId is invalid`);
     if (!WAVE.test(job.wave ?? "")) errors.push(`${path}.wave is invalid`);
     if (job.jobConfigObject !== null && !SHA256.test(job.jobConfigObject ?? "")) errors.push(`${path}.jobConfigObject must be lowercase SHA-256 or null`);
     if (job.currentAlias !== null && !SHA256.test(job.currentAlias ?? "")) errors.push(`${path}.currentAlias must be lowercase SHA-256 or null`);
     validateUniqueArray(job.capturedObjects, `${path}.capturedObjects`, errors, digest => {
       if (!SHA256.test(digest ?? "")) errors.push(`${path}.capturedObjects must contain lowercase SHA-256`);
-    });
+    }, limits.maxReferencesPerEntry);
     if (jobs.has(job.jobId)) errors.push(`${path}.jobId is duplicated`);
     jobs.set(job.jobId, job);
   }
@@ -493,21 +918,79 @@ export function validateManifest(manifest) {
   }
 
   const attempts = new Map();
+  const attemptsByJob = new Map();
   for (const [index, attempt] of arrayOrEmpty(manifest.attempts).entries()) {
     const path = `attempts[${index}]`;
     if (!record(attempt)) { errors.push(`${path} must be an object`); continue; }
     rejectAdditionalProperties(attempt, ATTEMPT_FIELDS, path, errors);
     for (const field of ["attemptId", "jobId", "status", "startedAt", "finishedAt"]) requiredString(attempt[field], `${path}.${field}`, errors);
+    if (!JOB_ID.test(attempt.jobId ?? "")) errors.push(`${path}.jobId is invalid`);
     for (const field of ["outputSummaryObject", "wrapperObject"]) if (attempt[field] !== null && !SHA256.test(attempt[field] ?? "")) errors.push(`${path}.${field} must be lowercase SHA-256 or null`);
     validateUniqueArray(attempt.transcriptObjects, `${path}.transcriptObjects`, errors, digest => {
       if (!SHA256.test(digest ?? "")) errors.push(`${path}.transcriptObjects must contain lowercase SHA-256`);
-    });
+    }, limits.maxReferencesPerEntry);
+    if (Array.isArray(attempt.transcriptObjects) && attempt.transcriptObjects.length !== 1) {
+      errors.push(`${path}.transcriptObjects must contain exactly one backing attempt journal`);
+    }
     if (!Number.isSafeInteger(attempt.attemptNumber) || attempt.attemptNumber < 1) errors.push(`${path}.attemptNumber must be a positive safe integer`);
+    if (typeof attempt.jobId === "string" && Number.isSafeInteger(attempt.attemptNumber)
+      && attempt.attemptId !== `${attempt.jobId}:attempt:${attempt.attemptNumber}`) {
+      errors.push(`${path}.attemptId must be derived from jobId and attemptNumber`);
+    }
     if (!TERMINAL.has(attempt.status)) errors.push(`${path}.status must be terminal`);
     if (attempt.predecessorAttemptId !== null && typeof attempt.predecessorAttemptId !== "string") errors.push(`${path}.predecessorAttemptId must be a string or null`);
     if (attempt.continuationOf !== null && typeof attempt.continuationOf !== "string") errors.push(`${path}.continuationOf must be a string or null`);
     if (attempts.has(attempt.attemptId)) errors.push(`${path}.attemptId is duplicated`);
     attempts.set(attempt.attemptId, attempt);
+    if (typeof attempt.jobId === "string") {
+      const jobAttempts = attemptsByJob.get(attempt.jobId) ?? [];
+      jobAttempts.push(attempt);
+      attemptsByJob.set(attempt.jobId, jobAttempts);
+    }
+  }
+  const attemptPositions = new Map();
+  for (const jobAttempts of attemptsByJob.values()) {
+    jobAttempts.sort((left, right) => left.attemptNumber - right.attemptNumber);
+    for (const [position, attempt] of jobAttempts.entries()) attemptPositions.set(attempt.attemptId, position);
+  }
+  const objectRoles = new Map();
+  function bindObjectRole(digest, expectedKind, expectedPath, role, path) {
+    if (digest === null || digest === undefined) return;
+    const object = objects.get(digest);
+    if (object === undefined) return;
+    if (object.kind !== expectedKind) errors.push(`${path} must reference ${expectedKind} bytes`);
+    const pathMatches = expectedPath instanceof RegExp
+      ? expectedPath.test(object.sourcePath)
+      : object.sourcePath === expectedPath;
+    if (!pathMatches) errors.push(`${path} has incompatible sourcePath provenance`);
+    const prior = objectRoles.get(digest);
+    if (prior !== undefined && prior !== role) errors.push(`${path} reuses one object across incompatible custody roles`);
+    objectRoles.set(digest, role);
+  }
+  for (const [index, job] of arrayOrEmpty(manifest.jobs).entries()) {
+    if (!record(job) || typeof job.jobId !== "string") continue;
+    bindObjectRole(job.jobConfigObject, "jobConfig", `job-config/${job.jobId}/job.json`, `job:${job.jobId}:config`, `jobs[${index}].jobConfigObject`);
+    bindObjectRole(job.currentAlias, "worker-report", `runtime/${job.jobId}/${job.jobId}.latest-result.json`, `job:${job.jobId}:alias`, `jobs[${index}].currentAlias`);
+  }
+  for (const [index, attempt] of arrayOrEmpty(manifest.attempts).entries()) {
+    if (!record(attempt) || typeof attempt.jobId !== "string") continue;
+    bindObjectRole(attempt.wrapperObject, "worker-report", `runtime/${attempt.jobId}/${attempt.jobId}.latest-result.json`, `job:${attempt.jobId}:alias`, `attempts[${index}].wrapperObject`);
+    bindObjectRole(
+      attempt.outputSummaryObject,
+      "decoded-output-summary",
+      new RegExp(`^runtime/${attempt.jobId}/state/attempt-journal/.+#attempts/${attempt.attemptNumber}/lastOutputSummary$`, "u"),
+      `attempt:${attempt.attemptId}:summary`,
+      `attempts[${index}].outputSummaryObject`,
+    );
+    for (const digest of arrayOrEmpty(attempt.transcriptObjects)) {
+      bindObjectRole(
+        digest,
+        "attempt-journal",
+        new RegExp(`^runtime/${attempt.jobId}/state/attempt-journal/`, "u"),
+        `job:${attempt.jobId}:journal`,
+        `attempts[${index}].transcriptObjects`,
+      );
+    }
   }
   const attemptNumbersByJob = new Set();
   for (const [index, attempt] of arrayOrEmpty(manifest.attempts).entries()) {
@@ -529,8 +1012,16 @@ export function validateManifest(manifest) {
   for (const [index, attempt] of arrayOrEmpty(manifest.attempts).entries()) {
     if (!record(attempt)) continue;
     if (memberships.get(attempt.attemptId) !== 1) errors.push(`attempts[${index}] must belong to exactly one matching job`);
-    const jobAttempts = arrayOrEmpty(manifest.attempts).filter(candidate => record(candidate) && candidate.jobId === attempt.jobId).sort((a, b) => a.attemptNumber - b.attemptNumber);
-    const position = jobAttempts.findIndex(candidate => candidate.attemptId === attempt.attemptId);
+    const jobAttempts = attemptsByJob.get(attempt.jobId) ?? [];
+    const position = attemptPositions.get(attempt.attemptId) ?? -1;
+    const latestAttempt = jobAttempts.at(-1);
+    const owningJob = jobs.get(attempt.jobId);
+    if (attempt.wrapperObject !== null && latestAttempt?.attemptId !== attempt.attemptId) {
+      errors.push(`attempts[${index}].wrapperObject is allowed only for the latest attempt`);
+    }
+    if (attempt.wrapperObject !== null && owningJob?.currentAlias !== attempt.wrapperObject) {
+      errors.push(`attempts[${index}].wrapperObject must equal its job currentAlias`);
+    }
     const expectedPredecessor = position > 0 ? jobAttempts[position - 1].attemptId : null;
     if (attempt.predecessorAttemptId !== expectedPredecessor) errors.push(`attempts[${index}].predecessorAttemptId must identify the adjacent prior attempt`);
     if (attempt.predecessorAttemptId !== null) {
@@ -564,16 +1055,23 @@ export function validateManifest(manifest) {
       errors.push(`continuations[${index}] must match the attempt continuationOf field`);
     }
   }
+  const checkedContinuationAttempts = new Set();
   for (const attempt of arrayOrEmpty(manifest.attempts)) {
     if (!record(attempt)) continue;
-    const seen = new Set();
+    const path = [];
+    const pathPositions = new Map();
     let current = attempt;
-    while (current?.continuationOf !== null) {
-      if (seen.has(current.attemptId)) { errors.push(`${attempt.attemptId} has cyclic continuation lineage`); break; }
-      seen.add(current.attemptId);
-      current = attempts.get(current.continuationOf);
-      if (current === undefined) break;
+    while (current !== undefined && !checkedContinuationAttempts.has(current.attemptId)) {
+      const cycleStart = pathPositions.get(current.attemptId);
+      if (cycleStart !== undefined) {
+        errors.push(`${attempt.attemptId} has cyclic continuation lineage`);
+        break;
+      }
+      pathPositions.set(current.attemptId, path.length);
+      path.push(current.attemptId);
+      current = current.continuationOf === null ? undefined : attempts.get(current.continuationOf);
     }
+    for (const attemptId of path) checkedContinuationAttempts.add(attemptId);
     if (attempt.continuationOf !== null && !continuationAttempts.has(attempt.attemptId)) errors.push(`${attempt.attemptId} continuation is missing its index record`);
   }
   for (const [index, claim] of arrayOrEmpty(manifest.claims).entries()) {
@@ -584,7 +1082,7 @@ export function validateManifest(manifest) {
     for (const field of ["primarySourceObjects", "executableEvidenceObjects"]) {
       validateUniqueArray(claim[field], `${path}.${field}`, errors, digest => {
         if (!SHA256.test(digest ?? "")) errors.push(`${path}.${field} must contain lowercase SHA-256`);
-      });
+      }, limits.maxReferencesPerEntry);
     }
     requiredArray(claim.publisherIndependence, `${path}.publisherIndependence`, errors);
     const boundSources = new Set();
@@ -675,15 +1173,139 @@ function referencedDigests(manifest) {
   return values;
 }
 
-async function defaultPathExists(path) {
-  const filesystemPath = path.split("#", 1)[0];
+async function defaultLiveSourceVerifier(sourceRoot, object, limits) {
+  const [filesystemPath, fragment] = object.sourcePath.split("#", 2);
+  if (fragment !== undefined) return false;
   try {
-    const metadata = await lstat(filesystemPath);
-    return !metadata.isSymbolicLink() && metadata.isFile();
+    const bytes = await secureRead(sourceRoot, join(sourceRoot, filesystemPath), limits);
+    return bytes.length === object.bytes && sha256(bytes) === object.sha256;
   } catch (error) {
     if (error?.code === "ENOENT") return false;
     throw error;
   }
+}
+
+function manifestIdentityFailures(manifest, manifestBytes, expectedManifestSha256, limits) {
+  const failures = [];
+  if (!Buffer.isBuffer(manifestBytes) || !SHA256.test(expectedManifestSha256 ?? "")) {
+    return ["manifest verification requires exact bytes and a trusted expected SHA-256"];
+  }
+  if (manifestBytes.length > limits.maxFileBytes) return ["manifest bytes exceed the verification byte limit"];
+  const actual = sha256(manifestBytes);
+  if (actual !== expectedManifestSha256) failures.push("manifest bytes do not match the trusted expected SHA-256");
+  try {
+    const parsed = parseCustodyJson(manifestBytes.toString("utf8"), limits);
+    if (deterministicJson(parsed) !== deterministicJson(manifest)) {
+      failures.push("verified manifest bytes do not encode the supplied manifest value");
+    }
+  } catch {
+    failures.push("verified manifest bytes are not valid bounded custody JSON");
+  }
+  return failures;
+}
+
+function attemptJournalEntry(jobId, entry, journalLabel) {
+  if (!record(entry) || !Number.isSafeInteger(entry.attemptNumber) || entry.attemptNumber < 1) {
+    throw new Error(`attempt journal ${journalLabel} contains an invalid attempt number`);
+  }
+  if (!TERMINAL.has(entry.status)) throw new Error(`attempt journal ${journalLabel} contains a non-terminal attempt status`);
+  if (typeof entry.startedAt !== "string" || entry.startedAt.length === 0
+    || typeof entry.finishedAt !== "string" || entry.finishedAt.length === 0) {
+    throw new Error(`attempt journal ${journalLabel} contains invalid attempt timestamps`);
+  }
+  if (entry.lastOutputSummary !== undefined && typeof entry.lastOutputSummary !== "string") {
+    throw new Error(`attempt journal ${journalLabel} contains a non-string output summary`);
+  }
+  return {
+    attemptId: `${jobId}:attempt:${entry.attemptNumber}`,
+    attemptNumber: entry.attemptNumber,
+    status: entry.status,
+    startedAt: entry.startedAt,
+    finishedAt: entry.finishedAt,
+    continuationOf: journalContinuationAttemptId(jobId, entry, journalLabel),
+    outputSummary: entry.lastOutputSummary,
+  };
+}
+
+async function attemptJournalFailures(manifest, objectMap, storedObjectBytes, limits) {
+  const failures = [];
+  const journalEntries = new Map();
+  for (const object of manifest.objects) {
+    if (object.kind !== "attempt-journal") continue;
+    const jobId = provenanceJobId(object.sourcePath);
+    if (jobId === undefined) {
+      failures.push(`attempt journal ${object.sha256} has no job-scoped provenance`);
+      continue;
+    }
+    const bytes = storedObjectBytes.get(object.sha256);
+    if (bytes === undefined) continue;
+    let journal;
+    try {
+      journal = parseCustodyJson(bytes.toString("utf8"), limits);
+    } catch (error) {
+      failures.push(`attempt journal ${object.sha256} is not valid bounded JSON: ${error.message}`);
+      continue;
+    }
+    if (!record(journal) || !Array.isArray(journal.attempts)) {
+      failures.push(`attempt journal ${object.sha256} must contain an attempts array`);
+      continue;
+    }
+    if (journal.attempts.length > limits.maxManifestAttempts) {
+      failures.push(`attempt journal ${object.sha256} exceeds the attempt limit`);
+      continue;
+    }
+    for (const entry of journal.attempts) {
+      let normalized;
+      try {
+        normalized = attemptJournalEntry(jobId, entry, object.sourcePath);
+      } catch (error) {
+        failures.push(error.message);
+        continue;
+      }
+      if (journalEntries.has(normalized.attemptId)) {
+        failures.push(`${normalized.attemptId} appears in multiple stored journal entries`);
+        continue;
+      }
+      journalEntries.set(normalized.attemptId, { ...normalized, journalObject: object });
+      if (journalEntries.size > limits.maxManifestAttempts) {
+        failures.push("stored attempt journals exceed the manifest attempt limit");
+        return failures;
+      }
+    }
+  }
+
+  const attempts = new Map(manifest.attempts.map(attempt => [attempt.attemptId, attempt]));
+  for (const attemptId of journalEntries.keys()) {
+    if (!attempts.has(attemptId)) failures.push(`${attemptId} is present in stored journal bytes but absent from the manifest`);
+  }
+  for (const attempt of manifest.attempts) {
+    const backing = journalEntries.get(attempt.attemptId);
+    if (backing === undefined) {
+      failures.push(`${attempt.attemptId} has no unique stored attempt-journal entry`);
+      continue;
+    }
+    for (const field of ["attemptNumber", "status", "startedAt", "finishedAt", "continuationOf"]) {
+      if (attempt[field] !== backing[field]) failures.push(`${attempt.attemptId}.${field} does not match stored attempt-journal bytes`);
+    }
+    if (attempt.transcriptObjects.length !== 1 || attempt.transcriptObjects[0] !== backing.journalObject.sha256) {
+      failures.push(`${attempt.attemptId}.transcriptObjects does not identify its unique backing journal`);
+    }
+    if (backing.outputSummary === undefined) {
+      if (attempt.outputSummaryObject !== null) failures.push(`${attempt.attemptId}.outputSummaryObject is not backed by its journal`);
+      continue;
+    }
+    const expectedSummaryDigest = sha256(Buffer.from(backing.outputSummary, "utf8"));
+    if (attempt.outputSummaryObject !== expectedSummaryDigest) {
+      failures.push(`${attempt.attemptId}.outputSummaryObject does not match stored attempt-journal bytes`);
+      continue;
+    }
+    const summaryObject = objectMap.get(attempt.outputSummaryObject);
+    const expectedSourcePath = `${backing.journalObject.sourcePath}#attempts/${attempt.attemptNumber}/lastOutputSummary`;
+    if (summaryObject?.sourcePath !== expectedSourcePath) {
+      failures.push(`${attempt.attemptId}.outputSummaryObject does not identify its backing journal fragment`);
+    }
+  }
+  return failures;
 }
 
 function executionAttestationFailure(document, evidenceObject, publisher) {
@@ -698,12 +1320,25 @@ function executionAttestationFailure(document, evidenceObject, publisher) {
     return "attestation does not bind the declared publisher";
   }
   if (document.status !== "passed") return "attestation does not record a successful result";
-  return undefined;
+  return "custody execution records are unauthenticated; a separately verified runner attestation is required";
 }
 
-export async function verifyManifest(manifest, { store, auditLiveSources = false, sourceRoot, pathExists = defaultPathExists } = {}) {
-  const validation = validateManifest(manifest);
+export async function verifyManifest(manifest, {
+  store,
+  auditLiveSources = false,
+  sourceRoot,
+  manifestBytes,
+  expectedManifestSha256,
+  resourceLimits = {},
+} = {}) {
+  const limits = normalizeResourceLimits(resourceLimits);
+  const validation = validateManifest(manifest, limits);
   const failures = Object.fromEntries(GATES.map(id => [id, []]));
+  failures["G-CUSTODY"].push(...manifestIdentityFailures(manifest, manifestBytes, expectedManifestSha256, limits));
+  if (store === undefined) {
+    failures["G-CUSTODY"].push("object store is required to verify referenced bytes");
+    failures["G-ALIAS"].push("object store is required to verify alias bytes");
+  }
   if (!validation.valid) {
     failures["G-CUSTODY"].push(...validation.errors);
     for (const id of GATES.filter(id => id !== "G-CUSTODY")) failures[id].push("manifest validation failed");
@@ -715,6 +1350,7 @@ export async function verifyManifest(manifest, { store, auditLiveSources = false
     };
   }
   const objectMap = new Map(manifest.objects.map(object => [object.sha256, object]));
+  const storedObjectBytes = new Map();
   const referenced = referencedDigests(manifest);
   for (const digest of referenced) {
     if (!objectMap.has(digest)) failures["G-CUSTODY"].push(`missing object record ${digest}`);
@@ -723,12 +1359,18 @@ export async function verifyManifest(manifest, { store, auditLiveSources = false
     const digest = object.sha256;
     if (store !== undefined) {
       try {
-        const bytes = await secureRead(store.root, store.objectPath(digest));
+        const bytes = await secureRead(store.root, store.objectPath(digest), limits);
         if (bytes.length !== object.bytes || sha256(bytes) !== digest) failures["G-CUSTODY"].push(`corrupt object ${digest}`);
+        else storedObjectBytes.set(digest, bytes);
       } catch (error) {
         failures["G-CUSTODY"].push(`unreadable object ${digest}: ${error.message}`);
       }
     }
+  }
+  if (store !== undefined) {
+    const journalFailures = await attemptJournalFailures(manifest, objectMap, storedObjectBytes, limits);
+    failures["G-CUSTODY"].push(...journalFailures);
+    failures["G-TERMINAL"].push(...journalFailures);
   }
   for (const attempt of manifest.attempts ?? []) {
     if (!TERMINAL.has(attempt.status)) failures["G-TERMINAL"].push(`${attempt.attemptId} is not terminal`);
@@ -743,10 +1385,11 @@ export async function verifyManifest(manifest, { store, auditLiveSources = false
     if (latest === undefined || job.currentAlias === null || job.currentAlias !== latest.wrapperObject) failures["G-ALIAS"].push(`${job.jobId} alias does not bind the latest attempt wrapper`);
     if (store !== undefined && aliasObject !== undefined) {
       try {
-        const currentBytes = await secureRead(store.root, store.objectPath(job.currentAlias));
+        const currentBytes = storedObjectBytes.get(job.currentAlias);
+        if (currentBytes === undefined) throw new Error("stored alias bytes did not pass custody verification");
         if (sha256(currentBytes) !== job.currentAlias) failures["G-ALIAS"].push(`${job.jobId} alias bytes changed after capture`);
         if (latest !== undefined) {
-          const binding = proveWrapperBinding(currentBytes, latest);
+          const binding = proveWrapperBinding(currentBytes, latest, limits);
           if (!binding.proven) failures["G-ALIAS"].push(`${job.jobId} alias binding is unproven: ${binding.reason}`);
         }
       } catch (error) {
@@ -758,7 +1401,13 @@ export async function verifyManifest(manifest, { store, auditLiveSources = false
     if (!portableSourcePath(object.sourcePath)) failures["G-PATH"].push(object.sourcePath);
     if (auditLiveSources) {
       if (sourceRoot === undefined) failures["G-PATH"].push("live-source audit requires sourceRoot");
-      else if (!(await pathExists(join(sourceRoot, object.sourcePath.split("#", 1)[0]), object))) failures["G-PATH"].push(object.sourcePath);
+      else {
+        try {
+          if (!(await defaultLiveSourceVerifier(sourceRoot, object, limits))) failures["G-PATH"].push(object.sourcePath);
+        } catch {
+          failures["G-PATH"].push(`live source verification failed for ${object.sourcePath}`);
+        }
+      }
     }
   }
   for (const claim of manifest.claims ?? []) {
@@ -785,8 +1434,9 @@ export async function verifyManifest(manifest, { store, auditLiveSources = false
         continue;
       }
       try {
-        const attestationBytes = await secureRead(store.root, store.objectPath(attestation.attestationObject));
-        const document = parseCustodyJson(attestationBytes.toString("utf8"));
+        const attestationBytes = storedObjectBytes.get(attestation.attestationObject);
+        if (attestationBytes === undefined) throw new Error("stored attestation bytes did not pass custody verification");
+        const document = parseCustodyJson(attestationBytes.toString("utf8"), limits);
         const failure = executionAttestationFailure(document, attestation.evidenceObject, attestation.publisher);
         if (failure !== undefined) {
           attestationsSatisfied = false;
@@ -800,7 +1450,10 @@ export async function verifyManifest(manifest, { store, auditLiveSources = false
     const executableKindsAllowed = claim.executableEvidenceObjects.every(digest => EXECUTABLE_EVIDENCE_KINDS.has(objectMap.get(digest)?.kind));
     const executableSatisfied = claim.executableEvidenceObjects.length > 0 && executableKindsAllowed && attestationsSatisfied;
     for (const digest of [...claim.primarySourceObjects, ...claim.executableEvidenceObjects]) if (!objectMap.has(digest)) failures["G-SOURCE"].push(`${claim.claimId} references missing evidence ${digest}`);
-    if (claim.promotionEligible && (!sourceSatisfied || !executableSatisfied)) failures["G-SOURCE"].push(`${claim.claimId} requires both bound independent primary sources and successfully attested executable evidence`);
+    if (POSITIVE_CLAIM_CLASSIFICATIONS.has(claim.classification)) {
+      failures["G-SOURCE"].push(`${claim.claimId} is a positive claim without an authenticated source receipt`);
+    }
+    if (claim.promotionEligible && (!sourceSatisfied || !executableSatisfied)) failures["G-SOURCE"].push(`${claim.claimId} requires both authenticated independent primary sources and successfully authenticated executable evidence`);
     if (!executableSatisfied && !claim.hypothesis && ["inference", "hypothesis"].includes(claim.classification)) failures["G-HYPOTHESIS"].push(claim.claimId);
     if (claim.primarySourceObjects.some(digest => objectMap.get(digest)?.kind === "worker-report")) failures["G-SOURCE"].push(`${claim.claimId} treats a worker report as primary`);
     if (!sourceKindsAllowed && claim.primarySourceObjects.length > 0) failures["G-SOURCE"].push(`${claim.claimId} has an ineligible primary-source evidence kind`);
@@ -811,9 +1464,7 @@ export async function verifyManifest(manifest, { store, auditLiveSources = false
   if (manifest.promotion.draftScope !== "evidence-tooling-only") failures["G-DRAFT-SCOPE"].push("draft scope is not evidence-tooling-only");
   if (manifest.promotion.synthesisVerdict !== "NO-GO") failures["G-SYNTHESIS"].push("synthesis verdict must remain NO-GO");
   if (manifest.promotion.workerAccounting?.countsAsVotes !== false) failures["G-SOURCE"].push("worker counts must never be votes");
-  for (const prerequisite of ["manifestGates", "productOwnerReview", "separateAdrChange", "p0P1ExecutableClosure"]) {
-    if (manifest.promotion[prerequisite] !== true) failures["G-PROMOTION"].push(`${prerequisite} is not proven`);
-  }
+  failures["G-PROMOTION"].push("V2 custody manifests are negative-only; promotion requires a separate authenticated receipt schema");
   return {
     valid: validation.valid,
     gates: Object.fromEntries(GATES.map(id => [id, { pass: failures[id].length === 0, failures: failures[id] }])),
@@ -828,22 +1479,42 @@ function mediaType(path) {
   return "text/plain; charset=utf-8";
 }
 
-async function regularFilesBelow(root, relativeDirectory) {
+async function regularFilesBelow(root, relativeDirectory, limits, budget) {
   const directory = join(root, relativeDirectory);
-  let entries;
   try {
-    entries = await readdir(directory, { withFileTypes: true, recursive: true });
+    const metadata = await lstat(directory);
+    if (metadata.isSymbolicLink() || !metadata.isDirectory()) throw new Error("capture directory must be a real directory");
   } catch (error) {
     if (error?.code === "ENOENT") return [];
     throw error;
   }
   const results = [];
-  for (const entry of entries) {
-    if (!entry.isFile()) continue;
-    const parent = entry.parentPath ?? entry.path;
-    const path = join(parent, entry.name);
-    const bytes = await secureRead(root, path);
-    results.push({ path, bytes });
+  budget.directories += 1;
+  if (budget.directories > limits.maxDirectories) throw new Error(`capture directory-count limit exceeded at ${directory}`);
+  const pending = [{ directory, depth: 0 }];
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (current.depth > limits.maxDirectoryDepth) throw new Error(`capture directory-depth limit exceeded at ${current.directory}`);
+    const stream = await opendir(current.directory);
+    for await (const entry of stream) {
+      budget.directoryEntries += 1;
+      if (budget.directoryEntries > limits.maxDirectoryEntries) {
+        throw new Error(`capture directory-entry limit exceeded at ${current.directory}`);
+      }
+      const path = join(current.directory, entry.name);
+      const metadata = await lstat(path);
+      if (metadata.isSymbolicLink()) throw new Error(`capture source must not contain symlinks: ${path}`);
+      if (metadata.isDirectory()) {
+        budget.directories += 1;
+        if (budget.directories > limits.maxDirectories) throw new Error(`capture directory-count limit exceeded at ${path}`);
+        pending.push({ directory: path, depth: current.depth + 1 });
+        continue;
+      }
+      if (!metadata.isFile()) continue;
+      const bytes = await secureRead(root, path, limits);
+      accountResource(budget, bytes, path, limits);
+      results.push({ path, bytes });
+    }
   }
   return results.sort((left, right) => left.path.localeCompare(right.path));
 }
@@ -872,20 +1543,35 @@ function waveFor(jobId) {
 
 export async function captureEvidence({
   campaignId,
-  baseline,
+  baseline: declaredBaseline,
+  repositoryRoot,
   jobIds,
   runtimeRoot,
   jobConfigRoot,
   outputRoot,
   capturedAt = new Date().toISOString(),
   claims = [],
-  continuations = [],
+  continuations: declaredContinuations,
   promotion = {},
+  resourceLimits = {},
 }) {
   if (typeof campaignId !== "string" || !CAMPAIGN_ID.test(campaignId)) throw new Error("campaignId must be a safe lowercase path component");
+  if (declaredBaseline !== undefined) {
+    throw new Error("caller-declared V1 baselines are unsupported; provide repositoryRoot for a V2 derived baseline");
+  }
+  if (declaredContinuations !== undefined) {
+    throw new Error("caller-declared continuations are unsupported; V2 lineage must be attempt-journal-backed");
+  }
+  if (typeof repositoryRoot !== "string" || repositoryRoot.length === 0) throw new Error("repositoryRoot is required for V2 baseline derivation");
+  if (typeof capturedAt !== "string" || capturedAt.length === 0) throw new Error("capturedAt must be a non-empty string");
+  const limits = normalizeResourceLimits(resourceLimits);
+  const budget = { files: 0, bytes: 0, directories: 0, directoryEntries: 0 };
+  const derived = await deriveBaseline(repositoryRoot, capturedAt, limits, budget);
+  const baseline = derived.baseline;
   const allowlist = assertExplicitJobIds(jobIds);
-  const safeRuntimeRoot = assertPermittedRoot(runtimeRoot, "runtime root");
-  const safeConfigRoot = assertPermittedRoot(jobConfigRoot, "job config root");
+  const safeRuntimeRoot = await assertCanonicalPermittedRoot(runtimeRoot, "runtime root");
+  const safeConfigRoot = await assertCanonicalPermittedRoot(jobConfigRoot, "job config root");
+  await assertCanonicalPermittedRoot(outputRoot, "output root");
   const store = new ObjectStore(assertPermittedRoot(outputRoot, "output root"));
   await store.recoverTemporaries();
   const objects = [];
@@ -916,7 +1602,12 @@ export async function captureEvidence({
     const jobCapturedObjects = new Set();
     for (const [kind, path] of Object.entries(expected)) {
       try {
-        capturedBytes[kind] = await secureRead(kind === "jobConfig" ? safeConfigRoot : safeRuntimeRoot, path);
+        capturedBytes[kind] = await secureRead(
+          kind === "jobConfig" ? safeConfigRoot : safeRuntimeRoot,
+          path,
+          limits,
+        );
+        accountResource(budget, capturedBytes[kind], path, limits);
         captured[kind] = await add(capturedBytes[kind], {
           kind: kind === "wrapper" ? "worker-report" : kind,
           sourcePath: sourceLabel(kind === "jobConfig" ? safeConfigRoot : safeRuntimeRoot, path, kind === "jobConfig" ? "job-config" : "runtime"),
@@ -928,7 +1619,7 @@ export async function captureEvidence({
         exceptions.push({ exceptionId: `${jobId}:${kind}:missing`, kind: "missing-historical-bytes", detail: `${label} was unavailable; no bytes were fabricated` });
       }
     }
-    const journalFiles = await regularFilesBelow(jobRoot, "state/attempt-journal");
+    const journalFiles = await regularFilesBelow(jobRoot, "state/attempt-journal", limits, budget);
     if (journalFiles.length === 0) exceptions.push({ exceptionId: `${jobId}:attempt-journal:missing`, kind: "missing-historical-bytes", detail: "No attempt journal was available; no lineage was inferred" });
     let priorAttemptId = null;
     const attemptIds = [];
@@ -939,22 +1630,38 @@ export async function captureEvidence({
       const journalDigest = await add(journalFile.bytes, { kind: "attempt-journal", sourcePath: journalLabel });
       jobCapturedObjects.add(journalDigest);
       let journal;
-      try { journal = parseCustodyJson(journalFile.bytes.toString("utf8")); }
+      try { journal = parseCustodyJson(journalFile.bytes.toString("utf8"), limits); }
       catch (error) {
         if (error?.code === "DUPLICATE_JSON_KEY") throw error;
-        exceptions.push({ exceptionId: `${jobId}:journal:${journalDigest}:invalid`, kind: "unknown-historical-bytes", detail: "Attempt journal is not valid JSON and was preserved only as raw bytes" });
-        continue;
+        throw new Error(`attempt journal ${journalLabel} must be valid bounded JSON`, { cause: error });
       }
-      if (!Array.isArray(journal.attempts)) throw new Error(`attempt journal ${journalLabel} must contain an attempts array`);
+      if (!record(journal) || !Array.isArray(journal.attempts)) throw new Error(`attempt journal ${journalLabel} must contain an attempts array`);
+      if (journal.attempts.length > limits.maxManifestAttempts) throw new Error(`attempt journal ${journalLabel} exceeds the attempt limit`);
       for (const entry of journal.attempts) {
         if (!record(entry) || !Number.isSafeInteger(entry.attemptNumber) || entry.attemptNumber < 1) {
           throw new Error(`attempt journal ${journalLabel} contains an invalid attempt number`);
         }
+        if (!TERMINAL.has(entry.status)) throw new Error(`attempt journal ${journalLabel} contains a non-terminal attempt status`);
+        if (typeof entry.startedAt !== "string" || entry.startedAt.length === 0
+          || typeof entry.finishedAt !== "string" || entry.finishedAt.length === 0) {
+          throw new Error(`attempt journal ${journalLabel} contains invalid attempt timestamps`);
+        }
+        if (entry.lastOutputSummary !== undefined && typeof entry.lastOutputSummary !== "string") {
+          throw new Error(`attempt journal ${journalLabel} contains a non-string output summary`);
+        }
         if (attemptNumbers.has(entry.attemptNumber)) {
           throw new Error(`ambiguous attempt ${entry.attemptNumber} for ${jobId} appears in multiple journal entries`);
         }
+        if (attemptNumbers.size >= limits.maxManifestAttempts) {
+          throw new Error(`attempt journals for ${jobId} exceed the attempt limit`);
+        }
         attemptNumbers.add(entry.attemptNumber);
-        journalEntries.push({ entry, journalDigest, journalLabel });
+        journalEntries.push({
+          entry,
+          continuationOf: journalContinuationAttemptId(jobId, entry, journalLabel),
+          journalDigest,
+          journalLabel,
+        });
       }
     }
     journalEntries.sort((left, right) => left.entry.attemptNumber - right.entry.attemptNumber);
@@ -962,7 +1669,7 @@ export async function captureEvidence({
     const currentAttemptNumber = currentEntry?.attemptNumber;
     let wrapperBindingProven = false;
     if (capturedBytes.wrapper !== undefined && currentEntry !== undefined) {
-      const binding = proveWrapperBinding(capturedBytes.wrapper, { jobId, attemptNumber: currentEntry.attemptNumber, status: currentEntry.status });
+      const binding = proveWrapperBinding(capturedBytes.wrapper, { jobId, attemptNumber: currentEntry.attemptNumber, status: currentEntry.status }, limits);
       wrapperBindingProven = binding.proven;
       if (!binding.proven) {
         exceptions.push({
@@ -978,13 +1685,14 @@ export async function captureEvidence({
         detail: "No captured attempt can prove the mutable wrapper identity; the bytes were preserved but not assigned to an attempt",
       });
     }
-    for (const { entry, journalDigest, journalLabel } of journalEntries) {
+    for (const { entry, continuationOf, journalDigest, journalLabel } of journalEntries) {
         const attemptId = `${jobId}:attempt:${entry.attemptNumber}`;
         const summary = typeof entry.lastOutputSummary === "string" ? Buffer.from(entry.lastOutputSummary, "utf8") : undefined;
         let summaryDigest = null;
         if (summary === undefined) {
           exceptions.push({ exceptionId: `${attemptId}:summary:missing`, kind: "missing-historical-bytes", detail: "lastOutputSummary was absent; no output was fabricated" });
         } else {
+          accountResource(budget, summary, `${attemptId}:lastOutputSummary`, limits);
           summaryDigest = await add(summary, { kind: "decoded-output-summary", sourcePath: `${journalLabel}#attempts/${entry.attemptNumber}/lastOutputSummary` });
           jobCapturedObjects.add(summaryDigest);
         }
@@ -998,15 +1706,16 @@ export async function captureEvidence({
               : "Only the current mutable wrapper was available; an earlier wrapper was not inferred",
           });
         }
+        if (attempts.length >= limits.maxManifestAttempts) throw new Error("captured attempts exceed the manifest attempt limit");
         attempts.push({
           attemptId,
           jobId,
           attemptNumber: entry.attemptNumber,
           status: entry.status,
           predecessorAttemptId: priorAttemptId,
-          continuationOf: null,
-          startedAt: entry.startedAt ?? "unknown",
-          finishedAt: entry.finishedAt ?? "unknown",
+          continuationOf,
+          startedAt: entry.startedAt,
+          finishedAt: entry.finishedAt,
           outputSummaryObject: summaryDigest,
           wrapperObject: isCurrentAttempt && wrapperBindingProven ? captured.wrapper : null,
           transcriptObjects: [journalDigest],
@@ -1023,17 +1732,17 @@ export async function captureEvidence({
       capturedObjects: [...jobCapturedObjects].sort(),
     });
   }
-  const continuationByAttempt = new Map(continuations.map(continuation => [continuation.attemptId, continuation.continuationOf]));
+  const continuations = attempts
+    .filter(attempt => attempt.continuationOf !== null)
+    .map(attempt => ({ attemptId: attempt.attemptId, continuationOf: attempt.continuationOf }));
+  await assertBaselineRemainsCurrent(derived.repositoryRoot, baseline, limits);
   const manifest = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     campaignId,
     baseline,
     objects: objects.sort((left, right) => left.sha256.localeCompare(right.sha256)),
     jobs,
-    attempts: attempts.map(attempt => ({
-      ...attempt,
-      continuationOf: continuationByAttempt.get(attempt.attemptId) ?? attempt.continuationOf,
-    })),
+    attempts,
     continuations,
     claims,
     exceptions,
@@ -1052,9 +1761,10 @@ export async function captureEvidence({
       p0P1ExecutableClosure: false,
     },
   };
-  const validation = validateManifest(manifest);
+  const validation = validateManifest(manifest, limits);
   if (!validation.valid) throw new Error(`captured manifest is invalid:\n${validation.errors.join("\n")}`);
   const manifestBytes = Buffer.from(`${deterministicJson(manifest)}\n`, "utf8");
+  if (manifestBytes.length > limits.maxFileBytes) throw new Error("captured manifest exceeds the file-size limit");
   const manifestObject = await store.publish(manifestBytes);
   const manifestDirectory = join(store.root, "manifests", campaignId);
   await assertDirectoryChain(store.root, manifestDirectory);
@@ -1068,7 +1778,7 @@ export async function captureEvidence({
   }
   const manifestPath = join(manifestDirectory, `${manifestObject.sha256}.json`);
   const temporary = join(manifestDirectory, temporaryName(manifestObject.sha256));
-  const handle = await open(temporary, "wx", 0o444);
+  const handle = await open(temporary, "wx", 0o400);
   try {
     await handle.writeFile(manifestBytes);
     await handle.sync();
@@ -1098,21 +1808,27 @@ export async function captureEvidence({
     await handle.close().catch(() => undefined);
     await rm(temporary).catch(error => { if (error?.code !== "ENOENT") throw error; });
   }
+  await assertBaselineRemainsCurrent(derived.repositoryRoot, baseline, limits);
   return { manifest, manifestPath, manifestSha256: manifestObject.sha256, store };
 }
 
 export async function loadManifest(path) {
-  const safePath = assertSafeEvidencePath(path, "manifest input");
-  const bytes = await secureRead(dirname(safePath), safePath);
-  scanSecrets(bytes, path);
-  return parseCustodyJson(bytes.toString("utf8"));
+  return (await readSafeJsonDocument(path, "manifest input")).value;
 }
 
-export async function readSafeJson(path, label = "JSON input") {
+export async function readSafeJsonDocument(path, label = "JSON input") {
   const safePath = assertSafeEvidencePath(path, label);
   const bytes = await secureRead(dirname(safePath), safePath);
   scanSecrets(bytes, safePath);
-  return parseCustodyJson(bytes.toString("utf8"));
+  return Object.freeze({
+    value: parseCustodyJson(bytes.toString("utf8")),
+    bytes,
+    sha256: sha256(bytes),
+  });
+}
+
+export async function readSafeJson(path, label = "JSON input") {
+  return (await readSafeJsonDocument(path, label)).value;
 }
 
 export { GATES, REQUIRED_FILES };

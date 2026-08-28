@@ -5,20 +5,20 @@ import {
   assertSafeEvidencePath,
   captureEvidence,
   ObjectStore,
-  readSafeJson,
+  readSafeJsonDocument,
   validateManifest,
   verifyManifest,
 } from "./evidence-custody.mjs";
 
 function usage() {
-  return "usage: evidence-custody <capture CONFIG.json | verify MANIFEST.json OBJECT_ROOT [--require-promotion]>";
+  return "usage: evidence-custody <capture CONFIG.json | verify MANIFEST.json OBJECT_ROOT EXPECTED_MANIFEST_SHA256>";
 }
 
 class InvalidJsonInputError extends Error {}
 
 async function readJson(path) {
   try {
-    return await readSafeJson(resolve(path));
+    return await readSafeJsonDocument(resolve(path));
   } catch (error) {
     if (!(error instanceof SyntaxError)) throw error;
     throw new InvalidJsonInputError();
@@ -28,17 +28,18 @@ async function readJson(path) {
 const [, , command, ...arguments_] = process.argv;
 try {
   if (command === "capture" && arguments_.length === 1) {
-    const result = await captureEvidence(await readJson(arguments_[0]));
+    const result = await captureEvidence((await readJson(arguments_[0])).value);
     process.stdout.write(`${JSON.stringify({ manifestPath: result.manifestPath, manifestSha256: result.manifestSha256 })}\n`);
-  } else if (command === "verify" && (arguments_.length === 2 || (arguments_.length === 3 && arguments_[2] === "--require-promotion"))) {
-    const manifest = await readJson(arguments_[0]);
-    const validation = validateManifest(manifest);
-    const verification = await verifyManifest(manifest, {
+  } else if (command === "verify" && arguments_.length === 3) {
+    const manifestDocument = await readJson(arguments_[0]);
+    const validation = validateManifest(manifestDocument.value);
+    const verification = await verifyManifest(manifestDocument.value, {
       store: new ObjectStore(assertSafeEvidencePath(resolve(arguments_[1]), "object root")),
+      manifestBytes: manifestDocument.bytes,
+      expectedManifestSha256: arguments_[2],
     });
     process.stdout.write(`${JSON.stringify({ validation, verification }, null, 2)}\n`);
-    const requirePromotion = arguments_[2] === "--require-promotion";
-    if (!verification.integrityValid || (requirePromotion && !verification.promotionAllowed)) process.exitCode = 1;
+    if (!verification.integrityValid) process.exitCode = 1;
   } else {
     process.stderr.write(`${usage()}\n`);
     process.exitCode = 2;

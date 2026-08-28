@@ -1,4 +1,5 @@
 export {
+  createDispatchTracker,
   decodeLengthPrefixedFrame,
   encodeLengthPrefixedFrame,
   handlePortableWorkerFrame,
@@ -6,6 +7,5 @@ export {
   protocolName,
   validateAuthorizedEnvelope,
   validateEnvelope,
-  validateResponseEnvelope,
 } from "./portable-protocol.mjs";
-export type { ProtocolEnvelope } from "./portable-protocol.mjs";
+export type { Dispatch, DispatchReceipt, DispatchTracker, ProtocolEnvelope } from "./portable-protocol.mjs";

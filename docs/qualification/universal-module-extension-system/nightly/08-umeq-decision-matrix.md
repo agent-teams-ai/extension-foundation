@@ -13,7 +13,7 @@ related:
 
 UMEQ-011 and UMEQ-016 are **accepted-existing** under ADR-0014; the remaining
 UMEQs in this table are open. Recommendations for open entries are approval
-aids, not resolutions. W11 static Pure DI is the sole current implementation
+aids, not resolutions. W11 static Pure DI was the nightly implementation
 recommendation; entries about a graph describe reversal gates and costs, not a
 parallel graph-first roadmap.
 

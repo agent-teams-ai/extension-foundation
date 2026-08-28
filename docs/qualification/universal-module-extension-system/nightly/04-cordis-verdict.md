@@ -25,8 +25,8 @@ terminal, joinable, bounded independently of the operation deadline, and tested.
 
 Reopen a private Cordis adapter only when a resource-heavy real consumer:
 
-1. deletes at least 25% net semantics-preserving production code after guards
-   and conformance are counted;
+1. wins a predeclared scorecard after adapter guards and conformance are counted,
+   including owned code as one input rather than an isolated percentage gate;
 2. passes reverse, attempt-all, aggregate-failure, deadline, leak, physical
    termination, provenance, and dependency-leak tests;
 3. uses no private API or vendor fork; and
