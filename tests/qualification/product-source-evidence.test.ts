@@ -149,6 +149,8 @@ test("exact tree, blob, origin, and repository mappings fail closed", async () =
     await assert.rejects(verifyProductSourceEvidence(evidence, { fixture: root }), /E-REPOSITORY/u);
     await git(root, ["remote", "set-url", "origin", "ssh://git:secret@github.com/example/product.git"]);
     await assert.rejects(verifyProductSourceEvidence(evidence, { fixture: root }), /E-REPOSITORY/u);
+    await git(root, ["remote", "set-url", "origin", "https://github.com:8443/example/product.git"]);
+    await assert.rejects(verifyProductSourceEvidence(evidence, { fixture: root }), /E-REPOSITORY/u);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

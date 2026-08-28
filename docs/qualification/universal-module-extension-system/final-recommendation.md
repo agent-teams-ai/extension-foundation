@@ -132,8 +132,10 @@ application-owned authority realm; this does not project a universal restart or
 physical-unload rule onto accepted UMEQ-016. Stop or simplify if the seam does
 not improve the named product measure. ADR-0013 requires stop or rollback when
 generic framework glue exceeds 30% of changed production code across the first
-two slices, unless explicit safety evidence justifies the cost. The owning
-decision must define the production-code numerator and denominator before the
+two slices, when ordinary feature work repeatedly requires Foundation changes,
+or when the candidate runtime requires a second overlapping lifecycle state
+machine. Explicit safety evidence is the only exception. The owning decision
+must define the production-code numerator and denominator before the
 measurement; generated, configuration, and test LOC are reported separately.
 
 Exit evidence: both built-ins run through the same product-owned port; selection

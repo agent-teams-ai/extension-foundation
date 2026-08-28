@@ -63,7 +63,7 @@ qualified as such.
 | Product-local authoring ownership | `accepted` | ADR-0013 assigns private semantics to the first product; ADR-0014 is the accepted product-local authoring authority under it, with no qualification-invented successor gate |
 | Runtime-selection trigger beyond static configuration | `missing` | No portable owning-product evidence admits runtime selection |
 | Independent module lifecycle trigger | `missing` | No portable owning-product evidence admits dependency-aware lifecycle coordination |
-| Required/optional/many production semantics | `partially proved` | Synthetic qualification evidence exists; no product grammar is admitted |
+| Required/optional/many production semantics | `missing` | Synthetic tests cover mechanism behavior only; no consumer-owned production semantics or product grammar is admitted |
 | Deterministic graph compilation | `partially proved` | Disposable synthetic tests only; not a production grammar |
 | Generation replacement and recovery | `partially proved` | Disposable evidence only; commit `7632385` closes reviewed identity/correlation defects but no product runtime is admitted |
 | Cordis lifecycle equivalence | `not applicable` | No portable product evidence admits the runtime or independently managed lifecycle trigger required for a comparison |

@@ -75,6 +75,16 @@ stopCriteria:
     observableEvidence: more-than-30-percent-of-changed-production-code-is-generic-framework-glue
     effect: stop-or-move-back
     exception: safety-requirement-with-explicit-evidence
+  - id: ordinary-feature-work-repeatedly-changes-foundation
+    appliesTo: [L1, L2, L3, L4, L5]
+    observableEvidence: ordinary-feature-work-repeatedly-requires-foundation-changes
+    effect: stop-or-move-back
+    exception: safety-requirement-with-explicit-evidence
+  - id: candidate-runtime-needs-overlapping-lifecycle-state-machine
+    appliesTo: [L2, L3, L4, L5]
+    observableEvidence: candidate-runtime-requires-a-second-overlapping-lifecycle-state-machine
+    effect: stop-or-move-back
+    exception: safety-requirement-with-explicit-evidence
   - id: no-measured-authoring-problem
     appliesTo: [L1]
     observableEvidence: direct-composition-meets-future-product-owned-benchmark

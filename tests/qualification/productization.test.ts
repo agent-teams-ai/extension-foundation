@@ -140,6 +140,16 @@ test("roadmap keeps authoring, selection, lifecycle, process hosting, and extrac
     effect: "stop-or-move-back",
     exception: "safety-requirement-with-explicit-evidence",
   });
+  assert.deepEqual(
+    roadmap.stopCriteria
+      .filter(criterion => criterion.effect === "stop-or-move-back")
+      .map(criterion => criterion.id),
+    [
+      "first-two-slices-framework-glue-over-30-percent",
+      "ordinary-feature-work-repeatedly-changes-foundation",
+      "candidate-runtime-needs-overlapping-lifecycle-state-machine",
+    ],
+  );
   const roadmapDocument = await readFile(resolve(dossier, "roadmap.md"), "utf8");
   const admissionDocument = await readFile(resolve(dossier, "consumer-admission.md"), "utf8");
   assert.match(roadmapDocument, /Moving back or stopping is required[\s\S]{0,160}more than 30%[\s\S]{0,160}generic framework glue/u);
@@ -373,4 +383,6 @@ test("qualification prose does not promote source custody into product semantics
   assert.doesNotMatch(verdict, /has a repeated setup-inspection workflow|same-seam case/u);
   assert.doesNotMatch(roadmap, /provider-contribution seam|sibling-capability seam/u);
   assert.match(recommendation, /ADR-0013 requires stop or rollback[\s\S]{0,180}exceeds 30%/u);
+  assert.match(recommendation, /ordinary feature work repeatedly requires Foundation changes/u);
+  assert.match(recommendation, /second overlapping lifecycle state[\s\S]{0,20}machine/u);
 });
