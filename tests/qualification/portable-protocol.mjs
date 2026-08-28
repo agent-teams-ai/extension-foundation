@@ -207,6 +207,15 @@ export function validateResponseEnvelope(value, authority, request, expectedKind
   const response = validateAuthorizedEnvelope(value, authority);
   if (response.requestId !== request.requestId) throw new Error("RESPONSE_REQUEST_MISMATCH");
   if (response.operationId !== request.operationId) throw new Error("RESPONSE_OPERATION_MISMATCH");
+  if (response.graphGeneration !== request.graphGeneration) {
+    throw new Error("RESPONSE_GRAPH_GENERATION_MISMATCH");
+  }
+  if (response.moduleActivationGeneration !== request.moduleActivationGeneration) {
+    throw new Error("RESPONSE_MODULE_ACTIVATION_GENERATION_MISMATCH");
+  }
+  if (response.hostIncarnation !== request.hostIncarnation) {
+    throw new Error("RESPONSE_HOST_INCARNATION_MISMATCH");
+  }
   if (response.absoluteDeadline !== request.absoluteDeadline) throw new Error("RESPONSE_DEADLINE_MISMATCH");
   if (response.kind !== expectedKind) throw new Error("UNEXPECTED_RESPONSE_KIND");
   return response;

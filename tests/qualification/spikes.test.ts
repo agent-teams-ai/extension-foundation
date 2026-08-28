@@ -361,6 +361,7 @@ test("qualification bindings preserve required, optional, and ordered-many seman
   ];
   const bindings = [
     { consumerId: "consumer", slot: "source", providerIds: ["source"] },
+    { consumerId: "consumer", slot: "telemetry", providerIds: [] },
     { consumerId: "consumer", slot: "transform", providerIds: ["transform-b", "transform-a"] },
   ];
   const first = compileQualificationBindings(modules, bindings);
@@ -385,6 +386,29 @@ test("qualification bindings preserve required, optional, and ordered-many seman
     ["consumer"],
   ]);
   assert.deepEqual(structuredClone(first.plan), first.plan);
+});
+
+test("qualification bindings distinguish a missing optional binding from explicit unbound", () => {
+  const modules: QualificationBindingModule[] = [{
+    id: "consumer",
+    consumes: [{ slot: "telemetry", cardinality: "optional", compatibleContractVersions: ["v1"] }],
+    provides: [],
+  }];
+  const missing = compileQualificationBindings(modules, []);
+  assert.equal(missing.ok, false);
+  if (!missing.ok) {
+    assert.deepEqual(missing.diagnostics, [
+      { code: "MISSING_BINDING", consumerId: "consumer", slot: "telemetry" },
+    ]);
+  }
+
+  const explicitUnbound = compileQualificationBindings(modules, [
+    { consumerId: "consumer", slot: "telemetry", providerIds: [] },
+  ]);
+  assert.equal(explicitUnbound.ok, true);
+  if (explicitUnbound.ok) {
+    assert.deepEqual(explicitUnbound.plan.resolved[0]?.providers, []);
+  }
 });
 
 test("qualification bindings fail closed on cardinality and compatibility errors", () => {
@@ -815,6 +839,80 @@ test("shutdown single-flight is reserved before an injected clock can reenter", 
   const [first, second] = await Promise.all([outer, reentered]);
   assert.equal(first, second);
   assert.equal(stops, 1);
+});
+
+test("activation cannot cross terminal shutdown through reentrant caller getters", async () => {
+  const plan = requirePlan([{ id: "module", requires: [] }]);
+
+  {
+    const lifecycle = new GenerationLifecycle(testAuthorityScope);
+    const request = activationRequest(
+      lifecycle,
+      "shutdown-from-request-getter",
+      plan,
+      new Map([["module", inertHooks()]]),
+    );
+    const deadline = request.absoluteDeadline;
+    let shutdownFlight: ReturnType<GenerationLifecycle["shutdown"]> | undefined;
+    Object.defineProperty(request, "absoluteDeadline", {
+      enumerable: true,
+      configurable: true,
+      get: () => {
+        shutdownFlight = lifecycle.shutdown();
+        return deadline;
+      },
+    });
+    assert.throws(() => lifecycle.activate(request), /LIFECYCLE_SHUTTING_DOWN/);
+    assert.ok(shutdownFlight);
+    await shutdownFlight;
+    assert.equal(lifecycle.cutovers, 0);
+  }
+
+  {
+    const lifecycle = new GenerationLifecycle(testAuthorityScope);
+    const request = activationRequest(
+      lifecycle,
+      "shutdown-from-identity-getter",
+      plan,
+      new Map([["module", inertHooks()]]),
+    );
+    let shutdownFlight: ReturnType<GenerationLifecycle["shutdown"]> | undefined;
+    Object.defineProperty(request.identity, "authorityScope", {
+      enumerable: true,
+      configurable: true,
+      get: () => {
+        shutdownFlight = lifecycle.shutdown();
+        return testAuthorityScope;
+      },
+    });
+    assert.throws(() => lifecycle.activate(request), /LIFECYCLE_SHUTTING_DOWN/);
+    assert.ok(shutdownFlight);
+    await shutdownFlight;
+    assert.equal(lifecycle.cutovers, 0);
+  }
+
+  {
+    const lifecycle = new GenerationLifecycle(testAuthorityScope);
+    const request = activationRequest(
+      lifecycle,
+      "shutdown-from-waiter-getter",
+      plan,
+      new Map([["module", inertHooks()]]),
+    );
+    const deadline = lifecycle.deadlineAfter(1_000);
+    let shutdownFlight: ReturnType<GenerationLifecycle["shutdown"]> | undefined;
+    const waiter = Object.defineProperty({}, "absoluteDeadline", {
+      enumerable: true,
+      get: () => {
+        shutdownFlight = lifecycle.shutdown();
+        return deadline;
+      },
+    });
+    assert.throws(() => lifecycle.activate(request, waiter), /LIFECYCLE_SHUTTING_DOWN/);
+    assert.ok(shutdownFlight);
+    await shutdownFlight;
+    assert.equal(lifecycle.cutovers, 0);
+  }
 });
 
 test("one hundred concurrent starts share one activation and one cutover", async () => {
@@ -2655,13 +2753,17 @@ test("replacement drains admitted work, cuts over once, and fences stale writes"
   assert.equal(oldWrite, 2);
 });
 
-test("crash recovery decisions are deterministic at durable boundaries", () => {
+test("crash recovery decisions bind readiness to runtime and module attempts at durable boundaries", () => {
   const baseline: DurableLifecycleState = {
     operationId: "activation-1",
     intentDigest: "sha256:intent-1",
     authorityScope: "tenant:test/project:test",
     graphDigest: "sha256:graph-1",
     candidateGeneration: 2,
+    candidateRuntimeGeneration: 11,
+    candidateModuleId: "module-a",
+    candidateModuleActivationGeneration: 17,
+    candidateAttemptId: "module-attempt-1",
     candidateHostIncarnation: "host-incarnation-1",
     expectedActiveHostIncarnation: "host-incarnation-old",
     expectedActiveGeneration: 1,
@@ -2691,6 +2793,10 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
       queryOperationId: string;
       queryIntentDigest: string;
       candidateGeneration: number;
+      candidateRuntimeGeneration: number;
+      candidateModuleId: string;
+      candidateModuleActivationGeneration: number;
+      candidateAttemptId: string;
       candidateOperationId: string;
       candidateIntentDigest: string;
       candidateHostIncarnation: string;
@@ -2700,6 +2806,10 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
       queryAuthorityScope: string;
       queryGraphDigest: string;
       queryHostIncarnation: string;
+      queryRuntimeGeneration: number;
+      queryModuleId: string;
+      queryModuleActivationGeneration: number;
+      queryAttemptId: string;
       oldOperationId: string;
       oldIntentDigest: string;
       oldGeneration: number;
@@ -2715,11 +2825,19 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
     queryAuthorityScope: overrides.queryAuthorityScope ?? testAuthorityScope,
     queryGraphDigest: overrides.queryGraphDigest ?? "sha256:graph-1",
     queryHostIncarnation: overrides.queryHostIncarnation ?? "host-incarnation-1",
+    queryRuntimeGeneration: overrides.queryRuntimeGeneration ?? 11,
+    queryModuleId: overrides.queryModuleId ?? "module-a",
+    queryModuleActivationGeneration: overrides.queryModuleActivationGeneration ?? 17,
+    queryAttemptId: overrides.queryAttemptId ?? "module-attempt-1",
     candidate: candidateState === "absent" ? { state: "absent" } : {
       state: candidateState,
       operationId: overrides.candidateOperationId ?? "activation-1",
       intentDigest: overrides.candidateIntentDigest ?? "sha256:intent-1",
       generation: overrides.candidateGeneration ?? 2,
+      runtimeGeneration: overrides.candidateRuntimeGeneration ?? 11,
+      moduleId: overrides.candidateModuleId ?? "module-a",
+      moduleActivationGeneration: overrides.candidateModuleActivationGeneration ?? 17,
+      attemptId: overrides.candidateAttemptId ?? "module-attempt-1",
       hostIncarnation: overrides.candidateHostIncarnation ?? "host-incarnation-1",
       authorityScope: overrides.candidateAuthorityScope ?? testAuthorityScope,
       graphDigest: overrides.candidateGraphDigest ?? "sha256:graph-1",
@@ -2760,12 +2878,20 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
     [baseline, observed("ready", false, { candidateHostIncarnation: "stale-host" }), "CONTROLLED_RECOVERY"],
     [baseline, observed("ready", false, { candidateOperationId: "activation-other" }), "CONTROLLED_RECOVERY"],
     [baseline, observed("ready", false, { candidateIntentDigest: "sha256:intent-other" }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("ready", false, { candidateRuntimeGeneration: 12 }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("ready", false, { candidateModuleId: "module-b" }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("ready", false, { candidateModuleActivationGeneration: 18 }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("ready", false, { candidateAttemptId: "module-attempt-replayed" }), "CONTROLLED_RECOVERY"],
     [baseline, observed("ready", false, { candidateSinkFence: 43 }), "CONTROLLED_RECOVERY"],
     [baseline, observed("absent", false, { queryOperationId: "activation-other" }), "CONTROLLED_RECOVERY"],
     [baseline, observed("absent", false, { queryIntentDigest: "sha256:intent-other" }), "CONTROLLED_RECOVERY"],
     [baseline, observed("absent", false, { queryHostIncarnation: "stale-host" }), "CONTROLLED_RECOVERY"],
     [baseline, observed("absent", false, { queryAuthorityScope: "tenant:other/project:other" }), "CONTROLLED_RECOVERY"],
     [baseline, observed("absent", false, { queryGraphDigest: "sha256:wrong-graph" }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("ready", false, { queryRuntimeGeneration: 12 }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("ready", false, { queryModuleId: "module-b" }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("ready", false, { queryModuleActivationGeneration: 18 }), "CONTROLLED_RECOVERY"],
+    [baseline, observed("ready", false, { queryAttemptId: "module-attempt-replayed" }), "CONTROLLED_RECOVERY"],
     [baseline, observed("absent", false, { oldGeneration: 9 }), "CONTROLLED_RECOVERY"],
     [baseline, observed("absent", false, { oldOperationId: "activation-other" }), "CONTROLLED_RECOVERY"],
     [baseline, observed("absent", false, { oldIntentDigest: "sha256:intent-other" }), "CONTROLLED_RECOVERY"],
@@ -2814,6 +2940,34 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
       malformed as unknown as ObservedHostState,
     ), "CONTROLLED_RECOVERY");
   }
+  for (const missingIdentityField of [
+    "runtimeGeneration",
+    "moduleId",
+    "moduleActivationGeneration",
+    "attemptId",
+  ]) {
+    const incompleteReadiness = structuredClone(observed("ready", false)) as unknown as {
+      candidate: Record<string, unknown>;
+    };
+    delete incompleteReadiness.candidate[missingIdentityField];
+    assert.equal(reconcileLifecycle(
+      baseline,
+      incompleteReadiness as unknown as ObservedHostState,
+    ), "CONTROLLED_RECOVERY");
+  }
+  for (const missingQueryIdentityField of [
+    "queryRuntimeGeneration",
+    "queryModuleId",
+    "queryModuleActivationGeneration",
+    "queryAttemptId",
+  ]) {
+    const incompleteReadiness = structuredClone(observed("ready", false)) as unknown as Record<string, unknown>;
+    delete incompleteReadiness[missingQueryIdentityField];
+    assert.equal(reconcileLifecycle(
+      baseline,
+      incompleteReadiness as unknown as ObservedHostState,
+    ), "CONTROLLED_RECOVERY");
+  }
   assert.equal(reconcileLifecycle(
     published,
     observed("ready", true, {
@@ -2848,7 +3002,7 @@ test("crash recovery decisions are deterministic at durable boundaries", () => {
   ), "CONTROLLED_RECOVERY");
 });
 
-test("portable protocol rejects stale, expired, malformed, and oversized frames", () => {
+test("portable protocol rejects stale, expired, malformed, oversized, and miscorrelated frames", () => {
   const authority = { ...protocolAuthority, now: Date.now() };
   const accepted = handlePortableWorkerFrame(frame(), authority);
   assert.throws(() => handlePortableWorkerFrame(frame({ kind: "result" }), authority), /INVALID_REQUEST_KIND/);
@@ -2944,6 +3098,24 @@ test("portable protocol rejects stale, expired, malformed, and oversized frames"
     request,
     "result",
   ), /RESPONSE_REQUEST_MISMATCH/);
+  assert.throws(() => validateResponseEnvelope(
+    response,
+    { ...responseAuthority, now: Date.now() },
+    { ...request, graphGeneration: request.graphGeneration + 1 },
+    "result",
+  ), /RESPONSE_GRAPH_GENERATION_MISMATCH/);
+  assert.throws(() => validateResponseEnvelope(
+    response,
+    { ...responseAuthority, now: Date.now() },
+    { ...request, moduleActivationGeneration: request.moduleActivationGeneration + 1 },
+    "result",
+  ), /RESPONSE_MODULE_ACTIVATION_GENERATION_MISMATCH/);
+  assert.throws(() => validateResponseEnvelope(
+    response,
+    { ...responseAuthority, now: Date.now() },
+    { ...request, hostIncarnation: "host-incarnation-replayed" },
+    "result",
+  ), /RESPONSE_HOST_INCARNATION_MISMATCH/);
   assert.throws(() => validateResponseEnvelope(
     { ...response, absoluteDeadline: response.absoluteDeadline + 1 },
     { ...responseAuthority, now: Date.now() },

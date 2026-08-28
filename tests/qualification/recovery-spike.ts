@@ -6,6 +6,10 @@ export interface DurableLifecycleState {
   readonly authorityScope: string;
   readonly graphDigest: string;
   readonly candidateGeneration: number;
+  readonly candidateRuntimeGeneration: number;
+  readonly candidateModuleId: string;
+  readonly candidateModuleActivationGeneration: number;
+  readonly candidateAttemptId: string;
   readonly candidateHostIncarnation: string;
   readonly expectedActiveHostIncarnation: string;
   readonly expectedActiveGeneration: number;
@@ -25,6 +29,10 @@ interface ObservedCandidateIdentity {
   readonly operationId: string;
   readonly intentDigest: string;
   readonly generation: number;
+  readonly runtimeGeneration: number;
+  readonly moduleId: string;
+  readonly moduleActivationGeneration: number;
+  readonly attemptId: string;
   readonly hostIncarnation: string;
   readonly authorityScope: string;
   readonly graphDigest: string;
@@ -53,6 +61,10 @@ export interface ObservedHostState {
   readonly queryAuthorityScope: string;
   readonly queryGraphDigest: string;
   readonly queryHostIncarnation: string;
+  readonly queryRuntimeGeneration: number;
+  readonly queryModuleId: string;
+  readonly queryModuleActivationGeneration: number;
+  readonly queryAttemptId: string;
   readonly candidate: ObservedCandidate;
   readonly oldGeneration: ObservedOldGeneration;
 }
@@ -69,7 +81,7 @@ export type RecoveryAction =
   | "RETURN_RETIRED_RESULT"
   | "CONTROLLED_RECOVERY";
 
-const recoveryCheckpointSchema = "qualification.recovery-checkpoint/v1";
+const recoveryCheckpointSchema = "qualification.recovery-checkpoint/v2";
 
 const lifecyclePhases = new Set<unknown>(["prepared", "started", "ready", "published", "draining", "retired"]);
 const publicationEvidenceStates = new Set<unknown>(["none", "committed", "uncertain"]);
@@ -97,6 +109,10 @@ function snapshotState(state: DurableLifecycleState): DurableLifecycleState {
     authorityScope: state.authorityScope,
     graphDigest: state.graphDigest,
     candidateGeneration: state.candidateGeneration,
+    candidateRuntimeGeneration: state.candidateRuntimeGeneration,
+    candidateModuleId: state.candidateModuleId,
+    candidateModuleActivationGeneration: state.candidateModuleActivationGeneration,
+    candidateAttemptId: state.candidateAttemptId,
     candidateHostIncarnation: state.candidateHostIncarnation,
     expectedActiveHostIncarnation: state.expectedActiveHostIncarnation,
     expectedActiveGeneration: state.expectedActiveGeneration,
@@ -123,6 +139,10 @@ function snapshotObserved(observed: ObservedHostState): ObservedHostState {
       operationId: sourceCandidate.operationId,
       intentDigest: sourceCandidate.intentDigest,
       generation: sourceCandidate.generation,
+      runtimeGeneration: sourceCandidate.runtimeGeneration,
+      moduleId: sourceCandidate.moduleId,
+      moduleActivationGeneration: sourceCandidate.moduleActivationGeneration,
+      attemptId: sourceCandidate.attemptId,
       hostIncarnation: sourceCandidate.hostIncarnation,
       authorityScope: sourceCandidate.authorityScope,
       graphDigest: sourceCandidate.graphDigest,
@@ -135,6 +155,10 @@ function snapshotObserved(observed: ObservedHostState): ObservedHostState {
     queryAuthorityScope: observed.queryAuthorityScope,
     queryGraphDigest: observed.queryGraphDigest,
     queryHostIncarnation: observed.queryHostIncarnation,
+    queryRuntimeGeneration: observed.queryRuntimeGeneration,
+    queryModuleId: observed.queryModuleId,
+    queryModuleActivationGeneration: observed.queryModuleActivationGeneration,
+    queryAttemptId: observed.queryAttemptId,
     candidate,
     oldGeneration: Object.freeze({
       operationId: sourceOld.operationId,
@@ -160,10 +184,14 @@ function hasValidRuntimeShape(state: DurableLifecycleState, observed: ObservedHo
     && nonEmptyString(state.intentDigest)
     && nonEmptyString(state.authorityScope)
     && nonEmptyString(state.graphDigest)
+    && nonEmptyString(state.candidateModuleId)
+    && nonEmptyString(state.candidateAttemptId)
     && nonEmptyString(state.candidateHostIncarnation)
     && nonEmptyString(state.expectedActiveHostIncarnation)
     && [
       state.candidateGeneration,
+      state.candidateRuntimeGeneration,
+      state.candidateModuleActivationGeneration,
       state.expectedActiveGeneration,
       state.activeGeneration,
       state.routeHeadGeneration,
@@ -172,6 +200,8 @@ function hasValidRuntimeShape(state: DurableLifecycleState, observed: ObservedHo
       state.sinkFence,
       observed.oldGeneration.generation,
       observed.oldGeneration.sinkFence,
+      observed.queryRuntimeGeneration,
+      observed.queryModuleActivationGeneration,
     ].every(nonNegativeInteger)
     && typeof state.operationDeadlineExpired === "boolean"
     && typeof state.drainDeadlineExpired === "boolean"
@@ -187,6 +217,8 @@ function hasValidRuntimeShape(state: DurableLifecycleState, observed: ObservedHo
     && nonEmptyString(observed.queryAuthorityScope)
     && nonEmptyString(observed.queryGraphDigest)
     && nonEmptyString(observed.queryHostIncarnation)
+    && nonEmptyString(observed.queryModuleId)
+    && nonEmptyString(observed.queryAttemptId)
     && nonEmptyString(observed.oldGeneration.operationId)
     && nonEmptyString(observed.oldGeneration.intentDigest)
     && nonEmptyString(observed.oldGeneration.hostIncarnation)
@@ -195,6 +227,10 @@ function hasValidRuntimeShape(state: DurableLifecycleState, observed: ObservedHo
       nonEmptyString(identifiedCandidate.operationId)
       && nonEmptyString(identifiedCandidate.intentDigest)
       && nonNegativeInteger(identifiedCandidate.generation)
+      && nonNegativeInteger(identifiedCandidate.runtimeGeneration)
+      && nonEmptyString(identifiedCandidate.moduleId)
+      && nonNegativeInteger(identifiedCandidate.moduleActivationGeneration)
+      && nonEmptyString(identifiedCandidate.attemptId)
       && nonEmptyString(identifiedCandidate.hostIncarnation)
       && nonEmptyString(identifiedCandidate.authorityScope)
       && nonEmptyString(identifiedCandidate.graphDigest)
@@ -219,6 +255,10 @@ function reconcileLifecycleUnsafe(
     || observed.queryAuthorityScope !== state.authorityScope
     || observed.queryGraphDigest !== state.graphDigest
     || observed.queryHostIncarnation !== state.candidateHostIncarnation
+    || observed.queryRuntimeGeneration !== state.candidateRuntimeGeneration
+    || observed.queryModuleId !== state.candidateModuleId
+    || observed.queryModuleActivationGeneration !== state.candidateModuleActivationGeneration
+    || observed.queryAttemptId !== state.candidateAttemptId
     || observed.oldGeneration.operationId !== state.operationId
     || observed.oldGeneration.intentDigest !== state.intentDigest
     || observed.oldGeneration.generation !== state.expectedActiveGeneration
@@ -243,6 +283,10 @@ function reconcileLifecycleUnsafe(
       observed.candidate.operationId !== state.operationId
       || observed.candidate.intentDigest !== state.intentDigest
       || observed.candidate.generation !== state.candidateGeneration
+      || observed.candidate.runtimeGeneration !== state.candidateRuntimeGeneration
+      || observed.candidate.moduleId !== state.candidateModuleId
+      || observed.candidate.moduleActivationGeneration !== state.candidateModuleActivationGeneration
+      || observed.candidate.attemptId !== state.candidateAttemptId
       || observed.candidate.hostIncarnation !== state.candidateHostIncarnation
       || observed.candidate.authorityScope !== state.authorityScope
       || observed.candidate.graphDigest !== state.graphDigest

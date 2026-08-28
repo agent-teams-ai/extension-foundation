@@ -564,8 +564,16 @@ export class GenerationLifecycle {
     });
     const waiterOptions = typeof waiter === "number" ? { absoluteDeadline: waiter } : waiter;
     const explicitWaiterDeadline = waiterOptions.absoluteDeadline;
+    const waiterSignal = waiterOptions.signal;
     if (explicitWaiterDeadline !== undefined && !Number.isFinite(explicitWaiterDeadline)) {
       throw new Error("INVALID_WAITER_DEADLINE");
+    }
+    // Caller-owned request and waiter accessors can synchronously reenter
+    // shutdown while their values are being snapshotted. Recheck the terminal
+    // gate after the last caller-owned read and before reserving any activation
+    // identity or flight state.
+    if (this.#shutdownFlight !== undefined) {
+      throw new Error("LIFECYCLE_SHUTTING_DOWN");
     }
     const operationId = identity.operationId;
     const key = fingerprint(normalizedRequest);
@@ -578,7 +586,7 @@ export class GenerationLifecycle {
       return this.#waitForFlight(
         existing.result,
         explicitWaiterDeadline ?? absoluteDeadline + 100,
-        waiterOptions.signal,
+        waiterSignal,
       );
     }
     const completed = this.#operationResults.get(operationId);
@@ -587,10 +595,10 @@ export class GenerationLifecycle {
         return this.#waitForFlight(
           Promise.resolve(completed),
           explicitWaiterDeadline,
-          waiterOptions.signal,
+          waiterSignal,
         );
       }
-      if (waiterOptions.signal?.aborted) return Promise.reject(new Error("WAITER_CANCELLED"));
+      if (waiterSignal?.aborted) return Promise.reject(new Error("WAITER_CANCELLED"));
       return Promise.resolve(completed);
     }
 
@@ -618,7 +626,7 @@ export class GenerationLifecycle {
     return this.#waitForFlight(
       deferred.promise,
       explicitWaiterDeadline ?? absoluteDeadline + 100,
-      waiterOptions.signal,
+      waiterSignal,
     );
   }
 

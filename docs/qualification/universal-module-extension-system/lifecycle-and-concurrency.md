@@ -136,7 +136,11 @@ that operation identity with a changed fingerprint is an idempotency conflict.
 Distinct operation identities intentionally represent distinct competing
 candidates even when source and plan match; expected-active compare-and-set
 still permits only one publication. A waiter's timeout or cancellation detaches
-that waiter; it does not cancel shared startup.
+that waiter; it does not cancel shared startup. Terminal shutdown reserves its
+single flight before cleanup and rejects activation both before and after the
+disposable coordinator snapshots caller-owned request and waiter values. A
+reentrant getter that reserves shutdown therefore cannot cross the terminal
+admission gate and create a later activation flight.
 
 The disposable in-memory spike retains completed operation results and sealed
 generations for its process lifetime so qualification can prove replay and stale
@@ -159,7 +163,10 @@ current revocation status, explicit provider binding, product authorization,
 grants, host policy, and the freshly read generation fence intersect.
 The complete caller-owned activation identity is copied and frozen at the same
 boundary. Later caller mutation cannot change idempotency, compare-and-set, or
-publication authority for an admitted flight.
+publication authority for an admitted flight. The disposable boundary also
+rechecks terminal lifecycle state after the last caller-owned read; accepting a
+value from an accessor does not preserve activation authority if that accessor
+reentered shutdown.
 
 An in-process invocation handle is an object-identity capability issued by one
 lifecycle instance. Its private membership, exact authority scope, generation,
@@ -241,6 +248,11 @@ completion, and readiness are distinct. Readiness evidence is generation-bound
 and policy-specific. It may include health checks, protocol negotiation,
 dependency readiness, and product conformance, but it is never inferred solely
 from a process PID, an accepted connection, or a successful `start` return.
+An observed ready state is usable only when it binds the exact candidate,
+runtime generation, module, module activation generation, attempt, graph,
+authority scope, host incarnation, and sink fence from the durable intent.
+Missing or mismatched runtime or module-attempt identity enters controlled
+recovery; candidate generation alone is not readiness correlation.
 
 Every provider selected by the immutable compiled plan is part of the candidate.
 Its startup or readiness failure aborts that candidate and leaves active routing
@@ -755,12 +767,16 @@ continuity, it fences the old generation, raises or retains the durable
 `restart_required` high-water mark, and enters controlled recovery. A fresh
 host may prepare only after the old-incarnation debt closure receipt exists.
 
-The current spike exercises deterministic reducer examples only. Before a
-production lifecycle claim, fault-injection fixtures must crash a fresh
+The current spike exercises deterministic reducer examples only. Its synthetic
+ready observations now fail closed when runtime generation, module identity,
+module activation generation, or attempt identity is missing or mismatched.
+Before a production lifecycle claim, fault-injection fixtures must crash a fresh
 coordinator on both sides of durable intent, dispatch, ready acknowledgement,
 publication compare-and-set, drain cutoff, debt recording and cleanup. Those
 fixtures must replay duplicate and reordered messages and bind every observed
-host fact to the complete intent/generation/fence/incarnation tuple.
+host fact to the complete intent/generation/fence/incarnation tuple. The one
+synthetic module attempt in the reducer is not a runtime-set or durable receipt
+implementation.
 
 ## Host Tiers
 
@@ -792,13 +808,15 @@ Implement now in a disposable qualification spike:
 - closed two-module graph;
 - `prepare -> start -> ready -> publish`;
 - single-flight concurrent starts;
+- terminal shutdown admission checks after caller-owned accessor snapshots;
 - one activation deadline plus bounded cleanup and waiter caps as disposable
   evidence, not the three-deadline durable contract;
 - reverse activation-projection abort and stop;
 - active and candidate generations;
 - one atomic in-memory compare-and-set seam;
 - bounded drain and an in-memory fence simulation;
-- deterministic traces and reducer-level crash/recovery examples.
+- deterministic traces and reducer-level crash/recovery examples;
+- exact runtime and module-attempt correlation on synthetic ready observations.
 
 Specify but defer production implementation and executable fault injection of:
 

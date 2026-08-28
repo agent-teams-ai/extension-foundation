@@ -209,8 +209,10 @@ example fixes only the separation, not a published API.
 
 - `required(C)` resolves exactly one explicitly bound compatible provider and
   injects `C`; zero or multiple unresolved candidates fail compilation.
-- `optional(C)` resolves zero or one provider and injects `C | undefined`. A
-  selected provider that fails is a failure, not optional absence.
+- `optional(C)` resolves an explicit profile value of one provider or literal
+  null/unbound and injects `C | undefined`. A missing binding coordinate fails
+  compilation, and a selected provider that fails is a failure, not optional
+  absence.
 - `many(C, ...)` resolves an immutable ordered collection. `minProviders` and
   `maxProviders` are graph-validity and fan-in bounds, not retry or runtime
   concurrency limits. `ordering: "profile"` requires the profile to state the
@@ -539,8 +541,10 @@ coordination.
 The executable evidence remains narrower than this target. The ID-DAG spike
 proves deterministic scheduling, immutable plan data and graph diagnostics. A
 separate disposable binding compiler now proves explicit `required`, `optional`
-and `ordered-many` bindings plus selected cardinality, compatibility, ambiguity
-and binding-induced-cycle negatives. It does not admit a production grammar,
+and `ordered-many` bindings plus a negative that distinguishes a missing
+optional coordinate from an explicit empty/unbound selection, selected
+cardinality, compatibility, ambiguity and binding-induced-cycle negatives. It
+does not admit a production grammar,
 scope/source model, package, public SPI or runtime owner. Phase 1 is the single
 approved product-local static Pure DI rehearsal under ADR-0013, ADR-0014, and an
 accepted owning feature decision. A production runtime graph remains blocked

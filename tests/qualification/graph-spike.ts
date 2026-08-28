@@ -352,7 +352,11 @@ export function compileQualificationBindings(
       const key = bindingCoordinateKey(module.id, demand.slot);
       if (duplicateDemandKeys.has(key) || duplicateBindingKeys.has(key)) continue;
       const binding = bindingByDemand.get(key);
-      const providerIds = binding === undefined ? [] : [...binding.providerIds];
+      if (binding === undefined) {
+        diagnostics.push({ code: "MISSING_BINDING", consumerId: module.id, slot: demand.slot });
+        continue;
+      }
+      const providerIds = [...binding.providerIds];
       const uniqueProviderIds = [...new Set(providerIds)];
       if (uniqueProviderIds.length !== providerIds.length) {
         diagnostics.push({ code: "AMBIGUOUS_BINDING", consumerId: module.id, slot: demand.slot });
