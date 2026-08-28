@@ -347,32 +347,219 @@ Live replacement, unload, distributed cutover, and product recovery are outside
 this proposal. They require their own accepted lifecycle or placement decisions
 and must not be inferred from dogfooding evidence.
 
-### Conditional progression
+### Conditional implementation plan
 
-If an owning product later admits a campaign, the sequence is:
+This plan becomes executable only after an owning product admits one campaign.
+It is deliberately product-local: it creates no Foundation runtime, shared
+candidate API, public SPI, production loader, or reusable campaign service.
 
-1. Measure the problem through the current Pure DI baseline without introducing
-   the candidate abstraction.
-2. Accept a product decision naming every prerequisite, the seam, outcome,
-   rationale, protocol, baseline, evaluator, thresholds, owners, and expiry. If
-   the candidate introduces a grammar, accept its ownership and governance
-   decision first.
-3. Preregister the treatment sources and build attempt, build inside
-   containment, and externally verify the resulting `T1`.
-4. Seal `B0`, the preregistered `T1` family, and `E0` before the sealed corpus or
-   outcomes are exposed to the candidate producer. Reserve any adaptive holdout
-   independently. Calibrate the harness against baseline-only runs and
-   deliberate mutants without unblinding the producer.
-5. Preregister artifact-execution attempts and issue one-use launch
-   authorizations, then execute baseline and treatment only in disposable
-   containment.
-6. Have an independent reviewer accept or reject only the registered evidence
-   claim.
-7. Use that result only as input to a later product decision. It authorizes no
-   runtime use by itself.
-8. Keep Foundation extraction blocked until two independently authored
-   consumers, executable conformance, and an accepted extraction decision
-   satisfy ADR-0013.
+#### Admission checklist
+
+Before implementation work starts, the product authorizer records all of the
+following in one immutable campaign decision:
+
+- the measured problem and current Pure DI baseline, captured without the
+  candidate abstraction;
+- one product-owned capability seam and the exact product outcome being tested;
+- `B0`, the proposed treatment family, evaluator owner, acceptance thresholds,
+  exclusions, expiry, retention, and stop rules;
+- named principals, credentials, and effective control domains for every
+  authority role;
+- the build and execution sandbox enforcer, deny-by-default policy, and allowed
+  disposable resources;
+- the evidence store, immutable locator scheme, access policy, and projection
+  rebuild procedure;
+- an exact immutable dossier revision used as supporting evidence;
+- an accepted ownership and governance successor before introducing any new
+  authoring grammar.
+
+Missing or mutable prerequisites are a no-go. A planning issue, draft ADR,
+mutable branch, or candidate-owned configuration cannot satisfy admission.
+
+#### Campaign-local deliverables
+
+| Deliverable | Responsibility | Boundary |
+| --- | --- | --- |
+| Protocol record | Holds campaign-specific coordinates, role bindings, thresholds, expiry, and stop rules | Data only; not a module declaration or shared Foundation schema |
+| Baseline adapter | Implements the existing product-owned port with `B0` behavior | Remains the default product composition |
+| Treatment adapter | Implements the same port and translates to the candidate's private ordinary-library API | Removable without changing the port, use case, or domain model |
+| Attempt registrar and launch gate | Preregisters attempts and atomically consumes one-use launch authorization | Runs outside candidate authority and before candidate-controlled code |
+| Build and evaluation sandbox adapters | Enforce the registered disposable policy and report actual grants | No real projects, ambient credentials, or implicit network |
+| Evidence writer and reader | Persist immutable raw receipts and reconstruct disposable projections | Candidate, harness, and evaluator cannot rewrite terminal facts |
+| Deterministic and stochastic evaluator adapters | Apply only the sealed product-approved oracle, rubric, and analysis | Produce separate verdicts and own no product decision |
+| Disposable fixtures and deliberate mutants | Prove the harness detects registered failure classes | Calibration only; never counted as an independent consumer |
+| Evidence report | Presents traceable inputs, failures, exclusions, and verdicts to reviewers | Derived and rebuildable; never an authority source |
+
+These are responsibilities, not a prescribed package topology. The owning
+product places them according to its accepted feature standard. Implementations
+must not extract a common campaign framework merely because adjacent adapters
+look similar.
+
+#### Phase 0 - Admission and freeze boundary
+
+1. Validate the admission checklist and effective role separation.
+2. Allocate immutable `ProtocolRevision`, `B0`, and draft `E0` coordinates.
+3. Define the experimental unit, deterministic oracle, stochastic estimand where
+   applicable, exclusions, attrition treatment, deadlines, and retention.
+4. Record the exact forbidden product paths, credentials, networks, and process
+   capabilities for containment tests.
+
+Exit only when every prerequisite has an owner, immutable reference, and
+testable acceptance rule. Otherwise stop without creating treatment code.
+
+#### Phase 1 - Baseline measurement and product seam
+
+1. Exercise the existing Pure DI composition through the product-owned port.
+2. Capture baseline failure, authoring, drift, and evaluation costs without
+   importing candidate types or introducing candidate-specific behavior.
+3. Prove the baseline adapter remains the default and the treatment adapter can
+   later be removed without changing the use case or domain.
+4. Add source and packed-artifact audits for forbidden framework, evaluator,
+   receipt, and product-type leakage.
+
+Exit only when the measured problem justifies a campaign and the seam is narrow,
+observable, and reversible. An unmeasured convenience abstraction is a no-go.
+
+#### Phase 2 - Candidate-independent harness
+
+1. Implement attempt registration, one-use launch authorization, append-only
+   receipts, and rebuildable read projections outside candidate authority.
+2. Run build and evaluation adapters with `B0` and deliberate mutants only.
+3. Exercise crash, timeout, cancellation, containment denial, receipt loss, and
+   restart behavior before any treatment outcome can influence the producer.
+4. Demonstrate that no `N-1` candidate is needed to build, launch, evaluate,
+   recover evidence, or clean up the campaign.
+
+Exit only when all registered negative cases fail closed and a destroyed
+projection can be rebuilt from immutable receipts. Calibration output cannot
+support promotion.
+
+#### Phase 3 - Treatment build and protocol seal
+
+1. Preregister the treatment source family and each `BuildAttemptIdentity` before
+   a build starts.
+2. Consume the build authorization, build in containment, and record success,
+   failure, or unknown outcome even when no artifact exists.
+3. Verify provenance and immutable custody for every produced `T1`.
+4. Freeze `B0`, the admitted `T1` family, and final `E0` before the sealed corpus
+   or interim outcomes are exposed to the candidate producer. Independently
+   reserve any adaptive holdout.
+
+Exit only when every executable treatment has one unambiguous build lineage and
+the sealed evaluator is retrievable by immutable locator.
+
+#### Phase 4 - Sealed campaign execution
+
+1. Preregister every execution attempt against its exact artifact, `E0`, and
+   `ExperimentalUnit`.
+2. Atomically consume its one-use authorization before process creation or
+   candidate-controlled code.
+3. Run baseline and treatment in fresh, non-sharing disposable workspaces with
+   fallback disabled.
+4. Record terminal receipts or explicit missing or unknown observations by the
+   sealed deadline. Retried attempts keep the original experimental unit.
+5. Do not expose interim outcomes to the candidate producer or product sponsor.
+
+Exit only when every registration has a terminal or explicit unknown record and
+all artifact, sandbox, and evaluator bindings verify. Any unresolved mismatch
+fails the registered claim.
+
+#### Phase 5 - Evaluation and independent review
+
+1. Apply deterministic and stochastic analyses separately under `E0`.
+2. Account for retries, attrition, exclusions, multiplicity, treatment lineage,
+   and any prior evaluation revisions exactly as preregistered.
+3. Generate a read-only evidence report from immutable receipts.
+4. Have the independent reviewer accept or reject only the registered claim and
+   record unresolved limitations.
+
+Exit with a bounded evidence verdict, not a runtime or extraction decision.
+
+#### Phase 6 - Product decision and retirement
+
+1. The product authorizer makes a separate decision to reject, repeat, or use
+   the evidence in later product-specific design work.
+2. Revoke every unused authorization and stop issuing new ones before teardown.
+3. Retain registered coordinates, terminal or unknown receipts, raw failures,
+   review, and retirement tombstone according to policy.
+4. Remove disposable workspaces only after evidence capture and report cleanup
+   failures explicitly.
+5. Remove the treatment adapter without modifying the product port, use case, or
+   domain model when the campaign ends.
+
+Foundation extraction remains blocked until two independently authored
+consumers, executable conformance, and an accepted extraction decision satisfy
+ADR-0013.
+
+#### Negative verification matrix
+
+| Scenario | Required result |
+| --- | --- |
+| Missing, reused, mismatched, expired, or revoked launch authorization | Candidate code never starts; an external denial observation is retained |
+| Crash after authorization consumption but before confirmed process start | Authorization remains consumed; attempt becomes missing or unknown at deadline |
+| Crash after process start but before terminal receipt | No automatic outcome-changing retry; attempt becomes missing or unknown under `E0` |
+| Duplicate registration or replayed request | Idempotent lookup returns the original identity; no second execution is authorized |
+| Build fails before producing an artifact | Terminal `BuildReceipt` records failure and no synthetic `T1` is created |
+| Artifact bytes change after registration or verification | Digest verification fails before execution and the claim fails closed |
+| Treatment has missing or ambiguous build lineage | Execution is rejected before launch |
+| Sandbox grants undeclared file, mount, network, environment, subprocess, or credential access | Launch is blocked or containment failure invalidates the claim |
+| Candidate can read the sealed corpus, outcomes, evidence credentials, or real projects | Campaign is invalid and cannot support promotion |
+| Retry is relabeled as an independent replication | Registration is rejected or analysis treats it as the original experimental unit |
+| `E0` input or analysis changes after sealing | A new `E0` and valid unseen assignment are required; prior results are not pooled |
+| Incompatible roles share effective or transitive administrative control | Evidence is calibration-only and cannot support promotion |
+| Candidate, adapter, or public product surface leaks framework, receipt, evaluator, or product-domain types | Source or packed-artifact gate fails |
+| Treatment failure triggers hidden baseline fallback | Attempt fails; fallback cannot contribute a successful score |
+| Read projection is deleted or corrupted | Projection rebuilds from immutable receipts without changing terminal facts |
+| `N-1` candidate is unavailable | Candidate-independent build, evaluation, evidence recovery, and cleanup still work |
+
+#### Operational readout
+
+The evidence custodian exposes a rebuildable campaign view with, at minimum:
+
+- counts of registered, denied, consumed, started, terminal, missing, and unknown
+  build and execution attempts;
+- orphan registrations, reused authorization attempts, receipt verification
+  failures, and artifact-lineage failures;
+- containment denials and differences between registered and actual grants;
+- cleanup backlog and elapsed time after campaign stop;
+- exact protocol, evaluator, artifact, sandbox-policy, and evidence-revision
+  digests for every reported verdict.
+
+Telemetry and projections are diagnostics only. They cannot create attempts,
+change terminal facts, waive a gate, or authorize execution. Raw evidence follows
+the admitted access and retention policy and never records unredacted ambient
+credentials.
+
+#### Stop and rollback procedure
+
+Stopping a campaign is an authority action, not a candidate callback:
+
+1. Stop issuing authorizations and atomically revoke every unused authorization.
+2. Prevent new launches while allowing already started sandboxes only their
+   sealed deadline and resource policy.
+3. Record unresolved in-flight attempts as missing or unknown; do not rewrite or
+   discard them and do not silently retry them.
+4. Preserve receipts, raw failures, review state, and the retirement tombstone
+   before deleting disposable resources.
+5. Restore the product's baseline composition by removing the treatment adapter;
+   no product contract, domain migration, or candidate `N-1` artifact is needed.
+
+#### Planning estimate
+
+For one admitted product-local campaign, the first implementation is expected to
+change approximately `2,500-6,500` lines including focused tests and fixtures:
+
+- campaign records and product-local adapters: `500-1,200` lines;
+- registrar, launch gate, receipts, and projections: `600-1,400` lines;
+- containment adapters and enforcement evidence: `400-1,000` lines;
+- evaluator adapters and report projection: `300-800` lines;
+- fault injection, mutants, restart, and packed-artifact tests: `700-2,100`
+  lines.
+
+This is a planning range, not scope authority. Re-estimate after a product owns
+the exact seam, sandbox technology, and evaluator. A universal runtime, plugin
+distribution, hot replacement, public SPI, production rollout, or Foundation
+extraction is explicitly outside this estimate and this plan.
 
 ### Retirement and retained evidence
 

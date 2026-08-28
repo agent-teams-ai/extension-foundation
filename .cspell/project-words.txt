@@ -40,6 +40,7 @@ reentrancy
 prebuilds
 replayable
 replayability
+rebuildable
 replaceability
 restartless
 sandboxed
@@ -51,6 +52,7 @@ SLSA
 Theia
 typosquatting
 UMEQ
+unredacted
 WASI
 Wasmtime
 watchlist
