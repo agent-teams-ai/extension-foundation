@@ -459,6 +459,28 @@ test("product source verifier binds source evidence to an exact executable Git t
       verifyProductSourceEvidence(duplicateRepository, { fixture: root, duplicate: root }),
       /E-INDEPENDENCE/u,
     );
+
+    await writeFile(join(root, "tsconfig.json"), JSON.stringify({
+      compilerOptions: {
+        paths: {
+          "@fixture/**": ["src/**"],
+        },
+      },
+    }));
+    await git(root, ["add", "tsconfig.json"]);
+    await git(root, ["commit", "--quiet", "-m", "test: add unsupported wildcard alias"]);
+    const multipleWildcards = structuredClone(evidence);
+    multipleWildcards.products.fixture.commit = await git(root, ["rev-parse", "HEAD"]);
+    multipleWildcards.products.fixture.tree = await git(root, ["rev-parse", "HEAD^{tree}"]);
+    const moduleResolutionFile = multipleWildcards.products.fixture.files.find(
+      file => file.path === "tsconfig.json",
+    );
+    assert.ok(moduleResolutionFile);
+    moduleResolutionFile.blob = await git(root, ["rev-parse", "HEAD:tsconfig.json"]);
+    await assert.rejects(
+      verifyProductSourceEvidence(multipleWildcards, { fixture: root }),
+      /path alias @fixture\/\*\* is outside the qualification subset/u,
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }

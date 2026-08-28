@@ -411,7 +411,15 @@ function resolveImportPath(importerPath, source, moduleResolution) {
     const suffix = mapping.pattern.slice(starIndex + 1);
     if (!source.startsWith(prefix) || !source.endsWith(suffix)) continue;
     const wildcard = source.slice(prefix.length, source.length - suffix.length);
-    matches.push(mapping.target.replace("*", wildcard));
+    const targetStarIndex = mapping.target.indexOf("*");
+    if (targetStarIndex === -1) {
+      fail("E-WIRING", `${moduleResolution.sourcePath} path alias ${mapping.pattern} lost its wildcard target`);
+    }
+    matches.push([
+      mapping.target.slice(0, targetStarIndex),
+      wildcard,
+      mapping.target.slice(targetStarIndex + 1),
+    ].join(""));
   }
   if (matches.length !== 1) return undefined;
   const resolved = posix.normalize(posix.join(
