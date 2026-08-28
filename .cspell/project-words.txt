@@ -24,6 +24,7 @@ journaled
 lifecycles
 linearizable
 linearization
+linearizability
 Lumino
 Modulith
 OpenCode
@@ -31,6 +32,7 @@ ORAS
 product-neutral
 recalibrated
 reentrancy
+prebuilds
 replaceability
 restartless
 sandboxed

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
 import { cp, mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -17,6 +18,7 @@ import {
   assertScaffoldOperationPaths,
   publishScaffoldPlan,
   runScaffoldCli,
+  validatePlanAgainstCatalog,
 } from "../architecture/checks/scaffold.mjs";
 import { validateBuiltPackageArtifacts } from "../architecture/checks/package-artifacts.mjs";
 import { validatePackageTopology as validateRepositoryPackageTopology } from "../architecture/checks/package-topology.mjs";
@@ -141,6 +143,7 @@ compositions:
         contractVersion: 1
     targetRoles:
       - foundation-component
+      - integration-adapter
     authorityVerifiers:
       - id: foundation.markdown-yaml-owner
         contractVersion: 1
@@ -571,6 +574,49 @@ test("apply rejects a plan after its catalog identity changes", async () => {
     assert.equal(await exists(join(root, "packages/example")), false);
   } finally {
     await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("catalog validation fully revalidates identity after owner resolution", async t => {
+  const mutations = {
+    id: "module.changed",
+    path: "packages/changed",
+    package_name: "@agent-teams/changed",
+    role: "integration-adapter",
+    owner_document: "ADR-0098",
+  };
+  for (const [field, value] of Object.entries(mutations)) {
+    await t.test(field, async () => {
+        const root = await createConsumer();
+        try {
+          const plan = await planScaffoldFromFile({
+            consumerRoot: root,
+            intentPath: "architecture/scaffolding-intents/example.yaml",
+          });
+          const mutateBeforeSecondPolicyRead = async id => {
+            const owner = await acceptedOwner(id);
+            const packageOwnership = owner.packageOwnership;
+            let validations = 0;
+            Object.defineProperty(owner, "packageOwnership", { get() {
+              if (++validations !== 1) return packageOwnership;
+              const catalogPath = join(root, "architecture/package-catalog.json");
+              const catalog = JSON.parse(readFileSync(catalogPath, "utf8"));
+              catalog.packages[0][field] = value;
+              writeFileSync(catalogPath, `${JSON.stringify(catalog)}\n`);
+              return packageOwnership;
+            } });
+            return owner;
+          };
+          await assert.rejects(
+            validatePlanAgainstCatalog(root, plan, mutateBeforeSecondPolicyRead),
+            /differs from the repository-owned package policy|package catalog is invalid/u,
+          );
+          assert.equal(await exists(join(root, "packages/example")), false);
+          assert.equal(await exists(join(root, "architecture/scaffolding-plans/module-dot-example.json")), false);
+        } finally {
+          await rm(root, { recursive: true, force: true });
+        }
+    });
   }
 });
 

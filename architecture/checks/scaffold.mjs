@@ -15,8 +15,7 @@ import {
   isEffectiveAcceptedDecision,
   isRecord,
   materializationPlanPath,
-  packageOwnerFeatures,
-  packageOwnerSemanticClassification,
+  packageOwnerPolicy,
   requireValidPackagePolicy,
 } from "./package-policy.mjs";
 
@@ -162,25 +161,31 @@ export function assertScaffoldOperationPaths(root, packagePath, operations) {
   }
 }
 
-async function validatePlanAgainstCatalog(root, plan, resolveOwner) {
+function scaffoldTargetMatchesEntry(target, entry) {
+  return entry !== undefined
+    && target.id === entry.id
+    && target.path === entry.path
+    && target.packageName === entry.package_name
+    && target.role === entry.role
+    && target.ownerDocument?.id === entry.owner_document;
+}
+
+export async function validatePlanAgainstCatalog(root, plan, resolveOwner) {
   if (!isRecord(plan) || !isRecord(plan.target) || !Array.isArray(plan.operations)) {
     throw new Error("scaffold plan has an invalid shape");
   }
   assertScaffoldPlanDigest(plan);
   const policy = await requireValidPackagePolicy(root);
   const entry = policy.entriesById.get(plan.target.id);
-  if (entry === undefined
-    || plan.target.path !== entry.path
-    || plan.target.packageName !== entry.package_name
-    || plan.target.role !== entry.role
-    || plan.target.ownerDocument?.id !== entry.owner_document) {
+  if (!scaffoldTargetMatchesEntry(plan.target, entry)) {
     throw new Error("scaffold target differs from the repository-owned package policy");
   }
   const owner = await resolveOwner(entry.owner_document);
-  if (packageOwnerFeatures(entry, owner) === undefined) {
+  const ownerPolicy = packageOwnerPolicy(entry, owner);
+  if (ownerPolicy === undefined) {
     throw new Error("scaffold owner must be one effective accepted ADR bound to the exact package and features");
   }
-  if (packageOwnerSemanticClassification(entry, owner)
+  if (ownerPolicy.semanticClassification
     !== policy.admissionsById.get(entry.id)?.semantic_classification) {
     throw new Error("scaffold admission semantic classification must equal the accepted owner ADR declaration");
   }
@@ -191,8 +196,28 @@ async function validatePlanAgainstCatalog(root, plan, resolveOwner) {
       throw new Error("scaffold semantic extraction decision must be one separate effective accepted ADR");
     }
   }
+  const revalidatedPolicy = await requireValidPackagePolicy(root);
+  const revalidatedEntry = revalidatedPolicy.entriesById.get(plan.target.id);
+  if (!scaffoldTargetMatchesEntry(plan.target, revalidatedEntry)) {
+    throw new Error("scaffold target differs from the repository-owned package policy");
+  }
+  const revalidatedOwnerPolicy = packageOwnerPolicy(revalidatedEntry, owner);
+  if (revalidatedOwnerPolicy === undefined) {
+    throw new Error("scaffold owner must be one effective accepted ADR bound to the exact package and features");
+  }
+  if (revalidatedOwnerPolicy.semanticClassification
+    !== revalidatedPolicy.admissionsById.get(revalidatedEntry.id)?.semantic_classification) {
+    throw new Error("scaffold admission semantic classification must equal the accepted owner ADR declaration");
+  }
+  const revalidatedAdmission = revalidatedPolicy.admissionsById.get(revalidatedEntry.id);
+  if (revalidatedAdmission?.semantic_classification === "foundation-module-semantics") {
+    const semanticDecision = await resolveOwner(revalidatedAdmission.semantic_extraction_decision);
+    if (!isEffectiveAcceptedDecision(semanticDecision, revalidatedAdmission.semantic_extraction_decision)) {
+      throw new Error("scaffold semantic extraction decision must be one separate effective accepted ADR");
+    }
+  }
   if (plan.operations.length === 0) throw new Error("scaffold plan must contain materialization operations");
-  assertScaffoldOperationPaths(root, entry.path, plan.operations);
+  assertScaffoldOperationPaths(root, revalidatedEntry.path, plan.operations);
   return plan;
 }
 
@@ -209,6 +234,9 @@ export async function publishScaffoldPlan({
   }), resolveOwner);
   const policy = await requireValidPackagePolicy(root);
   const entry = policy.entriesById.get(plan.target.id);
+  if (!scaffoldTargetMatchesEntry(plan.target, entry)) {
+    throw new Error("scaffold target differs from the repository-owned package policy");
+  }
   if (entry === undefined || planPath !== materializationPlanPath(entry)) {
     throw new Error(`plan path must be ${entry === undefined ? "the catalog-owned materialization path" : materializationPlanPath(entry)}`);
   }
@@ -303,6 +331,9 @@ export async function applyScaffoldPlan({
   const validated = await validatePlanAgainstCatalog(root, plan, resolveOwner);
   const policy = await requireValidPackagePolicy(root);
   const entry = policy.entriesById.get(validated.target.id);
+  if (!scaffoldTargetMatchesEntry(validated.target, entry)) {
+    throw new Error("scaffold target differs from the repository-owned package policy");
+  }
   if (entry === undefined || planPath !== materializationPlanPath(entry)) {
     throw new Error(`plan path must be ${entry === undefined ? "the catalog-owned materialization path" : materializationPlanPath(entry)}`);
   }
