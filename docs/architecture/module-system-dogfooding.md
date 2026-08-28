@@ -47,19 +47,22 @@ each role to an auditable principal and credential identity.
 
 | Role | Owns | Must not own in the same campaign |
 | --- | --- | --- |
-| Product sponsor | Capability seam, product outcome, behavioral-oracle semantics, and proposed acceptance policy and thresholds | Treatment production, evaluation, evidence review, or product authorization |
+| Product sponsor | Capability seam, product outcome, behavioral-oracle semantics, and proposed acceptance policy and thresholds | Treatment production, harness operation, evidence custody, evaluation, evidence review, or product authorization |
 | Product authorizer | Campaign admission, expiry, and any later product-use decision | Sponsorship, treatment production, harness operation, evidence custody, evaluation, or evidence review |
 | Candidate producer | Treatment implementation and declared build inputs | Harness operation, evidence custody, evaluation, review, or product authorization |
-| Harness operator | Sealed execution of the registered protocol | Candidate production, evidence custody, evaluation, review, or product authorization |
-| Evidence custodian | Attempt registration, append-only receipts, raw outputs, provenance, and retrieval | Candidate production, harness operation, evaluation, review, or product authorization |
+| Harness operator | Sealed execution of the registered protocol | Sponsorship, candidate production, evidence custody, evaluation, review, or product authorization |
+| Evidence custodian | Attempt registration, append-only receipts, raw outputs, provenance, and retrieval | Sponsorship, candidate production, harness operation, evaluation, review, or product authorization |
 | Independent evaluator | Application of a sealed product-approved oracle or rubric and registered analysis | Oracle semantics, treatment implementation, harness operation, evidence custody, review, or product authorization |
 | Independent reviewer | Acceptance or rejection of the evidence claim supported by one campaign | Sponsorship, authorization, implementation, execution, custody, or evaluation |
 
-Calibration may combine roles, but its output cannot support promotion. A
-campaign used for an architectural or product claim enforces the incompatible
-role combinations above with separate principals or workload identities,
-separate credentials, and auditable handoffs. Labels inside one process or
-account are not separation.
+Calibration may combine roles, but its output cannot support promotion. Neither
+the future candidate producer nor any principal in its effective control domain
+may access the final campaign corpus, holdout assignment, oracle outcomes, or
+interim results during measurement or calibration. Campaign admission binds
+historical non-access evidence. A campaign used for an architectural or product
+claim enforces the incompatible role combinations above with separate principals
+or workload identities, separate credentials, and auditable handoffs. Labels
+inside one process or account are not separation.
 
 Independence is evaluated over effective and transitive administrative control,
 including the human or organization, workflow administrator, and credential
@@ -131,6 +134,7 @@ Every campaign keeps the following coordinates distinct:
 | `TreatmentArtifact` | Candidate implementation under evaluation, also called `T1` |
 | `EvaluationRevision` | Immutable evaluator inputs, execution rules, analysis, and stop rules, also called `E0` |
 | `ExperimentalUnit` | The entity whose outcome contributes once to the registered analysis |
+| `TreatmentSlotIdentity` | One preregistered treatment variant linking exact source and build inputs to all expected execution dispositions, including the no-artifact case |
 | `BuildAttemptIdentity` | One preregistered build of exact source, recipe, and toolchain inputs; its output artifact is optional |
 | `AttemptIdentity` | One non-reused artifact execution, optionally linked to a prior attempt without becoming a new experimental unit |
 | `LaunchAuthorization` | One-use custodian-issued capability bound to one registered attempt and exact sandbox policy |
@@ -420,14 +424,24 @@ of the following in one immutable campaign decision:
 
 - the exact calibration authorization and its results;
 - immutable `ProtocolRevision` and `B0` coordinates;
-- the proposed treatment family, admitted deterministic and stochastic tracks,
-  exact immutable `E0`, evaluator owner, acceptance thresholds, exclusions,
-  expiry, retention, and stop rules;
+- the committed treatment source family and immutable `TreatmentSlotIdentity`
+  roster, including each exact source, recipe, toolchain, and complete mapping to
+  expected execution slots before the final holdout is revealed;
+- the admitted deterministic and stochastic tracks, exact immutable `E0`,
+  evaluator owner, acceptance thresholds, exclusions, expiry, retention, and
+  stop rules;
+- independently held final corpus and assignment coordinates, plus evidence that
+  the candidate producer and its effective control domain had no access before
+  treatment commitment and registered unblinding;
 - the campaign generation fence, authoritative durable time source, maximum
   uncertainty, and transactional linearization points for every expiry and
   deadline decision;
 - named principals, credentials, and effective control domains for every
   authority role;
+- a stop-authority matrix binding exactly one accountable owner and scoped
+  credential to registered analytic stop, discretionary abort, automatic expiry,
+  and emergency containment stop; any transition not registered by `E0` is
+  non-promotional;
 - the build and execution sandbox enforcer, deny-by-default policy, and allowed
   disposable resources;
 - the evidence store, immutable locator scheme, access policy, and projection
@@ -510,11 +524,14 @@ Phases 0 and 1. An unmeasured convenience abstraction is a no-go.
    deadline before releasing candidate-controlled code.
 3. Attest effective file, mount, network, environment, subprocess, and credential
    grants against the registered policy before candidate-controlled code runs.
-4. Run build and evaluation adapters with `B0` and deliberate mutants only. Seal
-   a no-treatment evaluator qualification that binds the exact proposed final
-   `E0` runner, oracle, scoring configuration, corpus coordinates, and report
-   renderer. The final `E0` may reference only these qualified artifacts and
-   configurations; qualification results remain non-promotional.
+4. Run build and evaluation adapters with `B0` and deliberate mutants only,
+   against a dedicated qualification corpus that is disjoint from the final
+   campaign holdout. Seal a no-treatment evaluator qualification binding the
+   exact proposed final runner, oracle implementation, scoring configuration, and
+   report renderer. The final `E0` may reference only these qualified artifacts
+   and configurations, while its independently held corpus and assignment are
+   sealed later in campaign admission. Qualification results remain
+   non-promotional.
 5. Exercise crash, timeout, cancellation, containment denial, receipt mutation,
    deletion, conflicting duplicates, crash durability, orphan reconciliation,
    campaign-expiry races, malicious output rendering, and restart behavior before
@@ -536,13 +553,15 @@ Exit only when all registered negative cases fail closed and a destroyed
 projection can be rebuilt from immutable receipts. Mutation, deletion, or
 conflicting terminal receipts must be rejected or detectably invalidate the
 claim. Calibration output cannot support promotion. Only after this exit may the
-product authorizer mint the immutable `ProtocolRevision`, freeze `B0`, and issue
-the final `E0` and campaign decision. The final `E0` references only evaluator
+product authorizer commit the treatment source family and
+`TreatmentSlotIdentity` roster, mint the immutable `ProtocolRevision`, freeze
+`B0`, seal the independently held final corpus and assignment, and issue the
+final `E0` and campaign decision. The final `E0` references only evaluator
 artifacts and configurations qualified by the exact
-`HarnessQualificationRevision`. Any later change to the harness, evaluator, or
-report path requires new calibration coordinates, a complete Phase 2 rerun, and
-campaign readmission. Calibration coordinates are never promoted or reused as
-campaign coordinates.
+`HarnessQualificationRevision`. Any later change to the harness, evaluator,
+report path, treatment roster, or final holdout requires new calibration or
+campaign coordinates as applicable and campaign readmission. Calibration
+coordinates are never promoted or reused as campaign coordinates.
 
 #### Phase 3 - Treatment build and protocol seal
 
@@ -551,13 +570,12 @@ campaign coordinates.
    harness artifacts and configurations before accepting any treatment
    registration. Any harness change requires new calibration authorization,
    Phase 2 qualification, and campaign re-admission.
-2. Before the first build registration, freeze an immutable roster of every
-   expected build slot in the admitted treatment family. Each slot binds admitted
-   source inputs, recipe, toolchain, and intended treatment identity without
-   revealing sealed corpus or outcomes to the candidate producer.
-3. Preregister one `BuildAttemptIdentity` for each started build slot. Reconcile
-   every expected slot to explicit non-registration, success, failure, or unknown;
-   no variant may disappear before registration.
+2. Validate the admitted immutable `TreatmentSlotIdentity` roster and its total
+   build-to-execution mapping before the first build registration. The final
+   corpus and outcomes remain unavailable to the candidate producer.
+3. Preregister one `BuildAttemptIdentity` for each started treatment slot.
+   Reconcile every expected slot to explicit non-registration, success, failure,
+   or unknown; no variant may disappear before registration.
 4. Consume the build authorization, build in containment, and record success,
    failure, or unknown outcome even when no artifact exists.
 5. Run the source and packed-artifact leakage audits against every produced
@@ -566,15 +584,18 @@ campaign coordinates.
    read-only snapshot or opened object whose runtime identity cannot change
    between verification and execution.
 
-Exit only when every executable treatment has one unambiguous build lineage and
-the sealed evaluator and exact runtime artifact are retrievable by immutable
-locators.
+Exit only when every treatment slot has a build disposition, every executable
+treatment has one unambiguous build lineage, every failed or unknown no-artifact
+slot remains mapped to non-executable `E0` observations, and the sealed evaluator
+and exact runtime artifacts are retrievable by immutable locators.
 
 #### Phase 4 - Sealed campaign execution
 
-1. Before registrations begin, the evidence custodian persists the immutable
-   roster of every attempt slot expected by `E0`, including experimental unit,
-   assignment, pair, and order.
+1. Before registrations begin, the evidence custodian materializes the immutable
+   roster of every attempt slot expected by `E0` from the admitted
+   `TreatmentSlotIdentity` mapping, including treatment slot, build disposition,
+   experimental unit, assignment, pair, and order. It cannot independently omit
+   a treatment slot.
 2. Preregister every execution attempt against one exact roster slot, artifact,
    `E0`, and `ExperimentalUnit`.
 3. Atomically consume its one-use authorization before process creation or
@@ -603,10 +624,10 @@ verify. Any unresolved mismatch fails the registered claim.
 
 1. Apply every admitted evaluation track under `E0`; when both deterministic and
    stochastic tracks are admitted, keep their analyses and verdicts separate.
-2. Reconcile the complete expected roster against registered, non-registered,
-   missing, unknown, excluded, and terminal slots, then account for retries,
-   attrition, multiplicity, treatment lineage, and prior evaluation revisions
-   exactly as preregistered.
+2. Reconcile the complete treatment, build, and execution join against registered,
+   non-registered, non-executable, missing, unknown, excluded, and terminal slots,
+   then account for retries, attrition, multiplicity, treatment lineage, and prior
+   evaluation revisions exactly as preregistered.
 3. Apply the monotonic receipt finality rule at the registered authoritative-time
    linearization point. The deadline classification remains the analytic result;
    late receipts are appended as late and cannot rewrite it.
@@ -665,15 +686,18 @@ ADR-0013.
 | Duplicate registration or replayed request | Idempotent lookup returns the original identity; no second execution is authorized |
 | Build fails before producing an artifact | Terminal `BuildReceipt` records failure and no synthetic `T1` is created |
 | An expected treatment build slot is omitted before registration | Its immutable roster slot resolves to explicit non-registration or unknown and remains in attrition accounting |
+| A build slot lacks an execution mapping or produces no artifact | The admitted treatment-to-build-to-execution join retains explicit non-executable observations; the variant remains in attrition analysis |
 | Artifact bytes or resolution target change after verification | Execution uses the already verified immutable object or fails before process creation |
 | Treatment has missing or ambiguous build lineage | Execution is rejected before launch |
 | Sandbox grants undeclared file, mount, network, environment, subprocess, or credential access | Pre-release attestation blocks launch; runtime confinement loss triggers emergency termination and credential revocation |
 | Candidate can read the sealed corpus, outcomes, evidence credentials, or real projects | Campaign is invalid and cannot support promotion |
+| Candidate producer or its control domain accessed final holdout data during measurement or calibration | Campaign admission fails; a fresh independently held holdout and new campaign coordinates are required |
 | An expected `E0` slot is never registered | An explicit non-registration or unknown observation remains in attrition accounting and cannot disappear from the report |
 | Retry is relabeled as an independent replication | Registration is rejected or analysis treats it as the original experimental unit |
 | `E0` input or analysis changes after sealing | A new `E0` and valid unseen assignment are required; prior results are not pooled |
 | Evaluator, oracle, adapter, renderer, or harness component changes after qualification or on restart | Re-attestation fails, the fence closes, and Phase 2 plus campaign admission must be repeated |
 | Incompatible roles share effective or transitive administrative control | Evidence is calibration-only and cannot support promotion |
+| Sponsor can operate harness or custody, or an unregistered principal requests stop | Admission or transition fails closed; any already stopped campaign is non-promotional |
 | Candidate, adapter, or public product surface leaks framework, receipt, evaluator, or product-domain types | Source or packed-artifact gate fails |
 | Treatment failure triggers hidden baseline fallback | Attempt fails; fallback cannot contribute a successful score |
 | Read projection is deleted or corrupted | Projection rebuilds from immutable receipts without changing terminal facts |
@@ -711,9 +735,13 @@ credentials.
 
 #### Stop and rollback procedure
 
-Stopping a campaign is an authority action, not a candidate callback. An orderly
-stop performs these steps. Campaign expiry starts the same fence closure
-automatically even when the retirement workflow is delayed:
+Stopping a campaign is an authority action, not a candidate callback. The
+admitted stop-authority matrix determines the only credential and accountable
+owner allowed to initiate each transition. A registered analytic trigger is
+validated by the evidence custodian and executed by the launch gate; expiry is
+automatic; a discretionary abort is non-promotional. An orderly stop performs
+these steps. Campaign expiry starts the same fence closure automatically even
+when the retirement workflow is delayed:
 
 1. Advance the campaign generation fence, stop issuing authorizations, revoke
    issued authorizations and candidate-visible credentials, and block
