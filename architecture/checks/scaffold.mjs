@@ -368,12 +368,30 @@ export function createScaffoldPlanCommands({ loadPackagePolicy }) {
   };
 }
 
-export async function publishScaffoldPlan(options) {
-  return publishScaffoldPlanWithPolicy(options, requireValidPackagePolicy);
+export async function publishScaffoldPlan({
+  root,
+  intentPath,
+  planPath,
+  onPublicationFault = async () => undefined,
+}) {
+  return publishScaffoldPlanWithPolicy({
+    root,
+    intentPath,
+    planPath,
+    onPublicationFault,
+  }, requireValidPackagePolicy);
 }
 
-export async function applyScaffoldPlan(options) {
-  return applyScaffoldPlanWithPolicy(options, requireValidPackagePolicy);
+export async function applyScaffoldPlan({
+  root,
+  planPath,
+  expectedPlanDigest,
+}) {
+  return applyScaffoldPlanWithPolicy({
+    root,
+    planPath,
+    expectedPlanDigest,
+  }, requireValidPackagePolicy);
 }
 
 function receiptExitCode(receipt) {
