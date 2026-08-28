@@ -57,7 +57,7 @@ test("unified info and check expose the qualified Extension authority", () => {
   const info = run(repositoryRoot, "info");
   assert.equal(info.command, "docs.info");
   assert.equal(info.result.projectId, "extension-foundation");
-  assert.deepEqual(info.result.types.map(({ type }) => type).sort(), ["adr", "open-decision"]);
+  assert.deepEqual(info.result.types.map(({ type }) => type).sort(), ["adr", "architecture", "open-decision"]);
   assert.deepEqual(info.result.ownerIds, ["architecture", "architecture/security", "architecture/tooling"]);
   assert.equal(info.result.agentWorkflow.skillPath, ".agents/skills/docs-authoring/SKILL.md");
 
@@ -149,6 +149,18 @@ test("new previews and applies every supported type only inside a disposable rep
     const appliedOpenDecision = run(fixture, ...openDecisionArgs, "--apply");
     assert.equal(appliedOpenDecision.result.writeState, "applied");
     assert.equal(await exists(join(fixture, appliedOpenDecision.result.documentPath)), true);
+
+    const architectureArgs = [
+      "new", "--type", "architecture", "--id", "architecture.disposable",
+      "--title", "Disposable Architecture", "--owner", "architecture/tooling",
+      "--summary", "Proves architecture placement in an isolated fixture.",
+    ];
+    const architecture = run(fixture, ...architectureArgs, "--dry-run");
+    assert.equal(architecture.result.documentPath, "docs/architecture/disposable-architecture.md");
+    assert.equal(architecture.result.reachability.indexPath, "docs/README.md");
+    const appliedArchitecture = run(fixture, ...architectureArgs, "--apply");
+    assert.equal(appliedArchitecture.result.writeState, "applied");
+    assert.equal(await exists(join(fixture, appliedArchitecture.result.documentPath)), true);
 
     const doctor = run(fixture, "doctor");
     assert.equal(doctor.result.transaction.state, "idle");
