@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
 import { cp, mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -96,6 +97,7 @@ compositions:
         contractVersion: 1
     targetRoles:
       - foundation-component
+      - integration-adapter
     authorityVerifiers:
       - id: foundation.markdown-yaml-owner
         contractVersion: 1
@@ -446,6 +448,69 @@ test("apply rejects a plan after its catalog identity changes", async () => {
     assert.equal(await exists(join(root, "packages/example")), false);
   } finally {
     await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("plan and apply fully revalidate catalog identity after owner resolution", async t => {
+  const mutations = {
+    id: "module.changed",
+    path: "packages/changed",
+    package_name: "@agent-teams/changed",
+    role: "integration-adapter",
+    owner_document: "ADR-0098",
+  };
+  for (const operation of ["plan", "apply"]) {
+    for (const [field, value] of Object.entries(mutations)) {
+      await t.test(`${operation}:${field}`, async () => {
+        const root = await createConsumer();
+        try {
+          let planDigest;
+          if (operation === "apply") {
+            ({ planDigest } = await publishScaffoldPlan({
+              root,
+              intentPath: "architecture/scaffolding-intents/example.yaml",
+              planPath: "architecture/scaffolding-plans/module-dot-example.json",
+              resolveOwner: acceptedOwner,
+            }));
+          }
+          const mutateAfterSecondPolicyRead = async id => {
+            const owner = await acceptedOwner(id);
+            const packageOwnership = owner.packageOwnership;
+            let validations = 0;
+            Object.defineProperty(owner, "packageOwnership", { get() {
+              if (++validations !== 2) return packageOwnership;
+              const catalogPath = join(root, "architecture/package-catalog.json");
+              const catalog = JSON.parse(readFileSync(catalogPath, "utf8"));
+              catalog.packages[0][field] = value;
+              writeFileSync(catalogPath, `${JSON.stringify(catalog)}\n`);
+              return packageOwnership;
+            } });
+            return owner;
+          };
+          const action = operation === "plan"
+            ? publishScaffoldPlan({
+                root,
+                intentPath: "architecture/scaffolding-intents/example.yaml",
+                planPath: "architecture/scaffolding-plans/module-dot-example.json",
+                resolveOwner: mutateAfterSecondPolicyRead,
+              })
+            : applyScaffoldPlan({
+                root,
+                planPath: "architecture/scaffolding-plans/module-dot-example.json",
+                expectedPlanDigest: planDigest,
+                resolveOwner: mutateAfterSecondPolicyRead,
+              });
+          await assert.rejects(action, /differs from the repository-owned package policy/u);
+          assert.equal(await exists(join(root, "packages/example")), false);
+          assert.equal(
+            await exists(join(root, "architecture/scaffolding-plans/module-dot-example.json")),
+            operation === "apply",
+          );
+        } finally {
+          await rm(root, { recursive: true, force: true });
+        }
+      });
+    }
   }
 });
 
