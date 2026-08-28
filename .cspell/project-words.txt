@@ -11,6 +11,8 @@ cutovers
 dagrejs
 DeepSeek
 digest-pinned
+dogfood
+dogfooding
 Extism
 exfiltration
 GHCR
