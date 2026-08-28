@@ -144,7 +144,7 @@ Every campaign keeps the following coordinates distinct:
 | `EvaluationRevision` | Immutable evaluator inputs, execution rules, analysis, and stop rules, also called `E0` |
 | `ExperimentalUnit` | The entity whose outcome contributes once to the registered analysis |
 | `SourcePreparationSlotIdentity` | One immutable, preregistered source-authoring slot created before source work; its terminal source is optional |
-| `SourcePreparationReceipt` | One externally retained terminal source digest or explicit failed, missing, or unknown no-source disposition for an expected preparation slot |
+| `SourcePreparationReceipt` | One authenticated durable start-to-terminal record for an expected source slot, ending in an exact source digest or explicit failed, missing, denied, or unknown no-source disposition |
 | `TreatmentSlotIdentity` | One campaign slot mapped one-to-one from a source-preparation slot, linking an optional exact source and build inputs to all expected no-source, no-artifact, and execution observations |
 | `BuildAttemptIdentity` | One preregistered build of exact source, recipe, and toolchain inputs; its output artifact is optional |
 | `AttemptIdentity` | One non-reused artifact execution, optionally linked to a prior attempt without becoming a new experimental unit |
@@ -440,22 +440,35 @@ family, candidate producer, inputs, forbidden resources, expiry, a fresh
 source-preparation generation fence, and the complete immutable roster of
 `SourcePreparationSlotIdentity` values before any source authoring starts. No
 slot may be added, deleted, substituted, or reused after authorization. The
-authorization permits source authoring only. It cannot
+first authorization also preregisters the source-preparation lineage, maximum
+rounds, and selection and multiplicity rules. Every later related authorization
+must reference that lineage and all prior slots and dispositions; an unplanned
+round is ineligible for the campaign. The authorization permits source authoring
+only. It cannot
 allocate campaign coordinates, register or build a `T1`, execute candidate
 code, access the final corpus or assignment, observe qualification or campaign
 outcomes, support a promotional claim, authorize product use, or imply
 Foundation extraction.
 
 The candidate producer receives only blinded, outcome-independent authoring
-inputs. Before work, the evidence custodian registers every authorized source
-slot. It then retains exactly one `SourcePreparationReceipt` per slot containing
-the terminal exact source digest or an explicit failed, missing, or unknown
-no-source disposition. Expiry, scope violation, a changed digest, or a roster
-mismatch closes the preparation fence. A later campaign admission maps every
-preparation slot one-to-one to exactly one `TreatmentSlotIdentity`; a no-source
-slot remains an explicit non-buildable `E0` observation and cannot disappear. A
-produced source becomes eligible for a campaign only through that mapping and
-becomes a `T1` only after an admitted build produces and verifies the artifact.
+inputs inside a fresh custody-controlled disposable workspace that rejects
+preexisting source bytes and closes imports after the admitted terminal time.
+Before work, the evidence custodian registers every authorized source slot. It
+starts immutable retention and retirement-tombstone obligations at that
+registration even if no source, campaign, build, or execution follows. It then
+retains exactly one authenticated durable `SourcePreparationReceipt` per slot.
+The receipt binds the authorization digest and generation, lineage, slot,
+authorized inputs, producer principal, qualified registrar identity, workspace
+clean-state attestation, and authoritative-time start and terminal events. Its
+terminal result is the exact source digest or an explicit failed, missing,
+denied, or unknown no-source disposition. Expiry, scope violation, a changed
+digest, a roster mismatch, or source bytes existing outside the admitted window
+closes the preparation fence and makes the slot inadmissible. A later campaign
+admission maps every preparation slot one-to-one to exactly one
+`TreatmentSlotIdentity`; a no-source slot remains an explicit non-buildable `E0`
+observation and cannot disappear. A produced source becomes eligible for a
+campaign only through that mapping and becomes a `T1` only after an admitted
+build produces and verifies the artifact.
 
 #### Campaign admission checklist
 
@@ -467,7 +480,8 @@ records one immutable decision binding the exact manifest and receipt. Changing
 either invalidates admission. Together they contain all of the following:
 
 - the exact calibration authorization and its results;
-- the exact source-preparation authorization, fence history, complete immutable
+- the complete source-preparation lineage, every related authorization and fence
+  history, the preregistered selection and multiplicity rules, every immutable
   slot roster, and one terminal `SourcePreparationReceipt` per expected slot;
 - immutable `ProtocolRevision` and `B0` coordinates;
 - the committed treatment source family and immutable `TreatmentSlotIdentity`
@@ -507,8 +521,13 @@ either invalidates admission. Together they contain all of the following:
   digests; `CampaignAdmissionManifest` digest; dossier commit, tree, and file
   manifest; measurement authorization and discovery records; every relied-upon
   product commit and tree; `B0` artifact, build receipt, and provenance; complete
-  source-preparation and treatment rosters; and the exact equality result. An
-  unresolved placeholder, foreign or missing receipt, or mismatch is a no-go;
+  source-preparation and treatment rosters; and the exact equality result. For
+  every mandatory join declared by the protocol, the receipt enumerates expected
+  and observed repository identity, commit, and tree values from the dossier,
+  measurement authorization, discovery evidence, and `B0` build provenance.
+  Every relied-upon product state must be equal across those records; an absent
+  join, unresolved placeholder, foreign or missing receipt, or unequal value is
+  a no-go;
 - evidence that any new authoring grammar remains product-local under ADR-0014
   and its accepted level-specific owning-product decision.
 
@@ -751,9 +770,12 @@ ADR-0013.
 | Campaign expires after authorization consumption but before process release | Expiry closes the generation fence; process creation is denied and the denial is retained |
 | Calibration expires after authorization consumption but before process release | Calibration expiry closes its separate generation fence; process creation is denied and cannot produce qualification evidence |
 | Source preparation starts before Phase 2 exit, without its authorization, after expiry, or across a closed preparation fence | Source work is inadmissible, the slot records a denied or unknown disposition, and no resulting bytes may enter a campaign |
+| Source preparation presents preexisting or late bytes, or its receipt lacks authorization, generation, producer, workspace, registrar, input, or authoritative-time bindings | The slot is inadmissible and remains a no-source observation; campaign admission fails on any attempted reuse |
 | A preparation slot is omitted, added, substituted, reused, or resolves to changed source bytes | The preparation fence closes; the mismatch is retained and campaign admission fails |
+| A later preparation authorization omits prior lineage, exceeds preregistered multiplicity, or changes the selection rule | Every related round remains retained and the campaign is inadmissible under that lineage |
 | Preparation-to-treatment mapping is missing, duplicated, or not one-to-one | Campaign admission fails; every expected slot remains visible as an explicit no-source or invalid observation |
 | Dossier consistency receipt is missing, foreign, stale, forged, produced by an unqualified verifier, or binds different dossier, product source, manifest, or `B0` provenance | Campaign admission fails closed and the mismatch is retained |
+| A mandatory repository, commit, or tree join is absent or unequal across dossier, measurement, discovery, and `B0` provenance | The consistency verifier records the expected and observed mismatch and campaign admission fails |
 | Authoritative time is unavailable, uncertain beyond policy, rolls backward, jumps forward, or differs after restart | Registration, release, and receipt classification use admitted transactional time rules or fail closed; no later interpretation can reclassify the event |
 | Concurrent consumers race for one authorization | Exactly one consumption wins; all other launches are denied before process creation |
 | Campaign stop races with a consumed but unstarted launch | The generation fence prevents process creation and records a terminal denial or unknown disposition |
@@ -868,12 +890,14 @@ this estimate and this plan.
 ### Retirement and retained evidence
 
 An admitted product protocol names an exact expiry and review owner. Before any
-attempt exists, an unowned or expired proposal may be withdrawn through the
-product's approved process. Once a build or execution attempt is registered, its
-immutable coordinates, terminal receipt or missing or unknown observation, and
-every raw object and authorization, source-preparation receipt, dossier
-consistency receipt, sandbox, evaluation, review, and decision event required to
-rebuild its verdict are retained with a retirement tombstone.
+source slot or campaign roster exists, an unowned or expired proposal may be
+withdrawn through the product's approved process. Once a source-preparation slot,
+campaign manifest or roster, build attempt, or execution attempt is registered,
+its complete lineage, immutable coordinates, terminal receipt or missing or
+unknown observation, and every raw object and authorization,
+source-preparation receipt, dossier consistency receipt, sandbox, evaluation,
+review, and decision event required to rebuild its verdict are retained with a
+retirement tombstone even when no build or execution attempt ever starts.
 Verdict validity cannot outlive the shortest referenced retention period. Later
 evidence expiry or destruction appends a tombstone and never rewrites the prior
 record. Failed or missing attempts are never deleted or rewritten to simplify
@@ -896,6 +920,12 @@ A future implementation conforms to this proposal only when:
   outcomes, preregisters its complete immutable slot roster before authoring, and
   gives every expected source slot one retained terminal disposition before
   campaign admission;
+- each source-preparation receipt proves an admitted clean-workspace start and
+  terminal event under the exact authorization, fence generation, inputs,
+  producer, qualified registrar, and authoritative time;
+- source-preparation lineage, multiplicity, and selection rules are preregistered,
+  and every related authorization and disposition remains in campaign attrition
+  and retained evidence even when no later attempt starts;
 - calibration registrations, launches, and receipts bind immutable
   calibration-only coordinates that cannot be promoted or reused as campaign
   coordinates;
@@ -908,7 +938,9 @@ A future implementation conforms to this proposal only when:
   and missing, unknown, or retrospectively excluded entries block admission;
 - an independently operated, qualified consistency verifier signs a receipt over
   the exact admission manifest, dossier tree, product source trees, source-slot
-  bijection, and `B0` provenance, and all equality checks pass;
+  bijection, and `B0` provenance, enumerates expected and observed values for
+  every mandatory repository, commit, and tree join, and all equality checks
+  pass;
 - every treatment semantic is classified and remains within its admitted
   `L0`-`L4` level and accepted product trigger;
 - product ports, DTOs, domain types, and application use cases expose no module
