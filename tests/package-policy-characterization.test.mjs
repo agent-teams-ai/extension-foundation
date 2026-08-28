@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,6 +21,7 @@ import {
   createDocsOwnerCatalog as createOwnerCatalog,
   ownerEvidenceFromDocsExecution,
 } from "../architecture/checks/package-policy/docs-owner-source.mjs";
+import { createAcceptedDecisionSource } from "../architecture/checks/package-policy/accepted-decision-source.mjs";
 
 const BASE_SHA = "0836f62a386e253b156271f0b8f7defc969f3580";
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
@@ -136,6 +137,43 @@ test("duplicate package paths retain their exact diagnostics and order", async (
   }
 });
 
+test("admission diagnostics retain their position before catalog relationship diagnostics", async () => {
+  const root = await policyFixture({
+    version: 1,
+    packages: [
+      entry(),
+      entry({ id: "module.other", package_name: "@agent-teams/other" }),
+    ],
+  });
+  try {
+    const admissionPath = join(root, packageAdmissionPath(entry()));
+    const admission = JSON.parse(await readFile(admissionPath, "utf8"));
+    admission.semantic_classification = "invalid";
+    await writeFile(admissionPath, `${JSON.stringify(admission)}\n`);
+    assert.deepEqual((await loadPackagePolicy(root)).errors, [
+      "module.example: admission.semantic_classification must identify ordinary-library or foundation-module-semantics",
+      "module.other: duplicate path packages/example",
+      "module.other: package path overlaps module.example",
+    ]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("orphan admission diagnostics use deterministic binary filename order", async () => {
+  const root = await policyFixture({ version: 1, packages: [] });
+  try {
+    await writeFixture(root, "architecture/package-admissions/zeta.json", "{}\n");
+    await writeFixture(root, "architecture/package-admissions/alpha.json", "{}\n");
+    assert.deepEqual((await loadPackagePolicy(root)).errors, [
+      "architecture/package-admissions/alpha.json: orphan admission evidence is not declared by architecture/package-catalog.json",
+      "architecture/package-admissions/zeta.json: orphan admission evidence is not declared by architecture/package-catalog.json",
+    ]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("policy filesystem sources are fresh and preserve JSON/YAML failures", async () => {
   const root = await policyFixture({ version: 1, packages: [] });
   try {
@@ -245,9 +283,48 @@ test("Docs envelopes, supersession, duplicates, and per-instance caching are cha
   await assert.rejects(rejected.resolve("ADR-0099"), /Docs failed/u);
   await assert.rejects(rejected.listEffective(), /Docs failed/u);
   assert.equal(rejectionCalls, 1);
+  const governanceFailure = createOwnerCatalog({
+    loadDocuments: async () => { throw new Error("Docs failed"); },
+    loadAcceptedDecisionAuthority: async () => { throw new Error("Governance failed"); },
+  });
+  await assert.rejects(governanceFailure.resolve("ADR-0099"), /Governance failed/u);
   assert.equal((await createOwnerCatalog({ loadDocuments: async () => evidence }).resolve("ADR-0099")).id, "ADR-0099");
   assert.throws(() => ownerEvidenceFromDocsExecution({ envelope: { outcome: "failure" } }), /could not enumerate/u);
   assert.throws(() => ownerEvidenceFromDocsExecution({ envelope: { outcome: "success" } }), TypeError);
+});
+
+test("accepted-decision authority caching is isolated per repository root", async () => {
+  const calls = [];
+  const source = createAcceptedDecisionSource({
+    loadLedger: async root => {
+      calls.push(`ledger:${root}`);
+      const id = root === "root-a" ? "ADR-0001" : "ADR-0002";
+      return {
+        schemaVersion: 1,
+        algorithm: "sha256",
+        decisions: [{ id, path: `docs/decisions/${id}.md`, immutableDigest: `sha256:${"a".repeat(64)}` }],
+      };
+    },
+    loadDecisionIndex: async root => {
+      calls.push(`index:${root}`);
+      const id = root === "root-a" ? "ADR-0001" : "ADR-0002";
+      return `## Proposed decisions\n\n## Accepted decisions\n\n- [${id}: fixture](./fixture.md)\n\n## Superseded decisions\n`;
+    },
+    assertGovernance: async root => { calls.push(`governance:${root}`); },
+  });
+  const first = await source.loadAuthority("root-a");
+  const second = await source.loadAuthority("root-b");
+  await source.loadAuthority("root-a");
+  assert.deepEqual([...first.acceptedEntries.keys()], ["ADR-0001"]);
+  assert.deepEqual([...second.acceptedEntries.keys()], ["ADR-0002"]);
+  assert.deepEqual(calls, [
+    "index:root-a",
+    "governance:root-a",
+    "ledger:root-a",
+    "index:root-b",
+    "governance:root-b",
+    "ledger:root-b",
+  ]);
 });
 
 test("production CLIs preserve process output and exit codes", { skip: skipExpensiveIntegration }, async () => {

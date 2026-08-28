@@ -25,28 +25,31 @@ export function createLoadPackagePolicy({
       loadAllowedRoles(root),
       loadAdmissionDirectory(root),
     ]);
-    const policy = catalogPolicy(catalog, allowedRoles);
+    const { diagnosticGroups, rootValid, ...policy } = catalogPolicy(catalog, allowedRoles);
     const admissionsById = new Map();
     const admissionRecordDigestsById = new Map();
-    if (!Array.isArray(catalog?.packages)) {
+    if (!rootValid) {
       return { ...policy, admissionsById, admissionRecordDigestsById };
     }
-    const errors = [...policy.errors, ...admissionDirectory.errors];
+    const errors = [...admissionDirectory.errors];
     const expectedAdmissionFiles = new Set();
-    for (const entry of policy.entries) {
-      if (!PACKAGE_ID.test(entry.id)) continue;
-      expectedAdmissionFiles.add(
-        packageAdmissionPath(entry).slice(PACKAGE_ADMISSION_DIRECTORY.length + 1),
-      );
-      try {
-        if (!admissionDirectory.available) throw new Error("admission evidence directory is unavailable");
-        const { admission, digest } = await admissionDirectory.load(entry);
-        validateAdmission(entry, admission, errors);
-        admissionsById.set(entry.id, admission);
-        admissionRecordDigestsById.set(entry.id, digest);
-      } catch (error) {
-        errors.push(`${entry.id}: admission evidence is missing or invalid: ${error instanceof Error ? error.message : String(error)}`);
+    for (const { entry, entryErrors, relationErrors } of diagnosticGroups) {
+      errors.push(...entryErrors);
+      if (entry !== undefined && PACKAGE_ID.test(entry.id)) {
+        expectedAdmissionFiles.add(
+          packageAdmissionPath(entry).slice(PACKAGE_ADMISSION_DIRECTORY.length + 1),
+        );
+        try {
+          if (!admissionDirectory.available) throw new Error("admission evidence directory is unavailable");
+          const { admission, digest } = await admissionDirectory.load(entry);
+          validateAdmission(entry, admission, errors);
+          admissionsById.set(entry.id, admission);
+          admissionRecordDigestsById.set(entry.id, digest);
+        } catch (error) {
+          errors.push(`${entry.id}: admission evidence is missing or invalid: ${error instanceof Error ? error.message : String(error)}`);
+        }
       }
+      errors.push(...relationErrors);
     }
     if (admissionDirectory.available) {
       for (const entry of admissionDirectory.entries) {

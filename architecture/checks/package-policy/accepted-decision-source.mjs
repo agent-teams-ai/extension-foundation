@@ -8,14 +8,14 @@ export function createAcceptedDecisionSource({
   loadDecisionIndex,
   assertGovernance,
 }) {
-  let authorityExecution;
+  const authorityExecutions = new Map();
   const loadEntries = async root => acceptedDecisionEntries(await loadLedger(root));
   const loadStatuses = async root => authoritativeDecisionStatuses(await loadDecisionIndex(root));
   return {
     loadEntries,
     loadIds: async root => new Set((await loadEntries(root)).keys()),
     loadAuthority: root => {
-      authorityExecution ??= (async () => {
+      if (!authorityExecutions.has(root)) authorityExecutions.set(root, (async () => {
         const results = await Promise.allSettled([
           loadStatuses(root),
           assertGovernance(root),
@@ -28,8 +28,8 @@ export function createAcceptedDecisionSource({
           authoritativeStatuses: results[0].value,
           acceptedEntries: results[2].value,
         };
-      })();
-      return authorityExecution;
+      })());
+      return authorityExecutions.get(root);
     },
   };
 }

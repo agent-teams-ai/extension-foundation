@@ -620,6 +620,37 @@ test("catalog validation fully revalidates identity after owner resolution", asy
   }
 });
 
+test("catalog validation fully revalidates admission semantics after owner resolution", async () => {
+  const root = await createConsumer();
+  try {
+    const plan = await planScaffoldFromFile({
+      consumerRoot: root,
+      intentPath: "architecture/scaffolding-intents/example.yaml",
+    });
+    const mutateAdmissionBeforeSecondPolicyRead = async id => {
+      const owner = await acceptedOwner(id);
+      const packageOwnership = owner.packageOwnership;
+      Object.defineProperty(owner, "packageOwnership", { get() {
+        const admissionPath = join(root, "architecture/package-admissions/module-dot-example.json");
+        const admission = JSON.parse(readFileSync(admissionPath, "utf8"));
+        admission.semantic_classification = "foundation-module-semantics";
+        admission.semantic_extraction_decision = "ADR-0098";
+        writeFileSync(admissionPath, `${JSON.stringify(admission)}\n`);
+        return packageOwnership;
+      } });
+      return owner;
+    };
+    await assert.rejects(
+      validatePlanAgainstCatalog(root, plan, mutateAdmissionBeforeSecondPolicyRead),
+      /semantic classification/u,
+    );
+    assert.equal(await exists(join(root, "packages/example")), false);
+    assert.equal(await exists(join(root, "architecture/scaffolding-plans/module-dot-example.json")), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("apply rejects a symbolic-link plan file", async () => {
   const root = await createConsumer();
   try {

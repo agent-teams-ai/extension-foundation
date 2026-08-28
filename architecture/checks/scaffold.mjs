@@ -170,7 +170,7 @@ function scaffoldTargetMatchesEntry(target, entry) {
     && target.ownerDocument?.id === entry.owner_document;
 }
 
-export async function validatePlanAgainstCatalog(root, plan, resolveOwner) {
+async function validatePlanAndCatalog(root, plan, resolveOwner) {
   if (!isRecord(plan) || !isRecord(plan.target) || !Array.isArray(plan.operations)) {
     throw new Error("scaffold plan has an invalid shape");
   }
@@ -218,7 +218,11 @@ export async function validatePlanAgainstCatalog(root, plan, resolveOwner) {
   }
   if (plan.operations.length === 0) throw new Error("scaffold plan must contain materialization operations");
   assertScaffoldOperationPaths(root, revalidatedEntry.path, plan.operations);
-  return plan;
+  return { plan, entry: revalidatedEntry };
+}
+
+export async function validatePlanAgainstCatalog(root, plan, resolveOwner) {
+  return (await validatePlanAndCatalog(root, plan, resolveOwner)).plan;
 }
 
 export async function publishScaffoldPlan({
@@ -228,17 +232,12 @@ export async function publishScaffoldPlan({
   onPublicationFault = async () => undefined,
 }) {
   const resolveOwner = createDocsOwnerResolver(root);
-  const plan = await validatePlanAgainstCatalog(root, await planScaffoldFromFile({
+  const { plan, entry } = await validatePlanAndCatalog(root, await planScaffoldFromFile({
     consumerRoot: root,
     intentPath,
   }), resolveOwner);
-  const policy = await requireValidPackagePolicy(root);
-  const entry = policy.entriesById.get(plan.target.id);
-  if (!scaffoldTargetMatchesEntry(plan.target, entry)) {
-    throw new Error("scaffold target differs from the repository-owned package policy");
-  }
-  if (entry === undefined || planPath !== materializationPlanPath(entry)) {
-    throw new Error(`plan path must be ${entry === undefined ? "the catalog-owned materialization path" : materializationPlanPath(entry)}`);
+  if (planPath !== materializationPlanPath(entry)) {
+    throw new Error(`plan path must be ${materializationPlanPath(entry)}`);
   }
   const destination = safePlanPath(root, planPath);
   await ensurePlanDirectory(root);
@@ -328,14 +327,9 @@ export async function applyScaffoldPlan({
   if (plan.planDigest !== expectedPlanDigest) {
     throw new Error("scaffold plan differs from the reviewed plan digest");
   }
-  const validated = await validatePlanAgainstCatalog(root, plan, resolveOwner);
-  const policy = await requireValidPackagePolicy(root);
-  const entry = policy.entriesById.get(validated.target.id);
-  if (!scaffoldTargetMatchesEntry(validated.target, entry)) {
-    throw new Error("scaffold target differs from the repository-owned package policy");
-  }
-  if (entry === undefined || planPath !== materializationPlanPath(entry)) {
-    throw new Error(`plan path must be ${entry === undefined ? "the catalog-owned materialization path" : materializationPlanPath(entry)}`);
+  const { plan: validated, entry } = await validatePlanAndCatalog(root, plan, resolveOwner);
+  if (planPath !== materializationPlanPath(entry)) {
+    throw new Error(`plan path must be ${materializationPlanPath(entry)}`);
   }
   return applyFilesystemScaffold(root, validated);
 }

@@ -24,14 +24,13 @@ export function createDocsOwnerCatalog({ loadDocuments, loadAcceptedDecisionAuth
   let authoritySnapshotExecution;
   const authoritySnapshot = async () => {
     authoritySnapshotExecution ??= (async () => {
-      const results = await Promise.allSettled([
+      const [documents, authority] = await Promise.allSettled([
         loadDocuments(),
         loadAcceptedDecisionAuthority?.(),
       ]);
-      for (const result of results) {
-        if (result.status === "rejected") throw result.reason;
-      }
-      return { documents: results[0].value, authority: results[1].value };
+      if (authority.status === "rejected") throw authority.reason;
+      if (documents.status === "rejected") throw documents.reason;
+      return { documents: documents.value, authority: authority.value };
     })();
     return authoritySnapshotExecution;
   };

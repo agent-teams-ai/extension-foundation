@@ -193,7 +193,8 @@ async function loadAdmissionDirectory(root) {
     throw error;
   }
   const entries = (await readdir(directoryPath, { withFileTypes: true }))
-    .map(entry => ({ name: entry.name, isFile: entry.isFile() }));
+    .map(entry => ({ name: entry.name, isFile: entry.isFile() }))
+    .sort((left, right) => left.name < right.name ? -1 : left.name > right.name ? 1 : 0);
   return {
     available: true,
     entries,
