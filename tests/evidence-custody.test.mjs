@@ -867,6 +867,43 @@ test("publication fails closed when its parent directory identity changes", asyn
   await assert.rejects(store.publish("race"), /changed during publication/u);
 });
 
+test("publication rejects a symlink-swapped ancestor before creating an escaped object", async t => {
+  const root = await temporaryDirectory(t);
+  const storeRoot = join(root, "store");
+  const movedObjects = join(root, "moved-objects");
+  const store = new ObjectStore(storeRoot, { beforePublication: async () => {
+    await rename(join(storeRoot, "objects"), movedObjects);
+    await symlink(movedObjects, join(storeRoot, "objects"), "dir");
+  } });
+  await assert.rejects(store.publish("ancestor-race"), /unsafe directory component/u);
+  const files = (await readdir(movedObjects, { recursive: true, withFileTypes: true }))
+    .filter(entry => entry.isFile());
+  assert.deepEqual(files, []);
+});
+
+test("object publication snapshots mutable Buffer input before asynchronous work", async t => {
+  const root = await temporaryDirectory(t);
+  const store = new ObjectStore(join(root, "objects"));
+  const input = Buffer.from("immutable snapshot", "utf8");
+  const expected = Buffer.from(input);
+  const publication = store.publish(input);
+  input.fill(0x78);
+  const published = await publication;
+  assert.equal(published.sha256, sha256(expected));
+  assert.deepEqual(await readFile(published.path), expected);
+});
+
+test("temporary recovery applies a streaming directory-entry budget", async t => {
+  const root = await temporaryDirectory(t);
+  const store = new ObjectStore(join(root, "objects"));
+  await store.initialize();
+  const shard = join(store.root, "objects", "sha256", "aa");
+  await mkdir(shard);
+  await writeFile(join(shard, "one"), "one");
+  await writeFile(join(shard, "two"), "two");
+  await assert.rejects(store.recoverTemporaries({ maxDirectoryEntries: 1 }), /recovery directory-entry limit/u);
+});
+
 test("worker accounting never becomes voting authority", async () => {
   const manifest = validManifest();
   manifest.promotion.workerAccounting = { countsAsVotes: true, workers: 140 };
@@ -948,6 +985,11 @@ test("secret scanning detects common credentials without echoing the secret", ()
     assert.equal(error.message.includes(secret), false);
     return true;
   });
+  assert.throws(() => scanSecrets(`token=${secret}`, secret), error => {
+    assert.equal(error.message.includes(secret), false);
+    assert.equal(error.findings.some(finding => finding.label.includes(secret)), false);
+    return true;
+  });
   assert.deepEqual(scanSecrets("ordinary research output"), []);
   assert.throws(() => scanSecrets(`token=${"a".repeat(24)}`), /credential-assignment/u);
 });
@@ -960,6 +1002,7 @@ test("decoded JSON secret escapes fail closed without echoing the secret", async
     ["quote", `${JSON.stringify({ message: `token=\"${genericSecret}\"` })}\n`, /credential-assignment/u, genericSecret],
     ["tab", `${JSON.stringify({ message: `token=\t${genericSecret}` })}\n`, /credential-assignment/u, genericSecret],
     ["newline", `${JSON.stringify({ message: `token=\n${genericSecret}` })}\n`, /credential-assignment/u, genericSecret],
+    ["double-encoded", `${JSON.stringify({ message: JSON.stringify(`token=\"${genericSecret}\"`) })}\n`, /credential-assignment/u, genericSecret],
     ["authorization-field", `${JSON.stringify({ Authorization: `Bearer ${genericSecret}` })}\n`, /authorization-header/u, genericSecret],
     ["nested-token-array", `${JSON.stringify({ token: [{ value: genericSecret }] })}\n`, /credential-assignment/u, genericSecret],
     ["nested-token-object", `${JSON.stringify({ token: { value: genericSecret } })}\n`, /credential-assignment/u, genericSecret],
@@ -1200,19 +1243,22 @@ captureTest("capture hashes exact HEAD bytes and rejects escaped secrets before 
   const outputEntries = await readdir(secretPaths.outputRoot, { recursive: true, withFileTypes: true });
   assert.equal(outputEntries.some(entry => entry.isFile()), false);
 
-  const malformedRoot = await temporaryDirectory(t);
-  const malformedPaths = await writeCaptureFixture(malformedRoot, [{ attempts: [] }]);
-  await writeFile(
-    join(malformedPaths.jobConfigRoot, JOB_ID, "job.json"),
-    `{\"message\":\"token=\\\"${escapedSecret}\\\"\",}\n`,
-  );
-  await assert.rejects(captureEvidence({
-    campaignId: "malformed-escaped-secret",
-    jobIds: [JOB_ID],
-    ...malformedPaths,
-  }), /credential-assignment/u);
-  const malformedOutputEntries = await readdir(malformedPaths.outputRoot, { recursive: true, withFileTypes: true });
-  assert.equal(malformedOutputEntries.some(entry => entry.isFile()), false);
+  for (const [name, malformedDocument, expected] of [
+    ["message", `{\"message\":\"token=\\\"${escapedSecret}\\\"\",}\n`, /credential-assignment/u],
+    ["token-field", `{"token":"${escapedSecret}",}\n`, /valid bounded JSON/u],
+    ["authorization-field", `{"Authorization":"Bearer ${escapedSecret}",}\n`, /valid bounded JSON/u],
+  ]) {
+    const malformedRoot = await temporaryDirectory(t);
+    const malformedPaths = await writeCaptureFixture(malformedRoot, [{ attempts: [] }]);
+    await writeFile(join(malformedPaths.jobConfigRoot, JOB_ID, "job.json"), malformedDocument);
+    await assert.rejects(captureEvidence({
+      campaignId: `malformed-escaped-secret-${name}`,
+      jobIds: [JOB_ID],
+      ...malformedPaths,
+    }), expected);
+    const malformedOutputEntries = await readdir(malformedPaths.outputRoot, { recursive: true, withFileTypes: true });
+    assert.equal(malformedOutputEntries.some(entry => entry.isFile()), false);
+  }
 });
 
 captureTest("capture scans the assembled manifest before publishing it", async t => {
@@ -1289,6 +1335,31 @@ test("manifest node limits reject oversized sparse arrays before reading element
   manifest.claims = claims;
   assert.deepEqual(validateManifest(manifest).errors, ["JSON node limit exceeded"]);
   assert.equal(elementRead, false);
+
+  let iteratorReads = 0;
+  const customIterator = [];
+  customIterator[Symbol.iterator] = function* iterator() {
+    iteratorReads += 1;
+    yield null;
+  };
+  const iteratorManifest = validManifest();
+  iteratorManifest.claims = customIterator;
+  validateManifest(iteratorManifest, { maxJsonNodes: 64 });
+  assert.equal(iteratorReads, 0);
+
+  const secret = `sk-proj-${"x".repeat(32)}`;
+  const accessor = [null];
+  Object.defineProperty(accessor, 0, {
+    enumerable: true,
+    get() {
+      throw new Error(secret);
+    },
+  });
+  const accessorManifest = validManifest();
+  accessorManifest.claims = accessor;
+  const accessorResult = validateManifest(accessorManifest);
+  assert.deepEqual(accessorResult.errors, ["JSON value must not contain accessors"]);
+  assert.equal(accessorResult.errors.join("\n").includes(secret), false);
 });
 
 test("Windows remains verifier-only and rejects capture before source I/O", {
@@ -1496,6 +1567,21 @@ captureTest("capture caps recursive directory traversal", async t => {
     resourceLimits: { maxDirectoryEntries: 1 },
     ...paths,
   }), /directory-entry limit/u);
+});
+
+captureTest("capture bounds stale manifest recovery scans", async t => {
+  const root = await temporaryDirectory(t);
+  const paths = await writeCaptureFixture(root, [{ attempts: [] }]);
+  const manifestDirectory = join(paths.outputRoot, "manifests", "bounded-manifest-recovery");
+  await mkdir(manifestDirectory, { recursive: true });
+  await writeFile(join(manifestDirectory, ".one.tmp"), "one");
+  await writeFile(join(manifestDirectory, ".two.tmp"), "two");
+  await assert.rejects(captureEvidence({
+    campaignId: "bounded-manifest-recovery",
+    jobIds: [JOB_ID],
+    resourceLimits: { maxDirectoryEntries: 1 },
+    ...paths,
+  }), /recovery directory-entry limit/u);
 });
 
 test("manifest collection bounds fail before lineage expansion", () => {

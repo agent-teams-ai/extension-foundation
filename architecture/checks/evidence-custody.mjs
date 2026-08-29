@@ -125,6 +125,68 @@ function record(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+function binaryCompare(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function jsonShapeError(message) {
+  const error = new SyntaxError(message);
+  error.code = "JSON_INPUT_SHAPE";
+  return error;
+}
+
+function ownDataDescriptors(value) {
+  try {
+    return Object.getOwnPropertyDescriptors(value);
+  } catch {
+    throw jsonShapeError("JSON value must expose ordinary data properties");
+  }
+}
+
+function arrayLengthFromDescriptors(descriptors) {
+  const descriptor = descriptors.length;
+  if (descriptor === undefined || !("value" in descriptor)
+      || !Number.isSafeInteger(descriptor.value) || descriptor.value < 0) {
+    throw jsonShapeError("JSON arrays must have an ordinary finite length");
+  }
+  return descriptor.value;
+}
+
+function arrayDataValues(value) {
+  const descriptors = ownDataDescriptors(value);
+  const length = arrayLengthFromDescriptors(descriptors);
+  const values = new Array(length);
+  for (let index = 0; index < length; index += 1) {
+    const descriptor = descriptors[index];
+    if (descriptor === undefined) throw jsonShapeError("JSON value must not contain sparse arrays");
+    if (!("value" in descriptor)) throw jsonShapeError("JSON value must not contain accessors");
+    values[index] = descriptor.value;
+  }
+  return values;
+}
+
+function objectDataEntries(value) {
+  let prototype;
+  try {
+    prototype = Object.getPrototypeOf(value);
+  } catch {
+    throw jsonShapeError("JSON value must contain only plain objects");
+  }
+  if (prototype !== Object.prototype && prototype !== null) {
+    throw jsonShapeError("JSON value must contain only plain objects");
+  }
+  const descriptors = ownDataDescriptors(value);
+  const entries = [];
+  for (const key of Reflect.ownKeys(descriptors)) {
+    if (typeof key !== "string") throw jsonShapeError("JSON value must contain only string-keyed properties");
+    const descriptor = descriptors[key];
+    if (!descriptor.enumerable) throw jsonShapeError("JSON value must contain only enumerable properties");
+    if (!("value" in descriptor)) throw jsonShapeError("JSON value must not contain accessors");
+    entries.push([key, descriptor.value]);
+  }
+  return entries;
+}
+
 function rejectAdditionalProperties(value, allowed, path, errors) {
   if (!record(value)) return;
   for (const field of Object.keys(value)) if (!allowed.has(field)) errors.push(`${path}.${field} is not allowed`);
@@ -163,15 +225,22 @@ function assertJsonLimits(value, {
     }
     if (current.value === null || typeof current.value !== "object") continue;
     if (Array.isArray(current.value)) {
-      if (nodes + pending.length + current.value.length > maxJsonNodes) {
+      const descriptors = ownDataDescriptors(current.value);
+      const length = arrayLengthFromDescriptors(descriptors);
+      if (nodes + pending.length + length > maxJsonNodes) {
         const error = new SyntaxError("JSON node limit exceeded");
         error.code = "JSON_RESOURCE_LIMIT";
         throw error;
       }
-      for (const child of current.value) pending.push({ value: child, depth: current.depth + 1 });
+      for (let index = 0; index < length; index += 1) {
+        const descriptor = descriptors[index];
+        if (descriptor === undefined) throw jsonShapeError("JSON value must not contain sparse arrays");
+        if (!("value" in descriptor)) throw jsonShapeError("JSON value must not contain accessors");
+        pending.push({ value: descriptor.value, depth: current.depth + 1 });
+      }
       continue;
     }
-    const entries = Object.entries(current.value);
+    const entries = objectDataEntries(current.value);
     if (nodes + pending.length + entries.length > maxJsonNodes) {
       const error = new SyntaxError("JSON node limit exceeded");
       error.code = "JSON_RESOURCE_LIMIT";
@@ -193,21 +262,23 @@ function scanDecodedJsonSecrets(value, label) {
   while (pending.length > 0) {
     const { value: current, assignmentField, authorizationField } = pending.pop();
     if (typeof current === "string") {
-      scanSecrets(current, `${label} value`);
+      scanLexicallyDecodedSecrets(current, `${label} value`);
       if (assignmentField !== null) {
-        scanSecrets(`${assignmentField}=${current}`, `${label} field`);
+        scanLexicallyDecodedSecrets(`${assignmentField}=${current}`, `${label} field`);
       }
       if (authorizationField !== null) {
-        scanSecrets(`${authorizationField}: ${current}`, `${label} field`);
+        scanLexicallyDecodedSecrets(`${authorizationField}: ${current}`, `${label} field`);
       }
       continue;
     }
     if (current === null || typeof current !== "object") continue;
     if (Array.isArray(current)) {
-      for (const child of current) pending.push({ value: child, assignmentField, authorizationField });
+      for (const child of arrayDataValues(current)) {
+        pending.push({ value: child, assignmentField, authorizationField });
+      }
       continue;
     }
-    for (const [key, child] of Object.entries(current)) {
+    for (const [key, child] of objectDataEntries(current)) {
       scanSecrets(key, `${label} key`);
       pending.push({
         value: child,
@@ -222,6 +293,17 @@ function decodeJsonEscapesForSecretScan(text) {
   return text.replace(/\\(?:u([0-9a-fA-F]{4})|(["\\/bfnrt]))/gu, (_match, hex, escape) => (
     hex === undefined ? JSON_ESCAPE_VALUES[escape] : String.fromCharCode(Number.parseInt(hex, 16))
   ));
+}
+
+function scanLexicallyDecodedSecrets(text, label) {
+  let current = String(text);
+  for (let pass = 0; pass <= DEFAULT_RESOURCE_LIMITS.maxJsonDepth; pass += 1) {
+    scanSecrets(current, label);
+    const decoded = decodeJsonEscapesForSecretScan(current);
+    if (decoded === current) return;
+    current = decoded;
+  }
+  throw jsonShapeError("JSON escape nesting limit exceeded");
 }
 
 function parseCustodyJson(text, limits = DEFAULT_RESOURCE_LIMITS) {
@@ -347,17 +429,11 @@ export function deterministicJson(value) {
     active.add(candidate);
     try {
       if (Array.isArray(candidate)) {
-        for (let index = 0; index < candidate.length; index += 1) {
-          if (!Object.hasOwn(candidate, index)) throw new TypeError(`${path} must not contain sparse arrays`);
-        }
-        return `[${candidate.map((entry, index) => encode(entry, `${path}[${index}]`)).join(",")}]`;
+        const values = arrayDataValues(candidate);
+        return `[${values.map((entry, index) => encode(entry, `${path}[${index}]`)).join(",")}]`;
       }
-      const prototype = Object.getPrototypeOf(candidate);
-      if (prototype !== Object.prototype && prototype !== null) {
-        throw new TypeError(`${path} must contain only plain objects`);
-      }
-      const keys = Object.keys(candidate).sort();
-      return `{${keys.map(key => `${JSON.stringify(key)}:${encode(candidate[key], `${path}.${key}`)}`).join(",")}}`;
+      const entries = objectDataEntries(candidate).sort(([left], [right]) => binaryCompare(left, right));
+      return `{${entries.map(([key, entry]) => `${JSON.stringify(key)}:${encode(entry, `${path}.${key}`)}`).join(",")}}`;
     } finally {
       active.delete(candidate);
     }
@@ -819,15 +895,26 @@ export class ObjectStore {
     await assertDirectoryChain(this.root, join(this.root, "objects", "sha256"));
   }
 
-  async recoverTemporaries() {
+  async recoverTemporaries(resourceLimits = {}, budget = { directoryEntries: 0 }) {
+    const limits = normalizeResourceLimits(resourceLimits);
     await this.initialize();
     const base = join(this.root, "objects", "sha256");
-    for (const shard of await readdir(base, { withFileTypes: true })) {
+    const shards = await opendir(base);
+    for await (const shard of shards) {
+      budget.directoryEntries += 1;
+      if (budget.directoryEntries > limits.maxDirectoryEntries) {
+        throw new Error(`recovery directory-entry limit exceeded at ${base}`);
+      }
       if (!shard.isDirectory() || !/^[a-f0-9]{2}$/u.test(shard.name)) continue;
       const directory = join(base, shard.name);
       const metadata = await lstat(directory);
       if (metadata.isSymbolicLink()) throw new Error("object shard must not be a symlink");
-      for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const entries = await opendir(directory);
+      for await (const entry of entries) {
+        budget.directoryEntries += 1;
+        if (budget.directoryEntries > limits.maxDirectoryEntries) {
+          throw new Error(`recovery directory-entry limit exceeded at ${directory}`);
+        }
         if (!entry.name.startsWith(".") || !entry.name.endsWith(".tmp")) continue;
         const path = join(directory, entry.name);
         const temporaryMetadata = await lstat(path);
@@ -853,7 +940,7 @@ export class ObjectStore {
   }
 
   async publish(input) {
-    const bytes = Buffer.isBuffer(input) ? input : Buffer.from(input);
+    const bytes = Buffer.from(input);
     const digest = sha256(bytes);
     await this.initialize();
     const destination = this.objectPath(digest);
@@ -874,6 +961,7 @@ export class ObjectStore {
       const rootIdentity = await directoryIdentity(this.root, "object store root");
       const parentIdentity = await directoryIdentity(directory, "object publication parent");
       await this.beforePublication?.({ destination, directory });
+      await assertDirectoryChain(this.root, directory);
       if (!sameIdentity(rootIdentity, await directoryIdentity(this.root, "object store root")) ||
           !sameIdentity(parentIdentity, await directoryIdentity(directory, "object publication parent"))) {
         throw new Error("object store root or publication parent changed during publication");
@@ -881,6 +969,7 @@ export class ObjectStore {
       try {
         await link(temporary, destination);
         linked = true;
+        await assertDirectoryChain(this.root, directory);
         if (!sameIdentity(rootIdentity, await directoryIdentity(this.root, "object store root")) ||
             !sameIdentity(parentIdentity, await directoryIdentity(directory, "object publication parent"))) {
           throw new Error("object store root or publication parent changed during publication");
@@ -904,14 +993,22 @@ export function scanSecrets(bytes, label = "input") {
   const text = Buffer.isBuffer(bytes) ? bytes.toString("utf8") : String(bytes);
   const findings = SECRET_PATTERNS
     .filter(({ expression }) => expression.test(text))
-    .map(({ id }) => ({ id, label }));
+    .map(({ id }) => ({ id, label: safeDiagnosticLabel(label) }));
   if (findings.length > 0) {
-    const error = new Error(`secret scan failed for ${label}: ${findings.map(entry => entry.id).join(", ")}`);
+    const safeLabel = safeDiagnosticLabel(label);
+    const error = new Error(`secret scan failed for ${safeLabel}: ${findings.map(entry => entry.id).join(", ")}`);
     error.code = "SECRET_SCAN";
     error.findings = findings;
     throw error;
   }
   return [];
+}
+
+function safeDiagnosticLabel(label) {
+  const text = String(label);
+  if (SECRET_PATTERNS.some(({ expression }) => expression.test(text))) return "[redacted-label]";
+  const normalized = text.replace(/[\u0000-\u001f\u007f]/gu, "?");
+  return normalized.length <= 256 ? normalized : `${normalized.slice(0, 253)}...`;
 }
 
 function requiredString(value, path, errors) {
@@ -1674,15 +1771,14 @@ async function regularFilesBelow(root, relativeDirectory, limits, budget) {
       results.push({ path, bytes });
     }
   }
-  return results.sort((left, right) => left.path.localeCompare(right.path));
+  return results.sort((left, right) => binaryCompare(left.path, right.path));
 }
 
 function scanStructuredSecrets(bytes, sourcePath, limits) {
-  scanSecrets(bytes, sourcePath);
-  if (!sourcePath.split("#", 1)[0].match(/\.(?:json|jsonl)$/u)) return;
-  const decodedEscapes = decodeJsonEscapesForSecretScan(bytes.toString("utf8"));
-  scanSecrets(decodedEscapes, `${sourcePath} decoded JSON`);
-  const documents = sourcePath.endsWith(".jsonl")
+  scanLexicallyDecodedSecrets(bytes.toString("utf8"), sourcePath);
+  const [filePath, fragment] = sourcePath.split("#", 2);
+  if (fragment !== undefined || !filePath.match(/\.(?:json|jsonl)$/u)) return;
+  const documents = filePath.endsWith(".jsonl")
     ? bytes.toString("utf8").split(/\r?\n/u).filter(line => line.trim().length > 0)
     : [bytes.toString("utf8")];
   for (const document of documents) {
@@ -1690,6 +1786,10 @@ function scanStructuredSecrets(bytes, sourcePath, limits) {
       parseCustodyJson(document, limits);
     } catch (error) {
       if (error?.code === "SECRET_SCAN") throw error;
+      if (error?.code === "DUPLICATE_JSON_KEY") throw error;
+      const invalid = new SyntaxError("captured JSON evidence must contain valid bounded JSON");
+      invalid.code = "INVALID_JSON_EVIDENCE";
+      throw invalid;
     }
   }
 }
@@ -1745,13 +1845,14 @@ export async function captureEvidence({
   const limits = normalizeResourceLimits(resourceLimits);
   const allowlist = assertExplicitJobIds(jobIds, limits.maxManifestJobs);
   const budget = { files: 0, bytes: 0, directories: 0, directoryEntries: 0 };
+  const recoveryBudget = { directoryEntries: 0 };
   const derived = await deriveBaseline(repositoryRoot, capturedAt, limits, budget);
   const baseline = derived.baseline;
   const safeRuntimeRoot = await assertCanonicalPermittedRoot(runtimeRoot, "runtime root");
   const safeConfigRoot = await assertCanonicalPermittedRoot(jobConfigRoot, "job config root");
   await assertCanonicalPermittedRoot(outputRoot, "output root");
   const store = new ObjectStore(assertPermittedRoot(outputRoot, "output root"));
-  await store.recoverTemporaries();
+  await store.recoverTemporaries(limits, recoveryBudget);
   const objects = [];
   const jobs = [];
   const attempts = [];
@@ -1918,7 +2019,7 @@ export async function captureEvidence({
     schemaVersion: 2,
     campaignId,
     baseline,
-    objects: objects.sort((left, right) => left.sha256.localeCompare(right.sha256)),
+    objects: objects.sort((left, right) => binaryCompare(left.sha256, right.sha256)),
     jobs,
     attempts,
     continuations,
@@ -1952,7 +2053,12 @@ export async function captureEvidence({
   const manifestObject = await store.publish(manifestBytes);
   const manifestDirectory = join(store.root, "manifests", campaignId);
   await assertDirectoryChain(store.root, manifestDirectory);
-  for (const entry of await readdir(manifestDirectory, { withFileTypes: true })) {
+  const manifestEntries = await opendir(manifestDirectory);
+  for await (const entry of manifestEntries) {
+    recoveryBudget.directoryEntries += 1;
+    if (recoveryBudget.directoryEntries > limits.maxDirectoryEntries) {
+      throw new Error(`recovery directory-entry limit exceeded at ${manifestDirectory}`);
+    }
     if (!entry.name.startsWith(".") || !entry.name.endsWith(".tmp")) continue;
     const staleTemporary = join(manifestDirectory, entry.name);
     const metadata = await lstat(staleTemporary);
@@ -1969,6 +2075,7 @@ export async function captureEvidence({
     await handle.close();
     const rootIdentity = await directoryIdentity(store.root, "object store root");
     const parentIdentity = await directoryIdentity(manifestDirectory, "manifest publication parent");
+    await assertDirectoryChain(store.root, manifestDirectory);
     if (!sameIdentity(rootIdentity, await directoryIdentity(store.root, "object store root")) ||
         !sameIdentity(parentIdentity, await directoryIdentity(manifestDirectory, "manifest publication parent"))) {
       throw new Error("object store root or manifest publication parent changed during publication");
@@ -1979,6 +2086,7 @@ export async function captureEvidence({
       const existing = await secureRead(store.root, manifestPath);
       if (!existing.equals(manifestBytes)) throw new Error("manifest destination collision");
     }
+    await assertDirectoryChain(store.root, manifestDirectory);
     if (!sameIdentity(rootIdentity, await directoryIdentity(store.root, "object store root")) ||
         !sameIdentity(parentIdentity, await directoryIdentity(manifestDirectory, "manifest publication parent"))) {
       throw new Error("object store root or manifest publication parent changed during publication");
