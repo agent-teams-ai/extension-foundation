@@ -171,7 +171,7 @@ Every campaign keeps the following coordinates distinct:
 | `TreatmentSlotIdentity` | One campaign slot mapped one-to-one from a source-preparation slot, linking an optional exact source and build inputs to all expected no-source, no-artifact, and execution observations |
 | `BuildAttemptIdentity` | One preregistered build of exact source, recipe, and toolchain inputs; its output artifact is optional |
 | `AttemptIdentity` | One non-reused artifact execution, optionally linked to a prior attempt without becoming a new experimental unit |
-| `LaunchAuthorization` | One-use custodian-issued capability bound to one registered attempt and exact sandbox policy |
+| `LaunchAuthorization` | One-use custody-transaction-authority-issued capability bound to one registered attempt and exact sandbox policy |
 | `StopEvaluationCheckpointIdentity` | One preregistered outcome-independent boundary at which the sealed evaluator must produce a terminal continue or stop decision before later launch release |
 | `StopEvaluationReceipt` | One authenticated terminal continue, stop, missing, or unknown observation for an expected checkpoint; missing, late, or unknown output fails closed |
 | `ExplorationAuthorization` | One narrow non-promotional product authorization bound to one exploration scope, lifecycle transaction authority, generation fence, expiry, retention, and cleanup owner |
@@ -281,17 +281,19 @@ links to its predecessor and retains the original `ExperimentalUnit`. A genuine
 independently randomized replication is registered as a new experimental unit
 and attempt, never relabeled as a retry.
 
-Each registration issues a one-use `LaunchAuthorization`. The external launch
-gate atomically records its consumption before the build or evaluation sandbox
-can execute candidate-controlled code. Missing, reused, mismatched, or expired
-authorization blocks launch. Campaign authorizations expire no later than the
-campaign; calibration authorizations expire no later than the calibration
-window. Each authority has its own generation fence. Process release atomically
-revalidates the applicable fence and expiries at an admitted authoritative-time
-linearization point. Unavailable time or uncertainty outside the admitted bound
-fails closed. Expiry closes the corresponding fence even when retirement has not
-run. The harness cannot start an unregistered attempt and register it after
-observing the outcome.
+Each registration requests one one-use `LaunchAuthorization`. The custody
+transaction authority durably issues and atomically consumes it before committing
+the build or evaluation process-release decision. The external launch gate only
+enforces that committed decision before candidate-controlled code can execute; it
+cannot mutate authorization or fence state. Missing, reused, mismatched, or
+expired authorization blocks launch. Campaign authorizations expire no later than
+the campaign; calibration authorizations expire no later than the calibration
+window. Each authority has its own generation fence. The transaction authority's
+process-release decision atomically revalidates the applicable fence and expiries
+at an admitted authoritative-time linearization point. Unavailable time or
+uncertainty outside the admitted bound fails closed. Expiry closes the
+corresponding fence even when retirement has not run. The harness cannot start an
+unregistered attempt and register it after observing the outcome.
 
 ### Bootstrap without recursive authority
 
@@ -466,7 +468,7 @@ product-owned decision and architecture.
 | --- | --- |
 | Candidate self-certification | Candidate producer, harness, custody, evaluator, reviewer, sponsor, and authorizer remain auditable and separated as defined above |
 | Recursive bootstrap | Candidate-independent build and evaluation path remains sufficient and tested for every generation |
-| Omitted failed attempt | Build and evaluation sandboxes consume a one-use externally logged authorization before candidate code can run |
+| Omitted failed attempt | The custody transaction authority consumes a one-use externally logged authorization before a build or evaluation launch gate can release candidate code |
 | Artifact substitution | Immutable locator, digest, provenance, and verification at every use |
 | Evaluator drift | `E0` binds every evaluator input, model identity, assignment, and analysis rule |
 | Adaptive benchmark overfitting | Treatment family is committed before unblinding; outcome-informed changes require an unseen holdout or remain non-promotional |
@@ -881,8 +883,10 @@ contiguous terminal outcome and none is unknown, and linearizes admission or
 verdict publication with that boundary. After committing the intent, the custody
 transaction authority mints exactly one release capability bound to the intent,
 recipient and runtime, object digests, custody epoch, policy and control-domain
-generation, and expiry. The access enforcer atomically consumes that capability
-in the same ordering domain before releasing bytes; it accepts no alternate path.
+generation, and expiry. The access enforcer requests consumption; the custody
+transaction authority atomically commits that transition and the release decision
+in its ordering domain before the enforcer may release bytes. The enforcer cannot
+mutate the capability or accept an alternate path.
 The capability remains exhausted after `delivered` or crash-ambiguous `unknown`.
 On `unknown`, related unconsumed authority is revoked, reconciliation may only
 determine the terminal outcome, and neither the intent nor its logical release is
@@ -1126,12 +1130,13 @@ exact runtime artifacts are retrievable by immutable locators.
    a treatment slot.
 2. Preregister every execution attempt against one exact roster slot, artifact,
    `E0`, and `ExperimentalUnit`.
-3. Atomically consume its one-use authorization before process creation or
-   candidate-controlled code. Process creation revalidates the current campaign
-   generation fence, campaign expiry, authorization expiry, authoritative time,
-   participating qualified-component attestations, and effective grants before
-   release. Campaign expiry automatically closes the fence. Any time source or
-   attestation mismatch fails closed.
+3. Have the custody transaction authority atomically consume the attempt's one-use
+   authorization before it commits process creation or candidate-code release.
+   The launch gate only enforces that decision. Process creation revalidates the
+   current campaign generation fence, campaign expiry, authorization expiry,
+   authoritative time, participating qualified-component attestations, and
+   effective grants before release. Campaign expiry automatically closes the
+   fence. Any time source or attestation mismatch fails closed.
 4. Run baseline and treatment in fresh, non-sharing disposable workspaces with
    fallback disabled.
 5. Record terminal receipts or explicit non-registration, missing, or unknown
@@ -1266,7 +1271,7 @@ campaign admission; an ambiguous row is treated as `fixture-conformance`.
 | A root allocation, authorization consumption, evidence transition, or family closure lacks the registered custody-transaction principal, credential lineage, durable-store identity, authority generation, or predecessor, or shares prohibited administrative control | The transition and promotional evidence fail closed; another role cannot substitute as transaction authority |
 | A source root is minted outside the family ordering authority, allocated after family closure, omitted from the roster receipt, or abandoned after source or outcome observation | Allocation, abandonment, or admission fails; every ordered root and disposition remains in claim-family attrition and outcome shopping cannot produce a promotional claim |
 | Related authorization issuance, successful preparation closure, and source abandonment race | One durable evidence-lifecycle authority admits issuance only while open and lets exactly one of closure or abandonment win; recovery cannot emit both outcomes |
-| A registrar, evidence custodian, or launch gate issues, consumes, revokes, or mutates source launch authority independently of the custody transaction authority | The transition and release fail closed; recovery follows the single durable authorization order and cannot infer a process start from an adapter-local decision |
+| A registrar, evidence or corpus custodian, build, evaluation, source, or corpus-release gate issues, consumes, revokes, or mutates launch or release authority independently of the custody transaction authority | The transition and release fail closed; recovery follows the single durable authorization order and cannot infer a process start or disclosure from an adapter-local decision |
 | Source preparation is withdrawn, expires, or is abandoned before campaign admission while an authoring runtime is missing or unknown | Its own fence closes, credentials and launch authority are revoked, the exact runtime and workspace remain quarantined until termination or absence is proven, and an immutable source-retirement tombstone is retained without requiring campaign admission |
 | Source evidence closes successfully but campaign admission later fails | The closure receipt and failed-admission evidence remain immutable; the owner-bound resource-retirement lifecycle revokes residual authority, reconciles runtimes, preserves quarantine until absence is proven, and appends its tombstone without changing the root from `closed` |
 | Preparation-to-treatment mapping is missing, duplicated, or not one-to-one | Campaign admission fails; every expected slot remains visible as an explicit no-source or invalid observation |
@@ -1646,8 +1651,9 @@ A future implementation conforms to this proposal only when:
   release remains sealed and is reconciled without automatic retry;
 - every candidate-controlled build and execution receipt binds the sandbox
   enforcer, policy, actual grants, and enforcement outcome;
-- every treatment build receipt proves the exact `B0` product base and only its
-  allowlisted source delta before producing `T1`;
+- every treatment build receipt binds its observed `B0` product base and source
+  delta, and an independent passing `BuildConsistencyReceipt` proves equality
+  with the admitted base and allowlist before `T1` execution;
 - campaign `B0` and treatment build inputs are clean; matching Git coordinates
   never admit uncommitted or untracked bytes;
 - effective grants match the registered policy before candidate code is released,
