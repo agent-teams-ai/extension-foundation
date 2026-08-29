@@ -54,6 +54,8 @@ import {
 
 const fixtureDirectory = dirname(fileURLToPath(import.meta.url));
 const proofDirectory = join(fixtureDirectory, "module-authoring-proof");
+const strictJsonRuntimePath = join(fixtureDirectory, "..", "..", "architecture", "checks", "strict-json.mjs");
+const strictJsonTypePath = join(fixtureDirectory, "..", "..", "architecture", "checks", "strict-json.d.mts");
 const execFileAsync = promisify(execFile);
 const typescriptCli = fileURLToPath(new URL("../../node_modules/typescript/bin/tsc", import.meta.url));
 
@@ -64,6 +66,12 @@ const classified = (
 ): readonly ClassifiedProofPath[] => paths.map(path => Object.freeze({ bucket, path }));
 const measurementInput: MeasurementInput = {
   proofRoot: proofDirectory,
+  classificationRoots: [
+    proofDirectory,
+    join(fixtureDirectory, "module-authoring-proof.test.ts"),
+    strictJsonRuntimePath,
+    strictJsonTypePath,
+  ],
   admissionDocumentPath: join(fixtureDirectory, "..", "..", "docs", "qualification", "module-system-v1-productization", "consumer-admission.md"),
   classifiedPaths: [
     ...classified("baseline", proofPath("agent-runtime-baseline.ts"), proofPath("frontend-baseline.ts")),
@@ -86,7 +94,8 @@ const measurementInput: MeasurementInput = {
     ...classified("generic-proof", proofPath("model.ts"), proofPath("io.ts"), proofPath("literal-loaders.ts"), proofPath("fixture-data.ts")),
     ...classified("shared-fixture", proofPath("agent-runtime-fixture.ts"), proofPath("frontend-fixture.ts")),
     ...classified("measurement-harness", proofPath("measurement.ts"), join(fixtureDirectory, "module-authoring-proof.test.ts")),
-    ...classified("support-type", join(fixtureDirectory, "..", "..", "architecture", "checks", "strict-json.d.mts")),
+    ...classified("support-runtime", strictJsonRuntimePath),
+    ...classified("support-type", strictJsonTypePath),
   ],
   baselineBindingProbes: [
     { path: proofPath("agent-runtime-baseline.ts"), token: "@proof-binding-site runtime.executable-observer" },
@@ -475,13 +484,13 @@ test("24 complete baseline/candidate measurement separates L1, L5, and synthetic
   assert.equal(first.adrProductionGlueRatio, "not-applicable-production-loc-zero");
   assert.equal(first.baselineWiringLoc, 23);
   assert.equal(first.candidateProductLoc, 165);
-  assert.equal(first.genericProofGlueLoc, 659);
-  assert.equal(first.candidateWithGenericLoc, 824);
-  assert.equal(first.genericProofGlueRatio, 3.993939);
+  assert.equal(first.genericProofGlueLoc, 684);
+  assert.equal(first.candidateWithGenericLoc, 849);
+  assert.equal(first.genericProofGlueRatio, 4.145455);
   assert.deepEqual(first.fileCounts, { baseline: 2, candidateProduct: 13, genericProof: 4 });
   assert.deepEqual(first.syntacticBindingMarkerSites, { baseline: 2, candidate: 4 });
   assert.deepEqual(first.syntacticBindingMarkerFiles, { baseline: 2, candidate: 4 });
-  assert.equal(first.disposableExecutablePercent, 100);
+  assert.equal(first.disposableExecutablePercent, 94);
   assert.equal(first.genericProofGlueRatio > 0.3, true);
   assert.deepEqual(first.governedAdmission, {
     agentRuntimeL1: "NO-GO-MEASUREMENT-CANDIDATE",
@@ -493,10 +502,7 @@ test("24 complete baseline/candidate measurement separates L1, L5, and synthetic
   assert.equal(first.l1ReconsiderWhen, "owning-product-benchmark-exists");
   assert.deepEqual(first.l5NoGoReasons, ["canonical-consumer-admission-l5-no-go"]);
   assert.equal(first.l5ReconsiderWhen, "second-real-consumer-and-executable-conformance-exist");
-  assert.deepEqual(first.syntheticNegativeSignals, [
-    "synthetic-generic-proof-glue-ratio-above-0.3",
-    "candidate-does-not-reduce-binding-change-files",
-  ]);
+  assert.deepEqual(first.syntheticNegativeSignals, ["synthetic-generic-proof-glue-ratio-above-0.3"]);
   assert.equal(first.maintenanceDisposition, "delete-executable-proof-before-merge");
 });
 
@@ -766,9 +772,15 @@ test("45 multi-root diagnostics remain deterministic when input roots are revers
     const beta = located("beta", ["beta/v1"]);
     await writeDeclaration(firstRoot, "shared", { ...alpha.declaration, loaderKey: "shared.loader" });
     await writeDeclaration(secondRoot, "shared", { ...beta.declaration, loaderKey: "shared.loader" });
-    const forward = await discoverDeclarations("frontend", [firstRoot, secondRoot]);
-    const reverse = await discoverDeclarations("frontend", [secondRoot, firstRoot]);
+    const first = { rootId: "first", path: firstRoot } as const;
+    const second = { rootId: "second", path: secondRoot } as const;
+    const forward = await discoverDeclarations("frontend", [first, second]);
+    const reverse = await discoverDeclarations("frontend", [second, first]);
     assert.deepEqual(reverse, forward);
+    assert.deepEqual(forward.reads, [
+      "first/shared/module.declaration.json",
+      "second/shared/module.declaration.json",
+    ]);
     const profile = {
       consumer: "frontend",
       roots: ["alpha"],

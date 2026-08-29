@@ -15,7 +15,7 @@ summary: Records a disposable synthetic comparison of Pure DI and a static autho
 disposable candidate validates useful closed-world failure cases, but no
 owning-product-approved benchmark establishes an authoring problem.
 
-The synthetic generic-proof ratio is `3.993939`, but it is non-authoritative
+The synthetic generic-proof ratio is `4.145455`, but it is non-authoritative
 negative evidence rather than ADR-0013 production-glue evidence. Product-owned Pure DI and
 `FeatureModuleFactory` remain the baseline. Nothing in this proof admits a
 consumer, shared extraction, production package, public SPI, graph, or runtime
@@ -40,7 +40,9 @@ produced the fixture shapes. Exact Git custody remains the responsibility of the
 separate source-evidence records. Orchestrator admission is read directly from
 `consumer-admission.md`; it is not duplicated as a measurement constant.
 
-All executable proof code lives under `tests/qualification/`. Candidate declarations
+All newly introduced executable proof code lives under `tests/qualification/`. The
+proof also reuses the pre-existing strict JSON parser from `architecture/checks/`.
+Candidate declarations
 are fixed-name inert JSON, loaded from explicit bounded fixture directories.
 The synthetic validator produces deterministic diagnostics and a disposable
 plan projection, but runtime behavior never interprets that plan. Both candidate
@@ -86,15 +88,16 @@ These are synthetic qualification measurements, not production metrics.
 | --- | --- |
 | Baseline wiring | `23` non-empty LOC across `2` files |
 | Candidate product-shaped footprint | `165` non-empty LOC across `13` TypeScript/JavaScript/JSON files |
-| Generic proof glue | `659` non-empty LOC across `4` files |
-| Candidate plus generic glue | `824` non-empty LOC |
-| Generic/candidate ratio | `3.993939` |
+| Generic proof glue | `684` non-empty LOC across `4` files |
+| Candidate plus generic glue | `849` non-empty LOC |
+| Generic/candidate ratio | `4.145455` |
 | ADR production-glue ratio | `not-applicable-production-loc-zero` |
 | Syntactic binding markers | baseline `2/2`; candidate `4/4` sites/files |
-| Disposable executable proof | `100%` |
+| Disposable executable proof | `94%` (`16/17`; the reused strict JSON parser is retained) |
 
 The measurement consumes one exhaustive classified manifest and fails if any
-file under `tests/qualification/module-authoring-proof/` is unclassified.
+file in the proof directory, root test, or explicitly reused strict-JSON support
+surface is unclassified.
 Generated temporary output and this report are not LOC inputs.
 
 | Bucket | Classified paths |
@@ -104,6 +107,7 @@ Generated temporary output and this report are not LOC inputs.
 | Generic proof | `model.ts`, `io.ts`, `literal-loaders.ts`, `fixture-data.ts` |
 | Shared fixture, excluded | `agent-runtime-fixture.ts`, `frontend-fixture.ts` |
 | Measurement harness, excluded | `measurement.ts`, `module-authoring-proof.test.ts` |
+| Support runtime, retained | pre-existing `architecture/checks/strict-json.mjs` |
 | Support type, excluded | `architecture/checks/strict-json.d.mts` for the pre-existing strict JSON parser |
 
 Binding probes are only deterministic syntactic marker counts. No provider-rebind

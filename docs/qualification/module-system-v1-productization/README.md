@@ -53,7 +53,7 @@ portable fallback with weaker symbolic-link or path-race guarantees.
 - [Consumer admission](consumer-admission.md)
 - [Executable candidate source evidence](consumer-source-evidence.yaml)
 - [Authoring API and gap matrix](authoring-api-and-gap-matrix.md)
-- [Hybrid two-consumer module authoring measurement proof](module-authoring-measurement-proof.md)
+- [Synthetic two-fixture module authoring measurement proof](module-authoring-measurement-proof.md)
 - [Red-team findings](red-team-findings.md)
 - [Production roadmap](roadmap.md)
 - [Machine-readable qualification projection](current-roadmap.yaml)

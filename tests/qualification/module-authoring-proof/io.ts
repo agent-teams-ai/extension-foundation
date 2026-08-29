@@ -20,6 +20,11 @@ export interface DiscoveryResult {
   readonly reads: readonly string[];
 }
 
+export interface DiscoveryRoot {
+  readonly rootId: string;
+  readonly path: string;
+}
+
 async function boundedDirectories(root: string, remaining: number): Promise<Readonly<{ directories: readonly string[]; entriesSeen: number }>> {
   const directories: string[] = [];
   let entriesSeen = 0;
@@ -97,7 +102,7 @@ async function readBoundedDeclaration(root: string, directory: string, displayPa
 
 export async function discoverDeclarations(
   consumer: string,
-  roots: readonly string[],
+  roots: readonly (string | DiscoveryRoot)[],
   limits: Readonly<{ maxRoots: number; maxEntries: number; maxDeclarationBytes?: number }> = {
     maxRoots: 4,
     maxEntries: 32,
@@ -110,21 +115,36 @@ export async function discoverDeclarations(
     throw new Error("DISCOVERY_INVALID_LIMIT");
   }
   if (roots.length > limits.maxRoots) throw new Error("DISCOVERY_ROOT_LIMIT");
-  if (new Set(roots).size !== roots.length) throw new Error("DISCOVERY_DUPLICATE_ROOT");
-  const canonicalRoots = await Promise.all(roots.map(async root => ({ input: root, canonical: await realpath(root) })));
-  canonicalRoots.sort((left, right) => binaryCompare(left.canonical, right.canonical));
+  const normalizedRoots = roots.map(root => typeof root === "string"
+    ? { rootId: undefined, path: root }
+    : { rootId: root.rootId, path: root.path });
+  const canonicalRoots = await Promise.all(normalizedRoots.map(async root => ({
+    canonical: await realpath(root.path),
+    rootId: root.rootId,
+  })));
   if (new Set(canonicalRoots.map(root => root.canonical)).size !== canonicalRoots.length) throw new Error("DISCOVERY_DUPLICATE_ROOT");
+  if (canonicalRoots.length > 1 && canonicalRoots.some(root => root.rootId === undefined)) {
+    throw new Error("DISCOVERY_ROOT_ID_REQUIRED");
+  }
+  for (const root of canonicalRoots) {
+    if (root.rootId !== undefined && !/^[a-z][a-z0-9-]{0,63}$/u.test(root.rootId)) {
+      throw new Error(`DISCOVERY_ROOT_ID_INVALID:${root.rootId}`);
+    }
+  }
+  const rootIds = canonicalRoots.flatMap(root => root.rootId === undefined ? [] : [root.rootId]);
+  if (new Set(rootIds).size !== rootIds.length) throw new Error("DISCOVERY_DUPLICATE_ROOT_ID");
+  canonicalRoots.sort((left, right) => binaryCompare(left.rootId ?? "", right.rootId ?? ""));
   const declarations: LocatedDeclaration[] = [];
   const diagnostics: Diagnostic[] = [];
   const reads: string[] = [];
   let entriesSeen = 0;
-  for (const [rootIndex, root] of canonicalRoots.entries()) {
+  for (const root of canonicalRoots) {
     const entries = await boundedDirectories(root.canonical, limits.maxEntries - entriesSeen);
     entriesSeen += entries.entriesSeen;
     for (const entry of entries.directories) {
       const displayPath = canonicalRoots.length === 1
         ? `${entry}/${DECLARATION_NAME}`
-        : `root-${String(rootIndex + 1).padStart(4, "0")}/${entry}/${DECLARATION_NAME}`;
+        : `${root.rootId}/${entry}/${DECLARATION_NAME}`;
       const source = await readBoundedDeclaration(root.canonical, entry, displayPath, limits.maxDeclarationBytes ?? 16_384);
       if (source === undefined) continue;
       reads.push(displayPath);
@@ -208,7 +228,6 @@ export async function emitGenerated(outputDir: string, declarations: readonly Lo
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     }
     await rename(staging, outputDir);
-    if (previousMoved) await rm(backup, { recursive: true, force: true });
   } catch (error) {
     await rm(staging, { recursive: true, force: true });
     if (previousMoved) {
@@ -216,6 +235,13 @@ export async function emitGenerated(outputDir: string, declarations: readonly Lo
       await rename(backup, outputDir);
     }
     throw error;
+  }
+  if (previousMoved) {
+    try {
+      await rm(backup, { recursive: true, force: true });
+    } catch {
+      // The new generation is already committed; a stale backup is safer than rollback to partial data.
+    }
   }
   return outputs;
 }

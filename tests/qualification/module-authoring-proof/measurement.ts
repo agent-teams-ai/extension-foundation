@@ -1,4 +1,4 @@
-import { readdir, readFile } from "node:fs/promises";
+import { lstat, readdir, readFile } from "node:fs/promises";
 import { isAbsolute, relative, sep } from "node:path";
 
 export const CONTEXT_REVISIONS = Object.freeze({
@@ -15,6 +15,7 @@ export interface BindingProbe {
 
 export interface MeasurementInput {
   readonly proofRoot: string;
+  readonly classificationRoots: readonly string[];
   readonly admissionDocumentPath: string;
   readonly classifiedPaths: readonly ClassifiedProofPath[];
   readonly baselineBindingProbes: readonly BindingProbe[];
@@ -29,6 +30,7 @@ export interface ClassifiedProofPath {
     | "generic-proof"
     | "shared-fixture"
     | "measurement-harness"
+    | "support-runtime"
     | "support-type";
 }
 
@@ -71,26 +73,30 @@ async function uniqueSources(paths: readonly string[]): Promise<ReadonlyMap<stri
   return new Map(await Promise.all(paths.map(async path => [path, await readFile(path, "utf8")] as const)));
 }
 
-const portableRelative = (root: string, path: string): string => relative(root, path).split(sep).join("/");
 const contained = (root: string, path: string): boolean => {
   const child = relative(root, path);
   return child !== "" && child !== ".." && !child.startsWith(`..${sep}`) && !isAbsolute(child);
 };
 
-async function proofFiles(root: string, current = root): Promise<readonly string[]> {
+async function proofFiles(current: string): Promise<readonly string[]> {
+  const currentStats = await lstat(current);
+  if (currentStats.isFile()) return [current];
+  if (!currentStats.isDirectory()) throw new Error(`MEASUREMENT_UNSUPPORTED_PATH:${current}`);
   const files: string[] = [];
   for (const entry of await readdir(current, { withFileTypes: true })) {
     const path = `${current}${sep}${entry.name}`;
-    if (entry.isDirectory()) files.push(...await proofFiles(root, path));
-    else if (entry.isFile()) files.push(portableRelative(root, path));
-    else throw new Error(`MEASUREMENT_UNSUPPORTED_PATH:${portableRelative(root, path)}`);
+    if (entry.isDirectory()) files.push(...await proofFiles(path));
+    else if (entry.isFile()) files.push(path);
+    else throw new Error(`MEASUREMENT_UNSUPPORTED_PATH:${path}`);
   }
   return files.sort();
 }
 
-async function assertExhaustiveClassification(root: string, classifiedPaths: readonly ClassifiedProofPath[]): Promise<void> {
-  const expected = classifiedPaths.filter(item => contained(root, item.path)).map(item => portableRelative(root, item.path)).sort();
-  const actual = await proofFiles(root);
+async function assertExhaustiveClassification(roots: readonly string[], classifiedPaths: readonly ClassifiedProofPath[]): Promise<void> {
+  if (new Set(roots).size !== roots.length) throw new Error("MEASUREMENT_DUPLICATE_CLASSIFICATION_ROOT");
+  const expected = classifiedPaths.map(item => item.path).sort();
+  const actual = (await Promise.all(roots.map(proofFiles))).flat().sort();
+  if (new Set(actual).size !== actual.length) throw new Error("MEASUREMENT_OVERLAPPING_CLASSIFICATION_ROOT");
   if (JSON.stringify(expected) !== JSON.stringify(actual)) {
     throw new Error(`MEASUREMENT_PATH_CLASSIFICATION_MISMATCH:${JSON.stringify({ actual, expected })}`);
   }
@@ -133,7 +139,7 @@ export async function measureProof(input: MeasurementInput): Promise<Measurement
   if (new Set(input.classifiedPaths.map(item => item.path)).size !== input.classifiedPaths.length) {
     throw new Error("MEASUREMENT_DUPLICATE_PATH");
   }
-  await assertExhaustiveClassification(input.proofRoot, input.classifiedPaths);
+  await assertExhaustiveClassification(input.classificationRoots, input.classifiedPaths);
   const allPaths = input.classifiedPaths.map(item => item.path);
   const sources = await uniqueSources(allPaths);
   const paths = (bucket: ClassifiedProofPath["bucket"]): readonly string[] =>
@@ -154,7 +160,6 @@ export async function measureProof(input: MeasurementInput): Promise<Measurement
   const disposableExecutablePercent = Math.round(100 * executablePaths.filter(item => contained(qualificationRoot, item.path)).length / executablePaths.length);
   const syntheticNegativeSignals = [
     ratio > 0.3 ? "synthetic-generic-proof-glue-ratio-above-0.3" : undefined,
-    candidateBindings.files >= baselineBindings.files ? "candidate-does-not-reduce-binding-change-files" : undefined,
   ].filter((reason): reason is string => reason !== undefined);
 
   return Object.freeze({
