@@ -47,10 +47,19 @@ compiler, a loader, or lifecycle authority. It may challenge a Get Modular or
 product decision, but cannot silently replace one.
 
 The disposable model remains under `tests/qualification/**`, is capped at 2,500
-physical lines across its contract, reducer, oracle, and tests, and must never be
-imported by a production package. A real product seam starts from product-owned
-types and composition; this model is evidence to delete or archive after the
-owning decision, not shared campaign machinery.
+physical lines, 175,000 UTF-8 bytes, and 200 characters per line across its
+contract, reducer, oracle, and tests, and must never be imported by a production
+package. Its qualification test enforces those limits. A real product seam starts
+from product-owned types and composition; this model is not shared campaign
+machinery. The architecture owner must remove these executable files when an
+accepted decision either selects the first product-owned capability or rejects
+this campaign model. Audit retention moves an inert copy to
+`docs/evidence/archive/dogfooding-protocol/<decision-id>/`, outside TypeScript and
+test discovery, rather than leaving a second executable lifecycle authority.
+The reduced model recognizes only `expiry` and `analytic-stop` as generic
+`AdvanceFence` causes. Source closure, abandonment, explicit revocation, and
+retirement remain dedicated transitions so the model cannot silently invent a
+shared five-cause policy before an owning product decides it.
 
 Extension Foundation is a reusable library and protocol boundary, not an
 artifact store, catalog database, marketplace, or mandatory hosted service.
@@ -308,8 +317,10 @@ admission, source-preparation closure, treatment slot, build attempt and actual
 build receipt and records every expected-versus-observed repository, commit,
 tree, source, delta, recipe, toolchain, resolved dependency and build-material
 comparison. A missing, foreign, stale, or unequal comparison blocks `T1`
-execution. Build failure or product-base drift therefore remains visible before
-an artifact exists.
+execution. A failed or no-output build requires a positive consistency receipt
+matching that exact non-artifact result; `missing-build` is not a valid substitute
+for an observed failed build. Build failure or product-base drift therefore
+remains visible before an artifact exists.
 
 Before artifact execution, the custodian registers an `AttemptIdentity` against
 the exact `ProtocolRevision`, `B0` or verified `T1`, `E0`, and
@@ -318,9 +329,12 @@ links to its predecessor and retains the original `ExperimentalUnit`. A genuine
 independently randomized replication is registered as a new experimental unit
 and attempt, never relabeled as a retry.
 
-Each registration requests one one-use `LaunchAuthorization`. The custody
-transaction authority durably issues and atomically consumes it before committing
-the build or evaluation process-release decision. The external launch gate only
+Each registered launch purpose requests its own one-use `LaunchAuthorization`:
+`source-authoring`, `build`, or `evaluation`. At most one authority exists for a
+given purpose, slot, and prospective runtime, while different purposes never
+reuse one capability. The custody transaction authority durably issues and
+atomically consumes it before committing the matching process-release decision.
+A build receipt is accepted only for its consumed build authority. The external launch gate only
 enforces that committed decision before candidate-controlled code can execute; it
 cannot mutate authorization or fence state. Missing, reused, mismatched, or
 expired authorization blocks launch. Campaign authorizations expire no later than
@@ -432,6 +446,10 @@ dependency direction remain framework-neutral.
 The external custodian preregisters every expected build and execution attempt
 and records append-only terminal receipts. If no receipt arrives by the sealed
 deadline, the custodian records a separate missing or unknown observation.
+The authoritative deadline is inclusive: a receipt observed at or after it is
+retained only as late evidence and cannot create or rewrite the terminal result.
+The later deadline transition records the missing or unknown terminal and remains
+final; a late stop receipt also leaves the launch barrier closed.
 Absence alone is never reclassified as abandoned or invalid, and `E0` owns its
 attrition and analysis treatment.
 

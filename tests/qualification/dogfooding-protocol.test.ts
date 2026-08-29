@@ -3,18 +3,18 @@
  * This is intentionally test-only: it is neither a runtime nor a public SPI.
  */
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
-
 import fc from "fast-check";
-
 import * as C from "./dogfooding-protocol-contract.ts";
 import { foldOracleHistory } from "./dogfooding-protocol-oracle.ts";
 import { foldQualificationHistory } from "./dogfooding-protocol-reducer.ts";
-
 const id = {
   protocol: C.protocolRevisionId("protocol"), authority: C.custodyAuthorityId("authority"),
   family: C.sourceClaimFamilyId("family"), root: C.sourceFamilyRootId("root"),
   slot: C.sourceSlotId("slot"), authorization: C.authorizationId("authorization"),
+  buildAuthorization: C.authorizationId("build-authorization"),
+  otherAuthorization: C.authorizationId("other-authorization"),
   attempt: C.attemptId("attempt"), runtime: C.runtimeId("runtime"),
   checkpoint: C.checkpointId("checkpoint"), build: C.buildAttemptId("build"),
   owner: C.retirementOwnerId("owner"), otherOwner: C.retirementOwnerId("other-owner"),
@@ -32,7 +32,6 @@ const sourceFence: C.AuthorizationFenceBinding = {
   scope: "source", expectedGeneration: g(1), expectedFamilyAllocationGeneration: g(1),
 };
 const campaignFence: C.AuthorizationFenceBinding = { scope: "campaign", expectedGeneration: g(1) };
-
 interface Envelope {
   readonly eventId: C.EventId;
   readonly protocolRevisionId: C.ProtocolRevisionId;
@@ -53,9 +52,11 @@ const event = (label: string, type: C.ProtocolEvent["type"],
 const rejected = (spec: EventSpec): EventSpec => ({ ...spec, accepted: false });
 const detached = (spec: EventSpec): EventSpec => ({ ...spec, extendsLineage: false });
 const root = { sourceClaimFamilyId: id.family, sourceFamilyRootId: id.root };
-const authorization = (binding: C.AuthorizationFenceBinding) => ({ ...root,
+const authorization = (binding: C.AuthorizationFenceBinding,
+  launchPurpose: C.LaunchPurpose = binding.scope === "source" ? "source-authoring" : "evaluation") => ({ ...root,
   authorizationId: id.authorization, sourceSlotId: id.slot, runtimeId: id.runtime,
   retirementOwnerId: id.owner, credentialLineageId: id.lineage, authorizationFence: binding,
+  launchPurpose,
 });
 const register = event("register", "RegisterProtocol", {
   sourceClaimFamilyId: id.family, sourceFamilyRootId: id.root, sourceSlotId: id.slot,
@@ -65,11 +66,17 @@ const register = event("register", "RegisterProtocol", {
   familyAllocationFenceGeneration: g(1), launchDeadline: tick(60), attemptDeadline: tick(60),
   stopDeadline: tick(60), buildDeadline: tick(60), buildConsistencyDeadline: tick(80),
 });
-const issue = (label: string, binding: C.AuthorizationFenceBinding = sourceFence) => event(label, "IssueAuthorization", {
-  ...authorization(binding), expiresAt: tick(50),
+const issue = (label: string, binding: C.AuthorizationFenceBinding = sourceFence,
+  purpose?: C.LaunchPurpose) => event(label, "IssueAuthorization", {
+  ...authorization(binding, purpose), expiresAt: tick(50),
 });
-const consume = (label: string, binding: C.AuthorizationFenceBinding = sourceFence) =>
-  event(label, "ConsumeAuthorization", authorization(binding));
+const issueWithId = (label: string, selectedId: C.AuthorizationId,
+  binding: C.AuthorizationFenceBinding = sourceFence, purpose?: C.LaunchPurpose) =>
+  event(label, "IssueAuthorization", {
+  ...authorization(binding, purpose), authorizationId: selectedId, expiresAt: tick(50),
+});
+const consume = (label: string, binding: C.AuthorizationFenceBinding = sourceFence,
+  purpose?: C.LaunchPurpose) => event(label, "ConsumeAuthorization", authorization(binding, purpose));
 const revoke = (label: string, binding: C.AuthorizationFenceBinding = sourceFence) => event(label, "RevokeAuthorization", {
   ...root, authorizationId: id.authorization, authorizationFence: binding, reason: "analytic-stop",
 });
@@ -83,9 +90,10 @@ const close = (label: string) => event(label, "CloseSource", { ...root,
 const abandon = (label: string) => event(label, "AbandonSource", { ...root,
   expectedGeneration: g(1), nextGeneration: g(2), receiptId: receipt(label), proofId: proof(label),
 });
-const advance = (label: string, selected: "source" | "campaign" = "campaign") =>
+const advance = (label: string, selected: "source" | "campaign" = "campaign",
+  cause: C.AdvanceFence["cause"] = "analytic-stop") =>
   event(label, "AdvanceFence", { ...root, fence: selected, expectedGeneration: g(1),
-    nextGeneration: g(2), cause: "analytic-stop" });
+    nextGeneration: g(2), cause });
 const release = (label: string, binding: C.AuthorizationFenceBinding = campaignFence) => event(label, "ReleaseProcess", {
   ...authorization(binding), attemptId: id.attempt, launchReceiptId: receipt(label),
 });
@@ -97,9 +105,9 @@ const crash = (label: string, binding: C.AuthorizationFenceBinding = sourceFence
   expectedGeneration: binding.expectedGeneration,
 });
 const launchDeadline = (label: string, binding: C.AuthorizationFenceBinding = sourceFence,
-  result: "start-unknown" | "never-started" = "start-unknown") => event(label, "ReachLaunchDeadline", {
+  result: "start-unknown" | "never-started" = "start-unknown", minimumTick = 60) => event(label, "ReachLaunchDeadline", {
   ...authorization(binding), observationReceiptId: receipt(label), result,
-}, 60);
+}, minimumTick);
 const restart = (label: string) => event(label, "RestartObserved", { ...root, runtimeId: id.runtime });
 const reconcile = (label: string, observation: "live" | "terminated" | "unknown") =>
   event(label, "ReconcileRuntime", { ...root, runtimeId: id.runtime, observation, proofId: proof(label) });
@@ -116,21 +124,21 @@ const complete = (label: string, sourceReceipt: C.ReceiptId, admissionReceipt?: 
     retainedEvidence: [sourceReceipt, admissionReceipt].filter((value): value is C.ReceiptId => value !== undefined)
       .map(value => ({ type: "receipt" as const, receiptId: value })),
   });
-const attemptReceipt = (label: string, result: C.AttemptReceiptResult) =>
+const attemptReceipt = (label: string, result: C.AttemptReceiptResult, selectedReceipt = receipt(label)) =>
   event(label, "RecordAttemptReceipt", { attemptId: id.attempt, runtimeId: id.runtime,
-    receiptId: receipt(label), result });
-const attemptDeadline = (label: string, result: "missing" | "unknown" = "missing") =>
+    receiptId: selectedReceipt, result });
+const attemptDeadline = (label: string, result: "missing" | "unknown" = "missing", minimumTick = 60) =>
   event(label, "ReachAttemptDeadline", { attemptId: id.attempt,
-    observationReceiptId: receipt(label), result }, 60);
+    observationReceiptId: receipt(label), result }, minimumTick);
 const checkpoint = (label: string) => event(label, "CheckpointEffective", {
   checkpointId: id.checkpoint, expectedGeneration: g(1),
 });
 const stop = (label: string, result: "continue" | "stop" = "stop") => event(label, "RecordStopReceipt", {
   checkpointId: id.checkpoint, receiptId: receipt(label), expectedGeneration: g(1), result,
 });
-const stopDeadline = (label: string, result: "missing" | "unknown" = "missing") =>
+const stopDeadline = (label: string, result: "missing" | "unknown" = "missing", minimumTick = 60) =>
   event(label, "ReachStopDeadline", { checkpointId: id.checkpoint, expectedGeneration: g(1),
-    observationReceiptId: receipt(label), result }, 60);
+    observationReceiptId: receipt(label), result }, minimumTick);
 const recoverStop = (label: string, expected = 1, next = 2) => event(label, "RecoverStopFence", {
   checkpointId: id.checkpoint, expectedGeneration: g(expected), nextGeneration: g(next),
 });
@@ -139,21 +147,22 @@ const admission = (label: string, result: "accepted" | "failed") => event(label,
 });
 const build = (label: string, result: "succeeded" | "failed" | "no-output") =>
   event(label, "RecordBuildResult", { ...root, sourceSlotId: id.slot, buildAttemptId: id.build,
+    authorizationId: id.buildAuthorization,
     buildReceiptId: buildReceipt(label), result: result === "succeeded" ?
       { type: result, artifactDigest: id.artifact } : { type: result, proofId: proof(label) },
   });
-const buildDeadline = (label: string, result: "missing" | "unknown" = "missing") =>
+const buildDeadline = (label: string, result: "missing" | "unknown" = "missing", minimumTick = 60) =>
   event(label, "ReachBuildDeadline", { ...root, sourceSlotId: id.slot, buildAttemptId: id.build,
-    observationReceiptId: receipt(label), result }, 60);
+    observationReceiptId: receipt(label), result }, minimumTick);
 const consistency = (label: string, result: C.BuildConsistencyInput,
   boundBuildReceipt = buildReceipt("build"), selectedReceipt = consistencyReceipt(label)) =>
   event(label, "RecordBuildConsistencyReceipt", { ...root, sourceSlotId: id.slot,
     buildAttemptId: id.build, buildReceiptId: boundBuildReceipt,
     consistencyReceiptId: selectedReceipt, result });
-const consistencyDeadline = (label: string, result: "missing-verifier" | "unknown-verifier" = "missing-verifier") =>
+const consistencyDeadline = (label: string,
+  result: "missing-verifier" | "unknown-verifier" = "missing-verifier", minimumTick = 80) =>
   event(label, "ReachBuildConsistencyDeadline", { ...root, sourceSlotId: id.slot,
-    buildAttemptId: id.build, observationReceiptId: receipt(label), result }, 80);
-
+    buildAttemptId: id.build, observationReceiptId: receipt(label), result }, minimumTick);
 const materialize = (specs: readonly EventSpec[], tickStep = 1): readonly C.ProtocolEvent[] => {
   const events: C.ProtocolEvent[] = [];
   let predecessor: C.EventId | null = null;
@@ -172,7 +181,6 @@ const materialize = (specs: readonly EventSpec[], tickStep = 1): readonly C.Prot
   }
   return events;
 };
-
 const canonical = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map(canonical);
   if (value === null || typeof value !== "object") return value;
@@ -203,7 +211,6 @@ const compareHistory = (specs: readonly EventSpec[], context: string, tickStep =
     compareResult(result, oracle[index]!, `${context} event ${index} (${events[index]!.type})`);
   });
 };
-
 interface RaceFamily {
   readonly name: string;
   readonly variants: number;
@@ -211,8 +218,13 @@ interface RaceFamily {
 }
 const ordered = (reverse: boolean, left: EventSpec, right: EventSpec): readonly EventSpec[] =>
   reverse ? [right, left] : [left, right];
+const at = (spec: EventSpec, minimumTick: number): EventSpec => ({ ...spec, minimumTick });
 const closedPrefix = [register, close("close"), admission("admission", "accepted")] as const;
-const campaignBuildPrefix = [register, close("close"), admission("admission", "accepted"),
+const buildAuthorizedPrefix = [...closedPrefix,
+  issueWithId("build-issue", id.buildAuthorization, campaignFence, "build"),
+  event("build-consume", "ConsumeAuthorization", {
+    ...authorization(campaignFence, "build"), authorizationId: id.buildAuthorization })] as const;
+const campaignBuildPrefix = [...buildAuthorizedPrefix,
   build("build", "succeeded"), consistency("consistency", { type: "match", artifactDigest: id.artifact }),
   issue("issue", campaignFence)] as const;
 const raceFamilies: readonly RaceFamily[] = [
@@ -281,9 +293,9 @@ const raceFamilies: readonly RaceFamily[] = [
     history: (reverse, variant) => { const result = variant === 0 ? "failed" : "no-output";
       const consistencyId = consistencyReceipt("consistency");
       const evidence = consistency("consistency", variant === 2 ? { type: "match", artifactDigest: id.artifact } :
-        { type: "missing-build", proofId: proof("missing") },
+        { type: "non-artifact-match", buildResult: result, proofId: proof("non-artifact") },
       variant === 1 ? buildReceipt("wrong") : buildReceipt("build"), consistencyId);
-      return [...closedPrefix, ...ordered(reverse, build("build", result), evidence),
+      return [...buildAuthorizedPrefix, ...ordered(reverse, build("build", result), evidence),
         consistency("continuation-replay", { type: "missing-build", proofId: proof("replay") },
           buildReceipt("build"), consistencyId)];
     } },
@@ -300,6 +312,14 @@ const raceFamilies: readonly RaceFamily[] = [
   },
 ];
 assert.equal(raceFamilies.length, 12, "the registry must contain exactly twelve race families");
+const retiredCrashHistory = [register, issue("issue"), consume("consume"), close("close"),
+  retirement("retirement"), cleanup("cleanup"), complete("complete", receipt("close")),
+  rejected(detached(crash("post-retirement-crash")))] as const;
+const failedAdmissionAfterConsumedHistory = [register, issue("issue"), consume("consume"),
+  close("close"), admission("failed", "failed")] as const;
+const advanceCauses: readonly C.AdvanceFence["cause"][] = ["expiry", "analytic-stop"];
+const advanceCauseHistories = advanceCauses.map(cause =>
+  [register, issue(`issue-${cause}`), advance(`advance-${cause}`, "source", cause)] as const);
 const regressionHistories: readonly (readonly EventSpec[])[] = [
   [register, close("close"), admission("failed", "failed"),
     rejected(detached(issue("post-failure-issue", campaignFence)))],
@@ -311,15 +331,43 @@ const regressionHistories: readonly (readonly EventSpec[])[] = [
     rejected(detached(launchDeadline("never-started", sourceFence, "never-started")))],
   [...campaignBuildPrefix, consume("consume", campaignFence), checkpoint("checkpoint"), stop("stop"),
     advance("advance"), rejected(detached(recoverStop("recover-closed", 2, 3)))],
-  [...closedPrefix, build("build", "succeeded"), build("same-late-build", "succeeded")],
+  [...buildAuthorizedPrefix, build("build", "succeeded"), build("same-late-build", "succeeded")],
   [register, checkpoint("checkpoint"), stopDeadline("stop-deadline")],
   [...closedPrefix, buildDeadline("build-deadline")],
-  [...closedPrefix, build("build", "succeeded"), consistencyDeadline("consistency-deadline")],
+  [...buildAuthorizedPrefix, build("build", "succeeded"), consistencyDeadline("consistency-deadline")],
+  retiredCrashHistory,
+  failedAdmissionAfterConsumedHistory,
+  [register, attemptReceipt("attempt", "succeeded"),
+    rejected(detached(attemptReceipt("attempt-replay", "succeeded", receipt("attempt"))))],
+  [register, issue("issue"), rejected(detached(issueWithId("duplicate-slot-authority", id.otherAuthorization)))],
+  [register, issue("issue"), launchDeadline("never-started", sourceFence, "never-started"),
+    rejected(detached(consume("post-terminal-consume")))],
+  [register, issue("issue"), consume("consume"), launchDeadline("direct-start-unknown")],
+  [register, at(attemptReceipt("late-attempt", "succeeded"), 60), attemptDeadline("attempt-deadline")],
+  [register, checkpoint("checkpoint"), at(stop("late-stop"), 60), stopDeadline("stop-deadline")],
+  [...buildAuthorizedPrefix, at(build("late-build", "succeeded"), 60), buildDeadline("build-deadline")],
+  [...buildAuthorizedPrefix, build("build", "failed"),
+    consistency("non-artifact", { type: "non-artifact-match", buildResult: "failed", proofId: proof("failed") })],
+  [...buildAuthorizedPrefix, build("build", "no-output"),
+    consistency("bad-non-artifact", { type: "non-artifact-match", buildResult: "failed", proofId: proof("bad") })],
+  [...buildAuthorizedPrefix, build("build", "succeeded"),
+    at(consistency("late-consistency", { type: "match", artifactDigest: id.artifact }), 80),
+    consistencyDeadline("consistency-deadline")],
+  ...advanceCauseHistories,
+];
+const prematureDeadlineHistories: readonly (readonly EventSpec[])[] = [
+  [register, issue("issue"), rejected(detached(launchDeadline("early-launch", sourceFence, "start-unknown", 59)))],
+  [register, rejected(detached(attemptDeadline("early-attempt", "missing", 59)))],
+  [register, checkpoint("checkpoint"), rejected(detached(stopDeadline("early-stop", "missing", 59)))],
+  [...closedPrefix, rejected(detached(buildDeadline("early-build", "missing", 59)))],
+  [...buildAuthorizedPrefix, build("build", "succeeded"),
+    rejected(detached(consistencyDeadline("early-consistency", "missing-verifier", 79)))],
 ];
 const scenarioHistories: readonly (readonly EventSpec[])[] = [
   ...raceFamilies.flatMap(family => [false, true].flatMap(reverse =>
     Array.from({ length: family.variants }, (_, variant) => family.history(reverse, variant)))),
   ...regressionHistories,
+  ...prematureDeadlineHistories,
 ];
 const protocolEventTypes: readonly C.ProtocolEvent["type"][] = ["RegisterProtocol", "IssueAuthorization",
   "ConsumeAuthorization", "RevokeAuthorization", "ExpireAuthorization", "CloseSource", "AbandonSource",
@@ -328,12 +376,46 @@ const protocolEventTypes: readonly C.ProtocolEvent["type"][] = ["RegisterProtoco
   "RecordAttemptReceipt", "ReachAttemptDeadline", "CheckpointEffective", "RecordStopReceipt",
   "ReachStopDeadline", "RecoverStopFence", "RecordBuildResult", "ReachBuildDeadline",
   "RecordBuildConsistencyReceipt", "ReachBuildConsistencyDeadline", "RecordAdmission"];
-
 test("registered qualification scenarios cover every protocol transition kind", () => {
   const covered = new Set(scenarioHistories.flatMap(history =>
     history.map(spec => spec.body.type as C.ProtocolEvent["type"])));
   assert.deepEqual([...covered].sort(), [...protocolEventTypes].sort());
   regressionHistories.forEach((history, index) => compareHistory(history, `regression ${index + 1}`));
+});
+test("deadline transitions reject every supported deadline one tick early", () => {
+  prematureDeadlineHistories.forEach((history, index) => {
+    compareHistory(history, `premature deadline ${index + 1}`);
+    const last = foldQualificationHistory(materialize(history), 16).results.at(-1)!;
+    assert.equal(last.decision, "rejected");
+    assert.ok(last.effects.some(effect => effect.type === "denial-recorded" &&
+      effect.reason === "deadline-not-reached"));
+  });
+});
+test("retirement tombstone is final and failed admission revokes consumed authority", () => {
+  const retired = foldQualificationHistory(materialize(retiredCrashHistory), 16).results;
+  assert.equal(retired.at(-1)!.decision, "rejected");
+  assert.deepEqual(retired.at(-1)!.terminalProjections.resourceRetirement,
+    retired.at(-2)!.terminalProjections.resourceRetirement);
+  const failed = foldQualificationHistory(materialize(failedAdmissionAfterConsumedHistory), 16).results.at(-1)!;
+  assert.ok(failed.effects.some(effect => effect.type === "authorization-revoked" &&
+    effect.authorizationId === id.authorization));
+});
+test("qualification model remains disposable and bounded", () => {
+  const files = ["dogfooding-protocol-contract.ts", "dogfooding-protocol-reducer.ts",
+    "dogfooding-protocol-oracle.ts", "dogfooding-protocol.test.ts"];
+  const sources = files.map(file => readFileSync(new URL(file, import.meta.url), "utf8"));
+  const lineCount = sources.reduce((sum, source) => sum + source.split(/\r?\n/u).length - 1, 0);
+  const byteCount = sources.reduce((sum, source) => sum + Buffer.byteLength(source, "utf8"), 0);
+  const longestLine = Math.max(...sources.flatMap(source => source.split(/\r?\n/u).map(line => line.length)));
+  assert.ok(lineCount <= 2_500, `qualification model has ${lineCount} physical lines`);
+  assert.ok(byteCount <= 175_000, `qualification model has ${byteCount} UTF-8 bytes`);
+  assert.ok(longestLine <= 200, `qualification model has a ${longestLine}-character line`);
+});
+test("supported fence-advance causes apply the same fail-closed scope revocation", () => {
+  advanceCauseHistories.forEach(history => {
+    const last = foldQualificationHistory(materialize(history), 8).results.at(-1)!;
+    assert.ok(last.effects.some(effect => effect.type === "authorization-revoked"));
+  });
 });
 const variedHistory = (specs: readonly EventSpec[], noiseCount: number,
   selectedSlot: number): readonly EventSpec[] => {
@@ -343,7 +425,6 @@ const variedHistory = (specs: readonly EventSpec[], noiseCount: number,
       sourceFamilyRootId: C.sourceFamilyRootId(`wrong-root:${index}`), expiresAt: tick(50) }))));
   return [...specs.slice(0, insertion), ...noise, ...specs.slice(insertion)];
 };
-
 for (const family of raceFamilies) for (const reverse of [false, true]) {
   test(`${family.name} / ${reverse ? "right-before-left" : "left-before-right"}`, () => {
     for (let variant = 0; variant < family.variants; variant += 1) {
@@ -351,25 +432,22 @@ for (const family of raceFamilies) for (const reverse of [false, true]) {
     }
   });
 }
-
 test("bounded randomized scenario perturbations agree with the independent oracle", () => {
   fc.assert(fc.property(
     fc.integer({ min: 0, max: scenarioHistories.length - 1 }), fc.integer({ min: 0, max: 2 }),
     fc.nat(15), fc.integer({ min: 1, max: 2 }), (scenarioIndex, noiseCount, selectedSlot, tickStep) => {
       const history = variedHistory(scenarioHistories[scenarioIndex]!, noiseCount, selectedSlot);
-      assert.ok(history.length <= 16, "generated histories remain bounded");
+      assert.ok(history.length <= 20, "generated histories remain bounded");
       compareHistory(history, `generated scenario ${scenarioIndex + 1}`, tickStep);
     },
   ), { seed: 0x415139, numRuns: 500 });
 });
-
 type Mutant = "authorization-reuse" | "release-after-fence-advance" | "cleanup-unknown-runtime" |
   "late-receipt-rewrites-finality" | "closed-and-abandoned-simultaneously" |
   "build-mismatch-becomes-attrition" | "retirement-owner-changes-within-one-source-family-root";
 const mutantNames: readonly Mutant[] = ["authorization-reuse", "release-after-fence-advance",
   "cleanup-unknown-runtime", "late-receipt-rewrites-finality", "closed-and-abandoned-simultaneously",
   "build-mismatch-becomes-attrition", "retirement-owner-changes-within-one-source-family-root"];
-
 type TestOnlyMutantResult = C.TransitionResult;
 const faultyTransition = (name: Mutant, strict: C.TransitionResult,
   eventValue: C.ProtocolEvent): TestOnlyMutantResult => {
@@ -399,7 +477,6 @@ const faultyTransition = (name: Mutant, strict: C.TransitionResult,
   }
 };
 assert.equal(mutantNames.length, 7, "the suite must define exactly seven deliberate test-only mutants");
-
 const lastResults = (specs: readonly EventSpec[]) => {
   const history = materialize(specs);
   return { event: history.at(-1)!, strict: foldQualificationHistory(history, 20).results.at(-1)!,
@@ -417,7 +494,6 @@ const kill = (name: Mutant, specs: readonly EventSpec[],
   assert.throws(() => invariant(mutant),
     assert.AssertionError, `${name} must be killed by its targeted invariant`);
 };
-
 test("mutant kill: authorization reuse", () => kill("authorization-reuse",
   [register, issue("issue"), consume("first"), rejected(detached(consume("second")))],
   result => assert.equal(result.decision, "rejected")));
@@ -443,7 +519,7 @@ test("mutant kill: closed and abandoned simultaneously", () => kill("closed-and-
     assert.equal(result.effects.some(effect => effect.type === "terminal-appended" &&
       effect.terminal.type === "source" && effect.terminal.projection.type === "abandoned"), false); }));
 test("mutant kill: build mismatch becomes attrition/eligible", () => kill("build-mismatch-becomes-attrition",
-  [...closedPrefix, build("build", "succeeded"),
+  [...buildAuthorizedPrefix, build("build", "succeeded"),
     consistency("mismatch", { type: "match", artifactDigest: C.artifactDigest("sha256:wrong") })],
   result => { assert.equal(result.terminalProjections.buildConsistency?.type, "invalid");
     assert.equal(result.terminalProjections.claim, "invalid"); }));
