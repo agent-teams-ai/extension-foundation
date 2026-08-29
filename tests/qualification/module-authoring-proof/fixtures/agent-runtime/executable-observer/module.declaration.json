@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "consumer": "agent-runtime",
+  "moduleId": "runtime.executable-observer",
+  "loaderKey": "runtime.executable-observer",
+  "provides": ["runtime.executable-observation/v1"],
+  "dependencies": { "required": [], "optional": [], "many": [] }
+}

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "consumer": "agent-runtime",
+  "moduleId": "runtime.installation-discovery",
+  "loaderKey": "runtime.installation-discovery",
+  "provides": ["runtime.installation-discovery/v1"],
+  "dependencies": {
+    "required": [{ "slot": "executableFileObserver", "capability": "runtime.executable-observation/v1" }],
+    "optional": [],
+    "many": []
+  }
+}

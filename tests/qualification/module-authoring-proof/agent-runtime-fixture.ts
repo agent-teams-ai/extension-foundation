@@ -1,4 +1,5 @@
-import type { LocatedDeclaration, ModuleDeclaration, StaticProfile } from "./model.ts";
+import { readFixtureData } from "./fixture-data.ts";
+import type { StaticPlan } from "./model.ts";
 
 export interface ExecutableObserver {
   readonly observed: readonly string[];
@@ -22,53 +23,25 @@ export const createAgentRuntimeBaseline = (
   runtimeInstallation: createRuntimeInstallationFeature({ executableFileObserver: observer }),
 });
 
-export const AGENT_RUNTIME_DECLARATIONS = Object.freeze([
-  {
-    declarationPath: "executable-observer/module.declaration.json",
-    declaration: {
-      schemaVersion: 1,
-      consumer: "agent-runtime",
-      moduleId: "runtime.executable-observer",
-      loaderKey: "runtime.executable-observer",
-      provides: ["runtime.executable-observation"],
-      dependencies: { required: [], optional: [], many: [] },
-    },
-  },
-  {
-    declarationPath: "runtime-installation/module.declaration.json",
-    declaration: {
-      schemaVersion: 1,
-      consumer: "agent-runtime",
-      moduleId: "runtime.installation-discovery",
-      loaderKey: "runtime.installation-discovery",
-      provides: ["runtime.installation-discovery"],
-      dependencies: {
-        required: [{ slot: "executableFileObserver", capability: "runtime.executable-observation" }],
-        optional: [],
-        many: [],
-      },
-    },
-  },
-] satisfies readonly LocatedDeclaration[]);
-
-export const AGENT_RUNTIME_PROFILE: StaticProfile = Object.freeze({
-  consumer: "agent-runtime",
-  roots: ["runtime.installation-discovery"],
-  enabledModules: ["runtime.executable-observer", "runtime.installation-discovery"],
-  bindings: {
-    "runtime.installation-discovery.executableFileObserver": "runtime.executable-observer",
-  },
-  selectedLoaders: ["runtime.executable-observer", "runtime.installation-discovery"],
-});
+const fixtureData = readFixtureData("agent-runtime", new URL("./fixtures/agent-runtime/", import.meta.url));
+export const AGENT_RUNTIME_DECLARATIONS = fixtureData.declarations;
+export const AGENT_RUNTIME_PROFILE = fixtureData.profile;
 
 export function activateAgentRuntimeHybrid(
-  observer: ExecutableObserver,
+  plan: StaticPlan,
+  loaders: Readonly<Record<string, () => unknown>>,
 ): Readonly<{ runtimeInstallation: RuntimeInstallationFeature }> {
-  const providers = Object.freeze({ "runtime.executable-observer": observer });
+  const root = plan.factoryArguments.find(argument => argument.moduleId === "runtime.installation-discovery");
+  const observerId = root?.dependencies.executableFileObserver;
+  if (root === undefined || typeof observerId !== "string") throw new Error("INVALID_AGENT_RUNTIME_STATIC_PLAN");
+  const loadObserver = loaders[observerId];
+  const loadFactory = loaders[root.loaderKey];
+  if (loadObserver === undefined || loadFactory === undefined) throw new Error("MISSING_AGENT_RUNTIME_LITERAL_LOADER");
+  const observer = loadObserver() as ExecutableObserver;
+  const factory = loadFactory();
+  if (typeof factory !== "function") throw new Error("INVALID_AGENT_RUNTIME_ACTIVATION_FACTORY");
   return Object.freeze({
-    runtimeInstallation: createRuntimeInstallationFeature({
-      executableFileObserver: providers["runtime.executable-observer"],
-    }),
+    runtimeInstallation: (factory as typeof createRuntimeInstallationFeature)({ executableFileObserver: observer }),
   });
 }
 
@@ -83,9 +56,7 @@ export function createAgentRuntimeLoaderTable(
     },
     "runtime.installation-discovery": () => {
       trace.push("runtime.installation-discovery");
-      return createRuntimeInstallationFeature({ executableFileObserver: observer });
+      return createRuntimeInstallationFeature;
     },
   });
 }
-
-export const declaration = <T extends ModuleDeclaration>(value: T): T => value;

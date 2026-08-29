@@ -2,6 +2,7 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import {
+  binaryCompare,
   DECLARATION_NAME,
   type Diagnostic,
   type LocatedDeclaration,
@@ -19,27 +20,36 @@ export interface DiscoveryResult {
 export async function discoverDeclarations(
   consumer: string,
   roots: readonly string[],
-  limits: Readonly<{ maxRoots: number; maxCandidates: number }> = { maxRoots: 4, maxCandidates: 32 },
+  limits: Readonly<{ maxRoots: number; maxCandidates: number; maxDeclarationBytes?: number }> = {
+    maxRoots: 4,
+    maxCandidates: 32,
+    maxDeclarationBytes: 16_384,
+  },
 ): Promise<DiscoveryResult> {
   if (roots.length > limits.maxRoots) throw new Error("DISCOVERY_ROOT_LIMIT");
+  if (new Set(roots).size !== roots.length) throw new Error("DISCOVERY_DUPLICATE_ROOT");
   const declarations: LocatedDeclaration[] = [];
   const diagnostics: Diagnostic[] = [];
   const reads: string[] = [];
+  let candidates = 0;
   for (const root of roots) {
     const entries = (await readdir(root, { withFileTypes: true }))
       .filter(entry => entry.isDirectory())
-      .sort((left, right) => left.name.localeCompare(right.name));
-    if (entries.length + declarations.length > limits.maxCandidates) throw new Error("DISCOVERY_CANDIDATE_LIMIT");
+      .sort((left, right) => binaryCompare(left.name, right.name));
+    candidates += entries.length;
+    if (candidates > limits.maxCandidates) throw new Error("DISCOVERY_CANDIDATE_LIMIT");
     for (const entry of entries) {
       const declarationPath = join(root, entry.name, DECLARATION_NAME);
+      const displayPath = `${entry.name}/${DECLARATION_NAME}`;
       let source: string;
       try {
-        source = await readFile(declarationPath, "utf8");
+        const bytes = await readFile(declarationPath);
+        if (bytes.byteLength > (limits.maxDeclarationBytes ?? 16_384)) throw new Error(`DISCOVERY_DECLARATION_BYTE_LIMIT:${displayPath}`);
+        source = bytes.toString("utf8");
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code === "ENOENT") continue;
         throw error;
       }
-      const displayPath = `${entry.name}/${DECLARATION_NAME}`;
       reads.push(displayPath);
       let raw: unknown;
       try {
@@ -62,7 +72,7 @@ export async function discoverDeclarations(
 function stable(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
   if (typeof value === "object" && value !== null) {
-    return `{${Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, child]) => `${JSON.stringify(key)}:${stable(child)}`).join(",")}}`;
+    return `{${Object.entries(value).sort(([a], [b]) => binaryCompare(a, b)).map(([key, child]) => `${JSON.stringify(key)}:${stable(child)}`).join(",")}}`;
   }
   return JSON.stringify(value);
 }
@@ -70,13 +80,20 @@ function stable(value: unknown): string {
 const handleName = (moduleId: string): string => moduleId.split(/[.-]/u).map(part => `${part[0]?.toUpperCase() ?? ""}${part.slice(1)}`).join("");
 
 export function generatedOutputs(declarations: readonly LocatedDeclaration[]): Readonly<Record<string, string>> {
-  const ordered = [...declarations].sort((left, right) => left.declaration.moduleId.localeCompare(right.declaration.moduleId));
+  const ordered = [...declarations].sort((left, right) => binaryCompare(left.declaration.moduleId, right.declaration.moduleId));
+  const handlesByName = new Map<string, string>();
+  for (const { declaration } of ordered) {
+    const handle = handleName(declaration.moduleId);
+    const prior = handlesByName.get(handle);
+    if (prior !== undefined) throw new Error(`GENERATED_HANDLE_COLLISION:${handle}:${[prior, declaration.moduleId].sort(binaryCompare).join(",")}`);
+    handlesByName.set(handle, declaration.moduleId);
+  }
   const inventory = ordered.map(({ declaration, declarationPath }) => ({
     consumer: declaration.consumer,
     declarationPath,
     loaderKey: declaration.loaderKey,
     moduleId: declaration.moduleId,
-    provides: [...declaration.provides].sort(),
+    provides: [...declaration.provides].sort(binaryCompare),
   }));
   const handles = [
     "// Generated qualification projection. Disposable; do not edit.",
@@ -107,7 +124,7 @@ export async function staleGenerated(outputDir: string, declarations: readonly L
       stale.push(name);
     }
   }
-  return Object.freeze(stale.sort());
+  return Object.freeze(stale.sort(binaryCompare));
 }
 
 export async function writeDeclaration(root: string, directory: string, declaration: ModuleDeclaration | unknown): Promise<void> {

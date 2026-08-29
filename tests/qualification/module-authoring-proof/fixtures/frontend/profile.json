@@ -1,0 +1,21 @@
+{
+  "consumer": "frontend",
+  "roots": ["recent-projects.feature"],
+  "enabledModules": [
+    "recent-projects.claude-source",
+    "recent-projects.codex-source",
+    "recent-projects.feature"
+  ],
+  "bindings": {
+    "recent-projects.feature.logger": null,
+    "recent-projects.feature.sources": [
+      "recent-projects.claude-source",
+      "recent-projects.codex-source"
+    ]
+  },
+  "selectedLoaders": [
+    "recent-projects.claude-source",
+    "recent-projects.codex-source",
+    "recent-projects.feature"
+  ]
+}

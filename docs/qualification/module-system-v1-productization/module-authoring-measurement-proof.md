@@ -45,39 +45,27 @@ runtime file scan, or dynamic string import.
 
 ## Executable Scenarios
 
-The root test contains 26 named scenarios with direct expected outcomes rather
-than using agreement between candidates as its only oracle:
+The root test contains 42 named scenarios with direct expected outcomes rather
+than using agreement between candidates as its only oracle. The scenarios retain
+the original Pure DI and hybrid behavior comparisons and add the following
+closed-world evidence:
 
-1. Agent Runtime Pure DI outcome;
-2. Agent Runtime hybrid static arguments and outcome;
-3. Frontend Pure DI ordered-source outcome;
-4. Frontend hybrid static arguments and ordered-source outcome;
-5. inert serializable declarations;
-6. bounded fixed-name discovery;
-7. zero activation evaluation during discovery;
-8. malformed declaration diagnostics;
-9. duplicate declaration diagnostics;
-10. missing required binding rejection;
-11. explicit optional absence and profile-ordered many binding;
-12. disabled root rejection;
-13. disabled required provider and complete impact closure;
-14. disabled selected optional provider diagnostics;
-15. selected literal loader evaluation only;
-16. unselected and invalid loader zero-evaluation;
-17. loader-key bijection;
-18. deterministic AI inventory and nominal navigation handles;
-19. byte-identical regeneration and stale-output detection;
-20. plugin-shaped data becoming an ordinary typed product contribution;
-21. absence of framework, Foundation, graph, lifecycle, and container leaks;
-22. structured-clone-safe data with factories kept separate;
-23. isolated private-consumer package surface without authoring internals;
-24. deterministic measurement and deletion decision;
-25. explicit Orchestrator non-admission; and
-26. immutable, deterministically sorted, path-safe diagnostics.
+| Evidence area | Covered outcomes |
+| --- | --- |
+| Declaration authority | Checked-in fixed-name JSON is authoritative; TypeScript contains no duplicate payload; discovery and generation cause zero activation-sentinel evaluation |
+| Admission shape | Unknown declaration/profile fields, duplicate provides, duplicate roots/modules/bindings/loaders, owner mismatch, unknown roots/modules/bindings/loaders, and conflicting IDs fail closed |
+| Explicit composition | Required, optional, and ordered-many cardinalities cover zero, one, and many; missing required never auto-binds one or ambiguous installed providers; duplicate many providers fail |
+| Compatibility | Capability IDs require `/vN`; same-family version incompatibility differs from unrelated mismatch |
+| Static validation | Disabled root/required/optional cases and complete required-disable impact are covered; explicit-binding cycles fail with stable diagnostics |
+| Determinism | Plans, inventories, regeneration, stale checks, and diagnostics ignore non-semantic declaration/profile permutations while ordered-many profile order remains intact |
+| Discovery and loading | Root, candidate, and declaration-byte bounds apply; paths stay relative and safe; literal loader selection is an exact closed set with zero invalid/unselected evaluation |
+| Private consumer smoke | Pinned pnpm creates a tarball; a private consumer installs it offline, pinned TypeScript 7 checks its nominal handle, and Node executes its runtime export |
+| Governance | Measurement remains deterministic and `CONDITIONAL`; Orchestrator remains `second-consumer-not-admitted` |
 
-Diagnostics sort by code, consumer, relative declaration path, field path,
-available module ID, and sorted related paths. They contain no absolute paths,
-stack traces, timestamps, or discovery-order meaning.
+Diagnostics use explicit binary code-unit ordering over code, consumer, relative
+declaration path, field path, available module ID, and related paths. They
+contain no absolute paths, stack traces, timestamps, locale dependence, or
+discovery-order meaning.
 
 ## Raw Deterministic Measurements
 
@@ -85,33 +73,41 @@ These are qualification proof measurements, never production metrics.
 
 | Category | Result |
 | --- | --- |
-| Source-shaped wiring LOC | `194` physical nonblank LOC |
-| Generic proof glue LOC | `392` physical nonblank LOC |
-| Generic proof glue ratio | `2.020619` generic/source-shaped |
+| Source-shaped wiring LOC | `120` physical non-empty LOC |
+| Generic proof glue LOC | `553` physical non-empty LOC |
+| Generic proof glue ratio | `4.608333` generic/source-shaped |
 | ADR production-glue ratio | `not-applicable-production-loc-zero` |
-| Files in LOC sample | `5` |
+| Files in LOC sample | `6` |
 | Binding change sites | baseline `2`; hybrid `2` |
 | Diagnostics | immutable and deterministically sorted |
 | Determinism | byte-identical regeneration plus stale check |
-| Type inference fixture | nominal `ModuleId<Value>` handles |
-| Packed/private consumer leakage | isolated private surface absent |
-| Serializability | declarations, profiles, diagnostics, and inventory clone safely |
+| Type declaration fixture | nominal `ModuleId<Value>` handles emitted into the qualification tarball |
+| Private consumer smoke | offline packed install, typecheck, and execution passed |
+| Focused typecheck | repository-pinned TypeScript `7.0.2` passed |
+| Serializable projections | declarations, profiles, diagnostics, and inventory clone safely |
 | Disable impact | complete required-dependency closure |
 | Disposable classification | `30-50% disposable` label |
 
-The physical LOC sample covers the two source-shaped wiring fixtures and three
-generic authoring/discovery/loader helpers. Tests, this report, and measurement
-reporting code are excluded from that ratio. Shipping production LOC is zero,
-so the ADR production-glue ratio is not applicable; synthetic proof LOC is not
-used as its denominator.
+The physical LOC sample covers the two source-shaped wiring fixtures and four
+generic validation, discovery, fixture-reading, and loader helpers. Tests, JSON
+declarations/profiles, this report, and measurement reporting code are excluded
+from that ratio. Shipping production LOC is zero, so the ADR production-glue
+ratio is not applicable; synthetic proof LOC is not used as its denominator.
 
 ## Limitations And Stop Rules
 
 The source snapshots supplied to the run contain source trees without Git
 metadata. This proof records the supplied exact SHAs and uses the trees only to
-shape fixtures; it does not independently recertify Git custody or copy product
+shape fixtures; it does not independently verify Git custody or copy product
 domain models. The fixtures prove mechanism behavior, not product semantics,
 adoption value, runtime performance, or independent authorship.
+
+The isolated consumer smoke uses repository-pinned pnpm `11.18.0` to create a
+tarball and install it with `--offline`. Repository-pinned TypeScript `7.0.2`
+then checks a private consumer before Node executes the package runtime
+export. This qualifies the disposable package shape used by this proof. It does
+not satisfy `PACKAGE-1`, establish a production package, prove publication, or
+admit a public SPI.
 
 Delete the hybrid shadow and retain direct Pure DI if a product-owned benchmark
 does not demonstrate a repeated authoring or drift problem, if binding change

@@ -1,4 +1,5 @@
-import type { LocatedDeclaration, StaticProfile } from "./model.ts";
+import { readFixtureData } from "./fixture-data.ts";
+import type { StaticPlan } from "./model.ts";
 
 export interface RecentProjectSource {
   readonly sourceId: string;
@@ -27,76 +28,27 @@ export const createFrontendBaseline = (
   codex: RecentProjectSource,
 ): RecentProjectsFeature => createRecentProjectsFeature({ sources: [claude, codex] });
 
-export const FRONTEND_DECLARATIONS = Object.freeze([
-  {
-    declarationPath: "claude-recent-projects/module.declaration.json",
-    declaration: {
-      schemaVersion: 1,
-      consumer: "frontend",
-      moduleId: "recent-projects.claude-source",
-      loaderKey: "recent-projects.claude-source",
-      provides: ["recent-projects.source"],
-      dependencies: { required: [], optional: [], many: [] },
-      contribution: { kind: "recent-project-source" },
-    },
-  },
-  {
-    declarationPath: "codex-recent-projects/module.declaration.json",
-    declaration: {
-      schemaVersion: 1,
-      consumer: "frontend",
-      moduleId: "recent-projects.codex-source",
-      loaderKey: "recent-projects.codex-source",
-      provides: ["recent-projects.source"],
-      dependencies: { required: [], optional: [], many: [] },
-      contribution: { kind: "recent-project-source" },
-    },
-  },
-  {
-    declarationPath: "recent-projects/module.declaration.json",
-    declaration: {
-      schemaVersion: 1,
-      consumer: "frontend",
-      moduleId: "recent-projects.feature",
-      loaderKey: "recent-projects.feature",
-      provides: ["recent-projects.feature"],
-      dependencies: {
-        required: [],
-        optional: [{ slot: "logger", capability: "recent-projects.logger" }],
-        many: [{ slot: "sources", capability: "recent-projects.source" }],
-      },
-    },
-  },
-] satisfies readonly LocatedDeclaration[]);
-
-export const FRONTEND_PROFILE: StaticProfile = Object.freeze({
-  consumer: "frontend",
-  roots: ["recent-projects.feature"],
-  enabledModules: [
-    "recent-projects.claude-source",
-    "recent-projects.codex-source",
-    "recent-projects.feature",
-  ],
-  bindings: {
-    "recent-projects.feature.logger": null,
-    "recent-projects.feature.sources": [
-      "recent-projects.claude-source",
-      "recent-projects.codex-source",
-    ],
-  },
-  selectedLoaders: [
-    "recent-projects.claude-source",
-    "recent-projects.codex-source",
-    "recent-projects.feature",
-  ],
-});
+const fixtureData = readFixtureData("frontend", new URL("./fixtures/frontend/", import.meta.url));
+export const FRONTEND_DECLARATIONS = fixtureData.declarations;
+export const FRONTEND_PROFILE = fixtureData.profile;
 
 export function activateFrontendHybrid(
-  sources: Readonly<Record<string, RecentProjectSource>>,
+  plan: StaticPlan,
+  loaders: Readonly<Record<string, () => unknown>>,
 ): RecentProjectsFeature {
-  return createRecentProjectsFeature({
-    sources: [sources["recent-projects.claude-source"]!, sources["recent-projects.codex-source"]!],
+  const root = plan.factoryArguments.find(argument => argument.moduleId === "recent-projects.feature");
+  const sourceIds = root?.dependencies.sources;
+  if (root === undefined || !Array.isArray(sourceIds)) throw new Error("INVALID_FRONTEND_STATIC_PLAN");
+  const sources = sourceIds.map(sourceId => {
+    const loader = loaders[sourceId];
+    if (loader === undefined) throw new Error("MISSING_FRONTEND_SOURCE_LOADER");
+    return loader() as RecentProjectSource;
   });
+  const loadFactory = loaders[root.loaderKey];
+  if (loadFactory === undefined) throw new Error("MISSING_FRONTEND_FACTORY_LOADER");
+  const factory = loadFactory();
+  if (typeof factory !== "function") throw new Error("INVALID_FRONTEND_ACTIVATION_FACTORY");
+  return (factory as typeof createRecentProjectsFeature)({ sources });
 }
 
 export function createFrontendLoaderTable(
@@ -114,7 +66,7 @@ export function createFrontendLoaderTable(
     },
     "recent-projects.feature": () => {
       trace.push("recent-projects.feature");
-      return activateFrontendHybrid(sources);
+      return createRecentProjectsFeature;
     },
   });
 }

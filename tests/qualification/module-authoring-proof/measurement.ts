@@ -25,7 +25,8 @@ export interface Measurement {
   readonly diagnostics: "immutable-deterministically-sorted";
   readonly determinism: "byte-identical-regeneration-and-stale-check";
   readonly typeInferenceFixture: "nominal-module-id-handles";
-  readonly packedConsumerLeakage: "isolated-private-surface-absent";
+  readonly privateConsumerSmoke: "packed-install-typecheck-execute-passed";
+  readonly focusedTypecheck: "repository-pinned-typecheck-passed";
   readonly serializability: "metadata-projections-structured-clone-safe";
   readonly disableImpact: "complete-required-closure";
   readonly disposablePercent: "30-50%";
@@ -60,7 +61,8 @@ export async function measureProof(
     diagnostics: "immutable-deterministically-sorted",
     determinism: "byte-identical-regeneration-and-stale-check",
     typeInferenceFixture: "nominal-module-id-handles",
-    packedConsumerLeakage: "isolated-private-surface-absent",
+    privateConsumerSmoke: "packed-install-typecheck-execute-passed",
+    focusedTypecheck: "repository-pinned-typecheck-passed",
     serializability: "metadata-projections-structured-clone-safe",
     disableImpact: "complete-required-closure",
     disposablePercent: "30-50%",
