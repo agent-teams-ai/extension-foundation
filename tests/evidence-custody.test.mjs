@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { chmod, mkdir, mkdtemp, readFile, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, readdir, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
 import { promisify } from "node:util";
@@ -954,14 +954,22 @@ test("secret scanning detects common credentials without echoing the secret", ()
 
 test("decoded JSON secret escapes fail closed without echoing the secret", async t => {
   const root = await temporaryDirectory(t);
-  const path = join(root, "escaped-secret.json");
-  const escapedSecret = `sk-\\u0070roj-${"x".repeat(32)}`;
-  await writeFile(path, `{"unknown":"${escapedSecret}"}\n`);
-  await assert.rejects(readSafeJson(path), error => {
-    assert.match(error.message, /openai-key/u);
-    assert.equal(error.message.includes("sk-proj-"), false);
-    return true;
-  });
+  const genericSecret = "a".repeat(24);
+  const fixtures = [
+    ["unicode", `{"unknown":"sk-\\u0070roj-${"x".repeat(32)}"}\n`, /openai-key/u, "sk-proj-"],
+    ["quote", `${JSON.stringify({ message: `token=\"${genericSecret}\"` })}\n`, /credential-assignment/u, genericSecret],
+    ["tab", `${JSON.stringify({ message: `token=\t${genericSecret}` })}\n`, /credential-assignment/u, genericSecret],
+    ["newline", `${JSON.stringify({ message: `token=\n${genericSecret}` })}\n`, /credential-assignment/u, genericSecret],
+  ];
+  for (const [name, document, expected, secret] of fixtures) {
+    const path = join(root, `${name}-escaped-secret.json`);
+    await writeFile(path, document);
+    await assert.rejects(readSafeJson(path), error => {
+      assert.match(error.message, expected);
+      assert.equal(error.message.includes(secret), false);
+      return true;
+    });
+  }
 });
 
 test("auth roots and CODEX_HOME are rejected before reads", () => {
@@ -1154,20 +1162,22 @@ captureTest("capture hashes exact HEAD bytes and rejects escaped secrets before 
 
   const secretRoot = await temporaryDirectory(t);
   const secretPaths = await writeCaptureFixture(secretRoot, [{ attempts: [] }]);
-  const escapedSecret = `sk-\\u0070roj-${"x".repeat(32)}`;
+  const escapedSecret = "a".repeat(24);
   await writeFile(
     join(secretPaths.jobConfigRoot, JOB_ID, "job.json"),
-    `{"token":"${escapedSecret}"}\n`,
+    `${JSON.stringify({ message: `token=\"${escapedSecret}\"` })}\n`,
   );
   await assert.rejects(captureEvidence({
     campaignId: "escaped-capture-secret",
     jobIds: [JOB_ID],
     ...secretPaths,
   }), error => {
-    assert.match(error.message, /openai-key/u);
-    assert.equal(error.message.includes("sk-proj-"), false);
+    assert.match(error.message, /credential-assignment/u);
+    assert.equal(error.message.includes(escapedSecret), false);
     return true;
   });
+  const outputEntries = await readdir(secretPaths.outputRoot, { recursive: true, withFileTypes: true });
+  assert.equal(outputEntries.some(entry => entry.isFile()), false);
 });
 
 captureTest("capture accepts only explicit credential-free GitHub repository URLs", async t => {

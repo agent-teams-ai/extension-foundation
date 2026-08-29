@@ -165,6 +165,27 @@ function assertJsonLimits(value, {
   }
 }
 
+function scanDecodedJsonSecrets(value, label) {
+  const pending = [value];
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (typeof current === "string") {
+      scanSecrets(current, `${label} value`);
+      continue;
+    }
+    if (current === null || typeof current !== "object") continue;
+    if (Array.isArray(current)) {
+      for (const child of current) pending.push(child);
+      continue;
+    }
+    for (const [key, child] of Object.entries(current)) {
+      scanSecrets(key, `${label} key`);
+      if (typeof child === "string") scanSecrets(`${key}=${child}`, `${label} field`);
+      pending.push(child);
+    }
+  }
+}
+
 function parseCustodyJson(text, limits = DEFAULT_RESOURCE_LIMITS) {
   try {
     const value = parseStrictJson(text, {
@@ -173,6 +194,7 @@ function parseCustodyJson(text, limits = DEFAULT_RESOURCE_LIMITS) {
       maxStringLength: limits.maxJsonStringLength,
     });
     assertJsonLimits(value, limits);
+    scanDecodedJsonSecrets(value, "decoded JSON");
     scanSecrets(deterministicJson(value), "decoded JSON");
     return value;
   } catch (error) {
