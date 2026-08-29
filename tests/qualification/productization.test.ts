@@ -163,7 +163,7 @@ test("roadmap keeps authoring, selection, lifecycle, process hosting, and extrac
   assert.match(admissionDocument, /Owning-product decision, approved benchmark, measured authoring or drift problem, and executable product-owned evidence/u);
 });
 
-test("accepted ADR-0014 operates under ADR-0013 without an invented successor gate", async () => {
+test("ADR-0015 authorizes neutral 0.x while retaining product-local gates", async () => {
   const ledger = parse(await readFile(resolve(universal, "decision-ledger.yaml"), "utf8")) as DecisionLedger;
   const phase0 = ledger.implementationGates.find(gate => gate.id === "phase-0-static-composition-rehearsal");
   const phase1 = ledger.implementationGates.find(gate => gate.id === "phase-1-static-module-authoring");
@@ -183,8 +183,10 @@ test("accepted ADR-0014 operates under ADR-0013 without an invented successor ga
     false,
   );
   const verdict = await readFile(resolve(dossier, "executive-verdict.md"), "utf8");
-  assert.match(verdict, /ADR-0013 assigns[\s\S]{0,100}ADR-0014 is[\s\S]{0,80}accepted product-local authoring authority under/u);
-  assert.match(verdict, /qualification evidence adds no successor gate/u);
+  assert.match(verdict, /ADR-0015 supersedes ADR-0013 only for extraction timing/u);
+  assert.match(verdict, /ADR-0013's product-first,[\s\S]{0,180}safeguards continue[\s\S]{0,40}ADR-0015/u);
+  assert.match(verdict, /ADR-0014 remains the product-local authoring authority/u);
+  assert.match(verdict, /adoption adapters[\s\S]{0,100}do not count as independent implementations of a public plugin SPI/u);
 });
 
 test("every current product projection uses one exact pinned revision", async () => {
@@ -241,7 +243,7 @@ test("source claims stay within exact Git custody", async () => {
   const admission = await readFile(resolve(dossier, "consumer-admission.md"), "utf8");
   const ledger = await readFile(resolve(dossier, "evidence-ledger.yaml"), "utf8");
   assert.match(admission, /Agent Runtime[^\n]+L1_NO_GO_MEASUREMENT_CANDIDATE[^\n]+L2-L5_NO_GO/u);
-  assert.match(ledger, /Invalidate SOURCE_CUSTODY_BASELINE_RECORDED[\s\S]{0,180}ADR-0013 product-owned[\s\S]{0,80}Pure DI default remains authoritative/u);
+  assert.match(ledger, /Invalidate SOURCE_CUSTODY_BASELINE_RECORDED[\s\S]{0,180}ADR-0015-retained[\s\S]{0,80}product-owned Pure DI default remains authoritative/u);
   assert.doesNotMatch(ledger, /Revoke L0/u);
 });
 

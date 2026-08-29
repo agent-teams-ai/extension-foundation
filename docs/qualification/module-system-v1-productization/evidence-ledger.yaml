@@ -7,11 +7,14 @@ claims:
     sources:
       - docs/decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
       - docs/decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md
+      - docs/decisions/0015-authorize-get-modular-semantic-extraction.md
     result: >-
-      Accepted ADR-0013 assigns private module semantics to the first product,
-      and accepted ADR-0014 is the product-local authoring authority under that
-      assignment. Qualification evidence adds no successor gate. An accepted
-      owning-product decision is still required where ADR-0013 or ADR-0014 says so.
+      Accepted ADR-0015 supersedes ADR-0013 only for extraction timing: it
+      authorizes an independent product-neutral Get Modular 0.x while retaining
+      ADR-0013 and ADR-0014 product-first, Pure DI, runtime-trigger, public-SPI,
+      and owning-product safeguards. Qualification evidence adds no successor
+      gate. An accepted owning-product decision is still required where those
+      retained safeguards or ADR-0014 require one.
     reversalCondition: An accepted superseding ADR changes ownership or authoring policy.
   - id: existing-spike-coverage
     classification: partially-proved
@@ -40,10 +43,11 @@ claims:
       remains a no-go measurement candidate and L2-L5 remain no-go.
     reversalCondition: >-
       Invalidate SOURCE_CUSTODY_BASELINE_RECORDED and block dossier-dependent
-      decisions if exact source verification fails. The ADR-0013 product-owned
-      Pure DI default remains authoritative. Reopen L1 only after a product-owned
-      decision and approved benchmark prove an authoring or drift problem;
-      higher levels retain their independent product triggers.
+      decisions if exact source verification fails. The ADR-0015-retained
+      product-owned Pure DI default remains authoritative. Reopen product-local
+      L1 only after a product-owned decision and approved benchmark prove an
+      authoring or drift problem; higher levels retain their independent product
+      triggers. Independent Get Modular 0.x follows ADR-0015 instead.
   - id: orchestrator-consumer-admission
     classification: no-go
     sources:
@@ -116,9 +120,15 @@ claims:
   - id: shared-foundation-extraction
     classification: no-go
     sources:
-      - docs/decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
-    result: No portable evidence proves two independent implementations of one semantic contract with cross-consumer conformance.
-    reversalCondition: Two products independently implement the same candidate and pass executable cross-consumer conformance under a separate extraction decision.
+      - docs/decisions/0015-authorize-get-modular-semantic-extraction.md
+    result: >-
+      ADR-0015 authorizes an independent Get Modular 0.x, not semantic extraction
+      into Extension Foundation and not a public plugin SPI. No portable evidence
+      proves the independent implementations and conformance required for either
+      of those separate publication surfaces.
+    reversalCondition: >-
+      A separate accepted decision admits a named Foundation or public-SPI
+      contract after its independent-implementation and conformance gates pass.
   - id: evidence-custody-integrity
     classification: partially-proved
     sources:

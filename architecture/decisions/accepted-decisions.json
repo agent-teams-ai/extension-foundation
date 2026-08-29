@@ -66,6 +66,11 @@
       "id": "ADR-0014",
       "path": "docs/decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md",
       "immutableDigest": "sha256:d1524a899f1b5424ca7503891064271a976c2d8c1c60d6724d0641c93460fff0"
+    },
+    {
+      "id": "ADR-0015",
+      "path": "docs/decisions/0015-authorize-get-modular-semantic-extraction.md",
+      "immutableDigest": "sha256:e34f1c05a692855a51c8f5f0c5626e4f295e9704ecc804024d3fbd432c752bab"
     }
   ]
 }

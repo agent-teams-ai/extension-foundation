@@ -28,16 +28,16 @@ externalDecisionGates:
     effectWhileProposed: production-extension-host-phases-blocked
     approvalTrackedBy: adr-lifecycle
 requirementDefinitions:
-  - id: ADR-0013
-    kind: decision
-    authority: accepted-adr
-    detail: ../../decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
-    purpose: cumulative static-first ownership and extraction policy
   - id: ADR-0014
     kind: decision
     authority: accepted-adr
     detail: ../../decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md
     purpose: accepted product-local authoring, composition and generation guardrails
+  - id: ADR-0015
+    kind: decision
+    authority: accepted-adr
+    detail: ../../decisions/0015-authorize-get-modular-semantic-extraction.md
+    purpose: accepted independent Get Modular extraction with retained product and package safeguards
   - id: owning-product-feature-decision
     kind: decision
     authority: owning-product
@@ -161,7 +161,7 @@ implementationGates:
       - phase-0-product-owned-pure-di-measurement
     mode: all
     allOf:
-      - decision: ADR-0013
+      - decision: ADR-0015
         requiredStatus: accepted
       - decision: ADR-0014
         requiredStatus: accepted
@@ -207,7 +207,7 @@ implementationGates:
       - foundation-module-semantic-extraction
     mode: all
     allOf:
-      - decision: ADR-0013
+      - decision: ADR-0015
         requiredStatus: accepted
       - evidence: second-independent-consumer
         requiredStatus: proven
@@ -222,7 +222,7 @@ implementationGates:
       - phase-3-reusable-internal-packages
     mode: all
     allOf:
-      - decision: ADR-0013
+      - decision: ADR-0015
         requiredStatus: accepted
       - evidence: adr-0013-package-admission-basis
         requiredStatus: proven
@@ -364,8 +364,8 @@ entries:
   - id: UMEQ-003
     status: accepted-existing
     topic: product-first-library-module-plugin-boundaries
-    authority: ADR-0013
-    detail: ../../decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
+    authority: ADR-0015
+    detail: ../../decisions/0015-authorize-get-modular-semantic-extraction.md
     approvalRequired: false
   - id: UMEQ-009
     status: open
