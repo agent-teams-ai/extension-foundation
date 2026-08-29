@@ -15,6 +15,12 @@ related:
 
 # Unresolved Decisions
 
+> Historical qualification evidence. This page is non-operative. Use the
+> [current productization gate](../module-system-v1-productization/README.md),
+> [ADR-0014](../../decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md),
+> and [ADR-0015](../../decisions/0015-authorize-get-modular-semantic-extraction.md)
+> for current authority and implementation gates.
+
 These forks do not weaken accepted invariants. Approval selects the first
 implementation and compatibility surface. LOC ranges include focused tests but
 exclude substantive product behavior.
@@ -194,7 +200,8 @@ Those release decisions are not additional strategic UMEQ forks.
 `UMEQ-009` is additionally needed before a process release. `UMEQ-017` is
 required before hosted distributed claims. `UMEQ-018` is needed before managed
 update channels. `UMEQ-010` remains a separate Frontend decision and cannot
-bypass the ADR-0011 production-host gate. Every applicable production-host gate
-also requires durable independently observable evidence from the named
-production host; fixtures, in-memory or smoke results, plans, and aspirational
-claims cannot satisfy it.
+bypass a future accepted ADR-0011-equivalent production-host closure. Proposed
+ADR-0011 is evidence for that closure, not an operative gate. Every applicable
+production-host gate also requires durable independently observable evidence
+from the named production host; fixtures, in-memory or smoke results, plans, and
+aspirational claims cannot satisfy it.

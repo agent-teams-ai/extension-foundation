@@ -15,19 +15,22 @@ The experiment did not establish an owning-product authoring problem and did not
 justify a shared L1 declaration layer.
 
 The executable experiment was intentionally removed before merge. Its exact
-tested revision remains available in Git history:
-`b1597fabab5b4f0b5e5060cfe594d6cc056b623d`.
+tested revision, `b1597fabab5b4f0b5e5060cfe594d6cc056b623d`, remains resolvable
+through hosted pull-request history, but is not an ancestor of `main`, retained
+under a repository ref, or guaranteed to be available to offline or partial
+clones. It is non-portable historical corroboration, not repository-owned
+promotion evidence.
 
 Nothing in this record admits a consumer, production package, public SPI,
 selection graph, lifecycle coordinator, process host, plugin host, or runtime
 module engine.
 
-## Locked Evidence
+## Historical Corroboration
 
 | Context | Exact revision | Meaning |
 | --- | --- | --- |
 | Extension Foundation base | `4738aa329196f9d0c50a14edfcbe454d2cca0b98` | Experiment base |
-| Executable proof | `b1597fabab5b4f0b5e5060cfe594d6cc056b623d` | Exact reviewed and cross-platform-tested proof |
+| Executable proof | `b1597fabab5b4f0b5e5060cfe594d6cc056b623d` | Exact reviewed and cross-platform-tested proof; non-portable and reachable only through hosted PR history |
 | Agent Runtime | `7be998237a4c262bee9c4198d554b43cd2757ac6` | Contextual source-custody label |
 | Frontend | `85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd` | Contextual source-custody label |
 | Orchestrator | `4c5f55366ed8c83f97374b66c8e9f84059c47382` | Governed non-admission record |
