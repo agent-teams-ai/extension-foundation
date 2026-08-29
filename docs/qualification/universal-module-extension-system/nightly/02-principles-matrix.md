@@ -39,7 +39,7 @@ related:
 | Authority | Current status |
 | --- | --- |
 | ADR-0012 | `superseded` |
-| ADR-0011 | `proposed` |
+| ADR-0011 | `accepted` |
 | ADR-0013 | `superseded` |
 | ADR-0014 | `accepted` |
 | ADR-0015 | `accepted` |

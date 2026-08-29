@@ -56,7 +56,7 @@ resolved, or superseded by this dossier.
 | Authority | Current status | W11 effect |
 | --- | --- | --- |
 | ADR-0012 | `superseded` | Preserved historical authority only |
-| ADR-0011 | `proposed` | Remains non-operative |
+| ADR-0011 | `accepted` | Conditional safety floor; does not admit a runtime |
 | ADR-0013 | `superseded` | Retained safeguards continue through ADR-0015 |
 | ADR-0014 | `accepted` | Static-first rehearsal direction is effective |
 | ADR-0015 | `accepted` | Independent Get Modular extraction is authorized |
