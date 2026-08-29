@@ -197,6 +197,11 @@ return denial(event, before, "source-terminal"); }
 if (event.authoritativeTick >= event.expiresAt) return denial(event, before, "authorization-expired");
 if (before.admission.type === "failed" || before.resourceRetirement.type !== "active") {
 return denial(event, before, "gate-closed"); }
+if (event.authorizationFence.scope === "campaign" && before.admission.type !== "accepted") {
+return denial(event, before, "gate-closed"); }
+if (event.authorizationFence.scope === "campaign" && (before.build?.type !== "succeeded" ||
+before.buildConsistency?.type !== "match" || before.claim !== "eligible")) {
+return denial(event, before, "build-not-executable"); }
 const fenceFailure = bindingIsCurrent(history, event.authorizationFence);
 if (fenceFailure !== null) return denial(event, before, fenceFailure);
 if (event.authorizationFence.scope === "campaign" && stopBarrier(history)) {
@@ -221,6 +226,9 @@ const fenceFailure = bindingIsCurrent(history, event.authorizationFence);
 if (fenceFailure !== null) return denial(event, before, fenceFailure);
 if (event.authorizationFence.scope === "campaign" && stopBarrier(history)) {
 return denial(event, before, "gate-closed"); }
+if (event.authorizationFence.scope === "campaign" && (before.build?.type !== "succeeded" ||
+before.buildConsistency?.type !== "match" || before.claim !== "eligible")) {
+return denial(event, before, "build-not-executable"); }
 if (view.consumed) return denial(event, before, "authorization-consumed"); return accept(before); }
 if (view === null) return denial(event, before, "authorization-unavailable");
 if (view.expired) return denial(event, before, "authorization-expired");
@@ -269,7 +277,8 @@ if (before.launch !== null) return denial(event, before, "terminal-already-recor
 if (event.authoritativeTick < registration.launchDeadline) return denial(event, before, "deadline-not-reached");
 if (usedReceipt(history, event.observationReceiptId)) return replay(event, history, event.observationReceiptId);
 if (event.result === "start-unknown" && !view.consumed) return denial(event, before, "wrong-binding");
-if (event.result === "never-started" && view.released) return denial(event, before, "wrong-binding");
+if (event.result === "never-started" && (view.consumed || before.runtime !== "not-started")) {
+return denial(event, before, "wrong-binding"); }
 const launch = { type: event.result, receiptId: event.observationReceiptId } as const; return accept(
 withProjection(before, { launch, runtime: event.result === "start-unknown" ? "unknown" : "not-started",
 resourceRetirement: event.result === "start-unknown" ? { type: "quarantined" } : before.resourceRetirement,
@@ -313,11 +322,14 @@ if (!rootMatches(registration, event)) return denial(event, before, "wrong-bindi
 if (event.type === "RestartObserved" || event.type === "ReconcileRuntime") {
 if (!same(event.runtimeId, registration.runtimeId)) return denial(event, before, "wrong-binding");
 if (event.type === "RestartObserved") {
+if (before.resourceRetirement.type === "retired") return denial(event, before, "terminal-already-recorded");
 const hasProspectiveRuntime = acceptedOf(history, "ConsumeAuthorization").length > 0 || before.runtime !== "not-started";
 if (!hasProspectiveRuntime) return denial(event, before, "runtime-unresolved"); return accept(
 withProjection(before, { runtime: "unknown", resourceRetirement: { type: "quarantined" } }), [
 { type: "resource-quarantined", causalEventId: event.eventId, sourceFamilyRootId: event.sourceFamilyRootId, runtimeId: event.runtimeId },
 { type: "runtime-reconciliation-requested", causalEventId: event.eventId, runtimeId: event.runtimeId }, ], ); }
+if (before.resourceRetirement.type === "retired" || before.runtime === "not-started") {
+return denial(event, before, "runtime-unresolved"); }
 if (event.observation === "unknown") { return accept(
 withProjection(before, { runtime: "unknown", resourceRetirement: { type: "quarantined" } }), [
 { type: "resource-quarantined", causalEventId: event.eventId, sourceFamilyRootId: event.sourceFamilyRootId, runtimeId: event.runtimeId },
@@ -347,7 +359,9 @@ if (before.resourceRetirement.type !== "pending" && before.resourceRetirement.ty
 return denial(event, before, "gate-closed"); }
 if (before.runtime === "unknown" || before.runtime === "live") return denial(event, before, "runtime-unresolved");
 if (event.type === "RequestCleanup") {
-if (sourceTerminal(history) === null) return denial(event, before, "source-terminal"); return accept(before, [{
+if (sourceTerminal(history) === null) return denial(event, before, "source-terminal");
+if (acceptedOf(history, "RequestCleanup").length > 0) {
+return denial(event, before, "terminal-already-recorded"); } return accept(before, [{
 type: "resource-cleanup-requested", causalEventId: event.eventId, sourceFamilyRootId: event.sourceFamilyRootId,
 runtimeId: event.runtimeId, proofId: event.terminationProofId, }]); } const source = sourceTerminal(history);
 if (source === null || !same(source.receiptId, event.sourceTerminalReceiptId)) {
@@ -481,16 +495,18 @@ const allowed = projection.type === "match" && before.build.type === "succeeded"
 { type: "execution-gate-set", causalEventId: event.eventId, buildAttemptId: event.buildAttemptId, value: allowed ? "allowed" : "denied" },
 ]; return accept(withProjection(before, { buildConsistency: projection }), effects); }
 if (!buildBindingMatches(registration, event)) return denial(event, before, "wrong-binding");
-if (before.build === null) return denial(event, before, "gate-closed");
+if (before.sourceEvidence.type !== "closed" || before.admission.type !== "accepted" || before.build === null) {
+return denial(event, before, "gate-closed"); }
 if (before.buildConsistency !== null) return denial(event, before, "terminal-already-recorded");
 if (event.authoritativeTick < registration.buildConsistencyDeadline) {
 return denial(event, before, "deadline-not-reached"); }
 if (usedReceipt(history, event.observationReceiptId)) return replay(event, history, event.observationReceiptId);
 const projection: BuildConsistencyTerminalProjection = { type: event.result,
 observationReceiptId: event.observationReceiptId, }; return accept(withProjection(before, {
-buildConsistency: projection }), [
+buildConsistency: projection, claim: claimAfter(before.claim, "non-promotional") }), [
 { type: "terminal-appended", causalEventId: event.eventId, terminal: { type: "build-consistency", projection } },
 { type: "execution-gate-set", causalEventId: event.eventId, buildAttemptId: event.buildAttemptId, value: "denied" },
+nonPromotional(event, { type: "receipt", receiptId: event.observationReceiptId }),
 ]); }; const handleAdmission = (
 history: OracleHistory, event: Extract<ProtocolEvent, { readonly type: "RecordAdmission" }>, ): TransitionResult => {
 const before = currentProjection(history); const registration = history.registration;

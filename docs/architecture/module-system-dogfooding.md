@@ -25,26 +25,32 @@ factories, closed dependency objects, and explicit composition roots. The
 records non-authoritative evidence, verdicts, and recommended triggers. Only
 accepted ADRs and owning-product decisions authorize implementation or use.
 
-## Canonical Repository Boundary
+## Repository And Authority Boundary
 
 Dogfooding does not transfer module-system ownership into Extension Foundation.
 The responsibilities remain deliberately separate:
 
-| Owner | Canonical responsibility |
+| Owner or candidate | Responsibility in this proposal |
 | --- | --- |
-| [Get Modular](https://github.com/agent-teams-ai/get-modular) | Portable module and capability identities, inert declarations, explicit dependency cardinalities and bindings, deterministic closed-world graph compilation, immutable plans, digests, diagnostics, and composition conformance vectors. |
-| Extension Foundation | Plugin artifact identity, distribution, provenance, signatures, admission, permissions, isolation contracts, quarantine, updates, retirement, and plugin-state custody. |
+| [Get Modular](https://github.com/agent-teams-ai/get-modular) | Qualification candidate ordinary library for portable module identities, inert declarations, dependency bindings, deterministic graph compilation, immutable plans, diagnostics, and conformance vectors. These semantics remain product-owned until ADR-0013's evidence gate and a separate accepted extraction decision are satisfied. |
+| Extension Foundation | Product-neutral extension identities, immutable manifest and lifecycle values, distribution and isolation protocol contracts, verification envelopes, and conformance tooling. It does not decide admission or grants, orchestrate lifecycle, or store product installation or plugin-private state. |
 | OCI registry such as GHCR or Harbor | Immutable plugin artifact bytes addressed by digest. A registry does not decide product admission, grants, compatibility, or activation. |
 | Future Extension Catalog | Searchable publisher and extension metadata, moderation state, federation, and signed offline snapshots. A product can also install a digest-pinned artifact without this catalog. |
-| Owning product | Capability contracts, authorization, literal executable loaders, activation, readiness, generations, publication, routing, fencing, drain, cleanup, recovery, and reconciliation. |
+| Owning product or tenant | Capability contracts, admission decisions, grants, enforcement, durable installation intent, canonical extension and plugin-private state, literal executable loaders, activation, readiness, generations, publication, routing, fencing, quarantine, drain, cleanup, retirement, recovery, and reconciliation. |
 | External qualification evidence | Candidate-neutral dogfooding protocol checks such as the disposable reducer, independent oracle, race fixtures, and deliberate mutants described by this proposal. |
 
-Get Modular and Extension Foundation are independent neutral cores and do not
-import each other. A product-owned adapter may consume both. The executable
+Get Modular and Extension Foundation do not import each other. A product-owned
+adapter may consume both without making either candidate canonical. The executable
 qualification model in this repository is external evidence about campaign and
 custody invariants; it is not a production package, a Module API, a graph
 compiler, a loader, or lifecycle authority. It may challenge a Get Modular or
 product decision, but cannot silently replace one.
+
+The disposable model remains under `tests/qualification/**`, is capped at 2,500
+physical lines across its contract, reducer, oracle, and tests, and must never be
+imported by a production package. A real product seam starts from product-owned
+types and composition; this model is evidence to delete or archive after the
+owning decision, not shared campaign machinery.
 
 Extension Foundation is a reusable library and protocol boundary, not an
 artifact store, catalog database, marketplace, or mandatory hosted service.

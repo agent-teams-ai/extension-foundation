@@ -96,8 +96,9 @@ const crash = (label: string, binding: C.AuthorizationFenceBinding = sourceFence
   ...root, authorizationId: id.authorization, runtimeId: id.runtime,
   expectedGeneration: binding.expectedGeneration,
 });
-const launchDeadline = (label: string, binding: C.AuthorizationFenceBinding = sourceFence) => event(label, "ReachLaunchDeadline", {
-  ...authorization(binding), observationReceiptId: receipt(label), result: "start-unknown",
+const launchDeadline = (label: string, binding: C.AuthorizationFenceBinding = sourceFence,
+  result: "start-unknown" | "never-started" = "start-unknown") => event(label, "ReachLaunchDeadline", {
+  ...authorization(binding), observationReceiptId: receipt(label), result,
 }, 60);
 const restart = (label: string) => event(label, "RestartObserved", { ...root, runtimeId: id.runtime });
 const reconcile = (label: string, observation: "live" | "terminated" | "unknown") =>
@@ -127,8 +128,11 @@ const checkpoint = (label: string) => event(label, "CheckpointEffective", {
 const stop = (label: string, result: "continue" | "stop" = "stop") => event(label, "RecordStopReceipt", {
   checkpointId: id.checkpoint, receiptId: receipt(label), expectedGeneration: g(1), result,
 });
-const recoverStop = (label: string) => event(label, "RecoverStopFence", {
-  checkpointId: id.checkpoint, expectedGeneration: g(1), nextGeneration: g(2),
+const stopDeadline = (label: string, result: "missing" | "unknown" = "missing") =>
+  event(label, "ReachStopDeadline", { checkpointId: id.checkpoint, expectedGeneration: g(1),
+    observationReceiptId: receipt(label), result }, 60);
+const recoverStop = (label: string, expected = 1, next = 2) => event(label, "RecoverStopFence", {
+  checkpointId: id.checkpoint, expectedGeneration: g(expected), nextGeneration: g(next),
 });
 const admission = (label: string, result: "accepted" | "failed") => event(label, "RecordAdmission", {
   ...root, admissionId: id.admission, receiptId: receipt(label), result,
@@ -138,11 +142,17 @@ const build = (label: string, result: "succeeded" | "failed" | "no-output") =>
     buildReceiptId: buildReceipt(label), result: result === "succeeded" ?
       { type: result, artifactDigest: id.artifact } : { type: result, proofId: proof(label) },
   });
+const buildDeadline = (label: string, result: "missing" | "unknown" = "missing") =>
+  event(label, "ReachBuildDeadline", { ...root, sourceSlotId: id.slot, buildAttemptId: id.build,
+    observationReceiptId: receipt(label), result }, 60);
 const consistency = (label: string, result: C.BuildConsistencyInput,
   boundBuildReceipt = buildReceipt("build"), selectedReceipt = consistencyReceipt(label)) =>
   event(label, "RecordBuildConsistencyReceipt", { ...root, sourceSlotId: id.slot,
     buildAttemptId: id.build, buildReceiptId: boundBuildReceipt,
     consistencyReceiptId: selectedReceipt, result });
+const consistencyDeadline = (label: string, result: "missing-verifier" | "unknown-verifier" = "missing-verifier") =>
+  event(label, "ReachBuildConsistencyDeadline", { ...root, sourceSlotId: id.slot,
+    buildAttemptId: id.build, observationReceiptId: receipt(label), result }, 80);
 
 const materialize = (specs: readonly EventSpec[], tickStep = 1): readonly C.ProtocolEvent[] => {
   const events: C.ProtocolEvent[] = [];
@@ -202,9 +212,9 @@ interface RaceFamily {
 const ordered = (reverse: boolean, left: EventSpec, right: EventSpec): readonly EventSpec[] =>
   reverse ? [right, left] : [left, right];
 const closedPrefix = [register, close("close"), admission("admission", "accepted")] as const;
-const campaignBuildPrefix = [register, issue("issue", campaignFence), close("close"),
-  admission("admission", "accepted"), build("build", "succeeded"),
-  consistency("consistency", { type: "match", artifactDigest: id.artifact })] as const;
+const campaignBuildPrefix = [register, close("close"), admission("admission", "accepted"),
+  build("build", "succeeded"), consistency("consistency", { type: "match", artifactDigest: id.artifact }),
+  issue("issue", campaignFence)] as const;
 const raceFamilies: readonly RaceFamily[] = [
   { name: "1 consume vs stop/revoke/expiry", variants: 3, history: (reverse, variant) => {
     const binding = variant === 0 ? campaignFence : sourceFence;
@@ -290,6 +300,41 @@ const raceFamilies: readonly RaceFamily[] = [
   },
 ];
 assert.equal(raceFamilies.length, 12, "the registry must contain exactly twelve race families");
+const regressionHistories: readonly (readonly EventSpec[])[] = [
+  [register, close("close"), admission("failed", "failed"),
+    rejected(detached(issue("post-failure-issue", campaignFence)))],
+  [register, close("close"), retirement("retirement"), cleanup("cleanup"),
+    complete("complete", receipt("close")), rejected(detached(reconcile("post-retirement", "unknown")))],
+  [register, close("close"), retirement("retirement"), cleanup("cleanup"),
+    rejected(detached(cleanup("duplicate-cleanup")))],
+  [register, issue("issue"), consume("consume"),
+    rejected(detached(launchDeadline("never-started", sourceFence, "never-started")))],
+  [...campaignBuildPrefix, consume("consume", campaignFence), checkpoint("checkpoint"), stop("stop"),
+    advance("advance"), rejected(detached(recoverStop("recover-closed", 2, 3)))],
+  [...closedPrefix, build("build", "succeeded"), build("same-late-build", "succeeded")],
+  [register, checkpoint("checkpoint"), stopDeadline("stop-deadline")],
+  [...closedPrefix, buildDeadline("build-deadline")],
+  [...closedPrefix, build("build", "succeeded"), consistencyDeadline("consistency-deadline")],
+];
+const scenarioHistories: readonly (readonly EventSpec[])[] = [
+  ...raceFamilies.flatMap(family => [false, true].flatMap(reverse =>
+    Array.from({ length: family.variants }, (_, variant) => family.history(reverse, variant)))),
+  ...regressionHistories,
+];
+const protocolEventTypes: readonly C.ProtocolEvent["type"][] = ["RegisterProtocol", "IssueAuthorization",
+  "ConsumeAuthorization", "RevokeAuthorization", "ExpireAuthorization", "CloseSource", "AbandonSource",
+  "AdvanceFence", "ReleaseProcess", "RecordReleaseDenied", "ObserveCrash", "ReachLaunchDeadline",
+  "RestartObserved", "ReconcileRuntime", "RequestRetirement", "RequestCleanup", "CompleteRetirement",
+  "RecordAttemptReceipt", "ReachAttemptDeadline", "CheckpointEffective", "RecordStopReceipt",
+  "ReachStopDeadline", "RecoverStopFence", "RecordBuildResult", "ReachBuildDeadline",
+  "RecordBuildConsistencyReceipt", "ReachBuildConsistencyDeadline", "RecordAdmission"];
+
+test("registered qualification scenarios cover every protocol transition kind", () => {
+  const covered = new Set(scenarioHistories.flatMap(history =>
+    history.map(spec => spec.body.type as C.ProtocolEvent["type"])));
+  assert.deepEqual([...covered].sort(), [...protocolEventTypes].sort());
+  regressionHistories.forEach((history, index) => compareHistory(history, `regression ${index + 1}`));
+});
 const variedHistory = (specs: readonly EventSpec[], noiseCount: number,
   selectedSlot: number): readonly EventSpec[] => {
   const insertion = 1 + selectedSlot % Math.max(1, specs.length - 1);
@@ -307,16 +352,13 @@ for (const family of raceFamilies) for (const reverse of [false, true]) {
   });
 }
 
-test("bounded generated histories agree with the independent oracle", () => {
+test("bounded randomized scenario perturbations agree with the independent oracle", () => {
   fc.assert(fc.property(
-    fc.integer({ min: 0, max: raceFamilies.length - 1 }), fc.boolean(), fc.integer({ min: 0, max: 2 }),
-    fc.integer({ min: 0, max: 2 }), fc.nat(15), fc.integer({ min: 1, max: 2 }),
-    (familyIndex, reverse, selector, noiseCount, selectedSlot, tickStep) => {
-      const family = raceFamilies[familyIndex]!;
-      const variant = selector % family.variants;
-      const history = variedHistory(family.history(reverse, variant), noiseCount, selectedSlot);
+    fc.integer({ min: 0, max: scenarioHistories.length - 1 }), fc.integer({ min: 0, max: 2 }),
+    fc.nat(15), fc.integer({ min: 1, max: 2 }), (scenarioIndex, noiseCount, selectedSlot, tickStep) => {
+      const history = variedHistory(scenarioHistories[scenarioIndex]!, noiseCount, selectedSlot);
       assert.ok(history.length <= 16, "generated histories remain bounded");
-      compareHistory(history, `generated family ${familyIndex + 1}/${variant}/${reverse}`, tickStep);
+      compareHistory(history, `generated scenario ${scenarioIndex + 1}`, tickStep);
     },
   ), { seed: 0x415139, numRuns: 500 });
 });
