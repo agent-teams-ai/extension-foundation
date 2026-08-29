@@ -62,6 +62,10 @@ export interface EventEnvelope {
   readonly authoritativeTick: AuthoritativeTick;
   readonly authenticatedPredecessorId: EventId | null;
 }
+export interface TrustedProtocolCoordinates {
+  readonly protocolRevisionId: ProtocolRevisionId;
+  readonly custodyAuthorityId: CustodyAuthorityId;
+}
 export interface RegisterProtocol extends EventEnvelope {
   readonly type: "RegisterProtocol";
   readonly sourceClaimFamilyId: SourceClaimFamilyId;

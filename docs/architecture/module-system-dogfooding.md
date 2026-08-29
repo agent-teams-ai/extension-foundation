@@ -46,10 +46,10 @@ custody invariants; it is not a production package, a Module API, a graph
 compiler, a loader, or lifecycle authority. It may challenge a Get Modular or
 product decision, but cannot silently replace one.
 
-The disposable model remains under `tests/qualification/**`, is capped at 2,500
-physical lines, 175,000 UTF-8 bytes, and 200 characters per line across its
-contract, reducer, oracle, and tests, and must never be imported by a production
-package. Its qualification test enforces those limits. A real product seam starts
+The disposable model remains under `tests/qualification/**`, is capped at 3,000
+physical lines, 225,000 UTF-8 bytes, and 200 characters per line across its
+closed transitive source set, and must never be imported by a production package.
+Its qualification test rejects local imports outside that measured closure. A real product seam starts
 from product-owned types and composition; this model is not shared campaign
 machinery. The architecture owner must remove these executable files when an
 accepted decision either selects the first product-owned capability or rejects
@@ -60,6 +60,13 @@ The reduced model recognizes only `expiry` and `analytic-stop` as generic
 `AdvanceFence` causes. Source closure, abandonment, explicit revocation, and
 retirement remain dedicated transitions so the model cannot silently invent a
 shared five-cause policy before an owning product decides it.
+
+The model starts only from product-supplied trusted protocol-revision and custody-
+authority coordinates; the first ledger event cannot appoint its own authority.
+Its authenticated predecessor orders admitted state transitions. Denial effects
+are compared and retained as evidence, but sequencing of the separate authenticated
+denial journal and its verifiable high-watermark remain a product-owned campaign
+requirement rather than evidence proved by this disposable model.
 
 Extension Foundation is a reusable library and protocol boundary, not an
 artifact store, catalog database, marketplace, or mandatory hosted service.
@@ -460,6 +467,13 @@ within one protocol ledger, including across typed receipt families. The types
 prevent accidental API substitution; they do not create independent replay
 namespaces. Reusing the same primitive identity for another family is retained
 as invalid replay evidence and can never authorize execution or promotion.
+
+Before resource retirement can complete, every consumed launch authority has a
+terminal launch disposition, every started build or evaluation has its required
+terminal observations, and every effective stop checkpoint is terminal. The
+tombstone retains references to every admitted ledger event, typed receipt and
+proof observed before completion, plus the cleanup proof. Missing closure evidence
+fails closed; a tombstone cannot hide an unfinished or unreconciled runtime.
 
 Every `BuildReceipt` and execution `EvidenceReceipt` carries a common envelope
 that binds:

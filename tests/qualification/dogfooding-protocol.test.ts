@@ -17,6 +17,9 @@ const id = {
   lineage: C.credentialLineageId("lineage"), otherLineage: C.credentialLineageId("other-lineage"),
   admission: C.admissionId("admission"), artifact: C.artifactDigest("sha256:artifact"),
 };
+const trusted: C.TrustedProtocolCoordinates = {
+  protocolRevisionId: id.protocol, custodyAuthorityId: id.authority,
+};
 const g = (value: number): C.FenceGeneration => C.fenceGeneration(value);
 const tick = (value: number): C.AuthoritativeTick => C.authoritativeTick(value);
 const receipt = (label: string): C.ReceiptId => C.receiptId(`receipt:${label}`);
@@ -86,6 +89,9 @@ const close = (label: string) => event(label, "CloseSource", { ...root,
 const abandon = (label: string) => event(label, "AbandonSource", { ...root,
   expectedGeneration: g(1), nextGeneration: g(2), receiptId: receipt(label), proofId: proof(label),
 });
+const abandonAfterAdvance = (label: string) => event(label, "AbandonSource", { ...root,
+  expectedGeneration: g(2), nextGeneration: g(3), receiptId: receipt(label), proofId: proof(label),
+});
 const advance = (label: string, selected: "source" | "campaign" = "campaign",
   cause: C.AdvanceFence["cause"] = "analytic-stop") =>
   event(label, "AdvanceFence", { ...root, fence: selected, expectedGeneration: g(1),
@@ -115,12 +121,35 @@ const cleanup = (label: string, owner = id.owner) => event(label, "RequestCleanu
   runtimeId: id.runtime, retirementOwnerId: owner, credentialLineageId: id.lineage,
   terminationProofId: proof(label),
 });
-const complete = (label: string, sourceReceipt: C.ReceiptId, admissionReceipt?: C.ReceiptId) =>
+const bodyEvidence = (value: unknown): readonly C.EvidenceReference[] => {
+  if (value === null || typeof value !== "object") return [];
+  const result: C.EvidenceReference[] = [];
+  for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof item === "string") {
+      if (key === "receiptId" || key === "launchReceiptId" || key === "observationReceiptId")
+        result.push({ type: "receipt", receiptId: C.receiptId(item) });
+      else if (key === "buildReceiptId") result.push({ type: "build-receipt", buildReceiptId: C.buildReceiptId(item) });
+      else if (key === "consistencyReceiptId")
+        result.push({ type: "consistency-receipt", consistencyReceiptId: C.consistencyReceiptId(item) });
+      else if (key === "proofId" || key === "terminationProofId" || key === "cleanupProofId")
+        result.push({ type: "proof", proofId: C.proofId(item) });
+    }
+    if (typeof item === "object" && item !== null) result.push(...bodyEvidence(item));
+  }
+  return result;
+};
+const retainedEvidenceFor = (history: readonly EventSpec[], cleanupProof: C.ProofId): readonly C.EvidenceReference[] => {
+  const references = history.filter(spec => spec.accepted).flatMap(spec => [
+    { type: "event" as const, eventId: C.eventId(`event:${spec.label}`) }, ...bodyEvidence(spec.body)]);
+  references.push({ type: "proof", proofId: cleanupProof });
+  return references.filter((reference, index) => references.findIndex(candidate =>
+    JSON.stringify(candidate) === JSON.stringify(reference)) === index);
+};
+const complete = (label: string, history: readonly EventSpec[], sourceReceipt: C.ReceiptId) =>
   event(label, "CompleteRetirement", { ...root, runtimeId: id.runtime, retirementOwnerId: id.owner,
     credentialLineageId: id.lineage, tombstoneId: C.tombstoneId(`tombstone:${label}`),
     cleanupProofId: proof(label), sourceTerminalReceiptId: sourceReceipt,
-    retainedEvidence: [sourceReceipt, admissionReceipt].filter((value): value is C.ReceiptId => value !== undefined)
-      .map(value => ({ type: "receipt" as const, receiptId: value })),
+    retainedEvidence: retainedEvidenceFor(history, proof(label)),
   });
 const attemptReceipt = (label: string, result: C.AttemptReceiptResult, selectedReceipt = receipt(label)) =>
   event(label, "RecordAttemptReceipt", { attemptId: id.attempt, runtimeId: id.runtime,
@@ -195,10 +224,18 @@ const compareResult = (actual: C.TransitionResult, expected: C.TransitionResult,
   assert.deepEqual(canonical(actual.terminalProjections), canonical(expected.terminalProjections),
     `${context}: terminal projections`);
 };
+const compareEvents = (events: readonly C.ProtocolEvent[], context: string): readonly C.TransitionResult[] => {
+  const reducer = foldQualificationHistory(events, 64, trusted).results;
+  const oracle = foldOracleHistory(events, trusted).results;
+  assert.equal(reducer.length, oracle.length);
+  reducer.forEach((result, index) => compareResult(result, oracle[index]!,
+    `${context} event ${index} (${events[index]!.type})`));
+  return reducer;
+};
 const compareHistory = (specs: readonly EventSpec[], context: string, tickStep = 1): void => {
   const events = materialize(specs, tickStep);
-  const reducer = foldQualificationHistory(events, 32).results;
-  const oracle = foldOracleHistory(events).results;
+  const reducer = foldQualificationHistory(events, 64, trusted).results;
+  const oracle = foldOracleHistory(events, trusted).results;
   assert.equal(reducer.length, oracle.length);
   reducer.forEach((result, index) => {
     const fixtureDecision = specs[index]!.accepted ? "accepted" : "rejected";
@@ -221,7 +258,8 @@ const at = (spec: EventSpec, minimumTick: number): EventSpec => ({ ...spec, mini
 const sourcePreparedPrefix = [register, issueWithId("source-issue", id.otherAuthorization, sourceFence),
   event("source-consume", "ConsumeAuthorization", { ...authorization(sourceFence), authorizationId: id.otherAuthorization }),
   release("source-release", sourceFence, "source-authoring", id.otherAuthorization)] as const;
-const sourceClosedPrefix = [...sourcePreparedPrefix, close("close")] as const;
+const sourceClosedPrefix = [...sourcePreparedPrefix, close("close"),
+  reconcile("source-terminated", "terminated")] as const;
 const closedPrefix = [...sourceClosedPrefix, admission("admission", "accepted")] as const;
 const buildAuthorizedPrefix = [...closedPrefix,
   issueWithId("build-issue", id.buildAuthorization, campaignFence, "build"),
@@ -230,7 +268,7 @@ const buildAuthorizedPrefix = [...closedPrefix,
   release("build-release", campaignFence, "build", id.buildAuthorization)] as const;
 const campaignBuildPrefix = [...buildAuthorizedPrefix,
   build("build", "succeeded"), consistency("consistency", { type: "match", artifactDigest: id.artifact }),
-  issue("issue", campaignFence)] as const;
+  reconcile("build-terminated", "terminated"), issue("issue", campaignFence)] as const;
 const evaluationStartedPrefix = [...campaignBuildPrefix, consume("consume", campaignFence), release("release")] as const;
 const raceFamilies: readonly RaceFamily[] = [
   { name: "1 consume vs stop/revoke/expiry", variants: 3, history: (reverse, variant) => {
@@ -241,10 +279,9 @@ const raceFamilies: readonly RaceFamily[] = [
     return [...prefix, ...(reverse ? [adverse, rejected(detached(consumption))] : [consumption, adverse]),
       rejected(detached(release("continuation-release", binding)))];
   } },
-  { name: "2 issuance vs source closure/abandonment", variants: 2, history: (reverse, variant) => variant === 0 ?
-    [...sourcePreparedPrefix, close("terminal"), rejected(detached(issue("continuation-issue")))] : [register,
-      ...(reverse ? [abandon("terminal"), rejected(detached(issue("issue")))]
-        : [issue("issue"), abandon("terminal")]), rejected(detached(consume("continuation-consume")))] },
+  { name: "2 issuance vs source abandonment", variants: 1, history: reverse => [register,
+    ...(reverse ? [abandon("terminal"), rejected(detached(issue("issue")))]
+      : [issue("issue"), abandon("terminal")]), rejected(detached(consume("continuation-consume")))] },
   { name: "3 closure vs abandonment", variants: 1, history: reverse => [...sourcePreparedPrefix,
     ...(reverse ? [abandon("abandon"), rejected(detached(close("close")))]
       : [close("close"), rejected(detached(abandon("abandon")))]),
@@ -281,9 +318,10 @@ const raceFamilies: readonly RaceFamily[] = [
       const raced = variant === 0 ? ordered(reverse, restart("restart"), retirement("retirement"))
         : reverse ? [rejected(detached(cleanup("cleanup"))), restart("restart")]
           : [restart("restart"), rejected(detached(cleanup("cleanup")))];
-      return [...prefix, ...(variant === 0 ? [] : [retirement("retirement")]), ...raced,
-        reconcile("continuation-terminated", "terminated"), cleanup("continuation-cleanup"),
-        complete("continuation-complete", receipt("close"), receipt("admission"))];
+      const beforeComplete = [...prefix, ...(variant === 0 ? [] : [retirement("retirement")]), ...raced,
+        reconcile("continuation-terminated", "terminated"), attemptDeadline("continuation-attempt"),
+        cleanup("continuation-cleanup")];
+      return [...beforeComplete, complete("continuation-complete", beforeComplete, receipt("close"))];
     },
   },
   { name: "9 durable analytic stop vs next launch", variants: 1, history: reverse => [
@@ -303,29 +341,36 @@ const raceFamilies: readonly RaceFamily[] = [
           buildReceipt("build"), consistencyId)];
     } },
   { name: "11 failed admission after closed source vs retirement", variants: 1, history: reverse => [
-    ...sourceClosedPrefix, ...ordered(reverse, admission("failed-admission", "failed"), retirement("retirement")),
-    cleanup("continuation-cleanup"), complete("continuation-complete", receipt("close"), receipt("failed-admission"))],
+    ...(() => { const beforeComplete = [...sourceClosedPrefix,
+      ...ordered(reverse, admission("failed-admission", "failed"), retirement("retirement")),
+      cleanup("continuation-cleanup")]; return [...beforeComplete,
+        complete("continuation-complete", beforeComplete, receipt("close"))]; })()],
   },
   { name: "12 unknown runtime vs cleanup", variants: 1, history: reverse => [
-    register, issue("issue"), consume("consume"), crash("crash"), abandon("abandon"), retirement("retirement"),
-    ...(reverse ? [rejected(detached(cleanup("cleanup"))), reconcile("unknown", "unknown")]
-      : [reconcile("unknown", "unknown"), rejected(detached(cleanup("cleanup")))]),
-    reconcile("continuation-terminated", "terminated"), cleanup("continuation-cleanup"),
-    complete("continuation-complete", receipt("abandon"))],
+    ...(() => { const beforeComplete = [register, issue("issue"), consume("consume"), crash("crash"),
+      abandon("abandon"), retirement("retirement"),
+      ...(reverse ? [rejected(detached(cleanup("cleanup"))), reconcile("unknown", "unknown")]
+        : [reconcile("unknown", "unknown"), rejected(detached(cleanup("cleanup")))]),
+      launchDeadline("continuation-deadline"), reconcile("continuation-terminated", "terminated"),
+      cleanup("continuation-cleanup")];
+    return [...beforeComplete, complete("continuation-complete", beforeComplete, receipt("abandon"))]; })()],
   },
 ];
 assert.equal(raceFamilies.length, 12, "the registry must contain exactly twelve race families");
-const retiredCrashHistory = [...sourceClosedPrefix,
-  retirement("retirement"), cleanup("cleanup"), complete("complete", receipt("close")),
+const retiredBeforeComplete = [...sourceClosedPrefix, retirement("retirement"), cleanup("cleanup")] as const;
+const retiredCrashHistory = [...retiredBeforeComplete,
+  complete("complete", retiredBeforeComplete, receipt("close")),
   rejected(detached(crash("post-retirement-crash")))] as const;
 const failedAdmissionAfterConsumedHistory = [...sourceClosedPrefix, admission("failed", "failed")] as const;
 const advanceCauseHistories = [[register, issue("issue-expiry"), advance("advance-expiry", "source", "expiry")],
   [...campaignBuildPrefix, advance("advance-analytic", "campaign", "analytic-stop")]] as const;
 const regressionHistories: readonly (readonly EventSpec[])[] = [
+  [...sourcePreparedPrefix, close("unreconciled-close"), retirement("unreconciled-retirement"),
+    rejected(detached(cleanup("unreconciled-cleanup")))],
   [...sourceClosedPrefix, admission("failed", "failed"),
     rejected(detached(issue("post-failure-issue", campaignFence)))],
-  [...sourceClosedPrefix, retirement("retirement"), cleanup("cleanup"),
-    complete("complete", receipt("close")), rejected(detached(reconcile("post-retirement", "unknown")))],
+  [...retiredBeforeComplete, complete("complete", retiredBeforeComplete, receipt("close")),
+    rejected(detached(reconcile("post-retirement", "unknown")))],
   [...sourceClosedPrefix, retirement("retirement"), cleanup("cleanup"),
     rejected(detached(cleanup("duplicate-cleanup")))],
   [register, issue("issue"), consume("consume"),
@@ -354,21 +399,26 @@ const regressionHistories: readonly (readonly EventSpec[])[] = [
   [...buildAuthorizedPrefix, build("build", "succeeded"),
     at(consistency("late-consistency", { type: "match", artifactDigest: id.artifact }), 80),
     consistencyDeadline("consistency-deadline")],
-  [...sourcePreparedPrefix, close("close"), admission("admission", "accepted"),
+  [...sourceClosedPrefix, admission("admission", "accepted"),
     issueWithId("build-issue", id.buildAuthorization, campaignFence, "build"),
     event("build-consume", "ConsumeAuthorization", { ...authorization(campaignFence, "build"), authorizationId: id.buildAuthorization }),
     release("build-release", campaignFence, "build", id.buildAuthorization), build("build", "succeeded"),
     consistency("consistency", { type: "match", artifactDigest: id.artifact }),
+    reconcile("build-terminated", "terminated"),
     issue("evaluation-issue", campaignFence), consume("evaluation-consume", campaignFence),
     release("evaluation-release"), attemptReceipt("attempt", "succeeded")],
   [register, issue("issue"), expire("expiry"), abandon("abandon-after-expiry")],
+  [register, issue("issue"), expire("expiry"), rejected(detached(revoke("revoke-expired")))],
+  [register, issue("issue"), advance("advance-expiry", "source", "expiry"),
+    abandonAfterAdvance("abandon-after-advance")],
   [...evaluationStartedPrefix, reconcile("live", "live")],
   [register, rejected(close("close-without-source-authority"))],
   [register, event("long-issue", "IssueAuthorization", { ...authorization(sourceFence), expiresAt: tick(100) }),
     consume("consume"), at(release("late-release", sourceFence), 60), launchDeadline("launch-deadline")],
   [register, event("long-issue", "IssueAuthorization", { ...authorization(sourceFence), expiresAt: tick(100) }),
     consume("consume"), at(releaseDenied("late-denial", sourceFence), 60), launchDeadline("launch-deadline")],
-  [...campaignBuildPrefix, consume("consume", campaignFence), retirement("source-retirement"), release("release")],
+  [...campaignBuildPrefix, consume("consume", campaignFence), retirement("source-retirement"),
+    rejected(detached(release("release")))],
   [register, checkpoint("checkpoint"), at(stop("late-stop"), 60), rejected(detached(recoverStop("early-recovery"))),
     stopDeadline("stop-deadline"), recoverStop("recovery")],
   [register, checkpoint("checkpoint"), stopDeadline("stop-deadline"), recoverStop("recovery"),
@@ -381,6 +431,12 @@ const regressionHistories: readonly (readonly EventSpec[])[] = [
       authorizationId: id.buildAuthorization, authorizationFence: campaignFence }, 50)],
   [...buildAuthorizedPrefix,
     build("cross-namespace-receipt", "succeeded", C.buildReceiptId("receipt:close"))],
+  [...buildAuthorizedPrefix, build("build", "succeeded"),
+    consistency("consistency-first", { type: "match", artifactDigest: id.artifact }),
+    consistency("consistency-same", { type: "match", artifactDigest: id.artifact },
+      buildReceipt("build"), consistencyReceipt("consistency-same"))],
+  [...evaluationStartedPrefix, at(attemptReceipt("late-first", "succeeded"), 60),
+    at(attemptReceipt("late-conflict", "failed"), 61), attemptDeadline("late-deadline")],
   [register, rejected(build("negative-build", "failed"))],
   ...advanceCauseHistories, [register, rejected(advance("source-analytic", "source", "analytic-stop"))],
 ];
@@ -414,18 +470,18 @@ test("registered qualification scenarios cover every protocol transition kind", 
 test("deadline transitions reject every supported deadline one tick early", () => {
   prematureDeadlineHistories.forEach((history, index) => {
     compareHistory(history, `premature deadline ${index + 1}`);
-    const last = foldQualificationHistory(materialize(history), 16).results.at(-1)!;
+    const last = foldQualificationHistory(materialize(history), 64, trusted).results.at(-1)!;
     assert.equal(last.decision, "rejected");
     assert.ok(last.effects.some(effect => effect.type === "denial-recorded" &&
       effect.reason === "deadline-not-reached"));
   });
 });
 test("retirement tombstone is final and failed admission revokes consumed authority", () => {
-  const retired = foldQualificationHistory(materialize(retiredCrashHistory), 16).results;
+  const retired = foldQualificationHistory(materialize(retiredCrashHistory), 64, trusted).results;
   assert.equal(retired.at(-1)!.decision, "rejected");
   assert.deepEqual(retired.at(-1)!.terminalProjections.resourceRetirement,
     retired.at(-2)!.terminalProjections.resourceRetirement);
-  const failed = foldQualificationHistory(materialize(failedAdmissionAfterConsumedHistory), 16).results.at(-1)!;
+  const failed = foldQualificationHistory(materialize(failedAdmissionAfterConsumedHistory), 64, trusted).results.at(-1)!;
   assert.ok(failed.effects.some(effect => effect.type === "authorization-revoked" &&
     effect.authorizationId === id.otherAuthorization));
 });
@@ -437,19 +493,24 @@ test("qualification model remains disposable and bounded", () => {
   const lineCount = sources.reduce((sum, source) => sum + source.split(/\r?\n/u).length - 1, 0);
   const byteCount = sources.reduce((sum, source) => sum + Buffer.byteLength(source, "utf8"), 0);
   const longestLine = Math.max(...sources.flatMap(source => source.split(/\r?\n/u).map(line => line.length)));
-  assert.ok(lineCount <= 2_500, `qualification model has ${lineCount} physical lines`);
-  assert.ok(byteCount <= 175_000, `qualification model has ${byteCount} UTF-8 bytes`);
+  assert.ok(lineCount <= 3_000, `qualification model has ${lineCount} physical lines`);
+  assert.ok(byteCount <= 225_000, `qualification model has ${byteCount} UTF-8 bytes`);
   assert.ok(longestLine <= 200, `qualification model has a ${longestLine}-character line`);
+  for (const source of sources) {
+    const localImports = [...source.matchAll(/from\s+["']\.\/([^"']+)["']/gu)].map(match => match[1]!);
+    assert.ok(localImports.every(file => files.includes(file)), "qualification imports stay inside the capped closure");
+    assert.doesNotMatch(source, /import\s*\(\s*["']\.\//u, "dynamic local imports are forbidden");
+  }
 });
 test("supported fence-advance causes apply the same fail-closed scope revocation", () => {
   advanceCauseHistories.forEach(history => {
-    const last = foldQualificationHistory(materialize(history), 20).results.at(-1)!;
+    const last = foldQualificationHistory(materialize(history), 64, trusted).results.at(-1)!;
     assert.ok(last.effects.some(effect => effect.type === "authorization-revoked"));
   });
 });
 test("direct start-unknown requests containment and reconciliation", () => {
   const result = foldQualificationHistory(materialize([register, issue("issue"), consume("consume"),
-    launchDeadline("deadline")]), 8).results.at(-1)!;
+    launchDeadline("deadline")]), 8, trusted).results.at(-1)!;
   assert.deepEqual(result.effects.filter(effect => effect.type.endsWith("requested") ||
     effect.type === "resource-quarantined").map(effect => effect.type).sort(),
   ["resource-quarantined", "runtime-reconciliation-requested", "runtime-termination-requested"]);
@@ -457,19 +518,68 @@ test("direct start-unknown requests containment and reconciliation", () => {
 test("receipt primitive identity is unique across protocol receipt families", () => {
   const history = [...buildAuthorizedPrefix,
     build("cross-namespace-receipt", "succeeded", C.buildReceiptId("receipt:close"))] as const;
-  const result = foldQualificationHistory(materialize(history), 16).results.at(-1)!;
+  const result = foldQualificationHistory(materialize(history), 64, trusted).results.at(-1)!;
   assert.equal(result.decision, "accepted");
   assert.equal(result.terminalProjections.claim, "invalid");
   assert.ok(result.effects.some(effect => effect.type === "denial-recorded" &&
     effect.reason === "receipt-replay"));
 });
-const variedHistory = (specs: readonly EventSpec[], noiseCount: number,
-  selectedSlot: number): readonly EventSpec[] => {
-  const insertion = 1 + selectedSlot % Math.max(1, specs.length - 1);
-  const noise = Array.from({ length: noiseCount }, (_, index) => rejected(detached(event(
-    `generated-noise-${index}`, "IssueAuthorization", { ...authorization(sourceFence),
-      sourceFamilyRootId: C.sourceFamilyRootId(`wrong-root:${index}`), expiresAt: tick(50) }))));
-  return [...specs.slice(0, insertion), ...noise, ...specs.slice(insertion)];
+test("trusted bootstrap rejects substituted custody authority", () => {
+  const [registration] = materialize([register]);
+  const substituted = { ...registration!, custodyAuthorityId: C.custodyAuthorityId("substituted-authority") };
+  const [result] = compareEvents([substituted], "substituted bootstrap");
+  assert.equal(result!.decision, "rejected");
+});
+test("retirement tombstones occupy the shared replay namespace", () => {
+  const retired = [...retiredBeforeComplete, complete("complete", retiredBeforeComplete, receipt("close"))] as const;
+  const reused = event("reused-tombstone", "RecordAdmission", { ...root, admissionId: id.admission,
+    receiptId: C.receiptId("tombstone:complete"), result: "accepted" });
+  const history = [...retired, rejected(detached(reused))] as const;
+  compareHistory(history, "tombstone replay");
+  const result = foldQualificationHistory(materialize(history), 64, trusted).results.at(-1)!;
+  assert.ok(result.effects.some(effect => effect.type === "denial-recorded" && effect.reason === "receipt-replay"));
+});
+test("retirement requires the complete retained evidence closure", () => {
+  const candidate = complete("incomplete", retiredBeforeComplete, receipt("close"));
+  const incomplete = rejected({ ...candidate, body: { ...candidate.body, retainedEvidence: [] } });
+  const history = [...retiredBeforeComplete, incomplete] as const;
+  compareHistory(history, "incomplete retirement evidence");
+  const result = foldQualificationHistory(materialize(history), 64, trusted).results.at(-1)!;
+  assert.equal(result.decision, "rejected");
+});
+test("retirement tombstone cannot reuse an earlier receipt primitive", () => {
+  const candidate = complete("collision", retiredBeforeComplete, receipt("close"));
+  const collision = rejected({ ...candidate, body: { ...candidate.body,
+    tombstoneId: C.tombstoneId("receipt:close") } });
+  compareHistory([...retiredBeforeComplete, collision], "tombstone collision");
+});
+const perturbEvents = (source: readonly C.ProtocolEvent[], selectedIndex: number,
+  mutation: number, salt: number): readonly C.ProtocolEvent[] => {
+  const events = [...source], index = selectedIndex % events.length, selected = events[index]!;
+  if (mutation === 7 && index > 0 && index + 1 < events.length) {
+    [events[index], events[index + 1]] = [events[index + 1]!, events[index]!]; return events;
+  }
+  const changed: Record<string, unknown> = { ...selected };
+  if (mutation === 0) changed.custodyAuthorityId = C.custodyAuthorityId(`generated-authority:${salt}`);
+  else if (mutation === 1) changed.protocolRevisionId = C.protocolRevisionId(`generated-protocol:${salt}`);
+  else if (mutation === 2) changed.authenticatedPredecessorId = C.eventId(`generated-predecessor:${salt}`);
+  else if (mutation === 3) changed.authoritativeTick = tick(Math.max(0, Number(selected.authoritativeTick) - salt - 1));
+  else if (mutation === 4 && "sourceFamilyRootId" in selected)
+    changed.sourceFamilyRootId = C.sourceFamilyRootId(`generated-root:${salt}`);
+  else if (mutation === 5 && "authorizationFence" in selected) changed.authorizationFence = {
+    ...selected.authorizationFence, expectedGeneration: g(100 + salt),
+  };
+  else if (mutation === 6) {
+    if ("receiptId" in selected) changed.receiptId = C.receiptId("receipt:close");
+    else if ("launchReceiptId" in selected) changed.launchReceiptId = C.receiptId("receipt:close");
+    else if ("observationReceiptId" in selected) changed.observationReceiptId = C.receiptId("receipt:close");
+    else if ("buildReceiptId" in selected) changed.buildReceiptId = C.buildReceiptId("receipt:close");
+    else if ("consistencyReceiptId" in selected)
+      changed.consistencyReceiptId = C.consistencyReceiptId("receipt:close");
+    else changed.custodyAuthorityId = C.custodyAuthorityId(`generated-authority:${salt}`);
+  } else changed.custodyAuthorityId = C.custodyAuthorityId(`generated-authority:${salt}`);
+  events[index] = changed as unknown as C.ProtocolEvent;
+  return events;
 };
 for (const family of raceFamilies) for (const reverse of [false, true]) {
   test(`${family.name} / ${reverse ? "right-before-left" : "left-before-right"}`, () => {
@@ -478,13 +588,22 @@ for (const family of raceFamilies) for (const reverse of [false, true]) {
     }
   });
 }
+test("every registered race family exercises distinct event orders", () => {
+  for (const family of raceFamilies) for (let variant = 0; variant < family.variants; variant += 1) {
+    const left = family.history(false, variant).map(spec => spec.label);
+    const right = family.history(true, variant).map(spec => spec.label);
+    assert.notDeepEqual(left, right, `${family.name} variant ${variant + 1}`);
+  }
+});
 test("bounded randomized scenario perturbations agree with the independent oracle", () => {
   fc.assert(fc.property(
-    fc.integer({ min: 0, max: scenarioHistories.length - 1 }), fc.integer({ min: 0, max: 2 }),
-    fc.nat(15), fc.integer({ min: 1, max: 2 }), (scenarioIndex, noiseCount, selectedSlot, tickStep) => {
-      const history = variedHistory(scenarioHistories[scenarioIndex]!, noiseCount, selectedSlot);
-      assert.ok(history.length <= 24, "generated histories remain bounded");
-      compareHistory(history, `generated scenario ${scenarioIndex + 1}`, tickStep);
+    fc.integer({ min: 0, max: scenarioHistories.length - 1 }), fc.nat(31),
+    fc.integer({ min: 0, max: 7 }), fc.nat(31), fc.integer({ min: 1, max: 2 }),
+    (scenarioIndex, selectedIndex, mutation, salt, tickStep) => {
+      const baseline = materialize(scenarioHistories[scenarioIndex]!, tickStep);
+      const events = perturbEvents(baseline, selectedIndex, mutation, salt);
+      assert.ok(events.length <= 32, "generated histories remain bounded");
+      compareEvents(events, `generated scenario ${scenarioIndex + 1} mutation ${mutation}`);
     },
   ), { seed: 0x415139, numRuns: 500 });
 });
