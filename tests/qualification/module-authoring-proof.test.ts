@@ -46,6 +46,19 @@ const proofDirectory = join(fixtureDirectory, "module-authoring-proof");
 const execFileAsync = promisify(execFile);
 const typescriptCli = fileURLToPath(new URL("../../node_modules/typescript/bin/tsc", import.meta.url));
 
+async function execPnpm(args: readonly string[], options: Readonly<{ cwd: string; env: NodeJS.ProcessEnv }>): Promise<void> {
+  const npmExecPath = process.env.npm_execpath;
+  if (npmExecPath !== undefined) {
+    await execFileAsync(process.execPath, [npmExecPath, ...args], options);
+    return;
+  }
+  if (process.platform === "win32") {
+    await execFileAsync(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", "pnpm", ...args], options);
+    return;
+  }
+  await execFileAsync("pnpm", args, options);
+}
+
 const observer = Object.freeze({ observed: ["/opt/claude", "/opt/codex"] });
 const source = (sourceId: string, projects: readonly string[]): RecentProjectSource => Object.freeze({
   sourceId,
@@ -368,7 +381,7 @@ test("23 packed private consumer installs, typechecks, and executes with the pin
     await writeFile(join(packageRoot, "index.ts"), generated);
     await writeFile(join(packageRoot, "index.js"), 'export const RuntimeInstallationDiscovery = "runtime.installation-discovery";\n');
     await writeFile(join(packageRoot, "package.json"), JSON.stringify({ name: "@proof/inventory", version: "1.0.0", type: "module", packageManager: "pnpm@11.18.0", files: ["index.ts", "index.js"], exports: { ".": { types: "./index.ts", import: "./index.js" } } }));
-    await execFileAsync("pnpm", ["pack", "--pack-destination", packRoot], { cwd: packageRoot, env: commandEnvironment });
+    await execPnpm(["pack", "--pack-destination", packRoot], { cwd: packageRoot, env: commandEnvironment });
     const tarball = join(packRoot, "proof-inventory-1.0.0.tgz");
     await writeFile(join(consumerRoot, "package.json"), JSON.stringify({ private: true, type: "module", packageManager: "pnpm@11.18.0", dependencies: { "@proof/inventory": `file:${tarball}` } }));
     await writeFile(join(consumerRoot, "consumer.ts"), [
@@ -389,7 +402,7 @@ test("23 packed private consumer installs, typechecks, and executes with the pin
       },
       files: ["consumer.ts"],
     }));
-    await execFileAsync("pnpm", ["install", "--offline", "--ignore-workspace", "--frozen-lockfile=false"], { cwd: consumerRoot, env: commandEnvironment });
+    await execPnpm(["install", "--offline", "--ignore-workspace", "--frozen-lockfile=false"], { cwd: consumerRoot, env: commandEnvironment });
     await execFileAsync(process.execPath, [typescriptCli, "--project", join(consumerRoot, "tsconfig.json"), "--pretty", "false"], { cwd: consumerRoot, env: commandEnvironment });
     await execFileAsync(process.execPath, [join(consumerRoot, "consumer.mjs")], { cwd: consumerRoot, env: commandEnvironment });
     const packedSurface = await readFile(join(consumerRoot, "node_modules", "@proof", "inventory", "index.ts"), "utf8");
