@@ -12,9 +12,11 @@ related:
 
 # Architecture And LOC Roadmap
 
-W11 static imports and Pure DI are the sole current implementation
-recommendation. The earlier graph-first sequence is preserved historical
-research, not a second roadmap.
+W11 static imports and Pure DI were the nightly recommendation. This document
+is preserved historical research; the later
+[productization roadmap](../../module-system-v1-productization/current-roadmap.yaml)
+is the latest non-authoritative qualification projection. Accepted ADRs and
+owning-product decisions remain authority.
 
 ## Phase 0: Governance Alignment
 
@@ -36,9 +38,9 @@ diagnostics, and focused positive/negative tests.
 
 Do not add a runtime graph, descriptors, global container, service locator,
 plugin loading, artifact identity, generic lifecycle coordinator, Foundation
-package, public contract, or hot unload. Stop or simplify if generic glue is
-more than 30% of changed production code or the named product outcome does not
-improve.
+package, public contract, or hot unload. Record generic glue separately using a
+predeclared counting method, and stop or simplify if the named product outcome
+does not improve.
 
 Estimate: 1,500-4,500 LOC including tests, 1-3 weeks. Total through Phase 1:
 1,600-4,800 LOC and 1.5-4 weeks including approvals.

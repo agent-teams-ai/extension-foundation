@@ -1,0 +1,210 @@
+schemaVersion: 1
+campaignId: module-system-v1-productization-2026-08-28
+status: review-ready
+claims:
+  - id: effective-authority
+    classification: proved
+    sources:
+      - docs/decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
+      - docs/decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md
+    result: >-
+      Accepted ADR-0013 assigns private module semantics to the first product,
+      and accepted ADR-0014 is the product-local authoring authority under that
+      assignment. Qualification evidence adds no successor gate. An accepted
+      owning-product decision is still required where ADR-0013 or ADR-0014 says so.
+    reversalCondition: An accepted superseding ADR changes ownership or authoring policy.
+  - id: existing-spike-coverage
+    classification: partially-proved
+    sources:
+      - docs/qualification/universal-module-extension-system/spike-results.md
+      - tests/qualification/spikes.test.ts
+    result: >-
+      Existing disposable graph, lifecycle, recovery, host, and Cordis evidence
+      is substantial but does not establish a product grammar, production graph,
+      durable runtime, or public SPI. Lifecycle remediation is committed as
+      3c31341, is integrated in this branch, and passes the full local gate.
+      Final independent exact-head review remains external PR evidence.
+    reversalCondition: Exact-head execution or review contradicts the recorded coverage.
+  - id: agent-runtime-consumer-admission
+    classification: level-separated
+    sources:
+      - repository: agent-teams-ai/agent-runtime
+        revision: 7be998237a4c262bee9c4198d554b43cd2757ac6
+      - docs/qualification/module-system-v1-productization/consumer-source-evidence.yaml
+    evidence:
+      - local-exact-mirror-verification
+    result: >-
+      The canonical lock records exact Git custody for selected Agent Runtime
+      files. It does not interpret source or establish topology, values, or
+      runtime behavior. The verdict is SOURCE_CUSTODY_BASELINE_RECORDED; L1
+      remains a no-go measurement candidate and L2-L5 remain no-go.
+    reversalCondition: >-
+      Invalidate SOURCE_CUSTODY_BASELINE_RECORDED and block dossier-dependent
+      decisions if exact source verification fails. The ADR-0013 product-owned
+      Pure DI default remains authoritative. Reopen L1 only after a product-owned
+      decision and approved benchmark prove an authoring or drift problem;
+      higher levels retain their independent product triggers.
+  - id: orchestrator-consumer-admission
+    classification: no-go
+    sources:
+      - repository: agent-teams-ai/agent-teams-orchestrator
+        revision: 4c5f55366ed8c83f97374b66c8e9f84059c47382
+      - docs/qualification/module-system-v1-productization/consumer-source-evidence.yaml
+    evidence:
+      - local-exact-mirror-verification
+    result: >-
+      Exact Git custody is recorded for selected Orchestrator blobs. No portable
+      product-owned evidence admits L1-L5.
+    reversalCondition: An owning-product decision and executable evidence admit a named level.
+  - id: frontend-consumer-admission
+    classification: no-go-measurement-candidate
+    sources:
+      - repository: 777genius/agent-teams-ai
+        revision: 85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd
+      - docs/qualification/module-system-v1-productization/consumer-source-evidence.yaml
+    evidence:
+      - local-exact-mirror-verification
+    result: >-
+      The canonical lock records exact Git custody for selected Frontend files.
+      It does not interpret imports, constructions, publication, provider
+      execution, or use-case dataflow. The source may seed an owning-product
+      measurement, but no portable evidence establishes an authoring need,
+      product grammar, or exit condition.
+    reversalCondition: >-
+      Product evidence removes the candidate, or a Frontend-owned decision and
+      benchmark prove a concrete authoring problem that justifies an L1 comparison.
+  - id: executable-product-source-evidence
+    classification: candidate-only
+    sources:
+      - architecture/checks/product-source-evidence.mjs
+      - tests/qualification/product-source-evidence.test.ts
+      - docs/qualification/module-system-v1-productization/consumer-source-evidence.yaml
+    evidence:
+      - local-exact-mirror-verification
+    result: >-
+      The exact-git-source-custody mode reproduces exact origin, commit, tree,
+      and declared regular-file blob identities against three explicitly mapped
+      local mirrors. It performs no source interpretation.
+      It proves no semantic dataflow, reference values, runtime behavior,
+      authorization, lifecycle, fail-fast behavior, output correctness, provider
+      execution, independence, remote attestation, or product decision authority.
+    reversalCondition: The verifier, exact Git objects, configured origin, bounds, or portable-path evidence fails.
+  - id: authoring-api
+    classification: conditional
+    sources:
+      - docs/qualification/module-system-v1-productization/authoring-api-and-gap-matrix.md
+    result: >-
+      Handwritten typed factories and static Pure DI remain the selected baseline.
+      No declarative framework is preselected. A measured declaration, profile,
+      or zero-evaluation discovery trigger and an owning-product decision must
+      compare the smallest inert and typed candidates against this baseline.
+    reversalCondition: A real product trigger and measured implementation comparison justify another candidate.
+  - id: private-runtime-graph
+    classification: no-go
+    sources:
+      - agent-teams-ai/agent-runtime@7be998237a4c262bee9c4198d554b43cd2757ac6
+      - agent-teams-ai/agent-teams-orchestrator@4c5f55366ed8c83f97374b66c8e9f84059c47382
+      - 777genius/agent-teams-ai@85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd
+    result: No portable product-owned evidence admits runtime selection beyond static composition.
+    reversalCondition: One product proves selection must change without rebuild and accepts its own private selection-graph decision.
+  - id: lifecycle-coordinator
+    classification: no-go
+    sources:
+      - docs/qualification/module-system-v1-productization/current-roadmap.yaml
+    result: No portable product-owned evidence admits dependency-aware lifecycle coordination.
+    reversalCondition: A named product proves bounded readiness, drain, rollback, or recovery cannot remain in its existing owner.
+  - id: shared-foundation-extraction
+    classification: no-go
+    sources:
+      - docs/decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
+    result: No portable evidence proves two independent implementations of one semantic contract with cross-consumer conformance.
+    reversalCondition: Two products independently implement the same candidate and pass executable cross-consumer conformance under a separate extraction decision.
+  - id: evidence-custody-integrity
+    classification: partially-proved
+    sources:
+      - architecture/checks/evidence-custody.mjs
+      - architecture/evidence-custody-manifest.schema.json
+    result: >-
+      Current hardening for trusted manifest identity, bounded capture,
+      latest-attempt aliasing, platform-qualified live-source reads, and
+      owner-only storage passes the full local gate. Historical corpus custody
+      remains honestly unproven.
+      V2 can invalidate evidence but cannot authorize promotion; final
+      independent exact-head review remains external PR evidence.
+    reversalCondition: Integrated exact-head checks or review find unresolved fail-open behavior.
+jobEvidencePolicy:
+  decisionAuthority: false
+  portableArtifactLocator: unavailable
+  classification: corroboration-only
+  effect: job records cannot prove claims or authorize promotion
+jobs:
+  - { id: module-v1-pr17-architecture-review-r1, role: exact-head-architecture-review, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
+  - { id: module-v1-pr17-correctness-review-r1, role: exact-head-correctness-review, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
+  - { id: module-v1-pr17-lifecycle-review-r1, role: exact-head-lifecycle-review, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
+  - { id: module-v1-pr17-evidence-review-r1, role: exact-head-evidence-review, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
+  - { id: module-v1-audit-decisions-r1, role: effective-decision-audit, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
+  - { id: module-v1-audit-spikes-r1, role: existing-spike-gap-audit, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
+  - { id: module-v1-audit-package-policy-r1, role: package-policy-evidence-boundary, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
+  - { id: module-v1-audit-agent-runtime-r1, role: product-consumer-admission, sourceRevision: 25b2b7f383347466fa74fdd5586c485f5181d8d9, status: invalidated-dirty-nested-clone, lineage: historical-evidence-superseded-by-current-product-source-records }
+  - { id: module-v1-audit-agent-runtime-r2, role: product-consumer-admission, sourceRevision: 25b2b7f383347466fa74fdd5586c485f5181d8d9, status: completed, lineage: historical-evidence-superseded-by-current-product-source-records }
+  - { id: module-v1-audit-orchestrator-r1, role: product-consumer-admission, sourceRevision: 4c5f55366ed8c83f97374b66c8e9f84059c47382, status: completed }
+  - { id: module-v1-audit-frontend-r1, role: product-consumer-admission, sourceRevision: 85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd, status: completed }
+  - { id: module-v1-tiebreak-ownership-a-r1, role: ownership-tie-break, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
+  - { id: module-v1-tiebreak-ownership-b-r1, role: ownership-tie-break, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
+  - { id: module-v1-admission-operations-r1, role: admission-operations-critic, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
+  - { id: module-v1-admission-security-r1, role: admission-security-critic, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
+  - { id: module-v1-admission-minimalism-r1, role: admission-minimalism-critic, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
+  - { id: module-v1-admission-evolution-r1, role: admission-evolution-critic, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
+  - { id: module-v1-api-schema-factory-r1, role: authoring-api-advocate-a, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
+  - { id: module-v1-api-ts-builder-r1, role: authoring-api-advocate-b, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
+  - { id: module-v1-api-json-handles-r1, role: authoring-api-advocate-c, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
+  - { id: module-v1-tie-ar-admission-a-r1, role: agent-runtime-admission-tie-break, sourceRevision: 25b2b7f383347466fa74fdd5586c485f5181d8d9, status: completed, lineage: historical-evidence-superseded-by-current-product-source-records }
+  - { id: module-v1-tie-ar-admission-b-r1, role: agent-runtime-admission-tie-break, sourceRevision: 25b2b7f383347466fa74fdd5586c485f5181d8d9, status: completed, lineage: historical-evidence-superseded-by-current-product-source-records }
+  - { id: module-v1-api-critic-typescript-r1, role: authoring-api-typescript-critic, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
+  - { id: module-v1-api-critic-ai-dx-r1, role: authoring-api-ai-dx-critic, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
+  - { id: module-v1-api-critic-governance-r1, role: authoring-api-governance-critic, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
+  - { id: module-v1-api-critic-operations-r1, role: authoring-api-operations-critic, sourceRevision: 859e6d808bb1113133a21484aa590f671bb6795d, status: completed }
+  - id: module-v1-fix-lifecycle-r1
+    role: lifecycle-remediation
+    sourceRevision: ded182f0f04953107868c5e84039fdc420f12ecc
+    status: non-portable-corroboration
+    integratedRevision: 3c31341ee0483e8535532b51b5d91fb1cc64a512
+    acceptance: focused-and-full-local-gates-passed
+  - id: module-v1-fix-custody-r1
+    role: evidence-custody-remediation
+    sourceRevision: ded182f0f04953107868c5e84039fdc420f12ecc
+    status: non-portable-corroboration
+    integratedRevision: d82a57b6589543655922f8c6271f8e453a806676
+    acceptance: focused-and-full-local-gates-passed
+  - { id: module-v1-redteam-lifecycle-r1, role: red-team-lifecycle, sourceRevision: c9a01739a3a0906bfd52d8573a76e9d0058568ca, status: completed-attempt-2, resultSha256: d44e636e8d7512115b468d5bc28e16845a62faa6f80bab789cd751283b38326e }
+  - { id: module-v1-redteam-security-r1, role: red-team-security, sourceRevision: c9a01739a3a0906bfd52d8573a76e9d0058568ca, status: completed-attempt-2, resultSha256: f07f23bf87ea1162505b629053762805445e8f43b11ed0c7754b7b64f9d6024d }
+  - { id: module-v1-redteam-operations-r1, role: red-team-operations, sourceRevision: c9a01739a3a0906bfd52d8573a76e9d0058568ca, status: completed-attempt-2, resultSha256: ed9ff62d752714df7089589ef50033ab6c07c2fed0a6a3597e2a58d5805a43e1 }
+  - { id: module-v1-redteam-ai-dx-r1, role: red-team-ai-dx, sourceRevision: c9a01739a3a0906bfd52d8573a76e9d0058568ca, status: completed-attempt-2, resultSha256: e18c4132fb9649cc9449cb506101ead08f3d79f596659a3cef0b3c14b568b2f4 }
+  - { id: module-v1-redteam-lock-in-r1, role: red-team-lock-in, sourceRevision: c9a01739a3a0906bfd52d8573a76e9d0058568ca, status: completed-attempt-2, resultSha256: cb852b8e8d308b6afed131611006f6b7bc254eb101c28cab6570afbf57ce675c }
+  - { id: module-v1-redteam-evidence-r1, role: red-team-evidence, sourceRevision: c9a01739a3a0906bfd52d8573a76e9d0058568ca, status: completed-attempt-2, resultSha256: 436bf42f60d09bda35909693c692bac113740a4caa7b564f79d908edd1f5d6bc }
+  - { id: module-v1-redteam-performance-r1, role: red-team-performance, sourceRevision: c9a01739a3a0906bfd52d8573a76e9d0058568ca, status: completed-attempt-2, resultSha256: 2c5141ef1a0de8cd36d561fd6333f375eac7e3517c7f57ec700d3e1961a8295d }
+  - { id: module-v1-redteam-cross-consumer-r1, role: red-team-cross-consumer, sourceRevision: c9a01739a3a0906bfd52d8573a76e9d0058568ca, status: completed-attempt-2, resultSha256: c7fc6f8f8170f6f52dd829b5bd62fc35400878756b8a0e691961b783a08cd7e4 }
+  - { id: module-v1-final-architecture-r1, role: exact-head-architecture-review, sourceRevision: external-pr-head, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: pending-final-exact-head-review }
+  - { id: module-v1-final-lifecycle-r1, role: exact-head-lifecycle-review, sourceRevision: external-pr-head, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: pending-final-exact-head-review }
+  - { id: module-v1-final-security-r1, role: exact-head-security-review, sourceRevision: external-pr-head, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: pending-final-exact-head-review }
+  - { id: module-v1-final-product-r1, role: exact-head-product-review, sourceRevision: external-pr-head, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: pending-final-exact-head-review }
+followUpReports:
+  lineage: historical-evidence-superseded-by-current-product-source-records
+  status: corroboration-only-not-portable-evidence
+  decisionAuthority: false
+  custody:
+    portableArtifactLocator: unavailable
+    authenticatedReceipt: false
+    note: Hashes identify runtime-reported result payloads but do not make them independently retrievable or authoritative.
+  inputs:
+    extensionFoundation: e1a3492e56aff33a1569d12b28e0ee3762cd8ba5
+    agentRuntime: 493c6c37e247f021fc110c5fc624b72f1502d743
+  reports:
+    - { jobId: module-v1-audit-agent-runtime-r2, attemptId: module-v1-audit-agent-runtime-r2-followup-a5, resultSha256: 21456d44a31b480a5276070741a82ff0102e99db8a8bfb41c8978c9c1b59bdb7 }
+    - { jobId: module-v1-tie-ar-admission-a-r1, attemptId: module-v1-tie-ar-admission-a-r1-followup-a5, resultSha256: 633897f5bb0346ded332a352d8eb906366b67ffc3d33e69b5c8a5b3b791f6f79 }
+    - { jobId: module-v1-tie-ar-admission-b-r1, attemptId: module-v1-tie-ar-admission-b-r1-followup-a5, resultSha256: 423465e36b1bf6c022f37199ff4bb42ff27f324e0561fffa8ac47658f820fc3f }
+    - { jobId: module-v1-admission-minimalism-r1, attemptId: module-v1-admission-minimalism-r1-followup-a5, resultSha256: d9c7797ada62269d09b136c5f7c97e6af3bf5b8046114c944ba955ac9ac17111 }
+    - { jobId: module-v1-redteam-lifecycle-r1, attemptId: module-v1-redteam-lifecycle-r1-followup-a5, resultSha256: 52591623677c0300b8467eff86d8be0762f11ffe403bc00f963c4c83d52ab7da }
+    - { jobId: module-v1-redteam-cross-consumer-r1, attemptId: module-v1-redteam-cross-consumer-r1-followup-a5, resultSha256: f975d58a963a2891c174352b7afa10db97f36a6aea95b7db4be09d5516580080 }
+    - { jobId: module-v1-admission-evolution-r1, attemptId: module-v1-admission-evolution-r1-followup-a5, resultSha256: f29dd6c257b0ce05f8dec5bf28d507d5f6a54d458a64ea2390b14401089f8593 }
+    - { jobId: module-v1-api-critic-typescript-r1, attemptId: module-v1-api-critic-typescript-r1-followup-a5, resultSha256: df5b79974a4cc929f7fcb2b1251c598c8ae10acb1292634ac6d645cf58c7a9bc }

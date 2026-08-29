@@ -34,6 +34,52 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm check
 
+  product-sources:
+    name: product-sources
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: agent-teams-ai/agent-runtime
+          ref: 7be998237a4c262bee9c4198d554b43cd2757ac6
+          path: .product-sources/agent-runtime
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: agent-teams-ai/agent-teams-orchestrator
+          ref: 4c5f55366ed8c83f97374b66c8e9f84059c47382
+          path: .product-sources/agent-teams-orchestrator
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: 777genius/agent-teams-ai
+          ref: 85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd
+          path: .product-sources/frontend
+          persist-credentials: false
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        with:
+          version: 11.18.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Verify exact product sources
+        env:
+          AGENT_RUNTIME_SOURCE: ${{ github.workspace }}/.product-sources/agent-runtime
+          ORCHESTRATOR_SOURCE: ${{ github.workspace }}/.product-sources/agent-teams-orchestrator
+          FRONTEND_SOURCE: ${{ github.workspace }}/.product-sources/frontend
+        run: >-
+          pnpm qualification:product-sources:check --
+          --repository agentRuntime="$AGENT_RUNTIME_SOURCE"
+          --repository orchestrator="$ORCHESTRATOR_SOURCE"
+          --repository frontend="$FRONTEND_SOURCE"
+
   architecture-windows:
     name: architecture-windows
     runs-on: windows-2025

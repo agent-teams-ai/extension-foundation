@@ -8,16 +8,18 @@ summary: Index of the static-first recommendation and its preserved pre-implemen
 
 # Universal Module And Extension System Qualification
 
-This dossier qualifies a product-neutral module and extension architecture before
-any production package or public SPI is admitted. It distinguishes accepted
+This dossier preserves the product-neutral qualification basis created before
+any production package or public SPI was admitted. It distinguishes accepted
 decisions, verified evidence, recommendations, unresolved product choices, and
 post-MVP hypotheses.
 
-The [final recommendation](final-recommendation.md) is the sole current
-implementation roadmap: product-local static imports and Pure DI first, with a
-private product graph only after measured runtime-selection or independent-
-lifecycle need. No current Git SHA, package, runtime, or public SPI is declared
-production-qualified by this dossier.
+The current qualification gate is the later
+[Module System V1 Productization Gate](../module-system-v1-productization/README.md),
+which re-audits newer exact product revisions and records current GO/NO-GO
+results. The [final recommendation](final-recommendation.md) here is its
+historical static-first input, not a competing current roadmap. No current Git
+SHA, package, runtime, or public SPI is declared production-qualified by either
+dossier.
 
 ## Evidence And Decisions
 
@@ -32,8 +34,8 @@ production-qualified by this dossier.
 The following graph-first and generalized-runtime documents preserve exact
 qualification evidence, constraints, and failure findings. Their graph-first
 sequencing is superseded historical research, not a competing implementation
-recommendation. Use them only if the current roadmap's explicit later gate is
-triggered.
+recommendation. Use them only after an owning-product decision triggers the
+corresponding later gate in the current qualification projection.
 
 - [Module graph](module-graph.md)
 - [Lifecycle and concurrency](lifecycle-and-concurrency.md)
@@ -50,7 +52,7 @@ triggered.
 - [Spike results](spike-results.md)
 - [Conformance plan](conformance-plan.md)
 - [Unresolved decisions](unresolved-decisions.md)
-- [Final recommendation — sole current implementation roadmap](final-recommendation.md)
+- [Historical static-first recommendation](final-recommendation.md)
 
 ## Status Vocabulary
 
@@ -79,7 +81,7 @@ source. It links to full rationale and never duplicates normative decisions.
 
 ## Evidence Custody Qualification Tool
 
-The dependency-free Node 24 custody tool and its
+The dependency-free Node 24 custody tool and its V2
 [`manifest schema`](../../../architecture/evidence-custody-manifest.schema.json)
 capture an explicit allowlist of job IDs into create-only SHA-256 objects and a
 deterministic manifest. The tool never
@@ -88,27 +90,38 @@ discovers jobs with globs and must not be pointed at an authentication root or
 numbers, dense arrays and plain objects; it sorts object keys but does not claim
 full RFC 8785 canonicalization.
 
-Prepare a JSON configuration with `campaignId`, `baseline`, `jobIds`,
+Prepare a JSON configuration with `campaignId`, `repositoryRoot`, `jobIds`,
 `runtimeRoot`, `jobConfigRoot` and `outputRoot`, then run:
 
 ```console
 pnpm evidence:custody -- capture /absolute/path/to/config.json
-pnpm evidence:custody -- verify /absolute/path/to/manifest.json /absolute/path/to/evidence
+pnpm evidence:custody -- verify /absolute/path/to/manifest.json /absolute/path/to/evidence EXPECTED_MANIFEST_SHA256
 pnpm evidence:custody:test
 ```
 
+Capture prints `manifestSha256`; the caller must retain that digest outside the
+captured directory and provide it to verification. Manifest bytes cannot
+authenticate themselves. Missing or mismatched trusted digest fails custody.
+Capture derives the V2 baseline from the canonical, clean Git worktree and its
+tracked package and lock files while observing the active Node.js and pnpm
+versions. Caller-declared V1 baselines and continuations are rejected.
+
 Capture includes each allowed job's configuration, current result alias,
 progress, events, log, attempt journals and exactly decoded
-`lastOutputSummary` bytes. Missing or unknown historical bytes become explicit
-exceptions. They are never reconstructed. Duplicate JSON keys are rejected.
-Verification reports custody,
+`lastOutputSummary` bytes. Missing historical bytes and unproven alias identity
+become explicit exceptions. They are never reconstructed. Malformed journals
+and duplicate JSON keys are rejected.
+Verification parses stored attempt journals again within fixed resource limits
+and requires their attempt identity, terminal status, timestamps, output summary
+and continuation lineage to match the manifest. Verification reports custody,
 terminal-state, alias, path, source-independence, hypothesis, draft-scope,
 synthesis and promotion gates independently; worker counts never satisfy a
 source or voting requirement.
 
 Attempt entries from every journal are combined before current-alias binding.
 The mutable alias binds only when its recognized versioned wrapper identifies
-the same job, latest attempt count, and terminal status; otherwise identity is
+the same job, canonical attempt ID, latest attempt count, and terminal status;
+historical attempts cannot own it. Otherwise identity is
 reported as unproven. Duplicate attempt numbers are rejected as ambiguous.
 Identical bytes observed under different provenance are also rejected instead
 of silently collapsing their source path or evidence kind. Promotion-eligible
@@ -125,6 +138,16 @@ attempt wrapper in the immutable object store. The store root must be
 exclusively owned by the custody process. Publication revalidates root and parent directory
 identity and fails closed on a detected swap, but Node's path-based filesystem
 APIs cannot make this a security boundary against a hostile same-user process.
-The default `verify` command reports success for an intact portable NO-GO bundle;
-`verify ... --require-promotion` is the explicit admission check and remains
-fail-closed while any promotion prerequisite is unproven.
+The `verify` command reports integrity for a portable NO-GO bundle. V2 has no
+promotion mode: promotion requires a separate authenticated receipt schema and
+operation that are not implemented by this qualification tooling.
+
+Capture applies non-raisable defaults for per-file bytes, aggregate bytes, file
+count, directory depth, JSON depth, JSON node count, JSON string length and
+manifest collection sizes. It rejects symlinks and stores directories and
+objects with owner-only POSIX permissions. Live-source
+audit reopens and hashes the exact source bytes using canonical-parent and
+identity checks, plus `O_NOFOLLOW` where Node exposes it. Platforms without
+that flag do not receive an atomic no-follow guarantee. Secret
+scanning recognizes common credential shapes but remains best-effort; passing
+it is not proof that arbitrary sensitive content is absent.

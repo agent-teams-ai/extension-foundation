@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { access, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdtemp, mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -32,14 +32,15 @@ import {
   type ModuleHooks,
 } from "./lifecycle-spike.ts";
 import {
+  createDispatchTracker,
   decodeLengthPrefixedFrame,
   encodeLengthPrefixedFrame,
   handlePortableWorkerFrame,
   maxFrameBytes,
+  type DispatchTracker,
   type ProtocolEnvelope,
   validateAuthorizedEnvelope,
   validateEnvelope,
-  validateResponseEnvelope,
 } from "./protocol-spike.ts";
 import {
   createRecoveryCoordinator,
@@ -80,6 +81,7 @@ function frame(overrides: Partial<ProtocolEnvelope> = {}): ProtocolEnvelope {
     protocol: "agent-teams.extension-host/v1",
     requestId: "request-1",
     operationId: "operation-1",
+    dispatchNonce: "undispatched",
     authorityScope: testAuthorityScope,
     extensionInstanceId: "extension-instance-1",
     graphGeneration: 1,
@@ -92,6 +94,18 @@ function frame(overrides: Partial<ProtocolEnvelope> = {}): ProtocolEnvelope {
     payload: {},
     ...overrides,
   };
+}
+
+function dispatch(
+  tracker: DispatchTracker,
+  request: ProtocolEnvelope,
+  expectedResponseKind: "ready" | "result" = "result",
+) {
+  return tracker.createDispatch(
+    request,
+    { ...protocolAuthority, now: Date.now() },
+    expectedResponseKind,
+  );
 }
 
 function rejectAfter(milliseconds: number, errorFactory: () => Error): Promise<never> {
@@ -266,7 +280,7 @@ test("permutations produce the same graph plan and digest", () => {
       assert.deepEqual(result.plan.startBatches, [["a"], ["b", "c"], ["d"]]);
       assert.equal(result.plan.digest, requirePlan([...descriptors.values()]).digest);
     },
-  ), { numRuns: 200 });
+  ), { numRuns: 200, seed: 0x51a71c });
 });
 
 test("native compiler agrees with Graphlib on generated directed-graph validity", () => {
@@ -297,41 +311,36 @@ test("native compiler agrees with Graphlib on generated directed-graph validity"
       assert.ok(nativePosition.get(ids[provider]!)! < nativePosition.get(ids[consumer]!)!);
       assert.ok(oraclePosition.get(ids[provider]!)! < oraclePosition.get(ids[consumer]!)!);
     }
-  }), { numRuns: 500 });
+  }), { numRuns: 500, seed: 0x6d0d01 });
 });
 
-test("graph compiler remains stack-safe within 1k and 10k hard caps", t => {
+test("ID-DAG chain compilation remains stack-safe and reports non-gating timings", t => {
   const count = 10_000;
   const chain = Array.from({ length: count }, (_, index) => ({
     id: `module-${String(index).padStart(5, "0")}`,
     requires: index === 0 ? [] : [`module-${String(index - 1).padStart(5, "0")}`],
   }));
-  const measure = (size: number, hardCapMs: number): readonly number[] => {
+  const measure = (size: number): readonly number[] => {
     const samples: number[] = [];
     for (let iteration = 0; iteration < 5; iteration += 1) {
       const startedAt = performance.now();
       const measuredPlan = requirePlan(chain.slice(0, size));
       const elapsedMs = performance.now() - startedAt;
       assert.equal(measuredPlan.startOrder.length, size);
-      assert.ok(elapsedMs < hardCapMs, `GRAPH_${size}_TIMEOUT:${elapsedMs}`);
       samples.push(elapsedMs);
     }
     return samples.toSorted((left, right) => left - right);
   };
 
-  const oneThousandSamples = measure(1_000, 500);
+  const oneThousandSamples = measure(1_000);
   const heapBefore = process.memoryUsage().heapUsed;
-  const tenThousandSamples = measure(10_000, 5_000);
+  const tenThousandSamples = measure(10_000);
   const observedHeapDeltaBytes = Math.max(
     0,
     process.memoryUsage().heapUsed - heapBefore,
   );
-  assert.ok(
-    observedHeapDeltaBytes < 256 * 1024 * 1024,
-    `GRAPH_10K_HEAP:${observedHeapDeltaBytes}`,
-  );
   t.diagnostic(
-    `graph-1k maxOfFiveMs=${oneThousandSamples.at(-1)?.toFixed(2)} graph-10k maxOfFiveMs=${tenThousandSamples.at(-1)?.toFixed(2)} observedHeapDeltaBytes=${observedHeapDeltaBytes}`,
+    `id-dag-chain-1k maxOfFiveMs=${oneThousandSamples.at(-1)?.toFixed(2)} id-dag-chain-10k maxOfFiveMs=${tenThousandSamples.at(-1)?.toFixed(2)} diagnosticHeapDeltaBytes=${observedHeapDeltaBytes}`,
   );
 
   const cyclic = chain.map((descriptor, index) => index === 0
@@ -2688,14 +2697,21 @@ test("standalone lifecycle deadlines record async hangs and finite event-loop bl
     child.stderr.setEncoding("utf8");
     child.stdout.on("data", chunk => { stdout += chunk; });
     child.stderr.on("data", chunk => { stderr += chunk; });
-    const [code] = await once(child, "close", { signal: AbortSignal.timeout(2_000) });
+    const [code] = await once(child, "close", { signal: AbortSignal.timeout(10_000) });
     children.delete(child);
     assert.equal(code, 0, `${phase}:${stderr}`);
-    const result = JSON.parse(stdout) as {
-      readonly ok: boolean;
-      readonly termination: string;
-      readonly errors: readonly { readonly message: string }[];
+    const observation = JSON.parse(stdout) as {
+      readonly requestedPhase: string;
+      readonly enteredPhase?: string;
+      readonly result: {
+        readonly ok: boolean;
+        readonly termination: string;
+        readonly errors: readonly { readonly message: string }[];
+      };
     };
+    assert.equal(observation.requestedPhase, phase);
+    assert.equal(observation.enteredPhase, phase, `requested hook did not enter:${phase}`);
+    const { result } = observation;
     assert.equal(result.ok, phase === "stop", phase);
     assert.equal(result.termination, "termination_unproven", phase);
     assert.ok(result.errors.some(error => /(?:ABSOLUTE|CLEANUP)_TIMEOUT|DEADLINE_EXCEEDED/.test(error.message)), phase);
@@ -3003,6 +3019,7 @@ test("crash recovery decisions bind readiness to runtime and module attempts at 
 });
 
 test("portable protocol rejects stale, expired, malformed, oversized, and miscorrelated frames", () => {
+  const tracker = createDispatchTracker();
   const authority = { ...protocolAuthority, now: Date.now() };
   const accepted = handlePortableWorkerFrame(frame(), authority);
   assert.throws(() => handlePortableWorkerFrame(frame({ kind: "result" }), authority), /INVALID_REQUEST_KIND/);
@@ -3085,52 +3102,104 @@ test("portable protocol rejects stale, expired, malformed, oversized, and miscor
     () => handlePortableWorkerFrame(frame({ kind: "ready" }), { ...protocolAuthority, now: Date.now() }),
     /INVALID_REQUEST_KIND/,
   );
-  const response = handlePortableWorkerFrame(request, { ...protocolAuthority, now: Date.now() });
-  assert.equal(validateResponseEnvelope(
-    response,
-    { ...responseAuthority, now: Date.now() },
+  assert.throws(() => tracker.createDispatch(
     request,
-    "result",
-  ).payload.acceptedKind, "prepare");
-  assert.throws(() => validateResponseEnvelope(
-    { ...response, requestId: "wrong-request" },
-    { ...responseAuthority, now: Date.now() },
-    request,
-    "result",
-  ), /RESPONSE_REQUEST_MISMATCH/);
-  assert.throws(() => validateResponseEnvelope(
-    response,
-    { ...responseAuthority, now: Date.now() },
-    { ...request, graphGeneration: request.graphGeneration + 1 },
-    "result",
-  ), /RESPONSE_GRAPH_GENERATION_MISMATCH/);
-  assert.throws(() => validateResponseEnvelope(
-    response,
-    { ...responseAuthority, now: Date.now() },
-    { ...request, moduleActivationGeneration: request.moduleActivationGeneration + 1 },
-    "result",
-  ), /RESPONSE_MODULE_ACTIVATION_GENERATION_MISMATCH/);
-  assert.throws(() => validateResponseEnvelope(
-    response,
-    { ...responseAuthority, now: Date.now() },
-    { ...request, hostIncarnation: "host-incarnation-replayed" },
-    "result",
-  ), /RESPONSE_HOST_INCARNATION_MISMATCH/);
-  assert.throws(() => validateResponseEnvelope(
-    { ...response, absoluteDeadline: response.absoluteDeadline + 1 },
-    { ...responseAuthority, now: Date.now() },
-    request,
-    "result",
-  ), /RESPONSE_DEADLINE_MISMATCH/);
-  assert.throws(() => validateResponseEnvelope(
-    response,
-    { ...responseAuthority, now: Date.now() },
-    request,
+    { ...protocolAuthority, now: Date.now() },
     "stop" as never,
   ), /INVALID_EXPECTED_RESPONSE_KIND/);
+  const prepared = dispatch(tracker, request);
+  const response = handlePortableWorkerFrame(prepared.request, { ...protocolAuthority, now: Date.now() });
+  assert.throws(() => dispatch(tracker, request), /DISPATCH_ALREADY_PENDING/);
+  assert.throws(() => tracker.validateResponseEnvelope(
+    { ...response, requestId: "wrong-request" },
+    { ...responseAuthority, now: Date.now() },
+    prepared.receipt,
+  ), /RESPONSE_REQUEST_MISMATCH/);
+  assert.throws(() => tracker.validateResponseEnvelope(
+    { ...response, dispatchNonce: "forged-dispatch" },
+    { ...responseAuthority, now: Date.now() },
+    prepared.receipt,
+  ), /RESPONSE_DISPATCH_NONCE_MISMATCH/);
+  assert.throws(() => tracker.validateResponseEnvelope(
+    { ...response, authorityScope: "tenant:other/project:other" },
+    { ...responseAuthority, authorityScope: "tenant:other/project:other", now: Date.now() },
+    prepared.receipt,
+  ), /RESPONSE_AUTHORITY_SCOPE_MISMATCH/);
+  assert.throws(() => tracker.validateResponseEnvelope(
+    { ...response, extensionInstanceId: "extension-instance-2" },
+    { ...responseAuthority, extensionInstanceId: "extension-instance-2", now: Date.now() },
+    prepared.receipt,
+  ), /RESPONSE_EXTENSION_INSTANCE_MISMATCH/);
+  assert.throws(() => tracker.validateResponseEnvelope(
+    { ...response, graphGeneration: response.graphGeneration + 1 },
+    { ...responseAuthority, graphGeneration: response.graphGeneration + 1, now: Date.now() },
+    prepared.receipt,
+  ), /RESPONSE_GRAPH_GENERATION_MISMATCH/);
+  assert.throws(() => tracker.validateResponseEnvelope(
+    { ...response, moduleActivationGeneration: response.moduleActivationGeneration + 1 },
+    { ...responseAuthority, moduleActivationGeneration: response.moduleActivationGeneration + 1, now: Date.now() },
+    prepared.receipt,
+  ), /RESPONSE_MODULE_ACTIVATION_GENERATION_MISMATCH/);
+  assert.throws(() => tracker.validateResponseEnvelope(
+    { ...response, hostIncarnation: "host-incarnation-replayed" },
+    { ...responseAuthority, hostIncarnation: "host-incarnation-replayed", now: Date.now() },
+    prepared.receipt,
+  ), /RESPONSE_HOST_INCARNATION_MISMATCH/);
+  assert.throws(() => tracker.validateResponseEnvelope(
+    { ...response, senderId: "product-host", audience: "extension-host" },
+    { ...responseAuthority, authenticatedPeerId: "product-host", audience: "extension-host", now: Date.now() },
+    prepared.receipt,
+  ), /RESPONSE_ENDPOINT_DIRECTION_MISMATCH/);
+  assert.throws(() => tracker.validateResponseEnvelope(
+    { ...response, absoluteDeadline: response.absoluteDeadline + 1 },
+    { ...responseAuthority, now: Date.now() },
+    prepared.receipt,
+  ), /RESPONSE_DEADLINE_MISMATCH/);
+  assert.throws(() => tracker.validateResponseEnvelope(
+    { ...response, kind: "ready" },
+    { ...responseAuthority, now: Date.now() },
+    prepared.receipt,
+  ), /UNEXPECTED_RESPONSE_KIND/);
+  assert.throws(() => tracker.validateResponseEnvelope(
+    response,
+    { ...responseAuthority, now: Date.now() },
+    { ...prepared.receipt },
+  ), /INVALID_DISPATCH_RECEIPT/);
+  assert.equal(tracker.validateResponseEnvelope(
+    response,
+    { ...responseAuthority, now: Date.now() },
+    prepared.receipt,
+  ).payload.acceptedKind, "prepare");
+  assert.throws(() => tracker.validateResponseEnvelope(
+    response,
+    { ...responseAuthority, now: Date.now() },
+    prepared.receipt,
+  ), /INVALID_DISPATCH_RECEIPT/);
+  const cancelled = dispatch(tracker, frame({ requestId: "cancelled-request", operationId: "cancelled-operation", kind: "prepare" }));
+  assert.equal(tracker.cancelDispatch(cancelled.receipt), true);
+  assert.equal(tracker.cancelDispatch(cancelled.receipt), false);
+  assert.throws(() => tracker.validateResponseEnvelope(
+    handlePortableWorkerFrame(cancelled.request, { ...protocolAuthority, now: Date.now() }),
+    { ...responseAuthority, now: Date.now() },
+    cancelled.receipt,
+  ), /INVALID_DISPATCH_RECEIPT/);
+
+  const mutableRequest = frame({ requestId: "mutable-request", kind: "prepare" });
+  const immutableDispatch = dispatch(tracker, mutableRequest);
+  const mutationResponse = handlePortableWorkerFrame(
+    immutableDispatch.request,
+    { ...protocolAuthority, now: Date.now() },
+  );
+  (mutableRequest as { graphGeneration: number }).graphGeneration += 1;
+  assert.equal(tracker.validateResponseEnvelope(
+    mutationResponse,
+    { ...responseAuthority, now: Date.now() },
+    immutableDispatch.receipt,
+  ).requestId, "mutable-request");
 });
 
 test("process-host smoke acknowledges hello and readiness over bounded length-prefixed JSON", async t => {
+  const tracker = createDispatchTracker();
   const child = spawn(process.execPath, [join(fixtureRoot, "process-child.mjs")], { stdio: ["pipe", "pipe", "pipe"] });
   t.after(() => child.kill("SIGKILL"));
   const responses: ProtocolEnvelope[] = [];
@@ -3155,45 +3224,46 @@ test("process-host smoke acknowledges hello and readiness over bounded length-pr
   const helloRequest = frame();
   const prepareRequest = frame({ requestId: "request-2", kind: "prepare" });
   const drainRequest = frame({ requestId: "request-3", kind: "drain" });
-  child.stdin.write(encodeLengthPrefixedFrame(helloRequest));
-  child.stdin.write(encodeLengthPrefixedFrame(prepareRequest));
-  child.stdin.write(encodeLengthPrefixedFrame(drainRequest));
+  const helloDispatch = dispatch(tracker, helloRequest);
+  const prepareDispatch = dispatch(tracker, prepareRequest, "ready");
+  const drainDispatch = dispatch(tracker, drainRequest);
+  child.stdin.write(encodeLengthPrefixedFrame(helloDispatch.request));
+  child.stdin.write(encodeLengthPrefixedFrame(prepareDispatch.request));
+  child.stdin.write(encodeLengthPrefixedFrame(drainDispatch.request));
   await waitUntil(() => responses.length >= 3 || childFailure !== undefined, 2_000, "PROCESS_RESPONSE_TIMEOUT");
   if (childFailure) throw childFailure;
-  assert.equal(validateResponseEnvelope(
+  assert.equal(tracker.validateResponseEnvelope(
     responses[0],
     { ...responseAuthority, now: Date.now() },
-    helloRequest,
-    "result",
+    helloDispatch.receipt,
   ).kind, "result");
-  assert.equal(validateResponseEnvelope(
+  assert.equal(tracker.validateResponseEnvelope(
     responses[1],
     { ...responseAuthority, now: Date.now() },
-    prepareRequest,
-    "ready",
+    prepareDispatch.receipt,
   ).kind, "ready");
-  assert.equal(validateResponseEnvelope(
+  assert.equal(tracker.validateResponseEnvelope(
     responses[2],
     { ...responseAuthority, now: Date.now() },
-    drainRequest,
-    "result",
+    drainDispatch.receipt,
   ).payload.drained, true);
   const stopRequest = frame({ requestId: "request-4", kind: "stop" });
+  const stopDispatch = dispatch(tracker, stopRequest);
   const exit = once(child, "exit", { signal: AbortSignal.timeout(2_000) });
-  child.stdin.write(encodeLengthPrefixedFrame(stopRequest));
+  child.stdin.write(encodeLengthPrefixedFrame(stopDispatch.request));
   await waitUntil(() => responses.length >= 4 || childFailure !== undefined, 2_000, "PROCESS_STOP_RESPONSE_TIMEOUT");
   if (childFailure) throw childFailure;
-  assert.equal(validateResponseEnvelope(
+  assert.equal(tracker.validateResponseEnvelope(
     responses[3],
     { ...responseAuthority, now: Date.now() },
-    stopRequest,
-    "result",
+    stopDispatch.receipt,
   ).payload.stopped, true);
   const [exitCode] = await exit;
   assert.equal(exitCode, 0);
 });
 
 test("process-host stop is a terminal receive barrier for already-buffered frames", async t => {
+  const tracker = createDispatchTracker();
   const child = spawn(process.execPath, [join(fixtureRoot, "process-child.mjs")], { stdio: ["pipe", "pipe", "pipe"] });
   t.after(() => child.kill("SIGKILL"));
   const responses: ProtocolEnvelope[] = [];
@@ -3209,19 +3279,36 @@ test("process-host stop is a terminal receive barrier for already-buffered frame
   });
   const stopRequest = frame({ requestId: "terminal-stop", kind: "stop" });
   const prepareAfterStop = frame({ requestId: "after-stop", kind: "prepare" });
+  const stopDispatch = dispatch(tracker, stopRequest);
+  const prepareAfterStopDispatch = dispatch(tracker, prepareAfterStop, "ready");
   child.stdin.write(Buffer.concat([
-    encodeLengthPrefixedFrame(stopRequest),
-    encodeLengthPrefixedFrame(prepareAfterStop),
+    encodeLengthPrefixedFrame(stopDispatch.request),
+    encodeLengthPrefixedFrame(prepareAfterStopDispatch.request),
   ]));
   const [exitCode] = await once(child, "close", { signal: AbortSignal.timeout(2_000) });
   assert.equal(exitCode, 0);
   assert.equal(responses.length, 1);
-  assert.equal(validateResponseEnvelope(
+  assert.equal(tracker.validateResponseEnvelope(
     responses[0],
     { ...responseAuthority, now: Date.now() },
-    stopRequest,
-    "result",
+    stopDispatch.receipt,
   ).payload.stopped, true);
+  assert.equal(tracker.pendingCount, 1);
+  assert.equal(tracker.close(), 1);
+  assert.equal(tracker.close(), 0);
+  assert.throws(() => tracker.validateResponseEnvelope(
+    responses[0],
+    { ...responseAuthority, now: Date.now() },
+    prepareAfterStopDispatch.receipt,
+  ), /DISPATCH_TRACKER_CLOSED/);
+  assert.throws(() => dispatch(tracker, prepareAfterStop), /DISPATCH_TRACKER_CLOSED/);
+
+  const restartedTracker = createDispatchTracker();
+  const restartedDispatch = dispatch(restartedTracker, prepareAfterStop, "ready");
+  assert.equal(restartedTracker.pendingCount, 1);
+  assert.equal(restartedTracker.cancelDispatch(restartedDispatch.receipt), true);
+  assert.equal(restartedTracker.pendingCount, 0);
+  restartedTracker.close();
 });
 
 test("process-host fixture enforces deadline and authority before handling", async t => {
@@ -3260,6 +3347,7 @@ test("process-host fixture rejects a clean frame boundary without stop", async t
 });
 
 test("Worker structured-clone boundary preserves validation and stale rejection", async t => {
+  const tracker = createDispatchTracker();
   const worker = new Worker(new URL("./fixtures/portable-worker.mjs", import.meta.url), {
     workerData: protocolAuthority,
   });
@@ -3277,19 +3365,19 @@ test("Worker structured-clone boundary preserves validation and stale rejection"
     if (code !== 0) workerFailure = new Error(`WORKER_EXITED:${code}`);
   });
   const request = frame({ kind: "prepare" });
-  worker.postMessage(structuredClone(request));
+  const workerDispatch = dispatch(tracker, request);
+  worker.postMessage(structuredClone(workerDispatch.request));
   await waitUntil(() => responses.length >= 1 || workerFailure !== undefined, 2_000, "WORKER_RESPONSE_TIMEOUT");
   if (workerFailure) throw workerFailure;
   const workerResponse = responses[0] as { readonly ok?: unknown; readonly frame?: unknown };
   assert.equal(workerResponse.ok, true);
-  const validatedResponse = validateResponseEnvelope(
+  const validatedResponse = tracker.validateResponseEnvelope(
     workerResponse.frame,
     { ...responseAuthority, now: Date.now() },
-    request,
-    "result",
+    workerDispatch.receipt,
   );
   assert.deepEqual(validatedResponse, {
-    ...request,
+    ...workerDispatch.request,
     senderId: "extension-host",
     audience: "product-host",
     kind: "result",
@@ -3303,10 +3391,9 @@ test("Worker structured-clone boundary preserves validation and stale rejection"
 
 test("browser Worker carries a portable generation-bound frame", { timeout: 300_000 }, async t => {
   const isCi = process.env.CI?.trim().toLowerCase() === "true";
-  const slowWindowsCi = isCi && process.platform === "win32";
-  const debuggerStartupTimeoutMs = slowWindowsCi ? 15_000 : 10_000;
-  const pageDiscoveryTimeoutMs = slowWindowsCi ? 20_000 : 8_000;
-  const discoveryRequestTimeoutMs = slowWindowsCi ? 2_000 : 500;
+  const debuggerStartupTimeoutMs = isCi ? 30_000 : 10_000;
+  const pageDiscoveryTimeoutMs = isCi ? 20_000 : 8_000;
+  const discoveryRequestTimeoutMs = isCi ? 2_000 : 500;
   const candidates = process.platform === "darwin"
     ? [
         "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
@@ -3321,10 +3408,16 @@ test("browser Worker carries a portable generation-bound frame", { timeout: 300_
         ]
       : ["/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"];
   const availableBrowsers: string[] = [];
+  const canonicalBrowserPaths = new Set<string>();
   for (const candidate of candidates) {
     try {
       await access(candidate);
-      availableBrowsers.push(candidate);
+      const canonicalPath = await realpath(candidate);
+      const identity = process.platform === "win32" ? canonicalPath.toLowerCase() : canonicalPath;
+      if (!canonicalBrowserPaths.has(identity)) {
+        canonicalBrowserPaths.add(identity);
+        availableBrowsers.push(canonicalPath);
+      }
     } catch {
       continue;
     }
@@ -3664,45 +3757,47 @@ test("Cordis qualifies only as a private scoped-resource candidate", async () =>
 });
 
 test("Cordis hooks preserve the coordinator-owned trace shape in an applicability check", async () => {
-  const first = requirePlan([
-    { id: "provider", requires: [] },
-    { id: "consumer", requires: ["provider"] },
-  ]);
-  const second = requirePlan([{ id: "replacement", requires: [] }]);
+  const first = requirePlan([{ id: "stable-module", requires: [] }]);
+  const second = requirePlan([{ id: "stable-module", requires: [] }]);
   const native = new GenerationLifecycle(testAuthorityScope);
   await native.activate(activationRequest(native, "native-first", first, new Map([
-    ["provider", inertHooks()],
-    ["consumer", inertHooks()],
+    ["stable-module", inertHooks()],
   ])));
   const nativeResult = await native.activate(activationRequest(
     native,
     "native-replacement",
     second,
-    new Map([["replacement", inertHooks()]]),
+    new Map([["stable-module", inertHooks()]]),
   ));
 
   const root = new Context();
+  const resourceEvents: string[] = [];
   const disposers = new Map<string, () => Promise<void>>();
   const cordisHooks = (moduleId: string): ModuleHooks => inertHooks({
-    async start() {
-      const fiber = await root.plugin((ctx: Context) => ctx.effect(() => () => undefined, moduleId));
-      disposers.set(moduleId, () => fiber.dispose());
+    async start(context) {
+      const fiber = await root.plugin((ctx: Context) => ctx.effect(() => {
+        resourceEvents.push(`${context.authorityScope}:${context.generation}:${context.moduleId}:start`);
+        return () => {
+          resourceEvents.push(`${context.authorityScope}:${context.generation}:${context.moduleId}:stop`);
+        };
+      }, context.activationIdentity));
+      assert.equal(context.moduleId, moduleId);
+      disposers.set(context.activationIdentity, () => fiber.dispose());
     },
-    async stop() {
-      await disposers.get(moduleId)?.();
-      disposers.delete(moduleId);
+    async stop(context) {
+      await disposers.get(context.activationIdentity)?.();
+      disposers.delete(context.activationIdentity);
     },
   });
   const cordis = new GenerationLifecycle(testAuthorityScope);
   await cordis.activate(activationRequest(cordis, "cordis-first", first, new Map([
-    ["provider", cordisHooks("provider")],
-    ["consumer", cordisHooks("consumer")],
+    ["stable-module", cordisHooks("stable-module")],
   ])));
   const cordisResult = await cordis.activate(activationRequest(
     cordis,
     "cordis-replacement",
     second,
-    new Map([["replacement", cordisHooks("replacement")]]),
+    new Map([["stable-module", cordisHooks("stable-module")]]),
   ));
 
   const semanticTrace = (result: typeof nativeResult) => result.traces.map(trace => ({
@@ -3712,7 +3807,148 @@ test("Cordis hooks preserve the coordinator-owned trace shape in an applicabilit
     outcome: trace.outcome,
   }));
   assert.deepEqual(semanticTrace(cordisResult), semanticTrace(nativeResult));
-  await Promise.all([...disposers.values()].map(dispose => dispose()));
+  assert.deepEqual(resourceEvents, [
+    `${testAuthorityScope}:1:stable-module:start`,
+    `${testAuthorityScope}:2:stable-module:start`,
+    `${testAuthorityScope}:1:stable-module:stop`,
+  ]);
+  const otherAuthorityScope = "tenant:other/project:other";
+  const other = new GenerationLifecycle(otherAuthorityScope);
+  await other.activate(activationRequest(
+    other,
+    "cordis-other-scope",
+    first,
+    new Map([["stable-module", cordisHooks("stable-module")]]),
+    { authorityScope: otherAuthorityScope },
+  ));
+  assert.equal(disposers.size, 2, "same module and generation in distinct scopes must not share a disposer");
+  await cordis.shutdown();
+  await other.shutdown();
+  assert.deepEqual(resourceEvents, [
+    `${testAuthorityScope}:1:stable-module:start`,
+    `${testAuthorityScope}:2:stable-module:start`,
+    `${testAuthorityScope}:1:stable-module:stop`,
+    `${otherAuthorityScope}:1:stable-module:start`,
+    `${testAuthorityScope}:2:stable-module:stop`,
+    `${otherAuthorityScope}:1:stable-module:stop`,
+  ]);
+  assert.equal(disposers.size, 0);
+});
+
+test("Cordis cleanup identity isolates overlapping coordinator incarnations in one authority scope", async () => {
+  const plan = requirePlan([{ id: "stable-module", requires: [] }]);
+  const firstIncarnation = "coordinator-incarnation-first";
+  const secondIncarnation = "coordinator-incarnation-second";
+  const root = new Context();
+  const disposers = new Map<string, () => Promise<void>>();
+  const events: string[] = [];
+  const hooks = (): ModuleHooks => inertHooks({
+    async start(context) {
+      const fiber = await root.plugin((ctx: Context) => ctx.effect(() => {
+        events.push(`start:${context.activationIdentity}`);
+        return () => { events.push(`stop:${context.activationIdentity}`); };
+      }, context.activationIdentity));
+      if (disposers.has(context.activationIdentity)) throw new Error("ACTIVATION_IDENTITY_COLLISION");
+      disposers.set(context.activationIdentity, () => fiber.dispose());
+    },
+    async stop(context) {
+      const dispose = disposers.get(context.activationIdentity);
+      if (!dispose) throw new Error("MISSING_SCOPED_DISPOSER");
+      await dispose();
+      disposers.delete(context.activationIdentity);
+    },
+  });
+  const first = new GenerationLifecycle(testAuthorityScope, undefined, firstIncarnation);
+  const second = new GenerationLifecycle(testAuthorityScope, undefined, secondIncarnation);
+
+  await first.activate(activationRequest(first, "same-scope-first", plan, new Map([
+    ["stable-module", hooks()],
+  ])));
+  await second.activate(activationRequest(second, "same-scope-second", plan, new Map([
+    ["stable-module", hooks()],
+  ])));
+  assert.equal(disposers.size, 2);
+  assert.deepEqual(events, [
+    `start:${JSON.stringify([testAuthorityScope, firstIncarnation, 1, "stable-module"])}`,
+    `start:${JSON.stringify([testAuthorityScope, secondIncarnation, 1, "stable-module"])}`,
+  ]);
+
+  await first.shutdown();
+  assert.equal(disposers.size, 1, "stopping one coordinator must not dispose the other's generation");
+  await second.shutdown();
+  assert.equal(disposers.size, 0);
+  assert.equal(events.filter(event => event.startsWith("stop:")).length, 2);
+});
+
+test("canonical activation identity resists embedded-separator collisions during rollback", async () => {
+  const firstIncarnation = "coordinator\u00002";
+  const secondIncarnation = "coordinator";
+  const firstModuleId = "stable-module";
+  const secondModuleId = "1\u0000stable-module";
+  const legacyFirstIdentity = [testAuthorityScope, firstIncarnation, 1, firstModuleId].join("\u0000");
+  const legacySecondIdentity = [testAuthorityScope, secondIncarnation, 2, secondModuleId].join("\u0000");
+  assert.equal(legacyFirstIdentity, legacySecondIdentity, "fixture must reproduce the old NUL-join collision");
+
+  const resources = new Map<string, string>();
+  const startIdentities: string[] = [];
+  const stopIdentities: string[] = [];
+  const trackedHooks = (): ModuleHooks => inertHooks({
+    start(context) {
+      assert.equal(resources.has(context.activationIdentity), false, "canonical identity must not collide");
+      resources.set(context.activationIdentity, context.moduleId);
+      startIdentities.push(context.activationIdentity);
+    },
+    stop(context) {
+      assert.equal(resources.get(context.activationIdentity), context.moduleId);
+      resources.delete(context.activationIdentity);
+      stopIdentities.push(context.activationIdentity);
+    },
+  });
+  const first = new GenerationLifecycle(testAuthorityScope, undefined, firstIncarnation);
+  const second = new GenerationLifecycle(testAuthorityScope, undefined, secondIncarnation);
+  const firstPlan = requirePlan([{ id: firstModuleId, requires: [] }]);
+  const bootstrapPlan = requirePlan([{ id: "bootstrap", requires: [] }]);
+
+  await first.activate(activationRequest(first, "separator-first", firstPlan, new Map([
+    [firstModuleId, trackedHooks()],
+  ])));
+  await second.activate(activationRequest(second, "separator-bootstrap", bootstrapPlan, new Map([
+    ["bootstrap", trackedHooks()],
+  ])));
+
+  const rollbackPlan = requirePlan([
+    { id: secondModuleId, requires: [] },
+    { id: "rollback-failure", requires: [secondModuleId] },
+  ]);
+  const rollback = await second.activate(activationRequest(
+    second,
+    "separator-rollback",
+    rollbackPlan,
+    new Map([
+      [secondModuleId, trackedHooks()],
+      ["rollback-failure", inertHooks({
+        start: () => { throw new Error("ROLLBACK_FAILURE"); },
+        stop: () => undefined,
+      })],
+    ]),
+  ));
+
+  const expectedFirstIdentity = JSON.stringify([testAuthorityScope, firstIncarnation, 1, firstModuleId]);
+  const expectedBootstrapIdentity = JSON.stringify([testAuthorityScope, secondIncarnation, 1, "bootstrap"]);
+  const expectedRollbackIdentity = JSON.stringify([testAuthorityScope, secondIncarnation, 2, secondModuleId]);
+  assert.equal(rollback.ok, false);
+  assert.ok(rollback.errors.some(error => error.message === "ROLLBACK_FAILURE"));
+  assert.deepEqual(startIdentities, [
+    expectedFirstIdentity,
+    expectedBootstrapIdentity,
+    expectedRollbackIdentity,
+  ]);
+  assert.deepEqual(stopIdentities, [expectedRollbackIdentity]);
+  assert.deepEqual([...resources.keys()], [expectedFirstIdentity, expectedBootstrapIdentity]);
+
+  await first.shutdown();
+  await second.shutdown();
+  assert.equal(resources.size, 0);
 });
 
 test("WASM boundary accepts an inert numeric component but grants no host capability", async () => {

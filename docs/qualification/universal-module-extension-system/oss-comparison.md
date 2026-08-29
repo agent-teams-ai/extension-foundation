@@ -21,10 +21,11 @@ construction; product plugin platforms solve contribution discovery and host
 placement; control planes solve durable reconciliation. Combining any of them
 without one explicit authority would create duplicate graphs and lifecycles.
 
-The recommended first kernel therefore remains a small native TypeScript
-closed-world compiler plus product-owned lifecycle coordination. Existing OSS
-is used behind private adapters, as test oracles, and as operational patterns.
-This is a recommendation under `OD-003`, not an accepted dependency decision.
+If a product later admits the relevant level, the leading qualification
+candidate is a small native TypeScript closed-world compiler with product-owned
+lifecycle coordination. Existing OSS may be used behind private adapters, as
+test oracles, and as operational patterns. No implementation is selected while
+the product trigger and owning decision required by ADR-0013 remain absent.
 
 The conclusion is layer-specific, not a claim that one custom platform must
 replace all OSS:
@@ -72,7 +73,9 @@ lockfile verifies the exact `4.0.1` npm tarball, while DeepSeek Harness revision
 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e` is a separately pinned source
 reference. This qualification does not claim byte equivalence between them.
 Cordis qualifies only if a bounded adapter passes the neutral conformance suite
-and deletes at least 25% of equivalent owned runtime code.
+and wins a predeclared scorecard covering semantic fit, failure-trace parity,
+lifecycle ownership, provenance, maintainability, complexity, performance, and
+reversibility.
 
 Kill Cordis adoption if:
 
@@ -81,7 +84,9 @@ Kill Cordis adoption if:
 - Cordis and Foundation both own readiness, restart, cutover, drain, or retry;
 - same-name replacement requires an upstream patch or availability gap;
 - cleanup can block past the Foundation deadline without quarantine;
-- adapter and guards exceed 75% of the measured native kernel;
+- the multi-factor scorecard shows no net reduction in owned complexity or
+  weaker correctness, lifecycle ownership, failure parity, provenance,
+  maintenance, performance, leak resistance, or reversibility;
 - repeated replacement leaks fibers, effects, listeners, or services.
 
 Current spike evidence confirms only scoped resource start/stop. It deliberately

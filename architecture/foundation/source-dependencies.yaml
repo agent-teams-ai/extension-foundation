@@ -14,6 +14,7 @@ boundaries:
       - architecture/checks/evidence-custody.mjs
       - architecture/checks/package-artifacts.mjs
       - architecture/checks/package-topology.mjs
+      - architecture/checks/product-source-evidence.mjs
       - architecture/checks/scaffold.mjs
       - architecture/checks/source-safety.mjs
     allow:
@@ -115,12 +116,15 @@ boundaries:
       - tests/package-policy-source-boundaries.test.mjs
       - tests/scaffolding.test.mjs
       - tests/qualification/dossier.test.ts
+      - tests/qualification/product-source-evidence.test.ts
+      - tests/qualification/productization.test.ts
       - tests/qualification/spikes.test.ts
     allow:
       boundaries:
         - repository.architecture-checks
         - repository.package-policy
         - repository.package-policy-sources
+        - repository.shared-policy-primitives
       packages:
         - "@dagrejs/graphlib"
         - "@deepseek-ai/cordis"

@@ -1,0 +1,59 @@
+schemaVersion: 3
+proofMode: exact-git-source-custody
+capturedAt: 2026-08-28
+status: candidate-source-records
+claim:
+  kind: exact-git-source-custody
+verification:
+  authority: local-git-object-custody-verifier
+  promotionAuthority: false
+products:
+  agentRuntime:
+    repository: agent-teams-ai/agent-runtime
+    commit: 7be998237a4c262bee9c4198d554b43cd2757ac6
+    tree: ce00f6188fc2b9a174b48fe2412c0d417615fe49
+    files:
+      - { path: packages/apps/embedded-runtime/src/contracts/runtime-access.ts, blob: b5153a2ea3a1e7a213f631671bb274e038b116bc }
+      - { path: packages/apps/embedded-runtime/src/composition/agent-runtime-host.ts, blob: 87a88173defab7a4201df9314b40bd5f46268a5d }
+      - { path: packages/apps/embedded-runtime/package.json, blob: 9f7545fed7b707ffdfa0d321e37cca68cfadb9f7 }
+      - { path: packages/apps/embedded-runtime/src/application/build-codex-setup-view.ts, blob: fbfcaa4dc6728fb5f1956cc7b910f9e1d66808fa }
+      - { path: packages/apps/embedded-runtime/src/application/build-claude-code-setup-view.ts, blob: 702c93f60fe5b73854b3b217e5420931c2792aa8 }
+      - { path: packages/contexts/agent-execution/package.json, blob: bad369b10d4230ae7dc6a1761cd6ff438ec2aee7 }
+      - { path: packages/contexts/agent-execution/src/composition.ts, blob: 564b96c3dd370110ebbe6bd58979534dd653138e }
+      - { path: packages/contexts/agent-execution/src/features/runtime-installation-discovery/composition/feature-module-factory.ts, blob: f6028501af86cdf76068e24e02b572aadb12096e }
+      - { path: packages/contexts/runtime-configuration/package.json, blob: 91f40292d034dcdbcd44fdedbc2568673b32c041 }
+      - { path: packages/contexts/runtime-configuration/src/composition.ts, blob: 139557b986e607d2d016c40bf1e008ca487427bc }
+      - { path: packages/contexts/runtime-configuration/src/features/codex-configuration-inspection/composition/feature-module-factory.ts, blob: 1e92c79ba9126642d422e61b22358c3e38b88da2 }
+      - { path: packages/contexts/runtime-configuration/src/features/claude-code-configuration-inspection/composition/feature-module-factory.ts, blob: 94c178135ee6944fd6ec2610fa599e9033c75967 }
+      - { path: packages/contexts/runtime-security/package.json, blob: 62e991eab12117baf8765fd9fcd3f4536e02cbbc }
+      - { path: packages/contexts/runtime-security/src/composition.ts, blob: d8ec6020e9df0446a2e642c55de21a9171322ba3 }
+      - { path: packages/contexts/runtime-security/src/features/setup-source-inspection-authorization/composition/feature-module-factory.ts, blob: 5bc43f51530cca579604fc4f2696d278c8e4ca88 }
+      - { path: packages/apps/embedded-runtime/tests/capability-bundle-contract.test.ts, blob: 9d81242912f160ad875502333074b272c05acd2a }
+      - { path: packages/apps/embedded-runtime/tests/codex-setup.e2e.test.ts, blob: c63f1ca2c72b12e8e325859113e85421722e81f4 }
+      - { path: packages/apps/embedded-runtime/tests/claude-code-setup.e2e.test.ts, blob: 431df824eb69f3d0567b96f6714080c60a7f88f2 }
+      - { path: packages/apps/embedded-runtime/tests/public-api.test.ts, blob: 3de6a14a7ce463c47346bb991f201dc2a990323f }
+  orchestrator:
+    repository: agent-teams-ai/agent-teams-orchestrator
+    commit: 4c5f55366ed8c83f97374b66c8e9f84059c47382
+    tree: 8b386fe943ad182943797cfc1d1ba06c86706452
+    files:
+      - { path: packages/platform/local-host-control/src/features/host-discovery/application/ports/host-discovery-source.ts, blob: cfad3d6789a9572c22a94f3a48d6866905c62f9b }
+      - { path: packages/platform/local-host-control/src/features/host-discovery/application/discover-local-host.ts, blob: 884b971811ec6ab222b47e8838a71a3a38c746b5 }
+      - { path: packages/platform/local-host-control/tests/features/host-discovery/host-discovery.test.mjs, blob: 96378c0a4d787666836bd6b5f664f7ea574a527e }
+      - { path: packages/platform/local-host-control/src/features/host-discovery/README.md, blob: 032f5f45f4f0e0e69e1b974422f9a4725e0c9ac9 }
+  frontend:
+    repository: 777genius/agent-teams-ai
+    commit: 85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd
+    tree: c90d17b20ee7d459664bef313a178f5d30a3af9c
+    files:
+      - { path: tsconfig.json, blob: 133603d150f3826948b39b2965fd1ca83672c798 }
+      - { path: src/features/recent-projects/core/application/ports/RecentProjectsSourcePort.ts, blob: cba0360701d3a6dfcbcb571129869baa8397faa1 }
+      - { path: src/features/recent-projects/core/application/use-cases/ListDashboardRecentProjectsUseCase.ts, blob: ce15307e529a4a1f172f58f0c49051d2af5b7582 }
+      - { path: src/features/recent-projects/main/adapters/output/sources/ClaudeRecentProjectsSourceAdapter.ts, blob: faefffb617072d4eefea41f3273cfc2122f788e3 }
+      - { path: src/features/recent-projects/main/adapters/output/sources/CodexSessionFileRecentProjectsSourceAdapter.ts, blob: 220034dd5e4ca50a21901f2bd9d95b9ace7c7454 }
+      - { path: src/features/recent-projects/main/composition/createRecentProjectsFeature.ts, blob: d447e8d4bfe2812520a0146cd6ae030b9b7a4cfb }
+      - { path: test/features/recent-projects/core/application/ListDashboardRecentProjectsUseCase.test.ts, blob: ec0f2bed162e8927ec2eaab4a10fb6dfa1169125 }
+limitations:
+  - verifies only exact local Git origin, commit, tree, and declared regular-file blob identities
+  - does not interpret source text or prove symbols, topology, semantics, dataflow, or runtime behavior
+  - does not prove remote publication, repository independence, product approval, or promotion readiness
