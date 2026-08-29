@@ -253,7 +253,7 @@ export interface CompleteRetirement extends EventEnvelope, RootBound {
   readonly tombstoneId: TombstoneId;
   readonly cleanupProofId: ProofId;
   readonly sourceTerminalReceiptId: ReceiptId;
-  readonly retainedEvidenceReceiptIds: readonly ReceiptId[];
+  readonly retainedEvidence: readonly EvidenceReference[];
 }
 
 export type AttemptReceiptResult = "succeeded" | "failed";
@@ -433,7 +433,7 @@ export interface RetirementTombstoneProjection {
   readonly sourceTerminal: Exclude<SourceEvidenceProjection, { readonly type: "open" }>;
   readonly retirementOwnerId: RetirementOwnerId;
   readonly cleanupProofId: ProofId;
-  readonly retainedEvidenceReceiptIds: readonly ReceiptId[];
+  readonly retainedEvidence: readonly EvidenceReference[];
 }
 
 export type ResourceRetirementProjection =
@@ -488,16 +488,28 @@ export interface AuthorizationIssuedEffect extends EffectEnvelope {
   readonly type: "authorization-issued";
   readonly authorizationId: AuthorizationId;
   readonly sourceFamilyRootId: SourceFamilyRootId;
-  readonly generation: FenceGeneration;
+  readonly authorizationFence: AuthorizationFenceBinding;
 }
+
+export type DenialSubject =
+  | { readonly type: "authorization"; readonly authorizationId: AuthorizationId }
+  | {
+      readonly type: "process-release";
+      readonly authorizationId: AuthorizationId;
+      readonly attemptId: AttemptId;
+      readonly runtimeId: RuntimeId;
+    }
+  | { readonly type: "attempt"; readonly attemptId: AttemptId }
+  | { readonly type: "runtime"; readonly runtimeId: RuntimeId }
+  | { readonly type: "checkpoint"; readonly checkpointId: CheckpointId }
+  | { readonly type: "source-root"; readonly sourceFamilyRootId: SourceFamilyRootId }
+  | { readonly type: "build-attempt"; readonly buildAttemptId: BuildAttemptId }
+  | { readonly type: "admission"; readonly admissionId: AdmissionId };
 
 export interface DenialRecordedEffect extends EffectEnvelope {
   readonly type: "denial-recorded";
   readonly reason: DenialReason;
-  readonly authorizationId?: AuthorizationId;
-  readonly attemptId?: AttemptId;
-  readonly runtimeId?: RuntimeId;
-  readonly buildAttemptId?: BuildAttemptId;
+  readonly subject: DenialSubject;
 }
 
 export interface GateClosedEffect extends EffectEnvelope {
@@ -509,14 +521,14 @@ export interface GateClosedEffect extends EffectEnvelope {
 export interface AuthorizationRevokedEffect extends EffectEnvelope {
   readonly type: "authorization-revoked";
   readonly authorizationId: AuthorizationId;
-  readonly generation: FenceGeneration;
+  readonly authorizationFence: AuthorizationFenceBinding;
 }
 
 export interface ProcessReleaseRequestedEffect extends EffectEnvelope {
   readonly type: "process-release-requested";
   readonly authorizationId: AuthorizationId;
   readonly runtimeId: RuntimeId;
-  readonly generation: FenceGeneration;
+  readonly authorizationFence: AuthorizationFenceBinding;
 }
 
 export type TerminalReference =
