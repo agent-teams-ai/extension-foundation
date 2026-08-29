@@ -144,14 +144,17 @@ Every campaign keeps the following coordinates distinct:
 | `EvaluationRevision` | Immutable evaluator inputs, execution rules, analysis, and stop rules, also called `E0` |
 | `ExperimentalUnit` | The entity whose outcome contributes once to the registered analysis |
 | `TreatmentEvaluationCommitment` | Pre-source immutable commitment to the product base, estimand, evaluator semantics, attrition rules, thresholds, stops, and independently held corpus selection |
+| `SourceClaimFamilyIdentity` | One preregistered claim family joining every source root attempted for materially unchanged treatment and evaluation coordinates, including abandoned roots |
 | `SourceFamilyRootIdentity` | One preregistered root joining every authorized preparation lineage and disposition eligible for one campaign claim |
 | `SourcePreparationSlotIdentity` | One immutable, preregistered source-authoring slot created before source work; its terminal source is optional |
-| `SourcePreparationReceipt` | One authenticated durable start-to-terminal record for an expected source slot, ending in an exact source digest or explicit failed, missing, denied, or unknown no-source disposition |
+| `SourcePreparationReceipt` | One authenticated durable terminal record for an expected source slot, discriminated as a real start-to-terminal record or an externally proven never-started record, ending in an exact source digest or explicit failed, missing, denied, or unknown no-source disposition |
 | `SourcePreparationClosureReceipt` | One authenticated durable fence transition that closes an entire source-family root and freezes every related lineage, authorization, slot, disposition, and source digest before campaign admission |
 | `TreatmentSlotIdentity` | One campaign slot mapped one-to-one from a source-preparation slot, linking an optional exact source and build inputs to all expected no-source, no-artifact, and execution observations |
 | `BuildAttemptIdentity` | One preregistered build of exact source, recipe, and toolchain inputs; its output artifact is optional |
 | `AttemptIdentity` | One non-reused artifact execution, optionally linked to a prior attempt without becoming a new experimental unit |
 | `LaunchAuthorization` | One-use custodian-issued capability bound to one registered attempt and exact sandbox policy |
+| `StopEvaluationCheckpointIdentity` | One preregistered outcome-independent boundary at which the sealed evaluator must produce a terminal continue or stop decision before later launch release |
+| `StopEvaluationReceipt` | One authenticated terminal continue, stop, missing, or unknown observation for an expected checkpoint; missing, late, or unknown output fails closed |
 | `BuildReceipt` | Externally captured build result with an optional verified output artifact |
 | `BuildConsistencyReceipt` | Authenticated post-build reconciliation comparing one treatment build with its pre-build admission and closed source lineage, or recording an explicit missing or unknown build observation |
 | `EvidenceReceipt` | Externally captured binding between registered evaluator inputs, execution, raw output, and terminal result |
@@ -182,12 +185,15 @@ immutable `TreatmentEvaluationCommitment`. It binds the exact repository,
 clean commit, and tree from which clean `B0` inputs were built; the allowlisted treatment-delta
 surface; estimand; analysis; exclusions; retry, attrition, lineage, and
 multiplicity handling; thresholds; stop rules; and an independently held corpus
-commitment or fixed selection rule. The final `E0` may reveal and instantiate
-only the already committed hidden assignment and exact qualified evaluator
-artifacts. It cannot change those semantics after any source, disposition, or
-source digest is known. A source-informed change requires a fresh source-family
-root, pre-source commitment, unseen holdout, and campaign coordinates; results
-from the abandoned root remain retained and cannot be pooled into the new claim.
+commitment or fixed selection rule. It also creates one
+`SourceClaimFamilyIdentity`, maximum root count, root-successor rule, and
+outcome-independent abandonment reasons for materially unchanged coordinates.
+The final `E0` may reveal and instantiate only the already committed hidden
+assignment and exact qualified evaluator artifacts. It cannot change those
+semantics after any source, disposition, or source digest is known. A source-
+informed change requires a fresh claim family, pre-source commitment, unseen
+holdout, and campaign coordinates; results from the earlier family remain
+retained and cannot be pooled into the new claim.
 
 Before a build starts, the evidence custodian registers a
 `BuildAttemptIdentity` against the exact `ProtocolRevision`, `B0` product
@@ -390,7 +396,7 @@ product-owned decision and architecture.
 | Artifact substitution | Immutable locator, digest, provenance, and verification at every use |
 | Evaluator drift | `E0` binds every evaluator input, model identity, assignment, and analysis rule |
 | Adaptive benchmark overfitting | Treatment family is committed before unblinding; outcome-informed changes require an unseen holdout or remain non-promotional |
-| Source-selection bias | A pre-source evaluation commitment and one complete source-family root retain every lineage, disposition, and multiplicity outcome |
+| Source-selection bias | A pre-source evaluation commitment and complete claim family retain every closed or abandoned root, lineage, disposition, and multiplicity outcome |
 | Product-base substitution | Every preparation and build receipt binds the exact `B0` product tree and allowlisted treatment delta |
 | Unknown live runtime | Analytic finality does not release containment; quarantine remains until termination or absence is authoritatively proven |
 | Framework leakage | Export and dependency-direction audit outside black-box scoring |
@@ -475,21 +481,28 @@ After Phase 2 exits and the `TreatmentEvaluationCommitment` is immutable, the
 product authorizer may issue a narrow, expiring source preparation authorization
 under the already accepted level-specific owning-product decision. It binds the
 commitment, exact `B0` product repository, commit, and tree, allowlisted treatment
-delta, allowed treatment semantics, `SourceFamilyRootIdentity`, candidate
-producer, inputs, forbidden resources, expiry, a fresh source-preparation
-generation fence, exactly one root-bound accountable retirement owner and
-root-scoped credential lineage, and the complete immutable roster of
+delta, allowed treatment semantics, `SourceClaimFamilyIdentity`,
+`SourceFamilyRootIdentity`, candidate producer, inputs, forbidden resources,
+expiry, a fresh source-preparation generation fence, exactly one root-bound
+accountable retirement owner and root-scoped credential lineage, and the complete
+immutable roster of
 `SourcePreparationSlotIdentity` values before any source authoring starts. No
 slot may be added, deleted, substituted, or reused after authorization. The
-first authorization also preregisters the source-family root, retirement owner
-and credential lineage, initial source lineage, maximum source lineages and
-rounds, successor rule, and selection and multiplicity rules. Every later
-related authorization must reference that root and all prior source lineages,
-slots, and dispositions and must bind the same retirement owner and credential
-lineage. Custody-controlled credential rotation may advance a generation inside
-that lineage but cannot transfer ownership. An unplanned successor or ownership
-mismatch is ineligible for the campaign. The authorization permits source
-authoring only. It cannot
+pre-source commitment preregisters the claim-family identity, maximum source
+roots, root-successor rule, and outcome-independent abandonment reasons before
+the first root exists. The first authorization also preregisters the source-
+family root, retirement owner and credential lineage, initial source lineage,
+maximum source lineages and rounds, successor rule, and selection and
+multiplicity rules. Every later related authorization must reference that root
+and all prior source lineages, slots, and dispositions and must bind the same
+retirement owner and credential lineage. Custody-controlled credential rotation
+may advance a generation inside that lineage but cannot transfer ownership. The
+retirement owner and its effective control domain must be independent of the
+candidate producer and cannot observe source, qualification, or campaign
+outcomes. It may abandon only for a preregistered objective reason whose evidence
+is retained by custody. An unplanned successor, ownership mismatch, or
+outcome-informed abandonment is ineligible for the campaign. The authorization
+permits source authoring only. It cannot
 allocate campaign coordinates, register or build a `T1`, execute candidate
 code, access the final corpus or assignment, observe qualification or campaign
 outcomes, support a promotional claim, authorize product use, or imply
@@ -510,17 +523,21 @@ issues one slot-bound, one-use authoring launch authorization. The external
 source launch gate atomically consumes it and revalidates the preparation fence,
 expiry, authoritative time, enforcer attestation, and actual grants before any
 producer-controlled tool or process is released. The custodian retains exactly
-one authenticated durable `SourcePreparationReceipt` per slot. The receipt binds
-the launch-authorization identity and consumption, authorization digest and
-generation, source-family root,
-lineage, slot, exact product base and allowed delta, authorized inputs, producer
-principal, qualified registrar and sandbox-enforcer identities, workspace
-clean-state attestation, actual grants, imported-object digests, enforcement and
-recovery identity, and authoritative-time start and terminal events. Its
-terminal result is the exact source digest or an explicit failed, missing,
-denied, or unknown no-source disposition. Expiry, scope violation, a changed
-digest, a roster mismatch, or source bytes existing outside the admitted window
-closes the preparation fence and makes the slot inadmissible.
+one authenticated durable `SourcePreparationReceipt` per slot as a discriminated
+terminal record. A `started` record binds launch-authorization consumption,
+authorization digest and generation, source-family root, lineage, slot, exact
+product base and allowed delta, authorized inputs, producer principal, qualified
+registrar and sandbox-enforcer identities, workspace clean-state attestation,
+actual grants, imported-object digests, enforcement and recovery identity, and
+authoritative-time start and terminal events. A `never-started` record instead
+binds slot registration, the unconsumed authorization or external denial,
+generation, expiry or deadline, gate and registrar identities, authoritative
+terminal time, and the reason no producer-controlled process was released; it
+must not claim consumption, a clean-workspace start, runtime identity, or grants
+that never existed. Either variant ends in the exact source digest or an explicit
+failed, missing, denied, or unknown no-source disposition. Expiry, scope
+violation, a changed digest, a roster mismatch, or source bytes existing outside
+the admitted window closes the preparation fence and makes the slot inadmissible.
 
 Source preparation has an evidence lifecycle and an independent resource-
 retirement lifecycle; neither depends on campaign admission or Phase 6. On
@@ -532,7 +549,11 @@ The custody transaction authority atomically advances the preparation fence,
 marks the evidence root `abandoned`, revokes authoring credentials and unconsumed
 authorizations, and records each unresolved slot as denied, missing, or unknown
 without rewriting prior facts. An abandoned evidence root can never be admitted
-or reopened; later work requires a new root and pre-source commitment.
+or reopened. Later source work for materially unchanged `B0`, allowed delta,
+treatment semantics, estimand, or selection rules remains under the same claim-
+family identity and its preregistered root-successor and maximum-root rules. A
+materially different claim requires a new pre-source commitment and claim-family
+identity and cannot combine evidence with the earlier family.
 
 Resource retirement may begin after either evidence abandonment or successful
 evidence closure, including when campaign admission later fails. It reconciles
@@ -584,12 +605,15 @@ records one immutable decision binding the exact manifest and receipt. Changing
 either invalidates admission. Together they contain all of the following:
 
 - the exact calibration authorization and its results;
-- the pre-source `TreatmentEvaluationCommitment`, `SourceFamilyRootIdentity`,
-  every lineage under that root, every related authorization and fence history,
-  the preregistered successor, selection, attrition, and multiplicity rules,
-  every immutable slot roster, one terminal `SourcePreparationReceipt` per
-  expected slot, and the exact authenticated
-  `SourcePreparationClosureReceipt` that froze them;
+- the pre-source `TreatmentEvaluationCommitment`, `SourceClaimFamilyIdentity`,
+  every root ever allocated under that claim family, every abandonment reason and
+  disposition, and the root-successor and maximum-root rules; for the selected
+  closed `SourceFamilyRootIdentity`, every lineage, related authorization and
+  fence history, preregistered successor, selection, attrition, and multiplicity
+  rule, immutable slot roster, one terminal `SourcePreparationReceipt` per
+  expected slot, and the exact authenticated `SourcePreparationClosureReceipt`
+  that froze them; abandoned roots remain explicit attrition and can never be
+  omitted merely because a later root closed successfully;
 - immutable `ProtocolRevision` and `B0` coordinates;
 - the committed treatment source family and immutable `TreatmentSlotIdentity`
   roster, including a receipt-bound bijection from every preparation slot, each
@@ -597,8 +621,10 @@ either invalidates admission. Together they contain all of the following:
   build, and execution observations before the final holdout is revealed;
 - the admitted deterministic and stochastic tracks, exact immutable `E0`,
   evaluator owner, acceptance thresholds, exclusions, expiry, retention, and
-  stop rules, with proof that they mechanically instantiate the pre-source
-  commitment without source-informed changes;
+  stop rules, complete `StopEvaluationCheckpointIdentity` roster, checkpoint
+  boundaries and deadlines, and expected `StopEvaluationReceipt` identities,
+  with proof that they mechanically instantiate the pre-source commitment
+  without source-informed changes;
 - independently held final corpus and assignment coordinates, plus evidence that
   the candidate producer and its effective control domain had no access before
   treatment commitment and registered unblinding;
@@ -631,7 +657,9 @@ either invalidates admission. Together they contain all of the following:
   authenticated `DossierConsistencyReceipt`. The receipt binds the verifier
   principal and credential; verifier artifact, configuration, and toolchain
   digests; `CampaignAdmissionManifest` and `TreatmentEvaluationCommitment`
-  digests; `SourceFamilyRootIdentity`; dossier commit, tree, and file manifest;
+  digests; `SourceClaimFamilyIdentity`, every allocated source root and
+  abandonment disposition, and the selected closed `SourceFamilyRootIdentity`;
+  dossier commit, tree, and file manifest;
   measurement authorization and discovery records with their clean-workspace
   attestations and complete source/input manifests; every relied-upon product
   commit and tree; `B0` artifact, build receipt, and provenance; the exact
@@ -948,15 +976,17 @@ ADR-0013.
 | Calibration-only authority attempts to register a `T1` or treatment slot | Registration is rejected and no build authorization is issued |
 | Calibration-only authority attempts to build or execute `T1` | Launch is denied before candidate code or toolchain execution and the denial is retained |
 | Calibration receipt, artifact, or coordinate is presented as promotional evidence or campaign identity | Admission fails; calibration evidence remains permanently non-promotional and non-reusable |
-| `TreatmentEvaluationCommitment` is missing, changed after source work, or final `E0` changes its estimand, analysis, attrition, threshold, stop, or corpus-selection semantics | Campaign admission fails; a fresh source-family root, commitment, unseen holdout, and campaign coordinates are required |
+| `TreatmentEvaluationCommitment` is missing, changed after source work, or final `E0` changes its estimand, analysis, attrition, threshold, stop, or corpus-selection semantics | Campaign admission fails; a fresh claim family, source root, commitment, unseen holdout, and campaign coordinates are required, and earlier evidence cannot be pooled |
 | Source preparation starts before Phase 2 exit, without its authorization, after expiry, or across a closed preparation fence | Source work is inadmissible, the slot records a denied or unknown disposition, and no resulting bytes may enter a campaign |
 | Source authoring launch authorization is missing, reused, mismatched, expired, or consumed across a changed preparation fence | Producer-controlled tools never start; an external denial disposition is retained for the source slot |
+| A registered source slot expires, is denied, or is abandoned before authorization consumption | Its `never-started` terminal record binds registration, non-consumption or denial, deadline, and disposition without inventing start, runtime, workspace, or grant evidence |
 | Source-family authorization lacks the root-bound retirement owner or credential lineage, a related authorization changes either binding, or an unregistered principal requests retirement | Authorization or transition fails closed; no root is silently abandoned or finalized |
 | Source preparation presents preexisting or late bytes, or its receipt lacks authorization, generation, producer, workspace, registrar, input, or authoritative-time bindings | The slot is inadmissible and remains a no-source observation; campaign admission fails on any attempted reuse |
 | Source preparation has ambient egress or credentials, undeclared imports or grants, missing enforcer or recovery identity, or mismatched actual-grant evidence | Authoring is denied or the source remains inadmissible; no resulting bytes may enter a campaign |
 | A preparation slot is omitted, added, substituted, reused, or resolves to changed source bytes | The preparation fence closes; the mismatch is retained and campaign admission fails |
 | A later preparation authorization omits prior lineage, exceeds preregistered multiplicity, or changes the selection rule | Every related round remains retained and the campaign is inadmissible under that lineage |
 | A successor lineage is omitted from its source-family root or a favorable lineage is admitted while an earlier lineage or disposition is excluded | The complete root remains in attrition and multiplicity accounting; selective admission fails closed |
+| A source root is abandoned after source or outcome observation, an abandonment reason is not preregistered, or a later campaign omits an abandoned root from the same claim family | The abandonment or admission fails; every root and disposition remains in claim-family attrition and outcome shopping cannot produce a promotional claim |
 | Related authorization issuance, successful preparation closure, and source abandonment race | One durable evidence-lifecycle authority admits issuance only while open and lets exactly one of closure or abandonment win; recovery cannot emit both outcomes |
 | Source preparation is withdrawn, expires, or is abandoned before campaign admission while an authoring runtime is missing or unknown | Its own fence closes, credentials and launch authority are revoked, the exact runtime and workspace remain quarantined until termination or absence is proven, and an immutable source-retirement tombstone is retained without requiring campaign admission |
 | Source evidence closes successfully but campaign admission later fails | The closure receipt and failed-admission evidence remain immutable; the owner-bound resource-retirement lifecycle revokes residual authority, reconciles runtimes, preserves quarantine until absence is proven, and appends its tombstone without changing the root from `closed` |
@@ -970,6 +1000,7 @@ ADR-0013.
 | Concurrent consumers race for one authorization | Exactly one consumption wins; all other launches are denied before process creation |
 | Campaign stop races with a consumed but unstarted launch | The generation fence prevents process creation and records a terminal denial or unknown disposition |
 | Custody crashes after validating an analytic stop but before advancing the fence | The durable stop determination is recovered and idempotently completed before another launch; unprovable ordering makes the campaign non-promotional |
+| An expected analytic-stop checkpoint has missing, late, unknown, or unauthenticated evaluator output | Custody appends the terminal checkpoint observation, closes the launch fence, rejects later releases, and marks the campaign non-promotional; later output cannot reopen it |
 | Crash after authorization consumption but before confirmed process start | Recovery reconciles the persisted runtime identity, terminates any orphan, and records missing or unknown at deadline |
 | Crash after process start but before terminal receipt | Recovery finds the live runtime; no automatic outcome-changing retry occurs and deadline finality is preserved |
 | An attempt is analytically `unknown` while its runtime termination is unproven | Exact containment and workspace remain quarantined and retirement cannot complete until authoritative reconciliation proves termination or absence |
@@ -1041,17 +1072,25 @@ credentials.
 
 Stopping a campaign is an authority action, not a candidate callback. The
 admitted stop-authority matrix determines the only credential and accountable
-owner allowed to initiate each transition. For an outcome-dependent registered
-analytic trigger, the independent evaluator applies the sealed `E0` rule and
-issues an authenticated stop determination. The evidence custodian validates
-only the determination's evaluator identity, `E0` registration, signature,
-freshness, and integrity. Before acknowledging validation, custody durably
-appends the determination and its exact campaign generation to the same ordering
-domain used by the launch gate. The launch gate consumes that record through an
-idempotent fence transition; restart recovery must continue any appended but
-incomplete transition before admitting another launch. If the durable order
-between a valid stop determination and any later process release cannot be
-proven, the campaign becomes non-promotional and no new launch is admitted.
+owner allowed to initiate each transition. Campaign admission preregisters every
+outcome-dependent `StopEvaluationCheckpointIdentity`, its exact effective
+boundary, deadline, evaluator, sealed `E0` rule, and expected terminal
+`StopEvaluationReceipt`. Once the checkpoint becomes effective, the launch gate
+blocks later process release until custody accepts an authenticated `continue`
+receipt or closes the fence. The independent evaluator applies the sealed rule
+and issues an authenticated `continue` or `stop` determination. The evidence
+custodian validates only the determination's checkpoint, evaluator identity,
+`E0` registration, signature, freshness, and integrity. If the expected output
+is missing, late, or unknown at its deadline, custody appends that terminal
+observation, closes the launch fence, and makes the campaign non-promotional; a
+later receipt is retained but cannot reopen the fence or rewrite the checkpoint.
+Before acknowledging a valid stop determination, custody durably appends it and
+its exact campaign generation to the same ordering domain used by the launch
+gate. The launch gate consumes that record through an idempotent fence
+transition; restart recovery must continue any appended but incomplete
+transition before admitting another launch. If the durable order between a valid
+checkpoint result and any later process release cannot be proven, the campaign
+becomes non-promotional and no new launch is admitted.
 Expiry is automatic; a discretionary abort is non-promotional. An orderly stop
 performs these steps. Campaign expiry starts the same fence closure
 automatically even when the retirement workflow is delayed:
@@ -1142,26 +1181,32 @@ A future implementation conforms to this proposal only when:
   campaign admission;
 - an immutable pre-source evaluation commitment binds the exact `B0` product
   repository, clean commit, and tree, allowed treatment delta, estimand, evaluator
-  semantics, attrition and multiplicity handling, thresholds, stops, and held
-  corpus selection before any treatment source is authored;
-- each source-preparation receipt proves an admitted clean-workspace start and
-  terminal event under the exact authorization, fence generation, inputs,
-  producer, qualified registrar and enforcer, actual grants, imported-object
-  digests, recovery identity, and authoritative time;
+  semantics, attrition and multiplicity handling, thresholds, stops, held corpus
+  selection, claim-family identity, maximum roots, root-successor rule, and
+  outcome-independent abandonment reasons before any treatment source is
+  authored;
+- each source-preparation receipt is exactly one authenticated terminal variant:
+  a `started` record proves an admitted clean-workspace start and terminal event
+  under the exact authorization, fence, producer, enforcement and authoritative-
+  time bindings, while a `never-started` record proves registration,
+  non-consumption or denial, deadline, and disposition without inventing runtime
+  or start evidence;
 - no producer-controlled source-authoring tool or process starts without atomic
   consumption of its one-use slot authorization and revalidation of the current
   preparation fence, expiry, attestation, and grants;
-- source-preparation lineage, multiplicity, and selection rules are preregistered,
-  every lineage belongs to one source-family root, and every related
-  authorization and disposition remains in campaign attrition and retained
-  evidence even when no later attempt starts;
+- source-preparation lineage, root succession, multiplicity, and selection rules
+  are preregistered; every root belongs to one claim family, every lineage belongs
+  to one source root, and every abandoned root, authorization, and disposition
+  remains in campaign attrition and retained evidence even when a later root
+  closes successfully;
 - successful source preparation closes through one authenticated durable fence
   transition that is totally ordered with related authorization issuance,
   freezes every authorization, slot, disposition, and source digest, and cannot
   be reopened or omitted from campaign admission;
 - withdrawn, expired, or abandoned source preparation can stop and retire before
   campaign admission through one root-bound owner and credential lineage shared
-  by every related authorization,
+  by every related authorization and administratively separated from the
+  candidate producer and outcome access,
   retains all slot dispositions and a retirement tombstone, and never cleans an
   unresolved runtime or reopens the source-family root;
 - authorization issuance, successful source closure, and source abandonment
@@ -1225,6 +1270,10 @@ A future implementation conforms to this proposal only when:
   unknown attempt or an explicit non-registration observation;
 - campaign stop and process creation are linearized through a generation fence,
   and recovery reconciles every persisted runtime identity;
+- every analytic stop checkpoint, deadline, evaluator, and expected terminal
+  receipt is preregistered; process release blocks at the effective checkpoint,
+  and missing, late, unknown, or invalid output closes the fence and makes the
+  campaign non-promotional;
 - each valid analytic stop is durably appended before acknowledgement and its
   idempotent fence transition is recovered before another launch; uncertain
   ordering makes the campaign non-promotional;
