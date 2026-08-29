@@ -364,8 +364,8 @@ entries:
   - id: UMEQ-003
     status: accepted-existing
     topic: product-first-library-module-plugin-boundaries
-    authority: ADR-0013
-    detail: ../../decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
+    authority: ADR-0015
+    detail: ../../decisions/0015-authorize-get-modular-semantic-extraction.md
     approvalRequired: false
   - id: UMEQ-009
     status: open

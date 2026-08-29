@@ -24,9 +24,10 @@ resolved, or superseded by this dossier.
    completion evidence, or name a different capability, bounded context,
    accountable owner, two built-ins, authority exclusions, success measure,
    and deletion trigger.
-2. **Semantic ownership path.** Apply accepted ADR-0013's cumulative
-   first-consumer ownership model. ADR-0012 is historical authority, not a
-   competing Foundation graph path.
+2. **Semantic ownership path.** Apply accepted ADR-0015: independent Get Modular
+   `0.x` is authorized, while ADR-0013's product-first, runtime-trigger, public
+   SPI, and stop safeguards remain effective. ADR-0012 is historical authority,
+   not a competing Foundation graph path.
 3. **Rehearsal architecture.** Apply ADR-0014's direct-composition direction:
    the feature exports a pure `FeatureModuleFactory`, the application root owns
    implementation/configuration/lifetime, and no graph is built without

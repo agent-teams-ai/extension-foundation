@@ -769,6 +769,10 @@ test("superseded ADR-0013 retains its safeguards through accepted ADR-0015", asy
   const successorDecision = section(adr15.body, /^(?:Decision|Accepted Decision)$/i);
   assert.match(successorDecision, /feature, library, package, module-adapter/i);
   assert.match(successorDecision, /Get Modular is an independent product-neutral library/i);
+  assert.match(successorDecision, /Foundation does not become their[\s\S]{0,20}operational authority/i);
+  assert.match(successorDecision, /adoption adapters do not count as independent implementations/i);
+  assert.match(successorDecision, /stable public plugin SPI[\s\S]{0,180}independently authored implementations/i);
+  assert.match(successorDecision, /measured runtime-selection[\s\S]{0,20}or independent-lifecycle needs trigger it/i);
 });
 
 test("accepted ADR-0014 records evidence only and grants no production surface", async () => {

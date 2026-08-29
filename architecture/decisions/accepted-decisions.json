@@ -70,7 +70,7 @@
     {
       "id": "ADR-0015",
       "path": "docs/decisions/0015-authorize-get-modular-semantic-extraction.md",
-      "immutableDigest": "sha256:a07b463af9e939011da6ffc64451bfd0bf89096a65377827c5bd670f78e4f16f"
+      "immutableDigest": "sha256:e34f1c05a692855a51c8f5f0c5626e4f295e9704ecc804024d3fbd432c752bab"
     }
   ]
 }

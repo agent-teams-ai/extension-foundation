@@ -52,9 +52,10 @@ provides an ambient container or global service locator.
 1. An accepted owning-product decision names the bounded context, accountable
    owner, capability, two built-ins, authority exclusions, success metric, and
    kill criteria.
-2. ADR-0013 and ADR-0014 govern the product-local, static-first path. Any later
-   graph or lifecycle work requires a measured need and separate product scope;
-   ADR-0012 is superseded historical authority.
+2. ADR-0015 retains ADR-0013 and ADR-0014 safeguards for the product-local,
+   static-first path while separately authorizing independent Get Modular
+   `0.x`. Product graph or lifecycle work still requires a measured need and
+   separate product scope; ADR-0012 is superseded historical authority.
 3. A private TypeScript port returns evidence, pending, reconciliation-required,
    or unsupported; it cannot complete Work or return a bare authoritative
    completion Boolean.

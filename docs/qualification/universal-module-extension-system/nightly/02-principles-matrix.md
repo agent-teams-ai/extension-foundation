@@ -24,7 +24,7 @@ related:
 | Codec is not security | Serialization supplies no authentication or replay protection | Receiver authority and channel identity remain separate | Authenticated bootstrap, nonces, replay policy, and receiver-side checks |
 | Pinning is not freshness | Manual exact-digest import makes no currentness claim | A remote pin or revocation record can be replayed | TUF semantics from first remotely managed mutable metadata |
 | Role identities stay distinct | Library, DesignModule, SourceModule, RuntimeComponent, Contribution, PluginArtifact, and DeploymentUnit are not aliases | They have different ownership, lifecycle, and distribution meaning | No reversal; adapters may map them without collapsing semantics |
-| Extract after proof | First-consumer semantics stay product-local | Reuse is observed, not predicted | Second independent consumer plus neutral intersection and black-box conformance |
+| Separate neutral product from Foundation extraction | Independent Get Modular `0.x` is authorized; product runtime and Foundation extraction keep separate gates | Reuse is measured without moving product or plugin authority into Foundation | Get Modular 1.0 needs two adoption adapters and cross-consumer conformance; public SPI still needs independent implementations |
 | Public SPI is a separate gate | No public package promise now | Two consumers do not prove independent implementation or compatibility | Two independently authored implementations, release evidence, governance, and support |
 | Worker counts are not votes | Weight evidence, not report count | Shared prompts, model, sources, and aliases correlate findings | Independent publisher and reproduction evidence per claim |
 

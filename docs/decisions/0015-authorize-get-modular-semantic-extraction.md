@@ -28,11 +28,14 @@ Orchestrator, Frontend, and additional planned consumers.
 
 The product owner has approved a separate public repository,
 `agent-teams-ai/get-modular`, rather than placing module composition inside
-Extension Foundation. Synthetic qualification at
-`b002525250c8834fedf80d0bd3c91563e2477991` provides useful pre-production
-evidence, while the draft dogfooding model at
-`8d13e4e1e31d3d82e43584a953b1dc520eefc47f` remains non-authoritative. Neither
-draft is treated as two production consumers.
+Extension Foundation. The final NO-GO measurement evidence is recorded at
+`agent-teams-ai/extension-foundation@c75654370d0c00bbd1ca7dd71e3ba983bf6c5007`
+in
+`docs/qualification/module-system-v1-productization/module-authoring-measurement-proof.md`.
+The draft dogfooding model is observed at
+`agent-teams-ai/extension-foundation@e41f7da7ac4b04086c8f1d664389ab423464c264`
+in `docs/architecture/module-system-dogfooding.md` and remains
+non-authoritative. Neither record is treated as two production consumers.
 
 ## Decision
 
@@ -64,10 +67,13 @@ or retirement authority.
 
 ### Separate authorities
 
-Extension Foundation remains authoritative for extension artifact identity,
-distribution, provenance, signatures, admission protocols, isolation
-contracts, revocation, quarantine, installation, update, retirement, and state
-custody. It does not import Get Modular core.
+Extension Foundation remains authoritative only for product-neutral contracts,
+identities, and conformance primitives for extension artifact identity,
+distribution, provenance, signatures, admission, isolation, revocation,
+quarantine, installation, update, retirement, and state custody. Product hosts,
+catalog authorities, and product- or tenant-owned custody authorities perform
+and authorize the corresponding operations. Foundation does not become their
+operational authority and does not import Get Modular core.
 
 Each product host remains authoritative for product extension points, durable
 desired-profile revisions, target-local literal loader tables, executable
@@ -75,6 +81,10 @@ imports, candidate preparation, generations, readiness, active-head
 publication, routing, grants, fencing, drain, cleanup, and reconciliation.
 Product-owned adapters may depend on both neutral cores and translate between
 them; neither neutral core depends on the other.
+
+A private product graph remains allowed only after measured runtime-selection
+or independent-lifecycle needs trigger it and the owning product accepts the
+scope. Get Modular's existence does not satisfy that product trigger.
 
 `instantiate` means only invoking already authorized factories with a closed
 dependency object in one host-issued attempt. It never means enable, admit,
@@ -84,14 +94,20 @@ retry unknown effects, or declare cleanup complete.
 
 ### Pre-1.0 and stability gates
 
-Synthetic modules and qualification fixtures may drive an unstable `0.x`
-implementation before two production adapters exist. Public 1.0 stability,
-semantic compatibility guarantees, or a stable plugin SPI still require:
+Synthetic modules and qualification fixtures may drive an unstable Get Modular
+`0.x` implementation before two production adapters exist. Stable Get Modular
+1.0 semantics require:
 
 1. two independently authored product adoption adapters;
 2. executable cross-consumer conformance over the claimed intersection; and
 3. a promotion review that records the conformance version and immutable
    consumer evidence.
+
+These adoption adapters do not count as independent implementations of a
+public Extension Foundation or product plugin SPI. Any stable public plugin SPI
+still requires independently authored implementations, conformance, explicit
+contract ownership, publication safeguards, and the retained ADR-0010 and
+ADR-0013 stop conditions. Get Modular cannot authorize that surface.
 
 Before production code, Get Modular must record its own accepted ownership ADR,
 normative requirements, exact-SHA provenance map, identity and binding algebra,

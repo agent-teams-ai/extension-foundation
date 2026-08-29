@@ -5,6 +5,13 @@ projectionKind: non-authoritative-qualification-recommendation
 projectionRecency: latest
 authority: accepted-adrs-and-owning-product-decisions
 recommendedBaselineForFutureDecision: product-owned-pure-di
+neutralGetModular0x:
+  status: authorized-by-ADR-0015
+  scope: independent-product-neutral-pre-1.0-composition-semantics
+  doesNotAuthorize:
+    - product-local-runtime-adoption
+    - extension-foundation-semantic-extraction
+    - public-plugin-spi
 earlierQualificationInputs:
   - ../universal-module-extension-system/final-recommendation.md
   - ../universal-module-extension-system/nightly/10-architecture-and-loc-roadmap.md
@@ -30,7 +37,7 @@ levels:
       - product-owner-approved-benchmark-protocol
       - measured-authoring-or-drift-problem
       - executable-product-owned-runtime-wiring-evidence
-    effectWhileOpen: no-new-authoring-contract
+    effectWhileOpen: no-new-product-local-authoring-contract
   - id: L2
     capability: private-selection-graph
     status: no-go
@@ -47,13 +54,13 @@ levels:
     trigger: named-placement-or-containment-requirement
     effectWhileOpen: no-process-module-host
   - id: L5
-    capability: shared-foundation-api
+    capability: extension-foundation-semantic-extraction
     status: no-go
     trigger: two-independent-products-pass-cross-consumer-conformance
     prerequisites:
       - authenticated-distinct-repository-identities
       - independently-attested-implementation-ownership
-    effectWhileOpen: keep-semantics-product-local
+    effectWhileOpen: keep-semantics-out-of-extension-foundation
 aiNavigationBenchmark:
   status: product-owned-protocol-required
   authority: none-until-owning-product-approves-protocol
@@ -104,7 +111,7 @@ stopCriteria:
   - id: fewer-than-two-independent-consumers
     appliesTo: [L5]
     observableEvidence: repository-provider-or-conformance-independence-missing
-    effect: no-go-keep-product-local
+    effect: no-go-keep-semantics-out-of-extension-foundation
   - id: framework-authority-leak
     appliesTo: [L1, L2, L3, L4, L5]
     observableEvidence: framework-types-or-service-locator-enter-product-contracts
