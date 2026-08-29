@@ -163,7 +163,12 @@ test("ordinary Git failures are not misreported as timeouts", async () => {
     await git(root, ["remote", "remove", "origin"]);
     await assert.rejects(
       verifyProductSourceEvidence(evidence, { fixture: root }),
-      (error: unknown) => error instanceof ProductSourceEvidenceError && error.code === "E-GIT",
+      (error: unknown) => {
+        assert.ok(error instanceof ProductSourceEvidenceError);
+        assert.equal(error.code, "E-GIT");
+        assert.equal(error.message.includes(root), false);
+        return true;
+      },
     );
   } finally {
     await rm(root, { recursive: true, force: true });

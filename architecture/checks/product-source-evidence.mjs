@@ -114,16 +114,14 @@ async function runGit(repositoryRoot, args) {
       encoding: "utf8",
       maxBuffer: MAX_GIT_OUTPUT_BYTES,
       timeout: GIT_TIMEOUT_MS,
+      killSignal: "SIGKILL",
       windowsHide: true,
       env: Object.fromEntries(Object.entries(environment).filter(([, entry]) => entry !== undefined)),
     });
     return result.stdout;
   } catch (error) {
     const code = error?.killed === true ? "E-TIMEOUT" : "E-GIT";
-    const detail = typeof error?.stderr === "string" && error.stderr.trim().length > 0
-      ? error.stderr.trim()
-      : error instanceof Error ? error.message : String(error);
-    fail(code, `git ${args[0] ?? "command"} failed in ${repositoryRoot}: ${detail}`);
+    fail(code, `git ${args[0] ?? "command"} failed`);
   }
 }
 

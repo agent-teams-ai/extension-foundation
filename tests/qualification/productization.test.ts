@@ -152,9 +152,13 @@ test("roadmap keeps authoring, selection, lifecycle, process hosting, and extrac
   );
   const roadmapDocument = await readFile(resolve(dossier, "roadmap.md"), "utf8");
   const admissionDocument = await readFile(resolve(dossier, "consumer-admission.md"), "utf8");
+  const performanceDocument = await readFile(resolve(universal, "performance-and-slo.md"), "utf8");
   assert.match(roadmapDocument, /Moving back or stopping is required[\s\S]{0,160}more than 30%[\s\S]{0,160}generic framework glue/u);
-  assert.match(roadmapDocument, /safety requirement can justify that cost only with explicit evidence/u);
-  assert.match(roadmapDocument, /stop condition, not an advisory metric/u);
+  assert.match(roadmapDocument, /safety\s+requirement can justify that cost only with explicit evidence/u);
+  assert.match(roadmapDocument, /stop\s+conditions, not advisory metrics/u);
+  assert.match(roadmapDocument, /ordinary feature work repeatedly requires Foundation changes/u);
+  assert.match(roadmapDocument, /second overlapping lifecycle state machine/u);
+  assert.match(performanceDocument, /first three conditions require stop or rollback under ADR-0013/u);
   assert.match(roadmapDocument, /not a\s+semantic-extraction prerequisite/u);
   assert.match(admissionDocument, /Owning-product decision, approved benchmark, measured authoring or drift problem, and executable product-owned evidence/u);
 });
@@ -235,7 +239,10 @@ test("source claims stay within exact Git custody", async () => {
   assert.equal(evidence.verification.promotionAuthority, false);
   assert.ok(evidence.limitations.some(limit => limit.includes("does not interpret source text")));
   const admission = await readFile(resolve(dossier, "consumer-admission.md"), "utf8");
+  const ledger = await readFile(resolve(dossier, "evidence-ledger.yaml"), "utf8");
   assert.match(admission, /Agent Runtime[^\n]+L1_NO_GO_MEASUREMENT_CANDIDATE[^\n]+L2-L5_NO_GO/u);
+  assert.match(ledger, /Invalidate SOURCE_CUSTODY_BASELINE_RECORDED[\s\S]{0,180}ADR-0013 product-owned[\s\S]{0,80}Pure DI default remains authoritative/u);
+  assert.doesNotMatch(ledger, /Revoke L0/u);
 });
 
 test("complete Linux CI verifies exact product sources without changing intrinsic local checks", async () => {

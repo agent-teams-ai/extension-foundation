@@ -12,6 +12,7 @@ import {
   captureEvidence,
   deterministicJson,
   ObjectStore,
+  readSafeJson,
   scanSecrets,
   sha256,
   validateManifest,
@@ -187,6 +188,7 @@ test("explicit allowlist rejects glob admission and duplicates", () => {
   assert.throws(() => assertExplicitJobIds(["modres-w7-*-20260826-r1"]), /invalid explicit job ID/u);
   assert.throws(() => assertExplicitJobIds([JOB_ID, JOB_ID]), /duplicate job ID/u);
   assert.throws(() => assertExplicitJobIds([]), /non-empty explicit allowlist/u);
+  assert.throws(() => assertExplicitJobIds([JOB_ID, `${JOB_ID}-extra`], 1), /1-item limit/u);
 });
 
 test("deterministic JSON documents and enforces its smaller supported domain", () => {
@@ -949,6 +951,18 @@ test("secret scanning detects common credentials without echoing the secret", ()
   assert.throws(() => scanSecrets(`token=${"a".repeat(24)}`), /credential-assignment/u);
 });
 
+test("decoded JSON secret escapes fail closed without echoing the secret", async t => {
+  const root = await temporaryDirectory(t);
+  const path = join(root, "escaped-secret.json");
+  const escapedSecret = `sk-\\u0070roj-${"x".repeat(32)}`;
+  await writeFile(path, `{"unknown":"${escapedSecret}"}\n`);
+  await assert.rejects(readSafeJson(path), error => {
+    assert.match(error.message, /openai-key/u);
+    assert.equal(error.message.includes("sk-proj-"), false);
+    return true;
+  });
+});
+
 test("auth roots and CODEX_HOME are rejected before reads", () => {
   assert.throws(() => assertSafeEvidencePath("/root/.cache/subscription-runtime/live-codex-auth/token"), /must not target/u);
   const prior = process.env.CODEX_HOME;
@@ -1094,6 +1108,29 @@ test("capture requires a canonical clean repository root", async t => {
     ...paths,
     repositoryRoot: nested,
   }), /canonical Git worktree root/u);
+});
+
+test("capture rejects masked baseline files and oversized job allowlists before source I/O", async t => {
+  for (const flag of ["--assume-unchanged", "--skip-worktree"]) {
+    const root = await temporaryDirectory(t);
+    const paths = await writeCaptureFixture(root, [{ attempts: [] }]);
+    await execFileAsync("git", ["-C", paths.repositoryRoot, "update-index", flag, "package.json"]);
+    await assert.rejects(captureEvidence({
+      campaignId: "masked-baseline",
+      jobIds: [JOB_ID],
+      ...paths,
+    }), /index flags/u);
+  }
+
+  const jobIds = Array.from({ length: 257 }, (_, index) => `modres-w7-job-${index + 1}-20260826-r1`);
+  await assert.rejects(captureEvidence({
+    campaignId: "oversized-job-list",
+    repositoryRoot: "/definitely/not/a/repository",
+    jobIds,
+    runtimeRoot: "/definitely/not/a/runtime",
+    jobConfigRoot: "/definitely/not/configs",
+    outputRoot: "/definitely/not/output",
+  }), /256-item limit/u);
 });
 
 test("capture accepts only explicit credential-free GitHub repository URLs", async t => {

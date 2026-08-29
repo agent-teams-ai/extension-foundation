@@ -130,6 +130,8 @@ not change product contracts. Framework types never cross those rollback
 boundaries.
 
 Moving back or stopping is required when the first two product slices spend
-more than 30% of their changed production code on generic framework glue. A
-safety requirement can justify that cost only with explicit evidence. This is a
-stop condition, not an advisory metric.
+more than 30% of their changed production code on generic framework glue, when
+ordinary feature work repeatedly requires Foundation changes, or when a
+candidate runtime needs a second overlapping lifecycle state machine. A safety
+requirement can justify that cost only with explicit evidence. These are stop
+conditions, not advisory metrics.

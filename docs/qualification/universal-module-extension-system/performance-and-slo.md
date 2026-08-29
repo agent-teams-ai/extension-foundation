@@ -136,10 +136,10 @@ Secrets and user content are redacted before export.
 
 Stop or simplify a candidate when:
 
-- generic framework glue grows without a predeclared counting method or a named
-  product benefit in the first two product slices;
-- one feature change repeatedly requires Foundation changes;
-- an adapter introduces a second graph or lifecycle state machine;
+- the first two product slices spend more than 30% of changed production code
+  on generic framework glue;
+- ordinary feature work repeatedly requires Foundation changes;
+- a candidate runtime requires a second overlapping lifecycle state machine;
 - Cordis or another adapter loses the predeclared semantic, lifecycle,
   maintainability, provenance, complexity, performance, and reversibility
   scorecard;
@@ -147,5 +147,7 @@ Stop or simplify a candidate when:
 - startup, memory, or diagnostics regress without a capability benefit;
 - a feature is delayed for hypothetical extensibility with no second consumer.
 
-These signals trigger architecture review; security evidence may justify cost
+The first three conditions require stop or rollback under ADR-0013; only
+explicit safety evidence may justify their cost. The remaining signals trigger
+architecture review; security evidence may justify cost
 when the reason is explicit.

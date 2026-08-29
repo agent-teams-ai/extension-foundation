@@ -173,6 +173,7 @@ function parseCustodyJson(text, limits = DEFAULT_RESOURCE_LIMITS) {
       maxStringLength: limits.maxJsonStringLength,
     });
     assertJsonLimits(value, limits);
+    scanSecrets(deterministicJson(value), "decoded JSON");
     return value;
   } catch (error) {
     if (!String(error?.message).startsWith("DUPLICATE_JSON_KEY:")) throw error;
@@ -304,8 +305,9 @@ export function deterministicJson(value) {
   return encode(value, "$");
 }
 
-export function assertExplicitJobIds(jobIds) {
+export function assertExplicitJobIds(jobIds, maximum = DEFAULT_RESOURCE_LIMITS.maxManifestJobs) {
   if (!Array.isArray(jobIds) || jobIds.length === 0) throw new Error("jobIds must be a non-empty explicit allowlist");
+  if (jobIds.length > maximum) throw new Error(`jobIds exceed the ${maximum}-item limit`);
   const seen = new Set();
   for (const jobId of jobIds) {
     if (typeof jobId !== "string" || !JOB_ID.test(jobId) || /[*?\[\]{}!]/u.test(jobId)) {
@@ -430,6 +432,13 @@ async function secureRead(root, path, {
     if (!after.isFile() || before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size) {
       throw new Error(`source changed while opening: ${path}`);
     }
+    const openedCanonicalPath = await realpath(absolutePath);
+    if (!contained(canonicalRoot, openedCanonicalPath)) throw new Error(`source path traverses a symbolic link: ${path}`);
+    const openedPathMetadata = await lstat(openedCanonicalPath);
+    if (openedPathMetadata.isSymbolicLink() || !openedPathMetadata.isFile()
+      || openedPathMetadata.dev !== after.dev || openedPathMetadata.ino !== after.ino) {
+      throw new Error(`source path changed while opening: ${path}`);
+    }
     const chunks = [];
     let totalBytes = 0;
     while (totalBytes <= maxFileBytes) {
@@ -445,6 +454,14 @@ async function secureRead(root, path, {
     if (after.dev !== final.dev || after.ino !== final.ino || after.size !== final.size
       || after.mtimeMs !== final.mtimeMs || (requireStableCtime && after.ctimeMs !== final.ctimeMs)) {
       throw new Error(`source changed while reading: ${path}`);
+    }
+    const finalCanonicalPath = await realpath(absolutePath);
+    const finalPathMetadata = await lstat(finalCanonicalPath);
+    if (finalCanonicalPath !== openedCanonicalPath
+      || !contained(canonicalRoot, finalCanonicalPath)
+      || finalPathMetadata.isSymbolicLink() || !finalPathMetadata.isFile()
+      || finalPathMetadata.dev !== final.dev || finalPathMetadata.ino !== final.ino) {
+      throw new Error(`source path changed while reading: ${path}`);
     }
     return Buffer.concat(chunks, totalBytes);
   } finally {
@@ -606,8 +623,21 @@ async function deriveBaseline(repositoryRoot, capturedAt, limits, budget) {
     throw new Error("repositoryRoot must be the canonical Git worktree root");
   }
   await gitObservation(canonicalRoot, ["ls-files", "--error-unmatch", "--", "package.json", "pnpm-lock.yaml"], "tracked baseline files", limits);
-  const packageBytes = await secureRead(canonicalRoot, join(canonicalRoot, "package.json"), limits);
-  const lockfileBytes = await secureRead(canonicalRoot, join(canonicalRoot, "pnpm-lock.yaml"), limits);
+  const [trackedTypes, trackedAssumeState, packageSource, lockfileSource] = await Promise.all([
+    gitObservation(canonicalRoot, ["ls-files", "-t", "--", "package.json", "pnpm-lock.yaml"], "tracked baseline file types", limits),
+    gitObservation(canonicalRoot, ["ls-files", "-v", "--", "package.json", "pnpm-lock.yaml"], "tracked baseline index flags", limits),
+    gitObservation(canonicalRoot, ["show", "HEAD:package.json"], "repository package manifest", limits),
+    gitObservation(canonicalRoot, ["show", "HEAD:pnpm-lock.yaml"], "repository lockfile", limits),
+  ]);
+  const expectedTrackedFiles = ["H package.json", "H pnpm-lock.yaml"];
+  for (const observation of [trackedTypes, trackedAssumeState]) {
+    const entries = observation.trim().split("\n").filter(Boolean).sort();
+    if (deterministicJson(entries) !== deterministicJson(expectedTrackedFiles)) {
+      throw new Error("tracked baseline files must not use skip-worktree or assume-unchanged index flags");
+    }
+  }
+  const packageBytes = Buffer.from(packageSource, "utf8");
+  const lockfileBytes = Buffer.from(lockfileSource, "utf8");
   if (budget !== undefined) {
     accountResource(budget, packageBytes, "repository package.json", limits);
     accountResource(budget, lockfileBytes, "repository pnpm-lock.yaml", limits);
@@ -1596,10 +1626,10 @@ export async function captureEvidence({
   if (typeof repositoryRoot !== "string" || repositoryRoot.length === 0) throw new Error("repositoryRoot is required for V2 baseline derivation");
   if (typeof capturedAt !== "string" || capturedAt.length === 0) throw new Error("capturedAt must be a non-empty string");
   const limits = normalizeResourceLimits(resourceLimits);
+  const allowlist = assertExplicitJobIds(jobIds, limits.maxManifestJobs);
   const budget = { files: 0, bytes: 0, directories: 0, directoryEntries: 0 };
   const derived = await deriveBaseline(repositoryRoot, capturedAt, limits, budget);
   const baseline = derived.baseline;
-  const allowlist = assertExplicitJobIds(jobIds);
   const safeRuntimeRoot = await assertCanonicalPermittedRoot(runtimeRoot, "runtime root");
   const safeConfigRoot = await assertCanonicalPermittedRoot(jobConfigRoot, "job config root");
   await assertCanonicalPermittedRoot(outputRoot, "output root");
@@ -1796,6 +1826,7 @@ export async function captureEvidence({
   if (!validation.valid) throw new Error(`captured manifest is invalid:\n${validation.errors.join("\n")}`);
   const manifestBytes = Buffer.from(`${deterministicJson(manifest)}\n`, "utf8");
   if (manifestBytes.length > limits.maxFileBytes) throw new Error("captured manifest exceeds the file-size limit");
+  scanSecrets(manifestBytes, "captured manifest");
   const manifestObject = await store.publish(manifestBytes);
   const manifestDirectory = join(store.root, "manifests", campaignId);
   await assertDirectoryChain(store.root, manifestDirectory);
@@ -1851,8 +1882,9 @@ export async function readSafeJsonDocument(path, label = "JSON input") {
   const safePath = assertSafeEvidencePath(path, label);
   const bytes = await secureRead(dirname(safePath), safePath);
   scanSecrets(bytes, safePath);
+  const value = parseCustodyJson(bytes.toString("utf8"));
   return Object.freeze({
-    value: parseCustodyJson(bytes.toString("utf8")),
+    value,
     bytes,
     sha256: sha256(bytes),
   });

@@ -39,10 +39,11 @@ claims:
       runtime behavior. The verdict is SOURCE_CUSTODY_BASELINE_RECORDED; L1
       remains a no-go measurement candidate and L2-L5 remain no-go.
     reversalCondition: >-
-      Revoke L0 if exact source verification fails. Reopen L1 only after a
-      product-owned decision and
-      approved benchmark prove an authoring or drift problem; higher levels
-      retain their independent product triggers.
+      Invalidate SOURCE_CUSTODY_BASELINE_RECORDED and block dossier-dependent
+      decisions if exact source verification fails. The ADR-0013 product-owned
+      Pure DI default remains authoritative. Reopen L1 only after a product-owned
+      decision and approved benchmark prove an authoring or drift problem;
+      higher levels retain their independent product triggers.
   - id: orchestrator-consumer-admission
     classification: no-go
     sources:
