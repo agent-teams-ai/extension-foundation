@@ -17,6 +17,16 @@ products. Start with:
 - Product-specific extension points remain narrow and consumer-owned in the
   product that consumes them.
 - There is no global service locator or universal plugin interface.
+- Neutral module, capability, implementation, and slot identities; module
+  declarations; dependency bindings; graph compilation; canonical plans and
+  digests; and bounded composition diagnostics belong to
+  [`get-modular`](https://github.com/agent-teams-ai/get-modular). This
+  repository does not duplicate or import that composition core. A
+  product-owned adapter may consume both repositories.
+- Products own their concrete declaration instances, capability payloads,
+  product adapters, desired-profile revisions, literal loaders, and runtime
+  lifecycle. Product-local authoring guidance does not transfer neutral grammar
+  or validation ownership away from Get Modular.
 - Manifest permissions are requests, not grants.
 - Artifact signatures, catalog listings, commercial entitlements, product
   authorization, and runtime enforcement are independent facts.
