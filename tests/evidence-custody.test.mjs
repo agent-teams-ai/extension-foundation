@@ -1872,6 +1872,25 @@ captureTest("invalid journal paths and lineage fail before journal publication",
   );
 });
 
+captureTest("journal traversal reports the same first failure across entry permutations", async t => {
+  for (const order of [["z-invalid", "a-invalid"], ["a-invalid", "z-invalid"]]) {
+    const root = await temporaryDirectory(t);
+    const paths = await writeCaptureFixture(root, []);
+    const directory = join(paths.runtimeRoot, JOB_ID, "state", "attempt-journal");
+    await mkdir(directory, { recursive: true });
+    for (const name of order) await symlink("missing-target", join(directory, name));
+    await assert.rejects(captureEvidence({
+      campaignId: "deterministic-journal-order",
+      jobIds: [JOB_ID],
+      ...paths,
+    }), error => {
+      assert.match(error.message, /a-invalid/u);
+      assert.equal(error.message.includes("z-invalid"), false);
+      return true;
+    });
+  }
+});
+
 captureTest("global attempt bounds are checked before any journal publication", async t => {
   const root = await temporaryDirectory(t);
   const repositoryRoot = await createRepositoryFixture(root);

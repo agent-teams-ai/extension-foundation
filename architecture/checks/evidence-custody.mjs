@@ -1876,28 +1876,33 @@ async function regularFilesBelow(root, relativeDirectory, limits, budget) {
     const current = pending.pop();
     if (current.depth > limits.maxDirectoryDepth) throw new Error(`capture directory-depth limit exceeded at ${safeDiagnosticLabel(current.directory)}`);
     const stream = await sanitizedPathOperation(current.directory, () => opendir(current.directory));
+    const entries = [];
     try {
       for await (const entry of stream) {
         budget.directoryEntries += 1;
         if (budget.directoryEntries > limits.maxDirectoryEntries) {
           throw new Error(`capture directory-entry limit exceeded at ${safeDiagnosticLabel(current.directory)}`);
         }
-        const path = join(current.directory, entry.name);
-        const metadata = await sanitizedPathOperation(path, () => lstat(path));
-        if (metadata.isSymbolicLink()) throw new Error(`capture source must not contain symlinks: ${safeDiagnosticLabel(path)}`);
-        if (metadata.isDirectory()) {
-          budget.directories += 1;
-          if (budget.directories > limits.maxDirectories) throw new Error(`capture directory-count limit exceeded at ${safeDiagnosticLabel(path)}`);
-          pending.push({ directory: path, depth: current.depth + 1 });
-          continue;
-        }
-        if (!metadata.isFile()) continue;
-        const bytes = await secureRead(root, path, { ...limits, requireDescriptorContainment: true });
-        accountResource(budget, bytes, path, limits);
-        results.push({ path, bytes });
+        entries.push(entry);
       }
     } catch (error) {
       throw sanitizedPathError(error, current.directory);
+    }
+    entries.sort((left, right) => binaryCompare(left.name, right.name));
+    for (const entry of entries) {
+      const path = join(current.directory, entry.name);
+      const metadata = await sanitizedPathOperation(path, () => lstat(path));
+      if (metadata.isSymbolicLink()) throw new Error(`capture source must not contain symlinks: ${safeDiagnosticLabel(path)}`);
+      if (metadata.isDirectory()) {
+        budget.directories += 1;
+        if (budget.directories > limits.maxDirectories) throw new Error(`capture directory-count limit exceeded at ${safeDiagnosticLabel(path)}`);
+        pending.push({ directory: path, depth: current.depth + 1 });
+        continue;
+      }
+      if (!metadata.isFile()) continue;
+      const bytes = await secureRead(root, path, { ...limits, requireDescriptorContainment: true });
+      accountResource(budget, bytes, path, limits);
+      results.push({ path, bytes });
     }
   }
   return results.sort((left, right) => binaryCompare(left.path, right.path));
