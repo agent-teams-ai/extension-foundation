@@ -1,9 +1,0 @@
-{
-  "consumer": "agent-runtime",
-  "roots": ["runtime.installation-discovery"],
-  "enabledModules": ["runtime.executable-observer", "runtime.installation-discovery"],
-  "bindings": {
-    "runtime.installation-discovery.executableFileObserver": "runtime.executable-observer"
-  },
-  "selectedLoaders": ["runtime.executable-observer", "runtime.installation-discovery"]
-}

@@ -3,149 +3,108 @@ id: qualification.module-system-v1-productization.module-authoring-measurement-p
 type: qualification
 status: active
 owner: architecture
-summary: Records a disposable synthetic comparison of Pure DI and a static authoring candidate without admitting L1.
+summary: Records the completed disposable comparison of Pure DI and a static authoring candidate without admitting L1.
 ---
 
 # Synthetic Two-Fixture Module Authoring Measurement Proof
 
 ## Verdict
 
-`NO-GO`. Canonical consumer admission keeps both named product sources at
-`L1_NO_GO_MEASUREMENT_CANDIDATE` and shared extraction at `L5_NO_GO`. The
-disposable candidate validates useful closed-world failure cases, but no
-owning-product-approved benchmark establishes an authoring problem.
+`NO-GO`. Product-owned Pure DI and `FeatureModuleFactory` remain the baseline.
+The experiment did not establish an owning-product authoring problem and did not
+justify a shared L1 declaration layer.
 
-The synthetic generic-proof ratio is `4.557576`, but it is non-authoritative
-negative evidence rather than ADR-0013 production-glue evidence. Product-owned Pure DI and
-`FeatureModuleFactory` remain the baseline. Nothing in this proof admits a
-consumer, shared extraction, production package, public SPI, graph, or runtime
+The executable experiment was intentionally removed before merge. Its exact
+tested revision remains available in Git history:
+`b1597fabab5b4f0b5e5060cfe594d6cc056b623d`.
+
+Nothing in this record admits a consumer, production package, public SPI,
+selection graph, lifecycle coordinator, process host, plugin host, or runtime
 module engine.
 
-## Locked Context And Scope
+## Locked Evidence
 
 | Context | Exact revision | Meaning |
 | --- | --- | --- |
-| Extension Foundation base | `4738aa329196f9d0c50a14edfcbe454d2cca0b98` | Proof base |
-| Agent Runtime | `7be998237a4c262bee9c4198d554b43cd2757ac6` | Contextual source-lock label |
-| Frontend | `85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd` | Contextual source-lock label |
+| Extension Foundation base | `4738aa329196f9d0c50a14edfcbe454d2cca0b98` | Experiment base |
+| Executable proof | `b1597fabab5b4f0b5e5060cfe594d6cc056b623d` | Exact reviewed and cross-platform-tested proof |
+| Agent Runtime | `7be998237a4c262bee9c4198d554b43cd2757ac6` | Contextual source-custody label |
+| Frontend | `85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd` | Contextual source-custody label |
 | Orchestrator | `4c5f55366ed8c83f97374b66c8e9f84059c47382` | Governed non-admission record |
 
-The proof revision is the exact Draft PR head recorded by GitHub CI and the PR
-body. It is intentionally not embedded in its own Git commit as a circular
-self-reference.
+Agent Runtime and Frontend names identified synthetic fixtures. The experiment
+did not execute product trees or prove that the pinned product revisions
+produced those fixture shapes. Exact source custody is not product approval,
+semantic attribution, or shared-boundary admission.
 
-Agent Runtime and Frontend names identify synthetic measurement fixtures. The
-executable proof does not consume product trees or prove that those revisions
-produced the fixture shapes. Exact Git custody remains the responsibility of the
-separate source-evidence records. Orchestrator admission is read directly from
-`consumer-admission.md`; it is not duplicated as a measurement constant.
+## Tested Surface
 
-All newly introduced executable proof code lives under `tests/qualification/`. The
-proof also reuses the pre-existing strict JSON parser from `architecture/checks/`.
-Candidate declarations
-are fixed-name inert JSON, loaded from explicit bounded fixture directories.
-The synthetic validator produces deterministic diagnostics and a disposable
-plan projection, but runtime behavior never interprets that plan. Both candidate
-fixtures continue to execute through direct, product-shaped Pure DI.
+The disposable proof executed 48 scenarios: 46 numbered cases and two
+publication-recovery fault injections.
 
-This is build-time qualification in a trusted, non-concurrently-mutated checkout,
-not a hostile-filesystem security boundary. Discovery charges every observed
-entry, rejects duplicate JSON members, uses no-follow flags where the platform
-exposes them, and verifies file identity before and after bounded reads. A future
-installer still requires its own process/descriptor containment evidence,
-especially on Windows; this implementation must not be promoted as that loader.
-
-Generated-directory replacement restores the prior generation before attempting
-fallible staging cleanup, reports cleanup ambiguity explicitly, and treats
-unexpected output files as stale. The portable directory swap is not linearizable
-for concurrent readers: a reader can observe the output path between the two
-renames. This proof admits no concurrent reader. A production generator with live
-readers requires content-addressed generations plus an atomic active-head protocol.
-
-The proof contains no production package, product API change, plugin host,
-product/runtime lifecycle or recovery authority, service locator, global registry,
-decorator, executable metadata, runtime file scan, or dynamic string import.
-Product-specific plugin contribution data stays outside the generic declaration
-grammar.
-
-## Executable Evidence
-
-The root test contains 48 named scenarios with independent expected outcomes:
-46 numbered cases plus two remediation fault-injection cases.
-
-| Evidence area | Covered outcomes |
+| Evidence area | Tested outcomes |
 | --- | --- |
-| Declaration authority | Fixed-name JSON is inert; discovery/generation causes zero activation-sentinel evaluation |
-| Admission | Unknown fields, duplicate IDs/providers/roots/bindings/loaders, owner mismatch, unknown references, and collisions fail closed |
-| Cardinality | `required`, `optional`, and ordered `many` cover zero/one/many; optional arrays and duplicate many providers fail |
-| Compatibility | Capability IDs require `/vN`; version mismatch differs from capability-family mismatch |
-| Disable impact | Disabled roots/providers fail; required-dependency impact is complete and deterministic |
-| Determinism | Plans, inventories, generated output, stale checks, and diagnostics ignore non-semantic input order |
-| Discovery/loading | Root/entry/byte limits and explicit directory lists apply; duplicate JSON keys and unsafe files fail closed; invalid/unselected literal loaders receive zero evaluation |
-| Isolation | Packed qualification artifact installs offline, passes pinned TypeScript checking, and executes in a private temporary consumer |
-| Governance | Current Orchestrator `L1-L5_NO_GO` state is checked against the canonical admission document |
+| Declaration authority | Inert fixed-name JSON; discovery and generation did not evaluate activation sentinels |
+| Admission | Duplicate and unknown identities, owners, references, bindings, roots, providers, and loaders failed closed |
+| Cardinality | `required`, `optional`, and ordered `many` covered zero, one, and multiple providers |
+| Compatibility | Version mismatch and capability-family mismatch remained distinct |
+| Disable impact | Disabled roots and providers produced deterministic impact reports without hidden fallback |
+| Determinism | Plans, inventories, generated output, stale checks, and diagnostics ignored non-semantic input order |
+| Discovery | Explicit bounded directories, counts, bytes, strict JSON, file identity checks, and sanitized paths |
+| Loading | Literal loader tables validated all entries before invoking any selected factory |
+| Isolation | A packed disposable artifact installed offline, typechecked, and executed in a temporary consumer |
+| Publication recovery | Pre-publication ambiguity restored the previous generation; post-publication cleanup failure retained the replacement |
+| Governance | Canonical admission remained L1 measurement-candidate and L2-L5 NO-GO |
 
-Diagnostics use binary code-unit ordering and relative sanitized paths. They
-contain no absolute paths, stacks, timestamps, locale dependence, or discovery
-order as semantics.
+The portable two-rename directory swap was explicitly found non-linearizable for
+concurrent readers. Any production design with live readers requires
+content-addressed generations and atomic active-head publication.
 
-## Deterministic Measurements
+## Measurements
 
-These are synthetic qualification measurements, not production metrics.
+These values describe only the removed synthetic experiment.
 
 | Category | Result |
 | --- | --- |
 | Baseline wiring | `23` non-empty LOC across `2` files |
-| Candidate product-shaped footprint | `165` non-empty LOC across `13` TypeScript/JavaScript/JSON files |
+| Candidate product-shaped footprint | `165` non-empty LOC across `13` files |
 | Generic proof glue | `752` non-empty LOC across `4` files |
 | Candidate plus generic glue | `917` non-empty LOC |
 | Generic/candidate ratio | `4.557576` |
-| ADR production-glue ratio | `not-applicable-production-loc-zero` |
 | Syntactic binding markers | baseline `2/2`; candidate `4/4` sites/files |
-| Disposable executable proof | `94%` (`16/17`; the reused strict JSON parser is retained) |
+| Disposable executable surface | `94%` (`16/17` files) |
 
-The measurement consumes one exhaustive classified manifest and fails if any
-file in the proof directory, root test, or explicitly reused strict-JSON support
-surface is unclassified.
-Generated temporary output and this report are not LOC inputs.
+The ratio is non-authoritative negative evidence, not ADR-0013 production-glue
+evidence. Shipping production LOC was zero, so the production-glue threshold was
+not applicable. Binding counts were syntactic markers rather than a real
+provider-rebind benchmark.
 
-| Bucket | Classified paths |
-| --- | --- |
-| Baseline | `agent-runtime-baseline.ts`, `frontend-baseline.ts` |
-| Candidate product | `agent-runtime-candidate.ts`, `agent-runtime-loaders.ts`, `frontend-candidate.ts`, `frontend-loaders.ts`, both activation sentinels, seven declaration/profile JSON files |
-| Generic proof | `model.ts`, `io.ts`, `literal-loaders.ts`, `fixture-data.ts` |
-| Shared fixture, excluded | `agent-runtime-fixture.ts`, `frontend-fixture.ts` |
-| Measurement harness, excluded | `measurement.ts`, `module-authoring-proof.test.ts` |
-| Support runtime, retained | pre-existing `architecture/checks/strict-json.mjs` |
-| Support type, excluded | `architecture/checks/strict-json.d.mts` for the pre-existing strict JSON parser |
+## Verification
 
-Binding probes are only deterministic syntactic marker counts. No provider-rebind
-task, navigation-time measurement, semantic diff, or product outcome is claimed.
-Each marker must match exactly one checked-in source token or measurement fails.
+At the exact executable proof revision:
 
-Packed-install, typecheck, execution, determinism, and scenario outcomes are test
-evidence, not hard-coded measurement fields. The isolated smoke verifies a
-repository-compatible pnpm `11.x` executable and repository-resolved TypeScript
-`7.0.2`; it proves only the disposable
-qualification artifact. It does not satisfy `PACKAGE-1` or publication evidence.
+- all 48 focused scenarios passed in writable local and CI environments;
+- local `pnpm check` passed;
+- architecture tests passed: `156` plus one expected Windows-only skip;
+- qualification tests passed: `178/178`;
+- exact source-custody verification passed for all three product revisions;
+- GitHub CI passed on Linux, macOS, and Windows;
+- Documentation Protocol, product-sources, and CodeQL passed;
+- architecture/governance review passed with no P0-P3 findings;
+- correctness/security/determinism review passed with no P0-P3 findings;
+- measurement/DX review passed with no P0-P3 findings and independently
+  reproduced every reported measurement.
 
-## Stop Rule And Reconsideration
+The final docs-only revision is verified separately after removal of the
+executable experiment.
 
-The L1 candidate remains `NO-GO` because canonical admission records no approved
-owning-product benchmark or executable product-owned authoring evidence. Because
-shipping production LOC is zero, ADR-0013's production-glue stop rule is not
-applicable. The synthetic ratio and marker counts are recorded only as
-non-authoritative negative signals and never substitute for a production
-denominator or a real rebind task.
+## Reconsideration
 
-Reconsider L1 after one owning product approves and runs a benchmark against
-a real slice, including expected outcomes, repeated tasks, incorrect-edit
-taxonomy, navigation/diagnostic thresholds, binding-change measurement, and a
-deletion rule. Shared Foundation semantics still require a second independently
-authored real consumer and a separate accepted extraction decision.
+Reconsider L1 only after one owning product approves and executes a benchmark on
+a real slice with expected outcomes, repeated authoring tasks, incorrect-edit
+taxonomy, navigation and diagnostic thresholds, binding-change measurement, and
+a deletion rule.
 
-Until then, keep direct Pure DI. The executable proof has disposition
-`delete-before-merge`: preserve the negative report and Git history, but do not
-merge or maintain the synthetic validator, fixtures, packed harness, or grammar
-as a Foundation capability. Do not move or rename the grammar into a production
-package.
+Shared Foundation extraction still requires a second independently authored
+real consumer and a separate accepted extraction decision. Until then, keep
+direct Pure DI and product-owned factories.

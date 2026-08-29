@@ -1,8 +1,0 @@
-{
-  "schemaVersion": 1,
-  "consumer": "frontend",
-  "moduleId": "recent-projects.codex-source",
-  "loaderKey": "recent-projects.codex-source",
-  "provides": ["recent-projects.source/v1"],
-  "dependencies": { "required": [], "optional": [], "many": [] }
-}
