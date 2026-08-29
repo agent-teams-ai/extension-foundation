@@ -171,6 +171,22 @@ test("programmatic file arrays cannot hide records behind custom iteration", asy
   }
 });
 
+test("programmatic product records are snapshotted before Git I/O", async () => {
+  const root = await mkdtemp(join(tmpdir(), "exact-git-snapshot-"));
+  try {
+    const evidence = await fixture(root);
+    const expectedBlob = evidence.products.fixture.files[0]!.blob;
+    const verification = verifyProductSourceEvidence(evidence, { fixture: root });
+    evidence.products.fixture.files[0]!.blob = "0".repeat(40);
+    evidence.products.fixture.files[0]!.path = "mutated.ts";
+    const result = await verification;
+    assert.equal(result.reports[0]?.files[0]?.blob, expectedBlob);
+    assert.equal(result.reports[0]?.files[0]?.path, "src/source.ts");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("ordinary Git failures are not misreported as timeouts", async () => {
   const root = await mkdtemp(join(tmpdir(), "exact-git-failure-"));
   try {

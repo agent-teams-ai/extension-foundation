@@ -221,13 +221,26 @@ async function exactRegularBlob(repositoryRoot, commit, path, expectedBlob, prod
   return bytes;
 }
 
-export async function verifyProductSourceRecord(product, recordValue, repositoryRoot) {
+function snapshotProductSourceRecord(product, recordValue) {
   const record = requireExactKeys(recordValue, ["repository", "commit", "tree", "files"], product);
   const repository = requireString(record.repository, `${product}.repository`);
   if (!REPOSITORY.test(repository)) fail("E-SCHEMA", `${product}.repository must be owner/name`);
   const commit = requireGitObject(record.commit, `${product}.commit`);
   const expectedTree = requireGitObject(record.tree, `${product}.tree`);
   const sourceFiles = requireDenseArray(record.files, `${product}.files`, 1, MAX_FILES_PER_PRODUCT);
+  const files = sourceFiles.map((raw, index) => {
+    const file = requireExactKeys(raw, ["path", "blob"], `${product}.files[${index}]`);
+    return Object.freeze({
+      path: requireRepositoryPath(file.path, `${product}.files[${index}].path`),
+      blob: requireGitObject(file.blob, `${product}.files[${index}].blob`),
+    });
+  });
+  return Object.freeze({ repository, commit, tree: expectedTree, files: Object.freeze(files) });
+}
+
+export async function verifyProductSourceRecord(product, recordValue, repositoryRoot) {
+  const source = snapshotProductSourceRecord(product, recordValue);
+  const { repository, commit, tree: expectedTree, files: sourceFiles } = source;
 
   const topLevel = (await runGit(repositoryRoot, ["rev-parse", "--show-toplevel"])).trim();
   const remote = (await runGit(topLevel, ["remote", "get-url", "origin"])).trim();
@@ -244,13 +257,10 @@ export async function verifyProductSourceRecord(product, recordValue, repository
   const portableKeys = new Set();
   let totalBlobBytes = 0;
   for (let index = 0; index < sourceFiles.length; index += 1) {
-    const raw = sourceFiles[index];
-    const file = requireExactKeys(raw, ["path", "blob"], `${product}.files[${index}]`);
-    const path = requireRepositoryPath(file.path, `${product}.files[${index}].path`);
+    const { path, blob } = sourceFiles[index];
     const portableKey = path.toLowerCase();
     if (portableKeys.has(portableKey)) fail("E-PATH", `${product} repeats a case-insensitively equivalent evidence path`);
     portableKeys.add(portableKey);
-    const blob = requireGitObject(file.blob, `${product}.files[${index}].blob`);
     const bytes = await exactRegularBlob(topLevel, commit, path, blob, product);
     totalBlobBytes += bytes;
     if (totalBlobBytes > MAX_TOTAL_BLOB_BYTES) fail("E-BOUNDS", `${product} exceeds the aggregate blob byte bound`);
@@ -296,15 +306,27 @@ export async function verifyProductSourceEvidence(evidenceValue, repositoryRoots
   if (productNames.length === 0 || productNames.length > MAX_PRODUCTS) {
     fail("E-SCHEMA", `evidence.products must contain 1-${MAX_PRODUCTS} products`);
   }
-  const mappingNames = Object.keys(requireRecord(repositoryRoots, "repositoryRoots")).sort();
+  const repositoryMappings = requireRecord(repositoryRoots, "repositoryRoots");
+  const mappingNames = Object.keys(repositoryMappings).sort();
   if (mappingNames.length !== productNames.length || mappingNames.some((name, index) => name !== productNames[index])) {
     fail("E-REPOSITORY", "repository mappings must exactly match the canonical product keys");
   }
+  const productRecords = new Map(productNames.map(product => [
+    product,
+    snapshotProductSourceRecord(product, products[product]),
+  ]));
+  const repositoryRootByProduct = new Map(productNames.map(product => [
+    product,
+    requireString(repositoryMappings[product], `repositoryRoots.${product}`),
+  ]));
   const reports = [];
   const repositories = new Set();
   for (const product of productNames) {
-    const repositoryRoot = requireString(repositoryRoots[product], `repositoryRoots.${product}`);
-    const report = await verifyProductSourceRecord(product, products[product], repositoryRoot);
+    const report = await verifyProductSourceRecord(
+      product,
+      productRecords.get(product),
+      repositoryRootByProduct.get(product),
+    );
     const repositoryIdentity = report.repository.toLowerCase();
     if (repositories.has(repositoryIdentity)) fail("E-INDEPENDENCE", `multiple product keys cannot reuse repository ${report.repository}`);
     repositories.add(repositoryIdentity);

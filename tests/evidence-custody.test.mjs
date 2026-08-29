@@ -190,6 +190,16 @@ test("explicit allowlist rejects glob admission and duplicates", () => {
   assert.throws(() => assertExplicitJobIds([JOB_ID, JOB_ID]), /duplicate job ID/u);
   assert.throws(() => assertExplicitJobIds([]), /non-empty explicit allowlist/u);
   assert.throws(() => assertExplicitJobIds([JOB_ID, `${JOB_ID}-extra`], 1), /1-item limit/u);
+
+  let iteratorReads = 0;
+  const customIterator = [JOB_ID];
+  customIterator[Symbol.iterator] = function* iterator() {
+    iteratorReads += 1;
+    yield JOB_ID;
+    yield `${JOB_ID}-hidden`;
+  };
+  assert.deepEqual(assertExplicitJobIds(customIterator), [JOB_ID]);
+  assert.equal(iteratorReads, 0);
 });
 
 test("deterministic JSON documents and enforces its smaller supported domain", () => {
@@ -902,6 +912,14 @@ test("object publication snapshots mutable Buffer input before asynchronous work
   assert.deepEqual(await readFile(publishedArray.path), expectedArrayBytes);
 });
 
+test("object publication rejects shared memory inputs", async t => {
+  const root = await temporaryDirectory(t);
+  const store = new ObjectStore(join(root, "objects"));
+  const shared = new SharedArrayBuffer(16);
+  await assert.rejects(store.publish(shared), /must not use shared memory/u);
+  await assert.rejects(store.publish(new Uint8Array(shared)), /must not use shared memory/u);
+});
+
 test("temporary recovery applies a streaming directory-entry budget", async t => {
   const root = await temporaryDirectory(t);
   const store = new ObjectStore(join(root, "objects"));
@@ -1368,6 +1386,36 @@ captureTest("capture scans the assembled manifest before publishing it", async t
   });
 });
 
+captureTest("capture snapshots claims and promotion input before asynchronous custody work", async t => {
+  const root = await temporaryDirectory(t);
+  const paths = await writeCaptureFixture(root, [{ attempts: [] }]);
+  const claims = [{
+    claimId: "claim-1",
+    text: "initial claim",
+    classification: "hypothesis",
+    applicability: "qualification only",
+    primarySourceObjects: [],
+    executableEvidenceObjects: [],
+    publisherIndependence: [],
+    executableEvidenceAttestations: [],
+    hypothesis: true,
+    promotionEligible: false,
+  }];
+  const promotion = {};
+  const capture = captureEvidence({
+    campaignId: "snapshot-programmatic-input",
+    jobIds: [JOB_ID],
+    claims,
+    promotion,
+    ...paths,
+  });
+  claims[0].text = "mutated after invocation";
+  promotion.unexpected = "mutated after invocation";
+  const result = await capture;
+  assert.equal(result.manifest.claims[0].text, "initial claim");
+  assert.equal(Object.hasOwn(result.manifest.promotion, "unexpected"), false);
+});
+
 test("manifest node limits reject oversized sparse arrays before reading elements", () => {
   const claims = [];
   claims.length = 1_000_000;
@@ -1742,6 +1790,86 @@ captureTest("stored journals are the only authority for continuation lineage", a
   const verification = await verifyTrustedManifest(unbacked, { store: result.store });
   assert.equal(verification.integrityValid, false);
   assert.match(verification.gates["G-CUSTODY"].failures.join("\n"), /continuationOf does not match stored attempt-journal bytes/u);
+});
+
+captureTest("invalid journal paths and lineage fail before journal publication", async t => {
+  const secretRoot = await temporaryDirectory(t);
+  const secretPaths = await writeCaptureFixture(secretRoot, []);
+  const secret = `token=${"x".repeat(32)}`;
+  const invalidBytes = Buffer.from("not-json", "utf8");
+  const invalidPath = join(secretPaths.runtimeRoot, JOB_ID, "state", "attempt-journal", secret);
+  await mkdir(dirname(invalidPath), { recursive: true });
+  await writeFile(invalidPath, invalidBytes);
+  await assert.rejects(captureEvidence({
+    campaignId: "secret-journal-path",
+    jobIds: [JOB_ID],
+    ...secretPaths,
+  }), error => {
+    assert.equal(error.message.includes(secret), false);
+    return true;
+  });
+  await assert.rejects(
+    stat(new ObjectStore(secretPaths.outputRoot).objectPath(sha256(invalidBytes))),
+    error => error.code === "ENOENT",
+  );
+
+  const lineageRoot = await temporaryDirectory(t);
+  const journal = { attempts: [{
+    attemptNumber: 1,
+    status: "completed",
+    startedAt: "start",
+    finishedAt: "finish",
+    continuationOf: 1,
+  }] };
+  const lineagePaths = await writeCaptureFixture(lineageRoot, [journal]);
+  const journalBytes = Buffer.from(JSON.stringify(journal));
+  await assert.rejects(captureEvidence({
+    campaignId: "invalid-journal-lineage",
+    jobIds: [JOB_ID],
+    ...lineagePaths,
+  }), /invalid continuation lineage/u);
+  await assert.rejects(
+    stat(new ObjectStore(lineagePaths.outputRoot).objectPath(sha256(journalBytes))),
+    error => error.code === "ENOENT",
+  );
+});
+
+captureTest("global attempt bounds are checked before any journal publication", async t => {
+  const root = await temporaryDirectory(t);
+  const repositoryRoot = await createRepositoryFixture(root);
+  const runtimeRoot = join(root, "runtime");
+  const jobConfigRoot = join(root, "configs");
+  const outputRoot = join(root, "evidence");
+  const secondJobId = "modres-w7-second-20260826-r1";
+  const journals = [];
+  for (const [index, jobId] of [JOB_ID, secondJobId].entries()) {
+    const journal = { attempts: [{
+      attemptNumber: 1,
+      status: "completed",
+      startedAt: `start-${index}`,
+      finishedAt: `finish-${index}`,
+    }] };
+    const bytes = Buffer.from(JSON.stringify(journal));
+    const path = join(runtimeRoot, jobId, "state", "attempt-journal", "journal.json");
+    await mkdir(dirname(path), { recursive: true });
+    await writeFile(path, bytes);
+    journals.push(bytes);
+  }
+  await assert.rejects(captureEvidence({
+    campaignId: "global-attempt-bound",
+    repositoryRoot,
+    jobIds: [JOB_ID, secondJobId],
+    runtimeRoot,
+    jobConfigRoot,
+    outputRoot,
+    resourceLimits: { maxManifestAttempts: 1 },
+  }), /global manifest attempt limit/u);
+  for (const bytes of journals) {
+    await assert.rejects(
+      stat(new ObjectStore(outputRoot).objectPath(sha256(bytes))),
+      error => error.code === "ENOENT",
+    );
+  }
 });
 
 captureTest("overlapping journals are rejected as ambiguous and missing current wrappers fail closed portably", async t => {

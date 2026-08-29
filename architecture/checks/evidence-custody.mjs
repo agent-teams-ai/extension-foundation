@@ -474,17 +474,19 @@ export function deterministicJson(value) {
 }
 
 export function assertExplicitJobIds(jobIds, maximum = DEFAULT_RESOURCE_LIMITS.maxManifestJobs) {
-  if (!Array.isArray(jobIds) || jobIds.length === 0) throw new Error("jobIds must be a non-empty explicit allowlist");
-  if (jobIds.length > maximum) throw new Error(`jobIds exceed the ${maximum}-item limit`);
+  if (!Array.isArray(jobIds)) throw new Error("jobIds must be a non-empty explicit allowlist");
+  const values = arrayDataValues(jobIds);
+  if (values.length === 0) throw new Error("jobIds must be a non-empty explicit allowlist");
+  if (values.length > maximum) throw new Error(`jobIds exceed the ${maximum}-item limit`);
   const seen = new Set();
-  for (const jobId of jobIds) {
+  for (const jobId of values) {
     if (typeof jobId !== "string" || !JOB_ID.test(jobId) || /[*?\[\]{}!]/u.test(jobId)) {
-      throw new Error(`invalid explicit job ID: ${String(jobId)}`);
+      throw new Error(`invalid explicit job ID: ${safeDiagnosticLabel(jobId)}`);
     }
     if (seen.has(jobId)) throw new Error(`duplicate job ID: ${jobId}`);
     seen.add(jobId);
   }
-  return [...jobIds].sort();
+  return values.sort();
 }
 
 function assertPermittedRoot(path, label) {
@@ -944,11 +946,14 @@ function temporaryOwnerIsAlive(name) {
 
 function snapshotBytes(input) {
   if (typeof input === "string" || Buffer.isBuffer(input)) return Buffer.from(input);
+  if (utilTypes.isSharedArrayBuffer(input)
+      || (ArrayBuffer.isView(input) && utilTypes.isSharedArrayBuffer(input.buffer))) {
+    throw new TypeError("object publication input must not use shared memory");
+  }
   if (ArrayBuffer.isView(input)) {
     return Buffer.from(new Uint8Array(input.buffer, input.byteOffset, input.byteLength));
   }
-  if (input instanceof ArrayBuffer
-      || (typeof SharedArrayBuffer === "function" && input instanceof SharedArrayBuffer)) {
+  if (input instanceof ArrayBuffer) {
     return Buffer.from(new Uint8Array(input));
   }
   throw new TypeError("object publication input must be a string or contiguous byte sequence");
@@ -1900,6 +1905,76 @@ function waveFor(jobId) {
   return `W${jobId.match(/^modres-w(\d+)/u)?.[1]}`;
 }
 
+async function preflightAttemptJournals({ allowlist, runtimeRoot, limits, budget }) {
+  const journalsByJob = new Map();
+  let totalAttempts = 0;
+  for (const jobId of allowlist) {
+    const jobRoot = join(runtimeRoot, jobId);
+    const journalFiles = await regularFilesBelow(jobRoot, "state/attempt-journal", limits, budget);
+    const attemptNumbers = new Set();
+    const validatedJournals = [];
+    for (const journalFile of journalFiles) {
+      const journalLabel = sourceLabel(runtimeRoot, journalFile.path, "runtime");
+      const diagnosticLabel = safeDiagnosticLabel(journalLabel);
+      scanSecrets(journalLabel, "attempt journal path");
+      let journal;
+      try {
+        journal = parseCustodyJson(journalFile.bytes.toString("utf8"), limits);
+      } catch (error) {
+        if (error?.code === "DUPLICATE_JSON_KEY" || error?.code === "SECRET_SCAN") throw error;
+        throw new Error(`attempt journal ${diagnosticLabel} must be valid bounded JSON`);
+      }
+      if (!record(journal) || !Array.isArray(journal.attempts)) {
+        throw new Error(`attempt journal ${diagnosticLabel} must contain an attempts array`);
+      }
+      if (journal.attempts.length > limits.maxManifestAttempts) {
+        throw new Error(`attempt journal ${diagnosticLabel} exceeds the attempt limit`);
+      }
+      const entries = [];
+      for (const entry of arrayDataValues(journal.attempts)) {
+        const normalized = attemptJournalEntry(jobId, entry, diagnosticLabel);
+        if (attemptNumbers.has(normalized.attemptNumber)) {
+          throw new Error(`ambiguous attempt ${normalized.attemptNumber} for ${jobId} appears in multiple journal entries`);
+        }
+        if (attemptNumbers.size >= limits.maxManifestAttempts) {
+          throw new Error(`attempt journals for ${jobId} exceed the attempt limit`);
+        }
+        attemptNumbers.add(normalized.attemptNumber);
+        entries.push({
+          attemptNumber: normalized.attemptNumber,
+          status: normalized.status,
+          startedAt: normalized.startedAt,
+          finishedAt: normalized.finishedAt,
+          lastOutputSummary: normalized.outputSummary,
+          continuationOf: normalized.continuationOf,
+        });
+      }
+      validatedJournals.push({ journalFile, journalLabel, diagnosticLabel, entries });
+    }
+
+    const entriesById = new Map();
+    for (const { entries } of validatedJournals) {
+      for (const entry of entries) entriesById.set(`${jobId}:attempt:${entry.attemptNumber}`, entry);
+    }
+    for (const { diagnosticLabel, entries } of validatedJournals) {
+      for (const entry of entries) {
+        if (entry.continuationOf === null) continue;
+        const target = entriesById.get(entry.continuationOf);
+        if (target === undefined || target.attemptNumber >= entry.attemptNumber) {
+          throw new Error(`attempt journal ${diagnosticLabel} contains invalid continuation lineage`);
+        }
+      }
+    }
+
+    totalAttempts += attemptNumbers.size;
+    if (totalAttempts > limits.maxManifestAttempts) {
+      throw new Error("attempt journals exceed the global manifest attempt limit");
+    }
+    journalsByJob.set(jobId, { journalFiles, validatedJournals });
+  }
+  return journalsByJob;
+}
+
 export async function captureEvidence({
   campaignId,
   baseline: declaredBaseline,
@@ -1927,6 +2002,8 @@ export async function captureEvidence({
     throw new Error("strict evidence capture is supported only on Linux and macOS");
   }
   const limits = normalizeResourceLimits(resourceLimits);
+  const capturedClaims = snapshotBoundedJson(claims, limits);
+  const capturedPromotion = snapshotBoundedJson(promotion, limits);
   const allowlist = assertExplicitJobIds(jobIds, limits.maxManifestJobs);
   const budget = { files: 0, bytes: 0, directories: 0, directoryEntries: 0 };
   const recoveryBudget = { directoryEntries: 0 };
@@ -1937,6 +2014,12 @@ export async function captureEvidence({
   await assertCanonicalPermittedRoot(outputRoot, "output root");
   const store = new ObjectStore(assertPermittedRoot(outputRoot, "output root"));
   await store.recoverTemporaries(limits, recoveryBudget);
+  const journalsByJob = await preflightAttemptJournals({
+    allowlist,
+    runtimeRoot: safeRuntimeRoot,
+    limits,
+    budget,
+  });
   const objects = [];
   const jobs = [];
   const attempts = [];
@@ -1982,44 +2065,11 @@ export async function captureEvidence({
         exceptions.push({ exceptionId: `${jobId}:${kind}:missing`, kind: "missing-historical-bytes", detail: `${label} was unavailable; no bytes were fabricated` });
       }
     }
-    const journalFiles = await regularFilesBelow(jobRoot, "state/attempt-journal", limits, budget);
+    const { journalFiles, validatedJournals } = journalsByJob.get(jobId);
     if (journalFiles.length === 0) exceptions.push({ exceptionId: `${jobId}:attempt-journal:missing`, kind: "missing-historical-bytes", detail: "No attempt journal was available; no lineage was inferred" });
     let priorAttemptId = null;
     const attemptIds = [];
     const journalEntries = [];
-    const attemptNumbers = new Set();
-    const validatedJournals = [];
-    for (const journalFile of journalFiles) {
-      const journalLabel = sourceLabel(safeRuntimeRoot, journalFile.path, "runtime");
-      let journal;
-      try { journal = parseCustodyJson(journalFile.bytes.toString("utf8"), limits); }
-      catch (error) {
-        if (error?.code === "DUPLICATE_JSON_KEY" || error?.code === "SECRET_SCAN") throw error;
-        throw new Error(`attempt journal ${journalLabel} must be valid bounded JSON`, { cause: error });
-      }
-      if (!record(journal) || !Array.isArray(journal.attempts)) throw new Error(`attempt journal ${journalLabel} must contain an attempts array`);
-      if (journal.attempts.length > limits.maxManifestAttempts) throw new Error(`attempt journal ${journalLabel} exceeds the attempt limit`);
-      const entries = [];
-      for (const entry of arrayDataValues(journal.attempts)) {
-        const normalized = attemptJournalEntry(jobId, entry, journalLabel);
-        if (attemptNumbers.has(normalized.attemptNumber)) {
-          throw new Error(`ambiguous attempt ${normalized.attemptNumber} for ${jobId} appears in multiple journal entries`);
-        }
-        if (attemptNumbers.size >= limits.maxManifestAttempts) {
-          throw new Error(`attempt journals for ${jobId} exceed the attempt limit`);
-        }
-        attemptNumbers.add(normalized.attemptNumber);
-        entries.push({
-          attemptNumber: normalized.attemptNumber,
-          status: normalized.status,
-          startedAt: normalized.startedAt,
-          finishedAt: normalized.finishedAt,
-          lastOutputSummary: normalized.outputSummary,
-          continuationOf: normalized.continuationOf,
-        });
-      }
-      validatedJournals.push({ journalFile, journalLabel, entries });
-    }
     for (const { journalFile, journalLabel, entries } of validatedJournals) {
       const journalDigest = await add(journalFile.bytes, { kind: "attempt-journal", sourcePath: journalLabel });
       jobCapturedObjects.add(journalDigest);
@@ -2112,7 +2162,7 @@ export async function captureEvidence({
     jobs,
     attempts,
     continuations,
-    claims,
+    claims: capturedClaims,
     exceptions,
     promotion: {
       draftScope: "evidence-tooling-only",
@@ -2122,7 +2172,7 @@ export async function captureEvidence({
       productOwnerReview: false,
       separateAdrChange: false,
       p0P1ExecutableClosure: false,
-      ...Object.fromEntries(Object.entries(promotion).filter(([key]) => !["manifestGates", "productOwnerReview", "separateAdrChange", "p0P1ExecutableClosure"].includes(key))),
+      ...Object.fromEntries(Object.entries(capturedPromotion).filter(([key]) => !["manifestGates", "productOwnerReview", "separateAdrChange", "p0P1ExecutableClosure"].includes(key))),
       manifestGates: false,
       productOwnerReview: false,
       separateAdrChange: false,
