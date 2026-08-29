@@ -44,12 +44,14 @@ interface EventSpec {
   readonly label: string;
   readonly minimumTick?: number;
   readonly accepted: boolean;
+  readonly extendsLineage: boolean;
   readonly body: Readonly<Record<string, unknown>>;
 }
 const event = (label: string, type: C.ProtocolEvent["type"],
   body: Readonly<Record<string, unknown>> = {}, minimumTick = 0): EventSpec =>
-  ({ label, minimumTick, accepted: true, body: { type, ...body } });
+  ({ label, minimumTick, accepted: true, extendsLineage: true, body: { type, ...body } });
 const rejected = (spec: EventSpec): EventSpec => ({ ...spec, accepted: false });
+const detached = (spec: EventSpec): EventSpec => ({ ...spec, extendsLineage: false });
 const root = { sourceClaimFamilyId: id.family, sourceFamilyRootId: id.root };
 const authorization = (binding: C.AuthorizationFenceBinding) => ({ ...root,
   authorizationId: id.authorization, sourceSlotId: id.slot, runtimeId: id.runtime,
@@ -142,12 +144,12 @@ const consistency = (label: string, result: C.BuildConsistencyInput,
     buildAttemptId: id.build, buildReceiptId: boundBuildReceipt,
     consistencyReceiptId: selectedReceipt, result });
 
-const materialize = (specs: readonly EventSpec[]): readonly C.ProtocolEvent[] => {
+const materialize = (specs: readonly EventSpec[], tickStep = 1): readonly C.ProtocolEvent[] => {
   const events: C.ProtocolEvent[] = [];
   let predecessor: C.EventId | null = null;
   let now = 0;
   for (const spec of specs) {
-    now = Math.max(now + 1, spec.minimumTick ?? 0);
+    now = Math.max(now + tickStep, spec.minimumTick ?? 0);
     const envelope: Envelope = { eventId: C.eventId(`event:${spec.label}`),
       protocolRevisionId: id.protocol, custodyAuthorityId: id.authority,
       authoritativeTick: tick(now), authenticatedPredecessorId: predecessor };
@@ -155,7 +157,7 @@ const materialize = (specs: readonly EventSpec[]): readonly C.ProtocolEvent[] =>
     if (events.length === 0) {
       assert.equal(selected.type, "RegisterProtocol");
       predecessor = selected.eventId;
-    } else if (spec.accepted) predecessor = selected.eventId;
+    } else if (spec.extendsLineage) predecessor = selected.eventId;
     events.push(selected);
   }
   return events;
@@ -176,26 +178,20 @@ const compareResult = (actual: C.TransitionResult, expected: C.TransitionResult,
   assert.deepEqual(canonical(actual.terminalProjections), canonical(expected.terminalProjections),
     `${context}: terminal projections`);
 };
-const failureMessages = (failures: readonly unknown[]): string => failures
-  .map(failure => failure instanceof Error ? failure.message : String(failure)).join("\n");
-const compareHistory = (specs: readonly EventSpec[], context: string): void => {
-  const events = materialize(specs);
+const compareHistory = (specs: readonly EventSpec[], context: string, tickStep = 1): void => {
+  const events = materialize(specs, tickStep);
   const reducer = foldQualificationHistory(events, 32).results;
   const oracle = foldOracleHistory(events).results;
   assert.equal(reducer.length, oracle.length);
-  const failures: unknown[] = [];
   reducer.forEach((result, index) => {
-    try {
-      const fixtureDecision = specs[index]!.accepted ? "accepted" : "rejected";
-      assert.equal(result.decision, fixtureDecision, `${context} event ${index}: reducer fixture expectation`);
-      assert.equal(oracle[index]!.decision, fixtureDecision,
-        `${context} event ${index}: oracle fixture expectation`);
-      compareResult(result, oracle[index]!, `${context} event ${index} (${events[index]!.type})`);
-    } catch (error) {
-      failures.push(error);
-    }
+    const fixtureDecision = specs[index]!.accepted ? "accepted" : "rejected";
+    assert.equal(result.decision, fixtureDecision, `${context} event ${index}: reducer fixture expectation`);
+    assert.equal(oracle[index]!.decision, fixtureDecision,
+      `${context} event ${index}: oracle fixture expectation`);
   });
-  if (failures.length > 0) assert.fail(`${context} transition mismatches:\n${failureMessages(failures)}`);
+  reducer.forEach((result, index) => {
+    compareResult(result, oracle[index]!, `${context} event ${index} (${events[index]!.type})`);
+  });
 };
 
 interface RaceFamily {
@@ -206,65 +202,70 @@ interface RaceFamily {
 const ordered = (reverse: boolean, left: EventSpec, right: EventSpec): readonly EventSpec[] =>
   reverse ? [right, left] : [left, right];
 const closedPrefix = [register, close("close"), admission("admission", "accepted")] as const;
+const campaignBuildPrefix = [register, issue("issue", campaignFence), close("close"),
+  admission("admission", "accepted"), build("build", "succeeded"),
+  consistency("consistency", { type: "match", artifactDigest: id.artifact })] as const;
 const raceFamilies: readonly RaceFamily[] = [
   { name: "1 consume vs stop/revoke/expiry", variants: 3, history: (reverse, variant) => {
     const binding = variant === 0 ? campaignFence : sourceFence;
     const adverse = variant === 0 ? advance("stop") : variant === 1 ? revoke("revoke") : expire("expiry");
     const consumption = consume("consume", binding);
-    return [register, issue("issue", binding),
-      ...(reverse ? [adverse, rejected(consumption)] : [consumption, adverse]),
-      rejected(release("continuation-release", binding))];
+    const prefix = variant === 0 ? campaignBuildPrefix : [register, issue("issue", binding)];
+    return [...prefix, ...(reverse ? [adverse, rejected(detached(consumption))] : [consumption, adverse]),
+      rejected(detached(release("continuation-release", binding)))];
   } },
   { name: "2 issuance vs source closure/abandonment", variants: 2, history: (reverse, variant) => [
-    register, ...(reverse ? [variant === 0 ? close("terminal") : abandon("terminal"), rejected(issue("issue"))]
+    register, ...(reverse ? [variant === 0 ? close("terminal") : abandon("terminal"),
+      rejected(detached(issue("issue")))]
       : [issue("issue"), variant === 0 ? close("terminal") : abandon("terminal")]),
-    rejected(consume("continuation-consume")),
+    rejected(detached(consume("continuation-consume"))),
   ] },
   { name: "3 closure vs abandonment", variants: 1, history: reverse => [register,
-    ...(reverse ? [abandon("abandon"), rejected(close("close"))]
-      : [close("close"), rejected(abandon("abandon"))]), rejected(issue("continuation-issue"))],
+    ...(reverse ? [abandon("abandon"), rejected(detached(close("close")))]
+      : [close("close"), rejected(detached(abandon("abandon")))]),
+    rejected(detached(issue("continuation-issue")))],
   },
   { name: "4 process release vs generation advance", variants: 1, history: reverse => [
-    register, issue("issue", campaignFence), consume("consume", campaignFence),
-    ...(reverse ? [advance("advance"), rejected(release("release"))]
+    ...campaignBuildPrefix, consume("consume", campaignFence),
+    ...(reverse ? [advance("advance"), rejected(detached(release("release")))]
       : [release("release"), advance("advance")]),
-    ...(reverse ? [releaseDenied("continuation-denial")] : [rejected(releaseDenied("continuation-denial"))]),
+    ...(reverse ? [releaseDenied("continuation-denial")]
+      : [rejected(detached(releaseDenied("continuation-denial")))]),
   ] },
   { name: "5 crash after consume before start confirmation", variants: 1, history: reverse => [
     register, issue("issue"), consume("consume"), ...(reverse
-      ? [release("release", sourceFence), rejected(crash("crash"))]
-      : [crash("crash"), rejected(release("release", sourceFence))]),
+      ? [release("release", sourceFence), rejected(detached(crash("crash")))]
+      : [crash("crash"), rejected(detached(release("release", sourceFence)))]),
     reconcile("continuation-reconcile", "unknown"),
-    ...(reverse ? [rejected(launchDeadline("continuation-deadline"))]
+    ...(reverse ? [rejected(detached(launchDeadline("continuation-deadline")))]
       : [launchDeadline("continuation-deadline")]),
   ] },
   { name: "6 terminal receipt vs deadline", variants: 1, history: reverse => [register,
     ...(reverse ? [attemptDeadline("deadline"), attemptReceipt("receipt", "succeeded")]
-      : [attemptReceipt("receipt", "succeeded"), rejected(attemptDeadline("deadline"))]),
+      : [attemptReceipt("receipt", "succeeded"), rejected(detached(attemptDeadline("deadline")))]),
     attemptReceipt("continuation-conflict", "failed")],
   },
   { name: "7 late/conflicting receipt after finality", variants: 1, history: reverse => [
     register, attemptReceipt("terminal", "succeeded"),
     ...ordered(reverse, attemptReceipt("late-same", "succeeded"), attemptReceipt("late-conflict", "failed")),
-    rejected(attemptDeadline("continuation-deadline"))],
+    rejected(detached(attemptDeadline("continuation-deadline")))],
   },
   { name: "8 restart reconciliation vs cleanup/retirement", variants: 2,
     history: (reverse, variant) => {
-      const prefix = [register, issue("issue", campaignFence), consume("consume", campaignFence),
-        release("release"), close("close")];
+      const prefix = [...campaignBuildPrefix, consume("consume", campaignFence), release("release")];
       const raced = variant === 0 ? ordered(reverse, restart("restart"), retirement("retirement"))
-        : reverse ? [rejected(cleanup("cleanup")), restart("restart")]
-          : [restart("restart"), rejected(cleanup("cleanup"))];
+        : reverse ? [rejected(detached(cleanup("cleanup"))), restart("restart")]
+          : [restart("restart"), rejected(detached(cleanup("cleanup")))];
       return [...prefix, ...(variant === 0 ? [] : [retirement("retirement")]), ...raced,
         reconcile("continuation-terminated", "terminated"), cleanup("continuation-cleanup"),
-        complete("continuation-complete", receipt("close"))];
+        complete("continuation-complete", receipt("close"), receipt("admission"))];
     },
   },
   { name: "9 durable analytic stop vs next launch", variants: 1, history: reverse => [
-    register, issue("issue", campaignFence), consume("consume", campaignFence), checkpoint("checkpoint"),
-    ...(reverse ? [rejected(release("release")), stop("stop")]
-      : [stop("stop"), rejected(release("release"))]), recoverStop("continuation-recover"),
-    rejected(issue("continuation-issue", campaignFence))],
+    ...campaignBuildPrefix, consume("consume", campaignFence), checkpoint("checkpoint"),
+    ...(reverse ? [rejected(detached(release("release"))), stop("stop")]
+      : [stop("stop"), rejected(detached(release("release")))]), recoverStop("continuation-recover"),
+    rejected(detached(issue("continuation-issue", campaignFence)))],
   },
   { name: "10 build vs missing/replayed/mismatched consistency evidence", variants: 3,
     history: (reverse, variant) => { const result = variant === 0 ? "failed" : "no-output";
@@ -282,38 +283,40 @@ const raceFamilies: readonly RaceFamily[] = [
   },
   { name: "12 unknown runtime vs cleanup", variants: 1, history: reverse => [
     register, issue("issue"), consume("consume"), crash("crash"), close("close"), retirement("retirement"),
-    ...(reverse ? [rejected(cleanup("cleanup")), reconcile("unknown", "unknown")]
-      : [reconcile("unknown", "unknown"), rejected(cleanup("cleanup"))]),
+    ...(reverse ? [rejected(detached(cleanup("cleanup"))), reconcile("unknown", "unknown")]
+      : [reconcile("unknown", "unknown"), rejected(detached(cleanup("cleanup")))]),
     reconcile("continuation-terminated", "terminated"), cleanup("continuation-cleanup"),
     complete("continuation-complete", receipt("close"))],
   },
 ];
 assert.equal(raceFamilies.length, 12, "the registry must contain exactly twelve race families");
+const variedHistory = (specs: readonly EventSpec[], noiseCount: number,
+  selectedSlot: number): readonly EventSpec[] => {
+  const insertion = 1 + selectedSlot % Math.max(1, specs.length - 1);
+  const noise = Array.from({ length: noiseCount }, (_, index) => rejected(detached(event(
+    `generated-noise-${index}`, "IssueAuthorization", { ...authorization(sourceFence),
+      sourceFamilyRootId: C.sourceFamilyRootId(`wrong-root:${index}`), expiresAt: tick(50) }))));
+  return [...specs.slice(0, insertion), ...noise, ...specs.slice(insertion)];
+};
 
 for (const family of raceFamilies) for (const reverse of [false, true]) {
   test(`${family.name} / ${reverse ? "right-before-left" : "left-before-right"}`, () => {
-    const failures: unknown[] = [];
     for (let variant = 0; variant < family.variants; variant += 1) {
-      try {
-        compareHistory(family.history(reverse, variant), `${family.name} variant ${variant}`);
-      } catch (error) {
-        failures.push(error);
-      }
+      compareHistory(family.history(reverse, variant), `${family.name} variant ${variant}`);
     }
-    if (failures.length > 0) assert.fail(
-      `${family.name} disagrees with the oracle:\n${failureMessages(failures)}`);
   });
 }
 
 test("bounded generated histories agree with the independent oracle", () => {
   fc.assert(fc.property(
     fc.integer({ min: 0, max: raceFamilies.length - 1 }), fc.boolean(), fc.integer({ min: 0, max: 2 }),
-    (familyIndex, reverse, selector) => {
+    fc.integer({ min: 0, max: 2 }), fc.nat(15), fc.integer({ min: 1, max: 2 }),
+    (familyIndex, reverse, selector, noiseCount, selectedSlot, tickStep) => {
       const family = raceFamilies[familyIndex]!;
       const variant = selector % family.variants;
-      const history = family.history(reverse, variant);
+      const history = variedHistory(family.history(reverse, variant), noiseCount, selectedSlot);
       assert.ok(history.length <= 16, "generated histories remain bounded");
-      compareHistory(history, `generated family ${familyIndex + 1}/${variant}/${reverse}`);
+      compareHistory(history, `generated family ${familyIndex + 1}/${variant}/${reverse}`, tickStep);
     },
   ), { seed: 0x415139, numRuns: 500 });
 });
@@ -325,9 +328,7 @@ const mutantNames: readonly Mutant[] = ["authorization-reuse", "release-after-fe
   "cleanup-unknown-runtime", "late-receipt-rewrites-finality", "closed-and-abandoned-simultaneously",
   "build-mismatch-becomes-attrition", "retirement-owner-changes-within-one-source-family-root"];
 
-interface TestOnlyMutantResult extends C.TransitionResult {
-  readonly sourceFacts?: { readonly closed: boolean; readonly abandoned: boolean };
-}
+type TestOnlyMutantResult = C.TransitionResult;
 const faultyTransition = (name: Mutant, strict: C.TransitionResult,
   eventValue: C.ProtocolEvent): TestOnlyMutantResult => {
   const projections = strict.terminalProjections;
@@ -344,8 +345,10 @@ const faultyTransition = (name: Mutant, strict: C.TransitionResult,
     }], terminalProjections: { ...projections, resourceRetirement: { type: "pending" } } };
     case "late-receipt-rewrites-finality": return { ...strict,
       terminalProjections: { ...projections, attempt: { type: "succeeded", receiptId: receipt("late") } } };
-    case "closed-and-abandoned-simultaneously": return { ...strict, decision: "accepted", effects: [],
-      sourceFacts: { closed: true, abandoned: true } };
+    case "closed-and-abandoned-simultaneously": { const abandoned = { type: "abandoned" as const,
+      receiptId: receipt("mutant-abandon"), proofId: proof("mutant-abandon") };
+      return { ...strict, decision: "accepted", effects: [{ type: "terminal-appended",
+        causalEventId: eventValue.eventId, terminal: { type: "source", projection: abandoned } }] }; }
     case "build-mismatch-becomes-attrition": return { ...strict,
       terminalProjections: { ...projections, buildConsistency: {
         type: "missing-build", consistencyReceiptId: consistencyReceipt("mismatch") }, claim: "eligible" } };
@@ -363,21 +366,26 @@ const lastResults = (specs: readonly EventSpec[]) => {
 const kill = (name: Mutant, specs: readonly EventSpec[],
   invariant: (result: TestOnlyMutantResult) => void): void => {
   const { event: selected, strict, oracle } = lastResults(specs);
+  compareResult(strict, oracle, `${name} strict differential`);
   invariant(strict);
   invariant(oracle);
-  assert.throws(() => invariant(faultyTransition(name, strict, selected)),
+  const mutant = faultyTransition(name, strict, selected);
+  assert.throws(() => compareResult(mutant, oracle, `${name} mutant differential`), assert.AssertionError,
+    `${name} must be killed by exact differential comparison`);
+  assert.throws(() => invariant(mutant),
     assert.AssertionError, `${name} must be killed by its targeted invariant`);
 };
 
 test("mutant kill: authorization reuse", () => kill("authorization-reuse",
-  [register, issue("issue"), consume("first"), rejected(consume("second"))],
+  [register, issue("issue"), consume("first"), rejected(detached(consume("second")))],
   result => assert.equal(result.decision, "rejected")));
 test("mutant kill: release after fence advance", () => kill("release-after-fence-advance",
-  [register, issue("issue", campaignFence), consume("consume", campaignFence), advance("advance"),
-    rejected(release("release"))],
+  [...campaignBuildPrefix, consume("consume", campaignFence), advance("advance"),
+    rejected(detached(release("release")))],
   result => { assert.equal(result.decision, "rejected"); assert.notEqual(result.terminalProjections.runtime, "live"); }));
 test("mutant kill: cleanup of unknown runtime", () => kill("cleanup-unknown-runtime",
-  [register, issue("issue"), consume("consume"), crash("crash"), rejected(cleanup("cleanup"))],
+  [register, issue("issue"), consume("consume"), crash("crash"), close("close"), retirement("retirement"),
+    rejected(detached(cleanup("cleanup")))],
   result => { assert.equal(result.decision, "rejected");
     assert.equal(result.terminalProjections.runtime, "unknown");
     assert.notEqual(result.terminalProjections.resourceRetirement.type, "retired"); }));
@@ -386,10 +394,12 @@ test("mutant kill: late receipt rewrites finality", () => kill("late-receipt-rew
   result => assert.deepEqual(result.terminalProjections.attempt,
     { type: "missing", receiptId: receipt("deadline") })));
 test("mutant kill: closed and abandoned simultaneously", () => kill("closed-and-abandoned-simultaneously",
-  [register, close("close"), rejected(abandon("abandon"))],
-  result => { const source = result.terminalProjections.sourceEvidence;
-    const facts = result.sourceFacts ?? { closed: source.type === "closed", abandoned: source.type === "abandoned" };
-    assert.equal(facts.closed && facts.abandoned, false); }));
+  [register, close("close"), rejected(detached(abandon("abandon")))],
+  result => { assert.equal(result.decision, "rejected");
+    assert.deepEqual(result.terminalProjections.sourceEvidence,
+      { type: "closed", receiptId: receipt("close"), sourceDigest: C.artifactDigest("sha256:source") });
+    assert.equal(result.effects.some(effect => effect.type === "terminal-appended" &&
+      effect.terminal.type === "source" && effect.terminal.projection.type === "abandoned"), false); }));
 test("mutant kill: build mismatch becomes attrition/eligible", () => kill("build-mismatch-becomes-attrition",
   [...closedPrefix, build("build", "succeeded"),
     consistency("mismatch", { type: "match", artifactDigest: C.artifactDigest("sha256:wrong") })],
@@ -398,7 +408,8 @@ test("mutant kill: build mismatch becomes attrition/eligible", () => kill("build
 test("mutant kill: retirement owner or credential lineage changes within one root", () => {
   for (const [owner, lineage] of [[id.otherOwner, id.lineage], [id.owner, id.otherLineage]] as const) {
     kill("retirement-owner-changes-within-one-source-family-root",
-      [register, close("close"), rejected(retirement(`retirement-${owner}-${lineage}`, owner, lineage))],
+      [register, close("close"),
+        rejected(detached(retirement(`retirement-${owner}-${lineage}`, owner, lineage)))],
       result => assert.equal(result.decision, "rejected"));
   }
 });

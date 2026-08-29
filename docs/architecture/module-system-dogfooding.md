@@ -25,6 +25,32 @@ factories, closed dependency objects, and explicit composition roots. The
 records non-authoritative evidence, verdicts, and recommended triggers. Only
 accepted ADRs and owning-product decisions authorize implementation or use.
 
+## Canonical Repository Boundary
+
+Dogfooding does not transfer module-system ownership into Extension Foundation.
+The responsibilities remain deliberately separate:
+
+| Owner | Canonical responsibility |
+| --- | --- |
+| [Get Modular](https://github.com/agent-teams-ai/get-modular) | Portable module and capability identities, inert declarations, explicit dependency cardinalities and bindings, deterministic closed-world graph compilation, immutable plans, digests, diagnostics, and composition conformance vectors. |
+| Extension Foundation | Plugin artifact identity, distribution, provenance, signatures, admission, permissions, isolation contracts, quarantine, updates, retirement, and plugin-state custody. |
+| Owning product | Capability contracts, authorization, literal executable loaders, activation, readiness, generations, publication, routing, fencing, drain, cleanup, recovery, and reconciliation. |
+| External qualification evidence | Candidate-neutral dogfooding protocol checks such as the disposable reducer, independent oracle, race fixtures, and deliberate mutants described by this proposal. |
+
+Get Modular and Extension Foundation are independent neutral cores and do not
+import each other. A product-owned adapter may consume both. The executable
+qualification model in this repository is external evidence about campaign and
+custody invariants; it is not a production package, a Module API, a graph
+compiler, a loader, or lifecycle authority. It may challenge a Get Modular or
+product decision, but cannot silently replace one.
+
+Real product dogfooding therefore lives in the consuming product adapter and
+host. Get Modular supplies the composition subject and conformance vectors;
+Extension Foundation may supply admitted plugin inputs; the owning product
+performs activation and records outcomes. Keeping the evaluator outside the
+candidate repository prevents the module implementation from approving its own
+promotion evidence.
+
 ## Design Principles
 
 | Principle | Application here |

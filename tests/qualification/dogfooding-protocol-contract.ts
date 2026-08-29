@@ -154,6 +154,13 @@ export interface ConsumeAuthorization extends EventEnvelope, AuthorizationBound 
   readonly type: "ConsumeAuthorization";
 }
 
+/**
+ * Revocation is cause-sensitive. Abandonment or expiry revokes matching
+ * unconsumed authority. Successful source or family closure freezes issuance
+ * without inventing revocation of consumed authority. Campaign analytic stop
+ * or expiry also blocks a consumed-but-unstarted release. An explicit
+ * revocation remains bound to this exact authorization and fence.
+ */
 export interface RevokeAuthorization extends EventEnvelope, RootBound {
   readonly type: "RevokeAuthorization";
   readonly authorizationId: AuthorizationId;
@@ -455,6 +462,14 @@ export interface TerminalProjections {
   readonly claim: ClaimProjection;
 }
 
+/**
+ * When several rejection conditions hold, diagnostics use this semantic
+ * precedence: binding/identity, unresolved runtime, immutable finality, source
+ * terminal state, authorization expiry, explicit revocation, stale generation
+ * or closed gate, campaign build eligibility, then consumed or unavailable
+ * authority. This is a deterministic qualification diagnostic rule, not
+ * product authorization policy.
+ */
 export type DenialReason =
   | "not-registered"
   | "wrong-binding"
@@ -622,6 +637,10 @@ export interface RetirementTombstoneAppendedEffect extends EffectEnvelope {
   readonly cleanupProofId: ProofId;
 }
 
+/**
+ * Effects of one accepted transition are an exact unordered multiset. Array
+ * position carries no semantic ordering; multiplicity remains significant.
+ */
 export type DeclaredEffect =
   | AuthorizationIssuedEffect
   | DenialRecordedEffect
