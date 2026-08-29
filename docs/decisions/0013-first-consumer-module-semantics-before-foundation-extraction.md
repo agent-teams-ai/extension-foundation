@@ -1,11 +1,13 @@
 ---
 id: ADR-0013
 type: adr
-status: accepted
+status: superseded
 owner: architecture
 summary: Keeps module semantics product-local until independent consumers and conformance justify a separately approved Foundation extraction.
 approved_by: product-owner
 accepted_at: 2026-08-27
+superseded_by:
+  - ADR-0015
 supersedes:
   - ADR-0012
 related:
