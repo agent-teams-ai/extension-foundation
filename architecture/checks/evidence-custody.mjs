@@ -88,6 +88,7 @@ const SECRET_PATTERNS = [
   { id: "authorization-header", expression: /\bAuthorization\s*:\s*(?:Bearer|Basic)\s+[A-Za-z0-9+/_=.-]{12,}/iu },
   { id: "credential-assignment", expression: /\b(?:api[_-]?key|(?:access|auth)[_-]?token|token|client[_-]?secret|password)\s*[=:]\s*["']?[A-Za-z0-9+/_=.-]{16,}/iu },
 ];
+const SENSITIVE_JSON_FIELD = /^(?:authorization|api[_-]?key|(?:access|auth)[_-]?token|token|client[_-]?secret|password)$/iu;
 const DEFAULT_RESOURCE_LIMITS = Object.freeze({
   maxFileBytes: 8 * 1024 * 1024,
   maxTotalBytes: 64 * 1024 * 1024,
@@ -166,22 +167,28 @@ function assertJsonLimits(value, {
 }
 
 function scanDecodedJsonSecrets(value, label) {
-  const pending = [value];
+  const pending = [{ value, sensitiveField: null }];
   while (pending.length > 0) {
-    const current = pending.pop();
+    const { value: current, sensitiveField } = pending.pop();
     if (typeof current === "string") {
       scanSecrets(current, `${label} value`);
+      if (sensitiveField !== null) {
+        scanSecrets(`${sensitiveField}=${current}`, `${label} field`);
+        scanSecrets(`${sensitiveField}: ${current}`, `${label} field`);
+      }
       continue;
     }
     if (current === null || typeof current !== "object") continue;
     if (Array.isArray(current)) {
-      for (const child of current) pending.push(child);
+      for (const child of current) pending.push({ value: child, sensitiveField });
       continue;
     }
     for (const [key, child] of Object.entries(current)) {
       scanSecrets(key, `${label} key`);
-      if (typeof child === "string") scanSecrets(`${key}=${child}`, `${label} field`);
-      pending.push(child);
+      pending.push({
+        value: child,
+        sensitiveField: SENSITIVE_JSON_FIELD.test(key) ? key : sensitiveField,
+      });
     }
   }
 }
@@ -1905,10 +1912,11 @@ export async function captureEvidence({
       p0P1ExecutableClosure: false,
     },
   };
-  const manifestJson = deterministicJson(manifest);
-  scanSecrets(manifestJson, "captured manifest");
   const validation = validateManifest(manifest, limits);
   if (!validation.valid) throw new Error(`captured manifest is invalid:\n${validation.errors.join("\n")}`);
+  scanDecodedJsonSecrets(manifest, "captured manifest");
+  const manifestJson = deterministicJson(manifest);
+  scanSecrets(manifestJson, "captured manifest");
   const manifestBytes = Buffer.from(`${manifestJson}\n`, "utf8");
   if (manifestBytes.length > limits.maxFileBytes) throw new Error("captured manifest exceeds the file-size limit");
   scanSecrets(manifestBytes, "captured manifest");

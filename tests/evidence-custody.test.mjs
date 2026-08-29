@@ -960,6 +960,9 @@ test("decoded JSON secret escapes fail closed without echoing the secret", async
     ["quote", `${JSON.stringify({ message: `token=\"${genericSecret}\"` })}\n`, /credential-assignment/u, genericSecret],
     ["tab", `${JSON.stringify({ message: `token=\t${genericSecret}` })}\n`, /credential-assignment/u, genericSecret],
     ["newline", `${JSON.stringify({ message: `token=\n${genericSecret}` })}\n`, /credential-assignment/u, genericSecret],
+    ["authorization-field", `${JSON.stringify({ Authorization: `Bearer ${genericSecret}` })}\n`, /authorization-header/u, genericSecret],
+    ["nested-token-array", `${JSON.stringify({ token: [{ value: genericSecret }] })}\n`, /credential-assignment/u, genericSecret],
+    ["nested-token-object", `${JSON.stringify({ token: { value: genericSecret } })}\n`, /credential-assignment/u, genericSecret],
   ];
   for (const [name, document, expected, secret] of fixtures) {
     const path = join(root, `${name}-escaped-secret.json`);
@@ -1178,6 +1181,52 @@ captureTest("capture hashes exact HEAD bytes and rejects escaped secrets before 
   });
   const outputEntries = await readdir(secretPaths.outputRoot, { recursive: true, withFileTypes: true });
   assert.equal(outputEntries.some(entry => entry.isFile()), false);
+});
+
+captureTest("capture scans the assembled manifest before publishing it", async t => {
+  const root = await temporaryDirectory(t);
+  const paths = await writeCaptureFixture(root, [{ attempts: [] }]);
+  const secret = "a".repeat(24);
+  await assert.rejects(captureEvidence({
+    campaignId: "manifest-secret",
+    jobIds: [JOB_ID],
+    claims: [{
+      claimId: "claim-1",
+      text: `token=\"${secret}\"`,
+      classification: "hypothesis",
+      applicability: "qualification only",
+      primarySourceObjects: [],
+      executableEvidenceObjects: [],
+      publisherIndependence: [],
+      executableEvidenceAttestations: [],
+      hypothesis: true,
+      promotionEligible: false,
+    }],
+    ...paths,
+  }), error => {
+    assert.match(error.message, /credential-assignment/u);
+    assert.equal(error.message.includes(secret), false);
+    return true;
+  });
+  await assert.rejects(readdir(join(paths.outputRoot, "manifests")), error => error.code === "ENOENT");
+  const storedFiles = (await readdir(paths.outputRoot, { recursive: true, withFileTypes: true }))
+    .filter(entry => entry.isFile());
+  for (const entry of storedFiles) {
+    assert.equal((await readFile(join(entry.parentPath, entry.name), "utf8")).includes(secret), false);
+  }
+});
+
+test("Windows remains verifier-only and rejects capture before source I/O", {
+  skip: process.platform !== "win32",
+}, async () => {
+  await assert.rejects(captureEvidence({
+    campaignId: "windows-verifier-only",
+    repositoryRoot: "Z:\\must-not-read",
+    jobIds: [JOB_ID],
+    runtimeRoot: "Z:\\must-not-read-runtime",
+    jobConfigRoot: "Z:\\must-not-read-config",
+    outputRoot: "Z:\\must-not-write-output",
+  }), /strict evidence capture is supported only on Linux and macOS/u);
 });
 
 captureTest("capture accepts only explicit credential-free GitHub repository URLs", async t => {
