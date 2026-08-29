@@ -476,16 +476,20 @@ product authorizer may issue a narrow, expiring source preparation authorization
 under the already accepted level-specific owning-product decision. It binds the
 commitment, exact `B0` product repository, commit, and tree, allowlisted treatment
 delta, allowed treatment semantics, `SourceFamilyRootIdentity`, candidate
-producer, inputs, forbidden resources, expiry, a fresh
-source-preparation generation fence, exactly one accountable retirement owner
-and scoped credential, and the complete immutable roster of
+producer, inputs, forbidden resources, expiry, a fresh source-preparation
+generation fence, exactly one root-bound accountable retirement owner and
+root-scoped credential lineage, and the complete immutable roster of
 `SourcePreparationSlotIdentity` values before any source authoring starts. No
 slot may be added, deleted, substituted, or reused after authorization. The
-first authorization also preregisters the source-family root, initial lineage,
-maximum lineages and rounds, successor rule, and selection and multiplicity
-rules. Every later related authorization must reference that root and all prior
-lineages, slots, and dispositions; an unplanned successor is ineligible for the
-campaign. The authorization permits source authoring only. It cannot
+first authorization also preregisters the source-family root, retirement owner
+and credential lineage, initial source lineage, maximum source lineages and
+rounds, successor rule, and selection and multiplicity rules. Every later
+related authorization must reference that root and all prior source lineages,
+slots, and dispositions and must bind the same retirement owner and credential
+lineage. Custody-controlled credential rotation may advance a generation inside
+that lineage but cannot transfer ownership. An unplanned successor or ownership
+mismatch is ineligible for the campaign. The authorization permits source
+authoring only. It cannot
 allocate campaign coordinates, register or build a `T1`, execute candidate
 code, access the final corpus or assignment, observe qualification or campaign
 outcomes, support a promotional claim, authorize product use, or imply
@@ -521,8 +525,9 @@ closes the preparation fence and makes the slot inadmissible.
 Source preparation has an evidence lifecycle and an independent resource-
 retirement lifecycle; neither depends on campaign admission or Phase 6. On
 withdrawal, expiry, containment failure, or abandonment while the evidence
-lifecycle is still `open`, the authorization-bound source-preparation retirement
-owner uses its scoped credential to request one durable abandonment transition.
+lifecycle is still `open`, the root-bound source-preparation retirement owner
+uses a current credential from the preregistered lineage to request one durable
+abandonment transition.
 The custody transaction authority atomically advances the preparation fence,
 marks the evidence root `abandoned`, revokes authoring credentials and unconsumed
 authorizations, and records each unresolved slot as denied, missing, or unknown
@@ -946,7 +951,7 @@ ADR-0013.
 | `TreatmentEvaluationCommitment` is missing, changed after source work, or final `E0` changes its estimand, analysis, attrition, threshold, stop, or corpus-selection semantics | Campaign admission fails; a fresh source-family root, commitment, unseen holdout, and campaign coordinates are required |
 | Source preparation starts before Phase 2 exit, without its authorization, after expiry, or across a closed preparation fence | Source work is inadmissible, the slot records a denied or unknown disposition, and no resulting bytes may enter a campaign |
 | Source authoring launch authorization is missing, reused, mismatched, expired, or consumed across a changed preparation fence | Producer-controlled tools never start; an external denial disposition is retained for the source slot |
-| Source-family authorization lacks its retirement owner or scoped credential, or an unregistered principal requests retirement | Authorization or transition fails closed; no root is silently abandoned or finalized |
+| Source-family authorization lacks the root-bound retirement owner or credential lineage, a related authorization changes either binding, or an unregistered principal requests retirement | Authorization or transition fails closed; no root is silently abandoned or finalized |
 | Source preparation presents preexisting or late bytes, or its receipt lacks authorization, generation, producer, workspace, registrar, input, or authoritative-time bindings | The slot is inadmissible and remains a no-source observation; campaign admission fails on any attempted reuse |
 | Source preparation has ambient egress or credentials, undeclared imports or grants, missing enforcer or recovery identity, or mismatched actual-grant evidence | Authoring is denied or the source remains inadmissible; no resulting bytes may enter a campaign |
 | A preparation slot is omitted, added, substituted, reused, or resolves to changed source bytes | The preparation fence closes; the mismatch is retained and campaign admission fails |
@@ -1155,7 +1160,8 @@ A future implementation conforms to this proposal only when:
   freezes every authorization, slot, disposition, and source digest, and cannot
   be reopened or omitted from campaign admission;
 - withdrawn, expired, or abandoned source preparation can stop and retire before
-  campaign admission through an authorization-bound owner and scoped credential,
+  campaign admission through one root-bound owner and credential lineage shared
+  by every related authorization,
   retains all slot dispositions and a retirement tombstone, and never cleans an
   unresolved runtime or reopens the source-family root;
 - authorization issuance, successful source closure, and source abandonment
