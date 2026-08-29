@@ -918,6 +918,29 @@ test("object publication rejects shared memory inputs", async t => {
   const shared = new SharedArrayBuffer(16);
   await assert.rejects(store.publish(shared), /must not use shared memory/u);
   await assert.rejects(store.publish(new Uint8Array(shared)), /must not use shared memory/u);
+  const sharedBuffer = Buffer.from(shared);
+  Object.defineProperty(sharedBuffer, "buffer", {
+    configurable: true,
+    get() {
+      return new ArrayBuffer(16);
+    },
+  });
+  await assert.rejects(store.publish(sharedBuffer), /must not use shared memory/u);
+
+  const ordinary = new Uint8Array([1, 2, 3]);
+  let overriddenGetterReads = 0;
+  for (const property of ["buffer", "byteOffset", "byteLength"]) {
+    Object.defineProperty(ordinary, property, {
+      configurable: true,
+      get() {
+        overriddenGetterReads += 1;
+        throw new Error("caller-owned getter must not run");
+      },
+    });
+  }
+  const published = await store.publish(ordinary);
+  assert.deepEqual(await readFile(published.path), Buffer.from([1, 2, 3]));
+  assert.equal(overriddenGetterReads, 0);
 });
 
 test("temporary recovery applies a streaming directory-entry budget", async t => {
@@ -1793,6 +1816,21 @@ captureTest("stored journals are the only authority for continuation lineage", a
 });
 
 captureTest("invalid journal paths and lineage fail before journal publication", async t => {
+  const traversalRoot = await temporaryDirectory(t);
+  const traversalPaths = await writeCaptureFixture(traversalRoot, []);
+  const traversalSecret = `token=${"y".repeat(32)}`;
+  const traversalDirectory = join(traversalPaths.runtimeRoot, JOB_ID, "state", "attempt-journal");
+  await mkdir(traversalDirectory, { recursive: true });
+  await symlink("missing-target", join(traversalDirectory, traversalSecret));
+  await assert.rejects(captureEvidence({
+    campaignId: "secret-journal-traversal",
+    jobIds: [JOB_ID],
+    ...traversalPaths,
+  }), error => {
+    assert.equal(error.message.includes(traversalSecret), false);
+    return true;
+  });
+
   const secretRoot = await temporaryDirectory(t);
   const secretPaths = await writeCaptureFixture(secretRoot, []);
   const secret = `token=${"x".repeat(32)}`;

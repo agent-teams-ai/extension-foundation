@@ -119,6 +119,17 @@ const DEFAULT_RESOURCE_LIMITS = Object.freeze({
   maxObservationMs: 10_000,
 });
 const execFileAsync = promisify(execFile);
+const TYPED_ARRAY_PROTOTYPE = Object.getPrototypeOf(Uint8Array.prototype);
+const TYPED_ARRAY_VIEW_GETTERS = Object.freeze({
+  buffer: Object.getOwnPropertyDescriptor(TYPED_ARRAY_PROTOTYPE, "buffer").get,
+  byteOffset: Object.getOwnPropertyDescriptor(TYPED_ARRAY_PROTOTYPE, "byteOffset").get,
+  byteLength: Object.getOwnPropertyDescriptor(TYPED_ARRAY_PROTOTYPE, "byteLength").get,
+});
+const DATA_VIEW_GETTERS = Object.freeze({
+  buffer: Object.getOwnPropertyDescriptor(DataView.prototype, "buffer").get,
+  byteOffset: Object.getOwnPropertyDescriptor(DataView.prototype, "byteOffset").get,
+  byteLength: Object.getOwnPropertyDescriptor(DataView.prototype, "byteLength").get,
+});
 
 function record(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -431,9 +442,10 @@ function normalizeResourceLimits(overrides = {}) {
 function accountResource(budget, bytes, label, limits) {
   budget.files += 1;
   budget.bytes += bytes.length;
-  if (budget.files > limits.maxFiles) throw new Error(`capture file-count limit exceeded at ${label}`);
-  if (bytes.length > limits.maxFileBytes) throw new Error(`capture file-size limit exceeded at ${label}`);
-  if (budget.bytes > limits.maxTotalBytes) throw new Error(`capture aggregate byte limit exceeded at ${label}`);
+  const safeLabel = safeDiagnosticLabel(label);
+  if (budget.files > limits.maxFiles) throw new Error(`capture file-count limit exceeded at ${safeLabel}`);
+  if (bytes.length > limits.maxFileBytes) throw new Error(`capture file-size limit exceeded at ${safeLabel}`);
+  if (budget.bytes > limits.maxTotalBytes) throw new Error(`capture aggregate byte limit exceeded at ${safeLabel}`);
 }
 
 export function sha256(bytes) {
@@ -604,6 +616,27 @@ async function syncDirectory(directory) {
   }
 }
 
+function sanitizedPathError(error, path) {
+  let text;
+  try {
+    text = String(path);
+  } catch {
+    text = "";
+  }
+  if (!SECRET_PATTERNS.some(({ expression }) => expression.test(text))) return error;
+  const sanitized = new Error("evidence path operation failed");
+  if (typeof error?.code === "string") sanitized.code = error.code;
+  return sanitized;
+}
+
+async function sanitizedPathOperation(path, operation) {
+  try {
+    return await operation();
+  } catch (error) {
+    throw sanitizedPathError(error, path);
+  }
+}
+
 async function descriptorCanonicalPath(handle, limits, cwd) {
   if (process.platform === "linux") return realpath(`/proc/self/fd/${handle.fd}`);
   if (process.platform === "darwin") {
@@ -625,10 +658,7 @@ async function secureRead(root, path, options = {}) {
   try {
     return await secureReadUnsafe(root, path, options);
   } catch (error) {
-    if (!SECRET_PATTERNS.some(({ expression }) => expression.test(String(path)))) throw error;
-    const sanitized = new Error("evidence path operation failed");
-    if (typeof error?.code === "string") sanitized.code = error.code;
-    throw sanitized;
+    throw sanitizedPathError(error, path);
   }
 }
 
@@ -945,15 +975,21 @@ function temporaryOwnerIsAlive(name) {
 }
 
 function snapshotBytes(input) {
-  if (typeof input === "string" || Buffer.isBuffer(input)) return Buffer.from(input);
-  if (utilTypes.isSharedArrayBuffer(input)
-      || (ArrayBuffer.isView(input) && utilTypes.isSharedArrayBuffer(input.buffer))) {
+  if (typeof input === "string") return Buffer.from(input);
+  if (utilTypes.isSharedArrayBuffer(input)) {
     throw new TypeError("object publication input must not use shared memory");
   }
   if (ArrayBuffer.isView(input)) {
-    return Buffer.from(new Uint8Array(input.buffer, input.byteOffset, input.byteLength));
+    const getters = utilTypes.isDataView(input) ? DATA_VIEW_GETTERS : TYPED_ARRAY_VIEW_GETTERS;
+    const buffer = getters.buffer.call(input);
+    if (utilTypes.isSharedArrayBuffer(buffer)) {
+      throw new TypeError("object publication input must not use shared memory");
+    }
+    const byteOffset = getters.byteOffset.call(input);
+    const byteLength = getters.byteLength.call(input);
+    return Buffer.from(new Uint8Array(buffer, byteOffset, byteLength));
   }
-  if (input instanceof ArrayBuffer) {
+  if (utilTypes.isAnyArrayBuffer(input)) {
     return Buffer.from(new Uint8Array(input));
   }
   throw new TypeError("object publication input must be a string or contiguous byte sequence");
@@ -1826,7 +1862,7 @@ function mediaType(path) {
 async function regularFilesBelow(root, relativeDirectory, limits, budget) {
   const directory = join(root, relativeDirectory);
   try {
-    const metadata = await lstat(directory);
+    const metadata = await sanitizedPathOperation(directory, () => lstat(directory));
     if (metadata.isSymbolicLink() || !metadata.isDirectory()) throw new Error("capture directory must be a real directory");
   } catch (error) {
     if (error?.code === "ENOENT") return [];
@@ -1834,30 +1870,34 @@ async function regularFilesBelow(root, relativeDirectory, limits, budget) {
   }
   const results = [];
   budget.directories += 1;
-  if (budget.directories > limits.maxDirectories) throw new Error(`capture directory-count limit exceeded at ${directory}`);
+  if (budget.directories > limits.maxDirectories) throw new Error(`capture directory-count limit exceeded at ${safeDiagnosticLabel(directory)}`);
   const pending = [{ directory, depth: 0 }];
   while (pending.length > 0) {
     const current = pending.pop();
-    if (current.depth > limits.maxDirectoryDepth) throw new Error(`capture directory-depth limit exceeded at ${current.directory}`);
-    const stream = await opendir(current.directory);
-    for await (const entry of stream) {
-      budget.directoryEntries += 1;
-      if (budget.directoryEntries > limits.maxDirectoryEntries) {
-        throw new Error(`capture directory-entry limit exceeded at ${current.directory}`);
+    if (current.depth > limits.maxDirectoryDepth) throw new Error(`capture directory-depth limit exceeded at ${safeDiagnosticLabel(current.directory)}`);
+    const stream = await sanitizedPathOperation(current.directory, () => opendir(current.directory));
+    try {
+      for await (const entry of stream) {
+        budget.directoryEntries += 1;
+        if (budget.directoryEntries > limits.maxDirectoryEntries) {
+          throw new Error(`capture directory-entry limit exceeded at ${safeDiagnosticLabel(current.directory)}`);
+        }
+        const path = join(current.directory, entry.name);
+        const metadata = await sanitizedPathOperation(path, () => lstat(path));
+        if (metadata.isSymbolicLink()) throw new Error(`capture source must not contain symlinks: ${safeDiagnosticLabel(path)}`);
+        if (metadata.isDirectory()) {
+          budget.directories += 1;
+          if (budget.directories > limits.maxDirectories) throw new Error(`capture directory-count limit exceeded at ${safeDiagnosticLabel(path)}`);
+          pending.push({ directory: path, depth: current.depth + 1 });
+          continue;
+        }
+        if (!metadata.isFile()) continue;
+        const bytes = await secureRead(root, path, { ...limits, requireDescriptorContainment: true });
+        accountResource(budget, bytes, path, limits);
+        results.push({ path, bytes });
       }
-      const path = join(current.directory, entry.name);
-      const metadata = await lstat(path);
-      if (metadata.isSymbolicLink()) throw new Error(`capture source must not contain symlinks: ${path}`);
-      if (metadata.isDirectory()) {
-        budget.directories += 1;
-        if (budget.directories > limits.maxDirectories) throw new Error(`capture directory-count limit exceeded at ${path}`);
-        pending.push({ directory: path, depth: current.depth + 1 });
-        continue;
-      }
-      if (!metadata.isFile()) continue;
-      const bytes = await secureRead(root, path, { ...limits, requireDescriptorContainment: true });
-      accountResource(budget, bytes, path, limits);
-      results.push({ path, bytes });
+    } catch (error) {
+      throw sanitizedPathError(error, current.directory);
     }
   }
   return results.sort((left, right) => binaryCompare(left.path, right.path));
