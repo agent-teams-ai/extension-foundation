@@ -200,7 +200,7 @@ applicable field, ambiguous predicate, or changed catalog fails closed.
 
 | Record | Authorized source fields | Required join |
 | --- | --- | --- |
-| Current dossier custody | Observed repository, commit, tree, blob and gitlink mapping only | Equal matching Git fields; it does not prove workspace cleanliness, lock resolution, or generated inputs |
+| Current dossier custody | Observed repository, commit, tree, and declared regular-file path and blob identities only | Equal matching Git fields; gitlink or submodule mapping requires separately captured evidence, and current custody does not prove workspace cleanliness, lock resolution, or generated inputs |
 | Measurement authorization | Expected repository constraints and baseline-selection rule; no observed snapshot | Validate later discovery through the authorization's native rule, not snapshot equality |
 | Discovery and Phase 1 reproduction | Observed repository, commit, tree, submodules, applicable lockfiles, generated production inputs, and clean-state evidence | Equal the corresponding clean `B0` source fields |
 | Clean `B0` build provenance | The complete observed source snapshot plus build-native recipe, dependency, material, and toolchain evidence | Equal discovery source fields; validate build-only fields under the build contract |
