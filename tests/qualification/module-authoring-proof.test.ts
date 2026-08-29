@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
@@ -32,6 +32,7 @@ import {
   discoverDeclarations,
   emitGenerated,
   generatedOutputs,
+  type GenerationFileOperations,
   staleGenerated,
   writeDeclaration,
 } from "./module-authoring-proof/io.ts";
@@ -379,6 +380,69 @@ test("19 regeneration is byte-identical and stale outputs fail closed", async ()
     assert.deepEqual(await staleGenerated(root, AGENT_RUNTIME_DECLARATIONS), []);
     await writeFile(join(root, "module-handles.ts"), "stale\n", "utf8");
     assert.deepEqual(await staleGenerated(root, AGENT_RUNTIME_DECLARATIONS), ["module-handles.ts"]);
+    await writeFile(join(root, "obsolete.generated.ts"), "obsolete\n", "utf8");
+    assert.deepEqual(await staleGenerated(root, AGENT_RUNTIME_DECLARATIONS), [
+      "module-handles.ts",
+      "obsolete.generated.ts",
+    ]);
+  });
+});
+
+test("19b failed replacement restores the previous generation before fallible staging cleanup", async () => {
+  await withTemp(async root => {
+    await emitGenerated(root, AGENT_RUNTIME_DECLARATIONS);
+    const realOperations: GenerationFileOperations = { mkdtemp, rename, rm, writeFile };
+    const failingOperations: GenerationFileOperations = {
+      ...realOperations,
+      async rename(source, destination) {
+        if (String(source).includes(".staging-")) throw new Error("INJECTED_INSTALL_FAILURE");
+        await rename(source, destination);
+      },
+      async rm(path, options) {
+        if (String(path).includes(".staging-")) throw new Error("INJECTED_STAGING_CLEANUP_FAILURE");
+        await rm(path, options);
+      },
+    };
+    await assert.rejects(
+      emitGenerated(root, [...AGENT_RUNTIME_DECLARATIONS].reverse(), failingOperations),
+      /GENERATION_PUBLICATION_AND_RECOVERY_FAILED/u,
+    );
+    assert.deepEqual(await staleGenerated(root, AGENT_RUNTIME_DECLARATIONS), []);
+    const parentEntries = await readdir(dirname(root));
+    const backupPrefix = `.${basename(root)}.backup-`;
+    const stagingPrefix = `.${basename(root)}.staging-`;
+    assert.equal(parentEntries.some(name => name.startsWith(backupPrefix)), false);
+    const stagingArtifacts = parentEntries.filter(name => name.startsWith(stagingPrefix));
+    assert.equal(stagingArtifacts.length, 1);
+    await Promise.all(stagingArtifacts.map(name => rm(join(dirname(root), name), { recursive: true, force: true })));
+  });
+});
+
+test("19c committed replacement reports backup cleanup failure without reverting the new generation", async () => {
+  await withTemp(async root => {
+    await emitGenerated(root, AGENT_RUNTIME_DECLARATIONS);
+    let backupRemovals = 0;
+    const failingOperations: GenerationFileOperations = {
+      mkdtemp,
+      rename,
+      async rm(path, options) {
+        if (String(path).includes(".backup-") && ++backupRemovals === 2) {
+          throw new Error("INJECTED_BACKUP_CLEANUP_FAILURE");
+        }
+        await rm(path, options);
+      },
+      writeFile,
+    };
+    await assert.rejects(
+      emitGenerated(root, [...AGENT_RUNTIME_DECLARATIONS].reverse(), failingOperations),
+      /GENERATION_PUBLISHED_BACKUP_CLEANUP_FAILED/u,
+    );
+    assert.deepEqual(await staleGenerated(root, AGENT_RUNTIME_DECLARATIONS), []);
+    const parentEntries = await readdir(dirname(root));
+    const backupPrefix = `.${basename(root)}.backup-`;
+    const backupArtifacts = parentEntries.filter(name => name.startsWith(backupPrefix));
+    assert.equal(backupArtifacts.length, 1);
+    await Promise.all(backupArtifacts.map(name => rm(join(dirname(root), name), { recursive: true, force: true })));
   });
 });
 
@@ -484,9 +548,9 @@ test("24 complete baseline/candidate measurement separates L1, L5, and synthetic
   assert.equal(first.adrProductionGlueRatio, "not-applicable-production-loc-zero");
   assert.equal(first.baselineWiringLoc, 23);
   assert.equal(first.candidateProductLoc, 165);
-  assert.equal(first.genericProofGlueLoc, 684);
-  assert.equal(first.candidateWithGenericLoc, 849);
-  assert.equal(first.genericProofGlueRatio, 4.145455);
+  assert.equal(first.genericProofGlueLoc, 721);
+  assert.equal(first.candidateWithGenericLoc, 886);
+  assert.equal(first.genericProofGlueRatio, 4.369697);
   assert.deepEqual(first.fileCounts, { baseline: 2, candidateProduct: 13, genericProof: 4 });
   assert.deepEqual(first.syntacticBindingMarkerSites, { baseline: 2, candidate: 4 });
   assert.deepEqual(first.syntacticBindingMarkerFiles, { baseline: 2, candidate: 4 });

@@ -1,5 +1,5 @@
 import { constants, type Stats } from "node:fs";
-import { lstat, mkdtemp, open, opendir, readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
+import { lstat, mkdtemp, open, opendir, readFile, readdir, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 
 import { parseStrictJson } from "../../../architecture/checks/strict-json.mjs";
@@ -211,36 +211,67 @@ export function generatedOutputs(declarations: readonly LocatedDeclaration[]): R
   });
 }
 
-export async function emitGenerated(outputDir: string, declarations: readonly LocatedDeclaration[]): Promise<Readonly<Record<string, string>>> {
+export interface GenerationFileOperations {
+  readonly mkdtemp: typeof mkdtemp;
+  readonly rename: typeof rename;
+  readonly rm: typeof rm;
+  readonly writeFile: typeof writeFile;
+}
+
+const defaultGenerationFileOperations: GenerationFileOperations = Object.freeze({
+  mkdtemp,
+  rename,
+  rm,
+  writeFile,
+});
+
+export async function emitGenerated(
+  outputDir: string,
+  declarations: readonly LocatedDeclaration[],
+  operations: GenerationFileOperations = defaultGenerationFileOperations,
+): Promise<Readonly<Record<string, string>>> {
   const outputs = generatedOutputs(declarations);
   const parent = dirname(outputDir);
   const stem = basename(outputDir);
-  const staging = await mkdtemp(join(parent, `.${stem}.staging-`));
-  const backup = await mkdtemp(join(parent, `.${stem}.backup-`));
-  await rm(backup, { recursive: true, force: true });
+  const staging = await operations.mkdtemp(join(parent, `.${stem}.staging-`));
+  let backup: string | undefined;
   let previousMoved = false;
   try {
-    await Promise.all(Object.entries(outputs).map(([name, source]) => writeFile(join(staging, name), source, { encoding: "utf8", flag: "wx" })));
+    await Promise.all(Object.entries(outputs).map(([name, source]) => operations.writeFile(join(staging, name), source, { encoding: "utf8", flag: "wx" })));
+    backup = await operations.mkdtemp(join(parent, `.${stem}.backup-`));
+    await operations.rm(backup, { recursive: true, force: true });
     try {
-      await rename(outputDir, backup);
+      await operations.rename(outputDir, backup);
       previousMoved = true;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     }
-    await rename(staging, outputDir);
+    await operations.rename(staging, outputDir);
   } catch (error) {
-    await rm(staging, { recursive: true, force: true });
+    const cleanupErrors: unknown[] = [];
     if (previousMoved) {
-      await rm(outputDir, { recursive: true, force: true });
-      await rename(backup, outputDir);
+      try {
+        await operations.rm(outputDir, { recursive: true, force: true });
+        await operations.rename(backup!, outputDir);
+      } catch (restoreError) {
+        cleanupErrors.push(restoreError);
+      }
+    }
+    try {
+      await operations.rm(staging, { recursive: true, force: true });
+    } catch (cleanupError) {
+      cleanupErrors.push(cleanupError);
+    }
+    if (cleanupErrors.length > 0) {
+      throw new AggregateError([error, ...cleanupErrors], "GENERATION_PUBLICATION_AND_RECOVERY_FAILED");
     }
     throw error;
   }
-  if (previousMoved) {
+  if (previousMoved && backup !== undefined) {
     try {
-      await rm(backup, { recursive: true, force: true });
-    } catch {
-      // The new generation is already committed; a stale backup is safer than rollback to partial data.
+      await operations.rm(backup, { recursive: true, force: true });
+    } catch (error) {
+      throw new Error(`GENERATION_PUBLISHED_BACKUP_CLEANUP_FAILED:${backup}`, { cause: error });
     }
   }
   return outputs;
@@ -249,6 +280,14 @@ export async function emitGenerated(outputDir: string, declarations: readonly Lo
 export async function staleGenerated(outputDir: string, declarations: readonly LocatedDeclaration[]): Promise<readonly string[]> {
   const outputs = generatedOutputs(declarations);
   const stale: string[] = [];
+  const expectedNames = new Set(Object.keys(outputs));
+  try {
+    for (const name of await readdir(outputDir)) {
+      if (!expectedNames.has(name)) stale.push(name);
+    }
+  } catch {
+    return Object.freeze(Object.keys(outputs).sort(binaryCompare));
+  }
   for (const [name, expected] of Object.entries(outputs)) {
     try {
       if (await readFile(join(outputDir, name), "utf8") !== expected) stale.push(name);
