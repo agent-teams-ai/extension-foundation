@@ -1,7 +1,7 @@
 # Agent Teams Extension Foundation
 
-Product-neutral extension contracts, lifecycle primitives, OCI distribution,
-and conformance tooling shared by Agent Teams products.
+Product-neutral extension artifact, trust, distribution, isolation, and
+conformance primitives shared by Agent Teams products.
 
 This repository will provide common technical infrastructure for Orchestrator,
 Agent Runtime, Frontend, and future products. Every product retains its own
@@ -11,9 +11,10 @@ domain language, feature-owned extension points, authority, state, and host.
 
 Architecture foundation only. No public runtime SPI or production package has
 been materialized yet. A package is created only after a real product slice and
-one admission basis governed by ADR-0013 is proved: a second consumer, an
-independent replacement or release lifecycle, independent deployment or
-isolation, or a public SPI with two implementations and conformance evidence.
+one admission basis retained by ADR-0015 from superseded ADR-0013 is proved: a
+second consumer, an independent replacement or release lifecycle, independent
+deployment or isolation, or a public SPI with two implementations and
+conformance evidence.
 
 ## Accepted Direction
 
@@ -28,6 +29,14 @@ isolation, or a public SPI with two implementations and conformance evidence.
 - PostgreSQL is the only canonical state for each writable catalog source.
 - Signed catalog snapshots and search indexes are derived, reproducible outputs.
 - Federation routes each extension to one explicit authority and fails closed.
+
+Neutral module, capability, implementation, and slot identities; module
+declarations; dependency bindings; deterministic graph compilation; immutable
+plans and digests; and bounded composition diagnostics belong to
+[`get-modular`](https://github.com/agent-teams-ai/get-modular). Extension
+Foundation does not duplicate or import that composition core. Product-owned
+adapters may consume both repositories while the product host retains loading,
+authorization, lifecycle, readiness, routing, and recovery authority.
 
 See the [documentation index](docs/README.md) and
 [architecture decisions](docs/decisions/README.md).
