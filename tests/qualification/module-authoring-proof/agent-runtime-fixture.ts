@@ -13,19 +13,3 @@ export const createRuntimeInstallationFeature = (
   discoverClaudeCodeInstallations: () => `claude:${dependencies.executableFileObserver.observed.join(",")}`,
   discoverCodexInstallations: () => `codex:${dependencies.executableFileObserver.observed.join(",")}`,
 });
-
-export function createAgentRuntimeLoaderTable(
-  observer: ExecutableObserver,
-  trace: string[],
-): Readonly<Record<string, () => unknown>> {
-  return Object.freeze({
-    "runtime.executable-observer": () => {
-      trace.push("runtime.executable-observer");
-      return observer;
-    },
-    "runtime.installation-discovery": () => {
-      trace.push("runtime.installation-discovery");
-      return createRuntimeInstallationFeature;
-    },
-  });
-}

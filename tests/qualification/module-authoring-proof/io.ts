@@ -1,5 +1,8 @@
-import { lstat, open, opendir, readFile, realpath, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { constants, type Stats } from "node:fs";
+import { lstat, mkdtemp, open, opendir, readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
+import { basename, dirname, join } from "node:path";
+
+import { parseStrictJson } from "../../../architecture/checks/strict-json.mjs";
 
 import {
   binaryCompare,
@@ -17,18 +20,28 @@ export interface DiscoveryResult {
   readonly reads: readonly string[];
 }
 
-async function boundedDirectories(root: string, remaining: number): Promise<readonly string[]> {
+async function boundedDirectories(root: string, remaining: number): Promise<Readonly<{ directories: readonly string[]; entriesSeen: number }>> {
   const directories: string[] = [];
+  let entriesSeen = 0;
   const handle = await opendir(root);
   for await (const entry of handle) {
+    if (entriesSeen >= remaining) throw new Error("DISCOVERY_ENTRY_LIMIT");
+    entriesSeen += 1;
     if (!entry.isDirectory()) continue;
-    if (directories.length >= remaining) throw new Error("DISCOVERY_CANDIDATE_LIMIT");
     directories.push(entry.name);
   }
-  return Object.freeze(directories.sort(binaryCompare));
+  return Object.freeze({ directories: Object.freeze(directories.sort(binaryCompare)), entriesSeen });
 }
 
-async function readBoundedDeclaration(path: string, displayPath: string, maxBytes: number): Promise<string | undefined> {
+const sameFile = (left: Stats, right: Stats): boolean => left.dev === right.dev && left.ino === right.ino;
+
+async function readBoundedDeclaration(root: string, directory: string, displayPath: string, maxBytes: number): Promise<string | undefined> {
+  const parentPath = join(root, directory);
+  const path = join(parentPath, DECLARATION_NAME);
+  const parentStats = await lstat(parentPath);
+  if (!parentStats.isDirectory() || parentStats.isSymbolicLink() || await realpath(parentPath) !== parentPath) {
+    throw new Error(`DISCOVERY_CANDIDATE_NOT_REGULAR:${displayPath}`);
+  }
   let pathStats;
   try {
     pathStats = await lstat(path);
@@ -38,15 +51,45 @@ async function readBoundedDeclaration(path: string, displayPath: string, maxByte
   }
   if (!pathStats.isFile() || pathStats.isSymbolicLink()) throw new Error(`DISCOVERY_DECLARATION_NOT_REGULAR:${displayPath}`);
 
-  const handle = await open(path, "r");
+  const flags = constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_NONBLOCK ?? 0);
+  let handle;
+  try {
+    handle = await open(path, flags);
+  } catch (error) {
+    if (["ELOOP", "EFTYPE", "ENXIO"].includes((error as NodeJS.ErrnoException).code ?? "")) {
+      throw new Error(`DISCOVERY_DECLARATION_NOT_REGULAR:${displayPath}`);
+    }
+    throw error;
+  }
   try {
     const openedStats = await handle.stat();
-    if (!openedStats.isFile()) throw new Error(`DISCOVERY_DECLARATION_NOT_REGULAR:${displayPath}`);
+    const openedPath = await realpath(path);
+    const openedPathStats = await lstat(openedPath);
+    if (!openedStats.isFile() || !sameFile(pathStats, openedStats)
+      || openedPath !== path || openedPathStats.isSymbolicLink()
+      || !openedPathStats.isFile() || !sameFile(openedStats, openedPathStats)) {
+      throw new Error(`DISCOVERY_DECLARATION_CHANGED:${displayPath}`);
+    }
     if (openedStats.size > maxBytes) throw new Error(`DISCOVERY_DECLARATION_BYTE_LIMIT:${displayPath}`);
-    const buffer = Buffer.alloc(maxBytes + 1);
-    const { bytesRead } = await handle.read(buffer, 0, buffer.byteLength, 0);
-    if (bytesRead > maxBytes) throw new Error(`DISCOVERY_DECLARATION_BYTE_LIMIT:${displayPath}`);
-    return buffer.subarray(0, bytesRead).toString("utf8");
+    const chunks: Buffer[] = [];
+    let totalBytes = 0;
+    while (totalBytes <= maxBytes) {
+      const chunk = Buffer.allocUnsafe(Math.min(64 * 1024, maxBytes + 1 - totalBytes));
+      const { bytesRead } = await handle.read(chunk, 0, chunk.length, totalBytes);
+      if (bytesRead === 0) break;
+      chunks.push(chunk.subarray(0, bytesRead));
+      totalBytes += bytesRead;
+    }
+    if (totalBytes > maxBytes) throw new Error(`DISCOVERY_DECLARATION_BYTE_LIMIT:${displayPath}`);
+    const finalStats = await handle.stat();
+    const finalPath = await realpath(path);
+    const finalPathStats = await lstat(finalPath);
+    if (!sameFile(openedStats, finalStats) || openedStats.size !== finalStats.size
+      || openedStats.mtimeMs !== finalStats.mtimeMs || openedStats.ctimeMs !== finalStats.ctimeMs
+      || finalPath !== openedPath || !sameFile(finalStats, finalPathStats)) {
+      throw new Error(`DISCOVERY_DECLARATION_CHANGED:${displayPath}`);
+    }
+    return Buffer.concat(chunks, totalBytes).toString("utf8");
   } finally {
     await handle.close();
   }
@@ -55,14 +98,14 @@ async function readBoundedDeclaration(path: string, displayPath: string, maxByte
 export async function discoverDeclarations(
   consumer: string,
   roots: readonly string[],
-  limits: Readonly<{ maxRoots: number; maxCandidates: number; maxDeclarationBytes?: number }> = {
+  limits: Readonly<{ maxRoots: number; maxEntries: number; maxDeclarationBytes?: number }> = {
     maxRoots: 4,
-    maxCandidates: 32,
+    maxEntries: 32,
     maxDeclarationBytes: 16_384,
   },
 ): Promise<DiscoveryResult> {
   if (!Number.isSafeInteger(limits.maxRoots) || limits.maxRoots < 1 ||
-    !Number.isSafeInteger(limits.maxCandidates) || limits.maxCandidates < 1 ||
+    !Number.isSafeInteger(limits.maxEntries) || limits.maxEntries < 1 ||
     !Number.isSafeInteger(limits.maxDeclarationBytes ?? 16_384) || (limits.maxDeclarationBytes ?? 16_384) < 1) {
     throw new Error("DISCOVERY_INVALID_LIMIT");
   }
@@ -74,21 +117,20 @@ export async function discoverDeclarations(
   const declarations: LocatedDeclaration[] = [];
   const diagnostics: Diagnostic[] = [];
   const reads: string[] = [];
-  let candidates = 0;
+  let entriesSeen = 0;
   for (const [rootIndex, root] of canonicalRoots.entries()) {
-    const entries = await boundedDirectories(root.canonical, limits.maxCandidates - candidates);
-    candidates += entries.length;
-    for (const entry of entries) {
-      const declarationPath = join(root.canonical, entry, DECLARATION_NAME);
+    const entries = await boundedDirectories(root.canonical, limits.maxEntries - entriesSeen);
+    entriesSeen += entries.entriesSeen;
+    for (const entry of entries.directories) {
       const displayPath = canonicalRoots.length === 1
         ? `${entry}/${DECLARATION_NAME}`
         : `root-${String(rootIndex + 1).padStart(4, "0")}/${entry}/${DECLARATION_NAME}`;
-      const source = await readBoundedDeclaration(declarationPath, displayPath, limits.maxDeclarationBytes ?? 16_384);
+      const source = await readBoundedDeclaration(root.canonical, entry, displayPath, limits.maxDeclarationBytes ?? 16_384);
       if (source === undefined) continue;
       reads.push(displayPath);
       let raw: unknown;
       try {
-        raw = JSON.parse(source);
+        raw = parseStrictJson(source);
       } catch {
         raw = undefined;
       }
@@ -151,7 +193,30 @@ export function generatedOutputs(declarations: readonly LocatedDeclaration[]): R
 
 export async function emitGenerated(outputDir: string, declarations: readonly LocatedDeclaration[]): Promise<Readonly<Record<string, string>>> {
   const outputs = generatedOutputs(declarations);
-  await Promise.all(Object.entries(outputs).map(([name, source]) => writeFile(join(outputDir, name), source, "utf8")));
+  const parent = dirname(outputDir);
+  const stem = basename(outputDir);
+  const staging = await mkdtemp(join(parent, `.${stem}.staging-`));
+  const backup = await mkdtemp(join(parent, `.${stem}.backup-`));
+  await rm(backup, { recursive: true, force: true });
+  let previousMoved = false;
+  try {
+    await Promise.all(Object.entries(outputs).map(([name, source]) => writeFile(join(staging, name), source, { encoding: "utf8", flag: "wx" })));
+    try {
+      await rename(outputDir, backup);
+      previousMoved = true;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+    await rename(staging, outputDir);
+    if (previousMoved) await rm(backup, { recursive: true, force: true });
+  } catch (error) {
+    await rm(staging, { recursive: true, force: true });
+    if (previousMoved) {
+      await rm(outputDir, { recursive: true, force: true });
+      await rename(backup, outputDir);
+    }
+    throw error;
+  }
   return outputs;
 }
 

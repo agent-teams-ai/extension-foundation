@@ -15,7 +15,7 @@ import {
   AGENT_RUNTIME_PROFILE,
   createAgentRuntimeCandidate,
 } from "./module-authoring-proof/agent-runtime-candidate.ts";
-import { createAgentRuntimeLoaderTable } from "./module-authoring-proof/agent-runtime-fixture.ts";
+import { createAgentRuntimeLoaderTable } from "./module-authoring-proof/agent-runtime-loaders.ts";
 import {
   createFrontendBaseline,
 } from "./module-authoring-proof/frontend-baseline.ts";
@@ -25,9 +25,9 @@ import {
   createFrontendCandidate,
 } from "./module-authoring-proof/frontend-candidate.ts";
 import {
-  createFrontendLoaderTable,
   type RecentProjectSource,
 } from "./module-authoring-proof/frontend-fixture.ts";
+import { createFrontendLoaderTable } from "./module-authoring-proof/frontend-loaders.ts";
 import {
   discoverDeclarations,
   emitGenerated,
@@ -36,7 +36,12 @@ import {
   writeDeclaration,
 } from "./module-authoring-proof/io.ts";
 import { evaluateSelectedLoaders } from "./module-authoring-proof/literal-loaders.ts";
-import { CONTEXT_REVISIONS, measureProof, type MeasurementInput } from "./module-authoring-proof/measurement.ts";
+import {
+  CONTEXT_REVISIONS,
+  measureProof,
+  type ClassifiedProofPath,
+  type MeasurementInput,
+} from "./module-authoring-proof/measurement.ts";
 import {
   binaryCompare,
   requiredDisableImpact,
@@ -53,20 +58,36 @@ const execFileAsync = promisify(execFile);
 const typescriptCli = fileURLToPath(new URL("../../node_modules/typescript/bin/tsc", import.meta.url));
 
 const proofPath = (...parts: string[]): string => join(proofDirectory, ...parts);
+const classified = (
+  bucket: ClassifiedProofPath["bucket"],
+  ...paths: readonly string[]
+): readonly ClassifiedProofPath[] => paths.map(path => Object.freeze({ bucket, path }));
 const measurementInput: MeasurementInput = {
-  baselinePaths: [proofPath("agent-runtime-baseline.ts"), proofPath("frontend-baseline.ts")],
-  candidateProductPaths: [
-    proofPath("agent-runtime-candidate.ts"),
-    proofPath("frontend-candidate.ts"),
-    proofPath("fixtures", "agent-runtime", "executable-observer", "module.declaration.json"),
-    proofPath("fixtures", "agent-runtime", "runtime-installation", "module.declaration.json"),
-    proofPath("fixtures", "agent-runtime", "profile.json"),
-    proofPath("fixtures", "frontend", "claude-recent-projects", "module.declaration.json"),
-    proofPath("fixtures", "frontend", "codex-recent-projects", "module.declaration.json"),
-    proofPath("fixtures", "frontend", "recent-projects", "module.declaration.json"),
-    proofPath("fixtures", "frontend", "profile.json"),
+  proofRoot: proofDirectory,
+  admissionDocumentPath: join(fixtureDirectory, "..", "..", "docs", "qualification", "module-system-v1-productization", "consumer-admission.md"),
+  classifiedPaths: [
+    ...classified("baseline", proofPath("agent-runtime-baseline.ts"), proofPath("frontend-baseline.ts")),
+    ...classified(
+      "candidate-product",
+      proofPath("agent-runtime-candidate.ts"),
+      proofPath("agent-runtime-loaders.ts"),
+      proofPath("frontend-candidate.ts"),
+      proofPath("frontend-loaders.ts"),
+      proofPath("fixtures", "agent-runtime", "executable-observer", "activation-factory.mjs"),
+      proofPath("fixtures", "agent-runtime", "executable-observer", "module.declaration.json"),
+      proofPath("fixtures", "agent-runtime", "runtime-installation", "module.declaration.json"),
+      proofPath("fixtures", "agent-runtime", "profile.json"),
+      proofPath("fixtures", "frontend", "claude-recent-projects", "module.declaration.json"),
+      proofPath("fixtures", "frontend", "codex-recent-projects", "module.declaration.json"),
+      proofPath("fixtures", "frontend", "recent-projects", "activation-factory.mjs"),
+      proofPath("fixtures", "frontend", "recent-projects", "module.declaration.json"),
+      proofPath("fixtures", "frontend", "profile.json"),
+    ),
+    ...classified("generic-proof", proofPath("model.ts"), proofPath("io.ts"), proofPath("literal-loaders.ts"), proofPath("fixture-data.ts")),
+    ...classified("shared-fixture", proofPath("agent-runtime-fixture.ts"), proofPath("frontend-fixture.ts")),
+    ...classified("measurement-harness", proofPath("measurement.ts"), join(fixtureDirectory, "module-authoring-proof.test.ts")),
+    ...classified("support-type", join(fixtureDirectory, "..", "..", "architecture", "checks", "strict-json.d.mts")),
   ],
-  genericProofPaths: [proofPath("model.ts"), proofPath("io.ts"), proofPath("literal-loaders.ts"), proofPath("fixture-data.ts")],
   baselineBindingProbes: [
     { path: proofPath("agent-runtime-baseline.ts"), token: "@proof-binding-site runtime.executable-observer" },
     { path: proofPath("frontend-baseline.ts"), token: "@proof-binding-site recent-projects.sources" },
@@ -79,17 +100,13 @@ const measurementInput: MeasurementInput = {
   ],
 };
 
-async function execPnpm(args: readonly string[], options: Readonly<{ cwd: string; env: NodeJS.ProcessEnv }>): Promise<void> {
-  const npmExecPath = process.env.npm_execpath;
-  if (npmExecPath !== undefined) {
-    await execFileAsync(process.execPath, [npmExecPath, ...args], options);
-    return;
-  }
+async function execPnpm(args: readonly string[], options: Readonly<{ cwd: string; env: NodeJS.ProcessEnv }>): Promise<string> {
   if (process.platform === "win32") {
-    await execFileAsync(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", "pnpm", ...args], options);
-    return;
+    const { stdout } = await execFileAsync(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", "pnpm", ...args], options);
+    return String(stdout);
   }
-  await execFileAsync("pnpm", args, options);
+  const { stdout } = await execFileAsync("pnpm", args, options);
+  return String(stdout);
 }
 
 const observer = Object.freeze({ observed: ["/opt/claude", "/opt/codex"] });
@@ -184,10 +201,10 @@ test("06 discovery is bounded to consumer roots and the fixed declaration name",
     await mkdir(join(root, "ignored"), { recursive: true });
     await writeDeclaration(root, "admitted", AGENT_RUNTIME_DECLARATIONS[0]!.declaration);
     await writeFile(join(root, "ignored", "other.json"), JSON.stringify(AGENT_RUNTIME_DECLARATIONS[1]!.declaration));
-    const result = await discoverDeclarations("agent-runtime", [root], { maxRoots: 1, maxCandidates: 2 });
+    const result = await discoverDeclarations("agent-runtime", [root], { maxRoots: 1, maxEntries: 2 });
     assert.deepEqual(result.reads, ["admitted/module.declaration.json"]);
     assert.deepEqual(result.declarations.map(item => item.declaration.moduleId), ["runtime.executable-observer"]);
-    await assert.rejects(discoverDeclarations("agent-runtime", [root, root], { maxRoots: 1, maxCandidates: 2 }), /DISCOVERY_ROOT_LIMIT/u);
+    await assert.rejects(discoverDeclarations("agent-runtime", [root, root], { maxRoots: 1, maxEntries: 2 }), /DISCOVERY_ROOT_LIMIT/u);
   });
 });
 
@@ -336,7 +353,7 @@ test("17 duplicate selected loader keys fail closed", () => {
   assert.deepEqual(simulateCandidateProfile(AGENT_RUNTIME_DECLARATIONS, profile).diagnostics.map(item => item.code), ["DUPLICATE_PROFILE_LOADER"]);
 });
 
-test("18 generated AI inventory is deterministic and navigable", () => {
+test("18 generated AI inventory is deterministic and exposes nominal handles", () => {
   const output = generatedOutputs([...FRONTEND_DECLARATIONS].reverse());
   const inventory = JSON.parse(output["module-inventory.json"]!);
   assert.deepEqual(inventory.map((item: { moduleId: string }) => item.moduleId), [
@@ -395,7 +412,7 @@ test("22 data projections are structuredClone safe while activation factories re
   assert.throws(() => structuredClone(createFrontendBaseline), /could not be cloned/u);
 });
 
-test("23 packed private consumer installs, typechecks, and executes with the pinned toolchain", async () => {
+test("23 packed private consumer installs, typechecks, and executes with the repository-compatible toolchain", async () => {
   await withTemp(async root => {
     const packageRoot = join(root, "package");
     const packRoot = join(root, "pack");
@@ -410,6 +427,9 @@ test("23 packed private consumer installs, typechecks, and executes with the pin
     await mkdir(packageRoot, { recursive: true });
     await mkdir(packRoot, { recursive: true });
     await mkdir(consumerRoot, { recursive: true });
+    assert.match((await execPnpm(["--version"], { cwd: root, env: commandEnvironment })).trim(), /^11\./u);
+    const { stdout: typescriptVersion } = await execFileAsync(process.execPath, [typescriptCli, "--version"], { cwd: root, env: commandEnvironment });
+    assert.equal(String(typescriptVersion).trim(), "Version 7.0.2");
     const generated = generatedOutputs(AGENT_RUNTIME_DECLARATIONS);
     await writeFile(join(packageRoot, "index.ts"), generated["module-handles.ts"]!);
     await writeFile(join(packageRoot, "index.js"), generated["module-handles.js"]!);
@@ -447,29 +467,37 @@ test("23 packed private consumer installs, typechecks, and executes with the pin
   });
 });
 
-test("24 complete baseline/candidate measurement deterministically applies the ADR-0013 NO-GO rule", async () => {
+test("24 complete baseline/candidate measurement separates L1, L5, and synthetic evidence", async () => {
   const first = await measureProof(measurementInput);
   const second = await measureProof(measurementInput);
   assert.deepEqual(second, first);
   assert.deepEqual(first.contextualSourceLocks, CONTEXT_REVISIONS);
   assert.equal(first.adrProductionGlueRatio, "not-applicable-production-loc-zero");
   assert.equal(first.baselineWiringLoc, 23);
-  assert.equal(first.candidateProductLoc, 119);
-  assert.equal(first.genericProofGlueLoc, 589);
-  assert.equal(first.candidateWithGenericLoc, 708);
-  assert.equal(first.genericProofGlueRatio, 4.94958);
-  assert.deepEqual(first.fileCounts, { baseline: 2, candidateProduct: 9, genericProof: 4 });
-  assert.deepEqual(first.bindingChangeSites, { baseline: 2, candidate: 4 });
-  assert.deepEqual(first.bindingChangeFiles, { baseline: 2, candidate: 4 });
+  assert.equal(first.candidateProductLoc, 165);
+  assert.equal(first.genericProofGlueLoc, 659);
+  assert.equal(first.candidateWithGenericLoc, 824);
+  assert.equal(first.genericProofGlueRatio, 3.993939);
+  assert.deepEqual(first.fileCounts, { baseline: 2, candidateProduct: 13, genericProof: 4 });
+  assert.deepEqual(first.syntacticBindingMarkerSites, { baseline: 2, candidate: 4 });
+  assert.deepEqual(first.syntacticBindingMarkerFiles, { baseline: 2, candidate: 4 });
   assert.equal(first.disposableExecutablePercent, 100);
   assert.equal(first.genericProofGlueRatio > 0.3, true);
+  assert.deepEqual(first.governedAdmission, {
+    agentRuntimeL1: "NO-GO-MEASUREMENT-CANDIDATE",
+    frontendL1: "NO-GO-MEASUREMENT-CANDIDATE",
+    sharedL5: "NO-GO",
+  });
   assert.equal(first.verdict, "NO-GO");
-  assert.deepEqual(first.reasons, [
-    "generic-proof-glue-exceeds-adr-0013-threshold",
+  assert.deepEqual(first.l1NoGoReasons, ["canonical-consumer-admission-l1-no-go"]);
+  assert.equal(first.l1ReconsiderWhen, "owning-product-benchmark-exists");
+  assert.deepEqual(first.l5NoGoReasons, ["canonical-consumer-admission-l5-no-go"]);
+  assert.equal(first.l5ReconsiderWhen, "second-real-consumer-and-executable-conformance-exist");
+  assert.deepEqual(first.syntheticNegativeSignals, [
+    "synthetic-generic-proof-glue-ratio-above-0.3",
     "candidate-does-not-reduce-binding-change-files",
-    "no-owning-product-benchmark",
-    "no-second-real-consumer",
   ]);
+  assert.equal(first.maintenanceDisposition, "delete-executable-proof-before-merge");
 });
 
 test("25 Orchestrator non-admission is read from the governed qualification authority", async () => {
@@ -645,8 +673,8 @@ test("39 discovery enforces declaration byte and duplicate-root bounds with rela
   await withTemp(async root => {
     await mkdir(join(root, "large"), { recursive: true });
     await writeFile(join(root, "large", "module.declaration.json"), " ".repeat(20));
-    await assert.rejects(discoverDeclarations("frontend", [root], { maxRoots: 1, maxCandidates: 1, maxDeclarationBytes: 10 }), /DISCOVERY_DECLARATION_BYTE_LIMIT:large\/module\.declaration\.json/u);
-    await assert.rejects(discoverDeclarations("frontend", [root, root], { maxRoots: 2, maxCandidates: 2 }), /DISCOVERY_DUPLICATE_ROOT/u);
+    await assert.rejects(discoverDeclarations("frontend", [root], { maxRoots: 1, maxEntries: 1, maxDeclarationBytes: 10 }), /DISCOVERY_DECLARATION_BYTE_LIMIT:large\/module\.declaration\.json/u);
+    await assert.rejects(discoverDeclarations("frontend", [root, root], { maxRoots: 2, maxEntries: 2 }), /DISCOVERY_DUPLICATE_ROOT/u);
   });
 });
 
@@ -684,14 +712,23 @@ test("43 literal loader selection validates the complete set before evaluating a
   const trace: string[] = [];
   const table = Object.freeze({ valid: () => trace.push("valid") });
   assert.throws(() => evaluateSelectedLoaders(table, ["valid", "invalid"]), /INVALID_LITERAL_LOADER:invalid/u);
+  assert.throws(() => evaluateSelectedLoaders(table, ["valid", "valid"]), /DUPLICATE_LITERAL_LOADER/u);
+  const accessorTable = Object.defineProperty({}, "accessor", {
+    enumerable: true,
+    get: () => {
+      trace.push("accessor");
+      return () => undefined;
+    },
+  }) as Readonly<Record<string, () => unknown>>;
+  assert.throws(() => evaluateSelectedLoaders(accessorTable, ["accessor"]), /INVALID_LITERAL_LOADER:accessor/u);
   assert.deepEqual(trace, []);
 });
 
-test("44 discovery rejects symlink declarations and stops at the candidate bound", async () => {
+test("44 discovery rejects unsafe declarations and charges every enumerated entry", async () => {
   await withTemp(async root => {
     await mkdir(join(root, "one"), { recursive: true });
     await mkdir(join(root, "two"), { recursive: true });
-    await assert.rejects(discoverDeclarations("frontend", [root], { maxRoots: 1, maxCandidates: 1 }), /DISCOVERY_CANDIDATE_LIMIT/u);
+    await assert.rejects(discoverDeclarations("frontend", [root], { maxRoots: 1, maxEntries: 1 }), /DISCOVERY_ENTRY_LIMIT/u);
 
     if (process.platform !== "win32") {
       const outside = join(root, "outside.json");
@@ -699,6 +736,23 @@ test("44 discovery rejects symlink declarations and stops at the candidate bound
       await symlink(outside, join(root, "one", "module.declaration.json"));
       await assert.rejects(discoverDeclarations("frontend", [root]), /DISCOVERY_DECLARATION_NOT_REGULAR:one\/module\.declaration\.json/u);
     }
+  });
+  await withTemp(async root => {
+    await writeFile(join(root, "ignored-a.txt"), "a");
+    await writeFile(join(root, "ignored-b.txt"), "b");
+    await assert.rejects(discoverDeclarations("frontend", [root], { maxRoots: 1, maxEntries: 1 }), /DISCOVERY_ENTRY_LIMIT/u);
+  });
+  await withTemp(async root => {
+    await mkdir(join(root, "duplicate-json"), { recursive: true });
+    const declaration = FRONTEND_DECLARATIONS[0]!.declaration;
+    const duplicateJson = JSON.stringify(declaration).replace(
+      `"moduleId":"${declaration.moduleId}"`,
+      `"moduleId":"ignored","moduleId":"${declaration.moduleId}"`,
+    );
+    await writeFile(join(root, "duplicate-json", "module.declaration.json"), duplicateJson);
+    const result = await discoverDeclarations("frontend", [root]);
+    assert.equal(result.declarations.length, 0);
+    assert.equal(result.diagnostics.length > 0, true);
   });
 });
 

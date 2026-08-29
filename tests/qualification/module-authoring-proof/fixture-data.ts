@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
 
+import { parseStrictJson } from "../../../architecture/checks/strict-json.mjs";
+
 import {
   DECLARATION_NAME,
   type Consumer,
@@ -20,12 +22,12 @@ export function readFixtureData(
     .map(directory => {
       if (!/^[a-z][a-z0-9-]*$/u.test(directory)) throw new Error("INVALID_PROOF_DECLARATION_DIRECTORY");
       const declarationPath = `${directory}/${DECLARATION_NAME}`;
-      const raw: unknown = JSON.parse(readFileSync(new URL(`${directory}/${DECLARATION_NAME}`, fixtureRoot), "utf8"));
+      const raw: unknown = parseStrictJson(readFileSync(new URL(`${directory}/${DECLARATION_NAME}`, fixtureRoot), "utf8"));
       const result = validateDeclaration(raw, declarationPath, consumer);
       if (result.declaration === undefined) throw new Error(`INVALID_PROOF_DECLARATION:${JSON.stringify(result.diagnostics)}`);
       return Object.freeze({ declarationPath, declaration: result.declaration });
     });
-  const rawProfile: unknown = JSON.parse(readFileSync(new URL("profile.json", fixtureRoot), "utf8"));
+  const rawProfile: unknown = parseStrictJson(readFileSync(new URL("profile.json", fixtureRoot), "utf8"));
   const profileResult = validateSyntheticCandidateProfile(rawProfile);
   if (profileResult.profile === undefined || profileResult.profile.consumer !== consumer) {
     throw new Error(`INVALID_PROOF_PROFILE:${JSON.stringify(profileResult.diagnostics)}`);
