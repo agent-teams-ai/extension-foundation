@@ -22,7 +22,18 @@ const currentProjection = (history: OracleHistory): TerminalProjections =>
 history.rows.at(-1)?.result.terminalProjections ?? initialProjection();
 const acceptedEvents = (history: OracleHistory): readonly ProtocolEvent[] =>
 history.rows.filter(row => row.accepted).map(row => row.event);
-const same = (left: unknown, right: unknown): boolean => left === right; const withProjection = (
+const same = (left: unknown, right: unknown): boolean => left === right;
+const samePayload = (left: unknown, right: unknown): boolean => {
+if (same(left, right)) return true;
+if (typeof left !== "object" || left === null || typeof right !== "object" || right === null) return false;
+if (Array.isArray(left) || Array.isArray(right)) return Array.isArray(left) && Array.isArray(right) &&
+left.length === right.length && left.every((value, index) => samePayload(value, right[index]));
+const leftRecord = left as Readonly<Record<string, unknown>>;
+const rightRecord = right as Readonly<Record<string, unknown>>;
+const leftKeys = Object.keys(leftRecord); const rightKeys = Object.keys(rightRecord);
+return leftKeys.length === rightKeys.length && leftKeys.every(key =>
+Object.prototype.hasOwnProperty.call(rightRecord, key) && samePayload(leftRecord[key], rightRecord[key])); };
+const withProjection = (
 before: TerminalProjections, patch: Partial<TerminalProjections>, ): TerminalProjections => ({ ...before, ...patch });
 const claimAfter = (current: ClaimProjection, proposed: ClaimProjection): ClaimProjection =>
 current === "invalid" || proposed === "invalid" ? "invalid"
@@ -56,13 +67,28 @@ for (const event of acceptedEvents(history)) { if (event.type === "AdvanceFence"
 generation = event.nextGeneration; open = false; } else if ( name === "source" &&
 (event.type === "CloseSource" || event.type === "AbandonSource") ) { generation = event.nextGeneration; open = false;
 } else if ( name === "campaign" && event.type === "RecoverStopFence" ) { generation = event.nextGeneration;
-open = false; } } return { generation, open }; }; const authorization = ( history: OracleHistory, id: AuthorizationId,
+open = false; } else if (event.type === "ExpireAuthorization") {
+const issue = acceptedOf(history, "IssueAuthorization").find(candidate =>
+same(candidate.authorizationId, event.authorizationId));
+if (issue?.authorizationFence.scope === name) open = false;
+} else if (name === "family-allocation" && event.type === "CloseSource") open = false;
+} return { generation, open }; }; const authorization = ( history: OracleHistory, id: AuthorizationId,
 ): AuthorizationView | null => {
 const issue = acceptedOf(history, "IssueAuthorization").find(event => same(event.authorizationId, id));
 if (issue === undefined) return null; const later = acceptedEvents(history).slice(
-acceptedEvents(history).findIndex(event => event.eventId === issue.eventId) + 1, ); return { issue,
+acceptedEvents(history).findIndex(event => event.eventId === issue.eventId) + 1, );
+const closesAuthority = later.some(event => event.type === "RequestRetirement" ||
+(event.type === "RecordAdmission" && event.result === "failed") ||
+(issue.authorizationFence.scope === "source" && (event.type === "CloseSource" || event.type === "AbandonSource")) ||
+(event.type === "AdvanceFence" && (event.fence === issue.authorizationFence.scope ||
+(issue.authorizationFence.scope === "source" && event.fence === "family-allocation"))) ||
+(issue.authorizationFence.scope === "campaign" && event.type === "RecoverStopFence") ||
+(event.type === "ExpireAuthorization" && !same(event.authorizationId, id) &&
+acceptedOf(history, "IssueAuthorization").some(candidate => same(candidate.authorizationId, event.authorizationId) &&
+candidate.authorizationFence.scope === issue.authorizationFence.scope)));
+return { issue,
 consumed: later.some(event => event.type === "ConsumeAuthorization" && same(event.authorizationId, id)),
-revoked: later.some(event => event.type === "RevokeAuthorization" && same(event.authorizationId, id)),
+revoked: closesAuthority || later.some(event => event.type === "RevokeAuthorization" && same(event.authorizationId, id)),
 expired: later.some(event => event.type === "ExpireAuthorization" && same(event.authorizationId, id)),
 released: later.some(event => event.type === "ReleaseProcess" && same(event.authorizationId, id)), }; };
 const rootMatches = ( registration: RegisterProtocol,
@@ -91,7 +117,7 @@ return "stale-generation"; } if (currentProjection(history).sourceEvidence.type 
 const checkpoint = acceptedOf(history, "CheckpointEffective").at(-1); if (checkpoint === undefined) return false;
 const terminal = currentProjection(history).stopCheckpoint; return terminal === null || terminal.type !== "continue";
 }; const usedReceipt = (history: OracleHistory, candidate: unknown): boolean => {
-for (const event of acceptedEvents(history)) { const values: readonly unknown[] = [
+for (const { event } of history.rows) { const values: readonly unknown[] = [
 "receiptId" in event ? event.receiptId : undefined, "launchReceiptId" in event ? event.launchReceiptId : undefined,
 "observationReceiptId" in event ? event.observationReceiptId : undefined,
 "buildReceiptId" in event ? event.buildReceiptId : undefined,
@@ -115,10 +141,14 @@ const nonPromotional = ( event: ProtocolEvent, evidence: | { readonly type: "eve
 evidence, }); const commonEnvelopeFailure = (history: OracleHistory, event: ProtocolEvent): DenialReason | null => {
 const registration = history.registration; if ( !same(event.protocolRevisionId, registration.protocolRevisionId) ||
 !same(event.custodyAuthorityId, registration.custodyAuthorityId) ) { return "wrong-binding"; }
-const predecessor = acceptedEvents(history).at(-1)?.eventId ?? registration.eventId;
-return same(event.authenticatedPredecessorId, predecessor) ? null : "wrong-binding"; }; const sourceTerminal = (
+const predecessor = acceptedEvents(history).at(-1); if (predecessor === undefined) return "not-registered";
+if (!same(event.authenticatedPredecessorId, predecessor.eventId)) return "wrong-binding";
+return event.authoritativeTick < predecessor.authoritativeTick ? "wrong-binding" : null; }; const sourceTerminal = (
 history: OracleHistory, ): Exclude<SourceEvidenceProjection, { readonly type: "open" }> | null => {
 const source = currentProjection(history).sourceEvidence; return source.type === "open" ? null : source; };
+const retainsReceipt = (references: Extract<ProtocolEvent, { readonly type: "CompleteRetirement" }>["retainedEvidence"],
+receiptId: unknown): boolean => references.some(reference => reference.type === "receipt" &&
+same(reference.receiptId, receiptId));
 const appendSourceTerminal = ( history: OracleHistory,
 event: Extract<ProtocolEvent, { readonly type: "CloseSource" | "AbandonSource" }>, ): TransitionResult => {
 const before = currentProjection(history);
@@ -133,7 +163,10 @@ const projection: Exclude<SourceEvidenceProjection, { readonly type: "open" }> =
 : { type: "abandoned", receiptId: event.receiptId, proofId: event.proofId }; const effects: DeclaredEffect[] = [
 { type: "terminal-appended", causalEventId: event.eventId, terminal: { type: "source", projection } },
 { type: "gate-closed", causalEventId: event.eventId, fence: "source", generation: event.nextGeneration },
-...sourceRevocations(history, event.eventId, event.nextGeneration, "source"), ]; if (event.type === "AbandonSource") {
+...sourceRevocations(history, event.eventId, event.nextGeneration, "source"), ];
+if (event.type === "CloseSource") effects.push({ type: "gate-closed", causalEventId: event.eventId,
+fence: "family-allocation", generation: fence(history, "family-allocation").generation });
+if (event.type === "AbandonSource") {
 effects.push(nonPromotional(event, { type: "receipt", receiptId: event.receiptId })); } return accept(
 withProjection(before, { sourceEvidence: projection, claim:
 event.type === "AbandonSource" ? claimAfter(before.claim, "non-promotional") : before.claim, }), effects, ); };
@@ -154,9 +187,12 @@ readonly type: "IssueAuthorization" | "ConsumeAuthorization" | "RevokeAuthorizat
 if (event.type === "IssueAuthorization") { const mismatch = authorizationBindingMatches(registration, event);
 if (mismatch !== null) return denial(event, before, mismatch);
 if (authorization(history, event.authorizationId) !== null) return denial(event, before, "authorization-unavailable");
+if (before.admission.type === "failed" || before.resourceRetirement.type !== "active") {
+return denial(event, before, "gate-closed"); }
 const fenceFailure = bindingIsCurrent(history, event.authorizationFence);
 if (fenceFailure !== null) return denial(event, before, fenceFailure);
-if (stopBarrier(history)) return denial(event, before, "gate-closed");
+if (event.authorizationFence.scope === "campaign" && stopBarrier(history)) {
+return denial(event, before, "gate-closed"); }
 if (event.authoritativeTick >= event.expiresAt) return denial(event, before, "authorization-expired");
 return accept(before, [{ type: "authorization-issued", causalEventId: event.eventId,
 authorizationId: event.authorizationId, sourceFamilyRootId: event.sourceFamilyRootId,
@@ -174,11 +210,17 @@ if (view.expired || event.authoritativeTick >= view.issue.expiresAt) {
 return denial(event, before, "authorization-expired"); }
 const fenceFailure = bindingIsCurrent(history, event.authorizationFence);
 if (fenceFailure !== null) return denial(event, before, fenceFailure);
-if (stopBarrier(history)) return denial(event, before, "gate-closed"); return accept(before); }
+if (event.authorizationFence.scope === "campaign" && stopBarrier(history)) {
+return denial(event, before, "gate-closed"); } return accept(before); }
 if (view.revoked || view.expired) {
 return denial(event, before, view.revoked ? "authorization-revoked" : "authorization-expired"); }
-return accept(before, [{ type: "authorization-revoked", causalEventId: event.eventId,
-authorizationId: event.authorizationId, authorizationFence: event.authorizationFence, }]); }; const handleFence = (
+if (event.type === "ExpireAuthorization" && event.authoritativeTick < view.issue.expiresAt) {
+return denial(event, before, "deadline-not-reached"); }
+const effects: DeclaredEffect[] = [{ type: "authorization-revoked", causalEventId: event.eventId,
+authorizationId: event.authorizationId, authorizationFence: event.authorizationFence, }];
+if (event.type === "ExpireAuthorization") effects.push({ type: "gate-closed", causalEventId: event.eventId,
+fence: event.authorizationFence.scope, generation: event.authorizationFence.expectedGeneration });
+return accept(before, effects); }; const handleFence = (
 history: OracleHistory, event: Extract<ProtocolEvent, { readonly type: "AdvanceFence" }>, ): TransitionResult => {
 const before = currentProjection(history);
 if (!rootMatches(history.registration, event)) return denial(event, before, "wrong-binding");
@@ -219,24 +261,29 @@ claim: claimAfter(before.claim, "non-promotional"), }), [
 { type: "terminal-appended", causalEventId: event.eventId, terminal: { type: "launch", projection: launch } },
 nonPromotional(event, { type: "receipt", receiptId: event.observationReceiptId }), ], ); }
 if (!view.consumed) return denial(event, before, "authorization-unavailable");
+if (event.type === "RecordReleaseDenied" && before.runtime === "unknown") {
+return denial(event, before, "runtime-unresolved"); }
 if (before.launch !== null) return denial(event, before, "terminal-already-recorded");
 if (event.type === "RecordReleaseDenied") {
 if (usedReceipt(history, event.receiptId)) return replay(event, history, event.receiptId);
 const launch = { type: "release-denied" as const, receiptId: event.receiptId };
 return accept(withProjection(before, { launch }), [
 { type: "terminal-appended", causalEventId: event.eventId, terminal: { type: "launch", projection: launch } }, ]); }
+if (event.authorizationFence.scope === "campaign" &&
+(before.build?.type !== "succeeded" || before.buildConsistency?.type !== "match")) {
+return denial(event, before, "build-not-executable"); }
 if (!same(event.attemptId, registration.attemptId)) return denial(event, before, "wrong-binding");
 if (view.revoked) return denial(event, before, "authorization-revoked");
 if (view.expired || event.authoritativeTick >= view.issue.expiresAt) return denial(event, before, "authorization-expired");
 const fenceFailure = bindingIsCurrent(history, event.authorizationFence);
 if (fenceFailure !== null) return denial(event, before, fenceFailure);
-if (stopBarrier(history)) return denial(event, before, "gate-closed");
+if (event.authorizationFence.scope === "campaign" && stopBarrier(history)) {
+return denial(event, before, "gate-closed"); }
 if (usedReceipt(history, event.launchReceiptId)) return replay(event, history, event.launchReceiptId);
 const launch = { type: "started" as const, receiptId: event.launchReceiptId }; return accept(
 withProjection(before, { launch, runtime: "live" }), [ { type: "process-release-requested",
 causalEventId: event.eventId, authorizationId: event.authorizationId, runtimeId: event.runtimeId,
-authorizationFence: event.authorizationFence, },
-{ type: "terminal-appended", causalEventId: event.eventId, terminal: { type: "launch", projection: launch } }, ], );
+authorizationFence: event.authorizationFence, }, ], );
 }; const handleRuntime = ( history: OracleHistory, event: Extract<ProtocolEvent, {
 readonly type: "RestartObserved" | "ReconcileRuntime" | "RequestRetirement" | "RequestCleanup" | "CompleteRetirement";
 }>, ): TransitionResult => { const before = currentProjection(history); const registration = history.registration;
@@ -259,6 +306,7 @@ event.observation === "live"
 const mismatch = ownerMatches(registration, event); if (mismatch !== null) return denial(event, before, mismatch);
 if (event.type === "RequestRetirement") {
 if (before.resourceRetirement.type === "retired") return denial(event, before, "terminal-already-recorded");
+if (sourceTerminal(history) === null) return denial(event, before, "source-terminal");
 const effects: DeclaredEffect[] = []; for (const issue of acceptedOf(history, "IssueAuthorization")) {
 const view = authorization(history, issue.authorizationId);
 if (view !== null && !view.revoked && !view.expired && !view.released) { effects.push({ type: "authorization-revoked",
@@ -281,6 +329,9 @@ runtimeId: event.runtimeId, proofId: event.terminationProofId, }]); } const sour
 if (source === null || !same(source.receiptId, event.sourceTerminalReceiptId)) {
 return denial(event, before, "wrong-binding"); } const cleanup = acceptedOf(history, "RequestCleanup").at(-1);
 if (cleanup === undefined) return denial(event, before, "gate-closed");
+if (!retainsReceipt(event.retainedEvidence, source.receiptId) ||
+(before.admission.type !== "pending" && !retainsReceipt(event.retainedEvidence, before.admission.receiptId))) {
+return denial(event, before, "wrong-binding"); }
 if (usedReceipt(history, event.tombstoneId)) return replay(event, history, event.tombstoneId); const tombstone = {
 tombstoneId: event.tombstoneId, sourceTerminal: source, retirementOwnerId: event.retirementOwnerId,
 cleanupProofId: event.cleanupProofId, retainedEvidence: event.retainedEvidence, };
@@ -306,11 +357,7 @@ if (conflict) effects.push(...invalidClaimEffects(event, { type: "receipt", rece
 return accept( conflict ? withProjection(before, { claim: "invalid" }) : before, effects, ); }
 const attempt = { type: nextType, receiptId: receipt }; const effects: DeclaredEffect[] = [
 { type: "terminal-appended", causalEventId: event.eventId, terminal: { type: "attempt", projection: attempt } }, ];
-if (event.type === "ReachAttemptDeadline") {
-effects.push(nonPromotional(event, { type: "receipt", receiptId: event.observationReceiptId })); }
-return accept(withProjection(before, { attempt,
-claim: event.type === "ReachAttemptDeadline" ? claimAfter(before.claim, "non-promotional") : before.claim,
-}), effects); }; const handleStop = ( history: OracleHistory, event: Extract<ProtocolEvent, {
+return accept(withProjection(before, { attempt }), effects); }; const handleStop = ( history: OracleHistory, event: Extract<ProtocolEvent, {
 readonly type: "CheckpointEffective" | "RecordStopReceipt" | "ReachStopDeadline" | "RecoverStopFence"; }>,
 ): TransitionResult => { const before = currentProjection(history); const registration = history.registration;
 if (!same(event.checkpointId, registration.checkpointId)) return denial(event, before, "wrong-binding");
@@ -358,7 +405,9 @@ if (usedReceipt(history, receipt)) return replay(event, history, receipt);
 if (event.type === "ReachBuildDeadline" && event.authoritativeTick < registration.buildDeadline) {
 return denial(event, before, "deadline-not-reached"); } if (before.build !== null) {
 if (event.type === "ReachBuildDeadline") return denial(event, before, "terminal-already-recorded");
-const currentType = before.build.type; const conflict = terminalConflict(currentType, event.result.type);
+const recordedTerminal = acceptedOf(history, "RecordBuildResult").at(0);
+const conflict = terminalConflict(before.build.type, event.result.type) ||
+(recordedTerminal !== undefined && !samePayload(recordedTerminal.result, event.result));
 const effects: DeclaredEffect[] = [{ type: "late-receipt-retained", causalEventId: event.eventId, evidence: {
 type: "build", buildAttemptId: event.buildAttemptId, buildReceiptId: event.buildReceiptId, result: event.result, },
 }];
@@ -367,13 +416,10 @@ return accept(conflict ? withProjection(before, { claim: "invalid" }) : before, 
 const build: BuildTerminalProjection = event.type === "RecordBuildResult"
 ? { type: event.result.type, buildReceiptId: event.buildReceiptId }
 : { type: event.result, observationReceiptId: event.observationReceiptId };
-const allowed = build.type === "succeeded"; const effects: DeclaredEffect[] = [
+const effects: DeclaredEffect[] = [
 { type: "terminal-appended", causalEventId: event.eventId, terminal: { type: "build", projection: build } },
-{ type: "execution-gate-set", causalEventId: event.eventId, buildAttemptId: event.buildAttemptId, value: allowed ? "allowed" : "denied" },
-]; if (event.type === "ReachBuildDeadline") {
-effects.push(nonPromotional(event, { type: "receipt", receiptId: event.observationReceiptId })); }
-return accept(withProjection(before, { build,
-claim: event.type === "ReachBuildDeadline" ? claimAfter(before.claim, "non-promotional") : before.claim, }), effects);
+{ type: "execution-gate-set", causalEventId: event.eventId, buildAttemptId: event.buildAttemptId, value: "denied" },
+]; return accept(withProjection(before, { build }), effects);
 }; const consistencyInvalid = ( history: OracleHistory,
 event: Extract<ProtocolEvent, { readonly type: "RecordBuildConsistencyReceipt" }>, ): TransitionResult => {
 const before = currentProjection(history); const projection: BuildConsistencyTerminalProjection = { type: "invalid",
@@ -390,7 +436,12 @@ if (before.buildConsistency === null) return consistencyInvalid(history, event);
 return replay(event, history, event.consistencyReceiptId); } if (before.buildConsistency !== null) {
 const effects: DeclaredEffect[] = [{ type: "late-receipt-retained", causalEventId: event.eventId, evidence: {
 type: "build-consistency", buildAttemptId: event.buildAttemptId, consistencyReceiptId: event.consistencyReceiptId,
-result: event.result, }, }]; if (terminalConflict(before.buildConsistency.type, event.result.type)) {
+result: event.result, }, }]; const terminalReceipt = acceptedOf(history, "RecordBuildConsistencyReceipt").at(0);
+const conflict = terminalConflict(before.buildConsistency.type, event.result.type) ||
+!buildBindingMatches(registration, event) || (terminalReceipt !== undefined &&
+(!same(terminalReceipt.buildReceiptId, event.buildReceiptId) ||
+!samePayload(terminalReceipt.result, event.result)));
+if (conflict) {
 effects.push(...invalidClaimEffects(event, { type: "consistency-receipt", consistencyReceiptId: event.consistencyReceiptId }));
 return accept(withProjection(before, { claim: "invalid" }), effects); } return accept(before, effects); }
 if (!buildBindingMatches(registration, event) || before.build === null) { return consistencyInvalid(history, event); }
@@ -404,9 +455,7 @@ type: event.result.type, consistencyReceiptId: event.consistencyReceiptId, };
 const allowed = projection.type === "match" && before.build.type === "succeeded"; const effects: DeclaredEffect[] = [
 { type: "terminal-appended", causalEventId: event.eventId, terminal: { type: "build-consistency", projection } },
 { type: "execution-gate-set", causalEventId: event.eventId, buildAttemptId: event.buildAttemptId, value: allowed ? "allowed" : "denied" },
-]; if (!allowed) effects.push(nonPromotional(event, { type: "event", eventId: event.eventId }));
-return accept(withProjection(before, { buildConsistency: projection,
-claim: allowed ? before.claim : claimAfter(before.claim, "non-promotional"), }), effects); }
+]; return accept(withProjection(before, { buildConsistency: projection }), effects); }
 if (!buildBindingMatches(registration, event)) return denial(event, before, "wrong-binding");
 if (before.build === null) return denial(event, before, "gate-closed");
 if (before.buildConsistency !== null) return denial(event, before, "terminal-already-recorded");
@@ -415,10 +464,10 @@ return denial(event, before, "deadline-not-reached"); }
 if (usedReceipt(history, event.observationReceiptId)) return replay(event, history, event.observationReceiptId);
 const projection: BuildConsistencyTerminalProjection = { type: event.result,
 observationReceiptId: event.observationReceiptId, }; return accept(withProjection(before, {
-buildConsistency: projection, claim: claimAfter(before.claim, "non-promotional"), }), [
+buildConsistency: projection }), [
 { type: "terminal-appended", causalEventId: event.eventId, terminal: { type: "build-consistency", projection } },
 { type: "execution-gate-set", causalEventId: event.eventId, buildAttemptId: event.buildAttemptId, value: "denied" },
-nonPromotional(event, { type: "receipt", receiptId: event.observationReceiptId }), ]); }; const handleAdmission = (
+]); }; const handleAdmission = (
 history: OracleHistory, event: Extract<ProtocolEvent, { readonly type: "RecordAdmission" }>, ): TransitionResult => {
 const before = currentProjection(history); const registration = history.registration;
 if (!rootMatches(registration, event) || !same(event.admissionId, registration.admissionId)) {
@@ -430,6 +479,7 @@ const admission: Exclude<AdmissionProjection, { readonly type: "pending" }> = { 
 receiptId: event.receiptId, }; const effects: DeclaredEffect[] = [
 { type: "terminal-appended", causalEventId: event.eventId, terminal: { type: "admission", projection: admission } },
 ]; if (event.result === "failed") {
+effects.push(...sourceRevocations(history, event.eventId, fence(history, "source").generation, "family-allocation"));
 effects.push(nonPromotional(event, { type: "receipt", receiptId: event.receiptId })); }
 return accept(withProjection(before, { admission,
 claim: event.result === "failed" ? claimAfter(before.claim, "non-promotional") : before.claim, }), effects); };
@@ -445,11 +495,17 @@ ReachAttemptDeadline: handleAttempt, CheckpointEffective: handleStop, RecordStop
 ReachStopDeadline: handleStop, RecoverStopFence: handleStop, RecordBuildResult: handleBuild,
 ReachBuildDeadline: handleBuild, RecordBuildConsistencyReceipt: handleConsistency,
 ReachBuildConsistencyDeadline: handleConsistency, RecordAdmission: handleAdmission, };
-export const initializeOracleHistory = (registration: RegisterProtocol): OracleHistory => ({ registration,
-rows: [{ event: registration, result: accept(initialProjection()), accepted: true }], });
+export const initializeOracleHistory = (registration: RegisterProtocol): OracleHistory => { const projection = initialProjection();
+const result = registration.authenticatedPredecessorId === null ? accept(projection)
+: denial(registration, projection, "wrong-binding");
+return { registration, rows: [{ event: registration, result, accepted: result.decision === "accepted" }] }; };
 export const appendOracleEvent = (history: OracleHistory, event: ProtocolEvent): OracleStep => {
-const previous = history.rows.find(row => same(row.event.eventId, event.eventId)); if (previous !== undefined) {
-return { history, result: accept(currentProjection(history)) }; } let result: TransitionResult;
+const sameId = history.rows.filter(row => same(row.event.eventId, event.eventId));
+const exact = sameId.find(row => samePayload(row.event, event));
+if (exact !== undefined) return { history, result: exact.result };
+let result: TransitionResult; if (sameId.length > 0) {
+result = denial(event, currentProjection(history), "wrong-binding");
+} else
 if (event.type === "RegisterProtocol") { result = denial(event, currentProjection(history), "not-registered");
 } else { const envelopeFailure = commonEnvelopeFailure(history, event); if (envelopeFailure !== null) {
 result = denial(event, currentProjection(history), envelopeFailure); } else {
@@ -464,4 +520,3 @@ for (const event of rest) { const step = appendOracleEvent(history, event); hist
 results.push(step.result); } return { history, results }; };
 export const getOracleTerminalProjections = (history: OracleHistory): TerminalProjections =>
 currentProjection(history);
-
