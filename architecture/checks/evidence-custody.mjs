@@ -88,7 +88,18 @@ const SECRET_PATTERNS = [
   { id: "authorization-header", expression: /\bAuthorization\s*:\s*(?:Bearer|Basic)\s+[A-Za-z0-9+/_=.-]{12,}/iu },
   { id: "credential-assignment", expression: /\b(?:api[_-]?key|(?:access|auth)[_-]?token|token|client[_-]?secret|password)\s*[=:]\s*["']?[A-Za-z0-9+/_=.-]{16,}/iu },
 ];
-const SENSITIVE_JSON_FIELD = /^(?:authorization|api[_-]?key|(?:access|auth)[_-]?token|token|client[_-]?secret|password)$/iu;
+const AUTHORIZATION_JSON_FIELD = /^authorization$/iu;
+const ASSIGNMENT_JSON_FIELD = /^(?:api[_-]?key|(?:access|auth)[_-]?token|token|client[_-]?secret|password)$/iu;
+const JSON_ESCAPE_VALUES = Object.freeze({
+  '"': '"',
+  "\\": "\\",
+  "/": "/",
+  b: "\b",
+  f: "\f",
+  n: "\n",
+  r: "\r",
+  t: "\t",
+});
 const DEFAULT_RESOURCE_LIMITS = Object.freeze({
   maxFileBytes: 8 * 1024 * 1024,
   maxTotalBytes: 64 * 1024 * 1024,
@@ -152,10 +163,21 @@ function assertJsonLimits(value, {
     }
     if (current.value === null || typeof current.value !== "object") continue;
     if (Array.isArray(current.value)) {
+      if (nodes + pending.length + current.value.length > maxJsonNodes) {
+        const error = new SyntaxError("JSON node limit exceeded");
+        error.code = "JSON_RESOURCE_LIMIT";
+        throw error;
+      }
       for (const child of current.value) pending.push({ value: child, depth: current.depth + 1 });
       continue;
     }
-    for (const [key, child] of Object.entries(current.value)) {
+    const entries = Object.entries(current.value);
+    if (nodes + pending.length + entries.length > maxJsonNodes) {
+      const error = new SyntaxError("JSON node limit exceeded");
+      error.code = "JSON_RESOURCE_LIMIT";
+      throw error;
+    }
+    for (const [key, child] of entries) {
       if (key.length > maxJsonStringLength) {
         const error = new SyntaxError("JSON string limit exceeded");
         error.code = "JSON_RESOURCE_LIMIT";
@@ -167,30 +189,39 @@ function assertJsonLimits(value, {
 }
 
 function scanDecodedJsonSecrets(value, label) {
-  const pending = [{ value, sensitiveField: null }];
+  const pending = [{ value, assignmentField: null, authorizationField: null }];
   while (pending.length > 0) {
-    const { value: current, sensitiveField } = pending.pop();
+    const { value: current, assignmentField, authorizationField } = pending.pop();
     if (typeof current === "string") {
       scanSecrets(current, `${label} value`);
-      if (sensitiveField !== null) {
-        scanSecrets(`${sensitiveField}=${current}`, `${label} field`);
-        scanSecrets(`${sensitiveField}: ${current}`, `${label} field`);
+      if (assignmentField !== null) {
+        scanSecrets(`${assignmentField}=${current}`, `${label} field`);
+      }
+      if (authorizationField !== null) {
+        scanSecrets(`${authorizationField}: ${current}`, `${label} field`);
       }
       continue;
     }
     if (current === null || typeof current !== "object") continue;
     if (Array.isArray(current)) {
-      for (const child of current) pending.push({ value: child, sensitiveField });
+      for (const child of current) pending.push({ value: child, assignmentField, authorizationField });
       continue;
     }
     for (const [key, child] of Object.entries(current)) {
       scanSecrets(key, `${label} key`);
       pending.push({
         value: child,
-        sensitiveField: SENSITIVE_JSON_FIELD.test(key) ? key : sensitiveField,
+        assignmentField: ASSIGNMENT_JSON_FIELD.test(key) ? key : assignmentField,
+        authorizationField: AUTHORIZATION_JSON_FIELD.test(key) ? key : authorizationField,
       });
     }
   }
+}
+
+function decodeJsonEscapesForSecretScan(text) {
+  return text.replace(/\\(?:u([0-9a-fA-F]{4})|(["\\/bfnrt]))/gu, (_match, hex, escape) => (
+    hex === undefined ? JSON_ESCAPE_VALUES[escape] : String.fromCharCode(Number.parseInt(hex, 16))
+  ));
 }
 
 function parseCustodyJson(text, limits = DEFAULT_RESOURCE_LIMITS) {
@@ -690,16 +721,15 @@ async function deriveBaseline(repositoryRoot, capturedAt, limits, budget) {
   }
   await gitObservation(canonicalRoot, ["ls-files", "--error-unmatch", "--", "package.json", "pnpm-lock.yaml"], "tracked baseline files", limits);
   const [trackedTypes, trackedAssumeState, packageSource, lockfileSource] = await Promise.all([
-    gitObservation(canonicalRoot, ["ls-files", "-t", "--", "package.json", "pnpm-lock.yaml"], "tracked baseline file types", limits),
-    gitObservation(canonicalRoot, ["ls-files", "-v", "--", "package.json", "pnpm-lock.yaml"], "tracked baseline index flags", limits),
+    gitObservation(canonicalRoot, ["ls-files", "-t", "-z"], "tracked file types", limits),
+    gitObservation(canonicalRoot, ["ls-files", "-v", "-z"], "tracked index flags", limits),
     gitObservation(canonicalRoot, ["show", "HEAD:package.json"], "repository package manifest", limits, null),
     gitObservation(canonicalRoot, ["show", "HEAD:pnpm-lock.yaml"], "repository lockfile", limits, null),
   ]);
-  const expectedTrackedFiles = ["H package.json", "H pnpm-lock.yaml"];
   for (const observation of [trackedTypes, trackedAssumeState]) {
-    const entries = observation.trim().split("\n").filter(Boolean).sort();
-    if (deterministicJson(entries) !== deterministicJson(expectedTrackedFiles)) {
-      throw new Error("tracked baseline files must not use skip-worktree or assume-unchanged index flags");
+    const entries = observation.split("\0").filter(Boolean);
+    if (entries.some(entry => !entry.startsWith("H "))) {
+      throw new Error("tracked files must not use skip-worktree or assume-unchanged index flags");
     }
   }
   const packageBytes = Buffer.from(packageSource);
@@ -1650,10 +1680,7 @@ async function regularFilesBelow(root, relativeDirectory, limits, budget) {
 function scanStructuredSecrets(bytes, sourcePath, limits) {
   scanSecrets(bytes, sourcePath);
   if (!sourcePath.split("#", 1)[0].match(/\.(?:json|jsonl)$/u)) return;
-  const decodedEscapes = bytes.toString("utf8").replace(
-    /\\u([0-9a-f]{4})/giu,
-    (_match, hex) => String.fromCharCode(Number.parseInt(hex, 16)),
-  );
+  const decodedEscapes = decodeJsonEscapesForSecretScan(bytes.toString("utf8"));
   scanSecrets(decodedEscapes, `${sourcePath} decoded JSON`);
   const documents = sourcePath.endsWith(".jsonl")
     ? bytes.toString("utf8").split(/\r?\n/u).filter(line => line.trim().length > 0)
@@ -1912,6 +1939,8 @@ export async function captureEvidence({
       p0P1ExecutableClosure: false,
     },
   };
+  assertJsonLimits(manifest, limits);
+  scanDecodedJsonSecrets(manifest, "captured manifest");
   const validation = validateManifest(manifest, limits);
   if (!validation.valid) throw new Error(`captured manifest is invalid:\n${validation.errors.join("\n")}`);
   scanDecodedJsonSecrets(manifest, "captured manifest");

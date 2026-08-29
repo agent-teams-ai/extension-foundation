@@ -963,6 +963,8 @@ test("decoded JSON secret escapes fail closed without echoing the secret", async
     ["authorization-field", `${JSON.stringify({ Authorization: `Bearer ${genericSecret}` })}\n`, /authorization-header/u, genericSecret],
     ["nested-token-array", `${JSON.stringify({ token: [{ value: genericSecret }] })}\n`, /credential-assignment/u, genericSecret],
     ["nested-token-object", `${JSON.stringify({ token: { value: genericSecret } })}\n`, /credential-assignment/u, genericSecret],
+    ["nested-token-authorization", `${JSON.stringify({ token: { authorization: { value: genericSecret } } })}\n`, /credential-assignment/u, genericSecret],
+    ["nested-authorization-token", `${JSON.stringify({ Authorization: { token: { value: `Bearer ${genericSecret}` } } })}\n`, /authorization-header/u, genericSecret],
   ];
   for (const [name, document, expected, secret] of fixtures) {
     const path = join(root, `${name}-escaped-secret.json`);
@@ -1134,6 +1136,22 @@ captureTest("capture rejects masked baseline files and oversized job allowlists 
     }), /index flags/u);
   }
 
+  for (const flag of ["--assume-unchanged", "--skip-worktree"]) {
+    const root = await temporaryDirectory(t);
+    const paths = await writeCaptureFixture(root, [{ attempts: [] }]);
+    await writeFile(join(paths.repositoryRoot, "masked.txt"), "original\n");
+    await execFileAsync("git", ["-C", paths.repositoryRoot, "add", "masked.txt"]);
+    await execFileAsync("git", ["-C", paths.repositoryRoot, "commit", "--quiet", "-m", "test: tracked file"]);
+    await execFileAsync("git", ["-C", paths.repositoryRoot, "update-index", flag, "masked.txt"]);
+    await writeFile(join(paths.repositoryRoot, "masked.txt"), "modified but hidden\n");
+    assert.equal((await execFileAsync("git", ["-C", paths.repositoryRoot, "status", "--porcelain=v1"])).stdout, "");
+    await assert.rejects(captureEvidence({
+      campaignId: "masked-worktree",
+      jobIds: [JOB_ID],
+      ...paths,
+    }), /tracked files must not use/u);
+  }
+
   const jobIds = Array.from({ length: 257 }, (_, index) => `modres-w7-job-${index + 1}-20260826-r1`);
   await assert.rejects(captureEvidence({
     campaignId: "oversized-job-list",
@@ -1181,6 +1199,20 @@ captureTest("capture hashes exact HEAD bytes and rejects escaped secrets before 
   });
   const outputEntries = await readdir(secretPaths.outputRoot, { recursive: true, withFileTypes: true });
   assert.equal(outputEntries.some(entry => entry.isFile()), false);
+
+  const malformedRoot = await temporaryDirectory(t);
+  const malformedPaths = await writeCaptureFixture(malformedRoot, [{ attempts: [] }]);
+  await writeFile(
+    join(malformedPaths.jobConfigRoot, JOB_ID, "job.json"),
+    `{\"message\":\"token=\\\"${escapedSecret}\\\"\",}\n`,
+  );
+  await assert.rejects(captureEvidence({
+    campaignId: "malformed-escaped-secret",
+    jobIds: [JOB_ID],
+    ...malformedPaths,
+  }), /credential-assignment/u);
+  const malformedOutputEntries = await readdir(malformedPaths.outputRoot, { recursive: true, withFileTypes: true });
+  assert.equal(malformedOutputEntries.some(entry => entry.isFile()), false);
 });
 
 captureTest("capture scans the assembled manifest before publishing it", async t => {
@@ -1214,6 +1246,49 @@ captureTest("capture scans the assembled manifest before publishing it", async t
   for (const entry of storedFiles) {
     assert.equal((await readFile(join(entry.parentPath, entry.name), "utf8")).includes(secret), false);
   }
+
+  const secretKeyRoot = await temporaryDirectory(t);
+  const secretKeyPaths = await writeCaptureFixture(secretKeyRoot, [{ attempts: [] }]);
+  const secretKey = `token=${secret}`;
+  await assert.rejects(captureEvidence({
+    campaignId: "manifest-secret-key",
+    jobIds: [JOB_ID],
+    claims: [{
+      claimId: "claim-1",
+      text: "safe",
+      classification: "hypothesis",
+      applicability: "qualification only",
+      primarySourceObjects: [],
+      executableEvidenceObjects: [],
+      publisherIndependence: [],
+      executableEvidenceAttestations: [],
+      hypothesis: true,
+      promotionEligible: false,
+      [secretKey]: true,
+    }],
+    ...secretKeyPaths,
+  }), error => {
+    assert.match(error.message, /credential-assignment/u);
+    assert.equal(error.message.includes(secret), false);
+    return true;
+  });
+});
+
+test("manifest node limits reject oversized sparse arrays before reading elements", () => {
+  const claims = [];
+  claims.length = 1_000_000;
+  let elementRead = false;
+  Object.defineProperty(claims, 0, {
+    enumerable: true,
+    get() {
+      elementRead = true;
+      return null;
+    },
+  });
+  const manifest = validManifest();
+  manifest.claims = claims;
+  assert.deepEqual(validateManifest(manifest).errors, ["JSON node limit exceeded"]);
+  assert.equal(elementRead, false);
 });
 
 test("Windows remains verifier-only and rejects capture before source I/O", {
