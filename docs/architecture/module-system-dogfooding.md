@@ -174,6 +174,7 @@ Every campaign keeps the following coordinates distinct:
 | `LaunchAuthorization` | One-use custodian-issued capability bound to one registered attempt and exact sandbox policy |
 | `StopEvaluationCheckpointIdentity` | One preregistered outcome-independent boundary at which the sealed evaluator must produce a terminal continue or stop decision before later launch release |
 | `StopEvaluationReceipt` | One authenticated terminal continue, stop, missing, or unknown observation for an expected checkpoint; missing, late, or unknown output fails closed |
+| `ExplorationAuthorization` | One narrow non-promotional product authorization bound to one exploration scope, lifecycle transaction authority, generation fence, expiry, retention, and cleanup owner |
 | `CorpusCustodyReceipt` | One item in an append-only qualification- or final-corpus custody stream: commitment, policy, audit coverage, release intent, terminal release outcome, access observation, assignment, or registered unblinding |
 | `CorpusCustodyHighWatermarkReceipt` | Custodian-signed terminal stream position proving the complete observed custody prefix and terminal outcome of every release intent through admission or verdict publication |
 | `BuildReceipt` | Externally captured build result with an optional verified output artifact |
@@ -549,19 +550,34 @@ reclassify a receipt.
 
 #### Non-promotional exploratory treatment
 
-An owning product may authorize a bounded exploratory treatment before building
-the promotional campaign machinery. That authorization pins the accepted
+An owning product may record a bounded `ExplorationAuthorization` before building
+the promotional campaign machinery. The product authorizer decides whether the
+exploration is allowed but receives no lifecycle transition authority. The
+authorization pins the accepted
 level-specific product decision, capability seam, clean `B0`, candidate source,
 candidate-independent toolchain, disposable containment policy, visible
 development fixtures, expiry, evidence retention terms, recorder, and cleanup
-owner. Before release, the recorder durably creates an exploration-only run,
-attempt slot, one-use launch authorization, and prospective runtime and
-containment identity. The launch gate consumes the authorization and revalidates
-the exploration fence before release. Every slot receives a terminal, missing, or
-unknown observation; a crash-ambiguous runtime remains quarantined, and cleanup
-cannot complete until termination or absence is authoritatively proven. The path
-denies real projects and hidden or final corpus data and restores the baseline
-adapter only after reconciliation.
+owner. It also binds exactly one product-local custody transaction authority,
+including that authority's principal, credential lineage, effective control
+domain, durable-store identity, authority generation, authoritative durable time,
+maximum time uncertainty, generation fence, and authenticated predecessor.
+Only that authority may durably order attempt registration, launch-authorization
+issuance and consumption, expiry, revocation, fence closure, and runtime
+reconciliation. The recorder requests those transitions but cannot perform them;
+the launch gate enforces the resulting current state but cannot mutate it.
+
+Before release, the custody transaction authority durably creates an
+exploration-only run, attempt slot, one-use launch authorization, and prospective
+runtime and containment identity. It atomically consumes that authorization and
+revalidates the exploration fence, expiry, revocation state, authority generation,
+and prospective runtime before the launch gate may release candidate-controlled
+code. Every slot receives a terminal, missing, or unknown observation from the
+same durable ordering domain. A crash-ambiguous runtime remains quarantined, and
+cleanup cannot complete until that authority records authenticated reconciliation
+proving termination or absence. Recovery idempotently completes the winning
+launch, denial, expiry, or revocation transition and never retries an ambiguous
+release. The path denies real projects and hidden or final corpus data and
+restores the baseline adapter only after reconciliation.
 
 These exploration-only coordinates can never be converted to campaign
 coordinates. This tier creates neither `T1`, `E0`, reusable
@@ -1215,6 +1231,7 @@ campaign admission; an ambiguous row is treated as `fixture-conformance`.
 | Calibration receipt, artifact, or coordinate is presented as promotional evidence or campaign identity | Admission fails; calibration evidence remains permanently non-promotional and non-reusable |
 | Exploratory candidate output or attempt evidence is presented as qualification, campaign, or product-use authority | Admission fails; the evidence remains diagnostic, non-promotional, and non-reusable |
 | Exploratory code is released without a durable exploration attempt, one-use authorization, prospective runtime identity, terminal observation, or retention and cleanup owner | Release is denied or the run remains an explicit unknown; its containment is quarantined and baseline restoration cannot claim cleanup until termination or absence is proven |
+| Exploration authorization issuance, consumption, expiry, revocation, or fence closure uses different transition owners, lacks the bound authority lineage, or races across restart | The transition fails closed; only the registered custody transaction authority may linearize it, ambiguous release is not retried, and the prospective runtime remains quarantined until authoritative reconciliation |
 | `TreatmentEvaluationCommitment` is missing, changed after source work, or final `E0` changes its estimand, analysis, attrition, threshold, stop, or corpus-selection semantics | Campaign admission fails; a fresh claim family, source root, commitment, unseen holdout, and campaign coordinates are required, and earlier evidence cannot be pooled |
 | Source preparation starts before Phase 2 exit, without its authorization, after expiry, or across a closed preparation fence | Source work is inadmissible, the slot records a denied or unknown disposition, and no resulting bytes may enter a campaign |
 | Source authoring launch authorization is missing, reused, mismatched, expired, or consumed across a changed preparation fence | Producer-controlled tools never start; an external denial disposition is retained for the source slot |
@@ -1566,6 +1583,10 @@ A future implementation conforms to this proposal only when:
   effective control domain, durable-store identity, authority generation, and
   authenticated predecessor; no other role can silently become its transition
   authority;
+- every non-promotional exploration binds one custody transaction authority
+  before registration; only that authority durably orders authorization issuance,
+  consumption, expiry, revocation, fence closure, and runtime reconciliation, and
+  recovery never retries an ambiguous process release;
 - final `E0` mechanically instantiates the pre-source evaluation commitment,
   baseline and every evaluator input remain frozen, and calibration drafts never
   reuse an `E0` identity;
