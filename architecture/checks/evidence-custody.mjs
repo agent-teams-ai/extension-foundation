@@ -205,7 +205,7 @@ function proveWrapperBinding(bytes, { jobId, attemptNumber, status }, limits = D
   try {
     wrapper = parseCustodyJson(bytes.toString("utf8"), limits);
   } catch (error) {
-    if (error?.code === "DUPLICATE_JSON_KEY") throw error;
+    if (error?.code === "DUPLICATE_JSON_KEY" || error?.code === "SECRET_SCAN") throw error;
     return { proven: false, reason: "the mutable wrapper is not valid unambiguous JSON" };
   }
   if (!record(wrapper) || wrapper.schemaVersion !== 1) {
@@ -411,9 +411,28 @@ async function syncDirectory(directory) {
   }
 }
 
+async function descriptorCanonicalPath(handle, limits, cwd) {
+  if (process.platform === "linux") return realpath(`/proc/self/fd/${handle.fd}`);
+  if (process.platform === "darwin") {
+    const output = await boundedObservation(
+      "/usr/sbin/lsof",
+      ["-a", "-p", String(process.pid), "-d", String(handle.fd), "-Fn"],
+      "open evidence descriptor",
+      limits,
+      cwd,
+    );
+    const paths = output.split("\n").filter(line => line.startsWith("n")).map(line => line.slice(1));
+    if (paths.length !== 1 || paths[0].length === 0) throw new Error("open evidence descriptor has no unique path");
+    return resolve(paths[0]);
+  }
+  throw new Error("strict evidence capture is supported only on Linux and macOS");
+}
+
 async function secureRead(root, path, {
   maxFileBytes = DEFAULT_RESOURCE_LIMITS.maxFileBytes,
+  maxObservationMs = DEFAULT_RESOURCE_LIMITS.maxObservationMs,
   requireStableCtime = true,
+  requireDescriptorContainment = false,
 } = {}) {
   const absoluteRoot = await assertCanonicalPermittedRoot(root, "source root");
   const absolutePath = resolve(path);
@@ -431,6 +450,12 @@ async function secureRead(root, path, {
     const after = await handle.stat();
     if (!after.isFile() || before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size) {
       throw new Error(`source changed while opening: ${path}`);
+    }
+    const openedDescriptorPath = requireDescriptorContainment
+      ? await descriptorCanonicalPath(handle, { ...DEFAULT_RESOURCE_LIMITS, maxFileBytes, maxObservationMs }, canonicalRoot)
+      : undefined;
+    if (openedDescriptorPath !== undefined && !contained(canonicalRoot, openedDescriptorPath)) {
+      throw new Error(`open source descriptor escapes configured root: ${path}`);
     }
     const openedCanonicalPath = await realpath(absolutePath);
     if (!contained(canonicalRoot, openedCanonicalPath)) throw new Error(`source path traverses a symbolic link: ${path}`);
@@ -463,24 +488,35 @@ async function secureRead(root, path, {
       || finalPathMetadata.dev !== final.dev || finalPathMetadata.ino !== final.ino) {
       throw new Error(`source path changed while reading: ${path}`);
     }
+    if (openedDescriptorPath !== undefined) {
+      const finalDescriptorPath = await descriptorCanonicalPath(
+        handle,
+        { ...DEFAULT_RESOURCE_LIMITS, maxFileBytes, maxObservationMs },
+        canonicalRoot,
+      );
+      if (finalDescriptorPath !== openedDescriptorPath || !contained(canonicalRoot, finalDescriptorPath)) {
+        throw new Error(`open source descriptor changed while reading: ${path}`);
+      }
+    }
     return Buffer.concat(chunks, totalBytes);
   } finally {
     await handle.close();
   }
 }
 
-async function boundedObservation(executable, arguments_, label, limits, cwd, environment) {
+async function boundedObservation(executable, arguments_, label, limits, cwd, environment, encoding = "utf8") {
   try {
     const { stdout } = await execFileAsync(executable, arguments_, {
       cwd,
-      encoding: "utf8",
+      encoding,
       maxBuffer: limits.maxFileBytes,
       timeout: limits.maxObservationMs,
       killSignal: "SIGKILL",
       windowsHide: true,
       ...(environment === undefined ? {} : { env: environment }),
     });
-    if (Buffer.byteLength(stdout, "utf8") > limits.maxFileBytes) {
+    const bytes = Buffer.isBuffer(stdout) ? stdout : Buffer.from(stdout, "utf8");
+    if (bytes.length > limits.maxFileBytes) {
       throw new Error(`${label} observation exceeds byte limit`);
     }
     return stdout;
@@ -495,7 +531,7 @@ async function boundedObservation(executable, arguments_, label, limits, cwd, en
   }
 }
 
-async function gitObservation(repositoryRoot, arguments_, label, limits) {
+async function gitObservation(repositoryRoot, arguments_, label, limits, encoding = "utf8") {
   const environment = Object.fromEntries(Object.entries({
     PATH: process.env.PATH,
     SystemRoot: process.env.SystemRoot,
@@ -520,6 +556,7 @@ async function gitObservation(repositoryRoot, arguments_, label, limits) {
     limits,
     repositoryRoot,
     environment,
+    encoding,
   );
 }
 
@@ -626,8 +663,8 @@ async function deriveBaseline(repositoryRoot, capturedAt, limits, budget) {
   const [trackedTypes, trackedAssumeState, packageSource, lockfileSource] = await Promise.all([
     gitObservation(canonicalRoot, ["ls-files", "-t", "--", "package.json", "pnpm-lock.yaml"], "tracked baseline file types", limits),
     gitObservation(canonicalRoot, ["ls-files", "-v", "--", "package.json", "pnpm-lock.yaml"], "tracked baseline index flags", limits),
-    gitObservation(canonicalRoot, ["show", "HEAD:package.json"], "repository package manifest", limits),
-    gitObservation(canonicalRoot, ["show", "HEAD:pnpm-lock.yaml"], "repository lockfile", limits),
+    gitObservation(canonicalRoot, ["show", "HEAD:package.json"], "repository package manifest", limits, null),
+    gitObservation(canonicalRoot, ["show", "HEAD:pnpm-lock.yaml"], "repository lockfile", limits, null),
   ]);
   const expectedTrackedFiles = ["H package.json", "H pnpm-lock.yaml"];
   for (const observation of [trackedTypes, trackedAssumeState]) {
@@ -636,8 +673,8 @@ async function deriveBaseline(repositoryRoot, capturedAt, limits, budget) {
       throw new Error("tracked baseline files must not use skip-worktree or assume-unchanged index flags");
     }
   }
-  const packageBytes = Buffer.from(packageSource, "utf8");
-  const lockfileBytes = Buffer.from(lockfileSource, "utf8");
+  const packageBytes = Buffer.from(packageSource);
+  const lockfileBytes = Buffer.from(lockfileSource);
   if (budget !== undefined) {
     accountResource(budget, packageBytes, "repository package.json", limits);
     accountResource(budget, lockfileBytes, "repository pnpm-lock.yaml", limits);
@@ -811,6 +848,7 @@ export function scanSecrets(bytes, label = "input") {
     .map(({ id }) => ({ id, label }));
   if (findings.length > 0) {
     const error = new Error(`secret scan failed for ${label}: ${findings.map(entry => entry.id).join(", ")}`);
+    error.code = "SECRET_SCAN";
     error.findings = findings;
     throw error;
   }
@@ -1572,7 +1610,7 @@ async function regularFilesBelow(root, relativeDirectory, limits, budget) {
         continue;
       }
       if (!metadata.isFile()) continue;
-      const bytes = await secureRead(root, path, limits);
+      const bytes = await secureRead(root, path, { ...limits, requireDescriptorContainment: true });
       accountResource(budget, bytes, path, limits);
       results.push({ path, bytes });
     }
@@ -1580,8 +1618,28 @@ async function regularFilesBelow(root, relativeDirectory, limits, budget) {
   return results.sort((left, right) => left.path.localeCompare(right.path));
 }
 
-async function captureObject(store, bytes, { kind, sourcePath, capturedAt }) {
+function scanStructuredSecrets(bytes, sourcePath, limits) {
   scanSecrets(bytes, sourcePath);
+  if (!sourcePath.split("#", 1)[0].match(/\.(?:json|jsonl)$/u)) return;
+  const decodedEscapes = bytes.toString("utf8").replace(
+    /\\u([0-9a-f]{4})/giu,
+    (_match, hex) => String.fromCharCode(Number.parseInt(hex, 16)),
+  );
+  scanSecrets(decodedEscapes, `${sourcePath} decoded JSON`);
+  const documents = sourcePath.endsWith(".jsonl")
+    ? bytes.toString("utf8").split(/\r?\n/u).filter(line => line.trim().length > 0)
+    : [bytes.toString("utf8")];
+  for (const document of documents) {
+    try {
+      parseCustodyJson(document, limits);
+    } catch (error) {
+      if (error?.code === "SECRET_SCAN") throw error;
+    }
+  }
+}
+
+async function captureObject(store, bytes, { kind, sourcePath, capturedAt }, limits) {
+  scanStructuredSecrets(bytes, sourcePath, limits);
   const published = await store.publish(bytes);
   return {
     sha256: published.sha256,
@@ -1625,6 +1683,9 @@ export async function captureEvidence({
   }
   if (typeof repositoryRoot !== "string" || repositoryRoot.length === 0) throw new Error("repositoryRoot is required for V2 baseline derivation");
   if (typeof capturedAt !== "string" || capturedAt.length === 0) throw new Error("capturedAt must be a non-empty string");
+  if (!new Set(["linux", "darwin"]).has(process.platform)) {
+    throw new Error("strict evidence capture is supported only on Linux and macOS");
+  }
   const limits = normalizeResourceLimits(resourceLimits);
   const allowlist = assertExplicitJobIds(jobIds, limits.maxManifestJobs);
   const budget = { files: 0, bytes: 0, directories: 0, directoryEntries: 0 };
@@ -1641,7 +1702,7 @@ export async function captureEvidence({
   const exceptions = [];
   const objectByDigest = new Map();
   async function add(bytes, metadata) {
-    const object = await captureObject(store, bytes, { ...metadata, capturedAt });
+    const object = await captureObject(store, bytes, { ...metadata, capturedAt }, limits);
     const prior = objectByDigest.get(object.sha256);
     if (prior === undefined) { objectByDigest.set(object.sha256, object); objects.push(object); }
     else if (prior.kind !== object.kind || prior.sourcePath !== object.sourcePath || prior.mediaType !== object.mediaType) {
@@ -1666,7 +1727,7 @@ export async function captureEvidence({
         capturedBytes[kind] = await secureRead(
           kind === "jobConfig" ? safeConfigRoot : safeRuntimeRoot,
           path,
-          limits,
+          { ...limits, requireDescriptorContainment: true },
         );
         accountResource(budget, capturedBytes[kind], path, limits);
         captured[kind] = await add(capturedBytes[kind], {
@@ -1693,7 +1754,7 @@ export async function captureEvidence({
       let journal;
       try { journal = parseCustodyJson(journalFile.bytes.toString("utf8"), limits); }
       catch (error) {
-        if (error?.code === "DUPLICATE_JSON_KEY") throw error;
+        if (error?.code === "DUPLICATE_JSON_KEY" || error?.code === "SECRET_SCAN") throw error;
         throw new Error(`attempt journal ${journalLabel} must be valid bounded JSON`, { cause: error });
       }
       if (!record(journal) || !Array.isArray(journal.attempts)) throw new Error(`attempt journal ${journalLabel} must contain an attempts array`);
@@ -1822,9 +1883,11 @@ export async function captureEvidence({
       p0P1ExecutableClosure: false,
     },
   };
+  const manifestJson = deterministicJson(manifest);
+  scanSecrets(manifestJson, "captured manifest");
   const validation = validateManifest(manifest, limits);
   if (!validation.valid) throw new Error(`captured manifest is invalid:\n${validation.errors.join("\n")}`);
-  const manifestBytes = Buffer.from(`${deterministicJson(manifest)}\n`, "utf8");
+  const manifestBytes = Buffer.from(`${manifestJson}\n`, "utf8");
   if (manifestBytes.length > limits.maxFileBytes) throw new Error("captured manifest exceeds the file-size limit");
   scanSecrets(manifestBytes, "captured manifest");
   const manifestObject = await store.publish(manifestBytes);

@@ -35,6 +35,18 @@ authoring remains a measurement candidate, while runtime
 selection, lifecycle coordination, process hosting, shared extraction, and a
 public SPI remain no-go.
 
+## Evidence Custody Platform Contract
+
+Strict evidence capture is supported on Linux and macOS only. Linux binds an
+open file descriptor through `/proc/self/fd`; macOS uses the system
+`/usr/sbin/lsof` command to prove the descriptor's canonical path before and
+after reading. Capture fails closed when that proof is unavailable or changes.
+
+Windows remains a supported verification platform for existing manifests and
+objects, but it is not a capture platform in V2. A Windows capture attempt is
+rejected before source I/O. This is an explicit custody limitation, not a
+portable fallback with weaker symbolic-link or path-race guarantees.
+
 ## Results
 
 - [Executive verdict](executive-verdict.md)

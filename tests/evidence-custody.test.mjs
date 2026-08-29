@@ -22,6 +22,7 @@ import { parseStrictJson } from "../architecture/checks/strict-json.mjs";
 
 const JOB_ID = "modres-w7-example-20260826-r1";
 const execFileAsync = promisify(execFile);
+const captureTest = process.platform === "win32" ? test.skip : test;
 
 async function createRepositoryFixture(root) {
   const repositoryRoot = join(root, "repository");
@@ -257,7 +258,7 @@ test("corruption and a pre-existing collision are rejected", async t => {
   await assert.rejects(store.verify(digest, bytes), /collision or corruption/u);
 });
 
-test("object store rejects symlink shards and source capture rejects symlinks", async t => {
+captureTest("object store rejects symlink shards and source capture rejects symlinks", async t => {
   const root = await temporaryDirectory(t);
   const outside = await temporaryDirectory(t);
   const store = new ObjectStore(join(root, "store"));
@@ -322,7 +323,7 @@ test("manifest baseline and object roles are exact and fail closed", () => {
   assert.match(validateManifest(arbitraryAttemptIdentity).errors.join("\n"), /derived from jobId and attemptNumber/u);
 });
 
-test("custody V2 explicitly rejects V1 manifests and declared capture identity", async t => {
+captureTest("custody V2 explicitly rejects V1 manifests and declared capture identity", async t => {
   const manifest = validManifest();
   manifest.schemaVersion = 1;
   assert.match(validateManifest(manifest).errors.join("\n"), /schemaVersion 1 is unsupported/u);
@@ -991,7 +992,7 @@ test("canonical auth-root checks reject a permitted-looking symlink ancestor", a
   }
 });
 
-test("capture preserves required runtime bytes and decodes lastOutputSummary", async t => {
+captureTest("capture preserves required runtime bytes and decodes lastOutputSummary", async t => {
   const root = await temporaryDirectory(t);
   const repositoryRoot = await createRepositoryFixture(root);
   const runtimeRoot = join(root, "runtime");
@@ -1090,7 +1091,7 @@ async function writeCaptureFixture(root, journalDocuments, { commonBytes = false
   return { repositoryRoot, runtimeRoot, jobConfigRoot: configRoot, outputRoot: join(root, "evidence") };
 }
 
-test("capture requires a canonical clean repository root", async t => {
+captureTest("capture requires a canonical clean repository root", async t => {
   const root = await temporaryDirectory(t);
   const paths = await writeCaptureFixture(root, [{ attempts: [] }]);
   await writeFile(join(paths.repositoryRoot, "untracked.txt"), "dirty");
@@ -1110,7 +1111,7 @@ test("capture requires a canonical clean repository root", async t => {
   }), /canonical Git worktree root/u);
 });
 
-test("capture rejects masked baseline files and oversized job allowlists before source I/O", async t => {
+captureTest("capture rejects masked baseline files and oversized job allowlists before source I/O", async t => {
   for (const flag of ["--assume-unchanged", "--skip-worktree"]) {
     const root = await temporaryDirectory(t);
     const paths = await writeCaptureFixture(root, [{ attempts: [] }]);
@@ -1133,7 +1134,43 @@ test("capture rejects masked baseline files and oversized job allowlists before 
   }), /256-item limit/u);
 });
 
-test("capture accepts only explicit credential-free GitHub repository URLs", async t => {
+captureTest("capture hashes exact HEAD bytes and rejects escaped secrets before publication", async t => {
+  const exactRoot = await temporaryDirectory(t);
+  const exactPaths = await writeCaptureFixture(exactRoot, [{ attempts: [] }]);
+  const lockfileBytes = Buffer.concat([
+    Buffer.from("lockfileVersion: '9.0'\n# "),
+    Buffer.from([0xff, 0xfe]),
+    Buffer.from("\n"),
+  ]);
+  await writeFile(join(exactPaths.repositoryRoot, "pnpm-lock.yaml"), lockfileBytes);
+  await execFileAsync("git", ["-C", exactPaths.repositoryRoot, "add", "pnpm-lock.yaml"]);
+  await execFileAsync("git", ["-C", exactPaths.repositoryRoot, "commit", "--quiet", "-m", "test: binary lockfile bytes"]);
+  const exact = await captureEvidence({
+    campaignId: "exact-head-bytes",
+    jobIds: [JOB_ID],
+    ...exactPaths,
+  });
+  assert.equal(exact.manifest.baseline.lockfileSha256, sha256(lockfileBytes));
+
+  const secretRoot = await temporaryDirectory(t);
+  const secretPaths = await writeCaptureFixture(secretRoot, [{ attempts: [] }]);
+  const escapedSecret = `sk-\\u0070roj-${"x".repeat(32)}`;
+  await writeFile(
+    join(secretPaths.jobConfigRoot, JOB_ID, "job.json"),
+    `{"token":"${escapedSecret}"}\n`,
+  );
+  await assert.rejects(captureEvidence({
+    campaignId: "escaped-capture-secret",
+    jobIds: [JOB_ID],
+    ...secretPaths,
+  }), error => {
+    assert.match(error.message, /openai-key/u);
+    assert.equal(error.message.includes("sk-proj-"), false);
+    return true;
+  });
+});
+
+captureTest("capture accepts only explicit credential-free GitHub repository URLs", async t => {
   for (const repository of [
     "file://github.com/agent-teams-ai/extension-foundation.git",
     "https://evilgithub.com/agent-teams-ai/extension-foundation.git",
@@ -1170,7 +1207,7 @@ test("capture accepts only explicit credential-free GitHub repository URLs", asy
   assert.equal(result.manifest.baseline.repository, "agent-teams-ai/extension-foundation");
 });
 
-test("capture bounds repository observation subprocesses", { skip: process.platform === "win32" }, async t => {
+captureTest("capture bounds repository observation subprocesses", async t => {
   const root = await temporaryDirectory(t);
   const repositoryRoot = await createRepositoryFixture(root);
   const bin = join(root, "bin");
@@ -1196,7 +1233,7 @@ test("capture bounds repository observation subprocesses", { skip: process.platf
   }
 });
 
-test("capture derives its baseline without Git replacement refs", async t => {
+captureTest("capture derives its baseline without Git replacement refs", async t => {
   const root = await temporaryDirectory(t);
   const paths = await writeCaptureFixture(root, [{ attempts: [{
     attemptNumber: 1,
@@ -1231,7 +1268,7 @@ test("capture derives its baseline without Git replacement refs", async t => {
   assert.equal(result.manifest.baseline.tree, originalTreeOutput.trim());
 });
 
-test("capture fails closed when identical bytes have conflicting provenance", async t => {
+captureTest("capture fails closed when identical bytes have conflicting provenance", async t => {
   const root = await temporaryDirectory(t);
   const paths = await writeCaptureFixture(root, [{ attempts: [] }], { commonBytes: true });
   await assert.rejects(captureEvidence({
@@ -1241,7 +1278,7 @@ test("capture fails closed when identical bytes have conflicting provenance", as
   }), /conflicting provenance for captured object/u);
 });
 
-test("capture rejects duplicate keys in attempt journals", async t => {
+captureTest("capture rejects duplicate keys in attempt journals", async t => {
   const root = await temporaryDirectory(t);
   const paths = await writeCaptureFixture(root, [{ attempts: [] }]);
   const journalPath = join(paths.runtimeRoot, JOB_ID, "state", "attempt-journal", "journal-0.json");
@@ -1253,7 +1290,7 @@ test("capture rejects duplicate keys in attempt journals", async t => {
   }), /duplicate JSON keys/u);
 });
 
-test("capture enforces bounded files, aggregate bytes, and JSON complexity", async t => {
+captureTest("capture enforces bounded files, aggregate bytes, and JSON complexity", async t => {
   for (const [name, resourceLimits, expected] of [
     ["file-size", { maxFileBytes: 2 }, /byte limit|file-size limit/u],
     ["file-count", { maxFiles: 3 }, /file-count limit/u],
@@ -1278,7 +1315,7 @@ test("capture enforces bounded files, aggregate bytes, and JSON complexity", asy
   }
 });
 
-test("capture applies tightened limits to final manifest validation", async t => {
+captureTest("capture applies tightened limits to final manifest validation", async t => {
   const root = await temporaryDirectory(t);
   const paths = await writeCaptureFixture(root, [{ attempts: [{
     attemptNumber: 1,
@@ -1307,7 +1344,7 @@ test("capture applies tightened limits to final manifest validation", async t =>
   }), /claims exceeds the 1-item limit/u);
 });
 
-test("capture caps recursive directory traversal", async t => {
+captureTest("capture caps recursive directory traversal", async t => {
   const root = await temporaryDirectory(t);
   const paths = await writeCaptureFixture(root, [{ attempts: [] }]);
   const nested = join(paths.runtimeRoot, JOB_ID, "state", "attempt-journal", "nested");
@@ -1347,7 +1384,7 @@ test("manifest collection bounds fail before lineage expansion", () => {
   assert.match(validateManifest(bytes, { maxFileBytes: 4 }).errors.join("\n"), /file limit/u);
 });
 
-test("mutable wrappers with a stale attempt or foreign job remain unproven", async t => {
+captureTest("mutable wrappers with a stale attempt or foreign job remain unproven", async t => {
   const entry = { attemptNumber: 2, status: "completed", startedAt: "start", finishedAt: "finish" };
   for (const [name, wrapperDocument] of [
     ["stale", { schemaVersion: 1, status: "done", taskId: JOB_ID, runId: JOB_ID, evidence: ["attempt_count:1"] }],
@@ -1364,7 +1401,7 @@ test("mutable wrappers with a stale attempt or foreign job remain unproven", asy
   }
 });
 
-test("multiple journals bind the wrapper only to the globally latest attempt", async t => {
+captureTest("multiple journals bind the wrapper only to the globally latest attempt", async t => {
   const root = await temporaryDirectory(t);
   const entry = attemptNumber => ({ attemptNumber, status: "completed", startedAt: `start-${attemptNumber}`, finishedAt: `finish-${attemptNumber}`, lastOutputSummary: `summary-${attemptNumber}` });
   const paths = await writeCaptureFixture(root, [{ attempts: [entry(1)] }, { attempts: [entry(2)] }]);
@@ -1377,7 +1414,7 @@ test("multiple journals bind the wrapper only to the globally latest attempt", a
   assert.equal((await verifyTrustedManifest(result.manifest, { store: result.store })).integrityValid, true);
 });
 
-test("stored journals are the only authority for continuation lineage", async t => {
+captureTest("stored journals are the only authority for continuation lineage", async t => {
   const root = await temporaryDirectory(t);
   const entry = attemptNumber => ({
     attemptNumber,
@@ -1403,7 +1440,7 @@ test("stored journals are the only authority for continuation lineage", async t 
   assert.match(verification.gates["G-CUSTODY"].failures.join("\n"), /continuationOf does not match stored attempt-journal bytes/u);
 });
 
-test("overlapping journals are rejected as ambiguous and missing current wrappers fail closed portably", async t => {
+captureTest("overlapping journals are rejected as ambiguous and missing current wrappers fail closed portably", async t => {
   const root = await temporaryDirectory(t);
   const entry = { attemptNumber: 1, status: "completed", startedAt: "start", finishedAt: "finish" };
   const ambiguous = await writeCaptureFixture(root, [{ attempts: [entry], journal: 1 }, { attempts: [entry], journal: 2 }]);
