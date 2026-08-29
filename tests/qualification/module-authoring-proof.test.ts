@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
@@ -8,17 +8,23 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 import {
+  createAgentRuntimeBaseline,
+} from "./module-authoring-proof/agent-runtime-baseline.ts";
+import {
   AGENT_RUNTIME_DECLARATIONS,
   AGENT_RUNTIME_PROFILE,
-  activateAgentRuntimeHybrid,
-  createAgentRuntimeBaseline,
-  createAgentRuntimeLoaderTable,
-} from "./module-authoring-proof/agent-runtime-fixture.ts";
+  createAgentRuntimeCandidate,
+} from "./module-authoring-proof/agent-runtime-candidate.ts";
+import { createAgentRuntimeLoaderTable } from "./module-authoring-proof/agent-runtime-fixture.ts";
+import {
+  createFrontendBaseline,
+} from "./module-authoring-proof/frontend-baseline.ts";
 import {
   FRONTEND_DECLARATIONS,
   FRONTEND_PROFILE,
-  activateFrontendHybrid,
-  createFrontendBaseline,
+  createFrontendCandidate,
+} from "./module-authoring-proof/frontend-candidate.ts";
+import {
   createFrontendLoaderTable,
   type RecentProjectSource,
 } from "./module-authoring-proof/frontend-fixture.ts";
@@ -30,21 +36,48 @@ import {
   writeDeclaration,
 } from "./module-authoring-proof/io.ts";
 import { evaluateSelectedLoaders } from "./module-authoring-proof/literal-loaders.ts";
-import { measureProof, PROOF_REVISIONS } from "./module-authoring-proof/measurement.ts";
+import { CONTEXT_REVISIONS, measureProof, type MeasurementInput } from "./module-authoring-proof/measurement.ts";
 import {
   binaryCompare,
-  compileStaticProfile,
   requiredDisableImpact,
+  simulateCandidateProfile,
   type LocatedDeclaration,
-  type StaticProfile,
+  type SyntheticCandidateProfile,
   validateDeclaration,
-  validateStaticProfile,
+  validateSyntheticCandidateProfile,
 } from "./module-authoring-proof/model.ts";
 
 const fixtureDirectory = dirname(fileURLToPath(import.meta.url));
 const proofDirectory = join(fixtureDirectory, "module-authoring-proof");
 const execFileAsync = promisify(execFile);
 const typescriptCli = fileURLToPath(new URL("../../node_modules/typescript/bin/tsc", import.meta.url));
+
+const proofPath = (...parts: string[]): string => join(proofDirectory, ...parts);
+const measurementInput: MeasurementInput = {
+  baselinePaths: [proofPath("agent-runtime-baseline.ts"), proofPath("frontend-baseline.ts")],
+  candidateProductPaths: [
+    proofPath("agent-runtime-candidate.ts"),
+    proofPath("frontend-candidate.ts"),
+    proofPath("fixtures", "agent-runtime", "executable-observer", "module.declaration.json"),
+    proofPath("fixtures", "agent-runtime", "runtime-installation", "module.declaration.json"),
+    proofPath("fixtures", "agent-runtime", "profile.json"),
+    proofPath("fixtures", "frontend", "claude-recent-projects", "module.declaration.json"),
+    proofPath("fixtures", "frontend", "codex-recent-projects", "module.declaration.json"),
+    proofPath("fixtures", "frontend", "recent-projects", "module.declaration.json"),
+    proofPath("fixtures", "frontend", "profile.json"),
+  ],
+  genericProofPaths: [proofPath("model.ts"), proofPath("io.ts"), proofPath("literal-loaders.ts"), proofPath("fixture-data.ts")],
+  baselineBindingProbes: [
+    { path: proofPath("agent-runtime-baseline.ts"), token: "@proof-binding-site runtime.executable-observer" },
+    { path: proofPath("frontend-baseline.ts"), token: "@proof-binding-site recent-projects.sources" },
+  ],
+  candidateBindingProbes: [
+    { path: proofPath("agent-runtime-candidate.ts"), token: "@proof-binding-site runtime.executable-observer" },
+    { path: proofPath("frontend-candidate.ts"), token: "@proof-binding-site recent-projects.sources" },
+    { path: proofPath("fixtures", "agent-runtime", "profile.json"), token: "\"runtime.installation-discovery.executableFileObserver\": \"runtime.executable-observer\"" },
+    { path: proofPath("fixtures", "frontend", "profile.json"), token: "\"recent-projects.feature.sources\": [" },
+  ],
+};
 
 async function execPnpm(args: readonly string[], options: Readonly<{ cwd: string; env: NodeJS.ProcessEnv }>): Promise<void> {
   const npmExecPath = process.env.npm_execpath;
@@ -67,8 +100,8 @@ const source = (sourceId: string, projects: readonly string[]): RecentProjectSou
 const claude = source("claude", ["alpha"]);
 const codex = source("codex", ["beta"]);
 
-function mutableProfile(profile: StaticProfile): {
-  consumer: StaticProfile["consumer"];
+function mutableProfile(profile: SyntheticCandidateProfile): {
+  consumer: SyntheticCandidateProfile["consumer"];
   roots: string[];
   enabledModules: string[];
   bindings: Record<string, string | readonly string[] | null>;
@@ -112,38 +145,31 @@ test("01 Agent Runtime Pure DI baseline has the independent expected outcome", (
   );
 });
 
-test("02 Agent Runtime hybrid compiles static arguments and has the independent expected outcome", () => {
-  const compilation = compileStaticProfile(AGENT_RUNTIME_DECLARATIONS, AGENT_RUNTIME_PROFILE);
+test("02 Agent Runtime candidate validates metadata while execution stays Pure DI", () => {
+  const compilation = simulateCandidateProfile(AGENT_RUNTIME_DECLARATIONS, AGENT_RUNTIME_PROFILE);
   assert.deepEqual(compilation.diagnostics, []);
   assert.deepEqual(compilation.plan?.factoryArguments[1], {
     moduleId: "runtime.installation-discovery",
     loaderKey: "runtime.installation-discovery",
     dependencies: { executableFileObserver: "runtime.executable-observer" },
   });
-  const trace: string[] = [];
-  const hybrid = activateAgentRuntimeHybrid(compilation.plan!, createAgentRuntimeLoaderTable(observer, trace));
-  assert.equal(hybrid.runtimeInstallation.discoverCodexInstallations(), "codex:/opt/claude,/opt/codex");
-  assert.deepEqual(trace, ["runtime.executable-observer", "runtime.installation-discovery"]);
+  const candidate = createAgentRuntimeCandidate(observer);
+  assert.equal(candidate.runtimeInstallation.discoverCodexInstallations(), "codex:/opt/claude,/opt/codex");
 });
 
 test("03 Frontend Pure DI baseline preserves the independently expected source order", () => {
   assert.deepEqual(createFrontendBaseline(claude, codex).listDashboardRecentProjects(), ["alpha", "beta"]);
 });
 
-test("04 Frontend hybrid compiles static many arguments and preserves expected source order", () => {
-  const compilation = compileStaticProfile(FRONTEND_DECLARATIONS, FRONTEND_PROFILE);
+test("04 Frontend candidate validates ordered metadata while execution stays Pure DI", () => {
+  const compilation = simulateCandidateProfile(FRONTEND_DECLARATIONS, FRONTEND_PROFILE);
   assert.deepEqual(compilation.diagnostics, []);
   assert.deepEqual(compilation.plan?.factoryArguments[2]?.dependencies, {
     logger: null,
     sources: ["recent-projects.claude-source", "recent-projects.codex-source"],
   });
-  const trace: string[] = [];
-  const feature = activateFrontendHybrid(compilation.plan!, createFrontendLoaderTable({
-    "recent-projects.claude-source": claude,
-    "recent-projects.codex-source": codex,
-  }, trace));
+  const feature = createFrontendCandidate(claude, codex);
   assert.deepEqual(feature.listDashboardRecentProjects(), ["alpha", "beta"]);
-  assert.deepEqual(trace, ["recent-projects.claude-source", "recent-projects.codex-source", "recent-projects.feature"]);
 });
 
 test("05 declarations are inert serializable JSON", () => {
@@ -200,7 +226,7 @@ test("09 duplicate declarations report deterministic related paths", () => {
     declarationPath: "z-duplicate/module.declaration.json",
     declaration: AGENT_RUNTIME_DECLARATIONS[0]!.declaration,
   };
-  const result = compileStaticProfile([duplicate, ...AGENT_RUNTIME_DECLARATIONS], AGENT_RUNTIME_PROFILE);
+  const result = simulateCandidateProfile([duplicate, ...AGENT_RUNTIME_DECLARATIONS], AGENT_RUNTIME_PROFILE);
   assert.deepEqual(result.diagnostics, [{
     code: "DUPLICATE_MODULE",
     consumer: "agent-runtime",
@@ -214,7 +240,7 @@ test("09 duplicate declarations report deterministic related paths", () => {
 test("10 a missing required binding fails before any factory argument is usable", () => {
   const profile = mutableProfile(AGENT_RUNTIME_PROFILE);
   delete profile.bindings["runtime.installation-discovery.executableFileObserver"];
-  const result = compileStaticProfile(AGENT_RUNTIME_DECLARATIONS, profile);
+  const result = simulateCandidateProfile(AGENT_RUNTIME_DECLARATIONS, profile);
   assert.deepEqual(result.diagnostics.map(item => item.code), ["MISSING_REQUIRED"]);
   assert.equal(result.plan, undefined);
 });
@@ -225,21 +251,21 @@ test("11 optional absence is explicit and ordered many follows profile order", (
     "recent-projects.codex-source",
     "recent-projects.claude-source",
   ];
-  const result = compileStaticProfile(FRONTEND_DECLARATIONS, profile);
+  const result = simulateCandidateProfile(FRONTEND_DECLARATIONS, profile);
   assert.deepEqual(result.diagnostics, []);
   assert.deepEqual(result.plan?.factoryArguments[2]?.dependencies, {
     logger: null,
     sources: ["recent-projects.codex-source", "recent-projects.claude-source"],
   });
   delete profile.bindings["recent-projects.feature.logger"];
-  assert.deepEqual(compileStaticProfile(FRONTEND_DECLARATIONS, profile).diagnostics.map(item => item.code), ["OPTIONAL_NOT_EXPLICIT"]);
+  assert.deepEqual(simulateCandidateProfile(FRONTEND_DECLARATIONS, profile).diagnostics.map(item => item.code), ["OPTIONAL_NOT_EXPLICIT"]);
 });
 
 test("12 a disabled root is rejected", () => {
   const profile = mutableProfile(FRONTEND_PROFILE);
   profile.enabledModules.pop();
   profile.selectedLoaders.pop();
-  const result = compileStaticProfile(FRONTEND_DECLARATIONS, profile);
+  const result = simulateCandidateProfile(FRONTEND_DECLARATIONS, profile);
   assert.equal(result.diagnostics.some(item => item.code === "DISABLED_ROOT"), true);
 });
 
@@ -265,7 +291,7 @@ test("13 disabling a required provider computes the complete impact closure", ()
   ]);
   profile.enabledModules = profile.enabledModules.filter(id => id !== "runtime.executable-observer");
   profile.selectedLoaders = profile.selectedLoaders.filter(id => id !== "runtime.executable-observer");
-  assert.equal(compileStaticProfile([...AGENT_RUNTIME_DECLARATIONS, application], profile).diagnostics.some(item => item.code === "DISABLED_REQUIRED"), true);
+  assert.equal(simulateCandidateProfile([...AGENT_RUNTIME_DECLARATIONS, application], profile).diagnostics.some(item => item.code === "DISABLED_REQUIRED"), true);
 });
 
 test("14 disabling an explicitly selected optional dependency is diagnosed", () => {
@@ -282,7 +308,7 @@ test("14 disabling an explicitly selected optional dependency is diagnosed", () 
   };
   const profile = mutableProfile(FRONTEND_PROFILE);
   profile.bindings["recent-projects.feature.logger"] = "recent-projects.logger";
-  const result = compileStaticProfile([...FRONTEND_DECLARATIONS, logger], profile);
+  const result = simulateCandidateProfile([...FRONTEND_DECLARATIONS, logger], profile);
   assert.deepEqual(result.diagnostics.map(item => item.code), ["DISABLED_OPTIONAL"]);
 });
 
@@ -307,7 +333,7 @@ test("16 unselected and invalid literal loaders receive zero evaluation", () => 
 test("17 duplicate selected loader keys fail closed", () => {
   const profile = mutableProfile(AGENT_RUNTIME_PROFILE);
   profile.selectedLoaders = ["runtime.installation-discovery", "runtime.installation-discovery"];
-  assert.deepEqual(compileStaticProfile(AGENT_RUNTIME_DECLARATIONS, profile).diagnostics.map(item => item.code), ["DUPLICATE_PROFILE_LOADER"]);
+  assert.deepEqual(simulateCandidateProfile(AGENT_RUNTIME_DECLARATIONS, profile).diagnostics.map(item => item.code), ["DUPLICATE_PROFILE_LOADER"]);
 });
 
 test("18 generated AI inventory is deterministic and navigable", () => {
@@ -330,28 +356,35 @@ test("19 regeneration is byte-identical and stale outputs fail closed", async ()
   });
 });
 
-test("20 plugin-shaped metadata activates only an ordinary product-owned typed contribution", () => {
-  const pluginShaped = FRONTEND_DECLARATIONS[0]!.declaration;
-  assert.deepEqual(pluginShaped.contribution, { kind: "recent-project-source" });
+test("20 a plugin-shaped envelope maps to an ordinary product-owned contribution outside the generic grammar", () => {
+  const pluginEnvelope = Object.freeze({
+    contributionKind: "recent-project-source",
+    moduleId: "recent-projects.claude-source",
+  });
+  const declaration = FRONTEND_DECLARATIONS.find(item => item.declaration.moduleId === pluginEnvelope.moduleId)?.declaration;
+  assert.equal(declaration?.provides.includes("recent-projects.source/v1"), true);
   const contribution: RecentProjectSource = claude;
   assert.deepEqual(contribution.list(), ["alpha"]);
+  assert.equal("contributionKind" in declaration!, false);
   assert.equal("install" in contribution, false);
   assert.equal("plugin" in contribution, false);
 });
 
-test("21 framework, Foundation, graph, lifecycle, and container types do not leak", async () => {
+test("21 framework, graph, lifecycle, and container imports do not leak into fixture APIs", async () => {
   const publicProofSources = await Promise.all([
-    "model.ts", "agent-runtime-fixture.ts", "frontend-fixture.ts", "literal-loaders.ts",
+    "agent-runtime-fixture.ts", "agent-runtime-baseline.ts", "agent-runtime-candidate.ts",
+    "frontend-fixture.ts", "frontend-baseline.ts", "frontend-candidate.ts",
   ].map(name => readFile(join(proofDirectory, name), "utf8")));
   for (const text of publicProofSources) {
-    assert.equal(/\b(?:Foundation|Graph|Lifecycle|Container|ServiceLocator)\b/u.test(text), false);
-    assert.equal(text.includes("import("), false);
-    assert.equal(text.includes("@deepseek-ai"), false);
+    const imports = text.split("\n").filter(line => line.startsWith("import ")).join("\n");
+    assert.equal(/\b(?:Graph|Lifecycle|Container|ServiceLocator)\b/u.test(imports), false);
+    assert.equal(imports.includes("import("), false);
+    assert.equal(imports.includes("@deepseek-ai"), false);
   }
 });
 
 test("22 data projections are structuredClone safe while activation factories remain separate", () => {
-  const compilation = compileStaticProfile(FRONTEND_DECLARATIONS, FRONTEND_PROFILE);
+  const compilation = simulateCandidateProfile(FRONTEND_DECLARATIONS, FRONTEND_PROFILE);
   const projections = {
     declarations: FRONTEND_DECLARATIONS.map(item => item.declaration),
     profile: FRONTEND_PROFILE,
@@ -377,21 +410,24 @@ test("23 packed private consumer installs, typechecks, and executes with the pin
     await mkdir(packageRoot, { recursive: true });
     await mkdir(packRoot, { recursive: true });
     await mkdir(consumerRoot, { recursive: true });
-    const generated = generatedOutputs(AGENT_RUNTIME_DECLARATIONS)["module-handles.ts"]!;
-    await writeFile(join(packageRoot, "index.ts"), generated);
-    await writeFile(join(packageRoot, "index.js"), 'export const RuntimeInstallationDiscovery = "runtime.installation-discovery";\n');
+    const generated = generatedOutputs(AGENT_RUNTIME_DECLARATIONS);
+    await writeFile(join(packageRoot, "index.ts"), generated["module-handles.ts"]!);
+    await writeFile(join(packageRoot, "index.js"), generated["module-handles.js"]!);
     await writeFile(join(packageRoot, "package.json"), JSON.stringify({ name: "@proof/inventory", version: "1.0.0", type: "module", packageManager: "pnpm@11.18.0", files: ["index.ts", "index.js"], exports: { ".": { types: "./index.ts", import: "./index.js" } } }));
     await execPnpm(["pack", "--pack-destination", packRoot], { cwd: packageRoot, env: commandEnvironment });
     const tarball = join(packRoot, "proof-inventory-1.0.0.tgz");
     await writeFile(join(consumerRoot, "package.json"), JSON.stringify({ private: true, type: "module", packageManager: "pnpm@11.18.0", dependencies: { "@proof/inventory": `file:${tarball}` } }));
     await writeFile(join(consumerRoot, "consumer.ts"), [
-      'import { RuntimeInstallationDiscovery, type ModuleId } from "@proof/inventory";',
+      'import { RuntimeExecutableObserver, RuntimeInstallationDiscovery, type ModuleId } from "@proof/inventory";',
       'const identity: ModuleId<"runtime.installation-discovery"> = RuntimeInstallationDiscovery;',
+      'const observer: ModuleId<"runtime.executable-observer"> = RuntimeExecutableObserver;',
       'void identity;',
+      'void observer;',
     ].join("\n"));
     await writeFile(join(consumerRoot, "consumer.mjs"), [
-      'import { RuntimeInstallationDiscovery } from "@proof/inventory";',
+      'import { RuntimeExecutableObserver, RuntimeInstallationDiscovery } from "@proof/inventory";',
       'if (RuntimeInstallationDiscovery !== "runtime.installation-discovery") process.exit(2);',
+      'if (RuntimeExecutableObserver !== "runtime.executable-observer") process.exit(3);',
     ].join("\n"));
     await writeFile(join(consumerRoot, "tsconfig.json"), JSON.stringify({
       compilerOptions: {
@@ -407,30 +443,38 @@ test("23 packed private consumer installs, typechecks, and executes with the pin
     await execFileAsync(process.execPath, [join(consumerRoot, "consumer.mjs")], { cwd: consumerRoot, env: commandEnvironment });
     const packedSurface = await readFile(join(consumerRoot, "node_modules", "@proof", "inventory", "index.ts"), "utf8");
     assert.equal(packedSurface.includes("unique symbol"), true);
-    assert.equal(/Declaration|StaticProfile|Diagnostic|FactoryArgument/u.test(packedSurface), false);
+    assert.equal(/Declaration|SyntheticCandidateProfile|Diagnostic|FactoryArgument/u.test(packedSurface), false);
   });
 });
 
-test("24 measurement and deletion decision are deterministic and CONDITIONAL", async () => {
-  const sourcePaths = [join(proofDirectory, "agent-runtime-fixture.ts"), join(proofDirectory, "frontend-fixture.ts")];
-  const genericPaths = [join(proofDirectory, "model.ts"), join(proofDirectory, "io.ts"), join(proofDirectory, "literal-loaders.ts"), join(proofDirectory, "fixture-data.ts")];
-  const first = await measureProof(sourcePaths, genericPaths);
-  const second = await measureProof(sourcePaths, genericPaths);
+test("24 complete baseline/candidate measurement deterministically applies the ADR-0013 NO-GO rule", async () => {
+  const first = await measureProof(measurementInput);
+  const second = await measureProof(measurementInput);
   assert.deepEqual(second, first);
-  assert.deepEqual(first.revisions, PROOF_REVISIONS);
+  assert.deepEqual(first.contextualSourceLocks, CONTEXT_REVISIONS);
   assert.equal(first.adrProductionGlueRatio, "not-applicable-production-loc-zero");
-  assert.equal(first.disposablePercent, "30-50%");
-  assert.equal(first.verdict, "CONDITIONAL");
-  assert.equal(first.residualBlocker, "product-owner-benchmark-and-adoption-evidence-absent");
+  assert.equal(first.baselineWiringLoc, 23);
+  assert.equal(first.candidateProductLoc, 119);
+  assert.equal(first.genericProofGlueLoc, 589);
+  assert.equal(first.candidateWithGenericLoc, 708);
+  assert.equal(first.genericProofGlueRatio, 4.94958);
+  assert.deepEqual(first.fileCounts, { baseline: 2, candidateProduct: 9, genericProof: 4 });
+  assert.deepEqual(first.bindingChangeSites, { baseline: 2, candidate: 4 });
+  assert.deepEqual(first.bindingChangeFiles, { baseline: 2, candidate: 4 });
+  assert.equal(first.disposableExecutablePercent, 100);
+  assert.equal(first.genericProofGlueRatio > 0.3, true);
+  assert.equal(first.verdict, "NO-GO");
+  assert.deepEqual(first.reasons, [
+    "generic-proof-glue-exceeds-adr-0013-threshold",
+    "candidate-does-not-reduce-binding-change-files",
+    "no-owning-product-benchmark",
+    "no-second-real-consumer",
+  ]);
 });
 
-test("25 Orchestrator is recorded as second-consumer-not-admitted", async () => {
-  const result = await measureProof(
-    [join(proofDirectory, "agent-runtime-fixture.ts"), join(proofDirectory, "frontend-fixture.ts")],
-    [join(proofDirectory, "literal-loaders.ts")],
-  );
-  assert.equal(result.consumers.orchestrator, "second-consumer-not-admitted");
-  assert.equal(result.revisions.orchestrator, "4c5f55366ed8c83f97374b66c8e9f84059c47382");
+test("25 Orchestrator non-admission is read from the governed qualification authority", async () => {
+  const admission = await readFile(join(fixtureDirectory, "..", "..", "docs", "qualification", "module-system-v1-productization", "consumer-admission.md"), "utf8");
+  assert.match(admission, new RegExp("\\| Orchestrator \\| `" + CONTEXT_REVISIONS.orchestrator + "` \\|[^\\n]*`L1-L5_NO_GO`", "u"));
 });
 
 test("26 diagnostics are immutable and sorted independently of discovery order", () => {
@@ -445,7 +489,7 @@ test("27 checked-in fixed-name JSON is the sole fixture declaration authority", 
   const root = join(proofDirectory, "fixtures", "frontend");
   const discovered = await discoverDeclarations("frontend", [root]);
   assert.deepEqual(discovered.declarations, FRONTEND_DECLARATIONS);
-  for (const name of ["agent-runtime-fixture.ts", "frontend-fixture.ts"]) {
+  for (const name of ["agent-runtime-candidate.ts", "frontend-candidate.ts"]) {
     const fixtureSource = await readFile(join(proofDirectory, name), "utf8");
     assert.equal(fixtureSource.includes("schemaVersion"), false);
     assert.equal(fixtureSource.includes("provides:"), false);
@@ -473,7 +517,7 @@ test("29 profile admission rejects unknown fields and duplicate roots, modules, 
     selectedLoaders: ["recent-projects.feature", "recent-projects.feature"],
     future: true,
   };
-  assert.deepEqual(validateStaticProfile(duplicate).diagnostics.map(item => item.code), [
+  assert.deepEqual(validateSyntheticCandidateProfile(duplicate).diagnostics.map(item => item.code), [
     "DUPLICATE_PROFILE_BINDING",
     "DUPLICATE_PROFILE_LOADER",
     "DUPLICATE_PROFILE_MODULE",
@@ -483,13 +527,13 @@ test("29 profile admission rejects unknown fields and duplicate roots, modules, 
 });
 
 test("30 unique module IDs admit while conflicting IDs fail deterministically", () => {
-  assert.deepEqual(compileStaticProfile(AGENT_RUNTIME_DECLARATIONS, AGENT_RUNTIME_PROFILE).diagnostics, []);
+  assert.deepEqual(simulateCandidateProfile(AGENT_RUNTIME_DECLARATIONS, AGENT_RUNTIME_PROFILE).diagnostics, []);
   const duplicate = { ...AGENT_RUNTIME_DECLARATIONS[0]!, declarationPath: "zz/module.declaration.json" };
-  assert.deepEqual(compileStaticProfile([duplicate, ...AGENT_RUNTIME_DECLARATIONS], AGENT_RUNTIME_PROFILE).diagnostics.map(item => item.code), ["DUPLICATE_MODULE"]);
+  assert.deepEqual(simulateCandidateProfile([duplicate, ...AGENT_RUNTIME_DECLARATIONS], AGENT_RUNTIME_PROFILE).diagnostics.map(item => item.code), ["DUPLICATE_MODULE"]);
 });
 
 test("31 declaration ownership is local to the admitted consumer", async () => {
-  const compile = compileStaticProfile([FRONTEND_DECLARATIONS[0]!, ...AGENT_RUNTIME_DECLARATIONS], AGENT_RUNTIME_PROFILE);
+  const compile = simulateCandidateProfile([FRONTEND_DECLARATIONS[0]!, ...AGENT_RUNTIME_DECLARATIONS], AGENT_RUNTIME_PROFILE);
   assert.equal(compile.diagnostics.some(item => item.code === "OWNER_CONSUMER_MISMATCH"), true);
   await withTemp(async root => {
     await mkdir(join(root, "foreign"), { recursive: true });
@@ -502,11 +546,11 @@ test("31 declaration ownership is local to the admitted consumer", async () => {
 test("32 optional and ordered-many slots admit explicit 0, 1, and many cardinalities", () => {
   const zero = mutableProfile(FRONTEND_PROFILE);
   zero.bindings["recent-projects.feature.sources"] = [];
-  assert.deepEqual(compileStaticProfile(FRONTEND_DECLARATIONS, zero).plan?.factoryArguments[2]?.dependencies.sources, []);
+  assert.deepEqual(simulateCandidateProfile(FRONTEND_DECLARATIONS, zero).plan?.factoryArguments[2]?.dependencies.sources, []);
   const one = mutableProfile(FRONTEND_PROFILE);
   one.bindings["recent-projects.feature.sources"] = ["recent-projects.codex-source"];
-  assert.deepEqual(compileStaticProfile(FRONTEND_DECLARATIONS, one).plan?.factoryArguments[2]?.dependencies.sources, ["recent-projects.codex-source"]);
-  assert.deepEqual(compileStaticProfile(FRONTEND_DECLARATIONS, FRONTEND_PROFILE).plan?.factoryArguments[2]?.dependencies.sources, [
+  assert.deepEqual(simulateCandidateProfile(FRONTEND_DECLARATIONS, one).plan?.factoryArguments[2]?.dependencies.sources, ["recent-projects.codex-source"]);
+  assert.deepEqual(simulateCandidateProfile(FRONTEND_DECLARATIONS, FRONTEND_PROFILE).plan?.factoryArguments[2]?.dependencies.sources, [
     "recent-projects.claude-source", "recent-projects.codex-source",
   ]);
   const logger = located("recent-projects.logger", ["recent-projects.logger/v1"]);
@@ -514,23 +558,25 @@ test("32 optional and ordered-many slots admit explicit 0, 1, and many cardinali
   optional.enabledModules.push("recent-projects.logger");
   optional.selectedLoaders.push("recent-projects.logger");
   optional.bindings["recent-projects.feature.logger"] = "recent-projects.logger";
-  assert.equal(compileStaticProfile([...FRONTEND_DECLARATIONS, logger], optional).plan?.factoryArguments[2]?.dependencies.logger, "recent-projects.logger");
+  assert.equal(simulateCandidateProfile([...FRONTEND_DECLARATIONS, logger], optional).plan?.factoryArguments[2]?.dependencies.logger, "recent-projects.logger");
+  optional.bindings["recent-projects.feature.logger"] = [];
+  assert.deepEqual(simulateCandidateProfile([...FRONTEND_DECLARATIONS, logger], optional).diagnostics.map(item => item.code), ["OPTIONAL_NOT_SINGLE"]);
 });
 
 test("33 ordered-many rejects a duplicate provider ID", () => {
   const profile = mutableProfile(FRONTEND_PROFILE);
   profile.bindings["recent-projects.feature.sources"] = ["recent-projects.claude-source", "recent-projects.claude-source"];
-  assert.deepEqual(compileStaticProfile(FRONTEND_DECLARATIONS, profile).diagnostics.map(item => item.code), ["DUPLICATE_MANY_PROVIDER"]);
+  assert.deepEqual(simulateCandidateProfile(FRONTEND_DECLARATIONS, profile).diagnostics.map(item => item.code), ["DUPLICATE_MANY_PROVIDER"]);
 });
 
 test("34 required binding never falls back to exactly one or ambiguous installed providers", () => {
   const missing = mutableProfile(AGENT_RUNTIME_PROFILE);
   delete missing.bindings["runtime.installation-discovery.executableFileObserver"];
-  assert.deepEqual(compileStaticProfile(AGENT_RUNTIME_DECLARATIONS, missing).diagnostics.map(item => item.code), ["MISSING_REQUIRED"]);
+  assert.deepEqual(simulateCandidateProfile(AGENT_RUNTIME_DECLARATIONS, missing).diagnostics.map(item => item.code), ["MISSING_REQUIRED"]);
   const alternate = located("runtime.alternate-observer", ["runtime.executable-observation/v1"], undefined, "agent-runtime");
   missing.enabledModules.push(alternate.declaration.moduleId);
   missing.selectedLoaders.push(alternate.declaration.loaderKey);
-  assert.equal(compileStaticProfile([...AGENT_RUNTIME_DECLARATIONS, alternate], missing).diagnostics.some(item => item.code === "MISSING_REQUIRED"), true);
+  assert.equal(simulateCandidateProfile([...AGENT_RUNTIME_DECLARATIONS, alternate], missing).diagnostics.some(item => item.code === "MISSING_REQUIRED"), true);
 });
 
 test("35 incompatible capability versions differ from unrelated mismatches", () => {
@@ -539,28 +585,28 @@ test("35 incompatible capability versions differ from unrelated mismatches", () 
   versioned.enabledModules.push(v2.declaration.moduleId);
   versioned.selectedLoaders.push(v2.declaration.loaderKey);
   versioned.bindings["runtime.installation-discovery.executableFileObserver"] = v2.declaration.moduleId;
-  assert.equal(compileStaticProfile([...AGENT_RUNTIME_DECLARATIONS, v2], versioned).diagnostics.some(item => item.code === "INCOMPATIBLE_CAPABILITY_VERSION"), true);
+  assert.equal(simulateCandidateProfile([...AGENT_RUNTIME_DECLARATIONS, v2], versioned).diagnostics.some(item => item.code === "INCOMPATIBLE_CAPABILITY_VERSION"), true);
   const unrelated = located("runtime.logger", ["runtime.logging/v1"], undefined, "agent-runtime");
   versioned.enabledModules = versioned.enabledModules.filter(id => id !== v2.declaration.moduleId);
   versioned.selectedLoaders = versioned.selectedLoaders.filter(id => id !== v2.declaration.loaderKey);
   versioned.enabledModules.push(unrelated.declaration.moduleId);
   versioned.selectedLoaders.push(unrelated.declaration.loaderKey);
   versioned.bindings["runtime.installation-discovery.executableFileObserver"] = unrelated.declaration.moduleId;
-  assert.equal(compileStaticProfile([...AGENT_RUNTIME_DECLARATIONS, unrelated], versioned).diagnostics.some(item => item.code === "CAPABILITY_MISMATCH"), true);
+  assert.equal(simulateCandidateProfile([...AGENT_RUNTIME_DECLARATIONS, unrelated], versioned).diagnostics.some(item => item.code === "CAPABILITY_MISMATCH"), true);
 });
 
 test("36 static explicit bindings reject cycles with deterministic admission diagnostics", () => {
   const left = located("cycle.left", ["cycle.left/v1"], { required: [{ slot: "right", capability: "cycle.right/v1" }], optional: [], many: [] });
   const right = located("cycle.right", ["cycle.right/v1"], { required: [{ slot: "left", capability: "cycle.left/v1" }], optional: [], many: [] });
-  const profile: StaticProfile = {
+  const profile: SyntheticCandidateProfile = {
     consumer: "frontend",
     roots: ["cycle.left"],
     enabledModules: ["cycle.right", "cycle.left"],
     bindings: { "cycle.left.right": "cycle.right", "cycle.right.left": "cycle.left" },
     selectedLoaders: ["cycle.right", "cycle.left"],
   };
-  const forward = compileStaticProfile([left, right], profile).diagnostics;
-  const reverse = compileStaticProfile([right, left], { ...profile, enabledModules: [...profile.enabledModules].reverse(), selectedLoaders: [...profile.selectedLoaders].reverse() }).diagnostics;
+  const forward = simulateCandidateProfile([left, right], profile).diagnostics;
+  const reverse = simulateCandidateProfile([right, left], { ...profile, enabledModules: [...profile.enabledModules].reverse(), selectedLoaders: [...profile.selectedLoaders].reverse() }).diagnostics;
   assert.deepEqual(forward, reverse);
   assert.deepEqual(forward.map(item => item.code), ["STATIC_PROFILE_CYCLE"]);
 });
@@ -571,7 +617,7 @@ test("37 unknown roots, enabled modules, bindings, and loaders all fail closed",
   profile.enabledModules.push("unknown.module");
   profile.bindings["unknown.module.slot"] = null;
   profile.selectedLoaders.push("unknown.loader");
-  const codes = compileStaticProfile(FRONTEND_DECLARATIONS, profile).diagnostics.map(item => item.code);
+  const codes = simulateCandidateProfile(FRONTEND_DECLARATIONS, profile).diagnostics.map(item => item.code);
   assert.equal(codes.includes("UNKNOWN_ROOT"), true);
   assert.equal(codes.includes("UNKNOWN_ENABLED_MODULE"), true);
   assert.equal(codes.includes("UNKNOWN_BINDING"), true);
@@ -586,12 +632,12 @@ test("38 plans, inventories, and diagnostics ignore non-semantic input permutati
   profile.enabledModules.reverse();
   profile.selectedLoaders.reverse();
   profile.bindings = Object.fromEntries(Object.entries(profile.bindings).reverse());
-  assert.deepEqual(compileStaticProfile([...FRONTEND_DECLARATIONS].reverse(), profile).plan, compileStaticProfile(FRONTEND_DECLARATIONS, baseline).plan);
+  assert.deepEqual(simulateCandidateProfile([...FRONTEND_DECLARATIONS].reverse(), profile).plan, simulateCandidateProfile(FRONTEND_DECLARATIONS, baseline).plan);
   assert.deepEqual(generatedOutputs([...FRONTEND_DECLARATIONS].reverse()), generatedOutputs(FRONTEND_DECLARATIONS));
   const duplicate = { ...FRONTEND_DECLARATIONS[0]!, declarationPath: "z/module.declaration.json" };
   assert.deepEqual(
-    compileStaticProfile([duplicate, ...FRONTEND_DECLARATIONS], baseline).diagnostics,
-    compileStaticProfile([...FRONTEND_DECLARATIONS].reverse().concat(duplicate), profile).diagnostics,
+    simulateCandidateProfile([duplicate, ...FRONTEND_DECLARATIONS], baseline).diagnostics,
+    simulateCandidateProfile([...FRONTEND_DECLARATIONS].reverse().concat(duplicate), profile).diagnostics,
   );
 });
 
@@ -629,7 +675,65 @@ test("42 loader and generated handle identities reject collisions", () => {
     enabledModules: ["alpha.beta", "alpha-beta"],
     bindings: {},
     selectedLoaders: ["alpha.beta"],
-  } satisfies StaticProfile;
-  assert.equal(compileStaticProfile([alphaDot, alphaDashSameLoader], profile).diagnostics.some(item => item.code === "DUPLICATE_LOADER_KEY"), true);
+  } satisfies SyntheticCandidateProfile;
+  assert.equal(simulateCandidateProfile([alphaDot, alphaDashSameLoader], profile).diagnostics.some(item => item.code === "DUPLICATE_LOADER_KEY"), true);
   assert.throws(() => generatedOutputs([alphaDot, alphaDash]), /GENERATED_HANDLE_COLLISION:AlphaBeta/u);
+});
+
+test("43 literal loader selection validates the complete set before evaluating anything", () => {
+  const trace: string[] = [];
+  const table = Object.freeze({ valid: () => trace.push("valid") });
+  assert.throws(() => evaluateSelectedLoaders(table, ["valid", "invalid"]), /INVALID_LITERAL_LOADER:invalid/u);
+  assert.deepEqual(trace, []);
+});
+
+test("44 discovery rejects symlink declarations and stops at the candidate bound", async () => {
+  await withTemp(async root => {
+    await mkdir(join(root, "one"), { recursive: true });
+    await mkdir(join(root, "two"), { recursive: true });
+    await assert.rejects(discoverDeclarations("frontend", [root], { maxRoots: 1, maxCandidates: 1 }), /DISCOVERY_CANDIDATE_LIMIT/u);
+
+    if (process.platform !== "win32") {
+      const outside = join(root, "outside.json");
+      await writeFile(outside, JSON.stringify(FRONTEND_DECLARATIONS[0]!.declaration));
+      await symlink(outside, join(root, "one", "module.declaration.json"));
+      await assert.rejects(discoverDeclarations("frontend", [root]), /DISCOVERY_DECLARATION_NOT_REGULAR:one\/module\.declaration\.json/u);
+    }
+  });
+});
+
+test("45 multi-root diagnostics remain deterministic when input roots are reversed", async () => {
+  await withTemp(async root => {
+    const firstRoot = join(root, "a-root");
+    const secondRoot = join(root, "b-root");
+    await mkdir(join(firstRoot, "shared"), { recursive: true });
+    await mkdir(join(secondRoot, "shared"), { recursive: true });
+    const alpha = located("alpha", ["alpha/v1"]);
+    const beta = located("beta", ["beta/v1"]);
+    await writeDeclaration(firstRoot, "shared", { ...alpha.declaration, loaderKey: "shared.loader" });
+    await writeDeclaration(secondRoot, "shared", { ...beta.declaration, loaderKey: "shared.loader" });
+    const forward = await discoverDeclarations("frontend", [firstRoot, secondRoot]);
+    const reverse = await discoverDeclarations("frontend", [secondRoot, firstRoot]);
+    assert.deepEqual(reverse, forward);
+    const profile = {
+      consumer: "frontend",
+      roots: ["alpha"],
+      enabledModules: ["alpha", "beta"],
+      bindings: {},
+      selectedLoaders: ["shared.loader"],
+    } satisfies SyntheticCandidateProfile;
+    assert.deepEqual(
+      simulateCandidateProfile(forward.declarations, profile).diagnostics,
+      simulateCandidateProfile(reverse.declarations, profile).diagnostics,
+    );
+  });
+});
+
+test("46 prototype-like binding keys remain visible and fail closed", () => {
+  const raw = structuredClone(FRONTEND_PROFILE) as unknown as Record<string, unknown>;
+  raw.bindings = JSON.parse('{"__proto__":null}') as unknown;
+  const checked = validateSyntheticCandidateProfile(raw);
+  assert.notEqual(checked.profile, undefined);
+  const result = simulateCandidateProfile(FRONTEND_DECLARATIONS, checked.profile!);
+  assert.equal(result.diagnostics.some(item => item.code === "UNKNOWN_BINDING" && item.fieldPath.endsWith(".__proto__")), true);
 });

@@ -3,125 +3,111 @@ id: qualification.module-system-v1-productization.module-authoring-measurement-p
 type: qualification
 status: active
 owner: architecture
-summary: Records a disposable source-shaped comparison of Pure DI and hybrid static authoring for two measurement fixtures.
+summary: Records a disposable synthetic comparison of Pure DI and a static authoring candidate without admitting L1.
 ---
 
 # Hybrid Two-Consumer Module Authoring Measurement Proof
 
 ## Verdict
 
-`CONDITIONAL`. This qualification-only proof shows that a small hybrid static
-authoring candidate can preserve the expected behavior of two source-shaped
-measurement fixtures. It does not supply the missing product-owner-approved
-benchmark or product adoption evidence. It therefore admits no consumer,
-shared extraction, production package, public SPI, or runtime module engine.
+`NO-GO`. The disposable candidate validates useful closed-world failure cases,
+but it does not justify an L1 authoring layer now:
 
-Agent Runtime and Frontend are measurement fixtures only. Orchestrator is
-`second-consumer-not-admitted`: its pinned host-discovery slice has one fixed
-source and no repeated authoring seam. The proof does not claim two admitted
-consumers or a shared semantic intersection.
+- generic proof glue is `4.94958` times the candidate product-shaped footprint;
+- a modeled provider rebind touches four candidate files versus two baseline files;
+- no owning-product-approved benchmark exists; and
+- no second real consumer is admitted.
 
-## Locked Inputs And Scope
+The result applies ADR-0013's stop rule. Product-owned Pure DI and
+`FeatureModuleFactory` remain the baseline. Nothing in this proof admits a
+consumer, shared extraction, production package, public SPI, graph, or runtime
+module engine.
 
-| Input | Exact revision | Use |
+## Locked Context And Scope
+
+| Context | Exact revision | Meaning |
 | --- | --- | --- |
 | Extension Foundation base | `4738aa329196f9d0c50a14edfcbe454d2cca0b98` | Proof base |
-| Agent Runtime | `7be998237a4c262bee9c4198d554b43cd2757ac6` | Read-only source shaping |
-| Frontend | `85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd` | Read-only source shaping |
-| Orchestrator | `4c5f55366ed8c83f97374b66c8e9f84059c47382` | Non-admission finding |
+| Agent Runtime | `7be998237a4c262bee9c4198d554b43cd2757ac6` | Contextual source-lock label |
+| Frontend | `85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd` | Contextual source-lock label |
+| Orchestrator | `4c5f55366ed8c83f97374b66c8e9f84059c47382` | Governed non-admission record |
 
-The private `source-shaped-shadow` lives only under `tests/qualification/`.
-It compares literal imports, closed dependency objects, and explicit roots
-against module-colocated fixed-name inert JSON, bounded build-time discovery,
-validation, generated nominal handles and inventory, an explicit static
-profile, separate typed activation factories, and target-local literal loader
-tables. Compilation produces static factory arguments, not a runtime graph.
-Generated outputs are written only to temporary directories.
+Agent Runtime and Frontend names identify synthetic measurement fixtures. The
+executable proof does not consume product trees or prove that those revisions
+produced the fixture shapes. Exact Git custody remains the responsibility of the
+separate source-evidence records. Orchestrator admission is read directly from
+`consumer-admission.md`; it is not duplicated as a measurement constant.
 
-The proof imports no graph, lifecycle, recovery, container, or framework spike
-helper. It contains no production package, plugin installation, lifecycle,
-recovery, service locator, global registry, decorator, executable metadata,
-runtime file scan, or dynamic string import.
+All executable code lives under `tests/qualification/`. Candidate declarations
+are fixed-name inert JSON, loaded from explicit bounded fixture directories.
+The synthetic validator produces deterministic diagnostics and a disposable
+plan projection, but runtime behavior never interprets that plan. Both candidate
+fixtures continue to execute through direct, product-shaped Pure DI.
 
-## Executable Scenarios
+The proof contains no production package, product API change, plugin host,
+lifecycle, recovery, service locator, global registry, decorator, executable
+metadata, runtime file scan, or dynamic string import. Product-specific plugin
+contribution data stays outside the generic declaration grammar.
 
-The root test contains 42 named scenarios with direct expected outcomes rather
-than using agreement between candidates as its only oracle. The scenarios retain
-the original Pure DI and hybrid behavior comparisons and add the following
-closed-world evidence:
+## Executable Evidence
+
+The root test contains 46 named scenarios with independent expected outcomes.
 
 | Evidence area | Covered outcomes |
 | --- | --- |
-| Declaration authority | Checked-in fixed-name JSON is authoritative; TypeScript contains no duplicate payload; discovery and generation cause zero activation-sentinel evaluation |
-| Admission shape | Unknown declaration/profile fields, duplicate provides, duplicate roots/modules/bindings/loaders, owner mismatch, unknown roots/modules/bindings/loaders, and conflicting IDs fail closed |
-| Explicit composition | Required, optional, and ordered-many cardinalities cover zero, one, and many; missing required never auto-binds one or ambiguous installed providers; duplicate many providers fail |
-| Compatibility | Capability IDs require `/vN`; same-family version incompatibility differs from unrelated mismatch |
-| Static validation | Disabled root/required/optional cases and complete required-disable impact are covered; explicit-binding cycles fail with stable diagnostics |
-| Determinism | Plans, inventories, regeneration, stale checks, and diagnostics ignore non-semantic declaration/profile permutations while ordered-many profile order remains intact |
-| Discovery and loading | Root, candidate, and declaration-byte bounds apply; paths stay relative and safe; literal loader selection is an exact closed set with zero invalid/unselected evaluation |
-| Private consumer smoke | Pinned pnpm creates a tarball; a private consumer installs it offline, pinned TypeScript 7 checks its nominal handle, and Node executes its runtime export |
-| Governance | Measurement remains deterministic and `CONDITIONAL`; Orchestrator remains `second-consumer-not-admitted` |
+| Declaration authority | Fixed-name JSON is inert; discovery/generation causes zero activation-sentinel evaluation |
+| Admission | Unknown fields, duplicate IDs/providers/roots/bindings/loaders, owner mismatch, unknown references, and collisions fail closed |
+| Cardinality | `required`, `optional`, and ordered `many` cover zero/one/many; optional arrays and duplicate many providers fail |
+| Compatibility | Capability IDs require `/vN`; version mismatch differs from capability-family mismatch |
+| Disable impact | Disabled roots/providers fail; required-dependency impact is complete and deterministic |
+| Determinism | Plans, inventories, generated output, stale checks, and diagnostics ignore non-semantic input order |
+| Discovery/loading | Root/candidate/byte limits and explicit directory lists apply; invalid/unselected literal loaders receive zero evaluation |
+| Isolation | Packed qualification artifact installs offline, passes pinned TypeScript checking, and executes in a private temporary consumer |
+| Governance | Current Orchestrator `L1-L5_NO_GO` state is checked against the canonical admission document |
 
-Diagnostics use explicit binary code-unit ordering over code, consumer, relative
-declaration path, field path, available module ID, and related paths. They
-contain no absolute paths, stack traces, timestamps, locale dependence, or
-discovery-order meaning.
+Diagnostics use binary code-unit ordering and relative sanitized paths. They
+contain no absolute paths, stacks, timestamps, locale dependence, or discovery
+order as semantics.
 
-## Raw Deterministic Measurements
+## Deterministic Measurements
 
-These are qualification proof measurements, never production metrics.
+These are synthetic qualification measurements, not production metrics.
 
 | Category | Result |
 | --- | --- |
-| Source-shaped wiring LOC | `120` physical non-empty LOC |
-| Generic proof glue LOC | `553` physical non-empty LOC |
-| Generic proof glue ratio | `4.608333` generic/source-shaped |
+| Baseline wiring | `23` non-empty LOC across `2` files |
+| Candidate product-shaped footprint | `119` non-empty LOC across `9` TypeScript/JSON files |
+| Generic proof glue | `589` non-empty LOC across `4` files |
+| Candidate plus generic glue | `708` non-empty LOC |
+| Generic/candidate ratio | `4.94958` |
 | ADR production-glue ratio | `not-applicable-production-loc-zero` |
-| Files in LOC sample | `6` |
-| Binding change sites | baseline `2`; hybrid `2` |
-| Diagnostics | immutable and deterministically sorted |
-| Determinism | byte-identical regeneration plus stale check |
-| Type declaration fixture | nominal `ModuleId<Value>` handles emitted into the qualification tarball |
-| Private consumer smoke | offline packed install, typecheck, and execution passed |
-| Focused typecheck | repository-pinned TypeScript `7.0.2` passed |
-| Serializable projections | declarations, profiles, diagnostics, and inventory clone safely |
-| Disable impact | complete required-dependency closure |
-| Disposable classification | `30-50% disposable` label |
+| Modeled provider-rebind sites/files | baseline `2/2`; candidate `4/4` |
+| Disposable executable proof | `100%` |
 
-The physical LOC sample covers the two source-shaped wiring fixtures and four
-generic validation, discovery, fixture-reading, and loader helpers. Tests, JSON
-declarations/profiles, this report, and measurement reporting code are excluded
-from that ratio. Shipping production LOC is zero, so the ADR production-glue
-ratio is not applicable; synthetic proof LOC is not used as its denominator.
+The inventory includes every baseline composition file, every candidate
+composition/declaration/profile file, and all generic validator/discovery/loader
+helpers. Shared feature-core fixtures, tests, generated temporary output,
+measurement code, and this report are excluded from both sides. Binding probes
+must each match exactly one checked-in source token or the measurement fails.
 
-## Limitations And Stop Rules
+Packed-install, typecheck, execution, determinism, and scenario outcomes are test
+evidence, not hard-coded measurement fields. The isolated smoke uses repository-
+pinned pnpm `11.18.0` and TypeScript `7.0.2`; it proves only the disposable
+qualification artifact. It does not satisfy `PACKAGE-1` or publication evidence.
 
-The source snapshots supplied to the run contain source trees without Git
-metadata. This proof records the supplied exact SHAs and uses the trees only to
-shape fixtures; it does not independently verify Git custody or copy product
-domain models. The fixtures prove mechanism behavior, not product semantics,
-adoption value, runtime performance, or independent authorship.
+## Stop Rule And Reconsideration
 
-The isolated consumer smoke uses repository-pinned pnpm `11.18.0` to create a
-tarball and install it with `--offline`. Repository-pinned TypeScript `7.0.2`
-then checks a private consumer before Node executes the package runtime
-export. This qualifies the disposable package shape used by this proof. It does
-not satisfy `PACKAGE-1`, establish a production package, prove publication, or
-admit a public SPI.
+The candidate already triggers deletion/no-go conditions: it does not reduce
+binding-change files and its synthetic generic-glue ratio is far above 30%.
+Because shipping production LOC is zero, the ADR production ratio itself remains
+not applicable; the synthetic ratio is additional negative evidence, not a
+substitute denominator.
 
-Delete the hybrid shadow and retain direct Pure DI if a product-owned benchmark
-does not demonstrate a repeated authoring or drift problem, if binding change
-sites do not fall, or if navigation and diagnosis do not improve. Stop or move
-back if the first two production slices exceed the ADR-0013 30% generic-glue
-limit, ordinary feature work repeatedly changes Foundation, or framework types
-cross product contracts. The disposable output must never be promoted by
-renaming or moving it into a production package.
+Reconsider L1 only after one owning product approves and runs a benchmark against
+a real slice, including expected outcomes, repeated tasks, incorrect-edit
+taxonomy, navigation/diagnostic thresholds, binding-change measurement, and a
+deletion rule. Shared Foundation semantics still require a second independently
+authored real consumer and a separate accepted extraction decision.
 
-## Next Minimal Product-Owned Step
-
-One owning product may approve a benchmark protocol and replay the same
-baseline-versus-hybrid authoring tasks in its own repository against one real
-slice. The protocol must name expected outcomes, repetitions, thresholds,
-incorrect-edit taxonomy, binding-change measurement, deletion criteria, and
-adoption owner. Until that evidence exists, retain product-owned Pure DI and do
-not extract shared semantics.
+Until then, keep direct Pure DI, delete rather than promote the disposable
+candidate, and do not move or rename its grammar into a production package.

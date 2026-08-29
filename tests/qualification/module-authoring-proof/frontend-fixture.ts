@@ -1,6 +1,3 @@
-import { readFixtureData } from "./fixture-data.ts";
-import type { StaticPlan } from "./model.ts";
-
 export interface RecentProjectSource {
   readonly sourceId: string;
   list(): readonly string[];
@@ -22,34 +19,6 @@ export const createRecentProjectsFeature = (
     return Object.freeze(projects);
   },
 });
-
-export const createFrontendBaseline = (
-  claude: RecentProjectSource,
-  codex: RecentProjectSource,
-): RecentProjectsFeature => createRecentProjectsFeature({ sources: [claude, codex] });
-
-const fixtureData = readFixtureData("frontend", new URL("./fixtures/frontend/", import.meta.url));
-export const FRONTEND_DECLARATIONS = fixtureData.declarations;
-export const FRONTEND_PROFILE = fixtureData.profile;
-
-export function activateFrontendHybrid(
-  plan: StaticPlan,
-  loaders: Readonly<Record<string, () => unknown>>,
-): RecentProjectsFeature {
-  const root = plan.factoryArguments.find(argument => argument.moduleId === "recent-projects.feature");
-  const sourceIds = root?.dependencies.sources;
-  if (root === undefined || !Array.isArray(sourceIds)) throw new Error("INVALID_FRONTEND_STATIC_PLAN");
-  const sources = sourceIds.map(sourceId => {
-    const loader = loaders[sourceId];
-    if (loader === undefined) throw new Error("MISSING_FRONTEND_SOURCE_LOADER");
-    return loader() as RecentProjectSource;
-  });
-  const loadFactory = loaders[root.loaderKey];
-  if (loadFactory === undefined) throw new Error("MISSING_FRONTEND_FACTORY_LOADER");
-  const factory = loadFactory();
-  if (typeof factory !== "function") throw new Error("INVALID_FRONTEND_ACTIVATION_FACTORY");
-  return (factory as typeof createRecentProjectsFeature)({ sources });
-}
 
 export function createFrontendLoaderTable(
   sources: Readonly<Record<string, RecentProjectSource>>,

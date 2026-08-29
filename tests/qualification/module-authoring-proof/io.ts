@@ -1,4 +1,4 @@
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { lstat, open, opendir, readFile, realpath, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import {
@@ -17,6 +17,41 @@ export interface DiscoveryResult {
   readonly reads: readonly string[];
 }
 
+async function boundedDirectories(root: string, remaining: number): Promise<readonly string[]> {
+  const directories: string[] = [];
+  const handle = await opendir(root);
+  for await (const entry of handle) {
+    if (!entry.isDirectory()) continue;
+    if (directories.length >= remaining) throw new Error("DISCOVERY_CANDIDATE_LIMIT");
+    directories.push(entry.name);
+  }
+  return Object.freeze(directories.sort(binaryCompare));
+}
+
+async function readBoundedDeclaration(path: string, displayPath: string, maxBytes: number): Promise<string | undefined> {
+  let pathStats;
+  try {
+    pathStats = await lstat(path);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    throw error;
+  }
+  if (!pathStats.isFile() || pathStats.isSymbolicLink()) throw new Error(`DISCOVERY_DECLARATION_NOT_REGULAR:${displayPath}`);
+
+  const handle = await open(path, "r");
+  try {
+    const openedStats = await handle.stat();
+    if (!openedStats.isFile()) throw new Error(`DISCOVERY_DECLARATION_NOT_REGULAR:${displayPath}`);
+    if (openedStats.size > maxBytes) throw new Error(`DISCOVERY_DECLARATION_BYTE_LIMIT:${displayPath}`);
+    const buffer = Buffer.alloc(maxBytes + 1);
+    const { bytesRead } = await handle.read(buffer, 0, buffer.byteLength, 0);
+    if (bytesRead > maxBytes) throw new Error(`DISCOVERY_DECLARATION_BYTE_LIMIT:${displayPath}`);
+    return buffer.subarray(0, bytesRead).toString("utf8");
+  } finally {
+    await handle.close();
+  }
+}
+
 export async function discoverDeclarations(
   consumer: string,
   roots: readonly string[],
@@ -26,30 +61,30 @@ export async function discoverDeclarations(
     maxDeclarationBytes: 16_384,
   },
 ): Promise<DiscoveryResult> {
+  if (!Number.isSafeInteger(limits.maxRoots) || limits.maxRoots < 1 ||
+    !Number.isSafeInteger(limits.maxCandidates) || limits.maxCandidates < 1 ||
+    !Number.isSafeInteger(limits.maxDeclarationBytes ?? 16_384) || (limits.maxDeclarationBytes ?? 16_384) < 1) {
+    throw new Error("DISCOVERY_INVALID_LIMIT");
+  }
   if (roots.length > limits.maxRoots) throw new Error("DISCOVERY_ROOT_LIMIT");
   if (new Set(roots).size !== roots.length) throw new Error("DISCOVERY_DUPLICATE_ROOT");
+  const canonicalRoots = await Promise.all(roots.map(async root => ({ input: root, canonical: await realpath(root) })));
+  canonicalRoots.sort((left, right) => binaryCompare(left.canonical, right.canonical));
+  if (new Set(canonicalRoots.map(root => root.canonical)).size !== canonicalRoots.length) throw new Error("DISCOVERY_DUPLICATE_ROOT");
   const declarations: LocatedDeclaration[] = [];
   const diagnostics: Diagnostic[] = [];
   const reads: string[] = [];
   let candidates = 0;
-  for (const root of roots) {
-    const entries = (await readdir(root, { withFileTypes: true }))
-      .filter(entry => entry.isDirectory())
-      .sort((left, right) => binaryCompare(left.name, right.name));
+  for (const [rootIndex, root] of canonicalRoots.entries()) {
+    const entries = await boundedDirectories(root.canonical, limits.maxCandidates - candidates);
     candidates += entries.length;
-    if (candidates > limits.maxCandidates) throw new Error("DISCOVERY_CANDIDATE_LIMIT");
     for (const entry of entries) {
-      const declarationPath = join(root, entry.name, DECLARATION_NAME);
-      const displayPath = `${entry.name}/${DECLARATION_NAME}`;
-      let source: string;
-      try {
-        const bytes = await readFile(declarationPath);
-        if (bytes.byteLength > (limits.maxDeclarationBytes ?? 16_384)) throw new Error(`DISCOVERY_DECLARATION_BYTE_LIMIT:${displayPath}`);
-        source = bytes.toString("utf8");
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === "ENOENT") continue;
-        throw error;
-      }
+      const declarationPath = join(root.canonical, entry, DECLARATION_NAME);
+      const displayPath = canonicalRoots.length === 1
+        ? `${entry}/${DECLARATION_NAME}`
+        : `root-${String(rootIndex + 1).padStart(4, "0")}/${entry}/${DECLARATION_NAME}`;
+      const source = await readBoundedDeclaration(declarationPath, displayPath, limits.maxDeclarationBytes ?? 16_384);
+      if (source === undefined) continue;
       reads.push(displayPath);
       let raw: unknown;
       try {
@@ -102,7 +137,13 @@ export function generatedOutputs(declarations: readonly LocatedDeclaration[]): R
     ...ordered.map(({ declaration }) => `export const ${handleName(declaration.moduleId)} = ${JSON.stringify(declaration.moduleId)} as ModuleId<${JSON.stringify(declaration.moduleId)}>;`),
     "",
   ].join("\n");
+  const runtimeHandles = [
+    "// Generated qualification projection. Disposable; do not edit.",
+    ...ordered.map(({ declaration }) => `export const ${handleName(declaration.moduleId)} = ${JSON.stringify(declaration.moduleId)};`),
+    "",
+  ].join("\n");
   return Object.freeze({
+    "module-handles.js": runtimeHandles,
     "module-handles.ts": handles,
     "module-inventory.json": `${stable(inventory)}\n`,
   });

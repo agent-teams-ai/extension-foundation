@@ -15,7 +15,6 @@ export interface ModuleDeclaration {
   readonly loaderKey: string;
   readonly provides: readonly string[];
   readonly dependencies: Readonly<Record<SlotKind, readonly DependencySlot[]>>;
-  readonly contribution?: Readonly<{ kind: "recent-project-source" }>;
 }
 
 export interface LocatedDeclaration {
@@ -23,7 +22,7 @@ export interface LocatedDeclaration {
   readonly declarationPath: string;
 }
 
-export interface StaticProfile {
+export interface SyntheticCandidateProfile {
   readonly consumer: Consumer;
   readonly roots: readonly string[];
   readonly enabledModules: readonly string[];
@@ -40,28 +39,28 @@ export interface Diagnostic {
   readonly relatedPaths: readonly string[];
 }
 
-export interface StaticFactoryArgument {
+export interface SyntheticFactoryArgument {
   readonly moduleId: string;
   readonly loaderKey: string;
   readonly dependencies: Readonly<Record<string, string | readonly string[] | null>>;
 }
 
-export interface StaticPlan {
+export interface SyntheticCandidatePlan {
   readonly consumer: Consumer;
   readonly roots: readonly string[];
-  readonly factoryArguments: readonly StaticFactoryArgument[];
+  readonly factoryArguments: readonly SyntheticFactoryArgument[];
   readonly selectedLoaders: readonly string[];
 }
 
-export interface Compilation {
+export interface SyntheticCandidateResult {
   readonly diagnostics: readonly Diagnostic[];
-  readonly plan?: StaticPlan;
+  readonly plan?: SyntheticCandidatePlan;
 }
 
 const MODULE_ID = /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/u;
 const CAPABILITY_ID = /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*\/v[1-9][0-9]*$/u;
 const SLOT = /^[a-z][A-Za-z0-9]*$/u;
-const DECLARATION_FIELDS = new Set(["schemaVersion", "consumer", "moduleId", "loaderKey", "provides", "dependencies", "contribution"]);
+const DECLARATION_FIELDS = new Set(["schemaVersion", "consumer", "moduleId", "loaderKey", "provides", "dependencies"]);
 const DEPENDENCY_FIELDS = new Set<SlotKind>(["required", "optional", "many"]);
 const SLOT_FIELDS = new Set(["slot", "capability"]);
 const PROFILE_FIELDS = new Set(["consumer", "roots", "enabledModules", "bindings", "selectedLoaders"]);
@@ -191,12 +190,6 @@ export function validateDeclaration(
   const many = parseSlots(dependencies.many, "many", consumer, declarationPath, moduleId, diagnostics);
   const slotNames = [...required, ...optional, ...many].map(slot => slot.slot);
   if (new Set(slotNames).size !== slotNames.length) diagnostics.push(diagnostic("DUPLICATE_SLOT", consumer, declarationPath, "dependencies", moduleId));
-  let contribution: ModuleDeclaration["contribution"];
-  if (raw.contribution !== undefined) {
-    if (!isRecord(raw.contribution) || raw.contribution.kind !== "recent-project-source" || Object.keys(raw.contribution).some(key => key !== "kind")) {
-      diagnostics.push(diagnostic("DECLARATION_FIELD", consumer, declarationPath, "contribution", moduleId));
-    } else contribution = { kind: "recent-project-source" };
-  }
   if (diagnostics.length > 0 || moduleId === undefined || typeof raw.loaderKey !== "string") return { diagnostics: sortDiagnostics(diagnostics) };
   return {
     declaration: immutable({
@@ -206,13 +199,12 @@ export function validateDeclaration(
       loaderKey: raw.loaderKey,
       provides,
       dependencies: { required, optional, many },
-      ...(contribution === undefined ? {} : { contribution }),
     }),
     diagnostics: sortDiagnostics([]),
   };
 }
 
-export function validateStaticProfile(raw: unknown): { readonly profile?: StaticProfile; readonly diagnostics: readonly Diagnostic[] } {
+export function validateSyntheticCandidateProfile(raw: unknown): { readonly profile?: SyntheticCandidateProfile; readonly diagnostics: readonly Diagnostic[] } {
   const diagnostics: Diagnostic[] = [];
   if (!isRecord(raw)) return { diagnostics: sortDiagnostics([diagnostic("PROFILE_SHAPE", "unknown", "profile.json", "$")]) };
   const consumer = raw.consumer === "agent-runtime" || raw.consumer === "frontend" ? raw.consumer : "unknown";
@@ -231,7 +223,7 @@ export function validateStaticProfile(raw: unknown): { readonly profile?: Static
   const roots = arrayField("roots");
   const enabledModules = arrayField("enabledModules");
   const selectedLoaders = arrayField("selectedLoaders");
-  const bindings: Record<string, string | readonly string[] | null> = {};
+  const bindings: Record<string, string | readonly string[] | null> = Object.create(null) as Record<string, string | readonly string[] | null>;
   if (Array.isArray(raw.bindings)) {
     const seen = new Set<string>();
     raw.bindings.forEach((entry, index) => {
@@ -254,7 +246,7 @@ export function validateStaticProfile(raw: unknown): { readonly profile?: Static
     }
   }
   if (diagnostics.length > 0 || consumer === "unknown") return { diagnostics: sortDiagnostics(diagnostics) };
-  return { profile: immutable({ consumer, roots, enabledModules, bindings, selectedLoaders }), diagnostics: sortDiagnostics([]) };
+  return { profile: immutable({ consumer, roots, enabledModules, bindings: { ...bindings }, selectedLoaders }), diagnostics: sortDiagnostics([]) };
 }
 
 const capabilityFamily = (capability: string): string => capability.replace(/\/v[1-9][0-9]*$/u, "");
@@ -290,8 +282,13 @@ function cycleDiagnostics(
   return result;
 }
 
-export function compileStaticProfile(declarations: readonly LocatedDeclaration[], rawProfile: StaticProfile | unknown): Compilation {
-  const checkedProfile = validateStaticProfile(rawProfile);
+// Qualification-only oracle. It is deliberately not exported by a package and
+// does not authorize a Foundation or product runtime contract.
+export function simulateCandidateProfile(
+  declarations: readonly LocatedDeclaration[],
+  rawProfile: SyntheticCandidateProfile | unknown,
+): SyntheticCandidateResult {
+  const checkedProfile = validateSyntheticCandidateProfile(rawProfile);
   if (checkedProfile.profile === undefined) return { diagnostics: checkedProfile.diagnostics };
   const profile = checkedProfile.profile;
   const diagnostics: Diagnostic[] = [...checkedProfile.diagnostics];
@@ -326,7 +323,7 @@ export function compileStaticProfile(declarations: readonly LocatedDeclaration[]
   }
   for (const key of Object.keys(profile.bindings).sort(binaryCompare)) if (!expectedBindings.has(key)) diagnostics.push(diagnostic("UNKNOWN_BINDING", profile.consumer, "profile.json", `bindings.${key}`));
 
-  const argumentsByModule = new Map<string, StaticFactoryArgument>();
+  const argumentsByModule = new Map<string, SyntheticFactoryArgument>();
   const edges = new Map<string, string[]>();
   for (const moduleId of [...profile.enabledModules].sort(binaryCompare)) {
     const item = byId.get(moduleId);
@@ -343,6 +340,10 @@ export function compileStaticProfile(declarations: readonly LocatedDeclaration[]
         }
         if (kind === "optional" && binding === undefined) {
           diagnostics.push(diagnostic("OPTIONAL_NOT_EXPLICIT", profile.consumer, "profile.json", fieldPath, moduleId, [item.declarationPath]));
+          continue;
+        }
+        if (kind === "optional" && binding !== null && typeof binding !== "string") {
+          diagnostics.push(diagnostic("OPTIONAL_NOT_SINGLE", profile.consumer, "profile.json", fieldPath, moduleId, [item.declarationPath]));
           continue;
         }
         if (kind === "many" && !Array.isArray(binding)) {
@@ -391,7 +392,7 @@ export function compileStaticProfile(declarations: readonly LocatedDeclaration[]
 
 export function requiredDisableImpact(
   declarations: readonly LocatedDeclaration[],
-  profile: StaticProfile,
+  profile: SyntheticCandidateProfile,
   disabledModuleId: string,
 ): readonly string[] {
   const disabled = new Set([disabledModuleId]);

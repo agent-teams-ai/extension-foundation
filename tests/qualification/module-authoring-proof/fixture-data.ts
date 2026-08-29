@@ -1,33 +1,32 @@
-import { readFileSync, readdirSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 
 import {
-  binaryCompare,
   DECLARATION_NAME,
   type Consumer,
   type LocatedDeclaration,
-  type StaticProfile,
+  type SyntheticCandidateProfile,
   validateDeclaration,
-  validateStaticProfile,
+  validateSyntheticCandidateProfile,
 } from "./model.ts";
 
 export function readFixtureData(
   consumer: Consumer,
   fixtureRoot: URL,
-): Readonly<{ declarations: readonly LocatedDeclaration[]; profile: StaticProfile }> {
-  const root = fileURLToPath(fixtureRoot);
-  const declarations = readdirSync(root, { withFileTypes: true })
-    .filter(entry => entry.isDirectory())
-    .sort((left, right) => binaryCompare(left.name, right.name))
-    .map(entry => {
-      const declarationPath = `${entry.name}/${DECLARATION_NAME}`;
-      const raw: unknown = JSON.parse(readFileSync(new URL(`${entry.name}/${DECLARATION_NAME}`, fixtureRoot), "utf8"));
+  declarationDirectories: readonly string[],
+): Readonly<{ declarations: readonly LocatedDeclaration[]; profile: SyntheticCandidateProfile }> {
+  if (new Set(declarationDirectories).size !== declarationDirectories.length) throw new Error("DUPLICATE_PROOF_DECLARATION_DIRECTORY");
+  const declarations = [...declarationDirectories]
+    .sort()
+    .map(directory => {
+      if (!/^[a-z][a-z0-9-]*$/u.test(directory)) throw new Error("INVALID_PROOF_DECLARATION_DIRECTORY");
+      const declarationPath = `${directory}/${DECLARATION_NAME}`;
+      const raw: unknown = JSON.parse(readFileSync(new URL(`${directory}/${DECLARATION_NAME}`, fixtureRoot), "utf8"));
       const result = validateDeclaration(raw, declarationPath, consumer);
       if (result.declaration === undefined) throw new Error(`INVALID_PROOF_DECLARATION:${JSON.stringify(result.diagnostics)}`);
       return Object.freeze({ declarationPath, declaration: result.declaration });
     });
   const rawProfile: unknown = JSON.parse(readFileSync(new URL("profile.json", fixtureRoot), "utf8"));
-  const profileResult = validateStaticProfile(rawProfile);
+  const profileResult = validateSyntheticCandidateProfile(rawProfile);
   if (profileResult.profile === undefined || profileResult.profile.consumer !== consumer) {
     throw new Error(`INVALID_PROOF_PROFILE:${JSON.stringify(profileResult.diagnostics)}`);
   }
