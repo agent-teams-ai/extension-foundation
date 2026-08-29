@@ -37,7 +37,7 @@ The responsibilities remain deliberately separate:
 | OCI registry such as GHCR or Harbor | Immutable plugin artifact bytes addressed by digest. A registry does not decide product admission, grants, compatibility, or activation. |
 | Future Extension Catalog | Searchable publisher and extension metadata, moderation state, federation, and signed offline snapshots. A product can also install a digest-pinned artifact without this catalog. |
 | Owning product or tenant | Capability contracts, admission decisions, grants, enforcement, durable installation intent, canonical extension and plugin-private state, literal executable loaders, activation, readiness, generations, publication, routing, fencing, quarantine, drain, cleanup, retirement, recovery, and reconciliation. |
-| External qualification evidence | Candidate-neutral dogfooding protocol checks such as the disposable reducer, independent oracle, race fixtures, and deliberate mutants described by this proposal. |
+| External qualification evidence | Candidate-neutral dogfooding protocol checks such as the disposable reducer, independent oracle, and adversarial race fixtures described by this proposal. |
 
 Get Modular and Extension Foundation do not import each other. A product-owned
 adapter may consume both without making either candidate canonical. The executable
@@ -424,8 +424,10 @@ are not independent consumers.
 The exact benchmark remains product-owned. Any deterministic campaign used for
 an evidence claim must register normalized inputs and expected outputs,
 non-stochastic oracle behavior, resource bounds, identical adapter treatment,
-and deliberate mutants. Mutation evidence supports only the bounded claim that
-the registered oracle rejects each registered mutant.
+and adversarial traces. The reduced executable model does not claim mutation
+coverage: stateful deliberate mutants become mandatory only in the first
+product-owned campaign harness, where they can mutate real candidate behavior
+rather than compare synthetic values after the fact.
 
 Any stochastic campaign must preregister its primary estimand, experimental
 unit, pairing and randomization schedule, analysis method, sample-size or power
@@ -452,6 +454,12 @@ The later deadline transition records the missing or unknown terminal and remain
 final; a late stop receipt also leaves the launch barrier closed.
 Absence alone is never reclassified as abandoned or invalid, and `E0` owns its
 attrition and analysis treatment.
+
+Receipt and retirement-tombstone primitive identifiers are globally unique
+within one protocol ledger, including across typed receipt families. The types
+prevent accidental API substitution; they do not create independent replay
+namespaces. Reusing the same primitive identity for another family is retained
+as invalid replay evidence and can never authorize execution or promotion.
 
 Every `BuildReceipt` and execution `EvidenceReceipt` carries a common envelope
 that binds:

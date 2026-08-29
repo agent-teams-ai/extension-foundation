@@ -1,11 +1,5 @@
-/**
- * Qualification-only wire shapes shared by independently authored models.
- * This file is disposable evidence, not a Foundation API or runtime contract.
- */
 declare const qualificationBrand: unique symbol;
-type Branded<Value, Name extends string> = Value & {
-  readonly [qualificationBrand]: Name;
-};
+type Branded<Value, Name extends string> = Value & { readonly [qualificationBrand]: Name };
 export type EventId = Branded<string, "EventId">;
 export type ProtocolRevisionId = Branded<string, "ProtocolRevisionId">;
 export type CustodyAuthorityId = Branded<string, "CustodyAuthorityId">;
@@ -29,10 +23,7 @@ export type TombstoneId = Branded<string, "TombstoneId">;
 export type AuthoritativeTick = Branded<number, "AuthoritativeTick">;
 export type FenceGeneration = Branded<number, "FenceGeneration">;
 function validatedBrand<Value extends string | number, Result extends Branded<Value, string>>(
-  name: string,
-  value: Value,
-  valid: (candidate: Value) => boolean,
-  expectation: string,
+  name: string, value: Value, valid: (candidate: Value) => boolean, expectation: string,
 ): Result {
   if (!valid(value)) {
     throw new TypeError(`Invalid ${name}: expected ${expectation}.`);
@@ -489,6 +480,8 @@ export interface TerminalAppendedEffect extends EffectEnvelope {
   readonly terminal: TerminalReference;
 }
 export type LateEvidenceReference =
+  | { readonly type: "launch"; readonly authorizationId: AuthorizationId; readonly receiptId: ReceiptId;
+      readonly result: "started" | "release-denied" }
   | {
       readonly type: "attempt";
       readonly attemptId: AttemptId;
