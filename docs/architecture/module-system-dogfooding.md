@@ -34,6 +34,8 @@ The responsibilities remain deliberately separate:
 | --- | --- |
 | [Get Modular](https://github.com/agent-teams-ai/get-modular) | Portable module and capability identities, inert declarations, explicit dependency cardinalities and bindings, deterministic closed-world graph compilation, immutable plans, digests, diagnostics, and composition conformance vectors. |
 | Extension Foundation | Plugin artifact identity, distribution, provenance, signatures, admission, permissions, isolation contracts, quarantine, updates, retirement, and plugin-state custody. |
+| OCI registry such as GHCR or Harbor | Immutable plugin artifact bytes addressed by digest. A registry does not decide product admission, grants, compatibility, or activation. |
+| Future Extension Catalog | Searchable publisher and extension metadata, moderation state, federation, and signed offline snapshots. A product can also install a digest-pinned artifact without this catalog. |
 | Owning product | Capability contracts, authorization, literal executable loaders, activation, readiness, generations, publication, routing, fencing, drain, cleanup, recovery, and reconciliation. |
 | External qualification evidence | Candidate-neutral dogfooding protocol checks such as the disposable reducer, independent oracle, race fixtures, and deliberate mutants described by this proposal. |
 
@@ -43,6 +45,9 @@ qualification model in this repository is external evidence about campaign and
 custody invariants; it is not a production package, a Module API, a graph
 compiler, a loader, or lifecycle authority. It may challenge a Get Modular or
 product decision, but cannot silently replace one.
+
+Extension Foundation is a reusable library and protocol boundary, not an
+artifact store, catalog database, marketplace, or mandatory hosted service.
 
 Real product dogfooding therefore lives in the consuming product adapter and
 host. Get Modular supplies the composition subject and conformance vectors;
