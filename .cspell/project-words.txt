@@ -66,3 +66,5 @@ overfitting
 unblinding
 disjointness
 recomputable
+gitlink
+downgradable
