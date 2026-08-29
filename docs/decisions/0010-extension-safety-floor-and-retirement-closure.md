@@ -1,11 +1,13 @@
 ---
 id: ADR-0010
 type: adr
-status: accepted
+status: superseded
 owner: architecture
 summary: Preserves the complete extension safety floor and closes staged reuse, custody, and target-specific retirement gaps.
 approved_by: product-owner
 accepted_at: 2026-08-24
+superseded_by:
+  - ADR-0011
 supersedes:
   - ADR-0009
 related:

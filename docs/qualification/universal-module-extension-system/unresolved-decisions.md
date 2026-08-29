@@ -200,8 +200,9 @@ Those release decisions are not additional strategic UMEQ forks.
 `UMEQ-009` is additionally needed before a process release. `UMEQ-017` is
 required before hosted distributed claims. `UMEQ-018` is needed before managed
 update channels. `UMEQ-010` remains a separate Frontend decision and cannot
-bypass a future accepted ADR-0011-equivalent production-host closure. Proposed
-ADR-0011 is evidence for that closure, not an operative gate. Every applicable
-production-host gate also requires durable independently observable evidence
-from the named production host; fixtures, in-memory or smoke results, plans, and
-aspirational claims cannot satisfy it.
+bypass ADR-0011's accepted conditional production-host closure. ADR-0011 is
+operative only after an owning product admits an applicable host profile; it
+does not itself admit a runtime. Every applicable production-host gate also
+requires durable independently observable evidence from the named production
+host; fixtures, in-memory or smoke results, plans, and aspirational claims cannot
+satisfy it.

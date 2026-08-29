@@ -6,7 +6,7 @@ owner: architecture
 summary: Tracks unresolved extension host, public SPI, invocation protocol, and extension-state migration choices without reopening Get Modular composition ownership.
 related:
   - ADR-0001
-  - ADR-0010
+  - ADR-0011
   - ADR-0013
   - ADR-0014
   - ADR-0015
@@ -35,7 +35,7 @@ Foundation package, production graph runtime, or public SPI by implication.
 
 ## Fixed Constraints
 
-- ADR-0010's cumulative ownership, authority, identity, transaction,
+- ADR-0011's cumulative ownership, authority, identity, transaction,
   trust-tier, graph, lifecycle, and state safety floor remains fixed.
 - ADR-0015 preserves ADR-0013's product-local feature, static Pure DI, and
   private-graph trigger rules while authorizing the independent Get Modular
@@ -66,7 +66,8 @@ Extension Foundation identity and protocol vocabulary. A product-owned adapter
 may translate admitted contributions into Get Modular declarations and plans,
 but this decision cannot prescribe or redefine that adapter's Get Modular API.
 
-ADR-0010's minimum publication floor still applies: a real product slice,
+ADR-0011's conditional minimum publication floor still applies after an owning
+product admits the applicable production-host profile: a real product slice,
 stable ownership, two independently authored conforming implementations,
 compatibility fixtures, negative tests, and an executable conformance suite.
 Get Modular adoption or promotion evidence does not satisfy this publication
@@ -106,7 +107,7 @@ by every router or effect store.
 Define plugin-private state compatibility, checkpoint, migration, rollback,
 export, retention, deletion, and recovery protocols. Every operation remains
 subject to the independent state-custody authorization and exact attachment
-identity required by ADR-0010. Product migrations and canonical product state
+identity required by ADR-0011. Product migrations and canonical product state
 do not move into Foundation.
 
 ## Required Evidence

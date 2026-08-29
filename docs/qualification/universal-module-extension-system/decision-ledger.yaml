@@ -21,11 +21,10 @@ retiredIdentifiers:
     disposition: withdrawn-draft-consolidated-into-OD-003
 externalDecisionGates:
   - id: ADR-0011
-    status: proposed
+    status: accepted
     topic: production-extension-host-safety-closure
     authority: product-owner
     detail: ../../decisions/0011-extension-admission-custody-and-retirement-closure.md
-    effectWhileProposed: production-extension-host-phases-blocked
     approvalTrackedBy: adr-lifecycle
 requirementDefinitions:
   - id: ADR-0014
