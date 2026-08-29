@@ -15,7 +15,7 @@ summary: Records a disposable synthetic comparison of Pure DI and a static autho
 disposable candidate validates useful closed-world failure cases, but no
 owning-product-approved benchmark establishes an authoring problem.
 
-The synthetic generic-proof ratio is `4.369697`, but it is non-authoritative
+The synthetic generic-proof ratio is `4.557576`, but it is non-authoritative
 negative evidence rather than ADR-0013 production-glue evidence. Product-owned Pure DI and
 `FeatureModuleFactory` remain the baseline. Nothing in this proof admits a
 consumer, shared extraction, production package, public SPI, graph, or runtime
@@ -63,13 +63,15 @@ renames. This proof admits no concurrent reader. A production generator with liv
 readers requires content-addressed generations plus an atomic active-head protocol.
 
 The proof contains no production package, product API change, plugin host,
-lifecycle, recovery, service locator, global registry, decorator, executable
-metadata, runtime file scan, or dynamic string import. Product-specific plugin
-contribution data stays outside the generic declaration grammar.
+product/runtime lifecycle or recovery authority, service locator, global registry,
+decorator, executable metadata, runtime file scan, or dynamic string import.
+Product-specific plugin contribution data stays outside the generic declaration
+grammar.
 
 ## Executable Evidence
 
-The root test contains 46 named scenarios with independent expected outcomes.
+The root test contains 48 named scenarios with independent expected outcomes:
+46 numbered cases plus two remediation fault-injection cases.
 
 | Evidence area | Covered outcomes |
 | --- | --- |
@@ -95,9 +97,9 @@ These are synthetic qualification measurements, not production metrics.
 | --- | --- |
 | Baseline wiring | `23` non-empty LOC across `2` files |
 | Candidate product-shaped footprint | `165` non-empty LOC across `13` TypeScript/JavaScript/JSON files |
-| Generic proof glue | `721` non-empty LOC across `4` files |
-| Candidate plus generic glue | `886` non-empty LOC |
-| Generic/candidate ratio | `4.369697` |
+| Generic proof glue | `752` non-empty LOC across `4` files |
+| Candidate plus generic glue | `917` non-empty LOC |
+| Generic/candidate ratio | `4.557576` |
 | ADR production-glue ratio | `not-applicable-production-loc-zero` |
 | Syntactic binding markers | baseline `2/2`; candidate `4/4` sites/files |
 | Disposable executable proof | `94%` (`16/17`; the reused strict JSON parser is retained) |

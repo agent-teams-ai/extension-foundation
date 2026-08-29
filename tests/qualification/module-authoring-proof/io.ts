@@ -212,6 +212,7 @@ export function generatedOutputs(declarations: readonly LocatedDeclaration[]): R
 }
 
 export interface GenerationFileOperations {
+  readonly lstat: typeof lstat;
   readonly mkdtemp: typeof mkdtemp;
   readonly rename: typeof rename;
   readonly rm: typeof rm;
@@ -219,11 +220,22 @@ export interface GenerationFileOperations {
 }
 
 const defaultGenerationFileOperations: GenerationFileOperations = Object.freeze({
+  lstat,
   mkdtemp,
   rename,
   rm,
   writeFile,
 });
+
+async function generationPathExists(path: string, operations: GenerationFileOperations): Promise<boolean> {
+  try {
+    await operations.lstat(path);
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+    throw error;
+  }
+}
 
 export async function emitGenerated(
   outputDir: string,
@@ -244,7 +256,27 @@ export async function emitGenerated(
       await operations.rename(outputDir, backup);
       previousMoved = true;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      let outputExists: boolean;
+      let backupExists: boolean;
+      try {
+        [outputExists, backupExists] = await Promise.all([
+          generationPathExists(outputDir, operations),
+          generationPathExists(backup, operations),
+        ]);
+      } catch (observationError) {
+        throw new AggregateError([error, observationError], "GENERATION_PREVIOUS_MOVE_STATE_UNKNOWN");
+      }
+      if (!outputExists && backupExists) {
+        previousMoved = true;
+        throw error;
+      }
+      if (!outputExists && !backupExists && (error as NodeJS.ErrnoException).code === "ENOENT") {
+        // There was no previous generation to preserve.
+      } else if (outputExists && !backupExists) {
+        throw error;
+      } else {
+        throw new Error(`GENERATION_PREVIOUS_MOVE_AMBIGUOUS:${outputDir}:${backup}`, { cause: error });
+      }
     }
     await operations.rename(staging, outputDir);
   } catch (error) {

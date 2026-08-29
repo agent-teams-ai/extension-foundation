@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, readdir, rename, rm, symlink, writeFile } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, readFile, readdir, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import test from "node:test";
@@ -162,6 +162,18 @@ function located(
     declarationPath: `${moduleId}/module.declaration.json`,
     declaration: { schemaVersion: 1, consumer, moduleId, loaderKey: moduleId, provides, dependencies },
   };
+}
+
+function changedAgentRuntimeGeneration(): readonly LocatedDeclaration[] {
+  return Object.freeze([
+    ...AGENT_RUNTIME_DECLARATIONS,
+    located(
+      "runtime.health-probe",
+      ["runtime.health-probe/v1"],
+      { required: [], optional: [], many: [] },
+      "agent-runtime",
+    ),
+  ]);
 }
 
 test("01 Agent Runtime Pure DI baseline has the independent expected outcome", () => {
@@ -388,14 +400,20 @@ test("19 regeneration is byte-identical and stale outputs fail closed", async ()
   });
 });
 
-test("19b failed replacement restores the previous generation before fallible staging cleanup", async () => {
+test("19b ambiguous previous move restores the old generation before fallible staging cleanup", async () => {
   await withTemp(async root => {
     await emitGenerated(root, AGENT_RUNTIME_DECLARATIONS);
-    const realOperations: GenerationFileOperations = { mkdtemp, rename, rm, writeFile };
+    const replacement = changedAgentRuntimeGeneration();
+    let previousMoveInjected = false;
+    const realOperations: GenerationFileOperations = { lstat, mkdtemp, rename, rm, writeFile };
     const failingOperations: GenerationFileOperations = {
       ...realOperations,
       async rename(source, destination) {
-        if (String(source).includes(".staging-")) throw new Error("INJECTED_INSTALL_FAILURE");
+        if (!previousMoveInjected && String(source) === root && String(destination).includes(".backup-")) {
+          previousMoveInjected = true;
+          await rename(source, destination);
+          throw new Error("INJECTED_AFTER_PREVIOUS_MOVE");
+        }
         await rename(source, destination);
       },
       async rm(path, options) {
@@ -404,10 +422,11 @@ test("19b failed replacement restores the previous generation before fallible st
       },
     };
     await assert.rejects(
-      emitGenerated(root, [...AGENT_RUNTIME_DECLARATIONS].reverse(), failingOperations),
+      emitGenerated(root, replacement, failingOperations),
       /GENERATION_PUBLICATION_AND_RECOVERY_FAILED/u,
     );
     assert.deepEqual(await staleGenerated(root, AGENT_RUNTIME_DECLARATIONS), []);
+    assert.notDeepEqual(await staleGenerated(root, replacement), []);
     const parentEntries = await readdir(dirname(root));
     const backupPrefix = `.${basename(root)}.backup-`;
     const stagingPrefix = `.${basename(root)}.staging-`;
@@ -421,8 +440,10 @@ test("19b failed replacement restores the previous generation before fallible st
 test("19c committed replacement reports backup cleanup failure without reverting the new generation", async () => {
   await withTemp(async root => {
     await emitGenerated(root, AGENT_RUNTIME_DECLARATIONS);
+    const replacement = changedAgentRuntimeGeneration();
     let backupRemovals = 0;
     const failingOperations: GenerationFileOperations = {
+      lstat,
       mkdtemp,
       rename,
       async rm(path, options) {
@@ -434,10 +455,11 @@ test("19c committed replacement reports backup cleanup failure without reverting
       writeFile,
     };
     await assert.rejects(
-      emitGenerated(root, [...AGENT_RUNTIME_DECLARATIONS].reverse(), failingOperations),
+      emitGenerated(root, replacement, failingOperations),
       /GENERATION_PUBLISHED_BACKUP_CLEANUP_FAILED/u,
     );
-    assert.deepEqual(await staleGenerated(root, AGENT_RUNTIME_DECLARATIONS), []);
+    assert.deepEqual(await staleGenerated(root, replacement), []);
+    assert.notDeepEqual(await staleGenerated(root, AGENT_RUNTIME_DECLARATIONS), []);
     const parentEntries = await readdir(dirname(root));
     const backupPrefix = `.${basename(root)}.backup-`;
     const backupArtifacts = parentEntries.filter(name => name.startsWith(backupPrefix));
@@ -548,9 +570,9 @@ test("24 complete baseline/candidate measurement separates L1, L5, and synthetic
   assert.equal(first.adrProductionGlueRatio, "not-applicable-production-loc-zero");
   assert.equal(first.baselineWiringLoc, 23);
   assert.equal(first.candidateProductLoc, 165);
-  assert.equal(first.genericProofGlueLoc, 721);
-  assert.equal(first.candidateWithGenericLoc, 886);
-  assert.equal(first.genericProofGlueRatio, 4.369697);
+  assert.equal(first.genericProofGlueLoc, 752);
+  assert.equal(first.candidateWithGenericLoc, 917);
+  assert.equal(first.genericProofGlueRatio, 4.557576);
   assert.deepEqual(first.fileCounts, { baseline: 2, candidateProduct: 13, genericProof: 4 });
   assert.deepEqual(first.syntacticBindingMarkerSites, { baseline: 2, candidate: 4 });
   assert.deepEqual(first.syntacticBindingMarkerFiles, { baseline: 2, candidate: 4 });
