@@ -891,6 +891,15 @@ test("object publication snapshots mutable Buffer input before asynchronous work
   const published = await publication;
   assert.equal(published.sha256, sha256(expected));
   assert.deepEqual(await readFile(published.path), expected);
+
+  const arrayStore = new ObjectStore(join(root, "array-buffer-objects"));
+  const mutableBytes = new TextEncoder().encode("array buffer snapshot");
+  const expectedArrayBytes = Buffer.from(mutableBytes);
+  const arrayPublication = arrayStore.publish(mutableBytes.buffer);
+  mutableBytes.fill(0x78);
+  const publishedArray = await arrayPublication;
+  assert.equal(publishedArray.sha256, sha256(expectedArrayBytes));
+  assert.deepEqual(await readFile(publishedArray.path), expectedArrayBytes);
 });
 
 test("temporary recovery applies a streaming directory-entry budget", async t => {
@@ -992,6 +1001,16 @@ test("secret scanning detects common credentials without echoing the secret", ()
   });
   assert.deepEqual(scanSecrets("ordinary research output"), []);
   assert.throws(() => scanSecrets(`token=${"a".repeat(24)}`), /credential-assignment/u);
+  const hostileLabel = {
+    [Symbol.toPrimitive]() {
+      throw new Error(secret);
+    },
+  };
+  assert.throws(() => scanSecrets(`token=${secret}`, hostileLabel), error => {
+    assert.equal(error.message.includes(secret), false);
+    assert.ok(error.findings.every(finding => finding.label === "[redacted-label]"));
+    return true;
+  });
 });
 
 test("decoded JSON secret escapes fail closed without echoing the secret", async t => {
@@ -1008,6 +1027,8 @@ test("decoded JSON secret escapes fail closed without echoing the secret", async
     ["nested-token-object", `${JSON.stringify({ token: { value: genericSecret } })}\n`, /credential-assignment/u, genericSecret],
     ["nested-token-authorization", `${JSON.stringify({ token: { authorization: { value: genericSecret } } })}\n`, /credential-assignment/u, genericSecret],
     ["nested-authorization-token", `${JSON.stringify({ Authorization: { token: { value: `Bearer ${genericSecret}` } } })}\n`, /authorization-header/u, genericSecret],
+    ["double-escaped-token-key", `${JSON.stringify({ "tok\\u0065n": genericSecret })}\n`, /credential-assignment/u, genericSecret],
+    ["double-escaped-authorization-key", `${JSON.stringify({ "Authoriz\\u0061tion": `Bearer ${genericSecret}` })}\n`, /authorization-header/u, genericSecret],
   ];
   for (const [name, document, expected, secret] of fixtures) {
     const path = join(root, `${name}-escaped-secret.json`);
@@ -1018,6 +1039,17 @@ test("decoded JSON secret escapes fail closed without echoing the secret", async
       return true;
     });
   }
+});
+
+test("secret-shaped evidence paths never appear in read diagnostics", async t => {
+  const root = await temporaryDirectory(t);
+  const secret = `sk-proj-${"x".repeat(32)}`;
+  const secretPath = join(root, secret);
+  await mkdir(secretPath);
+  await assert.rejects(readSafeJson(secretPath), error => {
+    assert.equal(error.message.includes(secret), false);
+    return true;
+  });
 });
 
 test("auth roots and CODEX_HOME are rejected before reads", () => {
@@ -1243,6 +1275,22 @@ captureTest("capture hashes exact HEAD bytes and rejects escaped secrets before 
   const outputEntries = await readdir(secretPaths.outputRoot, { recursive: true, withFileTypes: true });
   assert.equal(outputEntries.some(entry => entry.isFile()), false);
 
+  const jsonlRoot = await temporaryDirectory(t);
+  const jsonlPaths = await writeCaptureFixture(jsonlRoot, [{ attempts: [] }]);
+  await writeFile(
+    join(jsonlPaths.runtimeRoot, JOB_ID, `${JOB_ID}.events.jsonl`),
+    `${JSON.stringify({ "tok\\u0065n": escapedSecret })}\n`,
+  );
+  await assert.rejects(captureEvidence({
+    campaignId: "double-escaped-jsonl-key",
+    jobIds: [JOB_ID],
+    ...jsonlPaths,
+  }), error => {
+    assert.match(error.message, /credential-assignment/u);
+    assert.equal(error.message.includes(escapedSecret), false);
+    return true;
+  });
+
   for (const [name, malformedDocument, expected] of [
     ["message", `{\"message\":\"token=\\\"${escapedSecret}\\\"\",}\n`, /credential-assignment/u],
     ["token-field", `{"token":"${escapedSecret}",}\n`, /valid bounded JSON/u],
@@ -1347,6 +1395,16 @@ test("manifest node limits reject oversized sparse arrays before reading element
   validateManifest(iteratorManifest, { maxJsonNodes: 64 });
   assert.equal(iteratorReads, 0);
 
+  const nestedIteratorManifest = validManifest();
+  const nestedAttemptIds = [...nestedIteratorManifest.jobs[0].attemptIds];
+  nestedAttemptIds[Symbol.iterator] = function* iterator() {
+    iteratorReads += 1;
+    yield "attacker-controlled";
+  };
+  nestedIteratorManifest.jobs[0].attemptIds = nestedAttemptIds;
+  assert.equal(validateManifest(nestedIteratorManifest).valid, true);
+  assert.equal(iteratorReads, 0);
+
   const secret = `sk-proj-${"x".repeat(32)}`;
   const accessor = [null];
   Object.defineProperty(accessor, 0, {
@@ -1360,6 +1418,18 @@ test("manifest node limits reject oversized sparse arrays before reading element
   const accessorResult = validateManifest(accessorManifest);
   assert.deepEqual(accessorResult.errors, ["JSON value must not contain accessors"]);
   assert.equal(accessorResult.errors.join("\n").includes(secret), false);
+
+  let proxyTrapCalls = 0;
+  const proxiedPromotion = new Proxy({}, {
+    ownKeys() {
+      proxyTrapCalls += 1;
+      throw new Error(secret);
+    },
+  });
+  const proxyManifest = validManifest();
+  proxyManifest.promotion = proxiedPromotion;
+  assert.deepEqual(validateManifest(proxyManifest).errors, ["JSON value must not contain proxies"]);
+  assert.equal(proxyTrapCalls, 0);
 });
 
 test("Windows remains verifier-only and rejects capture before source I/O", {
@@ -1493,6 +1563,20 @@ captureTest("capture rejects duplicate keys in attempt journals", async t => {
     jobIds: [JOB_ID],
     ...paths,
   }), /duplicate JSON keys/u);
+});
+
+captureTest("capture validates extensionless attempt journals before publication", async t => {
+  const root = await temporaryDirectory(t);
+  const paths = await writeCaptureFixture(root, [{ attempts: [] }]);
+  const bytes = Buffer.from("not-json", "utf8");
+  await writeFile(join(paths.runtimeRoot, JOB_ID, "state", "attempt-journal", "extensionless"), bytes);
+  await assert.rejects(captureEvidence({
+    campaignId: "extensionless-journal",
+    jobIds: [JOB_ID],
+    ...paths,
+  }), /valid bounded JSON/u);
+  const objectPath = new ObjectStore(paths.outputRoot).objectPath(sha256(bytes));
+  await assert.rejects(readFile(objectPath), error => error.code === "ENOENT");
 });
 
 captureTest("capture enforces bounded files, aggregate bytes, and JSON complexity", async t => {

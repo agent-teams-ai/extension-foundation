@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { posix } from "node:path";
-import { promisify } from "node:util";
+import { promisify, types as utilTypes } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const SCHEMA_VERSION = 3;
@@ -45,7 +45,57 @@ function requireRecord(value, label) {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     fail("E-SCHEMA", `${label} must be an object`);
   }
-  return value;
+  if (utilTypes.isProxy(value)) fail("E-SCHEMA", `${label} must not be a proxy`);
+  let prototype;
+  let descriptors;
+  try {
+    prototype = Object.getPrototypeOf(value);
+    descriptors = Object.getOwnPropertyDescriptors(value);
+  } catch {
+    fail("E-SCHEMA", `${label} must expose ordinary data properties`);
+  }
+  if (prototype !== Object.prototype && prototype !== null) fail("E-SCHEMA", `${label} must be a plain object`);
+  const snapshot = {};
+  for (const key of Reflect.ownKeys(descriptors)) {
+    const descriptor = descriptors[key];
+    if (typeof key !== "string" || !descriptor.enumerable || !("value" in descriptor)) {
+      fail("E-SCHEMA", `${label} must expose only enumerable string-keyed data properties`);
+    }
+    Object.defineProperty(snapshot, key, {
+      configurable: true,
+      enumerable: true,
+      value: descriptor.value,
+      writable: true,
+    });
+  }
+  return snapshot;
+}
+
+function requireDenseArray(value, label, minimum, maximum) {
+  if (!Array.isArray(value) || utilTypes.isProxy(value)) {
+    fail("E-SCHEMA", `${label} must be an array`);
+  }
+  let descriptors;
+  try {
+    descriptors = Object.getOwnPropertyDescriptors(value);
+  } catch {
+    fail("E-SCHEMA", `${label} must expose ordinary data items`);
+  }
+  const lengthDescriptor = descriptors.length;
+  const length = lengthDescriptor?.value;
+  if (!("value" in (lengthDescriptor ?? {})) || !Number.isSafeInteger(length)
+      || length < minimum || length > maximum) {
+    fail("E-SCHEMA", `${label} must contain ${minimum}-${maximum} items`);
+  }
+  const snapshot = new Array(length);
+  for (let index = 0; index < length; index += 1) {
+    const descriptor = descriptors[index];
+    if (descriptor === undefined || !("value" in descriptor)) {
+      fail("E-SCHEMA", `${label} must be a dense array of data items`);
+    }
+    snapshot[index] = descriptor.value;
+  }
+  return snapshot;
 }
 
 function requireExactKeys(value, allowed, label) {
@@ -177,9 +227,7 @@ export async function verifyProductSourceRecord(product, recordValue, repository
   if (!REPOSITORY.test(repository)) fail("E-SCHEMA", `${product}.repository must be owner/name`);
   const commit = requireGitObject(record.commit, `${product}.commit`);
   const expectedTree = requireGitObject(record.tree, `${product}.tree`);
-  if (!Array.isArray(record.files) || record.files.length === 0 || record.files.length > MAX_FILES_PER_PRODUCT) {
-    fail("E-SCHEMA", `${product}.files must contain 1-${MAX_FILES_PER_PRODUCT} files`);
-  }
+  const sourceFiles = requireDenseArray(record.files, `${product}.files`, 1, MAX_FILES_PER_PRODUCT);
 
   const topLevel = (await runGit(repositoryRoot, ["rev-parse", "--show-toplevel"])).trim();
   const remote = (await runGit(topLevel, ["remote", "get-url", "origin"])).trim();
@@ -195,7 +243,8 @@ export async function verifyProductSourceRecord(product, recordValue, repository
   const files = [];
   const portableKeys = new Set();
   let totalBlobBytes = 0;
-  for (const [index, raw] of record.files.entries()) {
+  for (let index = 0; index < sourceFiles.length; index += 1) {
+    const raw = sourceFiles[index];
     const file = requireExactKeys(raw, ["path", "blob"], `${product}.files[${index}]`);
     const path = requireRepositoryPath(file.path, `${product}.files[${index}].path`);
     const portableKey = path.toLowerCase();
@@ -233,9 +282,13 @@ export async function verifyProductSourceEvidence(evidenceValue, repositoryRoots
     fail("E-AUTHORITY", `evidence.verification.authority must be ${PRODUCT_SOURCE_VERIFICATION_AUTHORITY}`);
   }
   if (verification.promotionAuthority !== false) fail("E-STATUS", "source verification cannot be promotion authority");
-  if (!Array.isArray(evidence.limitations)
-    || evidence.limitations.length !== PRODUCT_SOURCE_PROOF_LIMITS.length
-    || evidence.limitations.some((limit, index) => limit !== PRODUCT_SOURCE_PROOF_LIMITS[index])) {
+  const limitations = requireDenseArray(
+    evidence.limitations,
+    "evidence.limitations",
+    PRODUCT_SOURCE_PROOF_LIMITS.length,
+    PRODUCT_SOURCE_PROOF_LIMITS.length,
+  );
+  if (limitations.some((limit, index) => limit !== PRODUCT_SOURCE_PROOF_LIMITS[index])) {
     fail("E-LIMITATIONS", "evidence.limitations must exactly equal the canonical proof limitations");
   }
   const products = requireRecord(evidence.products, "evidence.products");

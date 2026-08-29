@@ -1,9 +1,8 @@
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
-import { constants } from "node:fs";
+import { constants, linkSync, lstatSync } from "node:fs";
 import {
   chmod,
-  link,
   lstat,
   mkdir,
   open,
@@ -13,7 +12,7 @@ import {
   rm,
 } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import { promisify } from "node:util";
+import { promisify, types as utilTypes } from "node:util";
 
 import { parseStrictJson } from "./strict-json.mjs";
 
@@ -136,6 +135,7 @@ function jsonShapeError(message) {
 }
 
 function ownDataDescriptors(value) {
+  if (utilTypes.isProxy(value)) throw jsonShapeError("JSON value must not contain proxies");
   try {
     return Object.getOwnPropertyDescriptors(value);
   } catch {
@@ -166,6 +166,7 @@ function arrayDataValues(value) {
 }
 
 function objectDataEntries(value) {
+  if (utilTypes.isProxy(value)) throw jsonShapeError("JSON value must not contain proxies");
   let prototype;
   try {
     prototype = Object.getPrototypeOf(value);
@@ -185,6 +186,37 @@ function objectDataEntries(value) {
     entries.push([key, descriptor.value]);
   }
   return entries;
+}
+
+function snapshotBoundedJson(value, limits) {
+  assertJsonLimits(value, limits);
+  const active = new Set();
+  function clone(candidate) {
+    if (candidate === null || typeof candidate === "boolean" || typeof candidate === "string") return candidate;
+    if (typeof candidate === "number") {
+      if (!Number.isFinite(candidate)) throw jsonShapeError("JSON value must contain only finite numbers");
+      return candidate;
+    }
+    if (typeof candidate !== "object") throw jsonShapeError("JSON value contains an unsupported value");
+    if (active.has(candidate)) throw jsonShapeError("JSON value must not contain cycles");
+    active.add(candidate);
+    try {
+      if (Array.isArray(candidate)) return arrayDataValues(candidate).map(clone);
+      const result = {};
+      for (const [key, entry] of objectDataEntries(candidate)) {
+        Object.defineProperty(result, key, {
+          configurable: true,
+          enumerable: true,
+          value: clone(entry),
+          writable: true,
+        });
+      }
+      return result;
+    } finally {
+      active.delete(candidate);
+    }
+  }
+  return clone(value);
 }
 
 function rejectAdditionalProperties(value, allowed, path, errors) {
@@ -279,11 +311,11 @@ function scanDecodedJsonSecrets(value, label) {
       continue;
     }
     for (const [key, child] of objectDataEntries(current)) {
-      scanSecrets(key, `${label} key`);
+      const decodedKey = scanLexicallyDecodedSecrets(key, `${label} key`);
       pending.push({
         value: child,
-        assignmentField: ASSIGNMENT_JSON_FIELD.test(key) ? key : assignmentField,
-        authorizationField: AUTHORIZATION_JSON_FIELD.test(key) ? key : authorizationField,
+        assignmentField: ASSIGNMENT_JSON_FIELD.test(decodedKey) ? decodedKey : assignmentField,
+        authorizationField: AUTHORIZATION_JSON_FIELD.test(decodedKey) ? decodedKey : authorizationField,
       });
     }
   }
@@ -300,7 +332,7 @@ function scanLexicallyDecodedSecrets(text, label) {
   for (let pass = 0; pass <= DEFAULT_RESOURCE_LIMITS.maxJsonDepth; pass += 1) {
     scanSecrets(current, label);
     const decoded = decodeJsonEscapesForSecretScan(current);
-    if (decoded === current) return;
+    if (decoded === current) return current;
     current = decoded;
   }
   throw jsonShapeError("JSON escape nesting limit exceeded");
@@ -526,6 +558,29 @@ async function assertDirectoryChain(root, directory) {
   }
 }
 
+function assertExistingDirectoryChainSync(root, directory) {
+  if (!contained(root, directory)) throw new Error("path escapes its configured root");
+  const relation = relative(root, directory);
+  let current = root;
+  for (const part of ["", ...relation.split(sep).filter(Boolean)]) {
+    if (part.length > 0) current = join(current, part);
+    const metadata = lstatSync(current);
+    if (metadata.isSymbolicLink() || !metadata.isDirectory()) {
+      throw new Error(`unsafe directory component: ${current}`);
+    }
+  }
+}
+
+function linkAfterFinalChainCheck(root, directory, source, destination, expectedRoot, expectedParent) {
+  // Keep the last path check and publication in one JavaScript turn so hooks,
+  // timers and concurrent publishers in this process cannot interleave them.
+  assertExistingDirectoryChainSync(root, directory);
+  if (!sameIdentity(expectedRoot, lstatSync(root)) || !sameIdentity(expectedParent, lstatSync(directory))) {
+    throw new Error("object store root or publication parent changed during publication");
+  }
+  linkSync(source, destination);
+}
+
 async function directoryIdentity(path, label) {
   const metadata = await lstat(path);
   if (metadata.isSymbolicLink() || !metadata.isDirectory()) throw new Error(`${label} must remain a real directory`);
@@ -564,7 +619,18 @@ async function descriptorCanonicalPath(handle, limits, cwd) {
   throw new Error("strict evidence capture is supported only on Linux and macOS");
 }
 
-async function secureRead(root, path, {
+async function secureRead(root, path, options = {}) {
+  try {
+    return await secureReadUnsafe(root, path, options);
+  } catch (error) {
+    if (!SECRET_PATTERNS.some(({ expression }) => expression.test(String(path)))) throw error;
+    const sanitized = new Error("evidence path operation failed");
+    if (typeof error?.code === "string") sanitized.code = error.code;
+    throw sanitized;
+  }
+}
+
+async function secureReadUnsafe(root, path, {
   maxFileBytes = DEFAULT_RESOURCE_LIMITS.maxFileBytes,
   maxObservationMs = DEFAULT_RESOURCE_LIMITS.maxObservationMs,
   requireStableCtime = true,
@@ -876,6 +942,18 @@ function temporaryOwnerIsAlive(name) {
   }
 }
 
+function snapshotBytes(input) {
+  if (typeof input === "string" || Buffer.isBuffer(input)) return Buffer.from(input);
+  if (ArrayBuffer.isView(input)) {
+    return Buffer.from(new Uint8Array(input.buffer, input.byteOffset, input.byteLength));
+  }
+  if (input instanceof ArrayBuffer
+      || (typeof SharedArrayBuffer === "function" && input instanceof SharedArrayBuffer)) {
+    return Buffer.from(new Uint8Array(input));
+  }
+  throw new TypeError("object publication input must be a string or contiguous byte sequence");
+}
+
 export class ObjectStore {
   constructor(root, { beforePublication } = {}) {
     this.root = assertPermittedRoot(root, "object store");
@@ -940,7 +1018,7 @@ export class ObjectStore {
   }
 
   async publish(input) {
-    const bytes = Buffer.from(input);
+    const bytes = snapshotBytes(input);
     const digest = sha256(bytes);
     await this.initialize();
     const destination = this.objectPath(digest);
@@ -967,7 +1045,7 @@ export class ObjectStore {
         throw new Error("object store root or publication parent changed during publication");
       }
       try {
-        await link(temporary, destination);
+        linkAfterFinalChainCheck(this.root, directory, temporary, destination, rootIdentity, parentIdentity);
         linked = true;
         await assertDirectoryChain(this.root, directory);
         if (!sameIdentity(rootIdentity, await directoryIdentity(this.root, "object store root")) ||
@@ -1005,7 +1083,12 @@ export function scanSecrets(bytes, label = "input") {
 }
 
 function safeDiagnosticLabel(label) {
-  const text = String(label);
+  let text;
+  try {
+    text = String(label);
+  } catch {
+    return "[redacted-label]";
+  }
   if (SECRET_PATTERNS.some(({ expression }) => expression.test(text))) return "[redacted-label]";
   const normalized = text.replace(/[\u0000-\u001f\u007f]/gu, "?");
   return normalized.length <= 256 ? normalized : `${normalized.slice(0, 253)}...`;
@@ -1095,7 +1178,7 @@ export function validateManifest(manifest, resourceLimits = {}) {
   const errors = [];
   if (!record(manifest)) return { valid: false, errors: ["manifest must be an object"] };
   try {
-    assertJsonLimits(manifest, limits);
+    manifest = snapshotBoundedJson(manifest, limits);
   } catch (error) {
     return { valid: false, errors: [error.message] };
   }
@@ -1604,6 +1687,7 @@ export async function verifyManifest(manifest, {
       promotionAllowed: false,
     };
   }
+  manifest = snapshotBoundedJson(manifest, limits);
   const objectMap = new Map(manifest.objects.map(object => [object.sha256, object]));
   const storedObjectBytes = new Map();
   const referenced = referencedDigests(manifest);
@@ -1904,10 +1988,9 @@ export async function captureEvidence({
     const attemptIds = [];
     const journalEntries = [];
     const attemptNumbers = new Set();
+    const validatedJournals = [];
     for (const journalFile of journalFiles) {
       const journalLabel = sourceLabel(safeRuntimeRoot, journalFile.path, "runtime");
-      const journalDigest = await add(journalFile.bytes, { kind: "attempt-journal", sourcePath: journalLabel });
-      jobCapturedObjects.add(journalDigest);
       let journal;
       try { journal = parseCustodyJson(journalFile.bytes.toString("utf8"), limits); }
       catch (error) {
@@ -1916,28 +1999,34 @@ export async function captureEvidence({
       }
       if (!record(journal) || !Array.isArray(journal.attempts)) throw new Error(`attempt journal ${journalLabel} must contain an attempts array`);
       if (journal.attempts.length > limits.maxManifestAttempts) throw new Error(`attempt journal ${journalLabel} exceeds the attempt limit`);
-      for (const entry of journal.attempts) {
-        if (!record(entry) || !Number.isSafeInteger(entry.attemptNumber) || entry.attemptNumber < 1) {
-          throw new Error(`attempt journal ${journalLabel} contains an invalid attempt number`);
-        }
-        if (!TERMINAL.has(entry.status)) throw new Error(`attempt journal ${journalLabel} contains a non-terminal attempt status`);
-        if (typeof entry.startedAt !== "string" || entry.startedAt.length === 0
-          || typeof entry.finishedAt !== "string" || entry.finishedAt.length === 0) {
-          throw new Error(`attempt journal ${journalLabel} contains invalid attempt timestamps`);
-        }
-        if (entry.lastOutputSummary !== undefined && typeof entry.lastOutputSummary !== "string") {
-          throw new Error(`attempt journal ${journalLabel} contains a non-string output summary`);
-        }
-        if (attemptNumbers.has(entry.attemptNumber)) {
-          throw new Error(`ambiguous attempt ${entry.attemptNumber} for ${jobId} appears in multiple journal entries`);
+      const entries = [];
+      for (const entry of arrayDataValues(journal.attempts)) {
+        const normalized = attemptJournalEntry(jobId, entry, journalLabel);
+        if (attemptNumbers.has(normalized.attemptNumber)) {
+          throw new Error(`ambiguous attempt ${normalized.attemptNumber} for ${jobId} appears in multiple journal entries`);
         }
         if (attemptNumbers.size >= limits.maxManifestAttempts) {
           throw new Error(`attempt journals for ${jobId} exceed the attempt limit`);
         }
-        attemptNumbers.add(entry.attemptNumber);
+        attemptNumbers.add(normalized.attemptNumber);
+        entries.push({
+          attemptNumber: normalized.attemptNumber,
+          status: normalized.status,
+          startedAt: normalized.startedAt,
+          finishedAt: normalized.finishedAt,
+          lastOutputSummary: normalized.outputSummary,
+          continuationOf: normalized.continuationOf,
+        });
+      }
+      validatedJournals.push({ journalFile, journalLabel, entries });
+    }
+    for (const { journalFile, journalLabel, entries } of validatedJournals) {
+      const journalDigest = await add(journalFile.bytes, { kind: "attempt-journal", sourcePath: journalLabel });
+      jobCapturedObjects.add(journalDigest);
+      for (const entry of entries) {
         journalEntries.push({
           entry,
-          continuationOf: journalContinuationAttemptId(jobId, entry, journalLabel),
+          continuationOf: entry.continuationOf,
           journalDigest,
           journalLabel,
         });
@@ -2080,7 +2169,16 @@ export async function captureEvidence({
         !sameIdentity(parentIdentity, await directoryIdentity(manifestDirectory, "manifest publication parent"))) {
       throw new Error("object store root or manifest publication parent changed during publication");
     }
-    try { await link(temporary, manifestPath); }
+    try {
+      linkAfterFinalChainCheck(
+        store.root,
+        manifestDirectory,
+        temporary,
+        manifestPath,
+        rootIdentity,
+        parentIdentity,
+      );
+    }
     catch (error) {
       if (error?.code !== "EEXIST") throw error;
       const existing = await secureRead(store.root, manifestPath);

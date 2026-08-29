@@ -156,6 +156,21 @@ test("exact tree, blob, origin, and repository mappings fail closed", async () =
   }
 });
 
+test("programmatic file arrays cannot hide records behind custom iteration", async () => {
+  const root = await mkdtemp(join(tmpdir(), "exact-git-array-"));
+  try {
+    const evidence = await fixture(root);
+    evidence.products.fixture.files[0]!.blob = "0".repeat(40);
+    Object.defineProperty(evidence.products.fixture.files, "entries", {
+      configurable: true,
+      value: () => [][Symbol.iterator](),
+    });
+    await assert.rejects(verifyProductSourceEvidence(evidence, { fixture: root }), /E-BLOB/u);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("ordinary Git failures are not misreported as timeouts", async () => {
   const root = await mkdtemp(join(tmpdir(), "exact-git-failure-"));
   try {
