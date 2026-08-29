@@ -14,6 +14,12 @@ related:
 
 # Product Adoption
 
+> Historical qualification evidence. This page is non-operative. Use the
+> [current productization gate](../module-system-v1-productization/README.md),
+> [ADR-0014](../../decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md),
+> and [ADR-0015](../../decisions/0015-authorize-get-modular-semantic-extraction.md)
+> for current authority and implementation gates.
+
 ## Ownership Model
 
 ```mermaid

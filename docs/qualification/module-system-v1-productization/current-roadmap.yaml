@@ -52,6 +52,17 @@ levels:
     capability: process-or-wasm-host
     status: no-go
     trigger: named-placement-or-containment-requirement
+    prerequisites:
+      - separate-owning-product-decision
+      - product-owned-host-protocol-boundary
+      - structured-clone-safe-framed-envelopes
+      - host-issued-nonce-expected-response-kind-and-one-shot-receipt
+      - deadline-generation-fence-and-ambiguous-outcome-handling
+      - pending-dispatch-cancellation-and-authoritative-termination-reconciliation
+      - bidirectional-n-and-n-minus-one-compatibility-fixtures
+      - containment-claim-matches-the-selected-host-boundary
+    limitations:
+      - same-user-process-is-placement-not-hostile-code-containment
     effectWhileOpen: no-process-module-host
   - id: L5
     capability: extension-foundation-semantic-extraction
@@ -60,6 +71,12 @@ levels:
     prerequisites:
       - authenticated-distinct-repository-identities
       - independently-attested-implementation-ownership
+      - executable-cross-consumer-conformance
+      - reconciled-actual-semantic-intersection
+      - separate-accepted-extension-foundation-extraction-decision
+      - accepted-compatibility-ownership-migration-and-release-decisions
+    limitations:
+      - ADR-0015-authorizes-independent-get-modular-0x-not-extension-foundation-extraction
     effectWhileOpen: keep-semantics-out-of-extension-foundation
 aiNavigationBenchmark:
   status: product-owned-protocol-required

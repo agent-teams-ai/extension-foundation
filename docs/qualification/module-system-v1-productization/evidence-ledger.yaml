@@ -26,7 +26,8 @@ claims:
       is substantial but does not establish a product grammar, production graph,
       durable runtime, or public SPI. Lifecycle remediation is committed as
       3c31341, is integrated in this branch, and passes the full local gate.
-      Final independent exact-head review remains external PR evidence.
+      Final independent exact-head review at
+      97662d634b5eebd9865099830c0d7f124c7dc133 remains external PR evidence.
     reversalCondition: Exact-head execution or review contradicts the recorded coverage.
   - id: agent-runtime-consumer-admission
     classification: level-separated
@@ -140,7 +141,8 @@ claims:
       owner-only storage passes the full local gate. Historical corpus custody
       remains honestly unproven.
       V2 can invalidate evidence but cannot authorize promotion; final
-      independent exact-head review remains external PR evidence.
+      independent exact-head review at
+      97662d634b5eebd9865099830c0d7f124c7dc133 remains external PR evidence.
     reversalCondition: Integrated exact-head checks or review find unresolved fail-open behavior.
 jobEvidencePolicy:
   decisionAuthority: false
@@ -194,10 +196,12 @@ jobs:
   - { id: module-v1-redteam-evidence-r1, role: red-team-evidence, sourceRevision: c9a01739a3a0906bfd52d8573a76e9d0058568ca, status: completed-attempt-2, resultSha256: 436bf42f60d09bda35909693c692bac113740a4caa7b564f79d908edd1f5d6bc }
   - { id: module-v1-redteam-performance-r1, role: red-team-performance, sourceRevision: c9a01739a3a0906bfd52d8573a76e9d0058568ca, status: completed-attempt-2, resultSha256: 2c5141ef1a0de8cd36d561fd6333f375eac7e3517c7f57ec700d3e1961a8295d }
   - { id: module-v1-redteam-cross-consumer-r1, role: red-team-cross-consumer, sourceRevision: c9a01739a3a0906bfd52d8573a76e9d0058568ca, status: completed-attempt-2, resultSha256: c7fc6f8f8170f6f52dd829b5bd62fc35400878756b8a0e691961b783a08cd7e4 }
-  - { id: module-v1-final-architecture-r1, role: exact-head-architecture-review, sourceRevision: external-pr-head, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: pending-final-exact-head-review }
-  - { id: module-v1-final-lifecycle-r1, role: exact-head-lifecycle-review, sourceRevision: external-pr-head, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: pending-final-exact-head-review }
-  - { id: module-v1-final-security-r1, role: exact-head-security-review, sourceRevision: external-pr-head, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: pending-final-exact-head-review }
-  - { id: module-v1-final-product-r1, role: exact-head-product-review, sourceRevision: external-pr-head, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: pending-final-exact-head-review }
+  - { id: module-v1-final-architecture-r1, role: exact-head-architecture-review, sourceRevision: e1a3492e56aff33a1569d12b28e0ee3762cd8ba5, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: completed-non-portable-corroboration, evidenceLocator: https://github.com/agent-teams-ai/extension-foundation/pull/22#issuecomment-5451680508 }
+  - { id: module-v1-final-lifecycle-r1, role: exact-head-lifecycle-review, sourceRevision: e1a3492e56aff33a1569d12b28e0ee3762cd8ba5, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: completed-non-portable-corroboration, evidenceLocator: https://github.com/agent-teams-ai/extension-foundation/pull/22#issuecomment-5451680508 }
+  - { id: module-v1-final-security-r1, role: exact-head-security-review, sourceRevision: e1a3492e56aff33a1569d12b28e0ee3762cd8ba5, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: completed-non-portable-corroboration, evidenceLocator: https://github.com/agent-teams-ai/extension-foundation/pull/22#issuecomment-5451680508 }
+  - { id: module-v1-final-product-r1, role: exact-head-product-review, sourceRevision: e1a3492e56aff33a1569d12b28e0ee3762cd8ba5, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: completed-non-portable-corroboration, evidenceLocator: https://github.com/agent-teams-ai/extension-foundation/pull/22#issuecomment-5451680508 }
+  - { id: module-v1-final-architecture-r2, role: exact-head-architecture-review, sourceRevision: 97662d634b5eebd9865099830c0d7f124c7dc133, status: completed-external-pr-attestation, evidenceLocator: https://github.com/agent-teams-ai/extension-foundation/pull/22 }
+  - { id: module-v1-final-correctness-r1, role: exact-head-correctness-reliability-review, sourceRevision: 97662d634b5eebd9865099830c0d7f124c7dc133, status: completed-external-pr-attestation, evidenceLocator: https://github.com/agent-teams-ai/extension-foundation/pull/22 }
 followUpReports:
   lineage: historical-evidence-superseded-by-current-product-source-records
   status: corroboration-only-not-portable-evidence
