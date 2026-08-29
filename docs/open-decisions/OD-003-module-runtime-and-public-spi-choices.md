@@ -9,6 +9,7 @@ related:
   - ADR-0010
   - ADR-0013
   - ADR-0014
+  - ADR-0015
 ---
 
 # OD-003: Module Runtime And Public SPI Choices
@@ -17,7 +18,7 @@ related:
 
 Choose any production module runtime, public contract, host protocol, and state
 migration semantics only after product-local static composition supplies the
-triggers and evidence required by ADR-0013.
+retained triggers and evidence from ADR-0013 as preserved by ADR-0015.
 
 The already approved guardrails are resolved by
 [ADR-0014](../decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md).
@@ -28,9 +29,9 @@ Foundation package, production graph runtime, or public SPI by implication.
 
 - ADR-0010's cumulative ownership, authority, identity, transaction,
   trust-tier, graph, lifecycle, and state safety floor remains fixed.
-- ADR-0013 keeps product-local feature code and static Pure DI first. A private
-  product graph requires a measured runtime-selection or independent-lifecycle
-  trigger and an accepted owning-product decision.
+- ADR-0015 preserves ADR-0013's product-local feature, static Pure DI, and
+  private-graph trigger rules while authorizing the independent Get Modular
+  pre-1.0 composition repository.
 - Foundation semantic extraction requires two real independently authored
   consumers, cross-consumer conformance, and a separate accepted extraction
   decision. Package extraction evidence alone is not semantic ownership.

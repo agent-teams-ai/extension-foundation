@@ -74,8 +74,9 @@ provides an ambient container or global service locator.
 | --- | --- |
 | ADR-0012 | `superseded` |
 | ADR-0011 | `proposed` |
-| ADR-0013 | `accepted` |
+| ADR-0013 | `superseded` |
 | ADR-0014 | `accepted` |
+| ADR-0015 | `accepted` |
 | OD-002 and OD-003 | `open` |
 | UMEQ-009 through UMEQ-010 | `open` |
 | UMEQ-011 | `accepted-existing` |

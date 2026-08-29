@@ -56,8 +56,9 @@ resolved, or superseded by this dossier.
 | --- | --- | --- |
 | ADR-0012 | `superseded` | Preserved historical authority only |
 | ADR-0011 | `proposed` | Remains non-operative |
-| ADR-0013 | `accepted` | Cumulative product-local ownership is effective |
+| ADR-0013 | `superseded` | Retained safeguards continue through ADR-0015 |
 | ADR-0014 | `accepted` | Static-first rehearsal direction is effective |
+| ADR-0015 | `accepted` | Independent Get Modular extraction is authorized |
 | OD-002 and OD-003 | `open` | Remain open |
 | UMEQ-009 through UMEQ-010 | `open` | Remain open |
 | UMEQ-011 | `accepted-existing` | Explicit provider binding is effective through ADR-0014 |
