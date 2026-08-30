@@ -12,109 +12,72 @@ const id = { protocol: C.protocolRevisionId("protocol"), authority: C.custodyAut
   lineage: C.credentialLineageId("lineage"), otherLineage: C.credentialLineageId("other-lineage"),
   admission: C.admissionId("admission"), artifact: C.artifactDigest("sha256:artifact"),
 };
-const trusted: C.TrustedProtocolCoordinates = {
-  protocolRevisionId: id.protocol, custodyAuthorityId: id.authority,
-};
+const trusted: C.TrustedProtocolCoordinates = { protocolRevisionId: id.protocol, custodyAuthorityId: id.authority };
 const g = (value: number): C.FenceGeneration => C.fenceGeneration(value); const tick = (value: number): C.AuthoritativeTick => C.authoritativeTick(value);
 const receipt = (label: string): C.ReceiptId => C.receiptId(`receipt:${label}`); const buildReceipt = (label: string): C.BuildReceiptId => C.buildReceiptId(`build-receipt:${label}`);
-const consistencyReceipt = (label: string): C.ConsistencyReceiptId =>
-  C.consistencyReceiptId(`consistency-receipt:${label}`);
+const consistencyReceipt = (label: string): C.ConsistencyReceiptId => C.consistencyReceiptId(`consistency-receipt:${label}`);
 const proof = (label: string): C.ProofId => C.proofId(`proof:${label}`); const sourceFence: C.AuthorizationFenceBinding = {
   scope: "source", expectedGeneration: g(1), expectedFamilyAllocationGeneration: g(1),
 }; const campaignFence: C.AuthorizationFenceBinding = { scope: "campaign", expectedGeneration: g(1) };
-interface Envelope {
-  readonly eventId: C.EventId; readonly protocolRevisionId: C.ProtocolRevisionId;
-  readonly custodyAuthorityId: C.CustodyAuthorityId; readonly authoritativeTick: C.AuthoritativeTick;
-  readonly authenticatedPredecessorId: C.EventId | null;
-}
-interface EventSpec {
-  readonly label: string; readonly minimumTick?: number;
-  readonly accepted: boolean; readonly extendsLineage: boolean;
-  readonly retainedAfterRejection?: boolean;
-  readonly body: Readonly<Record<string, unknown>>;
-}
-const event = (label: string, type: C.ProtocolEvent["type"],
-  body: Readonly<Record<string, unknown>> = {}, minimumTick = 0): EventSpec =>
+interface Envelope { readonly eventId: C.EventId; readonly protocolRevisionId: C.ProtocolRevisionId;
+  readonly custodyAuthorityId: C.CustodyAuthorityId; readonly authoritativeTick: C.AuthoritativeTick; readonly authenticatedPredecessorId: C.EventId | null; }
+interface EventSpec { readonly label: string; readonly minimumTick?: number; readonly accepted: boolean; readonly extendsLineage: boolean;
+  readonly retainedAfterRejection?: boolean; readonly body: Readonly<Record<string, unknown>>; }
+const event = (label: string, type: C.ProtocolEvent["type"], body: Readonly<Record<string, unknown>> = {}, minimumTick = 0): EventSpec =>
   ({ label, minimumTick, accepted: true, extendsLineage: true, body: { type, ...body } });
 const rejected = (spec: EventSpec): EventSpec => ({ ...spec, accepted: false }); const detached = (spec: EventSpec): EventSpec => ({ ...spec, extendsLineage: false });
 const retained = (spec: EventSpec): EventSpec => ({ ...spec, retainedAfterRejection: true });
-const root = { sourceClaimFamilyId: id.family, sourceFamilyRootId: id.root }; const authorization = (binding: C.AuthorizationFenceBinding,
-  launchPurpose: C.LaunchPurpose = binding.scope === "source" ? "source-authoring" : "evaluation") => ({ ...root,
-  authorizationId: id.authorization, sourceSlotId: id.slot, runtimeId: id.runtime,
-  retirementOwnerId: id.owner, credentialLineageId: id.lineage, authorizationFence: binding,
-  launchPurpose,
-});
+const root = { sourceClaimFamilyId: id.family, sourceFamilyRootId: id.root };
+const authorization = (binding: C.AuthorizationFenceBinding, launchPurpose: C.LaunchPurpose = binding.scope === "source" ? "source-authoring" : "evaluation") => ({ ...root,
+  authorizationId: id.authorization, sourceSlotId: id.slot, runtimeId: id.runtime, retirementOwnerId: id.owner,
+  credentialLineageId: id.lineage, authorizationFence: binding, launchPurpose });
 const register = event("register", "RegisterProtocol", {
-  sourceClaimFamilyId: id.family, sourceFamilyRootId: id.root, sourceSlotId: id.slot,
-  attemptId: id.attempt, runtimeId: id.runtime, checkpointId: id.checkpoint,
-  buildAttemptId: id.build, retirementOwnerId: id.owner, credentialLineageId: id.lineage,
-  admissionId: id.admission, sourceFenceGeneration: g(1), campaignFenceGeneration: g(1),
-  familyAllocationFenceGeneration: g(1), launchDeadline: tick(60), attemptDeadline: tick(60),
-  stopDeadline: tick(60), buildDeadline: tick(60), buildConsistencyDeadline: tick(80),
-});
+  sourceClaimFamilyId: id.family, sourceFamilyRootId: id.root, sourceSlotId: id.slot, attemptId: id.attempt,
+  runtimeId: id.runtime, checkpointId: id.checkpoint, buildAttemptId: id.build, retirementOwnerId: id.owner,
+  credentialLineageId: id.lineage, admissionId: id.admission, sourceFenceGeneration: g(1), campaignFenceGeneration: g(1),
+  familyAllocationFenceGeneration: g(1), launchDeadline: tick(60), attemptDeadline: tick(60), stopDeadline: tick(60),
+  buildDeadline: tick(60), buildConsistencyDeadline: tick(80) });
 const issue = (label: string, binding: C.AuthorizationFenceBinding = sourceFence,
-  purpose?: C.LaunchPurpose) => event(label, "IssueAuthorization", {
-  ...authorization(binding, purpose), expiresAt: tick(50),
-});
+  purpose?: C.LaunchPurpose) => event(label, "IssueAuthorization", { ...authorization(binding, purpose), expiresAt: tick(50) });
 const longIssue = (label: string, binding: C.AuthorizationFenceBinding = sourceFence,
-  purpose?: C.LaunchPurpose) => event(label, "IssueAuthorization", {
-  ...authorization(binding, purpose), expiresAt: tick(100),
-});
-const issueWithId = (label: string, selectedId: C.AuthorizationId,
-  binding: C.AuthorizationFenceBinding = sourceFence, purpose?: C.LaunchPurpose) =>
-  event(label, "IssueAuthorization", {
-  ...authorization(binding, purpose), authorizationId: selectedId, expiresAt: tick(50),
-});
+  purpose?: C.LaunchPurpose) => event(label, "IssueAuthorization", { ...authorization(binding, purpose), expiresAt: tick(100) });
+const issueWithId = (label: string, selectedId: C.AuthorizationId, binding: C.AuthorizationFenceBinding = sourceFence,
+  purpose?: C.LaunchPurpose) => event(label, "IssueAuthorization",
+  { ...authorization(binding, purpose), authorizationId: selectedId, expiresAt: tick(50) });
 const consume = (label: string, binding: C.AuthorizationFenceBinding = sourceFence,
   purpose?: C.LaunchPurpose) => event(label, "ConsumeAuthorization", authorization(binding, purpose));
-const revoke = (label: string, binding: C.AuthorizationFenceBinding = sourceFence) => event(label, "RevokeAuthorization", {
-  ...root, authorizationId: id.authorization, authorizationFence: binding, reason: "analytic-stop",
-});
-const expire = (label: string, binding: C.AuthorizationFenceBinding = sourceFence) => event(label, "ExpireAuthorization", {
-  ...root, authorizationId: id.authorization, authorizationFence: binding,
-}, 50);
-const close = (label: string) => event(label, "CloseSource", { ...root,
-  expectedGeneration: g(1), nextGeneration: g(2), receiptId: receipt(label),
-  sourceDigest: C.artifactDigest("sha256:source"),
-});
-const abandon = (label: string) => event(label, "AbandonSource", { ...root,
-  expectedGeneration: g(1), nextGeneration: g(2), receiptId: receipt(label), proofId: proof(label),
-});
-const abandonAfterAdvance = (label: string) => event(label, "AbandonSource", { ...root,
-  expectedGeneration: g(2), nextGeneration: g(3), receiptId: receipt(label), proofId: proof(label),
-});
+const revoke = (label: string, binding: C.AuthorizationFenceBinding = sourceFence) => event(label, "RevokeAuthorization",
+  { ...root, authorizationId: id.authorization, authorizationFence: binding, reason: "analytic-stop" });
+const expire = (label: string, binding: C.AuthorizationFenceBinding = sourceFence) => event(label, "ExpireAuthorization",
+  { ...root, authorizationId: id.authorization, authorizationFence: binding }, 50);
+const close = (label: string) => event(label, "CloseSource", { ...root, expectedGeneration: g(1), nextGeneration: g(2),
+  receiptId: receipt(label), sourceDigest: C.artifactDigest("sha256:source") });
+const abandon = (label: string) => event(label, "AbandonSource", { ...root, expectedGeneration: g(1),
+  nextGeneration: g(2), receiptId: receipt(label), proofId: proof(label) });
+const abandonAfterAdvance = (label: string) => event(label, "AbandonSource", { ...root, expectedGeneration: g(2),
+  nextGeneration: g(3), receiptId: receipt(label), proofId: proof(label) });
 const advance = (label: string, selected: "source" | "campaign" = "campaign",
-  cause: C.AdvanceFence["cause"] = "analytic-stop") =>
-  event(label, "AdvanceFence", { ...root, fence: selected, expectedGeneration: g(1),
+  cause: C.AdvanceFence["cause"] = "analytic-stop") => event(label, "AdvanceFence", { ...root, fence: selected, expectedGeneration: g(1),
     nextGeneration: g(2), cause });
 const release = (label: string, binding: C.AuthorizationFenceBinding = campaignFence,
   purpose?: C.LaunchPurpose, selectedId = id.authorization) => event(label, "ReleaseProcess", {
-  ...authorization(binding, purpose), authorizationId: selectedId,
-  attemptId: id.attempt, launchReceiptId: receipt(label),
-});
-const releaseDenied = (label: string, binding: C.AuthorizationFenceBinding = campaignFence) => event(label, "RecordReleaseDenied", {
-  ...authorization(binding), receiptId: receipt(label), proofId: proof(label), reason: "gate-closed",
-});
-const crash = (label: string, binding: C.AuthorizationFenceBinding = sourceFence) => event(label, "ObserveCrash", {
-  ...root, authorizationId: id.authorization, runtimeId: id.runtime,
-  expectedGeneration: binding.expectedGeneration,
-});
-const launchDeadline = (label: string, binding: C.AuthorizationFenceBinding = sourceFence,
-  result: "start-unknown" | "never-started" = "start-unknown", minimumTick = 60) => event(label, "ReachLaunchDeadline", {
-  ...authorization(binding), observationReceiptId: receipt(label), result,
-}, minimumTick);
+  ...authorization(binding, purpose), authorizationId: selectedId, attemptId: id.attempt, launchReceiptId: receipt(label) });
+const releaseDenied = (label: string, binding: C.AuthorizationFenceBinding = campaignFence) => event(label,
+  "RecordReleaseDenied", { ...authorization(binding), receiptId: receipt(label), proofId: proof(label), reason: "gate-closed" });
+const crash = (label: string, binding: C.AuthorizationFenceBinding = sourceFence) => event(label, "ObserveCrash",
+  { ...root, authorizationId: id.authorization, runtimeId: id.runtime, expectedGeneration: binding.expectedGeneration });
+const launchDeadline = (label: string, binding: C.AuthorizationFenceBinding = sourceFence, result: "start-unknown" | "never-started" = "start-unknown",
+  minimumTick = 60) => event(label, "ReachLaunchDeadline", {
+  ...authorization(binding), observationReceiptId: receipt(label), result }, minimumTick);
 const restart = (label: string) => event(label, "RestartObserved", { ...root, runtimeId: id.runtime });
-const reconcile = (label: string, observation: "live" | "terminated" | "unknown",
-  runtimeSafetyWatermarkLabel: string, selectedProofLabel = label) =>
-  event(label, "ReconcileRuntime", { ...root, runtimeId: id.runtime, observation,
+const reconcile = (label: string, observation: "live" | "terminated" | "unknown", runtimeSafetyWatermarkLabel: string,
+  selectedProofLabel = label) => event(label, "ReconcileRuntime", { ...root, runtimeId: id.runtime, observation,
     runtimeSafetyWatermarkEventId: C.eventId(`event:${runtimeSafetyWatermarkLabel}`),
     proofId: proof(selectedProofLabel) });
 const retirement = (label: string, owner = id.owner, lineage = id.lineage) =>
   event(label, "RequestRetirement", { ...root, retirementOwnerId: owner, credentialLineageId: lineage });
-const cleanup = (label: string, terminationProofLabel = label, owner = id.owner) => event(label, "RequestCleanup", { ...root,
-  runtimeId: id.runtime, retirementOwnerId: owner, credentialLineageId: id.lineage,
-  terminationProofId: proof(terminationProofLabel),
-});
+const cleanup = (label: string, terminationProofLabel = label, owner = id.owner) => event(label, "RequestCleanup", { ...root, runtimeId: id.runtime,
+  retirementOwnerId: owner, credentialLineageId: id.lineage, terminationProofId: proof(terminationProofLabel) });
 const bodyEvidence = (value: unknown): readonly C.EvidenceReference[] => {
   if (value === null || typeof value !== "object") return [];
   const result: C.EvidenceReference[] = [];
@@ -123,91 +86,65 @@ const bodyEvidence = (value: unknown): readonly C.EvidenceReference[] => {
       if (key === "receiptId" || key === "launchReceiptId" || key === "observationReceiptId")
         result.push({ type: "receipt", receiptId: C.receiptId(item) });
       else if (key === "buildReceiptId") result.push({ type: "build-receipt", buildReceiptId: C.buildReceiptId(item) });
-      else if (key === "consistencyReceiptId")
-        result.push({ type: "consistency-receipt", consistencyReceiptId: C.consistencyReceiptId(item) });
-      else if (key === "proofId" || key === "terminationProofId" || key === "cleanupProofId")
-        result.push({ type: "proof", proofId: C.proofId(item) });
-    }
-    if (typeof item === "object" && item !== null) result.push(...bodyEvidence(item));
-  }
-  return result;
+      else if (key === "consistencyReceiptId") result.push({ type: "consistency-receipt", consistencyReceiptId: C.consistencyReceiptId(item) });
+      else if (key === "proofId" || key === "terminationProofId" || key === "cleanupProofId") result.push({ type: "proof", proofId: C.proofId(item) });
+    } if (typeof item === "object" && item !== null) result.push(...bodyEvidence(item));
+  } return result;
 };
 const retainedEvidenceFor = (history: readonly EventSpec[], cleanupProof: C.ProofId): readonly C.EvidenceReference[] => {
   const references = history.filter(spec => spec.accepted || spec.retainedAfterRejection === true).flatMap(spec => [
     { type: "event" as const, eventId: C.eventId(`event:${spec.label}`) }, ...bodyEvidence(spec.body)]);
-  references.push({ type: "proof", proofId: cleanupProof });
-  return references.filter((reference, index) => references.findIndex(candidate =>
+  references.push({ type: "proof", proofId: cleanupProof }); return references.filter((reference, index) => references.findIndex(candidate =>
     JSON.stringify(candidate) === JSON.stringify(reference)) === index);
 };
-const complete = (label: string, history: readonly EventSpec[], sourceReceipt: C.ReceiptId) =>
-  event(label, "CompleteRetirement", { ...root, runtimeId: id.runtime, retirementOwnerId: id.owner,
-    credentialLineageId: id.lineage, tombstoneId: C.tombstoneId(`tombstone:${label}`),
-    cleanupProofId: proof(label), sourceTerminalReceiptId: sourceReceipt,
-    retainedEvidence: retainedEvidenceFor(history, proof(label)),
-  });
-const attemptReceipt = (label: string, result: C.AttemptReceiptResult, selectedReceipt = receipt(label)) =>
-  event(label, "RecordAttemptReceipt", { attemptId: id.attempt, runtimeId: id.runtime,
-    receiptId: selectedReceipt, result });
-const attemptDeadline = (label: string, result: "missing" | "unknown" = "missing", minimumTick = 60) =>
-  event(label, "ReachAttemptDeadline", { attemptId: id.attempt,
-    observationReceiptId: receipt(label), result }, minimumTick);
-const checkpoint = (label: string) => event(label, "CheckpointEffective", {
-  checkpointId: id.checkpoint, expectedGeneration: g(1),
-});
+const complete = (label: string, history: readonly EventSpec[], sourceReceipt: C.ReceiptId) => event(label, "CompleteRetirement", {
+  ...root, runtimeId: id.runtime, retirementOwnerId: id.owner, credentialLineageId: id.lineage,
+    tombstoneId: C.tombstoneId(`tombstone:${label}`), cleanupProofId: proof(label), sourceTerminalReceiptId: sourceReceipt,
+    retainedEvidence: retainedEvidenceFor(history, proof(label)) });
+const attemptReceipt = (label: string, result: C.AttemptReceiptResult, selectedReceipt = receipt(label)) => event(label,
+  "RecordAttemptReceipt", { attemptId: id.attempt, runtimeId: id.runtime, receiptId: selectedReceipt, result });
+const attemptDeadline = (label: string, result: "missing" | "unknown" = "missing", minimumTick = 60) => event(label, "ReachAttemptDeadline",
+  { attemptId: id.attempt, observationReceiptId: receipt(label), result }, minimumTick);
+const checkpoint = (label: string) => event(label, "CheckpointEffective", { checkpointId: id.checkpoint, expectedGeneration: g(1) });
 const stop = (label: string, result: "continue" | "stop" = "stop") => event(label, "RecordStopReceipt", {
-  checkpointId: id.checkpoint, receiptId: receipt(label), expectedGeneration: g(1), result,
-});
+  checkpointId: id.checkpoint, receiptId: receipt(label), expectedGeneration: g(1), result });
 const stopDeadline = (label: string, result: "missing" | "unknown" = "missing", minimumTick = 60) =>
   event(label, "ReachStopDeadline", { checkpointId: id.checkpoint, expectedGeneration: g(1),
     observationReceiptId: receipt(label), result }, minimumTick);
 const recoverStop = (label: string, expected = 1, next = 2) => event(label, "RecoverStopFence", {
-  checkpointId: id.checkpoint, expectedGeneration: g(expected), nextGeneration: g(next),
-});
+  checkpointId: id.checkpoint, expectedGeneration: g(expected), nextGeneration: g(next) });
 const admission = (label: string, result: "accepted" | "failed") => event(label, "RecordAdmission", {
-  ...root, admissionId: id.admission, receiptId: receipt(label), result,
-});
-const build = (label: string, result: "succeeded" | "failed" | "no-output",
-  selectedReceipt = buildReceipt(label)) =>
-  event(label, "RecordBuildResult", { ...root, sourceSlotId: id.slot, buildAttemptId: id.build,
-    authorizationId: id.buildAuthorization,
-    buildReceiptId: selectedReceipt, result: result === "succeeded" ?
-      { type: result, artifactDigest: id.artifact } : { type: result, proofId: proof(label) },
-  });
+  ...root, admissionId: id.admission, receiptId: receipt(label), result });
+const build = (label: string, result: "succeeded" | "failed" | "no-output", selectedReceipt = buildReceipt(label)) => event(label,
+  "RecordBuildResult", { ...root, sourceSlotId: id.slot, buildAttemptId: id.build, authorizationId: id.buildAuthorization,
+    buildReceiptId: selectedReceipt, result: result === "succeeded" ? { type: result, artifactDigest: id.artifact }
+      : { type: result, proofId: proof(label) } });
 const buildDeadline = (label: string, result: "missing" | "unknown" = "missing", minimumTick = 60) =>
   event(label, "ReachBuildDeadline", { ...root, sourceSlotId: id.slot, buildAttemptId: id.build,
     observationReceiptId: receipt(label), result }, minimumTick);
-const consistency = (label: string, result: C.BuildConsistencyInput,
-  boundBuildReceipt = buildReceipt("build"), selectedReceipt = consistencyReceipt(label)) =>
-  event(label, "RecordBuildConsistencyReceipt", { ...root, sourceSlotId: id.slot,
-    buildAttemptId: id.build, buildReceiptId: boundBuildReceipt,
-    consistencyReceiptId: selectedReceipt, result });
+const consistency = (label: string, result: C.BuildConsistencyInput, boundBuildReceipt = buildReceipt("build"),
+  selectedReceipt = consistencyReceipt(label)) => event(label, "RecordBuildConsistencyReceipt", { ...root, sourceSlotId: id.slot,
+    buildAttemptId: id.build, buildReceiptId: boundBuildReceipt, consistencyReceiptId: selectedReceipt, result });
 const consistencyDeadline = (label: string,
   result: "missing-verifier" | "unknown-verifier" = "missing-verifier", minimumTick = 80) =>
   event(label, "ReachBuildConsistencyDeadline", { ...root, sourceSlotId: id.slot,
     buildAttemptId: id.build, observationReceiptId: receipt(label), result }, minimumTick);
 const materialize = (specs: readonly EventSpec[], tickStep = 1): readonly C.ProtocolEvent[] => {
-  const events: C.ProtocolEvent[] = [];
-  let predecessor: C.EventId | null = null;
-  let now = 0;
+  const events: C.ProtocolEvent[] = []; let predecessor: C.EventId | null = null, now = 0;
   for (const spec of specs) {
     now = Math.max(now + tickStep, spec.minimumTick ?? 0);
-    const envelope: Envelope = { eventId: C.eventId(`event:${spec.label}`),
-      protocolRevisionId: id.protocol, custodyAuthorityId: id.authority,
-      authoritativeTick: tick(now), authenticatedPredecessorId: predecessor };
+    const envelope: Envelope = { eventId: C.eventId(`event:${spec.label}`), protocolRevisionId: id.protocol,
+      custodyAuthorityId: id.authority, authoritativeTick: tick(now), authenticatedPredecessorId: predecessor };
     const selected = { ...envelope, ...spec.body } as unknown as C.ProtocolEvent;
-    if (events.length === 0) {
-      assert.equal(selected.type, "RegisterProtocol");
-      if (spec.extendsLineage) predecessor = selected.eventId;
-    } else if (spec.extendsLineage) predecessor = selected.eventId;
+    if (events.length === 0) { assert.equal(selected.type, "RegisterProtocol");
+      if (spec.extendsLineage) predecessor = selected.eventId; } else if (spec.extendsLineage) predecessor = selected.eventId;
     events.push(selected);
-  }
-  return events;
+  } return events;
 };
 const canonical = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map(canonical);
   if (value === null || typeof value !== "object") return value;
-  return Object.fromEntries(Object.entries(value as Record<string, unknown>)
-    .sort(([left], [right]) => left.localeCompare(right))
+  return Object.fromEntries(Object.entries(value as Record<string, unknown>).sort(([left], [right]) => left.localeCompare(right))
     .map(([key, item]) => [key, canonical(item)]));
 };
 const effectBag = (effects: readonly C.DeclaredEffect[]): readonly string[] =>
@@ -234,26 +171,19 @@ const compareHistory = (specs: readonly EventSpec[], context: string, tickStep =
   reducer.forEach((result, index) => {
     const fixtureDecision = specs[index]!.accepted ? "accepted" : "rejected";
     assert.equal(result.decision, fixtureDecision, `${context} event ${index}: reducer fixture expectation`);
-    assert.equal(oracle[index]!.decision, fixtureDecision,
-      `${context} event ${index}: oracle fixture expectation`);
-  });
-  reducer.forEach((result, index) => {
+    assert.equal(oracle[index]!.decision, fixtureDecision, `${context} event ${index}: oracle fixture expectation`);
     compareResult(result, oracle[index]!, `${context} event ${index} (${events[index]!.type})`);
   });
 };
-interface RaceFamily {
-  readonly name: string;
-  readonly variants: number;
-  readonly history: (reverse: boolean, variant: number) => readonly EventSpec[];
-}
+interface RaceFamily { readonly name: string; readonly variants: number;
+  readonly history: (reverse: boolean, variant: number) => readonly EventSpec[]; }
 const ordered = (reverse: boolean, left: EventSpec, right: EventSpec): readonly EventSpec[] =>
   reverse ? [right, left] : [left, right];
 const at = (spec: EventSpec, minimumTick: number): EventSpec => ({ ...spec, minimumTick });
 const sourcePreparedPrefix = [register, issueWithId("source-issue", id.otherAuthorization, sourceFence),
   event("source-consume", "ConsumeAuthorization", { ...authorization(sourceFence), authorizationId: id.otherAuthorization }),
   release("source-release", sourceFence, "source-authoring", id.otherAuthorization)] as const;
-const sourceClosedPrefix = [...sourcePreparedPrefix, close("close"),
-  reconcile("source-terminated", "terminated", "source-release")] as const;
+const sourceClosedPrefix = [...sourcePreparedPrefix, close("close"), reconcile("source-terminated", "terminated", "source-release")] as const;
 const closedPrefix = [...sourceClosedPrefix, admission("admission", "accepted")] as const;
 const buildAuthorizedPrefix = [...closedPrefix,
   issueWithId("build-issue", id.buildAuthorization, campaignFence, "build"),
@@ -848,7 +778,7 @@ test("post-retirement replay still validates build binding", () => { const candi
   assert.deepEqual(denied.terminalProjections, frozen.terminalProjections); assert.equal(denied.effects.find(effect => effect.type === "denial-recorded")?.reason, "wrong-binding"); });
 test("post-retirement consistency with a foreign build receipt stays visible and invalid", () => {
   const wrong = consistency("foreign-retired-consistency", { type: "non-artifact-match",
-    buildResult: "failed", proofId: proof("retained-consistency") }, buildReceipt("foreign"));
+    buildResult: "failed", proofId: proof("foreign-retired-consistency") }, buildReceipt("foreign"));
   const results = compareEvents(materialize([...postRetirementReplayPrefix, wrong]),
     "post-retirement foreign build receipt"), frozen = results.at(-2)!, invalid = results.at(-1)!;
   assert.deepEqual(invalid.terminalProjections, frozen.terminalProjections);
@@ -970,6 +900,144 @@ test("exact replay after retirement is idempotent after finality rewriting", () 
   assert.deepEqual(results.at(-1), results.at(-2));
   assert.deepEqual(results.at(-1)!.terminalProjections,
     results[firstPass.length - 2]!.terminalProjections);
+});
+test("pre-retirement exact replay cannot expose stale effects or projections through a tombstone", () => {
+  const history = [...retiredBeforeComplete, complete("frozen-complete", retiredBeforeComplete, receipt("close"))] as const;
+  const events = materialize(history), results = compareEvents([...events, events[1]!], "retired historical lookup");
+  assert.deepEqual(results.at(-1)!.effects, []);
+  assert.deepEqual(results.at(-1)!.terminalProjections, results.at(-2)!.terminalProjections);
+});
+test("post-retirement containment supports repeated reconcile-and-clean tracks", () => {
+  const finalized = complete("private-complete", retiredBeforeComplete, receipt("close"));
+  const history = [...retiredBeforeComplete, finalized,
+    at(release("private-start", sourceFence), 61),
+    reconcile("private-terminated-one", "terminated", "private-start"),
+    reconcile("private-terminated-two", "terminated", "private-start"),
+    rejected(detached(cleanup("private-stale-cleanup", "private-terminated-one"))),
+    cleanup("private-cleanup", "private-terminated-two"),
+    { ...crash("private-crash"), body: { ...crash("private-crash").body,
+      authorizationId: id.otherAuthorization } },
+    reconcile("private-crash-terminated", "terminated", "private-crash"),
+    cleanup("private-crash-cleanup", "private-crash-terminated"), restart("private-restart"),
+    reconcile("private-restart-terminated", "terminated", "private-restart"),
+    cleanup("private-restart-cleanup", "private-restart-terminated")] as const;
+  const results = compareEvents(materialize(history), "private containment cleanup"), frozen = results[retiredBeforeComplete.length]!;
+  results.slice(retiredBeforeComplete.length + 1).forEach(result =>
+    assert.deepEqual(result.terminalProjections, frozen.terminalProjections));
+  assert.equal(results.at(-1)!.decision, "accepted");
+  assert.ok(results.at(-1)!.effects.some(effect => effect.type === "resource-cleanup-requested"));
+});
+test("equal-tick safety watermarks use authenticated ledger order", () => {
+  const history = [register, issue("equal-issue"), consume("equal-consume"), crash("equal-crash"),
+    restart("equal-restart"), rejected(detached(reconcile("equal-stale", "terminated", "equal-crash"))),
+    reconcile("equal-fresh", "terminated", "equal-restart")] as const;
+  const results = compareEvents(materialize(history, 0), "equal tick watermark");
+  assert.equal(results.at(-2)!.decision, "rejected");
+  assert.equal(results.at(-1)!.decision, "accepted");
+});
+test("proof identity is global, stale attempts reserve it, and foreign identities do not", () => {
+  const prefix = [register, issue("proof-issue"), consume("proof-consume"), crash("proof-crash")] as const;
+  const foreign = reconcile("foreign-proof", "terminated", "proof-crash", "foreign-free"), cases = [[...prefix, abandon("proof-abandon"),
+    rejected(detached(reconcile("cross-role-proof", "terminated", "proof-crash", "proof-abandon")))],
+  [...prefix, rejected(detached(reconcile("stale-proof", "terminated", "proof-consume", "reserved"))),
+    rejected(detached(reconcile("reserved-proof", "terminated", "proof-crash", "reserved")))],
+  [...prefix, rejected(detached({ ...foreign, body: { ...foreign.body,
+    sourceFamilyRootId: C.sourceFamilyRootId("foreign") } })),
+    reconcile("foreign-proof-retry", "terminated", "proof-crash", "foreign-free")]] as const;
+  cases.forEach((history, index) => compareHistory(history, `proof provenance ${index}`)); });
+test("consumed unresolved launches stay quarantined until exact reconciliation and cleanup", () => {
+  const beforeComplete = [...campaignBuildPrefix, consume("orphan-consume", campaignFence), retirement("orphan-retirement"),
+    rejected(detached(cleanup("orphan-early"))), reconcile("orphan-terminated", "terminated", "orphan-retirement"),
+    cleanup("orphan-cleanup", "orphan-terminated")] as const;
+  const results = compareEvents(materialize([...beforeComplete, complete("orphan-complete", beforeComplete,
+    receipt("close"))]), "prospective runtime retirement"), requested = results[campaignBuildPrefix.length + 1]!;
+  for (const type of ["resource-quarantined", "runtime-reconciliation-requested",
+    "runtime-termination-requested"] as const) assert.ok(requested.effects.some(effect => effect.type === type));
+  assert.equal(results.at(-1)!.terminalProjections.resourceRetirement.type, "retired"); });
+test("new safety watermarks invalidate old cleanup bindings", () => {
+  const stalePrefix = [...retiredBeforeComplete, restart("cleanup-restart"),
+    reconcile("cleanup-reterminated", "terminated", "cleanup-restart")] as const;
+  const stale = rejected(detached(complete("stale-cleanup-complete", stalePrefix, receipt("close"))));
+  const finalPrefix = [...stalePrefix, stale, cleanup("fresh-cleanup", "cleanup-reterminated")] as const;
+  compareHistory([...finalPrefix, complete("fresh-cleanup-complete", finalPrefix, receipt("close"))], "cleanup watermark binding"); });
+test("retirement evidence closure rejects duplicate and foreign references", () => {
+  const candidate = complete("exact-evidence", retiredBeforeComplete, receipt("close"));
+  const retainedEvidence = candidate.body.retainedEvidence as readonly C.EvidenceReference[];
+  for (const [name, extra] of [["duplicate", retainedEvidence[0]!],
+    ["foreign", { type: "event", eventId: C.eventId("event:foreign") }]] as const) {
+    const invalid = rejected(detached({ ...candidate, label: `exact-evidence-${name}`,
+      body: { ...candidate.body, tombstoneId: C.tombstoneId(`tombstone:${name}`),
+        retainedEvidence: [...retainedEvidence, extra] } }));
+    compareHistory([...retiredBeforeComplete, invalid], `exact retirement evidence ${name}`); } });
+test("retirement evidence is deeply immutable at the projection boundary", () => {
+  const history = [...retiredBeforeComplete, complete("immutable-complete", retiredBeforeComplete, receipt("close"))] as const,
+    projection = foldQualificationHistory(materialize(history), 32, trusted).results.at(-1)!.terminalProjections.resourceRetirement;
+  assert.equal(projection.type, "retired");
+  assert.ok(Object.isFrozen(projection) && Object.isFrozen(projection.tombstone.sourceTerminal));
+  assert.ok(Object.isFrozen(projection.tombstone) && Object.isFrozen(projection.tombstone.retainedEvidence));
+  assert.ok(projection.tombstone.retainedEvidence.every(Object.isFrozen));
+  assert.throws(() => (projection.tombstone.retainedEvidence as C.EvidenceReference[]).push({
+    type: "proof", proofId: proof("mutation") })); });
+test("model boundaries snapshot inputs and deeply freeze returned results", () => {
+  const events = structuredClone(materialize([register, issue("immutable-issue")])) as C.ProtocolEvent[];
+  const reducer = foldQualificationHistory(events, 4, trusted), oracle = foldOracleHistory(events, trusted);
+  const before = [reducer.results[1], oracle.results[1]].map(value => JSON.stringify(value));
+  const mutable = events[1] as C.IssueAuthorization & { authorizationFence: { expectedGeneration: C.FenceGeneration } };
+  mutable.authorizationFence.expectedGeneration = g(99);
+  assert.deepEqual([reducer.results[1], oracle.results[1]].map(value => JSON.stringify(value)), before);
+  for (const result of [reducer.results[1]!, oracle.results[1]!]) {
+    assert.ok(Object.isFrozen(result) && Object.isFrozen(result.effects) && Object.isFrozen(result.terminalProjections));
+    assert.throws(() => (result.terminalProjections as { claim: C.ClaimProjection }).claim = "invalid");
+  } });
+test("rejected bootstrap identities stay occupied", () => {
+  const bad = materialize([rejected(detached({ ...register, label: "occupied-bootstrap",
+    body: { ...register.body, custodyAuthorityId: C.custodyAuthorityId("wrong") } }))])[0]!;
+  const retry = { ...materialize([{ ...register, label: "occupied-bootstrap" }])[0]!,
+    eventId: bad.eventId } as C.ProtocolEvent;
+  const results = compareEvents([bad, retry], "occupied bootstrap identity");
+  assert.equal(results.at(-1)!.decision, "rejected");
+});
+test("campaign fence closure revokes consumed unstarted build authority", () => {
+  const history = [...closedPrefix, issueWithId("pending-build-issue", id.buildAuthorization, campaignFence, "build"),
+    event("pending-build-consume", "ConsumeAuthorization", { ...authorization(campaignFence, "build"),
+      authorizationId: id.buildAuthorization }), advance("pending-build-stop")] as const;
+  const result = compareEvents(materialize(history), "consumed build fence revocation").at(-1)!;
+  assert.ok(result.effects.some(effect => effect.type === "authorization-revoked" &&
+    effect.authorizationId === id.buildAuthorization));
+});
+test("typed build replay retains typed denial effects even while its gate is closed", () => {
+  const collision = C.buildReceiptId("receipt:denied");
+  const history = [register, issue("issue"), consume("consume"), releaseDenied("denied", sourceFence),
+    rejected(detached(build("closed-gate-replay", "failed", collision)))] as const;
+  const result = compareEvents(materialize(history), "closed gate typed replay").at(-1)!;
+  assert.ok(result.effects.some(effect => effect.type === "execution-gate-set" && effect.value === "denied"));
+  assert.ok(result.effects.some(effect => effect.type === "claim-disposition-set" &&
+    effect.evidence.type === "build-receipt"));
+});
+test("alternating late consistency compares the complete ordered history", () => {
+  const values = ["failed", "no-output", "failed"] as const;
+  const late = values.map((value, index) => at(consistency(`alternating-consistency-${index}`, {
+    type: "non-artifact-match", buildResult: value, proofId: proof(`${value}-${index}`),
+  }, buildReceipt("build")), 80 + index));
+  const results = compareEvents(materialize([...buildAuthorizedPrefix, build("build", "failed"), ...late]),
+    "alternating late consistency");
+  assert.ok(results.at(-1)!.effects.some(effect => effect.type === "claim-disposition-set" && effect.value === "invalid"));
+});
+test("receipt replay classification follows binding validation consistently", () => {
+  const cases = [
+    [register, attemptDeadline("used", "missing", 60), rejected(detached({ ...attemptDeadline("early-used", "missing", 59),
+      body: { ...attemptDeadline("early-used", "missing", 59).body, observationReceiptId: receipt("used") } }))],
+    [...closedPrefix, buildDeadline("used", "missing", 60), rejected(detached({ ...buildDeadline("early-used", "missing", 59),
+      body: { ...buildDeadline("early-used", "missing", 59).body, observationReceiptId: receipt("used") } }))],
+    [...buildAuthorizedPrefix, build("precedence-build", "succeeded"), consistency("precedence-consistency",
+      { type: "match", artifactDigest: id.artifact }, buildReceipt("precedence-build")),
+      rejected(detached(consistencyDeadline("early-terminal-consistency", "missing-verifier", 79)))],
+  ] as const;
+  cases.forEach((history, index) => {
+    const result = compareEvents(materialize(history), `validation precedence ${index}`).at(-1)!;
+    assert.equal(result.effects.find(effect => effect.type === "denial-recorded")?.reason,
+      index < 2 ? "receipt-replay" : "deadline-not-reached");
+  });
 });
 test("alternating late launch evidence uses the full history across deadline interleavings", () => {
   const prefix = [register, longIssue("alternating-issue"), consume("alternating-consume")] as const;

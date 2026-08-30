@@ -1,79 +1,43 @@
 import * as C from "./dogfooding-protocol-contract.ts";
 export interface QualificationReducerState { readonly kind: "qualification-reducer-state" }
-export interface QualificationTransition {
-  readonly state: QualificationReducerState; readonly result: C.TransitionResult;
-}
-export interface QualificationFold {
-  readonly state: QualificationReducerState; readonly results: readonly C.TransitionResult[];
-}
+export interface QualificationTransition { readonly state: QualificationReducerState; readonly result: C.TransitionResult; }
+export interface QualificationFold { readonly state: QualificationReducerState; readonly results: readonly C.TransitionResult[]; }
 interface Registration {
-  readonly protocolRevisionId: C.ProtocolRevisionId;
-  readonly custodyAuthorityId: C.CustodyAuthorityId;
-  readonly sourceClaimFamilyId: C.SourceClaimFamilyId;
-  readonly sourceFamilyRootId: C.SourceFamilyRootId;
-  readonly sourceSlotId: C.SourceSlotId;
-  readonly attemptId: C.AttemptId;
-  readonly runtimeId: C.RuntimeId;
-  readonly checkpointId: C.CheckpointId;
-  readonly buildAttemptId: C.BuildAttemptId;
-  readonly retirementOwnerId: C.RetirementOwnerId;
-  readonly credentialLineageId: C.CredentialLineageId;
-  readonly admissionId: C.AdmissionId;
-  readonly sourceFenceGeneration: C.FenceGeneration;
-  readonly campaignFenceGeneration: C.FenceGeneration;
-  readonly familyAllocationFenceGeneration: C.FenceGeneration;
-  readonly launchDeadline: C.AuthoritativeTick;
-  readonly attemptDeadline: C.AuthoritativeTick;
-  readonly stopDeadline: C.AuthoritativeTick;
-  readonly buildDeadline: C.AuthoritativeTick;
-  readonly buildConsistencyDeadline: C.AuthoritativeTick;
+  readonly protocolRevisionId: C.ProtocolRevisionId; readonly custodyAuthorityId: C.CustodyAuthorityId;
+  readonly sourceClaimFamilyId: C.SourceClaimFamilyId; readonly sourceFamilyRootId: C.SourceFamilyRootId;
+  readonly sourceSlotId: C.SourceSlotId; readonly attemptId: C.AttemptId; readonly runtimeId: C.RuntimeId;
+  readonly checkpointId: C.CheckpointId; readonly buildAttemptId: C.BuildAttemptId;
+  readonly retirementOwnerId: C.RetirementOwnerId; readonly credentialLineageId: C.CredentialLineageId;
+  readonly admissionId: C.AdmissionId; readonly sourceFenceGeneration: C.FenceGeneration;
+  readonly campaignFenceGeneration: C.FenceGeneration; readonly familyAllocationFenceGeneration: C.FenceGeneration;
+  readonly launchDeadline: C.AuthoritativeTick; readonly attemptDeadline: C.AuthoritativeTick;
+  readonly stopDeadline: C.AuthoritativeTick; readonly buildDeadline: C.AuthoritativeTick; readonly buildConsistencyDeadline: C.AuthoritativeTick;
 }
 interface Authorization {
-  readonly sourceClaimFamilyId: C.SourceClaimFamilyId;
-  readonly sourceFamilyRootId: C.SourceFamilyRootId;
-  readonly sourceSlotId: C.SourceSlotId;
-  readonly authorizationId: C.AuthorizationId;
-  readonly runtimeId: C.RuntimeId;
-  readonly retirementOwnerId: C.RetirementOwnerId;
-  readonly credentialLineageId: C.CredentialLineageId;
-  readonly authorizationFence: C.AuthorizationFenceBinding;
-  readonly launchPurpose: C.LaunchPurpose;
-  readonly expiresAt: C.AuthoritativeTick;
-  readonly consumedAt: C.EventId | null;
-  readonly revokedAt: C.EventId | null;
-  readonly expiredAt: C.EventId | null;
+  readonly sourceClaimFamilyId: C.SourceClaimFamilyId; readonly sourceFamilyRootId: C.SourceFamilyRootId;
+  readonly sourceSlotId: C.SourceSlotId; readonly authorizationId: C.AuthorizationId; readonly runtimeId: C.RuntimeId;
+  readonly retirementOwnerId: C.RetirementOwnerId; readonly credentialLineageId: C.CredentialLineageId;
+  readonly authorizationFence: C.AuthorizationFenceBinding; readonly launchPurpose: C.LaunchPurpose;
+  readonly expiresAt: C.AuthoritativeTick; readonly consumedAt: C.EventId | null;
+  readonly revokedAt: C.EventId | null; readonly expiredAt: C.EventId | null;
   readonly launch: C.LaunchTerminalProjection | null;
 }
-interface Fence { readonly generation: C.FenceGeneration; readonly open: boolean }
-interface BuildFact {
-  readonly projection: C.BuildTerminalProjection; readonly result: C.BuildResultInput | null;
-  readonly artifactDigest: C.ArtifactDigest | null;
-}
-interface Observation {
-  readonly event: C.ProtocolEvent; readonly result: C.TransitionResult;
-}
+interface Fence { readonly generation: C.FenceGeneration; readonly open: boolean } interface BuildFact { readonly projection: C.BuildTerminalProjection; readonly result: C.BuildResultInput | null;
+  readonly artifactDigest: C.ArtifactDigest | null; }
+interface Observation { readonly event: C.ProtocolEvent; readonly result: C.TransitionResult; }
+interface CleanupBinding { readonly requestEventId: C.EventId; readonly safetyWatermarkEventId: C.EventId | null;
+  readonly terminationProofId: C.ProofId; }
 interface State extends QualificationReducerState {
-  readonly trusted: C.TrustedProtocolCoordinates;
-  readonly registration: Registration | null;
-  readonly sourceFence: Fence | null;
-  readonly campaignFence: Fence | null;
-  readonly familyFence: Fence | null;
+  readonly trusted: C.TrustedProtocolCoordinates; readonly registration: Registration | null;
+  readonly sourceFence: Fence | null; readonly campaignFence: Fence | null; readonly familyFence: Fence | null;
   readonly authorizations: ReadonlyMap<C.AuthorizationId, Authorization>;
-  readonly events: ReadonlyMap<C.EventId, Observation>;
-  readonly receipts: ReadonlySet<C.ReceiptId>;
-  readonly buildReceipts: ReadonlySet<C.BuildReceiptId>;
-  readonly consistencyReceipts: ReadonlySet<C.ConsistencyReceiptId>;
-  readonly tombstones: ReadonlySet<C.TombstoneId>;
-  readonly lateFacts: ReadonlyMap<string, unknown>;
-  readonly lastEventId: C.EventId | null;
-  readonly lastTick: C.AuthoritativeTick | null;
-  readonly projections: C.TerminalProjections;
-  readonly checkpointEffective: boolean;
-  readonly stopBarrier: boolean;
-  readonly retirementRequested: boolean;
-  readonly cleanupRequested: boolean;
-  readonly postRetirementRuntime: Exclude<C.RuntimeProjection, "not-started"> | null;
-  readonly buildFact: BuildFact | null;
+  readonly events: ReadonlyMap<C.EventId, Observation>; readonly receipts: ReadonlySet<C.ReceiptId>;
+  readonly buildReceipts: ReadonlySet<C.BuildReceiptId>; readonly consistencyReceipts: ReadonlySet<C.ConsistencyReceiptId>;
+  readonly tombstones: ReadonlySet<C.TombstoneId>; readonly reservedProofs: ReadonlySet<C.ProofId>;
+  readonly lateFacts: ReadonlyMap<string, unknown>; readonly lastEventId: C.EventId | null;
+  readonly lastTick: C.AuthoritativeTick | null; readonly projections: C.TerminalProjections;
+  readonly checkpointEffective: boolean; readonly stopBarrier: boolean; readonly retirementRequested: boolean;
+  readonly cleanupRequest: CleanupBinding | null; readonly postRetirementRuntime: Exclude<C.RuntimeProjection, "not-started"> | null; readonly buildFact: BuildFact | null;
 }
 const emptyProjections = (): C.TerminalProjections => ({
   sourceEvidence: { type: "open" }, resourceRetirement: { type: "active" },
@@ -81,11 +45,8 @@ const emptyProjections = (): C.TerminalProjections => ({
   build: null, buildConsistency: null, admission: { type: "pending" },
   claim: "non-promotional",
 });
-const stateOf = (value: QualificationReducerState): State => value as State;
-const withSet = <T>(set: ReadonlySet<T>, value: T): ReadonlySet<T> =>
-  new Set([...set, value]);
-const withMap = <K, V>(map: ReadonlyMap<K, V>, key: K, value: V): ReadonlyMap<K, V> =>
-  new Map([...map, [key, value] as const]);
+const stateOf = (value: QualificationReducerState): State => value as State; const withSet = <T>(set: ReadonlySet<T>, value: T): ReadonlySet<T> => new Set([...set, value]);
+const withMap = <K, V>(map: ReadonlyMap<K, V>, key: K, value: V): ReadonlyMap<K, V> => new Map([...map, [key, value] as const]);
 const receiptUsed = (s: State, value: string): boolean => [...s.receipts, ...s.buildReceipts,
   ...s.consistencyReceipts, ...s.tombstones].some(candidate => candidate === value);
 const eventReceipt = (event: C.ProtocolEvent): string | null => {
@@ -114,13 +75,22 @@ const same = (left: unknown, right: unknown): boolean => {
     Object.prototype.hasOwnProperty.call(right, key) &&
     same((left as Record<string, unknown>)[key], (right as Record<string, unknown>)[key]));
 };
+const immutable = <T>(value: T): T => { const copy = structuredClone(value);
+  const freeze = (item: unknown): void => { if (item !== null && typeof item === "object") {
+    Object.values(item).forEach(freeze); Object.freeze(item); } }; freeze(copy); return copy; };
 const acceptedEvent = (s: State, predicate: (event: C.ProtocolEvent) => boolean): boolean =>
   [...s.events.values()].some(observation => observation.result.decision === "accepted" &&
     predicate(observation.event));
 const acceptedEvents = (s: State): readonly C.ProtocolEvent[] => [...s.events.values()]
   .filter(observation => observation.result.decision === "accepted")
   .map(observation => observation.event);
-const lateConflict = (s: State, key: string, value: unknown): boolean => {
+const producedProof = (event: C.ProtocolEvent): C.ProofId | null => {
+  switch (event.type) {
+    case "AbandonSource": case "RecordReleaseDenied": case "ReconcileRuntime": return event.proofId;
+    case "RecordBuildResult": return event.result.type === "succeeded" ? null : event.result.proofId;
+    case "RecordBuildConsistencyReceipt": return event.result.type === "match" ? null : event.result.proofId;
+    case "CompleteRetirement": return event.cleanupProofId; default: return null; } };
+const proofUsed = (s: State, value: C.ProofId): boolean => s.reservedProofs.has(value); const lateConflict = (s: State, key: string, value: unknown): boolean => {
   const previous = s.lateFacts.get(key);
   return previous !== undefined && !same(previous, value);
 };
@@ -148,10 +118,10 @@ export const initializeQualificationReducer = (
   const state: State = { kind: "qualification-reducer-state", trusted, registration: null,
     sourceFence: null, campaignFence: null, familyFence: null, authorizations: new Map(),
     events: new Map(), receipts: new Set(), buildReceipts: new Set(),
-    consistencyReceipts: new Set(), tombstones: new Set(), lateFacts: new Map(),
-    lastEventId: null, lastTick: null, projections: emptyProjections(),
+    consistencyReceipts: new Set(), tombstones: new Set(), reservedProofs: new Set(), lateFacts: new Map(),
+    lastEventId: null, lastTick: null, projections: immutable(emptyProjections()),
     checkpointEffective: false, stopBarrier: false, retirementRequested: false,
-    cleanupRequested: false, postRetirementRuntime: null, buildFact: null };
+    cleanupRequest: null, postRetirementRuntime: null, buildFact: null };
   return state;
 };
 export const projectQualificationTerminals = (
@@ -176,28 +146,34 @@ const subject = (event: C.ProtocolEvent): C.DenialSubject => {
 };
 const accept = (state: State, event: C.ProtocolEvent, changes: Partial<State>,
   effects: readonly C.DeclaredEffect[]): QualificationTransition => {
-  const changed: State = { ...state, ...changes, lastEventId: event.eventId,
+  const proof = producedProof(event);
+  const raw: State = { ...state, ...changes,
+    reservedProofs: proof === null ? state.reservedProofs : withSet(state.reservedProofs, proof), lastEventId: event.eventId,
     lastTick: event.authoritativeTick };
-  const result: C.TransitionResult = { decision: "accepted", effects,
-    terminalProjections: changed.projections };
+  const result = immutable<C.TransitionResult>({ decision: "accepted", effects, terminalProjections: raw.projections });
+  const changed: State = { ...raw, projections: result.terminalProjections };
   const next: State = { ...changed,
     events: withMap(state.events, event.eventId, { event, result }) };
   return { state: next, result };
 };
+const rejectAndReserveProof = (state: State, event: C.ReconcileRuntime, reason: C.DenialReason): QualificationTransition => {
+  const transition = reject(state, event, reason), candidate = stateOf(transition.state);
+  return { ...transition, state: { ...candidate, reservedProofs: withSet(state.reservedProofs, event.proofId) } as State }; };
 const reject = (state: State, event: C.ProtocolEvent, reason: C.DenialReason): QualificationTransition => {
   const denied: C.DeclaredEffect = { type: "denial-recorded", causalEventId: event.eventId, reason, subject: subject(event) };
   const replay = reason === "receipt-replay", projections = replay ? { ...state.projections, claim: "invalid" as const } : state.projections;
-  const result: C.TransitionResult = { decision: "rejected", effects: replay ? [denied,
-    invalid(event, { type: "event", eventId: event.eventId })] : [denied], terminalProjections: projections };
-  return { state: { ...state, projections, events: withMap(state.events, event.eventId, { event, result }) } as State, result };
+  const result = immutable<C.TransitionResult>({ decision: "rejected", effects: replay ? [denied,
+    invalid(event, { type: "event", eventId: event.eventId })] : [denied], terminalProjections: projections });
+  return { state: { ...state, projections: result.terminalProjections,
+    events: withMap(state.events, event.eventId, { event, result }) } as State, result };
 };
 const rejectTypedReplay = (state: State,
   event: C.RecordBuildResult | C.RecordBuildConsistencyReceipt,
   evidence: C.EvidenceReference): QualificationTransition => {
   const denied = reject(state, event, "receipt-replay");
-  const result: C.TransitionResult = { ...denied.result, effects: [
-    denied.result.effects[0]!, { type: "execution-gate-set", causalEventId: event.eventId,
-      buildAttemptId: event.buildAttemptId, value: "denied" }, invalid(event, evidence)] };
+  const result = immutable<C.TransitionResult>({ ...denied.result, effects: [denied.result.effects[0]!,
+    { type: "execution-gate-set", causalEventId: event.eventId,
+      buildAttemptId: event.buildAttemptId, value: "denied" }, invalid(event, evidence)] });
   const candidate = stateOf(denied.state);
   const next: State = { ...candidate,
     events: withMap(state.events, event.eventId, { event, result }) };
@@ -358,6 +334,7 @@ const expire = (s: State, e: C.ExpireAuthorization): QualificationTransition => 
 };
 const sourceTerminal = (s: State, e: C.CloseSource | C.AbandonSource): QualificationTransition => {
   if (!rootMatches(s.registration!, e)) return reject(s, e, "wrong-binding");
+  if (e.type === "AbandonSource" && proofUsed(s, e.proofId)) return reject(s, e, "wrong-binding");
   if (s.projections.sourceEvidence.type !== "open") return reject(s, e, "terminal-already-recorded");
   const expiredSource = e.type === "AbandonSource" && !s.sourceFence!.open && [...s.authorizations.values()]
     .some(a => a.authorizationFence.scope === "source" && a.expiredAt !== null) ||
@@ -398,7 +375,7 @@ const advance = (s: State, e: C.AdvanceFence): QualificationTransition => {
     return reject(s, e, "stale-generation");
   const revoked = revoke(s, e, (a) => (e.fence === "family-allocation" ? a.authorizationFence.scope === "source" :
     a.authorizationFence.scope === e.fence) && (a.consumedAt === null ||
-      e.fence === "campaign" && a.launchPurpose === "evaluation" && a.launch === null));
+      e.fence === "campaign" && a.launch === null));
   const closed = { generation: e.nextGeneration, open: false } as const;
   const changes: Partial<State> = e.fence === "source" ?
     { authorizations: revoked.authorizations, sourceFence: closed } : e.fence === "campaign" ?
@@ -425,6 +402,15 @@ const retainLateLaunch = (s: State, e: C.ReleaseProcess | C.RecordReleaseDenied,
   return accept(s, e, { receipts: withSet(s.receipts, receiptId), projections: conflict ? { ...s.projections,
     runtime: "unknown", resourceRetirement: { type: "quarantined" }, claim: "invalid" } : s.projections }, effects);
 };
+const retainLateDeadline = (s: State, e: C.ReachLaunchDeadline, launch: C.LaunchTerminalProjection): QualificationTransition => {
+  const conflict = launch.type !== e.result, unsafe = e.result === "start-unknown" || launch.type === "started" || launch.type === "start-unknown";
+  const effects: C.DeclaredEffect[] = [{ type: "late-receipt-retained", causalEventId: e.eventId,
+    evidence: { type: "launch", authorizationId: e.authorizationId, receiptId: e.observationReceiptId, result: e.result } }];
+  if (conflict) effects.push(invalid(e, { type: "receipt", receiptId: e.observationReceiptId })); if (unsafe) effects.push(...contain(e));
+  return accept(s, e, { receipts: withSet(s.receipts, e.observationReceiptId), projections:
+    conflict || unsafe ? { ...s.projections, ...(unsafe ? { runtime: "unknown" as const,
+      resourceRetirement: { type: "quarantined" as const } } : {}),
+      claim: conflict ? "invalid" : s.projections.claim } : s.projections }, effects); };
 const retainUnauthorizedLateStart = (s: State, e: C.ReleaseProcess,
   reason: "authorization-unavailable" | "authorization-revoked" | "authorization-expired"): QualificationTransition => {
   const denied: C.DenialRecordedEffect = { type: "denial-recorded", causalEventId: e.eventId,
@@ -511,6 +497,7 @@ const releaseDenied = (s: State, e: C.RecordReleaseDenied): QualificationTransit
   if (!bindingMatches(a, e)) return reject(s, e, "wrong-binding");
   if (a.consumedAt === null) return reject(s, e, "authorization-unavailable");
   if (receiptUsed(s, e.receiptId)) return reject(s, e, "receipt-replay");
+  if (proofUsed(s, e.proofId)) return reject(s, e, "wrong-binding");
   if (a.launch !== null) return retainLateLaunch(s, e, a.launch);
   if (s.projections.resourceRetirement.type === "retired") return reject(s, e, "terminal-already-recorded");
   if (e.authoritativeTick >= s.registration!.launchDeadline) {
@@ -564,7 +551,7 @@ const launchDeadline = (s: State, e: C.ReachLaunchDeadline): QualificationTransi
     return e.result === "start-unknown" && a.consumedAt !== null ?
       retainPostRetirementUnsafeLaunch(s, e, e.observationReceiptId, e.result) :
       reject(s, e, "terminal-already-recorded");
-  if (a.launch !== null) return reject(s, e, "terminal-already-recorded");
+  if (a.launch !== null) return retainLateDeadline(s, e, a.launch);
   if (e.result === "start-unknown" && a.consumedAt === null) return reject(s, e, "wrong-binding");
   if (e.result === "never-started" && (a.consumedAt !== null ||
       s.projections.runtime !== "not-started" && s.projections.runtime !== "terminated"))
@@ -620,14 +607,19 @@ const runtimeSafetyWatermark = (s: State, runtimeId: C.RuntimeId): RuntimeSafety
   }
   return watermark;
 };
+const consumedUnresolvedRuntime = (s: State, runtimeId: C.RuntimeId): boolean =>
+  [...s.authorizations.values()].some(candidate => candidate.runtimeId === runtimeId && candidate.consumedAt !== null && candidate.launch === null);
+const latestTermination = (s: State, runtimeId: C.RuntimeId, watermark: RuntimeSafetyWatermark | null): C.ReconcileRuntime | undefined => watermark === null ? undefined :
+  acceptedEvents(s).filter((candidate): candidate is C.ReconcileRuntime => candidate.type === "ReconcileRuntime" &&
+    candidate.runtimeId === runtimeId && candidate.observation === "terminated" &&
+    candidate.runtimeSafetyWatermarkEventId === watermark.eventId).at(-1);
 const reconcile = (s: State, e: C.ReconcileRuntime): QualificationTransition => {
   if (!rootMatches(s.registration!, e) || e.runtimeId !== s.registration!.runtimeId)
     return reject(s, e, "wrong-binding");
   const watermark = runtimeSafetyWatermark(s, e.runtimeId);
   if (watermark === null || watermark.eventId !== e.runtimeSafetyWatermarkEventId ||
-      e.authoritativeTick < watermark.authoritativeTick || acceptedEvent(s, candidate =>
-        candidate.type === "ReconcileRuntime" && candidate.proofId === e.proofId))
-    return reject(s, e, "wrong-binding");
+      e.authoritativeTick < watermark.authoritativeTick) return rejectAndReserveProof(s, e, "wrong-binding");
+  if (proofUsed(s, e.proofId)) return reject(s, e, "wrong-binding");
   const retired = s.projections.resourceRetirement.type === "retired";
   const runtime = retired ? s.postRetirementRuntime : s.projections.runtime;
   if (runtime === null || runtime === "not-started")
@@ -651,17 +643,19 @@ const retirement = (s: State, e: C.RequestRetirement): QualificationTransition =
   if (s.projections.sourceEvidence.type === "open") return reject(s, e, "source-terminal");
   if (s.projections.resourceRetirement.type === "retired") return reject(s, e, "terminal-already-recorded");
   if (s.retirementRequested) return reject(s, e, "terminal-already-recorded");
-  const quarantine = s.projections.runtime === "unknown";
+  const quarantine = s.projections.runtime === "unknown" || consumedUnresolvedRuntime(s, s.registration!.runtimeId);
   const revoked = revoke(s, e, a => a.runtimeId === s.registration!.runtimeId);
   const effects: C.DeclaredEffect[] = [...revoked.effects];
   if (quarantine) effects.push(
     { type: "resource-quarantined", causalEventId: e.eventId,
       sourceFamilyRootId: e.sourceFamilyRootId, runtimeId: s.registration!.runtimeId },
-    { type: "runtime-reconciliation-requested", causalEventId: e.eventId, runtimeId: s.registration!.runtimeId });
+    { type: "runtime-reconciliation-requested", causalEventId: e.eventId, runtimeId: s.registration!.runtimeId },
+    { type: "runtime-termination-requested", causalEventId: e.eventId, runtimeId: s.registration!.runtimeId });
   else if (s.projections.runtime === "live") effects.push(
     { type: "runtime-termination-requested", causalEventId: e.eventId, runtimeId: s.registration!.runtimeId });
   return accept(s, e, { authorizations: revoked.authorizations, retirementRequested: true,
-    projections: { ...s.projections, resourceRetirement: { type: quarantine ? "quarantined" : "pending" } } }, effects);
+    projections: { ...s.projections, ...(quarantine ? { runtime: "unknown" as const } : {}),
+      resourceRetirement: { type: quarantine ? "quarantined" : "pending" } } }, effects);
 };
 const cleanup = (s: State, e: C.RequestCleanup): QualificationTransition => {
   if (!rootMatches(s.registration!, e) || e.runtimeId !== s.registration!.runtimeId)
@@ -673,24 +667,50 @@ const cleanup = (s: State, e: C.RequestCleanup): QualificationTransition => {
   if (!s.retirementRequested) return reject(s, e, "gate-closed");
   if (s.projections.resourceRetirement.type === "active" || s.projections.resourceRetirement.type === "retired")
     return reject(s, e, "gate-closed");
-  if (s.cleanupRequested) return reject(s, e, "terminal-already-recorded");
   const watermark = runtimeSafetyWatermark(s, e.runtimeId);
-  const termination = acceptedEvents(s).filter((candidate): candidate is C.ReconcileRuntime =>
-    candidate.type === "ReconcileRuntime" && candidate.runtimeId === e.runtimeId &&
-    candidate.observation === "terminated").at(-1);
-  const noRuntimeWasReleased = s.projections.runtime === "not-started" && watermark === null;
+  if (s.cleanupRequest?.safetyWatermarkEventId === (watermark?.eventId ?? null))
+    return reject(s, e, "terminal-already-recorded");
+  const termination = latestTermination(s, e.runtimeId, watermark);
+  const noRuntimeWasReleased = s.projections.runtime === "not-started" && watermark === null &&
+    !consumedUnresolvedRuntime(s, e.runtimeId);
   if (!noRuntimeWasReleased && (watermark === null || termination === undefined ||
       termination.proofId !== e.terminationProofId ||
       termination.runtimeSafetyWatermarkEventId !== watermark.eventId))
     return reject(s, e, "wrong-binding");
-  return accept(s, e, { cleanupRequested: true,
+  return accept(s, e, { cleanupRequest: { requestEventId: e.eventId,
+      safetyWatermarkEventId: watermark?.eventId ?? null, terminationProofId: e.terminationProofId },
     projections: { ...s.projections, resourceRetirement: { type: "pending" } } }, [{
       type: "resource-cleanup-requested", causalEventId: e.eventId,
       sourceFamilyRootId: e.sourceFamilyRootId, runtimeId: e.runtimeId, proofId: e.terminationProofId,
-    }]);
+  }]);
+};
+const privateCleanup = (s: State, e: C.RequestCleanup): QualificationTransition => {
+  if (!rootMatches(s.registration!, e) || e.runtimeId !== s.registration!.runtimeId)
+    return reject(s, e, "wrong-binding");
+  const mismatch = ownerMismatch(s.registration!, e); if (mismatch) return reject(s, e, mismatch);
+  if (s.postRetirementRuntime !== "terminated") return reject(s, e, "runtime-unresolved");
+  const watermark = runtimeSafetyWatermark(s, e.runtimeId);
+  if (s.cleanupRequest?.safetyWatermarkEventId === watermark?.eventId) return reject(s, e, "terminal-already-recorded");
+  const termination = latestTermination(s, e.runtimeId, watermark);
+  if (watermark === null || termination === undefined || termination.proofId !== e.terminationProofId ||
+      termination.runtimeSafetyWatermarkEventId !== watermark.eventId)
+    return reject(s, e, "wrong-binding");
+  return accept(s, e, { cleanupRequest: { requestEventId: e.eventId,
+      safetyWatermarkEventId: watermark.eventId, terminationProofId: e.terminationProofId } }, [{
+    type: "resource-cleanup-requested", causalEventId: e.eventId, sourceFamilyRootId: e.sourceFamilyRootId,
+    runtimeId: e.runtimeId, proofId: e.terminationProofId }]);
 };
 const hasEvidence = (items: readonly C.EvidenceReference[], expected: C.EvidenceReference): boolean =>
   items.some((item) => same(item, expected));
+const evidenceKey = (reference: C.EvidenceReference): string => { switch (reference.type) {
+  case "proof": return `proof:${reference.proofId}`; case "receipt": return `receipt:${reference.receiptId}`;
+  case "build-receipt": return `build-receipt:${reference.buildReceiptId}`;
+  case "consistency-receipt": return `consistency-receipt:${reference.consistencyReceiptId}`;
+  case "event": return `event:${reference.eventId}`; } };
+const exactEvidence = (actual: readonly C.EvidenceReference[], expected: readonly C.EvidenceReference[]): boolean => {
+  const actualKeys = actual.map(evidenceKey), expectedKeys = [...new Set(expected.map(evidenceKey))];
+  return actualKeys.length === new Set(actualKeys).size && actualKeys.length === expectedKeys.length &&
+    expectedKeys.every(key => actualKeys.includes(key)); };
 const proofReferences = (value: unknown): readonly C.EvidenceReference[] => {
   if (value === null || typeof value !== "object") return [];
   const references: C.EvidenceReference[] = [];
@@ -728,9 +748,11 @@ const expectedRetainedEvidence = (s: State, cleanupProofId: C.ProofId): readonly
   return expected;
 };
 const retirementEvidenceClosed = (s: State): boolean => {
+  const watermark = runtimeSafetyWatermark(s, s.registration!.runtimeId);
+  const termination = latestTermination(s, s.registration!.runtimeId, watermark);
   for (const authorization of s.authorizations.values()) {
     if (authorization.revokedAt === null && authorization.expiredAt === null) return false;
-    if (authorization.consumedAt !== null && authorization.launch === null) return false;
+    if (authorization.consumedAt !== null && authorization.launch === null && termination === undefined) return false;
     if (authorization.launch?.type === "started" && authorization.launchPurpose === "build" &&
         (s.projections.build === null || s.projections.buildConsistency === null)) return false;
     if (authorization.launch?.type === "started" && authorization.launchPurpose === "evaluation" &&
@@ -752,8 +774,12 @@ const complete = (s: State, e: C.CompleteRetirement): QualificationTransition =>
   if (s.projections.resourceRetirement.type === "retired") return reject(s, e, "terminal-already-recorded");
   if (s.projections.runtime !== "terminated" && s.projections.runtime !== "not-started")
     return reject(s, e, "runtime-unresolved");
-  if (!s.retirementRequested || !s.cleanupRequested || s.projections.sourceEvidence.type === "open")
+  if (!s.retirementRequested || s.cleanupRequest === null || s.projections.sourceEvidence.type === "open")
     return reject(s, e, "gate-closed");
+  const watermark = runtimeSafetyWatermark(s, e.runtimeId);
+  if (s.cleanupRequest.safetyWatermarkEventId !== (watermark?.eventId ?? null) ||
+      s.cleanupRequest.terminationProofId === e.cleanupProofId || proofUsed(s, e.cleanupProofId))
+    return reject(s, e, "wrong-binding");
   if (!retirementEvidenceClosed(s)) return reject(s, e, "gate-closed");
   if (s.projections.sourceEvidence.receiptId !== e.sourceTerminalReceiptId ||
       !hasEvidence(e.retainedEvidence, { type: "receipt", receiptId: e.sourceTerminalReceiptId }))
@@ -761,13 +787,14 @@ const complete = (s: State, e: C.CompleteRetirement): QualificationTransition =>
   if (s.projections.admission.type !== "pending" &&
       !hasEvidence(e.retainedEvidence, { type: "receipt", receiptId: s.projections.admission.receiptId }))
     return reject(s, e, "wrong-binding");
-  if (!expectedRetainedEvidence(s, e.cleanupProofId).every(reference => hasEvidence(e.retainedEvidence, reference)))
+  if (!exactEvidence(e.retainedEvidence, expectedRetainedEvidence(s, e.cleanupProofId)))
     return reject(s, e, "wrong-binding");
-  const tombstone: C.RetirementTombstoneProjection = { tombstoneId: e.tombstoneId,
-    sourceTerminal: s.projections.sourceEvidence, retirementOwnerId: e.retirementOwnerId,
-    cleanupProofId: e.cleanupProofId, retainedEvidence: [...e.retainedEvidence] };
+  const retainedEvidence = Object.freeze(e.retainedEvidence.map(reference => Object.freeze({ ...reference })));
+  const tombstone: C.RetirementTombstoneProjection = Object.freeze({ tombstoneId: e.tombstoneId,
+    sourceTerminal: Object.freeze({ ...s.projections.sourceEvidence }), retirementOwnerId: e.retirementOwnerId,
+    cleanupProofId: e.cleanupProofId, retainedEvidence });
   return accept(s, e, { tombstones: withSet(s.tombstones, e.tombstoneId), projections: { ...s.projections,
-    resourceRetirement: { type: "retired", tombstone } } }, [{
+    resourceRetirement: Object.freeze({ type: "retired", tombstone }) } }, [{
       type: "retirement-tombstone-appended", causalEventId: e.eventId,
       sourceFamilyRootId: e.sourceFamilyRootId, tombstoneId: e.tombstoneId,
       retirementOwnerId: e.retirementOwnerId, cleanupProofId: e.cleanupProofId,
@@ -873,7 +900,7 @@ const recoverStop = (s: State, e: C.RecoverStopFence): QualificationTransition =
   if (e.expectedGeneration !== s.campaignFence!.generation || e.nextGeneration <= e.expectedGeneration)
     return reject(s, e, "stale-generation");
   const revoked = revoke(s, e, (a) => a.authorizationFence.scope === "campaign" &&
-    (a.consumedAt === null || a.launchPurpose === "evaluation" && a.launch === null));
+    (a.consumedAt === null || a.launch === null));
   return accept(s, e, { campaignFence: { generation: e.nextGeneration, open: false },
     stopBarrier: false, authorizations: revoked.authorizations }, [{ type: "gate-closed",
       causalEventId: e.eventId, fence: "campaign", generation: e.nextGeneration }, ...revoked.effects]);
@@ -891,6 +918,7 @@ const buildResult = (s: State, e: C.RecordBuildResult): QualificationTransition 
       authority.consumedAt === null || authority.launch?.type !== "started" || authority.sourceSlotId !== e.sourceSlotId ||
       authority.runtimeId !== s.registration!.runtimeId)
     return reject(s, e, authority ? "wrong-binding" : "authorization-unavailable");
+  if (e.result.type !== "succeeded" && proofUsed(s, e.result.proofId)) return reject(s, e, "wrong-binding");
   if (receiptUsed(s, e.buildReceiptId)) return rejectTypedReplay(s, e,
     { type: "build-receipt", buildReceiptId: e.buildReceiptId });
   if (s.projections.build !== null) {
@@ -953,6 +981,7 @@ const consistencyInputInvalid = (s: State, e: C.RecordBuildConsistencyReceipt): 
 const consistency = (s: State, e: C.RecordBuildConsistencyReceipt): QualificationTransition => {
   const replay = receiptUsed(s, e.consistencyReceiptId);
   if (!buildMatches(s.registration!, e)) return reject(s, e, "wrong-binding");
+  if (e.result.type !== "match" && proofUsed(s, e.result.proofId)) return reject(s, e, "wrong-binding");
   if (replay) return rejectTypedReplay(s, e,
     { type: "consistency-receipt", consistencyReceiptId: e.consistencyReceiptId });
   if (s.projections.buildConsistency !== null) {
@@ -1070,8 +1099,8 @@ const preserveReplayedRuntimeSafety = (s: State, e: C.ProtocolEvent,
     ...transition.result.terminalProjections, runtime: "unknown" as const,
     resourceRetirement: { type: "quarantined" as const }, claim: "invalid" as const,
   };
-  const result: C.TransitionResult = { ...transition.result, effects,
-    terminalProjections: publicProjections };
+  const result = immutable<C.TransitionResult>({ ...transition.result, effects,
+    terminalProjections: publicProjections });
   const candidate = stateOf(transition.state);
   const state: State = { ...candidate, projections: publicProjections,
     postRetirementRuntime: s.projections.resourceRetirement.type === "retired" ?
@@ -1080,11 +1109,12 @@ const preserveReplayedRuntimeSafety = (s: State, e: C.ProtocolEvent,
   return { state, result };
 };
 const enforceTombstoneFinality = (s: State, e: C.ProtocolEvent, transition: QualificationTransition): QualificationTransition => {
+  if (e.type === "RequestCleanup") return privateCleanup(s, e);
   if (transition.result.decision === "rejected") {
     const reason = transition.result.effects.find(effect =>
       effect.type === "denial-recorded")?.reason;
     if (reason === "receipt-replay") {
-      const result = { ...transition.result, terminalProjections: s.projections };
+      const result = immutable<C.TransitionResult>({ ...transition.result, terminalProjections: s.projections });
       const candidate = stateOf(transition.state);
       const events = withMap(s.events, e.eventId, { event: e, result });
       return { state: { ...s, postRetirementRuntime: candidate.postRetirementRuntime,
@@ -1111,11 +1141,15 @@ const enforceTombstoneFinality = (s: State, e: C.ProtocolEvent, transition: Qual
 export const transitionQualificationEvent = (
   reducerState: QualificationReducerState, event: C.ProtocolEvent,
 ): QualificationTransition => {
+  event = immutable(event);
   const s = stateOf(reducerState), prior = s.events.get(event.eventId);
-  if (prior) return same(prior.event, event) ? { state: s, result: prior.result } :
-    { state: s, result: { decision: "rejected", effects: [{ type: "denial-recorded",
+  if (prior) return same(prior.event, event) ? { state: s, result:
+    s.projections.resourceRetirement.type === "retired" &&
+    prior.result.terminalProjections.resourceRetirement.type !== "retired" ?
+      immutable<C.TransitionResult>({ ...prior.result, effects: [], terminalProjections: s.projections }) : prior.result } :
+    { state: s, result: immutable<C.TransitionResult>({ decision: "rejected", effects: [{ type: "denial-recorded",
       causalEventId: event.eventId, reason: "wrong-binding", subject: subject(event) }],
-    terminalProjections: s.projections } };
+    terminalProjections: s.projections }) };
   if (s.registration === null && event.type !== "RegisterProtocol") return reject(s, event, "not-registered");
   if (s.registration !== null && (event.protocolRevisionId !== s.registration.protocolRevisionId ||
     event.custodyAuthorityId !== s.registration.custodyAuthorityId ||
@@ -1128,7 +1162,11 @@ export const transitionQualificationEvent = (
   const identityFailure = denial?.reason === "wrong-binding" ||
     denial?.reason === "retirement-owner-mismatch" || denial?.reason === "credential-lineage-mismatch";
   if (receipt !== null && receiptUsed(s, receipt) && !replayAlreadyRecorded && !identityFailure)
-    transition = reject(s, event, "receipt-replay");
+    transition = event.type === "RecordBuildResult" ? rejectTypedReplay(s, event,
+      { type: "build-receipt", buildReceiptId: event.buildReceiptId }) :
+      event.type === "RecordBuildConsistencyReceipt" ? rejectTypedReplay(s, event,
+        { type: "consistency-receipt", consistencyReceiptId: event.consistencyReceiptId }) :
+        reject(s, event, "receipt-replay");
   transition = preserveReplayedRuntimeSafety(s, event, transition);
   return s.projections.resourceRetirement.type === "retired" ?
     enforceTombstoneFinality(s, event, transition) : transition;
@@ -1143,5 +1181,5 @@ export const foldQualificationHistory = (
   const results: C.TransitionResult[] = [];
   for (const event of events) { const next = transitionQualificationEvent(state, event);
     state = next.state; results.push(next.result); }
-  return { state, results };
+  return Object.freeze({ state, results: Object.freeze(results) });
 };

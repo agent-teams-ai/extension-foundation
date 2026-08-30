@@ -2,7 +2,8 @@ import type { AdmissionProjection, AuthorizationFenceBinding, AuthorizationId, B
 BuildReceiptId, BuildTerminalProjection, ClaimProjection, DeclaredEffect, DenialReason, DenialSubject, EventId,
 EvidenceReference, FenceGeneration, ProtocolEvent, RegisterProtocol, ResourceRetirementProjection, RuntimeProjection,
 ReceiptId, SourceEvidenceProjection, TerminalProjections, TransitionResult, TrustedProtocolCoordinates, } from "./dogfooding-protocol-contract.ts";
-interface LedgerRow { readonly event: ProtocolEvent; readonly result: TransitionResult; readonly accepted: boolean; }
+interface LedgerRow { readonly event: ProtocolEvent; readonly result: TransitionResult;
+readonly accepted: boolean; readonly reservedProofId: ReturnType<typeof producedProof>; }
 export interface OracleHistory {
 readonly trusted: TrustedProtocolCoordinates; readonly registration: RegisterProtocol;
 readonly registrationAccepted: boolean; readonly rows: readonly LedgerRow[];
@@ -20,6 +21,14 @@ const currentProjection = (history: OracleHistory): TerminalProjections =>
 history.rows.at(-1)?.result.terminalProjections ?? initialProjection();
 const acceptedEvents = (history: OracleHistory): readonly ProtocolEvent[] =>
 history.rows.filter(row => row.accepted).map(row => row.event);
+const producedProof = (event: ProtocolEvent): Extract<ProtocolEvent,
+{ readonly type: "ReconcileRuntime" }>["proofId"] | null => { switch (event.type) {
+case "AbandonSource": case "RecordReleaseDenied": case "ReconcileRuntime": return event.proofId;
+case "RecordBuildResult": return event.result.type === "succeeded" ? null : event.result.proofId;
+case "RecordBuildConsistencyReceipt": return event.result.type === "match" ? null : event.result.proofId;
+case "CompleteRetirement": return event.cleanupProofId; default: return null; } };
+const proofUsed = (history: OracleHistory, proofId: ReturnType<typeof producedProof>): boolean => proofId !== null &&
+history.rows.some(row => same(row.reservedProofId, proofId) || row.accepted && same(producedProof(row.event), proofId));
 const same = (left: unknown, right: unknown): boolean => left === right;
 const samePayload = (left: unknown, right: unknown): boolean => {
 if (same(left, right)) return true;
@@ -31,6 +40,9 @@ const rightRecord = right as Readonly<Record<string, unknown>>;
 const leftKeys = Object.keys(leftRecord); const rightKeys = Object.keys(rightRecord);
 return leftKeys.length === rightKeys.length && leftKeys.every(key =>
 Object.prototype.hasOwnProperty.call(rightRecord, key) && samePayload(leftRecord[key], rightRecord[key])); };
+const immutable = <T>(value: T): T => { const copy = structuredClone(value);
+const freeze = (item: unknown): void => { if (item !== null && typeof item === "object") {
+Object.values(item).forEach(freeze); Object.freeze(item); } }; freeze(copy); return copy; };
 const registrationMatches = (registered: RegisterProtocol, candidate: RegisterProtocol): boolean =>
 same(registered.protocolRevisionId, candidate.protocolRevisionId) &&
 same(registered.custodyAuthorityId, candidate.custodyAuthorityId) &&
@@ -55,7 +67,7 @@ const claimAfter = (current: ClaimProjection, proposed: ClaimProjection): ClaimP
 current === "invalid" || proposed === "invalid" ? "invalid"
 : current === "non-promotional" || proposed === "non-promotional" ? "non-promotional" : "eligible"; const accept = (
 projection: TerminalProjections, effects: readonly DeclaredEffect[] = [],
-): TransitionResult => ({ decision: "accepted", effects, terminalProjections: projection });
+): TransitionResult => immutable({ decision: "accepted", effects, terminalProjections: projection });
 const denialSubject = (event: ProtocolEvent): DenialSubject => { switch (event.type) { case "ReleaseProcess":
 return { type: "process-release", authorizationId: event.authorizationId, attemptId: event.attemptId, runtimeId: event.runtimeId };
 case "IssueAuthorization": case "ConsumeAuthorization": case "RevokeAuthorization": case "ExpireAuthorization": case "RecordReleaseDenied": case "ReachLaunchDeadline":
@@ -69,10 +81,10 @@ case "RecordBuildResult": case "ReachBuildDeadline": case "RecordBuildConsistenc
 return { type: "build-attempt", buildAttemptId: event.buildAttemptId };
 case "RecordAdmission": return { type: "admission", admissionId: event.admissionId };
 default: return { type: "source-root", sourceFamilyRootId: event.sourceFamilyRootId }; } }; const denial = (
-event: ProtocolEvent, projection: TerminalProjections, reason: DenialReason, ): TransitionResult => { return {
+event: ProtocolEvent, projection: TerminalProjections, reason: DenialReason, ): TransitionResult => immutable({
 decision: "rejected",
 effects: [{ type: "denial-recorded", causalEventId: event.eventId, reason, subject: denialSubject(event) }],
-terminalProjections: projection, }; }; const acceptedOf = <Kind extends ProtocolEvent["type"]>(
+terminalProjections: projection }); const acceptedOf = <Kind extends ProtocolEvent["type"]>(
 history: OracleHistory, type: Kind, ): readonly Extract<ProtocolEvent, { readonly type: Kind }>[] =>
 acceptedEvents(history).filter(
 (event): event is Extract<ProtocolEvent, { readonly type: Kind }> => event.type === type, );
@@ -216,6 +228,25 @@ subject: denialSubject(event) },
 ...invalidClaimEffects(event, { type: "receipt", receiptId }),
 ...contain(event),
 ]);
+const priorLaunchResult = (history: OracleHistory, authorizationId: AuthorizationId):
+Extract<ProtocolEvent, { readonly type: "ReachLaunchDeadline" }>["result"] | "started" | "release-denied" | null =>
+acceptedEvents(history).filter((candidate): candidate is Extract<ProtocolEvent, { readonly type:
+"ReleaseProcess" | "RecordReleaseDenied" | "ReachLaunchDeadline" }> => (candidate.type === "ReleaseProcess" ||
+candidate.type === "RecordReleaseDenied" || candidate.type === "ReachLaunchDeadline") &&
+same(candidate.authorizationId, authorizationId) && (candidate.type === "ReachLaunchDeadline" ||
+candidate.authoritativeTick < history.registration.launchDeadline)).map(candidate => candidate.type === "ReleaseProcess" ?
+"started" as const : candidate.type === "RecordReleaseDenied" ? "release-denied" as const : candidate.result).at(-1) ?? null;
+const retainLateDeadline = (history: OracleHistory,
+event: Extract<ProtocolEvent, { readonly type: "ReachLaunchDeadline" }>, prior: NonNullable<ReturnType<typeof priorLaunchResult>>):
+TransitionResult => { const before = currentProjection(history), conflict = prior !== event.result;
+const unsafe = event.result === "start-unknown" || prior === "started" || prior === "start-unknown";
+const effects: DeclaredEffect[] = [{ type: "late-receipt-retained", causalEventId: event.eventId,
+evidence: { type: "launch", authorizationId: event.authorizationId,
+receiptId: event.observationReceiptId, result: event.result } }];
+if (conflict) effects.push(...invalidClaimEffects(event, { type: "receipt", receiptId: event.observationReceiptId }));
+if (unsafe) effects.push(...contain(event));
+return accept(conflict || unsafe ? withProjection(before, { ...(unsafe ? { runtime: "unknown",
+resourceRetirement: { type: "quarantined" } as const } : {}), claim: conflict ? "invalid" : before.claim }) : before, effects); };
 const commonEnvelopeFailure = (history: OracleHistory, event: ProtocolEvent): DenialReason | null => {
 const registration = history.registration; if ( !same(event.protocolRevisionId, registration.protocolRevisionId) ||
 !same(event.custodyAuthorityId, registration.custodyAuthorityId) ) { return "wrong-binding"; }
@@ -229,6 +260,15 @@ receiptId: unknown): boolean => references.some(reference => reference.type === 
 same(reference.receiptId, receiptId));
 const hasEvidence = (items: readonly EvidenceReference[], expected: EvidenceReference): boolean =>
 items.some(item => samePayload(item, expected));
+const evidenceKey = (reference: EvidenceReference): string => { switch (reference.type) {
+case "proof": return `proof:${reference.proofId}`; case "receipt": return `receipt:${reference.receiptId}`;
+case "build-receipt": return `build-receipt:${reference.buildReceiptId}`;
+case "consistency-receipt": return `consistency-receipt:${reference.consistencyReceiptId}`;
+case "event": return `event:${reference.eventId}`; } };
+const exactEvidence = (actual: readonly EvidenceReference[], expected: readonly EvidenceReference[]): boolean => {
+const actualKeys = actual.map(evidenceKey), expectedKeys = [...new Set(expected.map(evidenceKey))];
+return actualKeys.length === new Set(actualKeys).size && actualKeys.length === expectedKeys.length &&
+expectedKeys.every(key => actualKeys.includes(key)); };
 const eventEvidence = (event: ProtocolEvent): readonly EvidenceReference[] => { const result: EvidenceReference[] = [
 { type: "event", eventId: event.eventId }]; switch (event.type) {
 case "RecordReleaseDenied": case "ReconcileRuntime":
@@ -262,10 +302,12 @@ return [{ type: "proof", proofId: cleanupProofId },
 };
 const retirementEvidenceClosed = (history: OracleHistory): boolean => {
 const projection = currentProjection(history);
+const watermark = runtimeSafetyWatermark(history, history.registration.runtimeId);
+const termination = latestTermination(history, history.registration.runtimeId, watermark);
 for (const issue of acceptedOf(history, "IssueAuthorization")) {
 const view = authorization(history, issue.authorizationId);
 if (view !== null && !view.revoked && !view.expired) return false;
-if (view?.consumed === true && !view.launchTerminal) return false;
+if (view?.consumed === true && !view.launchTerminal && termination === undefined) return false;
 if (view?.released === true && issue.launchPurpose === "build" &&
 (projection.build === null || projection.buildConsistency === null)) return false;
 if (view?.released === true && issue.launchPurpose === "evaluation" && projection.attempt === null) return false;
@@ -280,6 +322,7 @@ const appendSourceTerminal = ( history: OracleHistory,
 event: Extract<ProtocolEvent, { readonly type: "CloseSource" | "AbandonSource" }>, ): TransitionResult => {
 const before = currentProjection(history);
 if (!rootMatches(history.registration, event)) return denial(event, before, "wrong-binding");
+if (event.type === "AbandonSource" && proofUsed(history, event.proofId)) return denial(event, before, "wrong-binding");
 if (before.sourceEvidence.type !== "open") return denial(event, before, "terminal-already-recorded");
 const sourceFence = fence(history, "source"); const expiredSource = event.type === "AbandonSource" && !sourceFence.open &&
 acceptedOf(history, "ExpireAuthorization").some(expiry => authorization(history, expiry.authorizationId)?.issue.authorizationFence.scope === "source") ||
@@ -323,10 +366,10 @@ receiptId: event.launchReceiptId, result: "started" } });
 if (unsafeStart || uncertainStart) effects.push(...contain(event));
 if (typed) effects.push({ type: "execution-gate-set", causalEventId: event.eventId,
 buildAttemptId: event.buildAttemptId, value: "denied" });
-return { decision: "rejected", effects,
+return immutable({ decision: "rejected", effects,
 terminalProjections: withProjection(before, { claim: "invalid",
 ...(unsafeStart || uncertainStart ? { runtime: "unknown" as const,
-resourceRetirement: { type: "quarantined" as const } } : {}) }) }; };
+resourceRetirement: { type: "quarantined" as const } } : {}) }) }); };
 const retirementDenials: ReadonlySet<DenialReason> = new Set([
 "wrong-binding", "retirement-owner-mismatch", "credential-lineage-mismatch",
 "runtime-unresolved", "receipt-replay", "terminal-already-recorded",
@@ -365,6 +408,23 @@ watermark = { eventId: candidate.eventId, authoritativeTick: candidate.authorita
 }
 return watermark;
 };
+const consumedUnresolvedRuntime = (history: OracleHistory): boolean => acceptedOf(history, "IssueAuthorization")
+.some(issue => { const view = authorization(history, issue.authorizationId);
+return view?.consumed === true && !view.launchTerminal; });
+const latestTermination = (history: OracleHistory, runtimeId: RegisterProtocol["runtimeId"],
+watermark: RuntimeSafetyWatermark | null): Extract<ProtocolEvent, { readonly type: "ReconcileRuntime" }> | undefined =>
+watermark === null ? undefined : acceptedOf(history, "ReconcileRuntime").filter(candidate =>
+candidate.observation === "terminated" && same(candidate.runtimeId, runtimeId) &&
+same(candidate.runtimeSafetyWatermarkEventId, watermark.eventId)).at(-1);
+interface CleanupBinding { readonly requestEventId: EventId; readonly safetyWatermarkEventId: EventId | null;
+readonly terminationProofId: Extract<ProtocolEvent, { readonly type: "RequestCleanup" }>["terminationProofId"]; }
+const latestCleanupBinding = (history: OracleHistory): CleanupBinding | null => {
+for (let index = history.rows.length - 1; index >= 0; index -= 1) { const row = history.rows[index]!;
+if (!row.accepted || row.event.type !== "RequestCleanup") continue;
+const prefix: OracleHistory = { ...history, rows: history.rows.slice(0, index) };
+return { requestEventId: row.event.eventId,
+safetyWatermarkEventId: runtimeSafetyWatermark(prefix, row.event.runtimeId)?.eventId ?? null,
+terminationProofId: row.event.terminationProofId }; } return null; };
 const postRetirementReconciliation = (
 history: OracleHistory,
 event: Extract<ProtocolEvent, { readonly type: "ReconcileRuntime" }>,
@@ -379,6 +439,22 @@ sourceFamilyRootId: event.sourceFamilyRootId, runtimeId: event.runtimeId },
 ] : [];
 return accept(before, effects);
 };
+const postRetirementCleanup = (history: OracleHistory,
+event: Extract<ProtocolEvent, { readonly type: "RequestCleanup" }>): TransitionResult => {
+const before = currentProjection(history); const mismatch = ownerMatches(history.registration, event);
+if (!rootMatches(history.registration, event) || !same(event.runtimeId, history.registration.runtimeId))
+return denial(event, before, "wrong-binding");
+if (mismatch !== null) return denial(event, before, mismatch);
+if (postRetirementRuntime(history) !== "terminated") return denial(event, before, "runtime-unresolved");
+const watermark = runtimeSafetyWatermark(history, event.runtimeId);
+if (same(latestCleanupBinding(history)?.safetyWatermarkEventId ?? null, watermark?.eventId ?? null))
+return denial(event, before, "terminal-already-recorded");
+const termination = latestTermination(history, event.runtimeId, watermark);
+if (watermark === null || termination === undefined || !same(termination.proofId, event.terminationProofId) ||
+!same(termination.runtimeSafetyWatermarkEventId, watermark.eventId)) return denial(event, before, "wrong-binding");
+return accept(before, [{ type: "resource-cleanup-requested", causalEventId: event.eventId,
+sourceFamilyRootId: event.sourceFamilyRootId, runtimeId: event.runtimeId, proofId: event.terminationProofId }]);
+};
 const enforceRetiredHistoryFinality = (
 history: OracleHistory,
 event: ProtocolEvent,
@@ -386,6 +462,7 @@ result: TransitionResult,
 ): TransitionResult => {
 const before = currentProjection(history);
 if (before.resourceRetirement.type !== "retired") return result;
+if (event.type === "RequestCleanup") return postRetirementCleanup(history, event);
 const fx = result.effects;
 if (result.decision === "rejected") {
 const reason = fx.find(effect => effect.type === "denial-recorded")?.reason;
@@ -498,14 +575,18 @@ const mismatch = authorizationBindingMatches(registration, event); if (mismatch 
 const view = authorization(history, event.authorizationId);
 if (view !== null && (!sameFenceBinding(view.issue.authorizationFence, event.authorizationFence) ||
 view.issue.launchPurpose !== event.launchPurpose)) {
-return denial(event, before, "wrong-binding"); } if (event.type === "ReachLaunchDeadline") {
+return denial(event, before, "wrong-binding"); }
+if (event.type === "RecordReleaseDenied" && view?.consumed === true) {
+if (usedReceipt(history, event.receiptId)) return replay(event, history);
+if (proofUsed(history, event.proofId)) return denial(event, before, "wrong-binding"); }
+if (event.type === "ReachLaunchDeadline") {
 if (view === null) return denial(event, before, "authorization-unavailable");
 if (event.authoritativeTick < registration.launchDeadline) return denial(event, before, "deadline-not-reached");
 if (usedReceipt(history, event.observationReceiptId)) return replay(event, history);
 if (before.resourceRetirement.type === "retired") return event.result === "start-unknown" && view.consumed ?
 retainPostRetirementUnsafeLaunch(history, event, event.observationReceiptId, event.result) :
 denial(event, before, "terminal-already-recorded");
-if (view.launchTerminal) return denial(event, before, "terminal-already-recorded");
+if (view.launchTerminal) return retainLateDeadline(history, event, priorLaunchResult(history, event.authorizationId)!);
 if (event.result === "start-unknown" && !view.consumed) return denial(event, before, "wrong-binding");
 if (event.result === "never-started" && (view.consumed ||
 before.runtime !== "not-started" && before.runtime !== "terminated")) {
@@ -561,6 +642,7 @@ if (event.type === "RecordReleaseDenied" && before.resourceRetirement.type === "
 if (event.type === "RecordReleaseDenied") {
 if (view === null || !view.consumed) return denial(event, before, "authorization-unavailable");
 if (usedReceipt(history, event.receiptId)) return replay(event, history);
+if (proofUsed(history, event.proofId)) return denial(event, before, "wrong-binding");
 if (event.authoritativeTick >= registration.launchDeadline) {
 const conflict = oppositeLaunchObserved(history, event.authorizationId, "release-denied"); const effects: DeclaredEffect[] = [
 { type: "late-receipt-retained", causalEventId: event.eventId, evidence: { type: "launch",
@@ -597,8 +679,7 @@ if (event.type === "RestartObserved" || event.type === "ReconcileRuntime") {
 if (!same(event.runtimeId, registration.runtimeId)) return denial(event, before, "wrong-binding");
 if (event.type === "ReconcileRuntime") {
 const watermark = runtimeSafetyWatermark(history, event.runtimeId);
-const proofReused = acceptedOf(history, "ReconcileRuntime").some(candidate =>
-same(candidate.proofId, event.proofId));
+const proofReused = proofUsed(history, event.proofId);
 if (watermark === null || !same(watermark.eventId, event.runtimeSafetyWatermarkEventId) ||
 event.authoritativeTick < watermark.authoritativeTick || proofReused)
 return denial(event, before, "wrong-binding");
@@ -632,13 +713,16 @@ const effects: DeclaredEffect[] = []; for (const issue of acceptedOf(history, "I
 const view = authorization(history, issue.authorizationId);
 if (view !== null && !view.revoked && !view.expired) { effects.push({ type: "authorization-revoked",
 causalEventId: event.eventId, authorizationId: issue.authorizationId, authorizationFence: issue.authorizationFence,
-}); } } if (before.runtime === "unknown") { effects.push(
+}); } } const quarantine = before.runtime === "unknown" || consumedUnresolvedRuntime(history);
+if (quarantine) { effects.push(
 { type: "resource-quarantined", causalEventId: event.eventId, sourceFamilyRootId: event.sourceFamilyRootId, runtimeId: registration.runtimeId },
-{ type: "runtime-reconciliation-requested", causalEventId: event.eventId, runtimeId: registration.runtimeId }, );
+{ type: "runtime-reconciliation-requested", causalEventId: event.eventId, runtimeId: registration.runtimeId },
+{ type: "runtime-termination-requested", causalEventId: event.eventId, runtimeId: registration.runtimeId }, );
 } else if (before.runtime === "live") {
 effects.push({ type: "runtime-termination-requested", causalEventId: event.eventId, runtimeId: registration.runtimeId });
 } return accept(withProjection(before, {
-resourceRetirement: before.runtime === "unknown" ? { type: "quarantined" } : { type: "pending" }, }), effects); }
+...(quarantine ? { runtime: "unknown" as const } : {}),
+resourceRetirement: quarantine ? { type: "quarantined" } : { type: "pending" }, }), effects); }
 if (!same(event.runtimeId, registration.runtimeId)) return denial(event, before, "wrong-binding");
 if (event.type === "CompleteRetirement" && usedReceipt(history, event.tombstoneId)) return replay(event, history);
 if (before.resourceRetirement.type !== "pending" && before.resourceRetirement.type !== "quarantined") {
@@ -647,12 +731,12 @@ if (before.runtime === "unknown" || before.runtime === "live") return denial(eve
 if (event.type === "RequestCleanup") {
 if (sourceTerminal(history) === null) return denial(event, before, "source-terminal");
 if (acceptedOf(history, "RequestRetirement").length === 0) return denial(event, before, "gate-closed");
-if (acceptedOf(history, "RequestCleanup").length > 0) {
-return denial(event, before, "terminal-already-recorded"); }
 const watermark = runtimeSafetyWatermark(history, event.runtimeId);
-const termination = acceptedOf(history, "ReconcileRuntime").filter(candidate =>
-candidate.observation === "terminated" && same(candidate.runtimeId, event.runtimeId)).at(-1);
-const noRuntimeWasReleased = before.runtime === "not-started" && watermark === null;
+if (same(latestCleanupBinding(history)?.safetyWatermarkEventId ?? null, watermark?.eventId ?? null))
+return denial(event, before, "terminal-already-recorded");
+const termination = latestTermination(history, event.runtimeId, watermark);
+const noRuntimeWasReleased = before.runtime === "not-started" && watermark === null &&
+!consumedUnresolvedRuntime(history);
 if (!noRuntimeWasReleased && (watermark === null || termination === undefined ||
 !same(termination.proofId, event.terminationProofId) ||
 !same(termination.runtimeSafetyWatermarkEventId, watermark.eventId)))
@@ -664,16 +748,21 @@ if (acceptedOf(history, "RequestRetirement").length === 0) return denial(event, 
 if (source === null || !same(source.receiptId, event.sourceTerminalReceiptId)) {
 return denial(event, before, "wrong-binding"); } const cleanup = acceptedOf(history, "RequestCleanup").at(-1);
 if (cleanup === undefined) return denial(event, before, "gate-closed");
+const cleanupBinding = latestCleanupBinding(history), watermark = runtimeSafetyWatermark(history, event.runtimeId);
+if (!same(cleanupBinding?.safetyWatermarkEventId ?? null, watermark?.eventId ?? null) ||
+same(cleanupBinding?.terminationProofId, event.cleanupProofId) || proofUsed(history, event.cleanupProofId))
+return denial(event, before, "wrong-binding");
 if (!retirementEvidenceClosed(history)) return denial(event, before, "gate-closed");
 if (!retainsReceipt(event.retainedEvidence, source.receiptId) ||
 (before.admission.type !== "pending" && !retainsReceipt(event.retainedEvidence, before.admission.receiptId))) {
 return denial(event, before, "wrong-binding"); }
-if (!expectedRetainedEvidence(history, event.cleanupProofId).every(reference =>
-hasEvidence(event.retainedEvidence, reference))) return denial(event, before, "wrong-binding");
-const tombstone = {
-tombstoneId: event.tombstoneId, sourceTerminal: source, retirementOwnerId: event.retirementOwnerId,
-cleanupProofId: event.cleanupProofId, retainedEvidence: event.retainedEvidence, };
-const retirement: ResourceRetirementProjection = { type: "retired", tombstone };
+if (!exactEvidence(event.retainedEvidence, expectedRetainedEvidence(history, event.cleanupProofId)))
+return denial(event, before, "wrong-binding");
+const retainedEvidence = Object.freeze(event.retainedEvidence.map(reference => Object.freeze({ ...reference })));
+const tombstone = Object.freeze({
+tombstoneId: event.tombstoneId, sourceTerminal: Object.freeze({ ...source }), retirementOwnerId: event.retirementOwnerId,
+cleanupProofId: event.cleanupProofId, retainedEvidence, });
+const retirement: ResourceRetirementProjection = Object.freeze({ type: "retired", tombstone });
 return accept(withProjection(before, { resourceRetirement: retirement }), [ { type: "retirement-tombstone-appended",
 causalEventId: event.eventId, sourceFamilyRootId: event.sourceFamilyRootId, tombstoneId: event.tombstoneId,
 retirementOwnerId: event.retirementOwnerId, cleanupProofId: event.cleanupProofId, }, ]); }; const handleAttempt = (
@@ -701,8 +790,8 @@ evidence: { type: "attempt", attemptId: event.attemptId, receiptId: event.receip
 if (conflict) effects.push(...invalidClaimEffects(event, { type: "receipt", receiptId: event.receiptId }));
 return accept( conflict ? withProjection(before, { claim: "invalid" }) : before, effects, ); }
 if (event.type === "RecordAttemptReceipt" && event.authoritativeTick >= registration.attemptDeadline) {
-const prior = acceptedOf(history, "RecordAttemptReceipt").find(candidate =>
-same(candidate.attemptId, event.attemptId) && candidate.authoritativeTick >= registration.attemptDeadline);
+const prior = acceptedOf(history, "RecordAttemptReceipt").filter(candidate =>
+same(candidate.attemptId, event.attemptId) && candidate.authoritativeTick >= registration.attemptDeadline).at(-1);
 const conflict = prior !== undefined && prior.result !== event.result; const effects: DeclaredEffect[] = [
 { type: "late-receipt-retained", causalEventId: event.eventId,
 evidence: { type: "attempt", attemptId: event.attemptId, receiptId: event.receiptId, result: event.result } },
@@ -740,8 +829,8 @@ evidence: { type: "stop", checkpointId: event.checkpointId, receiptId: event.rec
 if (conflict) effects.push(...invalidClaimEffects(event, { type: "receipt", receiptId: event.receiptId }));
 return accept(conflict ? withProjection(before, { claim: "invalid" }) : before, effects); }
 if (event.type === "RecordStopReceipt" && event.authoritativeTick >= registration.stopDeadline) {
-const prior = acceptedOf(history, "RecordStopReceipt").find(candidate =>
-same(candidate.checkpointId, event.checkpointId) && candidate.authoritativeTick >= registration.stopDeadline);
+const prior = acceptedOf(history, "RecordStopReceipt").filter(candidate =>
+same(candidate.checkpointId, event.checkpointId) && candidate.authoritativeTick >= registration.stopDeadline).at(-1);
 const conflict = prior !== undefined && prior.result !== event.result; const effects: DeclaredEffect[] = [
 { type: "late-receipt-retained", causalEventId: event.eventId,
 evidence: { type: "stop", checkpointId: event.checkpointId, receiptId: event.receiptId, result: event.result } },
@@ -770,6 +859,8 @@ if (!authority.consumed || !authority.released || authority.issue.launchPurpose 
 authority.issue.authorizationFence.scope !== "campaign" ||
 !same(authority.issue.sourceSlotId, event.sourceSlotId) || !same(authority.issue.runtimeId, registration.runtimeId)) {
 return denial(event, before, "wrong-binding"); } }
+if (event.type === "RecordBuildResult" && event.result.type !== "succeeded" && proofUsed(history, event.result.proofId))
+return denial(event, before, "wrong-binding");
 const receipt = event.type === "RecordBuildResult" ? event.buildReceiptId : event.observationReceiptId;
 if (usedReceipt(history, receipt)) return replay(event, history);
 if (event.type === "ReachBuildDeadline" && event.authoritativeTick < registration.buildDeadline) {
@@ -784,8 +875,8 @@ type: "build", buildAttemptId: event.buildAttemptId, buildReceiptId: event.build
 if (conflict) effects.push(...invalidClaimEffects(event, { type: "build-receipt", buildReceiptId: event.buildReceiptId }));
 return accept(conflict ? withProjection(before, { claim: "invalid" }) : before, effects); }
 if (event.type === "RecordBuildResult" && event.authoritativeTick >= registration.buildDeadline) {
-const prior = acceptedOf(history, "RecordBuildResult").find(candidate =>
-same(candidate.buildAttemptId, event.buildAttemptId) && candidate.authoritativeTick >= registration.buildDeadline);
+const prior = acceptedOf(history, "RecordBuildResult").filter(candidate =>
+same(candidate.buildAttemptId, event.buildAttemptId) && candidate.authoritativeTick >= registration.buildDeadline).at(-1);
 const conflict = prior !== undefined && !samePayload(prior.result, event.result); const effects: DeclaredEffect[] = [
 { type: "late-receipt-retained", causalEventId: event.eventId, evidence: { type: "build",
 buildAttemptId: event.buildAttemptId, buildReceiptId: event.buildReceiptId, result: event.result } },
@@ -829,6 +920,7 @@ readonly type: "RecordBuildConsistencyReceipt" | "ReachBuildConsistencyDeadline"
 const before = currentProjection(history); const registration = history.registration;
 if (event.type === "RecordBuildConsistencyReceipt") {
 if (!buildBindingMatches(registration, event)) return denial(event, before, "wrong-binding");
+if (event.result.type !== "match" && proofUsed(history, event.result.proofId)) return denial(event, before, "wrong-binding");
 if (usedReceipt(history, event.consistencyReceiptId)) return replay(event, history);
 if (before.buildConsistency !== null) {
 const effects: DeclaredEffect[] = [{ type: "late-receipt-retained", causalEventId: event.eventId, evidence: {
@@ -841,9 +933,9 @@ if (conflict) {
 effects.push(...invalidClaimEffects(event, { type: "consistency-receipt", consistencyReceiptId: event.consistencyReceiptId }));
 return accept(withProjection(before, { claim: "invalid" }), effects); } return accept(before, effects); }
 if (event.authoritativeTick >= registration.buildConsistencyDeadline) {
-const prior = acceptedOf(history, "RecordBuildConsistencyReceipt").find(candidate =>
+const prior = acceptedOf(history, "RecordBuildConsistencyReceipt").filter(candidate =>
 same(candidate.buildAttemptId, event.buildAttemptId) &&
-candidate.authoritativeTick >= registration.buildConsistencyDeadline);
+candidate.authoritativeTick >= registration.buildConsistencyDeadline).at(-1);
 const conflict = prior !== undefined && (!same(prior.buildReceiptId, event.buildReceiptId) ||
 !samePayload(prior.result, event.result)) || consistencyInputInvalid(history, event); const effects: DeclaredEffect[] = [
 { type: "late-receipt-retained", causalEventId: event.eventId, evidence: { type: "build-consistency",
@@ -863,9 +955,9 @@ const allowed = projection.type === "match" && before.build?.type === "succeeded
 if (!buildBindingMatches(registration, event)) return denial(event, before, "wrong-binding");
 if (before.sourceEvidence.type !== "closed" || before.admission.type !== "accepted" || before.build === null) {
 return denial(event, before, "gate-closed"); }
-if (before.buildConsistency !== null) return denial(event, before, "terminal-already-recorded");
 if (event.authoritativeTick < registration.buildConsistencyDeadline) {
 return denial(event, before, "deadline-not-reached"); }
+if (before.buildConsistency !== null) return denial(event, before, "terminal-already-recorded");
 if (usedReceipt(history, event.observationReceiptId)) return replay(event, history);
 const projection: BuildConsistencyTerminalProjection = { type: event.result,
 observationReceiptId: event.observationReceiptId, }; return accept(withProjection(before, {
@@ -892,144 +984,79 @@ claim: event.result === "failed" ? claimAfter(before.claim, "non-promotional") :
 const transitionTable: { readonly [Kind in Exclude<ProtocolEvent["type"], "RegisterProtocol">]: (
 history: OracleHistory, event: Extract<ProtocolEvent, { readonly type: Kind }>, ) => TransitionResult; } = {
 IssueAuthorization: handleAuthorization, ConsumeAuthorization: handleAuthorization,
-  RevokeAuthorization: handleAuthorization,
-  ExpireAuthorization: handleAuthorization,
-  CloseSource: appendSourceTerminal,
-  AbandonSource: appendSourceTerminal,
-  AdvanceFence: handleFence,
-  ReleaseProcess: handleRelease,
-  RecordReleaseDenied: handleRelease,
-  ObserveCrash: handleRelease,
-  ReachLaunchDeadline: handleRelease,
-  RestartObserved: handleRuntime,
-  ReconcileRuntime: handleRuntime,
-  RequestRetirement: handleRuntime,
-  RequestCleanup: handleRuntime,
-  CompleteRetirement: handleRuntime,
-  RecordAttemptReceipt: handleAttempt,
-  ReachAttemptDeadline: handleAttempt,
-  CheckpointEffective: handleStop,
-  RecordStopReceipt: handleStop,
-  ReachStopDeadline: handleStop,
-  RecoverStopFence: handleStop,
-  RecordBuildResult: handleBuild,
-  ReachBuildDeadline: handleBuild,
-  RecordBuildConsistencyReceipt: handleConsistency,
-  ReachBuildConsistencyDeadline: handleConsistency,
-  RecordAdmission: handleAdmission,
-};
-
-export const initializeOracleHistory = (
-  registration: RegisterProtocol,
-  trusted: TrustedProtocolCoordinates,
-): OracleHistory => {
+RevokeAuthorization: handleAuthorization, ExpireAuthorization: handleAuthorization,
+CloseSource: appendSourceTerminal, AbandonSource: appendSourceTerminal, AdvanceFence: handleFence,
+ReleaseProcess: handleRelease, RecordReleaseDenied: handleRelease, ObserveCrash: handleRelease,
+ReachLaunchDeadline: handleRelease, RestartObserved: handleRuntime, ReconcileRuntime: handleRuntime,
+RequestRetirement: handleRuntime, RequestCleanup: handleRuntime, CompleteRetirement: handleRuntime,
+RecordAttemptReceipt: handleAttempt, ReachAttemptDeadline: handleAttempt, CheckpointEffective: handleStop,
+RecordStopReceipt: handleStop, ReachStopDeadline: handleStop, RecoverStopFence: handleStop,
+RecordBuildResult: handleBuild, ReachBuildDeadline: handleBuild,
+RecordBuildConsistencyReceipt: handleConsistency, ReachBuildConsistencyDeadline: handleConsistency,
+RecordAdmission: handleAdmission, };
+export const initializeOracleHistory = (registration: RegisterProtocol,
+  trusted: TrustedProtocolCoordinates): OracleHistory => {
+  registration = immutable(registration); trusted = immutable(trusted);
   const projection = initialProjection();
   const result = registration.authenticatedPredecessorId === null &&
     same(registration.protocolRevisionId, trusted.protocolRevisionId) &&
     same(registration.custodyAuthorityId, trusted.custodyAuthorityId) ?
-      accept(projection) :
-      denial(
-        registration,
-        withProjection(projection, { claim: "non-promotional" }),
-        "wrong-binding",
-      );
-
-  return {
-    trusted,
-    registration,
-    registrationAccepted: result.decision === "accepted",
-    rows: [{ event: registration, result, accepted: result.decision === "accepted" }],
-  };
+      accept(projection) : denial(registration, withProjection(projection, { claim: "non-promotional" }), "wrong-binding");
+  return Object.freeze({ trusted, registration, registrationAccepted: result.decision === "accepted",
+    rows: Object.freeze([Object.freeze({ event: registration, result,
+      accepted: result.decision === "accepted", reservedProofId: null })]) });
 };
-
-export const appendOracleEvent = (
-  history: OracleHistory,
-  event: ProtocolEvent,
-): OracleStep => {
+export const appendOracleEvent = (history: OracleHistory, event: ProtocolEvent): OracleStep => {
+  event = immutable(event);
   const sameId = history.rows.filter(row => same(row.event.eventId, event.eventId));
   const exact = sameId.find(row => samePayload(row.event, event));
-  if (exact !== undefined) return { history, result: exact.result };
-
-  let result: TransitionResult;
-  let registration = history.registration;
+  if (exact !== undefined) {
+    const before = currentProjection(history);
+    const result = before.resourceRetirement.type === "retired" &&
+      exact.result.terminalProjections.resourceRetirement.type !== "retired" ?
+      immutable({ ...exact.result, effects: [], terminalProjections: before }) : exact.result;
+    return { history, result }; }
+  let result: TransitionResult, proofReserved = false, registration = history.registration;
   let registrationAccepted = history.registrationAccepted;
-  if (!history.registrationAccepted) {
+  if (sameId.length > 0) {
+    result = denial(event, currentProjection(history), "wrong-binding"); } else if (!history.registrationAccepted) {
     if (event.type !== "RegisterProtocol") {
-      result = denial(event, currentProjection(history), "not-registered");
-    } else if (event.authenticatedPredecessorId !== null ||
+      result = denial(event, currentProjection(history), "not-registered"); } else if (event.authenticatedPredecessorId !== null ||
         !same(event.protocolRevisionId, history.trusted.protocolRevisionId) ||
         !same(event.custodyAuthorityId, history.trusted.custodyAuthorityId)) {
-      result = denial(event, currentProjection(history), "wrong-binding");
-    } else {
-      result = accept(initialProjection());
-      registration = event;
-      registrationAccepted = true;
-    }
-  } else if (sameId.length > 0) {
-    result = denial(event, currentProjection(history), "wrong-binding");
+      result = denial(event, currentProjection(history), "wrong-binding"); } else {
+      result = accept(initialProjection()); registration = event; registrationAccepted = true; }
   } else {
     const envelopeFailure = commonEnvelopeFailure(history, event);
-    if (envelopeFailure !== null) {
-      result = denial(event, currentProjection(history), envelopeFailure);
+    if (envelopeFailure !== null) { result = denial(event, currentProjection(history), envelopeFailure);
     } else if (event.type === "RegisterProtocol") {
       result = denial(event, currentProjection(history),
         registrationMatches(history.registration, event) ? "terminal-already-recorded" : "wrong-binding");
     } else {
-      const handler = transitionTable[event.type] as (
-        selected: OracleHistory,
-        selectedEvent: typeof event,
-      ) => TransitionResult;
+      const handler = transitionTable[event.type] as (selected: OracleHistory,
+        selectedEvent: typeof event) => TransitionResult;
       let candidate = handler(history, event);
+      proofReserved = event.type === "ReconcileRuntime" && rootMatches(history.registration, event) &&
+        same(event.runtimeId, history.registration.runtimeId) && candidate.decision === "rejected" &&
+        candidate.effects.some(effect => effect.type === "denial-recorded" && effect.reason === "wrong-binding");
       const receipt = ownedReceipt(event);
-      const reason = candidate.effects.find(effect =>
-        effect.type === "denial-recorded")?.reason;
+      const reason = candidate.effects.find(effect => effect.type === "denial-recorded")?.reason;
       const identityFailure = reason === "wrong-binding" ||
-        reason === "retirement-owner-mismatch" ||
-        reason === "credential-lineage-mismatch";
-
-      if (
-        receipt !== undefined &&
-        usedReceipt(history, receipt) &&
-        reason !== "receipt-replay" &&
-        !identityFailure
-      ) {
+        reason === "retirement-owner-mismatch" || reason === "credential-lineage-mismatch";
+      if (receipt !== undefined && usedReceipt(history, receipt) && reason !== "receipt-replay" && !identityFailure)
         candidate = replay(event, history);
-      }
-      result = enforceRetiredHistoryFinality(history, event, candidate);
-    }
-  }
-
-  const row: LedgerRow = {
-    event,
-    result,
-    accepted: result.decision === "accepted",
-  };
-  return {
-    history: { trusted: history.trusted, registration, registrationAccepted,
-      rows: [...history.rows, row] },
-    result,
-  };
+      result = enforceRetiredHistoryFinality(history, event, candidate); } }
+  const row: LedgerRow = { event, result, accepted: result.decision === "accepted",
+    reservedProofId: proofReserved && event.type === "ReconcileRuntime" ? event.proofId : null };
+  return Object.freeze({ result, history: Object.freeze({ trusted: history.trusted, registration, registrationAccepted,
+      rows: Object.freeze([...history.rows, Object.freeze(row)]) }) });
 };
-
-export const foldOracleHistory = (
-  events: readonly ProtocolEvent[],
-  trusted: TrustedProtocolCoordinates,
-): OracleFold => {
+export const foldOracleHistory = (events: readonly ProtocolEvent[], trusted: TrustedProtocolCoordinates): OracleFold => {
   const [first, ...rest] = events;
-  if (first?.type !== "RegisterProtocol") {
-    throw new TypeError("Oracle history must begin with RegisterProtocol.");
-  }
-
+  if (first?.type !== "RegisterProtocol") throw new TypeError("Oracle history must begin with RegisterProtocol.");
   let history = initializeOracleHistory(first, trusted);
   const results: TransitionResult[] = [history.rows[0]!.result];
-  for (const event of rest) {
-    const step = appendOracleEvent(history, event);
-    history = step.history;
-    results.push(step.result);
-  }
-  return { history, results };
+  for (const event of rest) { const step = appendOracleEvent(history, event);
+    history = step.history; results.push(step.result); } return Object.freeze({ history, results: Object.freeze(results) });
 };
-
-export const getOracleTerminalProjections = (
-  history: OracleHistory,
-): TerminalProjections => currentProjection(history);
+export const getOracleTerminalProjections = (history: OracleHistory): TerminalProjections => currentProjection(history);
