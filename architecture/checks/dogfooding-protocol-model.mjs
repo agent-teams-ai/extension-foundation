@@ -13,6 +13,20 @@ const modelFiles = [
   "tests/qualification/dogfooding-protocol.test.ts",
 ];
 const modelEntry = "tests/qualification/dogfooding-protocol.test.ts";
+const expectedLocalDependencies = new Map([
+  ["tests/qualification/dogfooding-protocol-contract.ts", []],
+  ["tests/qualification/dogfooding-protocol-oracle.ts", [
+    "tests/qualification/dogfooding-protocol-contract.ts",
+  ]],
+  ["tests/qualification/dogfooding-protocol-reducer.ts", [
+    "tests/qualification/dogfooding-protocol-contract.ts",
+  ]],
+  ["tests/qualification/dogfooding-protocol.test.ts", [
+    "tests/qualification/dogfooding-protocol-contract.ts",
+    "tests/qualification/dogfooding-protocol-oracle.ts",
+    "tests/qualification/dogfooding-protocol-reducer.ts",
+  ]],
+]);
 const limits = { physicalLines: 4_000, utf8Bytes: 320_000, charactersPerLine: 200 };
 const decode = new TextDecoder("utf-8", { fatal: true });
 const allowedExternalDependencies = new Set(["fast-check", "node:assert/strict", "node:test"]);
@@ -115,6 +129,17 @@ for (const source of sources) {
     dependencies.push(canonical);
   }
   localDependencies.set(source.path, dependencies);
+}
+
+for (const source of sources) {
+  const actual = [...new Set(localDependencies.get(source.path) ?? [])].sort();
+  const expected = (expectedLocalDependencies.get(source.relativePath) ?? [])
+    .map(relativePath => realpathSync(resolve(repositoryRoot, relativePath)))
+    .sort();
+  if (actual.length !== expected.length ||
+      actual.some((dependency, index) => dependency !== expected[index])) {
+    throw new Error(`${source.relativePath} violates the independent model dependency graph`);
+  }
 }
 
 const reachablePaths = new Set();

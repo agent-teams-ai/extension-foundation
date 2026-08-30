@@ -57,6 +57,8 @@ so edits to the model cannot silently weaken their own guard. The roster consist
 four distinct non-symlink regular files. Only literal static ESM and TypeScript
 dependencies plus an exact external allowlist are permitted; dynamic, CommonJS,
 factory, reflective, process, Worker, and WebAssembly loading paths fail closed.
+The contract imports no model code, reducer and oracle import only the contract,
+and the test entry imports all three; any other local edge fails the repository gate.
 A real product seam starts
 from product-owned types and composition; this model is not shared campaign
 machinery. The architecture owner must remove these executable files when an
