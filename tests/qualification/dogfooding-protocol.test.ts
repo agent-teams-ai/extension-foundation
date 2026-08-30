@@ -1,6 +1,5 @@
-import assert from "node:assert/strict"; import { readFileSync, realpathSync, statSync } from "node:fs";
-import { dirname, isAbsolute, relative, resolve, sep } from "node:path"; import test from "node:test"; import { fileURLToPath } from "node:url"; import fc from "fast-check";
-import { parseSync, Visitor } from "oxc-parser"; import * as C from "./dogfooding-protocol-contract.ts";
+import assert from "node:assert/strict"; import test from "node:test"; import fc from "fast-check";
+import * as C from "./dogfooding-protocol-contract.ts";
 import { foldOracleHistory } from "./dogfooding-protocol-oracle.ts"; import { foldQualificationHistory } from "./dogfooding-protocol-reducer.ts";
 const id = { protocol: C.protocolRevisionId("protocol"), authority: C.custodyAuthorityId("authority"),
   family: C.sourceClaimFamilyId("family"), root: C.sourceFamilyRootId("root"),
@@ -487,86 +486,6 @@ test("retirement tombstone is final and failed admission revokes consumed author
   const failed = foldQualificationHistory(materialize(failedAdmissionAfterConsumedHistory), 64, trusted).results.at(-1)!;
   assert.ok(failed.effects.some(effect => effect.type === "authorization-revoked" &&
     effect.authorizationId === id.otherAuthorization));
-});
-const modelEntry = realpathSync(fileURLToPath(import.meta.url)); const repositoryRoot = realpathSync(resolve(dirname(modelEntry), "..", ".."));
-const inside = (path: string, parent: string): boolean => { const relation = relative(parent, path);
-  return relation === "" || (!isAbsolute(relation) && relation !== ".." && !relation.startsWith(`..${sep}`)); };
-const dependencySpecifiers = (path: string, source: string): readonly string[] => { const parsed = parseSync(path, source), specifiers: string[] = [];
-  assert.equal(parsed.errors.length, 0, parsed.errors.map(error => error.message).join("\n"));
-  const literal = (node: { readonly type: string; readonly value?: unknown } | null | undefined): void => { assert.ok(node?.type === "Literal" && typeof node.value === "string",
-      `${relative(repositoryRoot, path)} has a non-literal module loader`); specifiers.push(node.value); };
-  const named = (node: { readonly type: string; readonly name?: unknown }, name: string): boolean =>
-    node.type === "Identifier" && node.name === name; new Visitor({ ImportDeclaration: node => literal(node.source), ExportAllDeclaration: node => literal(node.source),
-    ExportNamedDeclaration: node => { if (node.source !== null) literal(node.source); }, ImportExpression: node => literal(node.source), TSImportType: node => literal(node.source),
-    CallExpression: node => { const { callee } = node; const member = callee.type === "MemberExpression" && !callee.computed ? callee : null;
-      const loader = named(callee, "require") || member !== null && (
-        named(member.object, "require") && named(member.property, "resolve") ||
-        named(member.object, "module") && named(member.property, "require") ||
-        member.object.type === "MetaProperty" && named(member.object.meta, "import") &&
-          named(member.object.property, "meta") && named(member.property, "resolve")); if (loader) literal(node.arguments[0]); },
-  }).visit(parsed.program); return [...new Set(specifiers)]; }; type LocalAliases = Readonly<Record<string, readonly string[]>>;
-const qualificationAliases = { "#qualification/*": ["tests/qualification/*"] } as const satisfies LocalAliases;
-const aliasTargets = (specifier: string, aliases: LocalAliases): readonly string[] =>
-  Object.entries(aliases).flatMap(([pattern, targets]) => { const wildcard = pattern.indexOf("*"), prefix = pattern.slice(0, wildcard < 0 ? pattern.length : wildcard);
-    const suffix = wildcard < 0 ? "" : pattern.slice(wildcard + 1); const match = wildcard < 0 ? pattern === specifier ? "" : null :
-      specifier.startsWith(prefix) && specifier.endsWith(suffix) ?
-        specifier.slice(prefix.length, specifier.length - suffix.length) : null; return match === null ? [] : targets.map(target => target.replace("*", match)); });
-const resolveSourceDependency = (specifier: string, containingFile: string, aliases: LocalAliases): string | null => {
-  if (specifier.startsWith("node:")) return null; const targets = aliasTargets(specifier, aliases);
-  const local = /^(?:\.{1,2}(?:[/\\]|$)|[/\\]|file:)/u.test(specifier) || specifier.startsWith("#") || targets.length > 0; if (!local) return null; let candidates: readonly string[];
-  try { candidates = specifier.startsWith("file:") ? [fileURLToPath(specifier)] : targets.length > 0 ?
-    targets.map(target => resolve(repositoryRoot, target)) :
-    [isAbsolute(specifier) ? specifier : resolve(dirname(containingFile), specifier)]; }
-  catch { assert.fail(`${relative(repositoryRoot, containingFile)} has unresolvable local import ${specifier}`); }
-  for (const candidate of candidates) try { const canonical = realpathSync(candidate); assert.ok(inside(canonical, repositoryRoot) && !canonical.split(sep).includes("node_modules"),
-      `${relative(repositoryRoot, containingFile)} local import ${specifier} escapes the repository`); if (statSync(canonical).isFile()) return canonical;
-  } catch (error) { if (error instanceof assert.AssertionError) throw error; } assert.fail(`${relative(repositoryRoot, containingFile)} has unresolvable local import ${specifier}`); };
-interface CappedSource { readonly text: string }
-const sourceClosure = (entry: string, aliases: LocalAliases): ReadonlyMap<string, CappedSource> => {
-  const pending = [entry];
-  const sources = new Map<string, CappedSource>();
-  while (pending.length > 0) {
-    const path = pending.pop()!;
-    if (sources.has(path)) continue;
-    const bytes = readFileSync(path);
-    const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-    sources.set(path, { text });
-    if (!/\.(?:[cm]?[jt]sx?)$/u.test(path)) continue;
-    for (const specifier of dependencySpecifiers(path, text)) {
-      const dependency = resolveSourceDependency(specifier, path, aliases);
-      if (dependency !== null) pending.push(dependency);
-    }
-  }
-  return sources;
-};
-test("qualification source closure recognizes static and dynamic loading forms", () => {
-  const source = `import value from "./static.ts"; import "./side-effect.ts"; export * from "../export.ts";\n` +
-    `type Imported = import("#type-alias").Imported; void import("./dynamic.ts");\n` +
-    `require("./required.ts"); import.meta.resolve("#qualification/resolved.ts"); void value;`;
-  assert.deepEqual([...dependencySpecifiers("fixture.ts", source)].sort(),
-    ["#qualification/resolved.ts", "#type-alias", "../export.ts", "./dynamic.ts", "./required.ts", "./side-effect.ts", "./static.ts"].sort());
-  assert.throws(() => dependencySpecifiers("fixture.ts", "void import(dynamicPath)"),
-    /non-literal module loader/u);
-});
-test("qualification model remains disposable and bounded", () => {
-  assert.equal(resolveSourceDependency("#qualification/dogfooding-protocol-contract.ts", modelEntry,
-    qualificationAliases), realpathSync(resolve(dirname(modelEntry), "dogfooding-protocol-contract.ts")));
-  assert.throws(() => resolveSourceDependency("../missing-local.ts", modelEntry, qualificationAliases), /unresolvable local import/u);
-  assert.throws(() => resolveSourceDependency("#qualification/missing-local.ts", modelEntry, qualificationAliases),
-    /unresolvable local import/u);
-  const sources = sourceClosure(modelEntry, qualificationAliases);
-  assert.deepEqual([...sources.keys()].map(path => relative(dirname(modelEntry), path)).sort(), [
-    "dogfooding-protocol-contract.ts", "dogfooding-protocol-oracle.ts", "dogfooding-protocol-reducer.ts", "dogfooding-protocol.test.ts"]);
-  const physicalLines = (text: string): number => text.length === 0 ? 0 :
-    (text.match(/\n/gu)?.length ?? 0) + (text.endsWith("\n") ? 0 : 1);
-  const lineCount = [...sources.values()].reduce((sum, source) => sum + physicalLines(source.text), 0);
-  const canonicalText = (text: string): string => text.replace(/\r\n?/gu, "\n");
-  const byteCount = [...sources.values()].reduce((sum, source) => sum + Buffer.byteLength(canonicalText(source.text), "utf8"), 0);
-  const longestLine = Math.max(...[...sources.values()].flatMap(source => source.text.split("\n")
-    .map(line => [...line.replace(/\r$/u, "")].length)));
-  assert.ok(lineCount <= 4_000, `qualification model has ${lineCount} physical lines`);
-  assert.ok(byteCount <= 320_000, `qualification model has ${byteCount} canonical UTF-8 bytes`);
-  assert.ok(longestLine <= 200, `qualification model has a ${longestLine}-character line`);
 });
 test("supported fence-advance causes apply the same fail-closed scope revocation", () => { advanceCauseHistories.forEach(history => {
   const last = foldQualificationHistory(materialize(history), 64, trusted).results.at(-1)!; assert.ok(last.effects.some(

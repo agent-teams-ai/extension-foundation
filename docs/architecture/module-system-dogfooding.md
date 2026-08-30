@@ -51,10 +51,9 @@ physical lines, 320,000 UTF-8 bytes, and 200 characters per line across its
 closed transitive source set, and must never be imported by a production package.
 These are maintainability ceilings, not compression targets: qualification code
 must remain readable and must not join unrelated statements merely to fit the cap.
-Its qualification test rejects local imports outside that measured closure. A
-repository-level architecture check independently anchors the exact four-file
-roster and repeats all three limits so edits to the model cannot silently weaken
-their own guard. A real product seam starts
+A repository-level architecture check derives the transitive local source closure,
+rejects imports outside the exact four-file roster, and enforces all three limits,
+so edits to the model cannot silently weaken their own guard. A real product seam starts
 from product-owned types and composition; this model is not shared campaign
 machinery. The architecture owner must remove these executable files when an
 accepted decision either selects the first product-owned capability or rejects
