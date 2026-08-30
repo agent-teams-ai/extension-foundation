@@ -197,7 +197,8 @@ const bindingMatches = (a: Authorization, e: C.ConsumeAuthorization | C.ReleaseP
   a.runtimeId === e.runtimeId && a.retirementOwnerId === e.retirementOwnerId &&
   a.credentialLineageId === e.credentialLineageId && a.launchPurpose === e.launchPurpose &&
   same(a.authorizationFence, e.authorizationFence);
-const authorizationIdentity = (r: Registration, e: C.ConsumeAuthorization | C.ReleaseProcess): C.DenialReason | null =>
+const authorizationIdentity = (r: Registration, e: C.ConsumeAuthorization | C.ReleaseProcess |
+  C.RecordReleaseDenied | C.ReachLaunchDeadline): C.DenialReason | null =>
   !rootMatches(r, e) || e.sourceSlotId !== r.sourceSlotId || e.runtimeId !== r.runtimeId ? "wrong-binding" :
     ownerMismatch(r, e);
 const usable = (s: State, a: Authorization, e: C.ConsumeAuthorization | C.ReleaseProcess): C.DenialReason | null =>
@@ -347,12 +348,26 @@ const advance = (s: State, e: C.AdvanceFence): QualificationTransition => {
   return accept(s, e, changes, [{ type: "gate-closed", causalEventId: e.eventId,
     fence: e.fence, generation: e.nextGeneration }, ...revoked.effects]);
 };
+const retainLateLaunch = (s: State,
+  e: C.ReleaseProcess | C.RecordReleaseDenied): QualificationTransition => {
+  const result = e.type === "ReleaseProcess" ? "started" : "release-denied";
+  const receiptId = e.type === "ReleaseProcess" ? e.launchReceiptId : e.receiptId;
+  return accept(s, e, { receipts: withSet(s.receipts, receiptId) }, [{
+    type: "late-receipt-retained", causalEventId: e.eventId,
+    evidence: { type: "launch", authorizationId: e.authorizationId, receiptId, result },
+  }]);
+};
 const release = (s: State, e: C.ReleaseProcess): QualificationTransition => {
   const mismatch = authorizationIdentity(s.registration!, e);
   if (mismatch || e.attemptId !== s.registration!.attemptId) return reject(s, e, mismatch ?? "wrong-binding");
   const a = s.authorizations.get(e.authorizationId);
   if (!a) return reject(s, e, "authorization-unavailable");
   if (!bindingMatches(a, e)) return reject(s, e, "wrong-binding");
+  if (a.launch !== null && e.authoritativeTick >= s.registration!.launchDeadline) {
+    if (a.consumedAt === null) return reject(s, e, "authorization-unavailable");
+    if (receiptUsed(s, e.launchReceiptId)) return reject(s, e, "receipt-replay");
+    return retainLateLaunch(s, e);
+  }
   if (s.projections.resourceRetirement.type !== "active") return reject(s, e, "gate-closed");
   if (s.projections.runtime !== "not-started" && s.projections.runtime !== "terminated")
     return reject(s, e, "runtime-unresolved");
@@ -390,10 +405,15 @@ const release = (s: State, e: C.ReleaseProcess): QualificationTransition => {
     }]);
 };
 const releaseDenied = (s: State, e: C.RecordReleaseDenied): QualificationTransition => {
+  const mismatch = authorizationIdentity(s.registration!, e); if (mismatch) return reject(s, e, mismatch);
   const a = s.authorizations.get(e.authorizationId);
   if (!a) return reject(s, e, "authorization-unavailable");
   if (!bindingMatches(a, e)) return reject(s, e, "wrong-binding");
   if (a.consumedAt === null) return reject(s, e, "authorization-unavailable");
+  if (a.launch !== null && e.authoritativeTick >= s.registration!.launchDeadline) {
+    if (receiptUsed(s, e.receiptId)) return reject(s, e, "receipt-replay");
+    return retainLateLaunch(s, e);
+  }
   if (a.launch !== null) return reject(s, e, "terminal-already-recorded");
   if (s.projections.resourceRetirement.type === "retired") return reject(s, e, "terminal-already-recorded");
   if (receiptUsed(s, e.receiptId)) return reject(s, e, "receipt-replay");
@@ -435,16 +455,17 @@ const crash = (s: State, e: C.ObserveCrash): QualificationTransition => {
   ]);
 };
 const launchDeadline = (s: State, e: C.ReachLaunchDeadline): QualificationTransition => {
-  if (e.authoritativeTick < s.registration!.launchDeadline) return reject(s, e, "deadline-not-reached");
+  const mismatch = authorizationIdentity(s.registration!, e); if (mismatch) return reject(s, e, mismatch);
   const a = s.authorizations.get(e.authorizationId);
   if (!a || !bindingMatches(a, e)) return reject(s, e, a ? "wrong-binding" : "authorization-unavailable");
   if (s.projections.resourceRetirement.type === "retired") return reject(s, e, "terminal-already-recorded");
   if (a.launch !== null) return reject(s, e, "terminal-already-recorded");
+  if (e.authoritativeTick < s.registration!.launchDeadline) return reject(s, e, "deadline-not-reached");
+  if (receiptUsed(s, e.observationReceiptId)) return reject(s, e, "receipt-replay");
   if (e.result === "start-unknown" && a.consumedAt === null) return reject(s, e, "wrong-binding");
   if (e.result === "never-started" && (a.consumedAt !== null ||
       s.projections.runtime !== "not-started" && s.projections.runtime !== "terminated"))
     return reject(s, e, "wrong-binding");
-  if (receiptUsed(s, e.observationReceiptId)) return reject(s, e, "receipt-replay");
   const launch: C.LaunchTerminalProjection = { type: e.result, receiptId: e.observationReceiptId };
   const containment: C.DeclaredEffect[] = e.result === "start-unknown" ? [
     { type: "resource-quarantined", causalEventId: e.eventId,
@@ -701,7 +722,8 @@ const buildResult = (s: State, e: C.RecordBuildResult): QualificationTransition 
       authority.runtimeId !== s.registration!.runtimeId)
     return reject(s, e, authority ? "wrong-binding" : "authorization-unavailable");
   if (receiptUsed(s, e.buildReceiptId)) return accept(s, e,
-    { projections: { ...s.projections, claim: "invalid" } }, [{ type: "denial-recorded",
+    { buildReceipts: withSet(s.buildReceipts, e.buildReceiptId),
+      projections: { ...s.projections, claim: "invalid" } }, [{ type: "denial-recorded",
     causalEventId: e.eventId, reason: "receipt-replay",
     subject: { type: "build-attempt", buildAttemptId: e.buildAttemptId } },
   { type: "execution-gate-set", causalEventId: e.eventId,
@@ -865,6 +887,23 @@ const dispatch = (s: State, e: C.ProtocolEvent): QualificationTransition => {
     case "ReachBuildConsistencyDeadline": return consistencyDeadline(s, e); case "RecordAdmission": return admission(s, e);
   }
 };
+const beforeTombstoneFinality = (reason: C.DenialReason | undefined): boolean =>
+  reason === "wrong-binding" || reason === "retirement-owner-mismatch" ||
+  reason === "credential-lineage-mismatch" || reason === "runtime-unresolved" ||
+  reason === "receipt-replay" || reason === "terminal-already-recorded";
+const enforceTombstoneFinality = (s: State, e: C.ProtocolEvent,
+  transition: QualificationTransition): QualificationTransition => {
+  if (transition.result.decision === "rejected") {
+    const reason = transition.result.effects.find(effect => effect.type === "denial-recorded")?.reason;
+    return beforeTombstoneFinality(reason) ? transition : reject(s, e, "terminal-already-recorded");
+  }
+  const lateEffects = transition.result.effects.filter(
+    (effect): effect is C.LateReceiptRetainedEffect => effect.type === "late-receipt-retained");
+  if (lateEffects.length === 0) return reject(s, e, "terminal-already-recorded");
+  const candidate = stateOf(transition.state);
+  return accept(s, e, { receipts: candidate.receipts, buildReceipts: candidate.buildReceipts,
+    consistencyReceipts: candidate.consistencyReceipts, lateFacts: candidate.lateFacts }, lateEffects);
+};
 export const transitionQualificationEvent = (
   reducerState: QualificationReducerState, event: C.ProtocolEvent,
 ): QualificationTransition => {
@@ -878,7 +917,9 @@ export const transitionQualificationEvent = (
     event.custodyAuthorityId !== s.registration.custodyAuthorityId ||
     event.authenticatedPredecessorId !== s.lastEventId ||
     s.lastTick !== null && event.authoritativeTick < s.lastTick)) return reject(s, event, "wrong-binding");
-  return dispatch(s, event);
+  const transition = dispatch(s, event);
+  return s.projections.resourceRetirement.type === "retired" ?
+    enforceTombstoneFinality(s, event, transition) : transition;
 };
 export const foldQualificationHistory = (
   events: readonly C.ProtocolEvent[], maximumEvents: number, trusted: C.TrustedProtocolCoordinates,

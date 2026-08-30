@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync, realpathSync, statSync } from "node:fs";
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import fc from "fast-check";
+import { parseSync, Visitor } from "oxc-parser";
 import * as C from "./dogfooding-protocol-contract.ts";
 import { foldOracleHistory } from "./dogfooding-protocol-oracle.ts";
 import { foldQualificationHistory } from "./dogfooding-protocol-reducer.ts";
@@ -358,6 +361,11 @@ const raceFamilies: readonly RaceFamily[] = [
 ];
 assert.equal(raceFamilies.length, 12, "the registry must contain exactly twelve race families");
 const retiredBeforeComplete = [...sourceClosedPrefix, retirement("retirement"), cleanup("cleanup")] as const;
+const retainedClosurePrefix = [...buildAuthorizedPrefix, build("retained-build", "failed"),
+  consistency("retained-consistency", { type: "non-artifact-match", buildResult: "failed",
+    proofId: proof("retained-consistency") }, buildReceipt("retained-build")),
+  reconcile("retained-terminated", "terminated"), retirement("retained-retirement"),
+  cleanup("retained-cleanup")] as const;
 const retiredCrashHistory = [...retiredBeforeComplete,
   complete("complete", retiredBeforeComplete, receipt("close")),
   rejected(detached(crash("post-retirement-crash")))] as const;
@@ -485,23 +493,62 @@ test("retirement tombstone is final and failed admission revokes consumed author
   assert.ok(failed.effects.some(effect => effect.type === "authorization-revoked" &&
     effect.authorizationId === id.otherAuthorization));
 });
-test("qualification model remains disposable and bounded", () => {
-  const files = readdirSync(new URL(".", import.meta.url)).filter(file => /^dogfooding-protocol.*\.ts$/u.test(file)).sort();
-  assert.deepEqual(files, ["dogfooding-protocol-contract.ts", "dogfooding-protocol-oracle.ts",
-    "dogfooding-protocol-reducer.ts", "dogfooding-protocol.test.ts"]);
-  const sources = files.map(file => readFileSync(new URL(file, import.meta.url), "utf8"));
-  const lineCount = sources.reduce((sum, source) => sum + source.split(/\r?\n/u).length - 1, 0);
-  const byteCount = sources.reduce((sum, source) => sum + Buffer.byteLength(source, "utf8"), 0);
-  const longestLine = Math.max(...sources.flatMap(source => source.split(/\r?\n/u).map(line => line.length)));
-  assert.ok(lineCount <= 3_000, `qualification model has ${lineCount} physical lines`);
-  assert.ok(byteCount <= 225_000, `qualification model has ${byteCount} UTF-8 bytes`);
-  assert.ok(longestLine <= 200, `qualification model has a ${longestLine}-character line`);
-  for (const source of sources) {
-    const localImports = [...source.matchAll(/from\s+["']\.\/([^"']+)["']/gu)].map(match => match[1]!);
-    assert.ok(localImports.every(file => files.includes(file)), "qualification imports stay inside the capped closure");
-    assert.doesNotMatch(source, /import\s*\(\s*["']\.\//u, "dynamic local imports are forbidden");
-  }
-});
+const modelEntry = realpathSync(fileURLToPath(import.meta.url)); const repositoryRoot = realpathSync(resolve(dirname(modelEntry), "..", ".."));
+const inside = (path: string, parent: string): boolean => { const relation = relative(parent, path);
+  return relation === "" || (!isAbsolute(relation) && relation !== ".." && !relation.startsWith(`..${sep}`)); };
+const dependencySpecifiers = (path: string, source: string): readonly string[] => { const parsed = parseSync(path, source), specifiers: string[] = [];
+  assert.equal(parsed.errors.length, 0, parsed.errors.map(error => error.message).join("\n"));
+  const literal = (node: { readonly type: string; readonly value?: unknown } | null | undefined): void => { assert.ok(node?.type === "Literal" && typeof node.value === "string",
+      `${relative(repositoryRoot, path)} has a non-literal module loader`); specifiers.push(node.value); };
+  const named = (node: { readonly type: string; readonly name?: unknown }, name: string): boolean =>
+    node.type === "Identifier" && node.name === name; new Visitor({ ImportDeclaration: node => literal(node.source), ExportAllDeclaration: node => literal(node.source),
+    ExportNamedDeclaration: node => { if (node.source !== null) literal(node.source); }, ImportExpression: node => literal(node.source), TSImportType: node => literal(node.source),
+    CallExpression: node => { const { callee } = node; const member = callee.type === "MemberExpression" && !callee.computed ? callee : null;
+      const loader = named(callee, "require") || member !== null && (
+        named(member.object, "require") && named(member.property, "resolve") ||
+        named(member.object, "module") && named(member.property, "require") ||
+        member.object.type === "MetaProperty" && named(member.object.meta, "import") &&
+          named(member.object.property, "meta") && named(member.property, "resolve")); if (loader) literal(node.arguments[0]); },
+  }).visit(parsed.program); return [...new Set(specifiers)]; }; type LocalAliases = Readonly<Record<string, readonly string[]>>;
+const qualificationAliases = { "#qualification/*": ["tests/qualification/*"] } as const satisfies LocalAliases;
+const aliasTargets = (specifier: string, aliases: LocalAliases): readonly string[] =>
+  Object.entries(aliases).flatMap(([pattern, targets]) => { const wildcard = pattern.indexOf("*"), prefix = pattern.slice(0, wildcard < 0 ? pattern.length : wildcard);
+    const suffix = wildcard < 0 ? "" : pattern.slice(wildcard + 1); const match = wildcard < 0 ? pattern === specifier ? "" : null :
+      specifier.startsWith(prefix) && specifier.endsWith(suffix) ?
+        specifier.slice(prefix.length, specifier.length - suffix.length) : null; return match === null ? [] : targets.map(target => target.replace("*", match)); });
+const resolveSourceDependency = (specifier: string, containingFile: string, aliases: LocalAliases): string | null => {
+  if (specifier.startsWith("node:")) return null; const targets = aliasTargets(specifier, aliases);
+  const local = /^(?:\.{1,2}(?:[/\\]|$)|[/\\]|file:)/u.test(specifier) || specifier.startsWith("#") || targets.length > 0; if (!local) return null; let candidates: readonly string[];
+  try { candidates = specifier.startsWith("file:") ? [fileURLToPath(specifier)] : targets.length > 0 ?
+    targets.map(target => resolve(repositoryRoot, target)) :
+    [isAbsolute(specifier) ? specifier : resolve(dirname(containingFile), specifier)]; }
+  catch { assert.fail(`${relative(repositoryRoot, containingFile)} has unresolvable local import ${specifier}`); }
+  for (const candidate of candidates) try { const canonical = realpathSync(candidate); assert.ok(inside(canonical, repositoryRoot) && !canonical.split(sep).includes("node_modules"),
+      `${relative(repositoryRoot, containingFile)} local import ${specifier} escapes the repository`); if (statSync(canonical).isFile()) return canonical;
+  } catch (error) { if (error instanceof assert.AssertionError) throw error; } assert.fail(`${relative(repositoryRoot, containingFile)} has unresolvable local import ${specifier}`); };
+interface CappedSource { readonly bytes: Buffer; readonly text: string } const sourceClosure = (entry: string, aliases: LocalAliases): ReadonlyMap<string, CappedSource> => {
+  const pending = [entry], sources = new Map<string, CappedSource>(); while (pending.length > 0) { const path = pending.pop()!; if (sources.has(path)) continue;
+    const bytes = readFileSync(path), text = new TextDecoder("utf-8", { fatal: true }).decode(bytes); sources.set(path, { bytes, text }); if (!/\.(?:[cm]?[jt]sx?)$/u.test(path)) continue;
+    for (const specifier of dependencySpecifiers(path, text)) { const dependency = resolveSourceDependency(specifier, path, aliases); if (dependency !== null) pending.push(dependency); }
+  } return sources; }; test("qualification source closure recognizes static and dynamic loading forms", () => {
+  const source = `import value from "./static.ts"; import "./side-effect.ts"; export * from "../export.ts";\n` +
+    `type Imported = import("#type-alias").Imported; void import("./dynamic.ts");\n` +
+    `require("./required.ts"); import.meta.resolve("#qualification/resolved.ts"); void value;`; assert.deepEqual([...dependencySpecifiers("fixture.ts", source)].sort(),
+    ["#qualification/resolved.ts", "#type-alias", "../export.ts", "./dynamic.ts", "./required.ts", "./side-effect.ts", "./static.ts"].sort());
+  assert.throws(() => dependencySpecifiers("fixture.ts", "void import(dynamicPath)"), /non-literal module loader/u); }); test("qualification model remains disposable and bounded", () => {
+  assert.equal(resolveSourceDependency("#qualification/dogfooding-protocol-contract.ts", modelEntry,
+    qualificationAliases), realpathSync(resolve(dirname(modelEntry), "dogfooding-protocol-contract.ts")));
+  assert.throws(() => resolveSourceDependency("../missing-local.ts", modelEntry, qualificationAliases), /unresolvable local import/u);
+  assert.throws(() => resolveSourceDependency("#qualification/missing-local.ts", modelEntry, qualificationAliases),
+    /unresolvable local import/u); const sources = sourceClosure(modelEntry, qualificationAliases);
+  assert.deepEqual([...sources.keys()].map(path => relative(dirname(modelEntry), path)).sort(), [
+    "dogfooding-protocol-contract.ts", "dogfooding-protocol-oracle.ts", "dogfooding-protocol-reducer.ts", "dogfooding-protocol.test.ts"]);
+  const physicalLines = (text: string): number => text.length === 0 ? 0 :
+    (text.match(/\n/gu)?.length ?? 0) + (text.endsWith("\n") ? 0 : 1); const lineCount = [...sources.values()].reduce((sum, source) => sum + physicalLines(source.text), 0);
+  const byteCount = [...sources.values()].reduce((sum, source) => sum + source.bytes.length, 0);
+  const longestLine = Math.max(...[...sources.values()].flatMap(source => source.text.split("\n")
+    .map(line => [...line.replace(/\r$/u, "")].length))); assert.ok(lineCount <= 3_000, `qualification model has ${lineCount} physical lines`);
+  assert.ok(byteCount <= 225_000, `qualification model has ${byteCount} raw UTF-8 bytes`); assert.ok(longestLine <= 200, `qualification model has a ${longestLine}-character line`); });
 test("supported fence-advance causes apply the same fail-closed scope revocation", () => {
   advanceCauseHistories.forEach(history => {
     const last = foldQualificationHistory(materialize(history), 64, trusted).results.at(-1)!;
@@ -524,6 +571,40 @@ test("receipt primitive identity is unique across protocol receipt families", ()
   assert.ok(result.effects.some(effect => effect.type === "denial-recorded" &&
     effect.reason === "receipt-replay"));
 });
+test("cross-namespace build replay remains in the typed retirement evidence closure", () => { const replayReceipt = C.buildReceiptId("receipt:close");
+  const beforeComplete = [...buildAuthorizedPrefix, build("build", "succeeded"), build("cross-namespace-replay", "succeeded", replayReceipt),
+    consistency("consistency", { type: "match", artifactDigest: id.artifact }), reconcile("build-terminated", "terminated"), retirement("retirement"), cleanup("cleanup")] as const;
+  compareHistory([...beforeComplete, complete("complete-full", beforeComplete, receipt("close"))],
+    "cross-namespace replay complete closure"); const candidate = complete("complete-omitted", beforeComplete, receipt("close"));
+  const retainedEvidence = (candidate.body.retainedEvidence as readonly C.EvidenceReference[])
+    .filter(reference => reference.type !== "build-receipt" || reference.buildReceiptId !== replayReceipt);
+  const omitted = rejected({ ...candidate, body: { ...candidate.body, retainedEvidence } }); compareHistory([...beforeComplete, omitted], "cross-namespace replay omitted typed receipt"); });
+test("retirement freezes state mutations but retains explicit late forensic evidence", () => { const longIssue = event("source-issue-long", "IssueAuthorization", {
+    ...authorization(sourceFence), authorizationId: id.otherAuthorization, expiresAt: tick(100) }); const beforeComplete = [register, longIssue,
+    event("source-consume", "ConsumeAuthorization", { ...authorization(sourceFence), authorizationId: id.otherAuthorization }),
+    release("source-release", sourceFence, "source-authoring", id.otherAuthorization), close("close"),
+    reconcile("source-terminated", "terminated"), retirement("retirement"), cleanup("cleanup")] as const;
+  const tombstone = complete("complete", beforeComplete, receipt("close")), postRetirement = [
+    rejected(detached(admission("post-retirement-admission", "accepted"))), rejected(detached(advance("post-retirement-advance"))),
+    rejected(detached(attemptDeadline("post-retirement-attempt"))), rejected(detached(checkpoint("post-retirement-checkpoint"))),
+    at(release("post-retirement-late-start", sourceFence, "source-authoring", id.otherAuthorization), 61)] as const;
+  const history = [...beforeComplete, tombstone, ...postRetirement] as const; compareHistory(history, "post-retirement finality");
+  const results = foldQualificationHistory(materialize(history), 64, trusted).results; const finalized = results[beforeComplete.length]!.terminalProjections, late = results.at(-1)!;
+  results.slice(beforeComplete.length + 1).forEach(result => assert.deepEqual(result.terminalProjections, finalized)); assert.equal(late.decision, "accepted");
+  assert.ok(late.effects.some(effect => effect.type === "late-receipt-retained")); });
+test("launch deadline winner retains later start and denial receipts without rewriting terminals", () => {
+  const longIssue = event("long-issue", "IssueAuthorization", { ...authorization(sourceFence), expiresAt: tick(100) });
+  const prefix = [register, longIssue, consume("consume"), launchDeadline("launch-deadline")] as const;
+  const facts = [at(release("late-start", sourceFence), 61), at(releaseDenied("late-denial", sourceFence), 61)]; facts.forEach((fact, index) => {
+    const history = [...prefix, fact] as const; compareHistory(history, `post-deadline launch receipt ${index + 1}`);
+    const results = foldQualificationHistory(materialize(history), 64, trusted).results; assert.equal(results.at(-1)!.decision, "accepted");
+    assert.ok(results.at(-1)!.effects.some(effect => effect.type === "late-receipt-retained"));
+    assert.deepEqual(results.at(-1)!.terminalProjections, results.at(-2)!.terminalProjections); }); });
+test("launch deadline validates binding before reporting a premature deadline", () => { const candidate = launchDeadline("early-wrong-binding", sourceFence, "start-unknown", 59);
+  const wrongBinding = rejected({ ...candidate, body: { ...candidate.body, sourceFamilyRootId: C.sourceFamilyRootId("wrong-root") } });
+  const history = [register, issue("issue"), consume("consume"), wrongBinding] as const; compareHistory(history, "binding before launch deadline");
+  const result = foldQualificationHistory(materialize(history), 8, trusted).results.at(-1)!;
+  assert.ok(result.effects.some(effect => effect.type === "denial-recorded" && effect.reason === "wrong-binding")); });
 test("trusted bootstrap rejects substituted custody authority", () => {
   const [registration] = materialize([register]);
   const substituted = { ...registration!, custodyAuthorityId: C.custodyAuthorityId("substituted-authority") };
@@ -539,48 +620,100 @@ test("retirement tombstones occupy the shared replay namespace", () => {
   const result = foldQualificationHistory(materialize(history), 64, trusted).results.at(-1)!;
   assert.ok(result.effects.some(effect => effect.type === "denial-recorded" && effect.reason === "receipt-replay"));
 });
-test("retirement requires the complete retained evidence closure", () => {
-  const candidate = complete("incomplete", retiredBeforeComplete, receipt("close"));
-  const incomplete = rejected({ ...candidate, body: { ...candidate.body, retainedEvidence: [] } });
-  const history = [...retiredBeforeComplete, incomplete] as const;
-  compareHistory(history, "incomplete retirement evidence");
-  const result = foldQualificationHistory(materialize(history), 64, trusted).results.at(-1)!;
-  assert.equal(result.decision, "rejected");
-});
-test("retirement tombstone cannot reuse an earlier receipt primitive", () => {
-  const candidate = complete("collision", retiredBeforeComplete, receipt("close"));
-  const collision = rejected({ ...candidate, body: { ...candidate.body,
-    tombstoneId: C.tombstoneId("receipt:close") } });
-  compareHistory([...retiredBeforeComplete, collision], "tombstone collision");
-});
-const perturbEvents = (source: readonly C.ProtocolEvent[], selectedIndex: number,
-  mutation: number, salt: number): readonly C.ProtocolEvent[] => {
-  const events = [...source], index = selectedIndex % events.length, selected = events[index]!;
-  if (mutation === 7 && index > 0 && index + 1 < events.length) {
-    [events[index], events[index + 1]] = [events[index + 1]!, events[index]!]; return events;
-  }
-  const changed: Record<string, unknown> = { ...selected };
-  if (mutation === 0) changed.custodyAuthorityId = C.custodyAuthorityId(`generated-authority:${salt}`);
-  else if (mutation === 1) changed.protocolRevisionId = C.protocolRevisionId(`generated-protocol:${salt}`);
-  else if (mutation === 2) changed.authenticatedPredecessorId = C.eventId(`generated-predecessor:${salt}`);
-  else if (mutation === 3) changed.authoritativeTick = tick(Math.max(0, Number(selected.authoritativeTick) - salt - 1));
-  else if (mutation === 4 && "sourceFamilyRootId" in selected)
-    changed.sourceFamilyRootId = C.sourceFamilyRootId(`generated-root:${salt}`);
-  else if (mutation === 5 && "authorizationFence" in selected) changed.authorizationFence = {
-    ...selected.authorizationFence, expectedGeneration: g(100 + salt),
-  };
-  else if (mutation === 6) {
-    if ("receiptId" in selected) changed.receiptId = C.receiptId("receipt:close");
-    else if ("launchReceiptId" in selected) changed.launchReceiptId = C.receiptId("receipt:close");
-    else if ("observationReceiptId" in selected) changed.observationReceiptId = C.receiptId("receipt:close");
-    else if ("buildReceiptId" in selected) changed.buildReceiptId = C.buildReceiptId("receipt:close");
-    else if ("consistencyReceiptId" in selected)
-      changed.consistencyReceiptId = C.consistencyReceiptId("receipt:close");
-    else changed.custodyAuthorityId = C.custodyAuthorityId(`generated-authority:${salt}`);
-  } else changed.custodyAuthorityId = C.custodyAuthorityId(`generated-authority:${salt}`);
-  events[index] = changed as unknown as C.ProtocolEvent;
-  return events;
-};
+test("retirement requires the complete retained evidence closure", () => { const candidate = complete("retained-complete", retainedClosurePrefix, receipt("close"));
+  const retained = candidate.body.retainedEvidence as readonly C.EvidenceReference[]; const sourceKeys = new Set([JSON.stringify({ type: "event", eventId: C.eventId("event:close") }),
+    JSON.stringify({ type: "receipt", receiptId: receipt("close") })]); assert.ok([...sourceKeys].every(key => retained.some(reference => JSON.stringify(reference) === key)));
+  const removable = retained.map((reference, index) => ({ reference, index }))
+    .filter(({ reference }) => !sourceKeys.has(JSON.stringify(reference))); assert.deepEqual([...new Set(removable.map(({ reference }) => reference.type))].sort(),
+    ["build-receipt", "consistency-receipt", "event", "proof", "receipt"]);
+  const accepted = compareEvents(materialize([...retainedClosurePrefix, candidate]), "complete retirement evidence"); assert.equal(accepted.at(-1)!.decision, "accepted");
+  for (const { reference, index } of removable) { const incomplete = rejected({ ...candidate, body: { ...candidate.body,
+      retainedEvidence: retained.filter((_item, retainedIndex) => retainedIndex !== index) } }); const results = compareEvents(materialize([...retainedClosurePrefix, incomplete]),
+      `retirement evidence missing ${JSON.stringify(reference)}`); const result = results.at(-1)!; assert.equal(result.decision, "rejected");
+    assert.deepEqual(result.effects.filter(effect => effect.type === "denial-recorded").map(effect => effect.reason), ["wrong-binding"]); } });
+test("retirement tombstone cannot reuse an earlier receipt primitive", () => { const candidate = complete("collision", retiredBeforeComplete, receipt("close"));
+  const collision = rejected({ ...candidate, body: { ...candidate.body, tombstoneId: C.tombstoneId("receipt:close") } });
+  compareHistory([...retiredBeforeComplete, collision], "tombstone collision"); });
+const mutationOperators = ["custody-authority", "protocol-revision", "predecessor", "tick",
+  "source-root", "authorization-fence", "receipt-rewrite", "order-swap"] as const;
+type MutationOperator = typeof mutationOperators[number];
+const receiptFields = ["receiptId", "launchReceiptId", "observationReceiptId", "buildReceiptId",
+  "consistencyReceiptId", "sourceTerminalReceiptId", "tombstoneId"] as const;
+type ReceiptField = typeof receiptFields[number];
+interface PerturbationTarget { readonly operator: MutationOperator; readonly scenario: number;
+  readonly index: number; readonly field?: ReceiptField; readonly replacement?: string }
+const ownedReceipt = (event: C.ProtocolEvent): string | null => {
+  switch (event.type) {
+    case "CloseSource": case "AbandonSource": case "RecordReleaseDenied": case "RecordAttemptReceipt":
+    case "RecordStopReceipt": case "RecordAdmission": return event.receiptId;
+    case "ReleaseProcess": return event.launchReceiptId;
+    case "ReachLaunchDeadline": case "ReachAttemptDeadline": case "ReachStopDeadline":
+    case "ReachBuildDeadline": case "ReachBuildConsistencyDeadline": return event.observationReceiptId;
+    case "RecordBuildResult": return event.buildReceiptId;
+    case "RecordBuildConsistencyReceipt": return event.consistencyReceiptId;
+    case "CompleteRetirement": return event.tombstoneId; default: return null; } };
+const perturbationTargets: readonly PerturbationTarget[] = scenarioHistories.flatMap((history, scenario) => {
+  const events = materialize(history), targets: PerturbationTarget[] = [];
+  events.forEach((selected, index) => {
+    for (const operator of mutationOperators.slice(0, 4)) targets.push({ operator, scenario, index });
+    if ("sourceFamilyRootId" in selected) targets.push({ operator: "source-root", scenario, index });
+    if ("authorizationFence" in selected) targets.push({ operator: "authorization-fence", scenario, index });
+    if (history[index]!.accepted) for (const field of receiptFields) if (field in selected) {
+      const current = (selected as unknown as Record<string, string>)[field];
+      const prior = events.slice(0, index).flatMap((event, priorIndex) =>
+        history[priorIndex]!.accepted && ownedReceipt(event) !== null ? [ownedReceipt(event)!] : []);
+      for (const replacement of new Set(prior)) if (replacement !== current)
+        targets.push({ operator: "receipt-rewrite", scenario, index, field, replacement }); } });
+  for (let index = 1; index + 1 < history.length; index += 1) {
+    const left = history[index]!, right = history[index + 1]!;
+    if (left.accepted && right.accepted && left.extendsLineage && right.extendsLineage && left.label !== right.label)
+      targets.push({ operator: "order-swap", scenario, index }); } return targets; });
+const targetTypes = (target: PerturbationTarget): readonly C.ProtocolEvent["type"][] => {
+  const events = materialize(scenarioHistories[target.scenario]!);
+  return target.operator === "order-swap" ? [events[target.index]!.type, events[target.index + 1]!.type]
+    : [events[target.index]!.type]; };
+const requiredTargets = new Map<string, PerturbationTarget>();
+const requireTarget = (target: PerturbationTarget | undefined): void => {
+  assert.ok(target !== undefined, "every perturbation coverage target must exist");
+  requiredTargets.set(JSON.stringify(target), target); };
+for (const operator of mutationOperators)
+  requireTarget(perturbationTargets.find(target => target.operator === operator));
+for (const type of protocolEventTypes) if (![...requiredTargets.values()].flatMap(targetTypes).includes(type))
+  requireTarget(perturbationTargets.find(target => targetTypes(target).includes(type)));
+for (const field of receiptFields)
+  requireTarget(perturbationTargets.find(target => target.operator === "receipt-rewrite" && target.field === field));
+const applyPerturbation = (target: PerturbationTarget, salt: number, tickStep: number) => {
+  const specs = scenarioHistories[target.scenario]!, baseline = materialize(specs, tickStep);
+  if (target.operator === "order-swap") {
+    const orderedSpecs = [...specs], records = [...baseline];
+    [orderedSpecs[target.index], orderedSpecs[target.index + 1]] =
+      [orderedSpecs[target.index + 1]!, orderedSpecs[target.index]!];
+    [records[target.index], records[target.index + 1]] = [records[target.index + 1]!, records[target.index]!];
+    let predecessor: C.EventId | null = null;
+    const events = records.map((record, index) => {
+      const next = { ...record, authoritativeTick: baseline[index]!.authoritativeTick,
+        authenticatedPredecessorId: predecessor } as C.ProtocolEvent;
+      if (index === 0 || orderedSpecs[index]!.extendsLineage) predecessor = next.eventId; return next; });
+    assert.equal(events[target.index]!.authenticatedPredecessorId,
+      baseline[target.index]!.authenticatedPredecessorId);
+    assert.equal(events[target.index + 1]!.authenticatedPredecessorId, events[target.index]!.eventId);
+    assert.ok(events[target.index]!.authoritativeTick <= events[target.index + 1]!.authoritativeTick);
+    assert.notDeepEqual(events, baseline, "order mutant must change the history");
+    return { baseline, events, types: targetTypes(target) }; }
+  const events = [...baseline], selected = events[target.index]!, changed: Record<string, unknown> = { ...selected };
+  if (target.operator === "custody-authority") changed.custodyAuthorityId = C.custodyAuthorityId(`generated-authority:${salt}`);
+  else if (target.operator === "protocol-revision") changed.protocolRevisionId = C.protocolRevisionId(`generated-protocol:${salt}`);
+  else if (target.operator === "predecessor") changed.authenticatedPredecessorId = C.eventId(`generated-predecessor:${salt}`);
+  else if (target.operator === "tick") changed.authoritativeTick = tick(Number(selected.authoritativeTick) + salt + 1);
+  else if (target.operator === "source-root") changed.sourceFamilyRootId = C.sourceFamilyRootId(`generated-root:${salt}`);
+  else if (target.operator === "authorization-fence") changed.authorizationFence = {
+    ...(selected as Extract<C.ProtocolEvent, { readonly authorizationFence: unknown }>).authorizationFence,
+    expectedGeneration: g(100 + salt) };
+  else if (target.operator === "receipt-rewrite") changed[target.field!] = target.replacement;
+  events[target.index] = changed as unknown as C.ProtocolEvent;
+  assert.notDeepEqual(events[target.index], baseline[target.index], `${target.operator} must change its record`);
+  assert.notDeepEqual(events, baseline, `${target.operator} mutant must change the history`);
+  return { baseline, events, types: targetTypes(target) }; };
 for (const family of raceFamilies) for (const reverse of [false, true]) {
   test(`${family.name} / ${reverse ? "right-before-left" : "left-before-right"}`, () => {
     for (let variant = 0; variant < family.variants; variant += 1) {
@@ -595,15 +728,27 @@ test("every registered race family exercises distinct event orders", () => {
     assert.notDeepEqual(left, right, `${family.name} variant ${variant + 1}`);
   }
 });
-test("bounded randomized scenario perturbations agree with the independent oracle", () => {
-  fc.assert(fc.property(
-    fc.integer({ min: 0, max: scenarioHistories.length - 1 }), fc.nat(31),
-    fc.integer({ min: 0, max: 7 }), fc.nat(31), fc.integer({ min: 1, max: 2 }),
-    (scenarioIndex, selectedIndex, mutation, salt, tickStep) => {
-      const baseline = materialize(scenarioHistories[scenarioIndex]!, tickStep);
-      const events = perturbEvents(baseline, selectedIndex, mutation, salt);
-      assert.ok(events.length <= 32, "generated histories remain bounded");
-      compareEvents(events, `generated scenario ${scenarioIndex + 1} mutation ${mutation}`);
-    },
-  ), { seed: 0x415139, numRuns: 500 });
+test("500 bounded randomized scenario perturbations agree with the independent oracle", () => {
+  const entropy = fc.record({ selector: fc.nat(), salt: fc.nat(31), tickStep: fc.integer({ min: 1, max: 2 }) });
+  fc.assert(fc.property(fc.array(entropy, { minLength: 500, maxLength: 500 }), batch => {
+    const operators = new Set<MutationOperator>(), types = new Set<C.ProtocolEvent["type"]>();
+    const fields = new Set<ReceiptField>(), required = [...requiredTargets.values()];
+    batch.forEach(({ selector, salt, tickStep }, index) => {
+      const target = required[index] ?? perturbationTargets[selector % perturbationTargets.length]!;
+      const mutation = applyPerturbation(target, salt, tickStep);
+      assert.ok(mutation.events.length <= 32, "generated histories remain bounded");
+      const results = compareEvents(mutation.events,
+        `generated scenario ${target.scenario + 1} operator ${target.operator}`);
+      if (target.operator === "order-swap") assert.ok(!results[target.index]!.effects.some(effect =>
+        effect.type === "denial-recorded" && effect.reason === "wrong-binding"),
+      "relinearized order swap must reach semantic ordering checks");
+      operators.add(target.operator);
+      mutation.types.forEach(type => types.add(type));
+      if (target.field !== undefined) fields.add(target.field);
+    });
+    assert.equal(batch.length, 500);
+    assert.deepEqual([...operators].sort(), [...mutationOperators].sort());
+    assert.deepEqual([...types].sort(), [...protocolEventTypes].sort());
+    assert.deepEqual([...fields].sort(), [...receiptFields].sort());
+  }), { seed: 0x415139, numRuns: 1 });
 });

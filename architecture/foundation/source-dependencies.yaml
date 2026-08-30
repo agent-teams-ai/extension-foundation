@@ -132,6 +132,7 @@ boundaries:
         - "@agent-teams/docs-protocol"
         - "@agent-teams/engineering-foundation"
         - fast-check
+        - oxc-parser
         - yaml
       builtins:
         - node:assert/strict

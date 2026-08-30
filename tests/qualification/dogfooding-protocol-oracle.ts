@@ -233,7 +233,22 @@ const effects: DeclaredEffect[] = [
 ...invalidClaimEffects(event, evidence), ]; if (event.type === "RecordBuildResult" ||
 event.type === "RecordBuildConsistencyReceipt") effects.push({ type: "execution-gate-set",
 causalEventId: event.eventId, buildAttemptId: event.buildAttemptId, value: "denied" });
-void receipt; return accept(withProjection(before, { claim: "invalid" }), effects); }; const terminalConflict = ( currentType: string, nextType: string,
+void receipt; return accept(withProjection(before, { claim: "invalid" }), effects); };
+const denialSurvivesRetirement = (reason: DenialReason | undefined): boolean =>
+reason === "wrong-binding" || reason === "retirement-owner-mismatch" ||
+reason === "credential-lineage-mismatch" || reason === "runtime-unresolved" ||
+reason === "receipt-replay" || reason === "terminal-already-recorded";
+const enforceRetiredHistoryFinality = (history: OracleHistory, event: ProtocolEvent,
+result: TransitionResult): TransitionResult => { const before = currentProjection(history);
+if (before.resourceRetirement.type !== "retired") return result;
+if (result.decision === "rejected") { const reason = result.effects.find(
+effect => effect.type === "denial-recorded")?.reason;
+return denialSurvivesRetirement(reason) ? result : denial(event, before, "terminal-already-recorded"); }
+const retained = result.effects.filter(
+(effect): effect is Extract<DeclaredEffect, { readonly type: "late-receipt-retained" }> =>
+effect.type === "late-receipt-retained");
+return retained.length === 0 ? denial(event, before, "terminal-already-recorded") : accept(before, retained); };
+const terminalConflict = ( currentType: string, nextType: string,
 ): boolean => currentType !== nextType; const handleAuthorization = ( history: OracleHistory,
 event: Extract<ProtocolEvent, {
 readonly type: "IssueAuthorization" | "ConsumeAuthorization" | "RevokeAuthorization" | "ExpireAuthorization"; }>,
@@ -344,6 +359,13 @@ sourceFamilyRootId: event.sourceFamilyRootId, runtimeId: event.runtimeId },
 { type: "runtime-termination-requested" as const, causalEventId: event.eventId, runtimeId: event.runtimeId }] : []), ], ); }
 if (event.type === "ReleaseProcess" && !same(event.attemptId, registration.attemptId)) {
 return denial(event, before, "wrong-binding"); }
+if (view?.launchTerminal === true && event.authoritativeTick >= registration.launchDeadline) {
+if (!view.consumed) return denial(event, before, "authorization-unavailable");
+const receiptId = event.type === "ReleaseProcess" ? event.launchReceiptId : event.receiptId;
+if (usedReceipt(history, receiptId)) return replay(event, history, receiptId);
+const result = event.type === "ReleaseProcess" ? "started" as const : "release-denied" as const;
+return accept(before, [{ type: "late-receipt-retained", causalEventId: event.eventId,
+evidence: { type: "launch", authorizationId: event.authorizationId, receiptId, result } }]); }
 if (event.type === "ReleaseProcess" && before.resourceRetirement.type !== "active")
 return denial(event, before, "gate-closed");
 if (event.type === "ReleaseProcess" && releaseRuntimeUnresolved(history)) return denial(event, before, "runtime-unresolved");
@@ -696,7 +718,7 @@ if (event.type === "RegisterProtocol") { result = denial(event, currentProjectio
 } else { const envelopeFailure = commonEnvelopeFailure(history, event); if (envelopeFailure !== null) {
 result = denial(event, currentProjection(history), envelopeFailure); } else {
 const handler = transitionTable[event.type] as ( selected: OracleHistory, selectedEvent: typeof event,
-) => TransitionResult; result = handler(history, event); } }
+) => TransitionResult; result = enforceRetiredHistoryFinality(history, event, handler(history, event)); } }
 const row: LedgerRow = { event, result, accepted: result.decision === "accepted" };
 return { history: { registration: history.registration, rows: [...history.rows, row] }, result }; };
 export const foldOracleHistory = (events: readonly ProtocolEvent[], trusted: TrustedProtocolCoordinates): OracleFold => { const [first, ...rest] = events;
