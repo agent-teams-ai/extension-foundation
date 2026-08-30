@@ -542,6 +542,17 @@ interface CappedSource { readonly text: string } const sourceClosure = (entry: s
 test("supported fence-advance causes apply the same fail-closed scope revocation", () => { advanceCauseHistories.forEach(history => {
   const last = foldQualificationHistory(materialize(history), 64, trusted).results.at(-1)!; assert.ok(last.effects.some(
     effect => effect.type === "authorization-revoked")); }); });
+test("a second protocol registration preserves binding precedence and reports immutable finality", () => {
+  const duplicate = rejected(event("duplicate-register", "RegisterProtocol", register.body));
+  const result = compareEvents(materialize([register, duplicate]), "duplicate protocol registration").at(-1)!;
+  assert.equal(result.effects.find(effect => effect.type === "denial-recorded")?.reason,
+    "terminal-already-recorded");
+  const foreign = rejected(event("foreign-register", "RegisterProtocol", { ...register.body,
+    custodyAuthorityId: C.custodyAuthorityId("foreign-authority") }));
+  const denied = compareEvents(materialize([register, foreign]), "foreign protocol registration").at(-1)!;
+  assert.equal(denied.effects.find(effect => effect.type === "denial-recorded")?.reason,
+    "wrong-binding");
+});
 test("direct start-unknown requests containment and reconciliation", () => { const result = foldQualificationHistory(materialize([register, issue("issue"), consume("consume"),
     launchDeadline("deadline")]), 8, trusted).results.at(-1)!;
   assert.deepEqual(result.effects.filter(effect => effect.type.endsWith("requested") || effect.type === "resource-quarantined").map(effect => effect.type).sort(),

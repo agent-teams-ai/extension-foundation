@@ -882,12 +882,12 @@ export const appendOracleEvent = (
     result = denial(event, currentProjection(history), "not-registered");
   } else if (sameId.length > 0) {
     result = denial(event, currentProjection(history), "wrong-binding");
-  } else if (event.type === "RegisterProtocol") {
-    result = denial(event, currentProjection(history), "not-registered");
   } else {
     const envelopeFailure = commonEnvelopeFailure(history, event);
     if (envelopeFailure !== null) {
       result = denial(event, currentProjection(history), envelopeFailure);
+    } else if (event.type === "RegisterProtocol") {
+      result = denial(event, currentProjection(history), "terminal-already-recorded");
     } else {
       const handler = transitionTable[event.type] as (
         selected: OracleHistory,
