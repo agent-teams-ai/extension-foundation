@@ -348,14 +348,15 @@ const advance = (s: State, e: C.AdvanceFence): QualificationTransition => {
   return accept(s, e, changes, [{ type: "gate-closed", causalEventId: e.eventId,
     fence: e.fence, generation: e.nextGeneration }, ...revoked.effects]);
 };
-const retainLateLaunch = (s: State,
-  e: C.ReleaseProcess | C.RecordReleaseDenied): QualificationTransition => {
-  const result = e.type === "ReleaseProcess" ? "started" : "release-denied";
-  const receiptId = e.type === "ReleaseProcess" ? e.launchReceiptId : e.receiptId;
-  return accept(s, e, { receipts: withSet(s.receipts, receiptId) }, [{
-    type: "late-receipt-retained", causalEventId: e.eventId,
-    evidence: { type: "launch", authorizationId: e.authorizationId, receiptId, result },
-  }]);
+const retainLateLaunch = (s: State, e: C.ReleaseProcess | C.RecordReleaseDenied, launch: C.LaunchTerminalProjection): QualificationTransition => {
+  const result = e.type === "ReleaseProcess" ? "started" : "release-denied", receiptId = e.type === "ReleaseProcess" ? e.launchReceiptId : e.receiptId;
+  const conflict = launch.type === "started" && result === "release-denied" || launch.type === "release-denied" && result === "started";
+  const effects: C.DeclaredEffect[] = [{ type: "late-receipt-retained", causalEventId: e.eventId, evidence: { type: "launch", authorizationId: e.authorizationId, receiptId, result } }];
+  if (conflict) effects.push(invalid(e, { type: "receipt", receiptId }), { type: "resource-quarantined", causalEventId: e.eventId,
+    sourceFamilyRootId: e.sourceFamilyRootId, runtimeId: e.runtimeId }, { type: "runtime-reconciliation-requested", causalEventId: e.eventId, runtimeId: e.runtimeId },
+    { type: "runtime-termination-requested", causalEventId: e.eventId, runtimeId: e.runtimeId });
+  return accept(s, e, { receipts: withSet(s.receipts, receiptId), projections: conflict ? { ...s.projections,
+    runtime: "unknown", resourceRetirement: { type: "quarantined" }, claim: "invalid" } : s.projections }, effects);
 };
 const release = (s: State, e: C.ReleaseProcess): QualificationTransition => {
   const mismatch = authorizationIdentity(s.registration!, e);
@@ -366,7 +367,7 @@ const release = (s: State, e: C.ReleaseProcess): QualificationTransition => {
   if (a.launch !== null && e.authoritativeTick >= s.registration!.launchDeadline) {
     if (a.consumedAt === null) return reject(s, e, "authorization-unavailable");
     if (receiptUsed(s, e.launchReceiptId)) return reject(s, e, "receipt-replay");
-    return retainLateLaunch(s, e);
+    return retainLateLaunch(s, e, a.launch);
   }
   if (s.projections.resourceRetirement.type !== "active") return reject(s, e, "gate-closed");
   if (s.projections.runtime !== "not-started" && s.projections.runtime !== "terminated")
@@ -412,7 +413,7 @@ const releaseDenied = (s: State, e: C.RecordReleaseDenied): QualificationTransit
   if (a.consumedAt === null) return reject(s, e, "authorization-unavailable");
   if (a.launch !== null && e.authoritativeTick >= s.registration!.launchDeadline) {
     if (receiptUsed(s, e.receiptId)) return reject(s, e, "receipt-replay");
-    return retainLateLaunch(s, e);
+    return retainLateLaunch(s, e, a.launch);
   }
   if (a.launch !== null) return reject(s, e, "terminal-already-recorded");
   if (s.projections.resourceRetirement.type === "retired") return reject(s, e, "terminal-already-recorded");
@@ -887,18 +888,17 @@ const dispatch = (s: State, e: C.ProtocolEvent): QualificationTransition => {
     case "ReachBuildConsistencyDeadline": return consistencyDeadline(s, e); case "RecordAdmission": return admission(s, e);
   }
 };
-const beforeTombstoneFinality = (reason: C.DenialReason | undefined): boolean =>
-  reason === "wrong-binding" || reason === "retirement-owner-mismatch" ||
-  reason === "credential-lineage-mismatch" || reason === "runtime-unresolved" ||
-  reason === "receipt-replay" || reason === "terminal-already-recorded";
-const enforceTombstoneFinality = (s: State, e: C.ProtocolEvent,
-  transition: QualificationTransition): QualificationTransition => {
-  if (transition.result.decision === "rejected") {
-    const reason = transition.result.effects.find(effect => effect.type === "denial-recorded")?.reason;
-    return beforeTombstoneFinality(reason) ? transition : reject(s, e, "terminal-already-recorded");
-  }
-  const lateEffects = transition.result.effects.filter(
-    (effect): effect is C.LateReceiptRetainedEffect => effect.type === "late-receipt-retained");
+const beforeTombstoneFinality = (reason: C.DenialReason | undefined): boolean => reason === "wrong-binding" || reason === "retirement-owner-mismatch" ||
+  reason === "credential-lineage-mismatch" || reason === "runtime-unresolved" || reason === "receipt-replay" || reason === "terminal-already-recorded";
+const enforceTombstoneFinality = (s: State, e: C.ProtocolEvent, transition: QualificationTransition): QualificationTransition => {
+  if (transition.result.decision === "rejected") { const reason = transition.result.effects.find(effect => effect.type === "denial-recorded")?.reason;
+    return beforeTombstoneFinality(reason) ? transition : reject(s, e, "terminal-already-recorded"); } const fx = transition.result.effects;
+  const typedReplay = (e.type === "RecordBuildResult" || e.type === "RecordBuildConsistencyReceipt") && fx.some(item => item.type === "denial-recorded" && item.reason === "receipt-replay");
+  if (typedReplay) return accept(s, e, {}, fx);
+  const launchConflict = (e.type === "ReleaseProcess" || e.type === "RecordReleaseDenied") && fx.some(effect => effect.type === "late-receipt-retained") &&
+    fx.some(effect => effect.type === "claim-disposition-set" && effect.value === "invalid");
+  if (launchConflict) return accept(s, e, { receipts: stateOf(transition.state).receipts }, fx);
+  const lateEffects = fx.filter((effect): effect is C.LateReceiptRetainedEffect => effect.type === "late-receipt-retained");
   if (lateEffects.length === 0) return reject(s, e, "terminal-already-recorded");
   const candidate = stateOf(transition.state);
   return accept(s, e, { receipts: candidate.receipts, buildReceipts: candidate.buildReceipts,
