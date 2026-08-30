@@ -147,7 +147,9 @@ evidence: DeclaredEffect extends infer _Unused ? | { readonly type: "event"; rea
 { type: "claim-disposition-set", causalEventId: event.eventId, value: "invalid", evidence }, ];
 const nonPromotional = ( event: ProtocolEvent, evidence: EvidenceReference,
 ): DeclaredEffect => ({ type: "claim-disposition-set", causalEventId: event.eventId, value: "non-promotional",
-evidence, }); const contain = (e: Extract<ProtocolEvent, { readonly type: "ReleaseProcess" | "RecordReleaseDenied" }>): readonly DeclaredEffect[] => [
+evidence, }); const contain = (e: Pick<Extract<ProtocolEvent, {
+readonly type: "ReleaseProcess" | "RecordReleaseDenied" | "ReachLaunchDeadline";
+}>, "eventId" | "sourceFamilyRootId" | "runtimeId">): readonly DeclaredEffect[] => [
 { type: "resource-quarantined", causalEventId: e.eventId, sourceFamilyRootId: e.sourceFamilyRootId, runtimeId: e.runtimeId },
 { type: "runtime-reconciliation-requested", causalEventId: e.eventId, runtimeId: e.runtimeId }, { type: "runtime-termination-requested", causalEventId: e.eventId, runtimeId: e.runtimeId }];
 const oppositeLaunchObserved = (
@@ -274,8 +276,17 @@ evidence = { type: "consistency-receipt", consistencyReceiptId: event.consistenc
 }
 const effects: DeclaredEffect[] = [
 { type: "denial-recorded", causalEventId: event.eventId, reason: "receipt-replay", subject: denialSubject(event) },
-...invalidClaimEffects(event, evidence), ]; if (!typed) return { decision: "rejected", effects,
-terminalProjections: withProjection(before, { claim: "invalid" }) }; effects.push({ type: "execution-gate-set",
+...invalidClaimEffects(event, evidence), ];
+const unsafeStart = event.type === "ReleaseProcess";
+const uncertainStart = event.type === "ReachLaunchDeadline" && event.result === "start-unknown";
+if (unsafeStart) effects.push({ type: "late-receipt-retained", causalEventId: event.eventId,
+evidence: { type: "launch", authorizationId: event.authorizationId,
+receiptId: event.launchReceiptId, result: "started" } });
+if (unsafeStart || uncertainStart) effects.push(...contain(event));
+if (!typed) return { decision: "rejected", effects,
+terminalProjections: withProjection(before, { claim: "invalid",
+...(unsafeStart || uncertainStart ? { runtime: "unknown" as const,
+resourceRetirement: { type: "quarantined" as const } } : {}) }) }; effects.push({ type: "execution-gate-set",
 causalEventId: event.eventId, buildAttemptId: event.buildAttemptId, value: "denied" });
 return accept(withProjection(before, { claim: "invalid" }), effects); };
 const retirementDenials: ReadonlySet<DenialReason> = new Set([
@@ -289,14 +300,32 @@ const retiredAt = history.rows.findIndex(row => row.accepted && row.event.type =
 if (retiredAt < 0) return null;
 let runtime: Exclude<RuntimeProjection, "not-started"> | null = null;
 for (const row of history.rows.slice(retiredAt + 1)) {
-if (!row.accepted) continue;
 const unsafeLaunch = (row.event.type === "ReleaseProcess" || row.event.type === "RecordReleaseDenied") &&
 row.result.effects.some(effect => effect.type === "late-receipt-retained") &&
 row.result.effects.some(effect => effect.type === "claim-disposition-set" && effect.value === "invalid");
-if (unsafeLaunch) runtime = "unknown";
-else if (row.event.type === "ReconcileRuntime" && runtime !== null) runtime = row.event.observation;
+const uncertainReplay = row.event.type === "ReachLaunchDeadline" && row.event.result === "start-unknown" &&
+row.result.effects.some(effect => effect.type === "denial-recorded" && effect.reason === "receipt-replay") &&
+row.result.effects.some(effect => effect.type === "runtime-reconciliation-requested");
+if (unsafeLaunch || uncertainReplay) runtime = "unknown";
+else if (row.accepted && row.event.type === "ReconcileRuntime" && runtime !== null)
+runtime = row.event.observation;
 }
 return runtime;
+};
+const runtimeSafetyFloor = (history: OracleHistory,
+runtimeId: Extract<ProtocolEvent, { readonly type: "ReconcileRuntime" }>["runtimeId"]):
+ProtocolEvent["authoritativeTick"] | null => {
+let floor: ProtocolEvent["authoritativeTick"] | null = null;
+for (const row of history.rows) {
+const candidate = row.event;
+if (!("runtimeId" in candidate) || !same(candidate.runtimeId, runtimeId)) continue;
+const safetyEvidence = row.result.effects.some(effect =>
+effect.type === "runtime-reconciliation-requested" ||
+effect.type === "runtime-termination-requested");
+if (safetyEvidence && (floor === null || candidate.authoritativeTick > floor))
+floor = candidate.authoritativeTick;
+}
+return floor;
 };
 const postRetirementReconciliation = (
 history: OracleHistory,
@@ -516,6 +545,11 @@ readonly type: "RestartObserved" | "ReconcileRuntime" | "RequestRetirement" | "R
 if (!rootMatches(registration, event)) return denial(event, before, "wrong-binding");
 if (event.type === "RestartObserved" || event.type === "ReconcileRuntime") {
 if (!same(event.runtimeId, registration.runtimeId)) return denial(event, before, "wrong-binding");
+if (event.type === "ReconcileRuntime") {
+const safetyFloor = runtimeSafetyFloor(history, event.runtimeId);
+if (safetyFloor !== null && event.authoritativeTick < safetyFloor)
+return denial(event, before, "wrong-binding");
+}
 if (event.type === "RestartObserved") {
 if (before.resourceRetirement.type === "retired") return denial(event, before, "terminal-already-recorded");
 const hasProspectiveRuntime = acceptedOf(history, "ConsumeAuthorization").length > 0 || before.runtime !== "not-started";

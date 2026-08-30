@@ -174,7 +174,9 @@ const terminal = (event: C.ProtocolEvent, value: C.TerminalReference): C.Termina
 const invalid = (event: C.ProtocolEvent, evidence: C.EvidenceReference): C.ClaimDispositionSetEffect => ({ type: "claim-disposition-set", causalEventId: event.eventId, value: "invalid", evidence });
 const nonPromotional = (event: C.ProtocolEvent, evidence: C.EvidenceReference): C.ClaimDispositionSetEffect =>
   ({ type: "claim-disposition-set", causalEventId: event.eventId, value: "non-promotional", evidence });
-const contain = (e: C.ReleaseProcess | C.RecordReleaseDenied): C.DeclaredEffect[] => [
+type RuntimeSafetyEvidence = Pick<C.ReleaseProcess | C.RecordReleaseDenied | C.ReachLaunchDeadline,
+  "eventId" | "sourceFamilyRootId" | "runtimeId">;
+const contain = (e: RuntimeSafetyEvidence): C.DeclaredEffect[] => [
   { type: "resource-quarantined", causalEventId: e.eventId, sourceFamilyRootId: e.sourceFamilyRootId, runtimeId: e.runtimeId },
   { type: "runtime-reconciliation-requested", causalEventId: e.eventId, runtimeId: e.runtimeId }, { type: "runtime-termination-requested", causalEventId: e.eventId, runtimeId: e.runtimeId }];
 const rootMatches = (r: Registration, e: { readonly sourceClaimFamilyId: C.SourceClaimFamilyId;
@@ -549,8 +551,24 @@ const restart = (s: State, e: C.RestartObserved): QualificationTransition => {
       sourceFamilyRootId: e.sourceFamilyRootId, runtimeId: e.runtimeId },
   ]);
 };
+const runtimeSafetyFloor = (s: State, runtimeId: C.RuntimeId): C.AuthoritativeTick | null => {
+  let floor: C.AuthoritativeTick | null = null;
+  for (const observation of s.events.values()) {
+    const candidate = observation.event;
+    if (!("runtimeId" in candidate) || candidate.runtimeId !== runtimeId) continue;
+    const safetyEvidence = observation.result.effects.some(effect =>
+      effect.type === "runtime-reconciliation-requested" ||
+      effect.type === "runtime-termination-requested");
+    if (safetyEvidence && (floor === null || candidate.authoritativeTick > floor))
+      floor = candidate.authoritativeTick;
+  }
+  return floor;
+};
 const reconcile = (s: State, e: C.ReconcileRuntime): QualificationTransition => {
   if (!rootMatches(s.registration!, e) || e.runtimeId !== s.registration!.runtimeId)
+    return reject(s, e, "wrong-binding");
+  const safetyFloor = runtimeSafetyFloor(s, e.runtimeId);
+  if (safetyFloor !== null && e.authoritativeTick < safetyFloor)
     return reject(s, e, "wrong-binding");
   if (s.projections.runtime === "not-started" || s.projections.resourceRetirement.type === "retired")
     return reject(s, e, "runtime-unresolved");
@@ -957,6 +975,31 @@ const tombstonePreservedDenials: ReadonlySet<C.DenialReason> = new Set([
 ]);
 const beforeTombstoneFinality = (reason: C.DenialReason | undefined): boolean =>
   reason !== undefined && tombstonePreservedDenials.has(reason);
+const preserveReplayedRuntimeSafety = (s: State, e: C.ProtocolEvent,
+  transition: QualificationTransition): QualificationTransition => {
+  const replay = transition.result.effects.some(effect =>
+    effect.type === "denial-recorded" && effect.reason === "receipt-replay");
+  const unsafeStart = e.type === "ReleaseProcess";
+  const uncertainStart = e.type === "ReachLaunchDeadline" && e.result === "start-unknown";
+  if (!replay || !unsafeStart && !uncertainStart) return transition;
+  const effects: C.DeclaredEffect[] = [...transition.result.effects];
+  if (unsafeStart) effects.push({ type: "late-receipt-retained", causalEventId: e.eventId,
+    evidence: { type: "launch", authorizationId: e.authorizationId,
+      receiptId: e.launchReceiptId, result: "started" } });
+  effects.push(...contain(e));
+  const publicProjections = s.projections.resourceRetirement.type === "retired" ? s.projections : {
+    ...transition.result.terminalProjections, runtime: "unknown" as const,
+    resourceRetirement: { type: "quarantined" as const }, claim: "invalid" as const,
+  };
+  const result: C.TransitionResult = { ...transition.result, effects,
+    terminalProjections: publicProjections };
+  const candidate = stateOf(transition.state);
+  const state: State = { ...candidate, projections: publicProjections,
+    postRetirementRuntime: s.projections.resourceRetirement.type === "retired" ?
+      "unknown" : candidate.postRetirementRuntime,
+    events: withMap(candidate.events, e.eventId, { event: e, result }) };
+  return { state, result };
+};
 const postRetirementReconciliation = (s: State, e: C.ReconcileRuntime): QualificationTransition => {
   const effects: C.DeclaredEffect[] = e.observation === "unknown" ? [
     { type: "resource-quarantined", causalEventId: e.eventId,
@@ -975,8 +1018,10 @@ const enforceTombstoneFinality = (s: State, e: C.ProtocolEvent, transition: Qual
       return postRetirementReconciliation(s, e);
     if (reason === "receipt-replay") {
       const result = { ...transition.result, terminalProjections: s.projections };
+      const candidate = stateOf(transition.state);
       const events = withMap(s.events, e.eventId, { event: e, result });
-      return { state: { ...s, events } as State, result };
+      return { state: { ...s, postRetirementRuntime: candidate.postRetirementRuntime,
+        events } as State, result };
     }
     return beforeTombstoneFinality(reason) ? transition :
       reject(s, e, "terminal-already-recorded");
@@ -1019,6 +1064,7 @@ export const transitionQualificationEvent = (
     denial?.reason === "retirement-owner-mismatch" || denial?.reason === "credential-lineage-mismatch";
   if (receipt !== null && receiptUsed(s, receipt) && !replayAlreadyRecorded && !identityFailure)
     transition = reject(s, event, "receipt-replay");
+  transition = preserveReplayedRuntimeSafety(s, event, transition);
   return s.projections.resourceRetirement.type === "retired" ?
     enforceTombstoneFinality(s, event, transition) : transition;
 };

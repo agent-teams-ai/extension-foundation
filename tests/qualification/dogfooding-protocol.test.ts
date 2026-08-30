@@ -546,6 +546,74 @@ test("direct start-unknown requests containment and reconciliation", () => { con
     launchDeadline("deadline")]), 8, trusted).results.at(-1)!;
   assert.deepEqual(result.effects.filter(effect => effect.type.endsWith("requested") || effect.type === "resource-quarantined").map(effect => effect.type).sort(),
   ["resource-quarantined", "runtime-reconciliation-requested", "runtime-termination-requested"]); });
+const assertReplayContainment = (result: C.TransitionResult): void => {
+  assert.equal(result.decision, "rejected");
+  assert.equal(result.effects.find(effect => effect.type === "denial-recorded")?.reason,
+    "receipt-replay");
+  for (const expected of ["claim-disposition-set", "resource-quarantined",
+    "runtime-reconciliation-requested", "runtime-termination-requested"] as const)
+    assert.ok(result.effects.some(effect => effect.type === expected), `missing ${expected}`);
+};
+test("replayed process-start evidence is rejected but still contained", () => {
+  const denied = releaseDenied("prior-denial", sourceFence);
+  const candidate = at(release("replayed-start", sourceFence), 61);
+  const replayed = rejected(detached({ ...candidate, body: { ...candidate.body,
+    launchReceiptId: receipt("prior-denial") } }));
+  const history = [register, longIssue("issue"), consume("consume"), denied, replayed] as const;
+  compareHistory(history, "replayed process start containment");
+  const result = foldQualificationHistory(materialize(history), 8, trusted).results.at(-1)!;
+  assertReplayContainment(result);
+  assert.ok(result.effects.some(effect => effect.type === "late-receipt-retained" &&
+    effect.evidence.type === "launch" && effect.evidence.result === "started"));
+  assert.deepEqual([result.terminalProjections.claim, result.terminalProjections.runtime,
+    result.terminalProjections.resourceRetirement.type], ["invalid", "unknown", "quarantined"]);
+});
+test("replayed start-unknown evidence is rejected but still contained", () => {
+  const denied = releaseDenied("prior-denial", sourceFence);
+  const candidate = launchDeadline("replayed-unknown", sourceFence);
+  const replayed = rejected(detached({ ...candidate, body: { ...candidate.body,
+    observationReceiptId: receipt("prior-denial") } }));
+  const history = [register, longIssue("issue"), consume("consume"), denied, replayed] as const;
+  compareHistory(history, "replayed start unknown containment");
+  const result = foldQualificationHistory(materialize(history), 8, trusted).results.at(-1)!;
+  assertReplayContainment(result);
+  assert.deepEqual([result.terminalProjections.claim, result.terminalProjections.runtime,
+    result.terminalProjections.resourceRetirement.type], ["invalid", "unknown", "quarantined"]);
+});
+test("replay containment requires a trusted runtime binding and remains idempotent", () => {
+  const denied = releaseDenied("prior-denial", sourceFence);
+  const candidate = at(release("replayed-start", sourceFence), 61);
+  const replayed = rejected(detached({ ...candidate, body: { ...candidate.body,
+    launchReceiptId: receipt("prior-denial") } }));
+  const prefix = [register, longIssue("issue"), consume("consume"), denied] as const;
+  const events = materialize([...prefix, replayed]);
+  const exactReplay = compareEvents([...events, events.at(-1)!],
+    "idempotent replayed process start");
+  assert.deepEqual(exactReplay.at(-1), exactReplay.at(-2));
+  const foreign = rejected(detached({ ...replayed, label: "foreign-replayed-start",
+    body: { ...replayed.body, sourceFamilyRootId: C.sourceFamilyRootId("foreign-root") } }));
+  const result = compareEvents(materialize([...prefix, foreign]),
+    "foreign replay cannot trigger containment").at(-1)!;
+  assert.equal(result.effects.find(effect => effect.type === "denial-recorded")?.reason,
+    "wrong-binding");
+  assert.equal(result.effects.some(effect => effect.type === "resource-quarantined"), false);
+  assert.equal(result.effects.some(effect => effect.type === "runtime-termination-requested"), false);
+});
+test("replay containment rejects reconciliation observed before its safety watermark", () => {
+  const denied = releaseDenied("prior-denial", sourceFence);
+  const candidate = at(release("replayed-start", sourceFence), 61);
+  const replayed = rejected(detached({ ...candidate, body: { ...candidate.body,
+    launchReceiptId: receipt("prior-denial") } }));
+  const specs = [register, longIssue("issue"), consume("consume"), denied, replayed,
+    rejected(detached(reconcile("stale-reconciliation", "terminated")))] as const;
+  const events = materialize(specs).map(selected => selected.eventId === C.eventId("event:stale-reconciliation") ?
+    { ...selected, authoritativeTick: tick(60) } as C.ProtocolEvent : selected);
+  const result = compareEvents(events, "replay containment safety watermark").at(-1)!;
+  assert.equal(result.effects.find(effect => effect.type === "denial-recorded")?.reason,
+    "wrong-binding");
+  assert.deepEqual([result.terminalProjections.runtime,
+    result.terminalProjections.resourceRetirement.type], ["unknown", "quarantined"]);
+});
 test("receipt primitive identity is unique across protocol receipt families", () => { const history = [...evaluationStartedPrefix,
     rejected(detached(attemptReceipt("cross-namespace-receipt", "succeeded", receipt("close"))))] as const;
   const result = foldQualificationHistory(materialize(history), 64, trusted).results.at(-1)!; assert.equal(result.decision, "rejected"); assert.equal(result.terminalProjections.claim, "invalid");
@@ -772,6 +840,34 @@ test("post-retirement unsafe starts retain containment until reconciliation prov
   assert.ok(unsafe.effects.some(effect => effect.type === "runtime-reconciliation-requested"));
   assert.ok(unsafe.effects.some(effect => effect.type === "runtime-termination-requested"));
   assert.ok(results.at(-2)!.effects.some(effect => effect.type === "runtime-termination-requested"));
+  assert.deepEqual(results.at(-1)!.effects, []);
+});
+test("post-retirement replayed starts keep the tombstone frozen and open private containment", () => {
+  const beforeComplete = [register, longIssue("retired-replay-issue"),
+    consume("retired-replay-consume"), release("retired-replay-release", sourceFence),
+    close("retired-replay-close"), reconcile("retired-replay-terminated", "terminated"),
+    retirement("retired-replay-retirement"), cleanup("retired-replay-cleanup")] as const;
+  const finalized = complete("retired-replay-complete", beforeComplete,
+    receipt("retired-replay-close"));
+  const candidate = at(release("post-retirement-replayed-start", sourceFence), 61);
+  const replayed = rejected(detached({ ...candidate, body: { ...candidate.body,
+    launchReceiptId: receipt("retired-replay-release") } }));
+  const stale = rejected(detached(reconcile("post-retirement-replayed-stale", "terminated")));
+  const history = [...beforeComplete, finalized, replayed, stale,
+    reconcile("post-retirement-replayed-live", "live"),
+    reconcile("post-retirement-replayed-terminated", "terminated")] as const;
+  const events = materialize(history).map(selected =>
+    selected.eventId === C.eventId("event:post-retirement-replayed-stale") ?
+      { ...selected, authoritativeTick: tick(60) } as C.ProtocolEvent : selected);
+  const results = compareEvents(events, "post-retirement replay containment");
+  const frozen = results[beforeComplete.length]!.terminalProjections;
+  results.slice(beforeComplete.length + 1).forEach(result =>
+    assert.deepEqual(result.terminalProjections, frozen));
+  assertReplayContainment(results[beforeComplete.length + 1]!);
+  assert.equal(results[beforeComplete.length + 2]!.effects.find(effect =>
+    effect.type === "denial-recorded")?.reason, "wrong-binding");
+  assert.ok(results.at(-2)!.effects.some(effect =>
+    effect.type === "runtime-termination-requested"));
   assert.deepEqual(results.at(-1)!.effects, []);
 });
 test("exact replay after retirement is idempotent after finality rewriting", () => {

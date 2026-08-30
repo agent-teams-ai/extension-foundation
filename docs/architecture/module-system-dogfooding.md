@@ -472,6 +472,15 @@ namespaces. Reusing the same primitive identity for another family is retained
 as invalid replay evidence and can never authorize execution or promotion. The
 rejected replay event itself remains part of the retirement evidence closure;
 retaining only the earlier receipt would hide the attempted substitution.
+Replay rejection also cannot suppress runtime-safety evidence. After the trusted
+envelope and its owner, root, slot, and runtime coordinates have been validated,
+a replayed `started` or `start-unknown` observation does not advance authenticated
+lineage or become a launch terminal, but it invalidates the claim and requests
+quarantine, reconciliation, and termination. Binding failure takes precedence,
+so an unrelated sender cannot trigger containment with a colliding identifier.
+After retirement the same rule opens only the private reconciliation track while
+the public tombstone and terminal projections remain unchanged. Reconciliation
+predating the retained runtime-safety observation cannot clear that containment.
 
 Resource retirement requires an explicit owner-bound retirement request. Before
 it can complete, every launch authority is expired or revoked, every consumed
