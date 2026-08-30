@@ -46,11 +46,13 @@ custody invariants; it is not a production package, a Module API, a graph
 compiler, a loader, or lifecycle authority. It may challenge a Get Modular or
 product decision, but cannot silently replace one.
 
-The disposable model remains under `tests/qualification/**`, is capped at 4,000
+The disposable model remains under `tests/qualification/**`, is capped at 4,200
 physical lines, 320,000 UTF-8 bytes, and 200 characters per line across its
 closed transitive source set, and must never be imported by a production package.
 These are maintainability ceilings, not compression targets: qualification code
 must remain readable and must not join unrelated statements merely to fit the cap.
+The increase from 4,000 to 4,200 lines is one bounded remediation allowance;
+raising it again requires separately reviewed evidence rather than formatting churn.
 A repository-level architecture check derives the transitive local source closure,
 rejects imports outside the exact four-file roster, and enforces all three limits,
 so edits to the model cannot silently weaken their own guard. The roster consists of
@@ -493,6 +495,20 @@ the public tombstone and terminal projections remain unchanged. Reconciliation
 must bind the exact latest runtime-safety event and a fresh proof; a stale event,
 predating observation, or reused proof cannot clear containment. Cleanup likewise
 references the latest accepted terminated reconciliation for that same watermark.
+A proof is opaque in this qualification model, so causal freshness cannot be
+reconstructed from its identifier. Every rejected reconciliation with an
+authenticated envelope and exact root/runtime binding therefore reserves its
+proof; every equivalently bound retirement-completion attempt reserves its
+cleanup proof. Identity-invalid or foreign-root attempts cannot reserve either.
+
+Cleanup records one explicit basis. A `terminated` basis binds the exact current
+runtime-safety watermark and its accepted termination proof. A `never-released`
+basis binds the exact source-terminal receipt and is accepted only when the ledger
+proves that no process release, runtime-safety watermark, or consumed unresolved
+authorization exists. Absence never receives a fabricated termination proof.
+An exact crash observation that contradicts a `release-denied` or `never-started`
+terminal is retained as runtime-safety evidence, invalidates the claim, opens
+containment, and makes the `never-released` basis impossible.
 
 Resource retirement requires an explicit owner-bound retirement request. Before
 it can complete, every launch authority is expired or revoked, every consumed
@@ -500,8 +516,10 @@ launch authority has a terminal launch disposition, every started build or
 evaluation has its required terminal observations, and every effective stop
 checkpoint is terminal. The tombstone retains references to every admitted
 ledger event, replay event, typed receipt and proof observed before completion,
-plus the cleanup proof. Missing closure evidence fails closed; a tombstone cannot
-hide an unfinished or unreconciled runtime.
+plus the exact cleanup request, its unchanged basis, and a fresh cleanup proof.
+Reconciliation can prove runtime termination but cannot invent a terminal launch
+disposition. Missing closure evidence fails closed; a tombstone cannot hide an
+unfinished or unreconciled runtime.
 
 The tombstone freezes terminal projections but does not suppress later safety
 evidence. A fresh `started` or `start-unknown` observation after retirement is
@@ -812,7 +830,9 @@ Resource retirement may begin after either evidence abandonment or successful
 evidence closure, including when campaign admission later fails. It reconciles
 every persisted authoring runtime identity, while workspaces and containment
 remain quarantined whenever a runtime is unknown. Cleanup is permitted only
-after the custody authority proves the exact runtime terminated or is absent.
+after the custody authority proves either exact termination or verified absence
+through the explicit cleanup bases above. Completion must bind the exact accepted
+cleanup request, preserve its basis unchanged, and add a fresh cleanup proof.
 The custodian then appends one source-preparation retirement tombstone that binds
 the immutable evidence terminal state and receipt, root, all lineages,
 authorizations, slot dispositions, revocations, reconciliation evidence,

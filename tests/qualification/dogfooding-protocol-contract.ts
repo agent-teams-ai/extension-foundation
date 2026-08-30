@@ -195,12 +195,22 @@ export interface RequestRetirement extends EventEnvelope, RootBound {
   readonly retirementOwnerId: RetirementOwnerId;
   readonly credentialLineageId: CredentialLineageId;
 }
+export type RuntimeCleanupBasis =
+  | {
+      readonly type: "terminated";
+      readonly runtimeSafetyWatermarkEventId: EventId;
+      readonly terminationProofId: ProofId;
+    }
+  | {
+      readonly type: "never-released";
+      readonly sourceTerminalReceiptId: ReceiptId;
+    };
 export interface RequestCleanup extends EventEnvelope, RootBound {
   readonly type: "RequestCleanup";
   readonly runtimeId: RuntimeId;
   readonly retirementOwnerId: RetirementOwnerId;
   readonly credentialLineageId: CredentialLineageId;
-  readonly terminationProofId: ProofId;
+  readonly basis: RuntimeCleanupBasis;
 }
 export interface CompleteRetirement extends EventEnvelope, RootBound {
   readonly type: "CompleteRetirement";
@@ -208,6 +218,8 @@ export interface CompleteRetirement extends EventEnvelope, RootBound {
   readonly retirementOwnerId: RetirementOwnerId;
   readonly credentialLineageId: CredentialLineageId;
   readonly tombstoneId: TombstoneId;
+  readonly cleanupRequestEventId: EventId;
+  readonly cleanupBasis: RuntimeCleanupBasis;
   readonly cleanupProofId: ProofId;
   readonly sourceTerminalReceiptId: ReceiptId;
   readonly retainedEvidence: readonly EvidenceReference[];
@@ -375,6 +387,8 @@ export interface RetirementTombstoneProjection {
   readonly tombstoneId: TombstoneId;
   readonly sourceTerminal: Exclude<SourceEvidenceProjection, { readonly type: "open" }>;
   readonly retirementOwnerId: RetirementOwnerId;
+  readonly cleanupRequestEventId: EventId;
+  readonly cleanupBasis: RuntimeCleanupBasis;
   readonly cleanupProofId: ProofId;
   readonly retainedEvidence: readonly EvidenceReference[];
 }
@@ -533,7 +547,7 @@ export interface ResourceCleanupRequestedEffect extends EffectEnvelope {
   readonly type: "resource-cleanup-requested";
   readonly sourceFamilyRootId: SourceFamilyRootId;
   readonly runtimeId: RuntimeId;
-  readonly proofId: ProofId;
+  readonly basis: RuntimeCleanupBasis;
 }
 export interface ExecutionGateSetEffect extends EffectEnvelope {
   readonly type: "execution-gate-set";
@@ -550,6 +564,8 @@ export interface RetirementTombstoneAppendedEffect extends EffectEnvelope {
   readonly sourceFamilyRootId: SourceFamilyRootId;
   readonly tombstoneId: TombstoneId;
   readonly retirementOwnerId: RetirementOwnerId;
+  readonly cleanupRequestEventId: EventId;
+  readonly cleanupBasis: RuntimeCleanupBasis;
   readonly cleanupProofId: ProofId;
 }
 /**

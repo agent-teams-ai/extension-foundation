@@ -181,7 +181,7 @@ evidence: DeclaredEffect extends infer _Unused ? | { readonly type: "event"; rea
 const nonPromotional = ( event: ProtocolEvent, evidence: EvidenceReference,
 ): DeclaredEffect => ({ type: "claim-disposition-set", causalEventId: event.eventId, value: "non-promotional",
 evidence, }); const contain = (e: Pick<Extract<ProtocolEvent, {
-readonly type: "ReleaseProcess" | "RecordReleaseDenied" | "ReachLaunchDeadline";
+readonly type: "ReleaseProcess" | "RecordReleaseDenied" | "ObserveCrash" | "ReachLaunchDeadline";
 }>, "eventId" | "sourceFamilyRootId" | "runtimeId">): readonly DeclaredEffect[] => [
 { type: "resource-quarantined", causalEventId: e.eventId, sourceFamilyRootId: e.sourceFamilyRootId, runtimeId: e.runtimeId },
 { type: "runtime-reconciliation-requested", causalEventId: e.eventId, runtimeId: e.runtimeId }, { type: "runtime-termination-requested", causalEventId: e.eventId, runtimeId: e.runtimeId }];
@@ -274,7 +274,8 @@ const eventEvidence = (event: ProtocolEvent): readonly EvidenceReference[] => { 
 case "RecordReleaseDenied": case "ReconcileRuntime":
 result.push({ type: "proof", proofId: event.proofId }); break;
 case "AbandonSource": result.push({ type: "proof", proofId: event.proofId }); break;
-case "RequestCleanup": result.push({ type: "proof", proofId: event.terminationProofId }); break;
+case "RequestCleanup": if (event.basis.type === "terminated")
+result.push({ type: "proof", proofId: event.basis.terminationProofId }); break;
 case "CompleteRetirement": result.push({ type: "proof", proofId: event.cleanupProofId }); break;
 case "RecordBuildResult": if (event.result.type !== "succeeded")
 result.push({ type: "proof", proofId: event.result.proofId }); break;
@@ -302,12 +303,10 @@ return [{ type: "proof", proofId: cleanupProofId },
 };
 const retirementEvidenceClosed = (history: OracleHistory): boolean => {
 const projection = currentProjection(history);
-const watermark = runtimeSafetyWatermark(history, history.registration.runtimeId);
-const termination = latestTermination(history, history.registration.runtimeId, watermark);
 for (const issue of acceptedOf(history, "IssueAuthorization")) {
 const view = authorization(history, issue.authorizationId);
 if (view !== null && !view.revoked && !view.expired) return false;
-if (view?.consumed === true && !view.launchTerminal && termination === undefined) return false;
+if (view?.consumed === true && !view.launchTerminal) return false;
 if (view?.released === true && issue.launchPurpose === "build" &&
 (projection.build === null || projection.buildConsistency === null)) return false;
 if (view?.released === true && issue.launchPurpose === "evaluation" && projection.attempt === null) return false;
@@ -416,15 +415,12 @@ watermark: RuntimeSafetyWatermark | null): Extract<ProtocolEvent, { readonly typ
 watermark === null ? undefined : acceptedOf(history, "ReconcileRuntime").filter(candidate =>
 candidate.observation === "terminated" && same(candidate.runtimeId, runtimeId) &&
 same(candidate.runtimeSafetyWatermarkEventId, watermark.eventId)).at(-1);
-interface CleanupBinding { readonly requestEventId: EventId; readonly safetyWatermarkEventId: EventId | null;
-readonly terminationProofId: Extract<ProtocolEvent, { readonly type: "RequestCleanup" }>["terminationProofId"]; }
+interface CleanupBinding { readonly requestEventId: EventId;
+readonly basis: Extract<ProtocolEvent, { readonly type: "RequestCleanup" }>["basis"]; }
 const latestCleanupBinding = (history: OracleHistory): CleanupBinding | null => {
 for (let index = history.rows.length - 1; index >= 0; index -= 1) { const row = history.rows[index]!;
 if (!row.accepted || row.event.type !== "RequestCleanup") continue;
-const prefix: OracleHistory = { ...history, rows: history.rows.slice(0, index) };
-return { requestEventId: row.event.eventId,
-safetyWatermarkEventId: runtimeSafetyWatermark(prefix, row.event.runtimeId)?.eventId ?? null,
-terminationProofId: row.event.terminationProofId }; } return null; };
+return { requestEventId: row.event.eventId, basis: row.event.basis }; } return null; };
 const postRetirementReconciliation = (
 history: OracleHistory,
 event: Extract<ProtocolEvent, { readonly type: "ReconcileRuntime" }>,
@@ -446,14 +442,17 @@ if (!rootMatches(history.registration, event) || !same(event.runtimeId, history.
 return denial(event, before, "wrong-binding");
 if (mismatch !== null) return denial(event, before, mismatch);
 if (postRetirementRuntime(history) !== "terminated") return denial(event, before, "runtime-unresolved");
+if (event.basis.type !== "terminated") return denial(event, before, "wrong-binding");
 const watermark = runtimeSafetyWatermark(history, event.runtimeId);
-if (same(latestCleanupBinding(history)?.safetyWatermarkEventId ?? null, watermark?.eventId ?? null))
+if (samePayload(latestCleanupBinding(history)?.basis, event.basis))
 return denial(event, before, "terminal-already-recorded");
 const termination = latestTermination(history, event.runtimeId, watermark);
-if (watermark === null || termination === undefined || !same(termination.proofId, event.terminationProofId) ||
+if (watermark === null || termination === undefined ||
+!same(event.basis.runtimeSafetyWatermarkEventId, watermark.eventId) ||
+!same(termination.proofId, event.basis.terminationProofId) ||
 !same(termination.runtimeSafetyWatermarkEventId, watermark.eventId)) return denial(event, before, "wrong-binding");
 return accept(before, [{ type: "resource-cleanup-requested", causalEventId: event.eventId,
-sourceFamilyRootId: event.sourceFamilyRootId, runtimeId: event.runtimeId, proofId: event.terminationProofId }]);
+sourceFamilyRootId: event.sourceFamilyRootId, runtimeId: event.runtimeId, basis: event.basis }]);
 };
 const enforceRetiredHistoryFinality = (
 history: OracleHistory,
@@ -554,19 +553,23 @@ readonly type: "ReleaseProcess" | "RecordReleaseDenied" | "ObserveCrash" | "Reac
 if (event.type === "ObserveCrash") {
 if (!rootMatches(registration, event) || !same(event.runtimeId, registration.runtimeId)) {
 return denial(event, before, "wrong-binding"); } const view = authorization(history, event.authorizationId);
-if (before.resourceRetirement.type === "retired") {
 if (view === null || !view.consumed) return denial(event, before, "authorization-unavailable");
 if (!same(view.issue.authorizationFence.expectedGeneration, event.expectedGeneration))
 return denial(event, before, "stale-generation");
+if (before.resourceRetirement.type === "retired") {
 return accept(before, [
 { type: "resource-quarantined", causalEventId: event.eventId,
 sourceFamilyRootId: event.sourceFamilyRootId, runtimeId: event.runtimeId },
 { type: "runtime-reconciliation-requested", causalEventId: event.eventId, runtimeId: event.runtimeId },
 { type: "runtime-termination-requested", causalEventId: event.eventId, runtimeId: event.runtimeId }, ]); }
+const launch = priorLaunchResult(history, event.authorizationId);
+if (launch === "release-denied" || launch === "never-started")
+return accept(withProjection(before, { claim: "invalid", runtime: "unknown",
+resourceRetirement: { type: "quarantined" } }), [
+...invalidClaimEffects(event, { type: "event", eventId: event.eventId }), ...contain(event)]);
 if (before.runtime !== "not-started" && before.runtime !== "terminated") return denial(event, before, "runtime-unresolved");
-if (view === null || !view.consumed || view.launchTerminal) return denial(event, before, "authorization-unavailable");
-if (!same(view.issue.authorizationFence.expectedGeneration, event.expectedGeneration)) {
-return denial(event, before, "stale-generation"); } return accept(
+if (view.launchTerminal) return denial(event, before, "terminal-already-recorded");
+return accept(
 withProjection(before, { runtime: "unknown", resourceRetirement: { type: "quarantined" } }), [
 { type: "resource-quarantined", causalEventId: event.eventId, sourceFamilyRootId: event.sourceFamilyRootId, runtimeId: event.runtimeId },
 { type: "runtime-reconciliation-requested", causalEventId: event.eventId, runtimeId: event.runtimeId },
@@ -732,26 +735,44 @@ if (event.type === "RequestCleanup") {
 if (sourceTerminal(history) === null) return denial(event, before, "source-terminal");
 if (acceptedOf(history, "RequestRetirement").length === 0) return denial(event, before, "gate-closed");
 const watermark = runtimeSafetyWatermark(history, event.runtimeId);
-if (same(latestCleanupBinding(history)?.safetyWatermarkEventId ?? null, watermark?.eventId ?? null))
+if (samePayload(latestCleanupBinding(history)?.basis, event.basis))
 return denial(event, before, "terminal-already-recorded");
+if (event.basis.type === "terminated") {
 const termination = latestTermination(history, event.runtimeId, watermark);
-const noRuntimeWasReleased = before.runtime === "not-started" && watermark === null &&
-!consumedUnresolvedRuntime(history);
-if (!noRuntimeWasReleased && (watermark === null || termination === undefined ||
-!same(termination.proofId, event.terminationProofId) ||
-!same(termination.runtimeSafetyWatermarkEventId, watermark.eventId)))
+if (before.runtime !== "terminated" || watermark === null || termination === undefined ||
+!same(event.basis.runtimeSafetyWatermarkEventId, watermark.eventId) ||
+!same(termination.proofId, event.basis.terminationProofId) ||
+!same(termination.runtimeSafetyWatermarkEventId, watermark.eventId))
 return denial(event, before, "wrong-binding");
+} else if (before.runtime !== "not-started" || watermark !== null ||
+consumedUnresolvedRuntime(history) || acceptedOf(history, "ReleaseProcess").some(candidate =>
+same(candidate.runtimeId, event.runtimeId)) || before.sourceEvidence.type === "open" ||
+!same(before.sourceEvidence.receiptId, event.basis.sourceTerminalReceiptId)) {
+return denial(event, before, "wrong-binding");
+}
 return accept(before, [{
 type: "resource-cleanup-requested", causalEventId: event.eventId, sourceFamilyRootId: event.sourceFamilyRootId,
-runtimeId: event.runtimeId, proofId: event.terminationProofId, }]); } const source = sourceTerminal(history);
+runtimeId: event.runtimeId, basis: event.basis, }]); } const source = sourceTerminal(history);
 if (acceptedOf(history, "RequestRetirement").length === 0) return denial(event, before, "gate-closed");
 if (source === null || !same(source.receiptId, event.sourceTerminalReceiptId)) {
-return denial(event, before, "wrong-binding"); } const cleanup = acceptedOf(history, "RequestCleanup").at(-1);
-if (cleanup === undefined) return denial(event, before, "gate-closed");
+return denial(event, before, "wrong-binding"); }
 const cleanupBinding = latestCleanupBinding(history), watermark = runtimeSafetyWatermark(history, event.runtimeId);
-if (!same(cleanupBinding?.safetyWatermarkEventId ?? null, watermark?.eventId ?? null) ||
-same(cleanupBinding?.terminationProofId, event.cleanupProofId) || proofUsed(history, event.cleanupProofId))
+if (cleanupBinding === null) return denial(event, before, "gate-closed");
+if (!same(cleanupBinding.requestEventId, event.cleanupRequestEventId) ||
+!samePayload(cleanupBinding.basis, event.cleanupBasis) || proofUsed(history, event.cleanupProofId))
 return denial(event, before, "wrong-binding");
+if (event.cleanupBasis.type === "terminated") {
+const termination = latestTermination(history, event.runtimeId, watermark);
+if (watermark === null || termination === undefined ||
+!same(event.cleanupBasis.runtimeSafetyWatermarkEventId, watermark.eventId) ||
+!same(termination.proofId, event.cleanupBasis.terminationProofId) ||
+same(event.cleanupBasis.terminationProofId, event.cleanupProofId))
+return denial(event, before, "wrong-binding");
+} else if (watermark !== null || before.runtime !== "not-started" ||
+consumedUnresolvedRuntime(history) ||
+!same(source.receiptId, event.cleanupBasis.sourceTerminalReceiptId)) {
+return denial(event, before, "wrong-binding");
+}
 if (!retirementEvidenceClosed(history)) return denial(event, before, "gate-closed");
 if (!retainsReceipt(event.retainedEvidence, source.receiptId) ||
 (before.admission.type !== "pending" && !retainsReceipt(event.retainedEvidence, before.admission.receiptId))) {
@@ -759,13 +780,15 @@ return denial(event, before, "wrong-binding"); }
 if (!exactEvidence(event.retainedEvidence, expectedRetainedEvidence(history, event.cleanupProofId)))
 return denial(event, before, "wrong-binding");
 const retainedEvidence = Object.freeze(event.retainedEvidence.map(reference => Object.freeze({ ...reference })));
+const cleanupBasis = Object.freeze({ ...event.cleanupBasis });
 const tombstone = Object.freeze({
 tombstoneId: event.tombstoneId, sourceTerminal: Object.freeze({ ...source }), retirementOwnerId: event.retirementOwnerId,
-cleanupProofId: event.cleanupProofId, retainedEvidence, });
+cleanupRequestEventId: event.cleanupRequestEventId, cleanupBasis, cleanupProofId: event.cleanupProofId, retainedEvidence, });
 const retirement: ResourceRetirementProjection = Object.freeze({ type: "retired", tombstone });
 return accept(withProjection(before, { resourceRetirement: retirement }), [ { type: "retirement-tombstone-appended",
 causalEventId: event.eventId, sourceFamilyRootId: event.sourceFamilyRootId, tombstoneId: event.tombstoneId,
-retirementOwnerId: event.retirementOwnerId, cleanupProofId: event.cleanupProofId, }, ]); }; const handleAttempt = (
+retirementOwnerId: event.retirementOwnerId, cleanupRequestEventId: event.cleanupRequestEventId,
+cleanupBasis, cleanupProofId: event.cleanupProofId, }, ]); }; const handleAttempt = (
 history: OracleHistory,
 event: Extract<ProtocolEvent, { readonly type: "RecordAttemptReceipt" | "ReachAttemptDeadline" }>,
 ): TransitionResult => { const before = currentProjection(history); const registration = history.registration;
@@ -1016,7 +1039,7 @@ export const appendOracleEvent = (history: OracleHistory, event: ProtocolEvent):
       exact.result.terminalProjections.resourceRetirement.type !== "retired" ?
       immutable({ ...exact.result, effects: [], terminalProjections: before }) : exact.result;
     return { history, result }; }
-  let result: TransitionResult, proofReserved = false, registration = history.registration;
+  let result: TransitionResult, proofReservationEligible = false, registration = history.registration;
   let registrationAccepted = history.registrationAccepted;
   if (sameId.length > 0) {
     result = denial(event, currentProjection(history), "wrong-binding"); } else if (!history.registrationAccepted) {
@@ -1036,9 +1059,10 @@ export const appendOracleEvent = (history: OracleHistory, event: ProtocolEvent):
       const handler = transitionTable[event.type] as (selected: OracleHistory,
         selectedEvent: typeof event) => TransitionResult;
       let candidate = handler(history, event);
-      proofReserved = event.type === "ReconcileRuntime" && rootMatches(history.registration, event) &&
-        same(event.runtimeId, history.registration.runtimeId) && candidate.decision === "rejected" &&
-        candidate.effects.some(effect => effect.type === "denial-recorded" && effect.reason === "wrong-binding");
+      proofReservationEligible = event.type === "ReconcileRuntime" && rootMatches(history.registration, event) &&
+        same(event.runtimeId, history.registration.runtimeId) || event.type === "CompleteRetirement" &&
+        rootMatches(history.registration, event) && same(event.runtimeId, history.registration.runtimeId) &&
+        ownerMatches(history.registration, event) === null;
       const receipt = ownedReceipt(event);
       const reason = candidate.effects.find(effect => effect.type === "denial-recorded")?.reason;
       const identityFailure = reason === "wrong-binding" ||
@@ -1047,7 +1071,7 @@ export const appendOracleEvent = (history: OracleHistory, event: ProtocolEvent):
         candidate = replay(event, history);
       result = enforceRetiredHistoryFinality(history, event, candidate); } }
   const row: LedgerRow = { event, result, accepted: result.decision === "accepted",
-    reservedProofId: proofReserved && event.type === "ReconcileRuntime" ? event.proofId : null };
+    reservedProofId: proofReservationEligible && result.decision === "rejected" ? producedProof(event) : null };
   return Object.freeze({ result, history: Object.freeze({ trusted: history.trusted, registration, registrationAccepted,
       rows: Object.freeze([...history.rows, Object.freeze(row)]) }) });
 };

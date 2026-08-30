@@ -25,8 +25,7 @@ interface Authorization {
 interface Fence { readonly generation: C.FenceGeneration; readonly open: boolean } interface BuildFact { readonly projection: C.BuildTerminalProjection; readonly result: C.BuildResultInput | null;
   readonly artifactDigest: C.ArtifactDigest | null; }
 interface Observation { readonly event: C.ProtocolEvent; readonly result: C.TransitionResult; }
-interface CleanupBinding { readonly requestEventId: C.EventId; readonly safetyWatermarkEventId: C.EventId | null;
-  readonly terminationProofId: C.ProofId; }
+interface CleanupBinding { readonly requestEventId: C.EventId; readonly basis: C.RuntimeCleanupBasis; }
 interface State extends QualificationReducerState {
   readonly trusted: C.TrustedProtocolCoordinates; readonly registration: Registration | null;
   readonly sourceFence: Fence | null; readonly campaignFence: Fence | null; readonly familyFence: Fence | null;
@@ -156,9 +155,6 @@ const accept = (state: State, event: C.ProtocolEvent, changes: Partial<State>,
     events: withMap(state.events, event.eventId, { event, result }) };
   return { state: next, result };
 };
-const rejectAndReserveProof = (state: State, event: C.ReconcileRuntime, reason: C.DenialReason): QualificationTransition => {
-  const transition = reject(state, event, reason), candidate = stateOf(transition.state);
-  return { ...transition, state: { ...candidate, reservedProofs: withSet(state.reservedProofs, event.proofId) } as State }; };
 const reject = (state: State, event: C.ProtocolEvent, reason: C.DenialReason): QualificationTransition => {
   const denied: C.DeclaredEffect = { type: "denial-recorded", causalEventId: event.eventId, reason, subject: subject(event) };
   const replay = reason === "receipt-replay", projections = replay ? { ...state.projections, claim: "invalid" as const } : state.projections;
@@ -183,7 +179,7 @@ const terminal = (event: C.ProtocolEvent, value: C.TerminalReference): C.Termina
 const invalid = (event: C.ProtocolEvent, evidence: C.EvidenceReference): C.ClaimDispositionSetEffect => ({ type: "claim-disposition-set", causalEventId: event.eventId, value: "invalid", evidence });
 const nonPromotional = (event: C.ProtocolEvent, evidence: C.EvidenceReference): C.ClaimDispositionSetEffect =>
   ({ type: "claim-disposition-set", causalEventId: event.eventId, value: "non-promotional", evidence });
-type RuntimeSafetyEvidence = Pick<C.ReleaseProcess | C.RecordReleaseDenied | C.ReachLaunchDeadline,
+type RuntimeSafetyEvidence = Pick<C.ReleaseProcess | C.RecordReleaseDenied | C.ObserveCrash | C.ReachLaunchDeadline,
   "eventId" | "sourceFamilyRootId" | "runtimeId">;
 const contain = (e: RuntimeSafetyEvidence): C.DeclaredEffect[] => [
   { type: "resource-quarantined", causalEventId: e.eventId, sourceFamilyRootId: e.sourceFamilyRootId, runtimeId: e.runtimeId },
@@ -195,6 +191,18 @@ const ownerMismatch = (r: Registration, e: { readonly retirementOwnerId: C.Retir
   readonly credentialLineageId: C.CredentialLineageId }): C.DenialReason | null =>
   e.retirementOwnerId !== r.retirementOwnerId ? "retirement-owner-mismatch" :
     e.credentialLineageId !== r.credentialLineageId ? "credential-lineage-mismatch" : null;
+const reserveRejectedLifecycleProof = (s: State, e: C.ProtocolEvent,
+  transition: QualificationTransition): QualificationTransition => {
+  if (transition.result.decision !== "rejected") return transition;
+  const proof = e.type === "ReconcileRuntime" && rootMatches(s.registration!, e) &&
+      e.runtimeId === s.registration!.runtimeId ? e.proofId :
+    e.type === "CompleteRetirement" && rootMatches(s.registration!, e) &&
+      e.runtimeId === s.registration!.runtimeId && ownerMismatch(s.registration!, e) === null ? e.cleanupProofId : null;
+  if (proof === null) return transition;
+  const candidate = stateOf(transition.state);
+  return { ...transition, state: { ...candidate,
+    reservedProofs: withSet(candidate.reservedProofs, proof) } as State };
+};
 const fence = (s: State, binding: C.AuthorizationFenceBinding): Fence =>
   (binding.scope === "source" ? s.sourceFence : s.campaignFence)!;
 const fenceReason = (s: State, binding: C.AuthorizationFenceBinding): C.DenialReason | null => {
@@ -528,16 +536,18 @@ const crash = (s: State, e: C.ObserveCrash): QualificationTransition => {
     { type: "runtime-reconciliation-requested", causalEventId: e.eventId, runtimeId: e.runtimeId },
     { type: "runtime-termination-requested", causalEventId: e.eventId, runtimeId: e.runtimeId },
   ];
+  if (a.authorizationFence.expectedGeneration !== e.expectedGeneration) return reject(s, e, "stale-generation");
+  if (a.consumedAt === null) return reject(s, e, "authorization-unavailable");
   if (s.projections.resourceRetirement.type === "retired") {
-    if (a.authorizationFence.expectedGeneration !== e.expectedGeneration) return reject(s, e, "stale-generation");
-    if (a.consumedAt === null) return reject(s, e, "authorization-unavailable");
     return accept(s, e, { postRetirementRuntime: "unknown" }, containment);
   }
+  if (a.launch?.type === "release-denied" || a.launch?.type === "never-started")
+    return accept(s, e, { projections: { ...s.projections, runtime: "unknown",
+      resourceRetirement: { type: "quarantined" }, claim: "invalid" } }, [
+        invalid(e, { type: "event", eventId: e.eventId }), ...containment]);
   if (s.projections.runtime !== "not-started" && s.projections.runtime !== "terminated")
     return reject(s, e, "runtime-unresolved");
   if (a.launch !== null) return reject(s, e, "terminal-already-recorded");
-  if (a.authorizationFence.expectedGeneration !== e.expectedGeneration) return reject(s, e, "stale-generation");
-  if (a.consumedAt === null) return reject(s, e, "authorization-unavailable");
   return accept(s, e, { projections: { ...s.projections, runtime: "unknown",
     resourceRetirement: { type: "quarantined" } } }, containment);
 };
@@ -618,7 +628,8 @@ const reconcile = (s: State, e: C.ReconcileRuntime): QualificationTransition => 
     return reject(s, e, "wrong-binding");
   const watermark = runtimeSafetyWatermark(s, e.runtimeId);
   if (watermark === null || watermark.eventId !== e.runtimeSafetyWatermarkEventId ||
-      e.authoritativeTick < watermark.authoritativeTick) return rejectAndReserveProof(s, e, "wrong-binding");
+      e.authoritativeTick < watermark.authoritativeTick)
+    return reject(s, e, "wrong-binding");
   if (proofUsed(s, e.proofId)) return reject(s, e, "wrong-binding");
   const retired = s.projections.resourceRetirement.type === "retired";
   const runtime = retired ? s.postRetirementRuntime : s.projections.runtime;
@@ -667,21 +678,25 @@ const cleanup = (s: State, e: C.RequestCleanup): QualificationTransition => {
   if (!s.retirementRequested) return reject(s, e, "gate-closed");
   if (s.projections.resourceRetirement.type === "active" || s.projections.resourceRetirement.type === "retired")
     return reject(s, e, "gate-closed");
-  const watermark = runtimeSafetyWatermark(s, e.runtimeId);
-  if (s.cleanupRequest?.safetyWatermarkEventId === (watermark?.eventId ?? null))
+  if (s.cleanupRequest !== null && same(s.cleanupRequest.basis, e.basis))
     return reject(s, e, "terminal-already-recorded");
-  const termination = latestTermination(s, e.runtimeId, watermark);
-  const noRuntimeWasReleased = s.projections.runtime === "not-started" && watermark === null &&
-    !consumedUnresolvedRuntime(s, e.runtimeId);
-  if (!noRuntimeWasReleased && (watermark === null || termination === undefined ||
-      termination.proofId !== e.terminationProofId ||
-      termination.runtimeSafetyWatermarkEventId !== watermark.eventId))
+  const watermark = runtimeSafetyWatermark(s, e.runtimeId);
+  if (e.basis.type === "terminated") {
+    const termination = latestTermination(s, e.runtimeId, watermark);
+    if (s.projections.runtime !== "terminated" || watermark === null || termination === undefined ||
+        e.basis.runtimeSafetyWatermarkEventId !== watermark.eventId ||
+        termination.proofId !== e.basis.terminationProofId ||
+        termination.runtimeSafetyWatermarkEventId !== watermark.eventId)
+      return reject(s, e, "wrong-binding");
+  } else if (s.projections.runtime !== "not-started" || watermark !== null ||
+      consumedUnresolvedRuntime(s, e.runtimeId) ||
+      acceptedEvents(s).some(candidate => candidate.type === "ReleaseProcess" && candidate.runtimeId === e.runtimeId) ||
+      s.projections.sourceEvidence.receiptId !== e.basis.sourceTerminalReceiptId)
     return reject(s, e, "wrong-binding");
-  return accept(s, e, { cleanupRequest: { requestEventId: e.eventId,
-      safetyWatermarkEventId: watermark?.eventId ?? null, terminationProofId: e.terminationProofId },
+  return accept(s, e, { cleanupRequest: { requestEventId: e.eventId, basis: e.basis },
     projections: { ...s.projections, resourceRetirement: { type: "pending" } } }, [{
       type: "resource-cleanup-requested", causalEventId: e.eventId,
-      sourceFamilyRootId: e.sourceFamilyRootId, runtimeId: e.runtimeId, proofId: e.terminationProofId,
+      sourceFamilyRootId: e.sourceFamilyRootId, runtimeId: e.runtimeId, basis: e.basis,
   }]);
 };
 const privateCleanup = (s: State, e: C.RequestCleanup): QualificationTransition => {
@@ -689,16 +704,19 @@ const privateCleanup = (s: State, e: C.RequestCleanup): QualificationTransition 
     return reject(s, e, "wrong-binding");
   const mismatch = ownerMismatch(s.registration!, e); if (mismatch) return reject(s, e, mismatch);
   if (s.postRetirementRuntime !== "terminated") return reject(s, e, "runtime-unresolved");
+  if (e.basis.type !== "terminated") return reject(s, e, "wrong-binding");
   const watermark = runtimeSafetyWatermark(s, e.runtimeId);
-  if (s.cleanupRequest?.safetyWatermarkEventId === watermark?.eventId) return reject(s, e, "terminal-already-recorded");
+  if (s.cleanupRequest !== null && same(s.cleanupRequest.basis, e.basis))
+    return reject(s, e, "terminal-already-recorded");
   const termination = latestTermination(s, e.runtimeId, watermark);
-  if (watermark === null || termination === undefined || termination.proofId !== e.terminationProofId ||
+  if (watermark === null || termination === undefined ||
+      e.basis.runtimeSafetyWatermarkEventId !== watermark.eventId ||
+      termination.proofId !== e.basis.terminationProofId ||
       termination.runtimeSafetyWatermarkEventId !== watermark.eventId)
     return reject(s, e, "wrong-binding");
-  return accept(s, e, { cleanupRequest: { requestEventId: e.eventId,
-      safetyWatermarkEventId: watermark.eventId, terminationProofId: e.terminationProofId } }, [{
+  return accept(s, e, { cleanupRequest: { requestEventId: e.eventId, basis: e.basis } }, [{
     type: "resource-cleanup-requested", causalEventId: e.eventId, sourceFamilyRootId: e.sourceFamilyRootId,
-    runtimeId: e.runtimeId, proofId: e.terminationProofId }]);
+    runtimeId: e.runtimeId, basis: e.basis }]);
 };
 const hasEvidence = (items: readonly C.EvidenceReference[], expected: C.EvidenceReference): boolean =>
   items.some((item) => same(item, expected));
@@ -748,11 +766,9 @@ const expectedRetainedEvidence = (s: State, cleanupProofId: C.ProofId): readonly
   return expected;
 };
 const retirementEvidenceClosed = (s: State): boolean => {
-  const watermark = runtimeSafetyWatermark(s, s.registration!.runtimeId);
-  const termination = latestTermination(s, s.registration!.runtimeId, watermark);
   for (const authorization of s.authorizations.values()) {
     if (authorization.revokedAt === null && authorization.expiredAt === null) return false;
-    if (authorization.consumedAt !== null && authorization.launch === null && termination === undefined) return false;
+    if (authorization.consumedAt !== null && authorization.launch === null) return false;
     if (authorization.launch?.type === "started" && authorization.launchPurpose === "build" &&
         (s.projections.build === null || s.projections.buildConsistency === null)) return false;
     if (authorization.launch?.type === "started" && authorization.launchPurpose === "evaluation" &&
@@ -777,8 +793,19 @@ const complete = (s: State, e: C.CompleteRetirement): QualificationTransition =>
   if (!s.retirementRequested || s.cleanupRequest === null || s.projections.sourceEvidence.type === "open")
     return reject(s, e, "gate-closed");
   const watermark = runtimeSafetyWatermark(s, e.runtimeId);
-  if (s.cleanupRequest.safetyWatermarkEventId !== (watermark?.eventId ?? null) ||
-      s.cleanupRequest.terminationProofId === e.cleanupProofId || proofUsed(s, e.cleanupProofId))
+  if (s.cleanupRequest.requestEventId !== e.cleanupRequestEventId ||
+      !same(s.cleanupRequest.basis, e.cleanupBasis) || proofUsed(s, e.cleanupProofId))
+    return reject(s, e, "wrong-binding");
+  if (e.cleanupBasis.type === "terminated") {
+    const termination = latestTermination(s, e.runtimeId, watermark);
+    if (watermark === null || termination === undefined ||
+        e.cleanupBasis.runtimeSafetyWatermarkEventId !== watermark.eventId ||
+        termination.proofId !== e.cleanupBasis.terminationProofId ||
+        e.cleanupBasis.terminationProofId === e.cleanupProofId)
+      return reject(s, e, "wrong-binding");
+  } else if (watermark !== null || s.projections.runtime !== "not-started" ||
+      consumedUnresolvedRuntime(s, e.runtimeId) ||
+      s.projections.sourceEvidence.receiptId !== e.cleanupBasis.sourceTerminalReceiptId)
     return reject(s, e, "wrong-binding");
   if (!retirementEvidenceClosed(s)) return reject(s, e, "gate-closed");
   if (s.projections.sourceEvidence.receiptId !== e.sourceTerminalReceiptId ||
@@ -790,14 +817,17 @@ const complete = (s: State, e: C.CompleteRetirement): QualificationTransition =>
   if (!exactEvidence(e.retainedEvidence, expectedRetainedEvidence(s, e.cleanupProofId)))
     return reject(s, e, "wrong-binding");
   const retainedEvidence = Object.freeze(e.retainedEvidence.map(reference => Object.freeze({ ...reference })));
+  const cleanupBasis = Object.freeze({ ...e.cleanupBasis });
   const tombstone: C.RetirementTombstoneProjection = Object.freeze({ tombstoneId: e.tombstoneId,
     sourceTerminal: Object.freeze({ ...s.projections.sourceEvidence }), retirementOwnerId: e.retirementOwnerId,
+    cleanupRequestEventId: e.cleanupRequestEventId, cleanupBasis,
     cleanupProofId: e.cleanupProofId, retainedEvidence });
   return accept(s, e, { tombstones: withSet(s.tombstones, e.tombstoneId), projections: { ...s.projections,
     resourceRetirement: Object.freeze({ type: "retired", tombstone }) } }, [{
       type: "retirement-tombstone-appended", causalEventId: e.eventId,
       sourceFamilyRootId: e.sourceFamilyRootId, tombstoneId: e.tombstoneId,
-      retirementOwnerId: e.retirementOwnerId, cleanupProofId: e.cleanupProofId,
+      retirementOwnerId: e.retirementOwnerId, cleanupRequestEventId: e.cleanupRequestEventId,
+      cleanupBasis, cleanupProofId: e.cleanupProofId,
     }]);
 };
 const attemptReceipt = (s: State, e: C.RecordAttemptReceipt): QualificationTransition => {
@@ -1168,8 +1198,9 @@ export const transitionQualificationEvent = (
         { type: "consistency-receipt", consistencyReceiptId: event.consistencyReceiptId }) :
         reject(s, event, "receipt-replay");
   transition = preserveReplayedRuntimeSafety(s, event, transition);
-  return s.projections.resourceRetirement.type === "retired" ?
-    enforceTombstoneFinality(s, event, transition) : transition;
+  if (s.projections.resourceRetirement.type === "retired")
+    transition = enforceTombstoneFinality(s, event, transition);
+  return reserveRejectedLifecycleProof(s, event, transition);
 };
 export const foldQualificationHistory = (
   events: readonly C.ProtocolEvent[], maximumEvents: number, trusted: C.TrustedProtocolCoordinates,

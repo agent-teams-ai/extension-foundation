@@ -76,8 +76,15 @@ const reconcile = (label: string, observation: "live" | "terminated" | "unknown"
     proofId: proof(selectedProofLabel) });
 const retirement = (label: string, owner = id.owner, lineage = id.lineage) =>
   event(label, "RequestRetirement", { ...root, retirementOwnerId: owner, credentialLineageId: lineage });
-const cleanup = (label: string, terminationProofLabel = label, owner = id.owner) => event(label, "RequestCleanup", { ...root, runtimeId: id.runtime,
-  retirementOwnerId: owner, credentialLineageId: id.lineage, terminationProofId: proof(terminationProofLabel) });
+const cleanup = (label: string, terminationProofLabel = label,
+  runtimeSafetyWatermarkLabel = terminationProofLabel, owner = id.owner) => event(label, "RequestCleanup", {
+  ...root, runtimeId: id.runtime, retirementOwnerId: owner, credentialLineageId: id.lineage,
+  basis: { type: "terminated", runtimeSafetyWatermarkEventId: C.eventId(`event:${runtimeSafetyWatermarkLabel}`),
+    terminationProofId: proof(terminationProofLabel) } satisfies C.RuntimeCleanupBasis });
+const neverReleasedCleanup = (label: string, sourceTerminalLabel: string, owner = id.owner) =>
+  event(label, "RequestCleanup", { ...root, runtimeId: id.runtime, retirementOwnerId: owner,
+    credentialLineageId: id.lineage, basis: { type: "never-released",
+      sourceTerminalReceiptId: receipt(sourceTerminalLabel) } satisfies C.RuntimeCleanupBasis });
 const bodyEvidence = (value: unknown): readonly C.EvidenceReference[] => {
   if (value === null || typeof value !== "object") return [];
   const result: C.EvidenceReference[] = [];
@@ -97,10 +104,17 @@ const retainedEvidenceFor = (history: readonly EventSpec[], cleanupProof: C.Proo
   references.push({ type: "proof", proofId: cleanupProof }); return references.filter((reference, index) => references.findIndex(candidate =>
     JSON.stringify(candidate) === JSON.stringify(reference)) === index);
 };
-const complete = (label: string, history: readonly EventSpec[], sourceReceipt: C.ReceiptId) => event(label, "CompleteRetirement", {
-  ...root, runtimeId: id.runtime, retirementOwnerId: id.owner, credentialLineageId: id.lineage,
-    tombstoneId: C.tombstoneId(`tombstone:${label}`), cleanupProofId: proof(label), sourceTerminalReceiptId: sourceReceipt,
-    retainedEvidence: retainedEvidenceFor(history, proof(label)) });
+const complete = (label: string, history: readonly EventSpec[], sourceReceipt: C.ReceiptId,
+  cleanupProofLabel = label) => {
+  const cleanupRequest = history.findLast(spec => spec.accepted && spec.body.type === "RequestCleanup");
+  assert.ok(cleanupRequest, "retirement completion requires an accepted cleanup request fixture");
+  const cleanupProof = proof(cleanupProofLabel);
+  return event(label, "CompleteRetirement", {
+    ...root, runtimeId: id.runtime, retirementOwnerId: id.owner, credentialLineageId: id.lineage,
+    tombstoneId: C.tombstoneId(`tombstone:${label}`), cleanupRequestEventId: C.eventId(`event:${cleanupRequest.label}`),
+    cleanupBasis: cleanupRequest.body.basis as C.RuntimeCleanupBasis,
+    cleanupProofId: cleanupProof, sourceTerminalReceiptId: sourceReceipt,
+    retainedEvidence: retainedEvidenceFor(history, cleanupProof) }); };
 const attemptReceipt = (label: string, result: C.AttemptReceiptResult, selectedReceipt = receipt(label)) => event(label,
   "RecordAttemptReceipt", { attemptId: id.attempt, runtimeId: id.runtime, receiptId: selectedReceipt, result });
 const attemptDeadline = (label: string, result: "missing" | "unknown" = "missing", minimumTick = 60) => event(label, "ReachAttemptDeadline",
@@ -239,13 +253,14 @@ const raceFamilies: readonly RaceFamily[] = [
   { name: "8 restart reconciliation vs cleanup/retirement", variants: 2,
     history: (reverse, variant) => {
       const prefix = [...campaignBuildPrefix, consume("consume", campaignFence), release("release")];
+      const finalWatermark = variant === 0 ? reverse ? "restart" : "retirement" : "restart";
       const raced = variant === 0 ? ordered(reverse, restart("restart"), retirement("retirement"))
         : reverse ? [rejected(detached(cleanup("cleanup"))), restart("restart")]
           : [restart("restart"), rejected(detached(cleanup("cleanup")))];
       const beforeComplete = [...prefix, ...(variant === 0 ? [] : [retirement("retirement")]), ...raced,
-        reconcile("continuation-terminated", "terminated",
-          variant === 0 ? reverse ? "restart" : "retirement" : "restart"),
-        attemptDeadline("continuation-attempt"), cleanup("continuation-cleanup", "continuation-terminated")];
+        reconcile("continuation-terminated", "terminated", finalWatermark),
+        attemptDeadline("continuation-attempt"),
+        cleanup("continuation-cleanup", "continuation-terminated", finalWatermark)];
       return [...beforeComplete, complete("continuation-complete", beforeComplete, receipt("close"))];
     },
   },
@@ -268,7 +283,7 @@ const raceFamilies: readonly RaceFamily[] = [
   { name: "11 failed admission after closed source vs retirement", variants: 1, history: reverse => [
     ...(() => { const beforeComplete = [...sourceClosedPrefix,
       ...ordered(reverse, admission("failed-admission", "failed"), retirement("retirement")),
-      cleanup("continuation-cleanup", "source-terminated")]; return [...beforeComplete,
+      cleanup("continuation-cleanup", "source-terminated", "source-release")]; return [...beforeComplete,
         complete("continuation-complete", beforeComplete, receipt("close"))]; })()],
   },
   { name: "12 unknown runtime vs cleanup", variants: 1, history: reverse => [
@@ -278,18 +293,18 @@ const raceFamilies: readonly RaceFamily[] = [
         : [reconcile("unknown", "unknown", "retirement"), rejected(detached(cleanup("cleanup")))]),
       launchDeadline("continuation-deadline"),
       reconcile("continuation-terminated", "terminated", "continuation-deadline"),
-      cleanup("continuation-cleanup", "continuation-terminated")];
+      cleanup("continuation-cleanup", "continuation-terminated", "continuation-deadline")];
     return [...beforeComplete, complete("continuation-complete", beforeComplete, receipt("abandon"))]; })()],
   },
 ];
 assert.equal(raceFamilies.length, 12, "the registry must contain exactly twelve race families");
 const retiredBeforeComplete = [...sourceClosedPrefix, retirement("retirement"),
-  cleanup("cleanup", "source-terminated")] as const;
+  cleanup("cleanup", "source-terminated", "source-release")] as const;
 const retainedClosurePrefix = [...buildAuthorizedPrefix, build("retained-build", "failed"),
   consistency("retained-consistency", { type: "non-artifact-match", buildResult: "failed",
     proofId: proof("retained-consistency") }, buildReceipt("retained-build")),
   reconcile("retained-terminated", "terminated", "build-release"), retirement("retained-retirement"),
-  cleanup("retained-cleanup", "retained-terminated")] as const;
+  cleanup("retained-cleanup", "retained-terminated", "build-release")] as const;
 const retiredCrashHistory = [...retiredBeforeComplete,
   complete("complete", retiredBeforeComplete, receipt("close")),
   rejected(detached(crash("post-retirement-crash")))] as const;
@@ -303,8 +318,8 @@ const regressionHistories: readonly (readonly EventSpec[])[] = [
     rejected(detached(issue("post-failure-issue", campaignFence)))],
   [...retiredBeforeComplete, complete("complete", retiredBeforeComplete, receipt("close")),
     rejected(detached(reconcile("post-retirement", "unknown", "source-release")))],
-  [...sourceClosedPrefix, retirement("retirement"), cleanup("cleanup", "source-terminated"),
-    rejected(detached(cleanup("duplicate-cleanup", "source-terminated")))],
+  [...sourceClosedPrefix, retirement("retirement"), cleanup("cleanup", "source-terminated", "source-release"),
+    rejected(detached(cleanup("duplicate-cleanup", "source-terminated", "source-release")))],
   [register, issue("issue"), consume("consume"),
     rejected(detached(launchDeadline("never-started", sourceFence, "never-started")))],
   [...campaignBuildPrefix, consume("consume", campaignFence), checkpoint("checkpoint"), stop("stop"),
@@ -532,7 +547,7 @@ test("reconciliation and cleanup require the latest safety event and a fresh pro
   const staleCleanup = [...unsafe,
     reconcile("fresh-termination", "terminated", "new-safety-watermark"),
     retirement("watermarked-retirement"),
-    rejected(detached(cleanup("stale-cleanup-proof", "source-terminated")))] as const;
+    rejected(detached(cleanup("stale-cleanup-proof", "source-terminated", "source-release")))] as const;
   const cleanupResult = compareEvents(materialize(staleCleanup), "stale cleanup proof").at(-1)!;
   assert.equal(cleanupResult.effects.find(effect => effect.type === "denial-recorded")?.reason,
     "wrong-binding");
@@ -545,7 +560,7 @@ test("receipt replay remains visible after a terminal and closes into retirement
   const replayedClose = retained(rejected(detached({ ...close("replayed-close"),
     body: { ...close("replayed-close").body, receiptId: receipt("close") } })));
   const beforeComplete = [...sourceClosedPrefix, replayedClose,
-    retirement("replay-retirement"), cleanup("replay-cleanup", "source-terminated")] as const;
+    retirement("replay-retirement"), cleanup("replay-cleanup", "source-terminated", "source-release")] as const;
   const candidate = complete("replay-retirement-complete", beforeComplete, receipt("close"));
   compareHistory([...beforeComplete, candidate], "replayed source terminal retirement closure");
   const replayResult = foldQualificationHistory(materialize(beforeComplete), 64, trusted)
@@ -612,7 +627,7 @@ test("a contained late evaluation retains its attempt receipt and can close reti
     attemptDeadline("late-evaluation-attempt-deadline"),
     reconcile("late-evaluation-terminated", "terminated", "late-evaluation-launch-deadline"),
     retirement("late-evaluation-retirement"),
-    cleanup("late-evaluation-cleanup", "late-evaluation-terminated")] as const;
+    cleanup("late-evaluation-cleanup", "late-evaluation-terminated", "late-evaluation-launch-deadline")] as const;
   const events = materialize([...beforeComplete,
     complete("late-evaluation-complete", beforeComplete, receipt("close"))]);
   const results = compareEvents(events, "late evaluation closure");
@@ -626,7 +641,7 @@ test("cross-namespace build replay remains in the typed retirement evidence clos
     retained(rejected(detached(build("cross-namespace-replay", "succeeded", replayReceipt)))),
     consistency("consistency", { type: "match", artifactDigest: id.artifact }),
     reconcile("build-terminated", "terminated", "build-release"), retirement("retirement"),
-    cleanup("cleanup", "build-terminated")] as const;
+    cleanup("cleanup", "build-terminated", "build-release")] as const;
   compareHistory([...beforeComplete, complete("complete-full", beforeComplete, receipt("close"))], "cross-namespace replay complete closure");
   const candidate = complete("complete-omitted", beforeComplete, receipt("close"));
   const retainedEvidence = (candidate.body.retainedEvidence as readonly C.EvidenceReference[])
@@ -637,7 +652,7 @@ test("retirement freezes state mutations but retains explicit late forensic evid
     event("source-consume", "ConsumeAuthorization", { ...authorization(sourceFence), authorizationId: id.otherAuthorization }),
     release("source-release", sourceFence, "source-authoring", id.otherAuthorization), close("close"),
     reconcile("source-terminated", "terminated", "source-release"), retirement("retirement"),
-    cleanup("cleanup", "source-terminated")] as const;
+    cleanup("cleanup", "source-terminated", "source-release")] as const;
   const tombstone = complete("complete", beforeComplete, receipt("close")), postRetirement = [
     rejected(detached(admission("post-retirement-admission", "accepted"))), rejected(detached(advance("post-retirement-advance"))),
     rejected(detached(attemptDeadline("post-retirement-attempt"))), rejected(detached(checkpoint("post-retirement-checkpoint"))),
@@ -672,7 +687,7 @@ test("opposite late launch terminals invalidate and contain both orderings throu
       [attemptDeadline(`${selected.name}-attempt`)] : [];
     const beforeComplete = [...selected.before, selected.late, ...terminalAfterLate,
       reconcile(`${selected.name}-terminated`, "terminated", selected.late.label),
-      cleanup(`${selected.name}-cleanup`, `${selected.name}-terminated`)];
+      cleanup(`${selected.name}-cleanup`, `${selected.name}-terminated`, selected.late.label)];
     const repeated = rejected({ ...selected.post, label: `${selected.name}-receipt-replay` }), history = [...beforeComplete,
       complete(`${selected.name}-complete`, beforeComplete, receipt("close")), selected.post, repeated] as const; compareHistory(history, selected.name);
     const results = foldQualificationHistory(materialize(history), 64, trusted).results, before = results[selected.before.length - 1]!,
@@ -746,11 +761,11 @@ test("retirement requires an explicit request and terminal observations for star
   const unfinishedBuild = [...buildAuthorizedPrefix,
     reconcile("unfinished-build-terminated", "terminated", "build-release"),
     retirement("unfinished-build-retirement"),
-    cleanup("unfinished-build-cleanup", "unfinished-build-terminated")] as const;
+    cleanup("unfinished-build-cleanup", "unfinished-build-terminated", "build-release")] as const;
   const unfinishedEvaluation = [...evaluationStartedPrefix,
     reconcile("unfinished-evaluation-terminated", "terminated", "release"),
     retirement("unfinished-evaluation-retirement"),
-    cleanup("unfinished-evaluation-cleanup", "unfinished-evaluation-terminated")] as const;
+    cleanup("unfinished-evaluation-cleanup", "unfinished-evaluation-terminated", "release")] as const;
   for (const [name, prefix] of [["build", unfinishedBuild],
     ["evaluation", unfinishedEvaluation]] as const) {
     const candidate = rejected(complete(`unfinished-${name}-complete`, prefix, receipt("close")));
@@ -791,7 +806,7 @@ test("post-retirement unsafe starts retain containment until reconciliation prov
     close("retired-source-close"),
     reconcile("retired-source-terminated", "terminated", "retired-source-release"),
     retirement("retired-source-retirement"),
-    cleanup("retired-source-cleanup", "retired-source-terminated")] as const;
+    cleanup("retired-source-cleanup", "retired-source-terminated", "retired-source-release")] as const;
   const finalized = complete("retired-source-complete", beforeComplete, receipt("retired-source-close"));
   const history = [...beforeComplete, finalized,
     at(release("post-retirement-unsafe-start", sourceFence), 61),
@@ -814,7 +829,7 @@ test("post-retirement starts are contained even before the original launch deadl
     release("early-retired-release", sourceFence), close("early-retired-close"),
     reconcile("early-retired-terminated", "terminated", "early-retired-release"),
     retirement("early-retired-retirement"),
-    cleanup("early-retired-cleanup", "early-retired-terminated")] as const;
+    cleanup("early-retired-cleanup", "early-retired-terminated", "early-retired-release")] as const;
   const finalized = complete("early-retired-complete", beforeComplete, receipt("early-retired-close"));
   const results = compareEvents(materialize([...beforeComplete, finalized,
     release("early-post-retirement-start", sourceFence)]), "early post-retirement start");
@@ -856,7 +871,7 @@ test("post-retirement replayed starts keep the tombstone frozen and open private
     close("retired-replay-close"),
     reconcile("retired-replay-terminated", "terminated", "retired-replay-release"),
     retirement("retired-replay-retirement"),
-    cleanup("retired-replay-cleanup", "retired-replay-terminated")] as const;
+    cleanup("retired-replay-cleanup", "retired-replay-terminated", "retired-replay-release")] as const;
   const finalized = complete("retired-replay-complete", beforeComplete,
     receipt("retired-replay-close"));
   const start = at(release("post-retirement-replayed-start", sourceFence), 61);
@@ -913,14 +928,14 @@ test("post-retirement containment supports repeated reconcile-and-clean tracks",
     at(release("private-start", sourceFence), 61),
     reconcile("private-terminated-one", "terminated", "private-start"),
     reconcile("private-terminated-two", "terminated", "private-start"),
-    rejected(detached(cleanup("private-stale-cleanup", "private-terminated-one"))),
-    cleanup("private-cleanup", "private-terminated-two"),
+    rejected(detached(cleanup("private-stale-cleanup", "private-terminated-one", "private-start"))),
+    cleanup("private-cleanup", "private-terminated-two", "private-start"),
     { ...crash("private-crash"), body: { ...crash("private-crash").body,
       authorizationId: id.otherAuthorization } },
     reconcile("private-crash-terminated", "terminated", "private-crash"),
-    cleanup("private-crash-cleanup", "private-crash-terminated"), restart("private-restart"),
+    cleanup("private-crash-cleanup", "private-crash-terminated", "private-crash"), restart("private-restart"),
     reconcile("private-restart-terminated", "terminated", "private-restart"),
-    cleanup("private-restart-cleanup", "private-restart-terminated")] as const;
+    cleanup("private-restart-cleanup", "private-restart-terminated", "private-restart")] as const;
   const results = compareEvents(materialize(history), "private containment cleanup"), frozen = results[retiredBeforeComplete.length]!;
   results.slice(retiredBeforeComplete.length + 1).forEach(result =>
     assert.deepEqual(result.terminalProjections, frozen.terminalProjections));
@@ -935,20 +950,89 @@ test("equal-tick safety watermarks use authenticated ledger order", () => {
   assert.equal(results.at(-2)!.decision, "rejected");
   assert.equal(results.at(-1)!.decision, "accepted");
 });
-test("proof identity is global, stale attempts reserve it, and foreign identities do not", () => {
-  const prefix = [register, issue("proof-issue"), consume("proof-consume"), crash("proof-crash")] as const;
+test("proof identity is global and every rejected exact-bound lifecycle attempt reserves it", () => {
+  const prospective = [register, issue("proof-issue"), consume("proof-consume")],
+    prefix = [...prospective, crash("proof-crash")] as const;
   const foreign = reconcile("foreign-proof", "terminated", "proof-crash", "foreign-free"), cases = [[...prefix, abandon("proof-abandon"),
     rejected(detached(reconcile("cross-role-proof", "terminated", "proof-crash", "proof-abandon")))],
-  [...prefix, rejected(detached(reconcile("stale-proof", "terminated", "proof-consume", "reserved"))),
-    rejected(detached(reconcile("reserved-proof", "terminated", "proof-crash", "reserved")))],
+  [...prefix, restart("new-safety"),
+    rejected(detached(reconcile("stale-proof", "terminated", "proof-crash", "reserved"))),
+    rejected(detached(reconcile("reserved-proof", "terminated", "new-safety", "reserved")))],
+  [...prefix, rejected(detached(reconcile("ordinary-reference", "terminated", "proof-consume", "ordinary-free"))),
+    rejected(detached(reconcile("ordinary-reference-retry", "terminated", "proof-crash", "ordinary-free")))],
+  [...prefix, rejected(detached(reconcile("missing-reference", "terminated", "does-not-exist", "missing-free"))),
+    rejected(detached(reconcile("missing-reference-retry", "terminated", "proof-crash", "missing-free")))],
+  [...prospective, rejected(detached(reconcile("preplayed-before-safety", "terminated", "future-safety", "preplayed"))),
+    crash("future-safety"), rejected(detached(reconcile("preplayed-after-safety", "terminated", "future-safety", "preplayed")))],
   [...prefix, rejected(detached({ ...foreign, body: { ...foreign.body,
     sourceFamilyRootId: C.sourceFamilyRootId("foreign") } })),
     reconcile("foreign-proof-retry", "terminated", "proof-crash", "foreign-free")]] as const;
   cases.forEach((history, index) => compareHistory(history, `proof provenance ${index}`)); });
+test("never-released cleanup proves absence without fabricating a termination proof", () => {
+  const prefix = [register, abandon("never-released-source"), retirement("never-released-retirement"),
+    neverReleasedCleanup("never-released-cleanup", "never-released-source")] as const;
+  const candidate = complete("never-released-complete", prefix, receipt("never-released-source"));
+  const results = compareEvents(materialize([...prefix, candidate]), "never-released cleanup");
+  const cleanupEvent = materialize(prefix).at(-1)! as C.RequestCleanup;
+  assert.equal(cleanupEvent.basis.type, "never-released");
+  assert.equal("terminationProofId" in cleanupEvent.basis, false);
+  const retirementProjection = results.at(-1)!.terminalProjections.resourceRetirement;
+  assert.equal(retirementProjection.type, "retired");
+  assert.deepEqual(retirementProjection.tombstone.cleanupBasis, cleanupEvent.basis);
+  assert.equal(retirementProjection.tombstone.cleanupRequestEventId, cleanupEvent.eventId); });
+test("never-released cleanup rejects consumed or safety-bearing runtime histories", () => {
+  const consumed = [register, issue("never-release-issue"), consume("never-release-consume"),
+    abandon("never-release-abandon"), retirement("never-release-retirement"),
+    rejected(detached(neverReleasedCleanup("never-release-consumed", "never-release-abandon")))] as const;
+  const safety = [...sourceClosedPrefix, retirement("never-release-safety-retirement"),
+    rejected(detached(neverReleasedCleanup("never-release-safety", "close")))] as const;
+  compareHistory(consumed, "never-released consumed history"); compareHistory(safety, "never-released safety history"); });
+test("a crash contradicting release denial opens containment and forbids never-released cleanup", () => {
+  const history = [register, issue("contradiction-issue"), consume("contradiction-consume"),
+    releaseDenied("contradiction-denied", sourceFence), crash("contradiction-crash"),
+    abandon("contradiction-abandon"), retirement("contradiction-retirement"),
+    rejected(detached(neverReleasedCleanup("contradiction-cleanup", "contradiction-abandon")))] as const;
+  const results = compareEvents(materialize(history), "crash contradicts release denial"), observed = results[4]!;
+  assert.equal(observed.decision, "accepted"); assert.equal(observed.terminalProjections.claim, "invalid");
+  assert.ok(observed.effects.some(effect => effect.type === "runtime-termination-requested"));
+  assert.equal(results.at(-1)!.effects.find(effect => effect.type === "denial-recorded")?.reason, "runtime-unresolved"); });
+test("a rejected exact-bound retirement completion reserves its cleanup proof", () => {
+  const pending = [...sourceClosedPrefix, retirement("proof-retirement")],
+    requested = cleanup("proof-cleanup", "source-terminated", "source-release"),
+    future = [...pending, requested] as const,
+    preplay = rejected(detached(complete("proof-preplay", future, receipt("close"), "shared-cleanup"))),
+    beforeRetry = [...pending, preplay, requested] as const,
+    retry = rejected(complete("proof-retry", beforeRetry, receipt("close"), "shared-cleanup"));
+  compareHistory([...beforeRetry, retry], "cleanup proof preplay"); });
+test("retirement completion binds the exact cleanup request and basis", () => {
+  const candidate = complete("bound-complete", retiredBeforeComplete, receipt("close"));
+  const mutations = [
+    { name: "request", patch: { cleanupRequestEventId: C.eventId("event:foreign-cleanup") } },
+    { name: "watermark", patch: { cleanupBasis: { type: "terminated",
+      runtimeSafetyWatermarkEventId: C.eventId("event:foreign-watermark"),
+      terminationProofId: proof("source-terminated") } satisfies C.RuntimeCleanupBasis } },
+    { name: "termination-proof", patch: { cleanupBasis: { type: "terminated",
+      runtimeSafetyWatermarkEventId: C.eventId("event:source-release"),
+      terminationProofId: proof("foreign-termination") } satisfies C.RuntimeCleanupBasis } },
+  ] as const;
+  for (const mutation of mutations) {
+    const invalid = rejected(detached({ ...candidate, label: `bound-complete-${mutation.name}`,
+      body: { ...candidate.body, ...mutation.patch,
+        tombstoneId: C.tombstoneId(`tombstone:bound-complete-${mutation.name}`) } }));
+    compareHistory([...retiredBeforeComplete, invalid], `retirement cleanup binding ${mutation.name}`); } });
+test("runtime reconciliation does not invent a consumed launch terminal", () => {
+  const prefix = [...campaignBuildPrefix, consume("unresolved-consume", campaignFence),
+    retirement("unresolved-retirement"),
+    reconcile("unresolved-terminated", "terminated", "unresolved-retirement"),
+    cleanup("unresolved-cleanup", "unresolved-terminated", "unresolved-retirement")] as const;
+  compareHistory([...prefix, rejected(complete("unresolved-complete", prefix, receipt("close")))],
+    "consumed launch terminal remains required"); });
 test("consumed unresolved launches stay quarantined until exact reconciliation and cleanup", () => {
   const beforeComplete = [...campaignBuildPrefix, consume("orphan-consume", campaignFence), retirement("orphan-retirement"),
-    rejected(detached(cleanup("orphan-early"))), reconcile("orphan-terminated", "terminated", "orphan-retirement"),
-    cleanup("orphan-cleanup", "orphan-terminated")] as const;
+    rejected(detached(cleanup("orphan-early"))),
+    launchDeadline("orphan-launch-terminal", campaignFence, "start-unknown"),
+    reconcile("orphan-terminated", "terminated", "orphan-launch-terminal"),
+    cleanup("orphan-cleanup", "orphan-terminated", "orphan-launch-terminal")] as const;
   const results = compareEvents(materialize([...beforeComplete, complete("orphan-complete", beforeComplete,
     receipt("close"))]), "prospective runtime retirement"), requested = results[campaignBuildPrefix.length + 1]!;
   for (const type of ["resource-quarantined", "runtime-reconciliation-requested",
@@ -958,7 +1042,8 @@ test("new safety watermarks invalidate old cleanup bindings", () => {
   const stalePrefix = [...retiredBeforeComplete, restart("cleanup-restart"),
     reconcile("cleanup-reterminated", "terminated", "cleanup-restart")] as const;
   const stale = rejected(detached(complete("stale-cleanup-complete", stalePrefix, receipt("close"))));
-  const finalPrefix = [...stalePrefix, stale, cleanup("fresh-cleanup", "cleanup-reterminated")] as const;
+  const finalPrefix = [...stalePrefix, stale,
+    cleanup("fresh-cleanup", "cleanup-reterminated", "cleanup-restart")] as const;
   compareHistory([...finalPrefix, complete("fresh-cleanup-complete", finalPrefix, receipt("close"))], "cleanup watermark binding"); });
 test("retirement evidence closure rejects duplicate and foreign references", () => {
   const candidate = complete("exact-evidence", retiredBeforeComplete, receipt("close"));
@@ -974,7 +1059,8 @@ test("retirement evidence is deeply immutable at the projection boundary", () =>
     projection = foldQualificationHistory(materialize(history), 32, trusted).results.at(-1)!.terminalProjections.resourceRetirement;
   assert.equal(projection.type, "retired");
   assert.ok(Object.isFrozen(projection) && Object.isFrozen(projection.tombstone.sourceTerminal));
-  assert.ok(Object.isFrozen(projection.tombstone) && Object.isFrozen(projection.tombstone.retainedEvidence));
+  assert.ok(Object.isFrozen(projection.tombstone) && Object.isFrozen(projection.tombstone.cleanupBasis) &&
+    Object.isFrozen(projection.tombstone.retainedEvidence));
   assert.ok(projection.tombstone.retainedEvidence.every(Object.isFrozen));
   assert.throws(() => (projection.tombstone.retainedEvidence as C.EvidenceReference[]).push({
     type: "proof", proofId: proof("mutation") })); });
