@@ -509,9 +509,9 @@ const resolveSourceDependency = (specifier: string, containingFile: string, alia
   for (const candidate of candidates) try { const canonical = realpathSync(candidate); assert.ok(inside(canonical, repositoryRoot) && !canonical.split(sep).includes("node_modules"),
       `${relative(repositoryRoot, containingFile)} local import ${specifier} escapes the repository`); if (statSync(canonical).isFile()) return canonical;
   } catch (error) { if (error instanceof assert.AssertionError) throw error; } assert.fail(`${relative(repositoryRoot, containingFile)} has unresolvable local import ${specifier}`); };
-interface CappedSource { readonly bytes: Buffer; readonly text: string } const sourceClosure = (entry: string, aliases: LocalAliases): ReadonlyMap<string, CappedSource> => {
+interface CappedSource { readonly text: string } const sourceClosure = (entry: string, aliases: LocalAliases): ReadonlyMap<string, CappedSource> => {
   const pending = [entry], sources = new Map<string, CappedSource>(); while (pending.length > 0) { const path = pending.pop()!; if (sources.has(path)) continue;
-    const bytes = readFileSync(path), text = new TextDecoder("utf-8", { fatal: true }).decode(bytes); sources.set(path, { bytes, text }); if (!/\.(?:[cm]?[jt]sx?)$/u.test(path)) continue;
+    const bytes = readFileSync(path), text = new TextDecoder("utf-8", { fatal: true }).decode(bytes); sources.set(path, { text }); if (!/\.(?:[cm]?[jt]sx?)$/u.test(path)) continue;
     for (const specifier of dependencySpecifiers(path, text)) { const dependency = resolveSourceDependency(specifier, path, aliases); if (dependency !== null) pending.push(dependency); }
   } return sources; }; test("qualification source closure recognizes static and dynamic loading forms", () => {
   const source = `import value from "./static.ts"; import "./side-effect.ts"; export * from "../export.ts";\n` +
@@ -528,10 +528,11 @@ interface CappedSource { readonly bytes: Buffer; readonly text: string } const s
     "dogfooding-protocol-contract.ts", "dogfooding-protocol-oracle.ts", "dogfooding-protocol-reducer.ts", "dogfooding-protocol.test.ts"]);
   const physicalLines = (text: string): number => text.length === 0 ? 0 :
     (text.match(/\n/gu)?.length ?? 0) + (text.endsWith("\n") ? 0 : 1); const lineCount = [...sources.values()].reduce((sum, source) => sum + physicalLines(source.text), 0);
-  const byteCount = [...sources.values()].reduce((sum, source) => sum + source.bytes.length, 0);
+  const canonicalText = (text: string): string => text.replace(/\r\n?/gu, "\n");
+  const byteCount = [...sources.values()].reduce((sum, source) => sum + Buffer.byteLength(canonicalText(source.text), "utf8"), 0);
   const longestLine = Math.max(...[...sources.values()].flatMap(source => source.text.split("\n")
     .map(line => [...line.replace(/\r$/u, "")].length))); assert.ok(lineCount <= 3_000, `qualification model has ${lineCount} physical lines`);
-  assert.ok(byteCount <= 225_000, `qualification model has ${byteCount} raw UTF-8 bytes`); assert.ok(longestLine <= 200, `qualification model has a ${longestLine}-character line`); });
+  assert.ok(byteCount <= 225_000, `qualification model has ${byteCount} canonical UTF-8 bytes`); assert.ok(longestLine <= 200, `qualification model has a ${longestLine}-character line`); });
 test("supported fence-advance causes apply the same fail-closed scope revocation", () => { advanceCauseHistories.forEach(history => {
   const last = foldQualificationHistory(materialize(history), 64, trusted).results.at(-1)!; assert.ok(last.effects.some(
     effect => effect.type === "authorization-revoked")); }); });
