@@ -573,14 +573,28 @@ test("supported fence-advance causes apply the same fail-closed scope revocation
     effect => effect.type === "authorization-revoked")); }); });
 test("a second protocol registration preserves binding precedence and reports immutable finality", () => {
   const duplicate = rejected(event("duplicate-register", "RegisterProtocol", register.body));
-  const result = compareEvents(materialize([register, duplicate]), "duplicate protocol registration").at(-1)!;
+  const duplicateResults = compareEvents(materialize([register, duplicate]), "duplicate protocol registration");
+  const result = duplicateResults.at(-1)!;
   assert.equal(result.effects.find(effect => effect.type === "denial-recorded")?.reason,
     "terminal-already-recorded");
+  assert.deepEqual(result.terminalProjections, duplicateResults[0]!.terminalProjections);
   const foreign = rejected(event("foreign-register", "RegisterProtocol", { ...register.body,
     custodyAuthorityId: C.custodyAuthorityId("foreign-authority") }));
-  const denied = compareEvents(materialize([register, foreign]), "foreign protocol registration").at(-1)!;
+  const foreignResults = compareEvents(materialize([register, foreign]), "foreign protocol registration");
+  const denied = foreignResults.at(-1)!;
   assert.equal(denied.effects.find(effect => effect.type === "denial-recorded")?.reason,
     "wrong-binding");
+  assert.deepEqual(denied.terminalProjections, foreignResults[0]!.terminalProjections);
+});
+test("a rejected bootstrap does not advance lineage and a trusted registration can retry", () => {
+  const specs = [rejected(detached({ ...register, label: "rejected-bootstrap" })),
+    { ...register, label: "trusted-bootstrap-retry" }] as const;
+  const events = materialize(specs), rejectedBootstrap = { ...events[0]!,
+    custodyAuthorityId: C.custodyAuthorityId("substituted-authority") } as C.ProtocolEvent;
+  const results = compareEvents([rejectedBootstrap, events[1]!], "trusted bootstrap retry");
+  assert.deepEqual(results.map(item => item.decision), ["rejected", "accepted"]);
+  assert.equal(events[1]!.authenticatedPredecessorId, null);
+  assert.equal(results[1]!.terminalProjections.claim, "eligible");
 });
 test("direct start-unknown requests containment and reconciliation", () => { const result = foldQualificationHistory(materialize([register, issue("issue"), consume("consume"),
     launchDeadline("deadline")]), 8, trusted).results.at(-1)!;
@@ -631,7 +645,7 @@ test("replay containment requires a trusted runtime binding and remains idempote
     "idempotent replayed process start");
   assert.deepEqual(exactReplay.at(-1), exactReplay.at(-2));
   const foreign = rejected(detached({ ...replayed, label: "foreign-replayed-start",
-    body: { ...replayed.body, sourceFamilyRootId: C.sourceFamilyRootId("foreign-root") } }));
+    body: { ...replayed.body, runtimeId: C.runtimeId("foreign-runtime") } }));
   const result = compareEvents(materialize([...prefix, foreign]),
     "foreign replay cannot trigger containment").at(-1)!;
   assert.equal(result.effects.find(effect => effect.type === "denial-recorded")?.reason,
@@ -653,6 +667,26 @@ test("replay containment rejects reconciliation observed before its safety water
     "wrong-binding");
   assert.deepEqual([result.terminalProjections.runtime,
     result.terminalProjections.resourceRetirement.type], ["unknown", "quarantined"]);
+});
+test("reconciliation and cleanup require the latest safety event and a fresh proof", () => {
+  const unsafe = [...sourceClosedPrefix, restart("new-safety-watermark")] as const;
+  const invalidReconciliations = [
+    reconcile("stale-watermark", "terminated", "source-release"),
+    reconcile("reused-proof", "terminated", "new-safety-watermark", "source-terminated"),
+  ] as const;
+  for (const candidate of invalidReconciliations) {
+    const result = compareEvents(materialize([...unsafe, rejected(detached(candidate))]),
+      candidate.label).at(-1)!;
+    assert.equal(result.effects.find(effect => effect.type === "denial-recorded")?.reason,
+      "wrong-binding");
+  }
+  const staleCleanup = [...unsafe,
+    reconcile("fresh-termination", "terminated", "new-safety-watermark"),
+    retirement("watermarked-retirement"),
+    rejected(detached(cleanup("stale-cleanup-proof", "source-terminated")))] as const;
+  const cleanupResult = compareEvents(materialize(staleCleanup), "stale cleanup proof").at(-1)!;
+  assert.equal(cleanupResult.effects.find(effect => effect.type === "denial-recorded")?.reason,
+    "wrong-binding");
 });
 test("receipt primitive identity is unique across protocol receipt families", () => { const history = [...evaluationStartedPrefix,
     rejected(detached(attemptReceipt("cross-namespace-receipt", "succeeded", receipt("close"))))] as const;
@@ -809,6 +843,14 @@ test("same-result late launch evidence remains forensic-only while authority is 
     [...longDenial, at(releaseDenied("same-late-denied"), 61)]] as const; cases.forEach((history, index) => {
     compareHistory(history, `same-result late launch ${index + 1}`); const results = foldQualificationHistory(materialize(history), 64, trusted).results, last = results.at(-1)!;
     assert.deepEqual(last.effects.map(effect => effect.type), ["late-receipt-retained"]); assert.deepEqual(last.terminalProjections, results.at(-2)!.terminalProjections); }); });
+test("a contradictory release denial invalidates and contains before the launch deadline", () => {
+  const result = compareEvents(materialize([...evaluationStartedPrefix,
+    releaseDenied("immediate-contradiction")]), "immediate launch contradiction").at(-1)!;
+  assert.equal(result.decision, "accepted");
+  assert.deepEqual([result.terminalProjections.claim, result.terminalProjections.runtime,
+    result.terminalProjections.resourceRetirement.type], ["invalid", "unknown", "quarantined"]);
+  assert.ok(result.effects.some(effect => effect.type === "runtime-termination-requested"));
+});
 test("launch deadline validates binding before reporting a premature deadline", () => { const candidate = launchDeadline("early-wrong-binding", sourceFence, "start-unknown", 59);
   const wrongBinding = rejected({ ...candidate, body: { ...candidate.body, sourceFamilyRootId: C.sourceFamilyRootId("wrong-root") } });
   const history = [register, issue("issue"), consume("consume"), wrongBinding] as const; compareHistory(history, "binding before launch deadline");
@@ -885,6 +927,15 @@ test("post-retirement replay still validates build binding", () => { const candi
     body: { ...candidate.body, sourceFamilyRootId: C.sourceFamilyRootId("wrong-root") } });
   const results = compareEvents(materialize([...postRetirementReplayPrefix, wrong]), "post-retirement wrong-binding replay"), frozen = results.at(-2)!, denied = results.at(-1)!;
   assert.deepEqual(denied.terminalProjections, frozen.terminalProjections); assert.equal(denied.effects.find(effect => effect.type === "denial-recorded")?.reason, "wrong-binding"); });
+test("post-retirement consistency with a foreign build receipt stays visible and invalid", () => {
+  const wrong = consistency("foreign-retired-consistency", { type: "non-artifact-match",
+    buildResult: "failed", proofId: proof("retained-consistency") }, buildReceipt("foreign"));
+  const results = compareEvents(materialize([...postRetirementReplayPrefix, wrong]),
+    "post-retirement foreign build receipt"), frozen = results.at(-2)!, invalid = results.at(-1)!;
+  assert.deepEqual(invalid.terminalProjections, frozen.terminalProjections);
+  assert.ok(invalid.effects.some(effect => effect.type === "late-receipt-retained"));
+  assert.ok(invalid.effects.some(effect => effect.type === "claim-disposition-set" && effect.value === "invalid"));
+});
 test("post-retirement unsafe starts retain containment until reconciliation proves termination", () => {
   const beforeComplete = [register, longIssue("retired-source-issue"),
     consume("retired-source-consume"), release("retired-source-release", sourceFence),
@@ -924,6 +975,22 @@ test("post-retirement starts are contained even before the original launch deadl
     "runtime-reconciliation-requested", "runtime-termination-requested"] as const)
     assert.ok(unsafe.effects.some(effect => effect.type === expected), `missing ${expected}`);
   assert.deepEqual(unsafe.terminalProjections, results.at(-2)!.terminalProjections);
+});
+test("fresh start-unknown after retirement opens private containment and keeps the tombstone frozen", () => {
+  const finalized = complete("unknown-after-retirement-complete", retiredBeforeComplete, receipt("close"));
+  const unknown = launchDeadline("unknown-after-retirement", sourceFence);
+  const boundUnknown = { ...unknown, body: { ...unknown.body,
+    authorizationId: id.otherAuthorization } } as EventSpec;
+  const history = [...retiredBeforeComplete, finalized, boundUnknown,
+    reconcile("unknown-after-retirement-terminated", "terminated", boundUnknown.label)] as const;
+  const results = compareEvents(materialize(history), "post-retirement start unknown"), frozen = results.at(-3)!;
+  const contained = results.at(-2)!;
+  assert.equal(contained.decision, "accepted");
+  assert.ok(contained.effects.some(effect => effect.type === "late-receipt-retained" &&
+    effect.evidence.type === "launch" && effect.evidence.result === "start-unknown"));
+  assert.ok(contained.effects.some(effect => effect.type === "runtime-termination-requested"));
+  assert.deepEqual([contained.terminalProjections, results.at(-1)!.terminalProjections],
+    [frozen.terminalProjections, frozen.terminalProjections]);
 });
 test("typed receipt replays deny execution without advancing authenticated lineage", () => {
   const replay = rejected(detached(build("typed-replay", "succeeded", C.buildReceiptId("receipt:close"))));

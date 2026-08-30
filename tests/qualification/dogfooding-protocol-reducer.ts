@@ -436,13 +436,15 @@ const retainUnauthorizedLateStart = (s: State, e: C.ReleaseProcess,
           receiptId: e.launchReceiptId, result: "started" } }, denied,
       invalid(e, { type: "receipt", receiptId: e.launchReceiptId }), ...contain(e)]);
 };
-const retainPostRetirementStart = (s: State, e: C.ReleaseProcess): QualificationTransition =>
-  accept(s, e, { receipts: withSet(s.receipts, e.launchReceiptId), projections: { ...s.projections,
+const retainPostRetirementUnsafeLaunch = (s: State, e: C.ReleaseProcess | C.ReachLaunchDeadline,
+  receiptId: C.ReceiptId, result: "started" | "start-unknown"): QualificationTransition =>
+  accept(s, e, { receipts: withSet(s.receipts, receiptId), postRetirementRuntime: "unknown",
+    projections: { ...s.projections,
     runtime: "unknown", resourceRetirement: { type: "quarantined" }, claim: "invalid" } }, [
     { type: "late-receipt-retained", causalEventId: e.eventId, evidence: { type: "launch",
-      authorizationId: e.authorizationId, receiptId: e.launchReceiptId, result: "started" } },
+      authorizationId: e.authorizationId, receiptId, result } },
     { type: "denial-recorded", causalEventId: e.eventId, reason: "gate-closed", subject: subject(e) },
-    invalid(e, { type: "receipt", receiptId: e.launchReceiptId }), ...contain(e)]);
+    invalid(e, { type: "receipt", receiptId }), ...contain(e)]);
 const release = (s: State, e: C.ReleaseProcess): QualificationTransition => {
   const mismatch = authorizationIdentity(s.registration!, e);
   if (mismatch || e.attemptId !== s.registration!.attemptId) return reject(s, e, mismatch ?? "wrong-binding");
@@ -450,7 +452,7 @@ const release = (s: State, e: C.ReleaseProcess): QualificationTransition => {
   if (!a) {
     if (s.projections.resourceRetirement.type === "retired" &&
         purposeMatchesFence(e.launchPurpose, e.authorizationFence) && !receiptUsed(s, e.launchReceiptId))
-      return retainPostRetirementStart(s, e);
+      return retainPostRetirementUnsafeLaunch(s, e, e.launchReceiptId, "started");
     if (e.authoritativeTick >= s.registration!.launchDeadline &&
         purposeMatchesFence(e.launchPurpose, e.authorizationFence) && !receiptUsed(s, e.launchReceiptId))
       return retainUnauthorizedLateStart(s, e, "authorization-unavailable");
@@ -459,7 +461,7 @@ const release = (s: State, e: C.ReleaseProcess): QualificationTransition => {
   if (!bindingMatches(a, e)) return reject(s, e, "wrong-binding");
   if (s.projections.resourceRetirement.type === "retired") {
     if (receiptUsed(s, e.launchReceiptId)) return reject(s, e, "receipt-replay");
-    return retainPostRetirementStart(s, e);
+    return retainPostRetirementUnsafeLaunch(s, e, e.launchReceiptId, "started");
   }
   if (receiptUsed(s, e.launchReceiptId)) return reject(s, e, "receipt-replay");
   if (a.launch !== null) return retainLateLaunch(s, e, a.launch);
@@ -556,10 +558,13 @@ const launchDeadline = (s: State, e: C.ReachLaunchDeadline): QualificationTransi
   const mismatch = authorizationIdentity(s.registration!, e); if (mismatch) return reject(s, e, mismatch);
   const a = s.authorizations.get(e.authorizationId);
   if (!a || !bindingMatches(a, e)) return reject(s, e, a ? "wrong-binding" : "authorization-unavailable");
-  if (s.projections.resourceRetirement.type === "retired") return reject(s, e, "terminal-already-recorded");
-  if (a.launch !== null) return reject(s, e, "terminal-already-recorded");
   if (e.authoritativeTick < s.registration!.launchDeadline) return reject(s, e, "deadline-not-reached");
   if (receiptUsed(s, e.observationReceiptId)) return reject(s, e, "receipt-replay");
+  if (s.projections.resourceRetirement.type === "retired")
+    return e.result === "start-unknown" && a.consumedAt !== null ?
+      retainPostRetirementUnsafeLaunch(s, e, e.observationReceiptId, e.result) :
+      reject(s, e, "terminal-already-recorded");
+  if (a.launch !== null) return reject(s, e, "terminal-already-recorded");
   if (e.result === "start-unknown" && a.consumedAt === null) return reject(s, e, "wrong-binding");
   if (e.result === "never-started" && (a.consumedAt !== null ||
       s.projections.runtime !== "not-started" && s.projections.runtime !== "terminated"))

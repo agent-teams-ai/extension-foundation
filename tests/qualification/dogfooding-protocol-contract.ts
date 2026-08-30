@@ -487,7 +487,7 @@ export interface TerminalAppendedEffect extends EffectEnvelope {
 }
 export type LateEvidenceReference =
   | { readonly type: "launch"; readonly authorizationId: AuthorizationId; readonly receiptId: ReceiptId;
-      readonly result: "started" | "release-denied" }
+      readonly result: LaunchTerminalResult }
   | {
       readonly type: "attempt";
       readonly attemptId: AttemptId;

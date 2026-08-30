@@ -1,7 +1,7 @@
 import type { AdmissionProjection, AuthorizationFenceBinding, AuthorizationId, BuildConsistencyTerminalProjection,
 BuildReceiptId, BuildTerminalProjection, ClaimProjection, DeclaredEffect, DenialReason, DenialSubject, EventId,
 EvidenceReference, FenceGeneration, ProtocolEvent, RegisterProtocol, ResourceRetirementProjection, RuntimeProjection,
-SourceEvidenceProjection, TerminalProjections, TransitionResult, TrustedProtocolCoordinates, } from "./dogfooding-protocol-contract.ts";
+ReceiptId, SourceEvidenceProjection, TerminalProjections, TransitionResult, TrustedProtocolCoordinates, } from "./dogfooding-protocol-contract.ts";
 interface LedgerRow { readonly event: ProtocolEvent; readonly result: TransitionResult; readonly accepted: boolean; }
 export interface OracleHistory {
 readonly trusted: TrustedProtocolCoordinates; readonly registration: RegisterProtocol;
@@ -199,19 +199,21 @@ receiptId: event.launchReceiptId, result: "started",
 ...contain(event),
 ]);
 };
-const retainPostRetirementStart = (
+const retainPostRetirementUnsafeLaunch = (
 history: OracleHistory,
-event: Extract<ProtocolEvent, { readonly type: "ReleaseProcess" }>,
+event: Extract<ProtocolEvent, { readonly type: "ReleaseProcess" | "ReachLaunchDeadline" }>,
+receiptId: ReceiptId,
+result: "started" | "start-unknown",
 ): TransitionResult => accept(withProjection(currentProjection(history), {
 claim: "invalid", runtime: "unknown", resourceRetirement: { type: "quarantined" },
 }), [
 { type: "late-receipt-retained", causalEventId: event.eventId, evidence: {
 type: "launch", authorizationId: event.authorizationId,
-receiptId: event.launchReceiptId, result: "started",
+receiptId, result,
 } },
 { type: "denial-recorded", causalEventId: event.eventId, reason: "gate-closed",
 subject: denialSubject(event) },
-...invalidClaimEffects(event, { type: "receipt", receiptId: event.launchReceiptId }),
+...invalidClaimEffects(event, { type: "receipt", receiptId }),
 ...contain(event),
 ]);
 const commonEnvelopeFailure = (history: OracleHistory, event: ProtocolEvent): DenialReason | null => {
@@ -498,10 +500,12 @@ if (view !== null && (!sameFenceBinding(view.issue.authorizationFence, event.aut
 view.issue.launchPurpose !== event.launchPurpose)) {
 return denial(event, before, "wrong-binding"); } if (event.type === "ReachLaunchDeadline") {
 if (view === null) return denial(event, before, "authorization-unavailable");
-if (before.resourceRetirement.type === "retired") return denial(event, before, "terminal-already-recorded");
-if (view.launchTerminal) return denial(event, before, "terminal-already-recorded");
 if (event.authoritativeTick < registration.launchDeadline) return denial(event, before, "deadline-not-reached");
 if (usedReceipt(history, event.observationReceiptId)) return replay(event, history);
+if (before.resourceRetirement.type === "retired") return event.result === "start-unknown" && view.consumed ?
+retainPostRetirementUnsafeLaunch(history, event, event.observationReceiptId, event.result) :
+denial(event, before, "terminal-already-recorded");
+if (view.launchTerminal) return denial(event, before, "terminal-already-recorded");
 if (event.result === "start-unknown" && !view.consumed) return denial(event, before, "wrong-binding");
 if (event.result === "never-started" && (view.consumed ||
 before.runtime !== "not-started" && before.runtime !== "terminated")) {
@@ -522,7 +526,7 @@ if (event.type === "ReleaseProcess" && !same(event.attemptId, registration.attem
 if (event.type === "ReleaseProcess" && before.resourceRetirement.type === "retired") {
 if (!purposeMatchesFence(event.launchPurpose, event.authorizationFence)) return denial(event, before, "wrong-binding");
 if (usedReceipt(history, event.launchReceiptId)) return replay(event, history);
-return retainPostRetirementStart(history, event); }
+return retainPostRetirementUnsafeLaunch(history, event, event.launchReceiptId, "started"); }
 if (view?.launchTerminal === true) {
 if (!view.consumed) return denial(event, before, "authorization-unavailable");
 const receiptId = event.type === "ReleaseProcess" ? event.launchReceiptId : event.receiptId;

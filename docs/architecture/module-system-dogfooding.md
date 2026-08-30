@@ -52,7 +52,9 @@ closed transitive source set, and must never be imported by a production package
 These are maintainability ceilings, not compression targets: qualification code
 must remain readable and must not join unrelated statements merely to fit the cap.
 Its qualification test rejects local imports outside that measured closure. A
-real product seam starts
+repository-level architecture check independently anchors the exact four-file
+roster and repeats all three limits so edits to the model cannot silently weaken
+their own guard. A real product seam starts
 from product-owned types and composition; this model is not shared campaign
 machinery. The architecture owner must remove these executable files when an
 accepted decision either selects the first product-owned capability or rejects
@@ -66,6 +68,9 @@ shared five-cause policy before an owning product decides it.
 
 The model starts only from product-supplied trusted protocol-revision and custody-
 authority coordinates; the first ledger event cannot appoint its own authority.
+Rejected bootstrap input neither registers the protocol nor advances its lineage;
+a later fresh registration may succeed only from the original trusted coordinates
+and null predecessor.
 Its authenticated predecessor orders admitted state transitions. Denial effects
 are compared and retained as evidence, but sequencing of the separate authenticated
 denial journal and its verifiable high-watermark remain a product-owned campaign
@@ -480,7 +485,9 @@ quarantine, reconciliation, and termination. Binding failure takes precedence,
 so an unrelated sender cannot trigger containment with a colliding identifier.
 After retirement the same rule opens only the private reconciliation track while
 the public tombstone and terminal projections remain unchanged. Reconciliation
-predating the retained runtime-safety observation cannot clear that containment.
+must bind the exact latest runtime-safety event and a fresh proof; a stale event,
+predating observation, or reused proof cannot clear containment. Cleanup likewise
+references the latest accepted terminated reconciliation for that same watermark.
 
 Resource retirement requires an explicit owner-bound retirement request. Before
 it can complete, every launch authority is expired or revoked, every consumed
@@ -492,8 +499,10 @@ plus the cleanup proof. Missing closure evidence fails closed; a tombstone canno
 hide an unfinished or unreconciled runtime.
 
 The tombstone freezes terminal projections but does not suppress later safety
-evidence. A late start observed after retirement is appended as invalid evidence,
-quarantines the resource, and opens a private containment-reconciliation track.
+evidence. A fresh `started` or `start-unknown` observation after retirement is
+appended as invalid evidence, quarantines the resource, and opens a private
+containment-reconciliation track. Contradictory trusted launch terminals trigger
+the same invalidation and containment immediately, not only after a deadline.
 That track may record `unknown`, `live`, and `terminated` observations and request
 termination while the tombstone remains byte-for-byte unchanged.
 
