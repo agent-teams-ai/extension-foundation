@@ -496,21 +496,22 @@ must bind the exact latest runtime-safety event and a fresh proof; a stale event
 predating observation, or reused proof cannot clear containment. Cleanup likewise
 references the latest accepted terminated reconciliation for that same watermark.
 A proof is opaque in this qualification model, so causal freshness cannot be
-reconstructed from its identifier. Every rejected reconciliation with an
-authenticated envelope and exact root/runtime binding therefore reserves its
-proof; every equivalently bound retirement-completion attempt reserves its
-cleanup proof. The retirement closure retains each such exact-bound rejected
-event together with its reserved proof. Identity-invalid or foreign-root
-attempts cannot reserve either.
+reconstructed from its identifier. Every rejected release-denial observation
+bound to an issued authorization, every rejected reconciliation with an
+authenticated envelope and exact root/runtime binding, and every equivalently
+bound retirement-completion attempt therefore reserves its proof. The
+retirement closure retains each such exact-bound rejected event together with
+its reserved proof. Identity-invalid or foreign-root attempts cannot reserve
+one.
 
 Cleanup records one explicit basis. A `terminated` basis binds the exact current
 runtime-safety watermark and its accepted termination proof. A `never-released`
 basis binds the exact source-terminal receipt and is accepted only when the ledger
 proves that no process release, runtime-safety watermark, or consumed unresolved
 authorization exists. Absence never receives a fabricated termination proof.
-An exact crash observation that contradicts a `release-denied` or `never-started`
-terminal is retained as runtime-safety evidence, invalidates the claim, opens
-containment, and makes the `never-released` basis impossible.
+An exact crash or restart observation that contradicts a `release-denied` or
+`never-started` terminal is retained as runtime-safety evidence, invalidates the
+claim, opens containment, and makes the `never-released` basis impossible.
 
 Resource retirement requires an explicit owner-bound retirement request. Before
 it can complete, every launch authority is expired or revoked, every consumed

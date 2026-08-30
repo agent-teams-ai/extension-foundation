@@ -178,10 +178,13 @@ evidence: DeclaredEffect extends infer _Unused ? | { readonly type: "event"; rea
 | { readonly type: "consistency-receipt"; readonly consistencyReceiptId: Extract<ProtocolEvent, { readonly type: "RecordBuildConsistencyReceipt" }>["consistencyReceiptId"] }
 : never, ): readonly DeclaredEffect[] => [
 { type: "claim-disposition-set", causalEventId: event.eventId, value: "invalid", evidence }, ];
+const releaseDenialBound = (history: OracleHistory, event: Extract<ProtocolEvent, { readonly type: "RecordReleaseDenied" }>): boolean => {
+const view = authorization(history, event.authorizationId); return authorizationBindingMatches(history.registration, event) === null && view !== null &&
+sameFenceBinding(view.issue.authorizationFence, event.authorizationFence) && view.issue.launchPurpose === event.launchPurpose; };
 const nonPromotional = ( event: ProtocolEvent, evidence: EvidenceReference,
 ): DeclaredEffect => ({ type: "claim-disposition-set", causalEventId: event.eventId, value: "non-promotional",
 evidence, }); const contain = (e: Pick<Extract<ProtocolEvent, {
-readonly type: "ReleaseProcess" | "RecordReleaseDenied" | "ObserveCrash" | "ReachLaunchDeadline";
+readonly type: "ReleaseProcess" | "RecordReleaseDenied" | "ObserveCrash" | "ReachLaunchDeadline" | "RestartObserved";
 }>, "eventId" | "sourceFamilyRootId" | "runtimeId">): readonly DeclaredEffect[] => [
 { type: "resource-quarantined", causalEventId: e.eventId, sourceFamilyRootId: e.sourceFamilyRootId, runtimeId: e.runtimeId },
 { type: "runtime-reconciliation-requested", causalEventId: e.eventId, runtimeId: e.runtimeId }, { type: "runtime-termination-requested", causalEventId: e.eventId, runtimeId: e.runtimeId }];
@@ -692,12 +695,13 @@ event.authoritativeTick < watermark.authoritativeTick || proofReused)
 return denial(event, before, "wrong-binding");
 }
 if (event.type === "RestartObserved") {
+const contradiction = acceptedOf(history, "IssueAuthorization").some(issue => {
+const launch = priorLaunchResult(history, issue.authorizationId); return launch === "release-denied" || launch === "never-started"; });
+if (contradiction) return accept(withProjection(before, { claim: "invalid", runtime: "unknown",
+resourceRetirement: { type: "quarantined" } }), [...invalidClaimEffects(event, { type: "event", eventId: event.eventId }), ...contain(event)]);
 const hasProspectiveRuntime = acceptedOf(history, "ConsumeAuthorization").length > 0 || before.runtime !== "not-started";
 if (!hasProspectiveRuntime) return denial(event, before, "runtime-unresolved"); return accept(
-withProjection(before, { runtime: "unknown", resourceRetirement: { type: "quarantined" } }), [
-{ type: "resource-quarantined", causalEventId: event.eventId, sourceFamilyRootId: event.sourceFamilyRootId, runtimeId: event.runtimeId },
-{ type: "runtime-reconciliation-requested", causalEventId: event.eventId, runtimeId: event.runtimeId },
-{ type: "runtime-termination-requested", causalEventId: event.eventId, runtimeId: event.runtimeId }, ], ); }
+withProjection(before, { runtime: "unknown", resourceRetirement: { type: "quarantined" } }), contain(event)); }
 if (before.resourceRetirement.type === "retired" || before.runtime === "not-started") {
 return denial(event, before, "runtime-unresolved"); }
 if (event.observation === "unknown") { return accept(
@@ -1063,10 +1067,9 @@ export const appendOracleEvent = (history: OracleHistory, event: ProtocolEvent):
       const handler = transitionTable[event.type] as (selected: OracleHistory,
         selectedEvent: typeof event) => TransitionResult;
       let candidate = handler(history, event);
-      proofReservationEligible = event.type === "ReconcileRuntime" && rootMatches(history.registration, event) &&
-        same(event.runtimeId, history.registration.runtimeId) || event.type === "CompleteRetirement" &&
-        rootMatches(history.registration, event) && same(event.runtimeId, history.registration.runtimeId) &&
-        ownerMatches(history.registration, event) === null;
+      proofReservationEligible = event.type === "RecordReleaseDenied" && releaseDenialBound(history, event) || event.type === "ReconcileRuntime" &&
+        rootMatches(history.registration, event) && same(event.runtimeId, history.registration.runtimeId) || event.type === "CompleteRetirement" &&
+        rootMatches(history.registration, event) && same(event.runtimeId, history.registration.runtimeId) && ownerMatches(history.registration, event) === null;
       const receipt = ownedReceipt(event);
       const reason = candidate.effects.find(effect => effect.type === "denial-recorded")?.reason;
       const identityFailure = reason === "wrong-binding" ||

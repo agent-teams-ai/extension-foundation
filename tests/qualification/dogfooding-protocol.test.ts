@@ -98,12 +98,15 @@ const bodyEvidence = (value: unknown): readonly C.EvidenceReference[] => {
     } if (typeof item === "object" && item !== null) result.push(...bodyEvidence(item));
   } return result;
 };
-const reservesRejectedLifecycleProof = (spec: EventSpec): boolean => {
-  const body = spec.body, exactRoot = body.sourceClaimFamilyId === id.family && body.sourceFamilyRootId === id.root;
-  return !spec.accepted && exactRoot && body.runtimeId === id.runtime && (body.type === "ReconcileRuntime" ||
+const reservesRejectedLifecycleProof = (spec: EventSpec, history: readonly EventSpec[], index: number): boolean => {
+  const body = spec.body, exactRoot = body.sourceClaimFamilyId === id.family && body.sourceFamilyRootId === id.root,
+    issue = body.type === "RecordReleaseDenied" && history.slice(0, index).find(candidate => candidate.accepted && candidate.body.type === "IssueAuthorization" &&
+      ["authorizationId", "sourceSlotId", "runtimeId", "retirementOwnerId", "credentialLineageId", "authorizationFence", "launchPurpose"].every(
+        key => JSON.stringify(candidate.body[key]) === JSON.stringify(body[key])));
+  return !spec.accepted && exactRoot && body.runtimeId === id.runtime && (issue !== false && issue !== undefined || body.type === "ReconcileRuntime" ||
     body.type === "CompleteRetirement" && body.retirementOwnerId === id.owner && body.credentialLineageId === id.lineage); };
 const retainedEvidenceFor = (history: readonly EventSpec[], cleanupProof: C.ProofId): readonly C.EvidenceReference[] => {
-  const references = history.filter(spec => spec.accepted || spec.retainedAfterRejection === true || reservesRejectedLifecycleProof(spec)).flatMap(spec => [
+  const references = history.filter((spec, index) => spec.accepted || spec.retainedAfterRejection === true || reservesRejectedLifecycleProof(spec, history, index)).flatMap(spec => [
     { type: "event" as const, eventId: C.eventId(`event:${spec.label}`) }, ...bodyEvidence(spec.body)]);
   references.push({ type: "proof", proofId: cleanupProof }); return references.filter((reference, index) => references.findIndex(candidate =>
     JSON.stringify(candidate) === JSON.stringify(reference)) === index);
@@ -972,52 +975,57 @@ test("proof identity is global and every rejected exact-bound lifecycle attempt 
     sourceFamilyRootId: C.sourceFamilyRootId("foreign") } })),
     reconcile("foreign-proof-retry", "terminated", "proof-crash", "foreign-free")]] as const;
   cases.forEach((history, index) => compareHistory(history, `proof provenance ${index}`)); });
+test("an exact release-denial preplay reserves its proof and remains retirement evidence", () => {
+  const preplay = rejected(detached(releaseDenied("denial-preplay", sourceFence))), retryCandidate = releaseDenied("denial-retry", sourceFence),
+    retry = rejected(detached({ ...retryCandidate, body: { ...retryCandidate.body, proofId: proof("denial-preplay") } }));
+  compareHistory([register, issue("denial-reuse-issue"), preplay, consume("denial-reuse-consume"), retry], "release-denial proof preplay");
+  const pending = [register, issue("denial-close-issue"), preplay, expire("denial-close-expire"),
+    launchDeadline("denial-close-terminal", sourceFence, "never-started"), abandon("denial-close-abandon"),
+    retirement("denial-close-retirement"), neverReleasedCleanup("denial-close-cleanup", "denial-close-abandon")] as const,
+    candidate = complete("denial-close-complete", pending, receipt("denial-close-abandon")), evidence = candidate.body.retainedEvidence as readonly C.EvidenceReference[];
+  assert.ok(evidence.some(item => item.type === "event" && item.eventId === C.eventId("event:denial-preplay")) &&
+    evidence.some(item => item.type === "proof" && item.proofId === proof("denial-preplay")));
+  compareHistory([...pending, candidate], "release-denial proof retirement closure"); });
+test("a foreign rejected event cannot enter retirement evidence through later valid proof reuse", () => {
+  const candidate = reconcile("foreign-retirement-rejected", "terminated", "foreign-retirement-restart", "foreign-shared"),
+    foreign = rejected(detached({ ...candidate, body: { ...candidate.body, sourceFamilyRootId: C.sourceFamilyRootId("foreign") } })),
+    prefix = [...sourceClosedPrefix, restart("foreign-retirement-restart"), foreign, reconcile("foreign-retirement-valid", "terminated",
+      "foreign-retirement-restart", "foreign-shared"), retirement("foreign-retirement-request"), cleanup("foreign-retirement-cleanup", "foreign-shared", "foreign-retirement-restart")] as const;
+  compareHistory([...prefix, complete("foreign-retirement-complete", prefix, receipt("close"))], "foreign proof retirement isolation"); });
 test("never-released cleanup proves absence without fabricating a termination proof", () => {
   const prefix = [register, abandon("never-released-source"), retirement("never-released-retirement"),
     neverReleasedCleanup("never-released-cleanup", "never-released-source")] as const;
-  const candidate = complete("never-released-complete", prefix, receipt("never-released-source"));
-  const results = compareEvents(materialize([...prefix, candidate]), "never-released cleanup");
-  const cleanupEvent = materialize(prefix).at(-1)! as C.RequestCleanup;
-  assert.equal(cleanupEvent.basis.type, "never-released");
-  assert.equal("terminationProofId" in cleanupEvent.basis, false);
-  const retirementProjection = results.at(-1)!.terminalProjections.resourceRetirement;
-  assert.equal(retirementProjection.type, "retired");
-  assert.deepEqual(retirementProjection.tombstone.cleanupBasis, cleanupEvent.basis);
+  const candidate = complete("never-released-complete", prefix, receipt("never-released-source")), results = compareEvents(materialize([...prefix, candidate]), "never-released cleanup");
+  const cleanupEvent = materialize(prefix).at(-1)! as C.RequestCleanup; assert.equal(cleanupEvent.basis.type, "never-released");
+  assert.equal("terminationProofId" in cleanupEvent.basis, false); const retirementProjection = results.at(-1)!.terminalProjections.resourceRetirement;
+  assert.equal(retirementProjection.type, "retired"); assert.deepEqual(retirementProjection.tombstone.cleanupBasis, cleanupEvent.basis);
   assert.equal(retirementProjection.tombstone.cleanupRequestEventId, cleanupEvent.eventId); });
 test("never-released cleanup rejects consumed or safety-bearing runtime histories", () => {
-  const consumed = [register, issue("never-release-issue"), consume("never-release-consume"),
-    abandon("never-release-abandon"), retirement("never-release-retirement"),
+  const consumed = [register, issue("never-release-issue"), consume("never-release-consume"), abandon("never-release-abandon"), retirement("never-release-retirement"),
     rejected(detached(neverReleasedCleanup("never-release-consumed", "never-release-abandon")))] as const;
-  const safety = [...sourceClosedPrefix, retirement("never-release-safety-retirement"),
-    rejected(detached(neverReleasedCleanup("never-release-safety", "close")))] as const;
+  const safety = [...sourceClosedPrefix, retirement("never-release-safety-retirement"), rejected(detached(neverReleasedCleanup("never-release-safety", "close")))] as const;
   compareHistory(consumed, "never-released consumed history"); compareHistory(safety, "never-released safety history"); });
-test("a crash contradicting release denial opens containment and forbids never-released cleanup", () => {
-  const history = [register, issue("contradiction-issue"), consume("contradiction-consume"),
-    releaseDenied("contradiction-denied", sourceFence), crash("contradiction-crash"),
-    abandon("contradiction-abandon"), retirement("contradiction-retirement"),
-    rejected(detached(neverReleasedCleanup("contradiction-cleanup", "contradiction-abandon")))] as const;
-  const results = compareEvents(materialize(history), "crash contradicts release denial"), observed = results[4]!;
-  assert.equal(observed.decision, "accepted"); assert.equal(observed.terminalProjections.claim, "invalid");
-  assert.ok(observed.effects.some(effect => effect.type === "runtime-termination-requested"));
-  assert.equal(results.at(-1)!.effects.find(effect => effect.type === "denial-recorded")?.reason, "runtime-unresolved"); });
-test("a crash contradicting never-started opens containment and forbids never-released cleanup", () => {
-  const history = [register, issue("never-started-issue"), launchDeadline("never-started-terminal", sourceFence, "never-started"),
-    crash("never-started-crash"), abandon("never-started-abandon"), retirement("never-started-retirement"),
-    rejected(detached(neverReleasedCleanup("never-started-cleanup", "never-started-abandon")))] as const;
-  const results = compareEvents(materialize(history), "crash contradicts never-started"), observed = results[3]!;
-  assert.equal(observed.decision, "accepted"); assert.equal(observed.terminalProjections.claim, "invalid");
-  assert.ok(observed.effects.some(effect => effect.type === "runtime-termination-requested")); assert.equal(results.at(-1)!.decision, "rejected"); });
-test("a post-retirement crash contradicting never-started preserves the tombstone and opens private containment", () => {
-  const beforeComplete = [register, issue("retired-never-started-issue"), expire("retired-never-started-expire"),
-    launchDeadline("retired-never-started-terminal", sourceFence, "never-started"),
-    abandon("retired-never-started-abandon"), retirement("retired-never-started-retirement"),
-    neverReleasedCleanup("retired-never-started-cleanup", "retired-never-started-abandon")] as const;
-  const finalized = complete("retired-never-started-complete", beforeComplete, receipt("retired-never-started-abandon"));
-  const results = compareEvents(materialize([...beforeComplete, finalized, crash("retired-never-started-crash")]), "post-retirement crash contradicts never-started");
-  const tombstone = results.at(-2)!.terminalProjections, observed = results.at(-1)!;
-  assert.equal(observed.decision, "accepted"); assert.deepEqual(observed.terminalProjections, tombstone); assert.ok(observed.effects.some(
-    effect => effect.type === "claim-disposition-set" && effect.value === "invalid")); assert.ok(observed.effects.some(
-      effect => effect.type === "runtime-termination-requested")); });
+test("trusted crash and restart contradictions open containment and forbid never-released cleanup", () => {
+  const cases = [["crash-denied", [register, issue("cd-issue"), consume("cd-consume"), releaseDenied("cd-denied", sourceFence), crash("cd-signal")]],
+    ["crash-never", [register, issue("cn-issue"), launchDeadline("cn-terminal", sourceFence, "never-started"), crash("cn-signal")]],
+    ["restart-denied", [register, issue("rd-issue"), consume("rd-consume"), releaseDenied("rd-denied", sourceFence), restart("rd-signal")]],
+    ["restart-never", [register, issue("rn-issue"), launchDeadline("rn-terminal", sourceFence, "never-started"), restart("rn-signal")]]] as const;
+  for (const [name, prefix] of cases) { const terminal = `${name}-abandon`, history = [...prefix, abandon(terminal),
+    retirement(`${name}-retirement`), rejected(detached(neverReleasedCleanup(`${name}-cleanup`, terminal)))] as const,
+    results = compareEvents(materialize(history), `${name} contradiction`), observed = results[prefix.length - 1]!;
+    assert.equal(observed.decision, "accepted"); assert.equal(observed.terminalProjections.claim, "invalid");
+    assert.ok(observed.effects.some(effect => effect.type === "runtime-termination-requested")); assert.equal(results.at(-1)!.decision, "rejected"); } });
+test("post-retirement crash and restart contradictions preserve the tombstone and open private containment", () => {
+  for (const kind of ["crash", "restart"] as const) { const prefix = `retired-${kind}`,
+    beforeComplete = [register, issue(`${prefix}-issue`), expire(`${prefix}-expire`),
+      launchDeadline(`${prefix}-terminal`, sourceFence, "never-started"), abandon(`${prefix}-abandon`),
+      retirement(`${prefix}-retirement`), neverReleasedCleanup(`${prefix}-cleanup`, `${prefix}-abandon`)] as const,
+    finalized = complete(`${prefix}-complete`, beforeComplete, receipt(`${prefix}-abandon`)), signal = kind === "crash" ? crash(`${prefix}-signal`) : restart(`${prefix}-signal`),
+    results = compareEvents(materialize([...beforeComplete, finalized, signal]), `post-retirement ${kind} contradiction`),
+    tombstone = results.at(-2)!.terminalProjections, observed = results.at(-1)!, effects = observed.effects;
+    assert.equal(observed.decision, "accepted"); assert.deepEqual(observed.terminalProjections, tombstone);
+    assert.ok(effects.some(effect => effect.type === "claim-disposition-set" && effect.value === "invalid") &&
+      effects.some(effect => effect.type === "runtime-termination-requested")); } });
 test("a rejected exact-bound retirement completion reserves its cleanup proof", () => {
   const pending = [...sourceClosedPrefix, retirement("proof-retirement")],
     requested = cleanup("proof-cleanup", "source-terminated", "source-release"),
@@ -1030,8 +1038,7 @@ test("retirement evidence closes over rejected exact-bound reconciliation proofs
   const pending = [...sourceClosedPrefix, retirement("reserved-reconcile-retirement"),
     rejected(detached(reconcile("reserved-reconcile-attempt", "terminated", "foreign-watermark", "reserved-reconcile-proof"))),
     cleanup("reserved-reconcile-cleanup", "source-terminated", "source-release")] as const;
-  const candidate = complete("reserved-reconcile-complete", pending, receipt("close")),
-    retainedEvidence = candidate.body.retainedEvidence as readonly C.EvidenceReference[];
+  const candidate = complete("reserved-reconcile-complete", pending, receipt("close")), retainedEvidence = candidate.body.retainedEvidence as readonly C.EvidenceReference[];
   assert.ok(retainedEvidence.some(reference => reference.type === "proof" && reference.proofId === proof("reserved-reconcile-proof")));
   compareHistory([...pending, candidate], "reserved reconciliation proof closure");
   const omitted = rejected(detached({ ...candidate, label: "reserved-reconcile-omitted",
@@ -1044,8 +1051,7 @@ test("retirement evidence closes over rejected exact-bound completion proofs", (
     prematureHistory = [...pending, cleanupRequest] as const,
     rejectedCompletion = rejected(detached(complete("reserved-completion-attempt", prematureHistory, receipt("close"), "reserved-completion-proof"))),
     history = [...pending, rejectedCompletion, cleanupRequest] as const,
-    candidate = complete("reserved-completion-final", history, receipt("close"));
-  const retainedEvidence = candidate.body.retainedEvidence as readonly C.EvidenceReference[];
+    candidate = complete("reserved-completion-final", history, receipt("close")), retainedEvidence = candidate.body.retainedEvidence as readonly C.EvidenceReference[];
   assert.ok(retainedEvidence.some(reference => reference.type === "proof" && reference.proofId === proof("reserved-completion-proof")));
   compareHistory([...history, candidate], "reserved completion proof closure");
   const omitted = rejected(detached({ ...candidate, label: "reserved-completion-omitted",

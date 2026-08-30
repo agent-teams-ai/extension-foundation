@@ -24,7 +24,7 @@ interface Authorization {
 }
 interface Fence { readonly generation: C.FenceGeneration; readonly open: boolean } interface BuildFact { readonly projection: C.BuildTerminalProjection; readonly result: C.BuildResultInput | null;
   readonly artifactDigest: C.ArtifactDigest | null; }
-interface Observation { readonly event: C.ProtocolEvent; readonly result: C.TransitionResult; }
+interface Observation { readonly event: C.ProtocolEvent; readonly result: C.TransitionResult; readonly reservedProofId: C.ProofId | null; }
 interface CleanupBinding { readonly requestEventId: C.EventId; readonly basis: C.RuntimeCleanupBasis; }
 interface State extends QualificationReducerState {
   readonly trusted: C.TrustedProtocolCoordinates; readonly registration: Registration | null;
@@ -152,7 +152,7 @@ const accept = (state: State, event: C.ProtocolEvent, changes: Partial<State>,
   const result = immutable<C.TransitionResult>({ decision: "accepted", effects, terminalProjections: raw.projections });
   const changed: State = { ...raw, projections: result.terminalProjections };
   const next: State = { ...changed,
-    events: withMap(state.events, event.eventId, { event, result }) };
+    events: withMap(state.events, event.eventId, { event, result, reservedProofId: null }) };
   return { state: next, result };
 };
 const reject = (state: State, event: C.ProtocolEvent, reason: C.DenialReason): QualificationTransition => {
@@ -161,7 +161,7 @@ const reject = (state: State, event: C.ProtocolEvent, reason: C.DenialReason): Q
   const result = immutable<C.TransitionResult>({ decision: "rejected", effects: replay ? [denied,
     invalid(event, { type: "event", eventId: event.eventId })] : [denied], terminalProjections: projections });
   return { state: { ...state, projections: result.terminalProjections,
-    events: withMap(state.events, event.eventId, { event, result }) } as State, result };
+    events: withMap(state.events, event.eventId, { event, result, reservedProofId: null }) } as State, result };
 };
 const rejectTypedReplay = (state: State,
   event: C.RecordBuildResult | C.RecordBuildConsistencyReceipt,
@@ -172,14 +172,14 @@ const rejectTypedReplay = (state: State,
       buildAttemptId: event.buildAttemptId, value: "denied" }, invalid(event, evidence)] });
   const candidate = stateOf(denied.state);
   const next: State = { ...candidate,
-    events: withMap(state.events, event.eventId, { event, result }) };
+    events: withMap(state.events, event.eventId, { event, result, reservedProofId: null }) };
   return { state: next, result };
 };
 const terminal = (event: C.ProtocolEvent, value: C.TerminalReference): C.TerminalAppendedEffect => ({ type: "terminal-appended", causalEventId: event.eventId, terminal: value });
 const invalid = (event: C.ProtocolEvent, evidence: C.EvidenceReference): C.ClaimDispositionSetEffect => ({ type: "claim-disposition-set", causalEventId: event.eventId, value: "invalid", evidence });
 const nonPromotional = (event: C.ProtocolEvent, evidence: C.EvidenceReference): C.ClaimDispositionSetEffect =>
   ({ type: "claim-disposition-set", causalEventId: event.eventId, value: "non-promotional", evidence });
-type RuntimeSafetyEvidence = Pick<C.ReleaseProcess | C.RecordReleaseDenied | C.ObserveCrash | C.ReachLaunchDeadline,
+type RuntimeSafetyEvidence = Pick<C.ReleaseProcess | C.RecordReleaseDenied | C.ObserveCrash | C.ReachLaunchDeadline | C.RestartObserved,
   "eventId" | "sourceFamilyRootId" | "runtimeId">;
 const contain = (e: RuntimeSafetyEvidence): C.DeclaredEffect[] => [
   { type: "resource-quarantined", causalEventId: e.eventId, sourceFamilyRootId: e.sourceFamilyRootId, runtimeId: e.runtimeId },
@@ -191,18 +191,16 @@ const ownerMismatch = (r: Registration, e: { readonly retirementOwnerId: C.Retir
   readonly credentialLineageId: C.CredentialLineageId }): C.DenialReason | null =>
   e.retirementOwnerId !== r.retirementOwnerId ? "retirement-owner-mismatch" :
     e.credentialLineageId !== r.credentialLineageId ? "credential-lineage-mismatch" : null;
-const reserveRejectedLifecycleProof = (s: State, e: C.ProtocolEvent,
-  transition: QualificationTransition): QualificationTransition => {
+const reserveRejectedLifecycleProof = (s: State, e: C.ProtocolEvent, transition: QualificationTransition): QualificationTransition => {
   if (transition.result.decision !== "rejected") return transition;
-  const proof = e.type === "ReconcileRuntime" && rootMatches(s.registration!, e) &&
-      e.runtimeId === s.registration!.runtimeId ? e.proofId :
-    e.type === "CompleteRetirement" && rootMatches(s.registration!, e) &&
+  const deniedRelease = e.type === "RecordReleaseDenied" ? s.authorizations.get(e.authorizationId) : undefined;
+  const proof = e.type === "RecordReleaseDenied" && deniedRelease !== undefined && authorizationIdentity(s.registration!, e) === null &&
+      bindingMatches(deniedRelease, e) ? e.proofId : e.type === "ReconcileRuntime" && rootMatches(s.registration!, e) &&
+      e.runtimeId === s.registration!.runtimeId ? e.proofId : e.type === "CompleteRetirement" && rootMatches(s.registration!, e) &&
       e.runtimeId === s.registration!.runtimeId && ownerMismatch(s.registration!, e) === null ? e.cleanupProofId : null;
-  if (proof === null) return transition;
-  const candidate = stateOf(transition.state);
-  return { ...transition, state: { ...candidate,
-    reservedProofs: withSet(candidate.reservedProofs, proof) } as State };
-};
+  if (proof === null) return transition; const candidate = stateOf(transition.state), observation = candidate.events.get(e.eventId)!;
+  return { ...transition, state: { ...candidate, reservedProofs: withSet(candidate.reservedProofs, proof),
+    events: withMap(candidate.events, e.eventId, { ...observation, reservedProofId: proof }) } as State }; };
 const fence = (s: State, binding: C.AuthorizationFenceBinding): Fence =>
   (binding.scope === "source" ? s.sourceFence : s.campaignFence)!;
 const fenceReason = (s: State, binding: C.AuthorizationFenceBinding): C.DenialReason | null => {
@@ -589,20 +587,15 @@ const launchDeadline = (s: State, e: C.ReachLaunchDeadline): QualificationTransi
       ]);
 };
 const restart = (s: State, e: C.RestartObserved): QualificationTransition => {
-  if (!rootMatches(s.registration!, e) || e.runtimeId !== s.registration!.runtimeId)
-    return reject(s, e, "wrong-binding");
-  if (s.projections.runtime === "not-started" && ![...s.authorizations.values()].some((a) => a.consumedAt))
-    return reject(s, e, "runtime-unresolved");
-  const effects: C.DeclaredEffect[] = [
-    { type: "runtime-reconciliation-requested", causalEventId: e.eventId, runtimeId: e.runtimeId },
-    { type: "resource-quarantined", causalEventId: e.eventId,
-      sourceFamilyRootId: e.sourceFamilyRootId, runtimeId: e.runtimeId },
-    { type: "runtime-termination-requested", causalEventId: e.eventId, runtimeId: e.runtimeId },
-  ];
-  return s.projections.resourceRetirement.type === "retired" ?
-    accept(s, e, { postRetirementRuntime: "unknown" }, effects) :
-    accept(s, e, { projections: { ...s.projections, runtime: "unknown",
-      resourceRetirement: { type: "quarantined" } } }, effects);
+  if (!rootMatches(s.registration!, e) || e.runtimeId !== s.registration!.runtimeId) return reject(s, e, "wrong-binding");
+  const contradiction = [...s.authorizations.values()].some(a => a.launch?.type === "release-denied" || a.launch?.type === "never-started"), effects = contain(e);
+  if (contradiction) return s.projections.resourceRetirement.type === "retired" ?
+    accept(s, e, { postRetirementRuntime: "unknown" }, [invalid(e, { type: "event", eventId: e.eventId }), ...effects]) :
+    accept(s, e, { projections: { ...s.projections, runtime: "unknown", resourceRetirement: { type: "quarantined" }, claim: "invalid" } },
+      [invalid(e, { type: "event", eventId: e.eventId }), ...effects]);
+  if (s.projections.runtime === "not-started" && ![...s.authorizations.values()].some((a) => a.consumedAt)) return reject(s, e, "runtime-unresolved");
+  return s.projections.resourceRetirement.type === "retired" ? accept(s, e, { postRetirementRuntime: "unknown" }, effects) :
+    accept(s, e, { projections: { ...s.projections, runtime: "unknown", resourceRetirement: { type: "quarantined" } } }, effects);
 };
 interface RuntimeSafetyWatermark {
   readonly eventId: C.EventId;
@@ -754,15 +747,13 @@ const replayReceiptReference = (event: C.ProtocolEvent): C.EvidenceReference | n
 };
 const expectedRetainedEvidence = (s: State, cleanupProofId: C.ProofId): readonly C.EvidenceReference[] => {
   const expected: C.EvidenceReference[] = [{ type: "proof", proofId: cleanupProofId }];
-  for (const observation of s.events.values()) { const reservedProof = producedProof(observation.event);
-    if (observation.result.decision === "accepted" || reservedProof !== null && s.reservedProofs.has(reservedProof) ||
-      observation.result.effects.some(effect => effect.type === "denial-recorded" &&
-        effect.reason === "receipt-replay")) {
+  for (const observation of s.events.values()) {
+    if (observation.result.decision === "accepted" || observation.reservedProofId !== null ||
+      observation.result.effects.some(effect => effect.type === "denial-recorded" && effect.reason === "receipt-replay")) {
     expected.push({ type: "event", eventId: observation.event.eventId }, ...proofReferences(observation.event));
     if (observation.result.decision === "rejected") {
       const replayReceipt = replayReceiptReference(observation.event);
-      if (replayReceipt !== null) expected.push(replayReceipt);
-    }
+      if (replayReceipt !== null) expected.push(replayReceipt); }
   } }
   expected.push(...[...s.receipts].map(receiptId => ({ type: "receipt" as const, receiptId })),
     ...[...s.buildReceipts].map(buildReceiptId => ({ type: "build-receipt" as const, buildReceiptId })),
@@ -1140,7 +1131,7 @@ const preserveReplayedRuntimeSafety = (s: State, e: C.ProtocolEvent,
   const state: State = { ...candidate, projections: publicProjections,
     postRetirementRuntime: s.projections.resourceRetirement.type === "retired" ?
       "unknown" : candidate.postRetirementRuntime,
-    events: withMap(candidate.events, e.eventId, { event: e, result }) };
+    events: withMap(candidate.events, e.eventId, { event: e, result, reservedProofId: null }) };
   return { state, result };
 };
 const enforceTombstoneFinality = (s: State, e: C.ProtocolEvent, transition: QualificationTransition): QualificationTransition => {
@@ -1151,7 +1142,7 @@ const enforceTombstoneFinality = (s: State, e: C.ProtocolEvent, transition: Qual
     if (reason === "receipt-replay") {
       const result = immutable<C.TransitionResult>({ ...transition.result, terminalProjections: s.projections });
       const candidate = stateOf(transition.state);
-      const events = withMap(s.events, e.eventId, { event: e, result });
+      const events = withMap(s.events, e.eventId, { event: e, result, reservedProofId: null });
       return { state: { ...s, postRetirementRuntime: candidate.postRetirementRuntime,
         events } as State, result };
     }
