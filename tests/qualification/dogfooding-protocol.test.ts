@@ -105,13 +105,16 @@ const launchDeadline = (label: string, binding: C.AuthorizationFenceBinding = so
   ...authorization(binding), observationReceiptId: receipt(label), result,
 }, minimumTick);
 const restart = (label: string) => event(label, "RestartObserved", { ...root, runtimeId: id.runtime });
-const reconcile = (label: string, observation: "live" | "terminated" | "unknown") =>
-  event(label, "ReconcileRuntime", { ...root, runtimeId: id.runtime, observation, proofId: proof(label) });
+const reconcile = (label: string, observation: "live" | "terminated" | "unknown",
+  runtimeSafetyWatermarkLabel: string, selectedProofLabel = label) =>
+  event(label, "ReconcileRuntime", { ...root, runtimeId: id.runtime, observation,
+    runtimeSafetyWatermarkEventId: C.eventId(`event:${runtimeSafetyWatermarkLabel}`),
+    proofId: proof(selectedProofLabel) });
 const retirement = (label: string, owner = id.owner, lineage = id.lineage) =>
   event(label, "RequestRetirement", { ...root, retirementOwnerId: owner, credentialLineageId: lineage });
-const cleanup = (label: string, owner = id.owner) => event(label, "RequestCleanup", { ...root,
+const cleanup = (label: string, terminationProofLabel = label, owner = id.owner) => event(label, "RequestCleanup", { ...root,
   runtimeId: id.runtime, retirementOwnerId: owner, credentialLineageId: id.lineage,
-  terminationProofId: proof(label),
+  terminationProofId: proof(terminationProofLabel),
 });
 const bodyEvidence = (value: unknown): readonly C.EvidenceReference[] => {
   if (value === null || typeof value !== "object") return [];
@@ -195,7 +198,7 @@ const materialize = (specs: readonly EventSpec[], tickStep = 1): readonly C.Prot
     const selected = { ...envelope, ...spec.body } as unknown as C.ProtocolEvent;
     if (events.length === 0) {
       assert.equal(selected.type, "RegisterProtocol");
-      predecessor = selected.eventId;
+      if (spec.extendsLineage) predecessor = selected.eventId;
     } else if (spec.extendsLineage) predecessor = selected.eventId;
     events.push(selected);
   }
@@ -251,7 +254,7 @@ const sourcePreparedPrefix = [register, issueWithId("source-issue", id.otherAuth
   event("source-consume", "ConsumeAuthorization", { ...authorization(sourceFence), authorizationId: id.otherAuthorization }),
   release("source-release", sourceFence, "source-authoring", id.otherAuthorization)] as const;
 const sourceClosedPrefix = [...sourcePreparedPrefix, close("close"),
-  reconcile("source-terminated", "terminated")] as const;
+  reconcile("source-terminated", "terminated", "source-release")] as const;
 const closedPrefix = [...sourceClosedPrefix, admission("admission", "accepted")] as const;
 const buildAuthorizedPrefix = [...closedPrefix,
   issueWithId("build-issue", id.buildAuthorization, campaignFence, "build"),
@@ -260,7 +263,7 @@ const buildAuthorizedPrefix = [...closedPrefix,
   release("build-release", campaignFence, "build", id.buildAuthorization)] as const;
 const campaignBuildPrefix = [...buildAuthorizedPrefix,
   build("build", "succeeded"), consistency("consistency", { type: "match", artifactDigest: id.artifact }),
-  reconcile("build-terminated", "terminated"), issue("issue", campaignFence)] as const;
+  reconcile("build-terminated", "terminated", "build-release"), issue("issue", campaignFence)] as const;
 const evaluationStartedPrefix = [...campaignBuildPrefix, consume("consume", campaignFence), release("release")] as const;
 const raceFamilies: readonly RaceFamily[] = [
   { name: "1 consume vs stop/revoke/expiry", variants: 3, history: (reverse, variant) => {
@@ -284,13 +287,13 @@ const raceFamilies: readonly RaceFamily[] = [
     ...(reverse ? [advance("advance"), rejected(detached(release("release")))]
       : [release("release"), advance("advance")]),
     ...(reverse ? [releaseDenied("continuation-denial")]
-      : [rejected(detached(releaseDenied("continuation-denial")))]),
+      : [releaseDenied("continuation-denial")]),
   ] },
   { name: "5 crash after consume before start confirmation", variants: 1, history: reverse => [
     ...campaignBuildPrefix, consume("consume", campaignFence), ...(reverse
       ? [release("release"), rejected(detached(crash("crash", campaignFence)))]
       : [crash("crash", campaignFence), rejected(detached(release("release")))]),
-    reconcile("continuation-reconcile", "unknown"),
+    reconcile("continuation-reconcile", "unknown", reverse ? "release" : "crash"),
     ...(reverse ? [rejected(detached(launchDeadline("continuation-deadline")))]
       : [launchDeadline("continuation-deadline", campaignFence)]),
   ] },
@@ -311,8 +314,9 @@ const raceFamilies: readonly RaceFamily[] = [
         : reverse ? [rejected(detached(cleanup("cleanup"))), restart("restart")]
           : [restart("restart"), rejected(detached(cleanup("cleanup")))];
       const beforeComplete = [...prefix, ...(variant === 0 ? [] : [retirement("retirement")]), ...raced,
-        reconcile("continuation-terminated", "terminated"), attemptDeadline("continuation-attempt"),
-        cleanup("continuation-cleanup")];
+        reconcile("continuation-terminated", "terminated",
+          variant === 0 ? reverse ? "restart" : "retirement" : "restart"),
+        attemptDeadline("continuation-attempt"), cleanup("continuation-cleanup", "continuation-terminated")];
       return [...beforeComplete, complete("continuation-complete", beforeComplete, receipt("close"))];
     },
   },
@@ -329,32 +333,34 @@ const raceFamilies: readonly RaceFamily[] = [
         { type: "non-artifact-match", buildResult: result, proofId: proof("non-artifact") },
       variant === 1 ? buildReceipt("wrong") : buildReceipt("build"), consistencyId);
       return [...buildAuthorizedPrefix, ...ordered(reverse, build("build", result), evidence),
-        consistency("continuation-replay", { type: "missing-build", proofId: proof("replay") },
-          buildReceipt("build"), consistencyId)];
+        rejected(detached(consistency("continuation-replay", { type: "missing-build", proofId: proof("replay") },
+          buildReceipt("build"), consistencyId)))];
     } },
   { name: "11 failed admission after closed source vs retirement", variants: 1, history: reverse => [
     ...(() => { const beforeComplete = [...sourceClosedPrefix,
       ...ordered(reverse, admission("failed-admission", "failed"), retirement("retirement")),
-      cleanup("continuation-cleanup")]; return [...beforeComplete,
+      cleanup("continuation-cleanup", "source-terminated")]; return [...beforeComplete,
         complete("continuation-complete", beforeComplete, receipt("close"))]; })()],
   },
   { name: "12 unknown runtime vs cleanup", variants: 1, history: reverse => [
     ...(() => { const beforeComplete = [register, issue("issue"), consume("consume"), crash("crash"),
       abandon("abandon"), retirement("retirement"),
-      ...(reverse ? [rejected(detached(cleanup("cleanup"))), reconcile("unknown", "unknown")]
-        : [reconcile("unknown", "unknown"), rejected(detached(cleanup("cleanup")))]),
-      launchDeadline("continuation-deadline"), reconcile("continuation-terminated", "terminated"),
-      cleanup("continuation-cleanup")];
+      ...(reverse ? [rejected(detached(cleanup("cleanup"))), reconcile("unknown", "unknown", "retirement")]
+        : [reconcile("unknown", "unknown", "retirement"), rejected(detached(cleanup("cleanup")))]),
+      launchDeadline("continuation-deadline"),
+      reconcile("continuation-terminated", "terminated", "continuation-deadline"),
+      cleanup("continuation-cleanup", "continuation-terminated")];
     return [...beforeComplete, complete("continuation-complete", beforeComplete, receipt("abandon"))]; })()],
   },
 ];
 assert.equal(raceFamilies.length, 12, "the registry must contain exactly twelve race families");
-const retiredBeforeComplete = [...sourceClosedPrefix, retirement("retirement"), cleanup("cleanup")] as const;
+const retiredBeforeComplete = [...sourceClosedPrefix, retirement("retirement"),
+  cleanup("cleanup", "source-terminated")] as const;
 const retainedClosurePrefix = [...buildAuthorizedPrefix, build("retained-build", "failed"),
   consistency("retained-consistency", { type: "non-artifact-match", buildResult: "failed",
     proofId: proof("retained-consistency") }, buildReceipt("retained-build")),
-  reconcile("retained-terminated", "terminated"), retirement("retained-retirement"),
-  cleanup("retained-cleanup")] as const;
+  reconcile("retained-terminated", "terminated", "build-release"), retirement("retained-retirement"),
+  cleanup("retained-cleanup", "retained-terminated")] as const;
 const retiredCrashHistory = [...retiredBeforeComplete,
   complete("complete", retiredBeforeComplete, receipt("close")),
   rejected(detached(crash("post-retirement-crash")))] as const;
@@ -367,9 +373,9 @@ const regressionHistories: readonly (readonly EventSpec[])[] = [
   [...sourceClosedPrefix, admission("failed", "failed"),
     rejected(detached(issue("post-failure-issue", campaignFence)))],
   [...retiredBeforeComplete, complete("complete", retiredBeforeComplete, receipt("close")),
-    rejected(detached(reconcile("post-retirement", "unknown")))],
-  [...sourceClosedPrefix, retirement("retirement"), cleanup("cleanup"),
-    rejected(detached(cleanup("duplicate-cleanup")))],
+    rejected(detached(reconcile("post-retirement", "unknown", "source-release")))],
+  [...sourceClosedPrefix, retirement("retirement"), cleanup("cleanup", "source-terminated"),
+    rejected(detached(cleanup("duplicate-cleanup", "source-terminated")))],
   [register, issue("issue"), consume("consume"),
     rejected(detached(launchDeadline("never-started", sourceFence, "never-started")))],
   [...campaignBuildPrefix, consume("consume", campaignFence), checkpoint("checkpoint"), stop("stop"),
@@ -401,14 +407,14 @@ const regressionHistories: readonly (readonly EventSpec[])[] = [
     event("build-consume", "ConsumeAuthorization", { ...authorization(campaignFence, "build"), authorizationId: id.buildAuthorization }),
     release("build-release", campaignFence, "build", id.buildAuthorization), build("build", "succeeded"),
     consistency("consistency", { type: "match", artifactDigest: id.artifact }),
-    reconcile("build-terminated", "terminated"),
+    reconcile("build-terminated", "terminated", "build-release"),
     issue("evaluation-issue", campaignFence), consume("evaluation-consume", campaignFence),
     release("evaluation-release"), attemptReceipt("attempt", "succeeded")],
   [register, issue("issue"), expire("expiry"), abandon("abandon-after-expiry")],
   [register, issue("issue"), expire("expiry"), rejected(detached(revoke("revoke-expired")))],
   [register, issue("issue"), advance("advance-expiry", "source", "expiry"),
     abandonAfterAdvance("abandon-after-advance")],
-  [...evaluationStartedPrefix, reconcile("live", "live")],
+  [...evaluationStartedPrefix, reconcile("live", "live", "release")],
   [register, rejected(close("close-without-source-authority"))],
   [register, event("long-issue", "IssueAuthorization", { ...authorization(sourceFence), expiresAt: tick(100) }),
     consume("consume"), at(release("late-release", sourceFence), 60), launchDeadline("launch-deadline")],
@@ -427,7 +433,7 @@ const regressionHistories: readonly (readonly EventSpec[])[] = [
       authorizationId: id.buildAuthorization }), event("build-expiry", "ExpireAuthorization", { ...root,
       authorizationId: id.buildAuthorization, authorizationFence: campaignFence }, 50)],
   [...buildAuthorizedPrefix,
-    build("cross-namespace-receipt", "succeeded", C.buildReceiptId("receipt:close"))],
+    rejected(detached(build("cross-namespace-receipt", "succeeded", C.buildReceiptId("receipt:close"))))],
   [...buildAuthorizedPrefix, build("build", "succeeded"),
     consistency("consistency-first", { type: "match", artifactDigest: id.artifact }),
     consistency("consistency-same", { type: "match", artifactDigest: id.artifact },
@@ -515,30 +521,53 @@ const resolveSourceDependency = (specifier: string, containingFile: string, alia
   for (const candidate of candidates) try { const canonical = realpathSync(candidate); assert.ok(inside(canonical, repositoryRoot) && !canonical.split(sep).includes("node_modules"),
       `${relative(repositoryRoot, containingFile)} local import ${specifier} escapes the repository`); if (statSync(canonical).isFile()) return canonical;
   } catch (error) { if (error instanceof assert.AssertionError) throw error; } assert.fail(`${relative(repositoryRoot, containingFile)} has unresolvable local import ${specifier}`); };
-interface CappedSource { readonly text: string } const sourceClosure = (entry: string, aliases: LocalAliases): ReadonlyMap<string, CappedSource> => {
-  const pending = [entry], sources = new Map<string, CappedSource>(); while (pending.length > 0) { const path = pending.pop()!; if (sources.has(path)) continue;
-    const bytes = readFileSync(path), text = new TextDecoder("utf-8", { fatal: true }).decode(bytes); sources.set(path, { text }); if (!/\.(?:[cm]?[jt]sx?)$/u.test(path)) continue;
-    for (const specifier of dependencySpecifiers(path, text)) { const dependency = resolveSourceDependency(specifier, path, aliases); if (dependency !== null) pending.push(dependency); }
-  } return sources; }; test("qualification source closure recognizes static and dynamic loading forms", () => {
+interface CappedSource { readonly text: string }
+const sourceClosure = (entry: string, aliases: LocalAliases): ReadonlyMap<string, CappedSource> => {
+  const pending = [entry];
+  const sources = new Map<string, CappedSource>();
+  while (pending.length > 0) {
+    const path = pending.pop()!;
+    if (sources.has(path)) continue;
+    const bytes = readFileSync(path);
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    sources.set(path, { text });
+    if (!/\.(?:[cm]?[jt]sx?)$/u.test(path)) continue;
+    for (const specifier of dependencySpecifiers(path, text)) {
+      const dependency = resolveSourceDependency(specifier, path, aliases);
+      if (dependency !== null) pending.push(dependency);
+    }
+  }
+  return sources;
+};
+test("qualification source closure recognizes static and dynamic loading forms", () => {
   const source = `import value from "./static.ts"; import "./side-effect.ts"; export * from "../export.ts";\n` +
     `type Imported = import("#type-alias").Imported; void import("./dynamic.ts");\n` +
-    `require("./required.ts"); import.meta.resolve("#qualification/resolved.ts"); void value;`; assert.deepEqual([...dependencySpecifiers("fixture.ts", source)].sort(),
+    `require("./required.ts"); import.meta.resolve("#qualification/resolved.ts"); void value;`;
+  assert.deepEqual([...dependencySpecifiers("fixture.ts", source)].sort(),
     ["#qualification/resolved.ts", "#type-alias", "../export.ts", "./dynamic.ts", "./required.ts", "./side-effect.ts", "./static.ts"].sort());
-  assert.throws(() => dependencySpecifiers("fixture.ts", "void import(dynamicPath)"), /non-literal module loader/u); }); test("qualification model remains disposable and bounded", () => {
+  assert.throws(() => dependencySpecifiers("fixture.ts", "void import(dynamicPath)"),
+    /non-literal module loader/u);
+});
+test("qualification model remains disposable and bounded", () => {
   assert.equal(resolveSourceDependency("#qualification/dogfooding-protocol-contract.ts", modelEntry,
     qualificationAliases), realpathSync(resolve(dirname(modelEntry), "dogfooding-protocol-contract.ts")));
   assert.throws(() => resolveSourceDependency("../missing-local.ts", modelEntry, qualificationAliases), /unresolvable local import/u);
   assert.throws(() => resolveSourceDependency("#qualification/missing-local.ts", modelEntry, qualificationAliases),
-    /unresolvable local import/u); const sources = sourceClosure(modelEntry, qualificationAliases);
+    /unresolvable local import/u);
+  const sources = sourceClosure(modelEntry, qualificationAliases);
   assert.deepEqual([...sources.keys()].map(path => relative(dirname(modelEntry), path)).sort(), [
     "dogfooding-protocol-contract.ts", "dogfooding-protocol-oracle.ts", "dogfooding-protocol-reducer.ts", "dogfooding-protocol.test.ts"]);
   const physicalLines = (text: string): number => text.length === 0 ? 0 :
-    (text.match(/\n/gu)?.length ?? 0) + (text.endsWith("\n") ? 0 : 1); const lineCount = [...sources.values()].reduce((sum, source) => sum + physicalLines(source.text), 0);
+    (text.match(/\n/gu)?.length ?? 0) + (text.endsWith("\n") ? 0 : 1);
+  const lineCount = [...sources.values()].reduce((sum, source) => sum + physicalLines(source.text), 0);
   const canonicalText = (text: string): string => text.replace(/\r\n?/gu, "\n");
   const byteCount = [...sources.values()].reduce((sum, source) => sum + Buffer.byteLength(canonicalText(source.text), "utf8"), 0);
   const longestLine = Math.max(...[...sources.values()].flatMap(source => source.text.split("\n")
-    .map(line => [...line.replace(/\r$/u, "")].length))); assert.ok(lineCount <= 4_000, `qualification model has ${lineCount} physical lines`);
-  assert.ok(byteCount <= 320_000, `qualification model has ${byteCount} canonical UTF-8 bytes`); assert.ok(longestLine <= 200, `qualification model has a ${longestLine}-character line`); });
+    .map(line => [...line.replace(/\r$/u, "")].length)));
+  assert.ok(lineCount <= 4_000, `qualification model has ${lineCount} physical lines`);
+  assert.ok(byteCount <= 320_000, `qualification model has ${byteCount} canonical UTF-8 bytes`);
+  assert.ok(longestLine <= 200, `qualification model has a ${longestLine}-character line`);
+});
 test("supported fence-advance causes apply the same fail-closed scope revocation", () => { advanceCauseHistories.forEach(history => {
   const last = foldQualificationHistory(materialize(history), 64, trusted).results.at(-1)!; assert.ok(last.effects.some(
     effect => effect.type === "authorization-revoked")); }); });
@@ -616,7 +645,7 @@ test("replay containment rejects reconciliation observed before its safety water
   const replayed = rejected(detached({ ...candidate, body: { ...candidate.body,
     launchReceiptId: receipt("prior-denial") } }));
   const specs = [register, longIssue("issue"), consume("consume"), denied, replayed,
-    rejected(detached(reconcile("stale-reconciliation", "terminated")))] as const;
+    rejected(detached(reconcile("stale-reconciliation", "terminated", "replayed-start")))] as const;
   const events = materialize(specs).map(selected => selected.eventId === C.eventId("event:stale-reconciliation") ?
     { ...selected, authoritativeTick: tick(60) } as C.ProtocolEvent : selected);
   const result = compareEvents(events, "replay containment safety watermark").at(-1)!;
@@ -633,7 +662,7 @@ test("receipt replay remains visible after a terminal and closes into retirement
   const replayedClose = retained(rejected(detached({ ...close("replayed-close"),
     body: { ...close("replayed-close").body, receiptId: receipt("close") } })));
   const beforeComplete = [...sourceClosedPrefix, replayedClose,
-    retirement("replay-retirement"), cleanup("replay-cleanup")] as const;
+    retirement("replay-retirement"), cleanup("replay-cleanup", "source-terminated")] as const;
   const candidate = complete("replay-retirement-complete", beforeComplete, receipt("close"));
   compareHistory([...beforeComplete, candidate], "replayed source terminal retirement closure");
   const replayResult = foldQualificationHistory(materialize(beforeComplete), 64, trusted)
@@ -692,9 +721,29 @@ test("late starts without live authority are retained, invalidated, and containe
       assert.ok(result.effects.some(candidate => candidate.type === effect));
   }
 });
+test("a contained late evaluation retains its attempt receipt and can close retirement", () => {
+  const beforeComplete = [...campaignBuildPrefix.slice(0, -1),
+    longIssue("late-evaluation-issue", campaignFence), consume("late-evaluation-consume", campaignFence),
+    at(release("late-evaluation-start"), 61), at(attemptReceipt("late-evaluation-attempt", "succeeded"), 62),
+    launchDeadline("late-evaluation-launch-deadline", campaignFence),
+    attemptDeadline("late-evaluation-attempt-deadline"),
+    reconcile("late-evaluation-terminated", "terminated", "late-evaluation-launch-deadline"),
+    retirement("late-evaluation-retirement"),
+    cleanup("late-evaluation-cleanup", "late-evaluation-terminated")] as const;
+  const events = materialize([...beforeComplete,
+    complete("late-evaluation-complete", beforeComplete, receipt("close"))]);
+  const results = compareEvents(events, "late evaluation closure");
+  const receiptIndex = events.findIndex(candidate => candidate.type === "RecordAttemptReceipt");
+  assert.ok(results[receiptIndex]!.effects.some(effect =>
+    effect.type === "late-receipt-retained" && effect.evidence.type === "attempt"));
+  assert.equal(results.at(-1)!.terminalProjections.resourceRetirement.type, "retired");
+});
 test("cross-namespace build replay remains in the typed retirement evidence closure", () => { const replayReceipt = C.buildReceiptId("receipt:close");
-  const beforeComplete = [...buildAuthorizedPrefix, build("build", "succeeded"), build("cross-namespace-replay", "succeeded", replayReceipt),
-    consistency("consistency", { type: "match", artifactDigest: id.artifact }), reconcile("build-terminated", "terminated"), retirement("retirement"), cleanup("cleanup")] as const;
+  const beforeComplete = [...buildAuthorizedPrefix, build("build", "succeeded"),
+    retained(rejected(detached(build("cross-namespace-replay", "succeeded", replayReceipt)))),
+    consistency("consistency", { type: "match", artifactDigest: id.artifact }),
+    reconcile("build-terminated", "terminated", "build-release"), retirement("retirement"),
+    cleanup("cleanup", "build-terminated")] as const;
   compareHistory([...beforeComplete, complete("complete-full", beforeComplete, receipt("close"))], "cross-namespace replay complete closure");
   const candidate = complete("complete-omitted", beforeComplete, receipt("close"));
   const retainedEvidence = (candidate.body.retainedEvidence as readonly C.EvidenceReference[])
@@ -704,7 +753,8 @@ test("retirement freezes state mutations but retains explicit late forensic evid
     ...authorization(sourceFence), authorizationId: id.otherAuthorization, expiresAt: tick(100) }); const beforeComplete = [register, longIssue,
     event("source-consume", "ConsumeAuthorization", { ...authorization(sourceFence), authorizationId: id.otherAuthorization }),
     release("source-release", sourceFence, "source-authoring", id.otherAuthorization), close("close"),
-    reconcile("source-terminated", "terminated"), retirement("retirement"), cleanup("cleanup")] as const;
+    reconcile("source-terminated", "terminated", "source-release"), retirement("retirement"),
+    cleanup("cleanup", "source-terminated")] as const;
   const tombstone = complete("complete", beforeComplete, receipt("close")), postRetirement = [
     rejected(detached(admission("post-retirement-admission", "accepted"))), rejected(detached(advance("post-retirement-advance"))),
     rejected(detached(attemptDeadline("post-retirement-attempt"))), rejected(detached(checkpoint("post-retirement-checkpoint"))),
@@ -738,7 +788,8 @@ test("opposite late launch terminals invalidate and contain both orderings throu
   for (const selected of cases) { const terminalAfterLate = selected.result === "started" ?
       [attemptDeadline(`${selected.name}-attempt`)] : [];
     const beforeComplete = [...selected.before, selected.late, ...terminalAfterLate,
-      reconcile(`${selected.name}-terminated`, "terminated"), cleanup(`${selected.name}-cleanup`)];
+      reconcile(`${selected.name}-terminated`, "terminated", selected.late.label),
+      cleanup(`${selected.name}-cleanup`, `${selected.name}-terminated`)];
     const repeated = rejected({ ...selected.post, label: `${selected.name}-receipt-replay` }), history = [...beforeComplete,
       complete(`${selected.name}-complete`, beforeComplete, receipt("close")), selected.post, repeated] as const; compareHistory(history, selected.name);
     const results = foldQualificationHistory(materialize(history), 64, trusted).results, before = results[selected.before.length - 1]!,
@@ -798,14 +849,17 @@ test("retirement tombstone cannot reuse an earlier receipt primitive", () => { c
 test("retirement requires an explicit request and terminal observations for started work", () => {
   const noRequest = [register, issue("no-request-issue"), consume("no-request-consume"),
     crash("no-request-crash"), abandon("no-request-abandon"),
-    reconcile("no-request-terminated", "terminated"),
+    reconcile("no-request-terminated", "terminated", "no-request-crash"),
     rejected(detached(cleanup("no-request-cleanup")))] as const;
   compareHistory(noRequest, "cleanup without retirement request");
-  const unfinishedBuild = [...buildAuthorizedPrefix, reconcile("unfinished-build-terminated", "terminated"),
-    retirement("unfinished-build-retirement"), cleanup("unfinished-build-cleanup")] as const;
+  const unfinishedBuild = [...buildAuthorizedPrefix,
+    reconcile("unfinished-build-terminated", "terminated", "build-release"),
+    retirement("unfinished-build-retirement"),
+    cleanup("unfinished-build-cleanup", "unfinished-build-terminated")] as const;
   const unfinishedEvaluation = [...evaluationStartedPrefix,
-    reconcile("unfinished-evaluation-terminated", "terminated"),
-    retirement("unfinished-evaluation-retirement"), cleanup("unfinished-evaluation-cleanup")] as const;
+    reconcile("unfinished-evaluation-terminated", "terminated", "release"),
+    retirement("unfinished-evaluation-retirement"),
+    cleanup("unfinished-evaluation-cleanup", "unfinished-evaluation-terminated")] as const;
   for (const [name, prefix] of [["build", unfinishedBuild],
     ["evaluation", unfinishedEvaluation]] as const) {
     const candidate = rejected(complete(`unfinished-${name}-complete`, prefix, receipt("close")));
@@ -817,9 +871,9 @@ test("retirement requires an explicit request and terminal observations for star
   }
 });
 const postRetirementReplayPrefix = [...retainedClosurePrefix, complete("replay-complete", retainedClosurePrefix, receipt("close"))] as const;
-const retiredReplayCases = [{ name: "build", event: build("retired-build", "failed", buildReceipt("retained-build")), evidence: {
-  type: "build-receipt", buildReceiptId: buildReceipt("retained-build") } }, { name: "consistency", event: consistency("retired-consistency",
-  { type: "invalid", proofId: proof("replay") }, buildReceipt("retained-build"), consistencyReceipt("retained-consistency")), evidence: {
+const retiredReplayCases = [{ name: "build", event: rejected(detached(build("retired-build", "failed", buildReceipt("retained-build")))), evidence: {
+  type: "build-receipt", buildReceiptId: buildReceipt("retained-build") } }, { name: "consistency", event: rejected(detached(consistency("retired-consistency",
+  { type: "invalid", proofId: proof("replay") }, buildReceipt("retained-build"), consistencyReceipt("retained-consistency")))), evidence: {
   type: "consistency-receipt", consistencyReceiptId: consistencyReceipt("retained-consistency") } }] as const;
 for (const selected of retiredReplayCases) test(`post-retirement ${selected.name} replay preserves typed fail-closed effects`, () => {
   const history = [...postRetirementReplayPrefix, selected.event] as const; compareHistory(history, `post-retirement ${selected.name} replay`);
@@ -834,14 +888,16 @@ test("post-retirement replay still validates build binding", () => { const candi
 test("post-retirement unsafe starts retain containment until reconciliation proves termination", () => {
   const beforeComplete = [register, longIssue("retired-source-issue"),
     consume("retired-source-consume"), release("retired-source-release", sourceFence),
-    close("retired-source-close"), reconcile("retired-source-terminated", "terminated"),
-    retirement("retired-source-retirement"), cleanup("retired-source-cleanup")] as const;
+    close("retired-source-close"),
+    reconcile("retired-source-terminated", "terminated", "retired-source-release"),
+    retirement("retired-source-retirement"),
+    cleanup("retired-source-cleanup", "retired-source-terminated")] as const;
   const finalized = complete("retired-source-complete", beforeComplete, receipt("retired-source-close"));
   const history = [...beforeComplete, finalized,
     at(release("post-retirement-unsafe-start", sourceFence), 61),
-    reconcile("post-retirement-unknown", "unknown"),
-    reconcile("post-retirement-live", "live"),
-    reconcile("post-retirement-terminated", "terminated")] as const;
+    reconcile("post-retirement-unknown", "unknown", "post-retirement-unsafe-start"),
+    reconcile("post-retirement-live", "live", "post-retirement-unknown"),
+    reconcile("post-retirement-terminated", "terminated", "post-retirement-live")] as const;
   compareHistory(history, "post-retirement containment reconciliation");
   const results = foldQualificationHistory(materialize(history), 64, trusted).results;
   const frozen = results[beforeComplete.length]!.terminalProjections;
@@ -853,11 +909,38 @@ test("post-retirement unsafe starts retain containment until reconciliation prov
   assert.ok(results.at(-2)!.effects.some(effect => effect.type === "runtime-termination-requested"));
   assert.deepEqual(results.at(-1)!.effects, []);
 });
+test("post-retirement starts are contained even before the original launch deadline", () => {
+  const beforeComplete = [register, longIssue("early-retired-issue"), consume("early-retired-consume"),
+    release("early-retired-release", sourceFence), close("early-retired-close"),
+    reconcile("early-retired-terminated", "terminated", "early-retired-release"),
+    retirement("early-retired-retirement"),
+    cleanup("early-retired-cleanup", "early-retired-terminated")] as const;
+  const finalized = complete("early-retired-complete", beforeComplete, receipt("early-retired-close"));
+  const results = compareEvents(materialize([...beforeComplete, finalized,
+    release("early-post-retirement-start", sourceFence)]), "early post-retirement start");
+  const unsafe = results.at(-1)!;
+  assert.equal(unsafe.decision, "accepted");
+  for (const expected of ["claim-disposition-set", "resource-quarantined",
+    "runtime-reconciliation-requested", "runtime-termination-requested"] as const)
+    assert.ok(unsafe.effects.some(effect => effect.type === expected), `missing ${expected}`);
+  assert.deepEqual(unsafe.terminalProjections, results.at(-2)!.terminalProjections);
+});
+test("typed receipt replays deny execution without advancing authenticated lineage", () => {
+  const replay = rejected(detached(build("typed-replay", "succeeded", C.buildReceiptId("receipt:close"))));
+  const results = compareEvents(materialize([...buildAuthorizedPrefix, replay,
+    reconcile("typed-replay-terminated", "terminated", "build-release")]), "typed replay lineage");
+  const denied = results.at(-2)!;
+  assert.equal(denied.decision, "rejected");
+  assert.ok(denied.effects.some(effect => effect.type === "execution-gate-set" && effect.value === "denied"));
+  assert.equal(results.at(-1)!.decision, "accepted");
+});
 test("post-retirement replayed starts keep the tombstone frozen and open private containment", () => {
   const beforeComplete = [register, longIssue("retired-replay-issue"),
     consume("retired-replay-consume"), release("retired-replay-release", sourceFence),
-    close("retired-replay-close"), reconcile("retired-replay-terminated", "terminated"),
-    retirement("retired-replay-retirement"), cleanup("retired-replay-cleanup")] as const;
+    close("retired-replay-close"),
+    reconcile("retired-replay-terminated", "terminated", "retired-replay-release"),
+    retirement("retired-replay-retirement"),
+    cleanup("retired-replay-cleanup", "retired-replay-terminated")] as const;
   const finalized = complete("retired-replay-complete", beforeComplete,
     receipt("retired-replay-close"));
   const start = at(release("post-retirement-replayed-start", sourceFence), 61);
@@ -867,10 +950,12 @@ test("post-retirement replayed starts keep the tombstone frozen and open private
   { name: "start-unknown", replayed: rejected(detached({ ...unknown,
     body: { ...unknown.body, observationReceiptId: receipt("retired-replay-release") } })) }] as const;
   for (const selected of cases) {
-    const stale = rejected(detached(reconcile(`${selected.name}-replayed-stale`, "terminated")));
+    const stale = rejected(detached(reconcile(`${selected.name}-replayed-stale`, "terminated",
+      selected.replayed.label)));
     const history = [...beforeComplete, finalized, selected.replayed, stale,
-      reconcile(`${selected.name}-replayed-live`, "live"),
-      reconcile(`${selected.name}-replayed-terminated`, "terminated")] as const;
+      reconcile(`${selected.name}-replayed-live`, "live", selected.replayed.label),
+      reconcile(`${selected.name}-replayed-terminated`, "terminated",
+        `${selected.name}-replayed-live`)] as const;
     const events = materialize(history).map(candidate =>
       candidate.eventId === C.eventId(`event:${selected.name}-replayed-stale`) ?
         { ...candidate, authoritativeTick: tick(60) } as C.ProtocolEvent : candidate);

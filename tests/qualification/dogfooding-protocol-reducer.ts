@@ -19,6 +19,9 @@ interface Registration {
   readonly retirementOwnerId: C.RetirementOwnerId;
   readonly credentialLineageId: C.CredentialLineageId;
   readonly admissionId: C.AdmissionId;
+  readonly sourceFenceGeneration: C.FenceGeneration;
+  readonly campaignFenceGeneration: C.FenceGeneration;
+  readonly familyAllocationFenceGeneration: C.FenceGeneration;
   readonly launchDeadline: C.AuthoritativeTick;
   readonly attemptDeadline: C.AuthoritativeTick;
   readonly stopDeadline: C.AuthoritativeTick;
@@ -121,6 +124,24 @@ const lateConflict = (s: State, key: string, value: unknown): boolean => {
   const previous = s.lateFacts.get(key);
   return previous !== undefined && !same(previous, value);
 };
+const registrationMatches = (registered: Registration, candidate: C.RegisterProtocol): boolean =>
+  registered.protocolRevisionId === candidate.protocolRevisionId &&
+  registered.custodyAuthorityId === candidate.custodyAuthorityId &&
+  registered.sourceClaimFamilyId === candidate.sourceClaimFamilyId &&
+  registered.sourceFamilyRootId === candidate.sourceFamilyRootId &&
+  registered.sourceSlotId === candidate.sourceSlotId && registered.attemptId === candidate.attemptId &&
+  registered.runtimeId === candidate.runtimeId && registered.checkpointId === candidate.checkpointId &&
+  registered.buildAttemptId === candidate.buildAttemptId &&
+  registered.retirementOwnerId === candidate.retirementOwnerId &&
+  registered.credentialLineageId === candidate.credentialLineageId &&
+  registered.admissionId === candidate.admissionId &&
+  registered.sourceFenceGeneration === candidate.sourceFenceGeneration &&
+  registered.campaignFenceGeneration === candidate.campaignFenceGeneration &&
+  registered.familyAllocationFenceGeneration === candidate.familyAllocationFenceGeneration &&
+  registered.launchDeadline === candidate.launchDeadline &&
+  registered.attemptDeadline === candidate.attemptDeadline && registered.stopDeadline === candidate.stopDeadline &&
+  registered.buildDeadline === candidate.buildDeadline &&
+  registered.buildConsistencyDeadline === candidate.buildConsistencyDeadline;
 export const initializeQualificationReducer = (
   trusted: C.TrustedProtocolCoordinates,
 ): QualificationReducerState => {
@@ -169,6 +190,18 @@ const reject = (state: State, event: C.ProtocolEvent, reason: C.DenialReason): Q
   const result: C.TransitionResult = { decision: "rejected", effects: replay ? [denied,
     invalid(event, { type: "event", eventId: event.eventId })] : [denied], terminalProjections: projections };
   return { state: { ...state, projections, events: withMap(state.events, event.eventId, { event, result }) } as State, result };
+};
+const rejectTypedReplay = (state: State,
+  event: C.RecordBuildResult | C.RecordBuildConsistencyReceipt,
+  evidence: C.EvidenceReference): QualificationTransition => {
+  const denied = reject(state, event, "receipt-replay");
+  const result: C.TransitionResult = { ...denied.result, effects: [
+    denied.result.effects[0]!, { type: "execution-gate-set", causalEventId: event.eventId,
+      buildAttemptId: event.buildAttemptId, value: "denied" }, invalid(event, evidence)] };
+  const candidate = stateOf(denied.state);
+  const next: State = { ...candidate,
+    events: withMap(state.events, event.eventId, { event, result }) };
+  return { state: next, result };
 };
 const terminal = (event: C.ProtocolEvent, value: C.TerminalReference): C.TerminalAppendedEffect => ({ type: "terminal-appended", causalEventId: event.eventId, terminal: value });
 const invalid = (event: C.ProtocolEvent, evidence: C.EvidenceReference): C.ClaimDispositionSetEffect => ({ type: "claim-disposition-set", causalEventId: event.eventId, value: "invalid", evidence });
@@ -242,7 +275,8 @@ const revoke = (s: State, event: C.ProtocolEvent, predicate: (a: Authorization) 
   return { authorizations, effects };
 };
 const register = (s: State, e: C.RegisterProtocol): QualificationTransition => {
-  if (s.registration !== null) return reject(s, e, "terminal-already-recorded");
+  if (s.registration !== null) return reject(s, e,
+    registrationMatches(s.registration, e) ? "terminal-already-recorded" : "wrong-binding");
   if (e.authenticatedPredecessorId !== null ||
       e.protocolRevisionId !== s.trusted.protocolRevisionId ||
       e.custodyAuthorityId !== s.trusted.custodyAuthorityId)
@@ -402,26 +436,38 @@ const retainUnauthorizedLateStart = (s: State, e: C.ReleaseProcess,
           receiptId: e.launchReceiptId, result: "started" } }, denied,
       invalid(e, { type: "receipt", receiptId: e.launchReceiptId }), ...contain(e)]);
 };
+const retainPostRetirementStart = (s: State, e: C.ReleaseProcess): QualificationTransition =>
+  accept(s, e, { receipts: withSet(s.receipts, e.launchReceiptId), projections: { ...s.projections,
+    runtime: "unknown", resourceRetirement: { type: "quarantined" }, claim: "invalid" } }, [
+    { type: "late-receipt-retained", causalEventId: e.eventId, evidence: { type: "launch",
+      authorizationId: e.authorizationId, receiptId: e.launchReceiptId, result: "started" } },
+    { type: "denial-recorded", causalEventId: e.eventId, reason: "gate-closed", subject: subject(e) },
+    invalid(e, { type: "receipt", receiptId: e.launchReceiptId }), ...contain(e)]);
 const release = (s: State, e: C.ReleaseProcess): QualificationTransition => {
   const mismatch = authorizationIdentity(s.registration!, e);
   if (mismatch || e.attemptId !== s.registration!.attemptId) return reject(s, e, mismatch ?? "wrong-binding");
   const a = s.authorizations.get(e.authorizationId);
   if (!a) {
+    if (s.projections.resourceRetirement.type === "retired" &&
+        purposeMatchesFence(e.launchPurpose, e.authorizationFence) && !receiptUsed(s, e.launchReceiptId))
+      return retainPostRetirementStart(s, e);
     if (e.authoritativeTick >= s.registration!.launchDeadline &&
         purposeMatchesFence(e.launchPurpose, e.authorizationFence) && !receiptUsed(s, e.launchReceiptId))
       return retainUnauthorizedLateStart(s, e, "authorization-unavailable");
     return reject(s, e, "authorization-unavailable");
   }
   if (!bindingMatches(a, e)) return reject(s, e, "wrong-binding");
-  if (e.authoritativeTick >= s.registration!.launchDeadline) {
+  if (s.projections.resourceRetirement.type === "retired") {
     if (receiptUsed(s, e.launchReceiptId)) return reject(s, e, "receipt-replay");
+    return retainPostRetirementStart(s, e);
+  }
+  if (receiptUsed(s, e.launchReceiptId)) return reject(s, e, "receipt-replay");
+  if (a.launch !== null) return retainLateLaunch(s, e, a.launch);
+  if (e.authoritativeTick >= s.registration!.launchDeadline) {
     if (a.consumedAt === null) return retainUnauthorizedLateStart(s, e, "authorization-unavailable");
     if (a.expiredAt !== null || e.authoritativeTick >= a.expiresAt)
       return retainUnauthorizedLateStart(s, e, "authorization-expired");
     if (a.revokedAt !== null) return retainUnauthorizedLateStart(s, e, "authorization-revoked");
-  }
-  if (a.launch !== null && e.authoritativeTick >= s.registration!.launchDeadline) {
-    return retainLateLaunch(s, e, a.launch);
   }
   if (a.consumedAt !== null && e.authoritativeTick >= s.registration!.launchDeadline) {
     const key = `launch:${e.authorizationId}`, conflict = oppositeLaunchObserved(s, e.authorizationId, "started");
@@ -436,7 +482,6 @@ const release = (s: State, e: C.ReleaseProcess): QualificationTransition => {
   if (s.projections.resourceRetirement.type !== "active") return reject(s, e, "gate-closed");
   if (s.projections.runtime !== "not-started" && s.projections.runtime !== "terminated")
     return reject(s, e, "runtime-unresolved");
-  if (a.launch !== null) return reject(s, e, "terminal-already-recorded");
   if (a.authorizationFence.scope === "source" && s.projections.sourceEvidence.type !== "open")
     return reject(s, e, "source-terminal");
   if (a.expiredAt !== null || e.authoritativeTick >= a.expiresAt) return reject(s, e, "authorization-expired");
@@ -449,7 +494,6 @@ const release = (s: State, e: C.ReleaseProcess): QualificationTransition => {
       s.projections.buildConsistency?.type !== "match" || s.projections.claim !== "eligible"))
     return reject(s, e, "build-not-executable");
   if (a.consumedAt === null) return reject(s, e, "authorization-unavailable");
-  if (receiptUsed(s, e.launchReceiptId)) return reject(s, e, "receipt-replay");
   const launch: C.LaunchTerminalProjection = { type: "started", receiptId: e.launchReceiptId };
   const authorizations = withMap(s.authorizations, e.authorizationId, { ...a, launch });
   return accept(s, e, { authorizations, receipts: withSet(s.receipts, e.launchReceiptId),
@@ -464,13 +508,9 @@ const releaseDenied = (s: State, e: C.RecordReleaseDenied): QualificationTransit
   if (!a) return reject(s, e, "authorization-unavailable");
   if (!bindingMatches(a, e)) return reject(s, e, "wrong-binding");
   if (a.consumedAt === null) return reject(s, e, "authorization-unavailable");
-  if (a.launch !== null && e.authoritativeTick >= s.registration!.launchDeadline) {
-    if (receiptUsed(s, e.receiptId)) return reject(s, e, "receipt-replay");
-    return retainLateLaunch(s, e, a.launch);
-  }
-  if (a.launch !== null) return reject(s, e, "terminal-already-recorded");
-  if (s.projections.resourceRetirement.type === "retired") return reject(s, e, "terminal-already-recorded");
   if (receiptUsed(s, e.receiptId)) return reject(s, e, "receipt-replay");
+  if (a.launch !== null) return retainLateLaunch(s, e, a.launch);
+  if (s.projections.resourceRetirement.type === "retired") return reject(s, e, "terminal-already-recorded");
   if (e.authoritativeTick >= s.registration!.launchDeadline) {
     const key = `launch:${e.authorizationId}`, conflict = oppositeLaunchObserved(s, e.authorizationId, "release-denied");
     const effects: C.DeclaredEffect[] = [
@@ -491,22 +531,26 @@ const releaseDenied = (s: State, e: C.RecordReleaseDenied): QualificationTransit
 const crash = (s: State, e: C.ObserveCrash): QualificationTransition => {
   if (!rootMatches(s.registration!, e) || e.runtimeId !== s.registration!.runtimeId)
     return reject(s, e, "wrong-binding");
-  if (s.projections.resourceRetirement.type === "retired")
-    return reject(s, e, "terminal-already-recorded");
   const a = s.authorizations.get(e.authorizationId);
   if (!a) return reject(s, e, "authorization-unavailable");
+  const containment: C.DeclaredEffect[] = [
+    { type: "resource-quarantined", causalEventId: e.eventId,
+      sourceFamilyRootId: e.sourceFamilyRootId, runtimeId: e.runtimeId },
+    { type: "runtime-reconciliation-requested", causalEventId: e.eventId, runtimeId: e.runtimeId },
+    { type: "runtime-termination-requested", causalEventId: e.eventId, runtimeId: e.runtimeId },
+  ];
+  if (s.projections.resourceRetirement.type === "retired") {
+    if (a.authorizationFence.expectedGeneration !== e.expectedGeneration) return reject(s, e, "stale-generation");
+    if (a.consumedAt === null) return reject(s, e, "authorization-unavailable");
+    return accept(s, e, { postRetirementRuntime: "unknown" }, containment);
+  }
   if (s.projections.runtime !== "not-started" && s.projections.runtime !== "terminated")
     return reject(s, e, "runtime-unresolved");
   if (a.launch !== null) return reject(s, e, "terminal-already-recorded");
   if (a.authorizationFence.expectedGeneration !== e.expectedGeneration) return reject(s, e, "stale-generation");
   if (a.consumedAt === null) return reject(s, e, "authorization-unavailable");
   return accept(s, e, { projections: { ...s.projections, runtime: "unknown",
-    resourceRetirement: { type: "quarantined" } } }, [
-    { type: "resource-quarantined", causalEventId: e.eventId,
-      sourceFamilyRootId: e.sourceFamilyRootId, runtimeId: e.runtimeId },
-    { type: "runtime-reconciliation-requested", causalEventId: e.eventId, runtimeId: e.runtimeId },
-    { type: "runtime-termination-requested", causalEventId: e.eventId, runtimeId: e.runtimeId },
-  ]);
+    resourceRetirement: { type: "quarantined" } } }, containment);
 };
 const launchDeadline = (s: State, e: C.ReachLaunchDeadline): QualificationTransition => {
   const mismatch = authorizationIdentity(s.registration!, e); if (mismatch) return reject(s, e, mismatch);
@@ -541,36 +585,47 @@ const launchDeadline = (s: State, e: C.ReachLaunchDeadline): QualificationTransi
 const restart = (s: State, e: C.RestartObserved): QualificationTransition => {
   if (!rootMatches(s.registration!, e) || e.runtimeId !== s.registration!.runtimeId)
     return reject(s, e, "wrong-binding");
-  if (s.projections.resourceRetirement.type === "retired") return reject(s, e, "terminal-already-recorded");
   if (s.projections.runtime === "not-started" && ![...s.authorizations.values()].some((a) => a.consumedAt))
     return reject(s, e, "runtime-unresolved");
-  return accept(s, e, { projections: { ...s.projections, runtime: "unknown",
-    resourceRetirement: { type: "quarantined" } } }, [
+  const effects: C.DeclaredEffect[] = [
     { type: "runtime-reconciliation-requested", causalEventId: e.eventId, runtimeId: e.runtimeId },
     { type: "resource-quarantined", causalEventId: e.eventId,
       sourceFamilyRootId: e.sourceFamilyRootId, runtimeId: e.runtimeId },
-  ]);
+    { type: "runtime-termination-requested", causalEventId: e.eventId, runtimeId: e.runtimeId },
+  ];
+  return s.projections.resourceRetirement.type === "retired" ?
+    accept(s, e, { postRetirementRuntime: "unknown" }, effects) :
+    accept(s, e, { projections: { ...s.projections, runtime: "unknown",
+      resourceRetirement: { type: "quarantined" } } }, effects);
 };
-const runtimeSafetyFloor = (s: State, runtimeId: C.RuntimeId): C.AuthoritativeTick | null => {
-  let floor: C.AuthoritativeTick | null = null;
+interface RuntimeSafetyWatermark {
+  readonly eventId: C.EventId;
+  readonly authoritativeTick: C.AuthoritativeTick;
+}
+const runtimeSafetyWatermark = (s: State, runtimeId: C.RuntimeId): RuntimeSafetyWatermark | null => {
+  let watermark: RuntimeSafetyWatermark | null = null;
   for (const observation of s.events.values()) {
     const candidate = observation.event;
-    if (!("runtimeId" in candidate) || candidate.runtimeId !== runtimeId) continue;
     const safetyEvidence = observation.result.effects.some(effect =>
-      effect.type === "runtime-reconciliation-requested" ||
-      effect.type === "runtime-termination-requested");
-    if (safetyEvidence && (floor === null || candidate.authoritativeTick > floor))
-      floor = candidate.authoritativeTick;
+      (effect.type === "process-release-requested" ||
+       effect.type === "runtime-reconciliation-requested" ||
+       effect.type === "runtime-termination-requested") && effect.runtimeId === runtimeId);
+    if (safetyEvidence && (watermark === null || candidate.authoritativeTick >= watermark.authoritativeTick))
+      watermark = { eventId: candidate.eventId, authoritativeTick: candidate.authoritativeTick };
   }
-  return floor;
+  return watermark;
 };
 const reconcile = (s: State, e: C.ReconcileRuntime): QualificationTransition => {
   if (!rootMatches(s.registration!, e) || e.runtimeId !== s.registration!.runtimeId)
     return reject(s, e, "wrong-binding");
-  const safetyFloor = runtimeSafetyFloor(s, e.runtimeId);
-  if (safetyFloor !== null && e.authoritativeTick < safetyFloor)
+  const watermark = runtimeSafetyWatermark(s, e.runtimeId);
+  if (watermark === null || watermark.eventId !== e.runtimeSafetyWatermarkEventId ||
+      e.authoritativeTick < watermark.authoritativeTick || acceptedEvent(s, candidate =>
+        candidate.type === "ReconcileRuntime" && candidate.proofId === e.proofId))
     return reject(s, e, "wrong-binding");
-  if (s.projections.runtime === "not-started" || s.projections.resourceRetirement.type === "retired")
+  const retired = s.projections.resourceRetirement.type === "retired";
+  const runtime = retired ? s.postRetirementRuntime : s.projections.runtime;
+  if (runtime === null || runtime === "not-started")
     return reject(s, e, "runtime-unresolved");
   const resourceRetirement: C.ResourceRetirementProjection = e.observation === "terminated" ?
     (s.projections.resourceRetirement.type === "active" ? { type: "active" } : { type: "pending" }) :
@@ -582,7 +637,8 @@ const reconcile = (s: State, e: C.ReconcileRuntime): QualificationTransition => 
   ] : e.observation === "live" ? [
     { type: "runtime-termination-requested", causalEventId: e.eventId, runtimeId: e.runtimeId },
   ] : [];
-  return accept(s, e, { projections: { ...s.projections, runtime: e.observation, resourceRetirement } }, effects);
+  return retired ? accept(s, e, { postRetirementRuntime: e.observation }, effects) :
+    accept(s, e, { projections: { ...s.projections, runtime: e.observation, resourceRetirement } }, effects);
 };
 const retirement = (s: State, e: C.RequestRetirement): QualificationTransition => {
   if (!rootMatches(s.registration!, e)) return reject(s, e, "wrong-binding");
@@ -613,6 +669,15 @@ const cleanup = (s: State, e: C.RequestCleanup): QualificationTransition => {
   if (s.projections.resourceRetirement.type === "active" || s.projections.resourceRetirement.type === "retired")
     return reject(s, e, "gate-closed");
   if (s.cleanupRequested) return reject(s, e, "terminal-already-recorded");
+  const watermark = runtimeSafetyWatermark(s, e.runtimeId);
+  const termination = acceptedEvents(s).filter((candidate): candidate is C.ReconcileRuntime =>
+    candidate.type === "ReconcileRuntime" && candidate.runtimeId === e.runtimeId &&
+    candidate.observation === "terminated").at(-1);
+  const noRuntimeWasReleased = s.projections.runtime === "not-started" && watermark === null;
+  if (!noRuntimeWasReleased && (watermark === null || termination === undefined ||
+      termination.proofId !== e.terminationProofId ||
+      termination.runtimeSafetyWatermarkEventId !== watermark.eventId))
+    return reject(s, e, "wrong-binding");
   return accept(s, e, { cleanupRequested: true,
     projections: { ...s.projections, resourceRetirement: { type: "pending" } } }, [{
       type: "resource-cleanup-requested", causalEventId: e.eventId,
@@ -631,12 +696,25 @@ const proofReferences = (value: unknown): readonly C.EvidenceReference[] => {
   }
   return references;
 };
+const replayReceiptReference = (event: C.ProtocolEvent): C.EvidenceReference | null => {
+  if (event.type === "RecordBuildResult")
+    return { type: "build-receipt", buildReceiptId: event.buildReceiptId };
+  if (event.type === "RecordBuildConsistencyReceipt")
+    return { type: "consistency-receipt", consistencyReceiptId: event.consistencyReceiptId };
+  const receiptId = eventReceipt(event);
+  return receiptId === null || event.type === "CompleteRetirement" ? null :
+    { type: "receipt", receiptId: C.receiptId(receiptId) };
+};
 const expectedRetainedEvidence = (s: State, cleanupProofId: C.ProofId): readonly C.EvidenceReference[] => {
   const expected: C.EvidenceReference[] = [{ type: "proof", proofId: cleanupProofId }];
   for (const observation of s.events.values()) if (observation.result.decision === "accepted" ||
       observation.result.effects.some(effect => effect.type === "denial-recorded" &&
         effect.reason === "receipt-replay")) {
     expected.push({ type: "event", eventId: observation.event.eventId }, ...proofReferences(observation.event));
+    if (observation.result.decision === "rejected") {
+      const replayReceipt = replayReceiptReference(observation.event);
+      if (replayReceipt !== null) expected.push(replayReceipt);
+    }
   }
   expected.push(...[...s.receipts].map(receiptId => ({ type: "receipt" as const, receiptId })),
     ...[...s.buildReceipts].map(buildReceiptId => ({ type: "build-receipt" as const, buildReceiptId })),
@@ -693,7 +771,12 @@ const complete = (s: State, e: C.CompleteRetirement): QualificationTransition =>
 const attemptReceipt = (s: State, e: C.RecordAttemptReceipt): QualificationTransition => {
   if (e.attemptId !== s.registration!.attemptId || e.runtimeId !== s.registration!.runtimeId)
     return reject(s, e, "wrong-binding");
-  if (s.projections.launch?.type !== "started") return reject(s, e, "gate-closed");
+  const retainedStart = [...s.events.values()].some(observation =>
+    observation.event.type === "ReleaseProcess" && observation.event.launchPurpose === "evaluation" &&
+    observation.event.attemptId === e.attemptId && observation.event.runtimeId === e.runtimeId &&
+    observation.result.effects.some(effect => effect.type === "late-receipt-retained" &&
+      effect.evidence.type === "launch" && effect.evidence.result === "started"));
+  if (s.projections.launch?.type !== "started" && !retainedStart) return reject(s, e, "gate-closed");
   if (receiptUsed(s, e.receiptId)) return reject(s, e, "receipt-replay");
   if (s.projections.attempt !== null) {
     const conflict = s.projections.attempt.type !== e.result;
@@ -803,14 +886,8 @@ const buildResult = (s: State, e: C.RecordBuildResult): QualificationTransition 
       authority.consumedAt === null || authority.launch?.type !== "started" || authority.sourceSlotId !== e.sourceSlotId ||
       authority.runtimeId !== s.registration!.runtimeId)
     return reject(s, e, authority ? "wrong-binding" : "authorization-unavailable");
-  if (receiptUsed(s, e.buildReceiptId)) return accept(s, e,
-    { buildReceipts: withSet(s.buildReceipts, e.buildReceiptId),
-      projections: { ...s.projections, claim: "invalid" } }, [{ type: "denial-recorded",
-    causalEventId: e.eventId, reason: "receipt-replay",
-    subject: { type: "build-attempt", buildAttemptId: e.buildAttemptId } },
-  { type: "execution-gate-set", causalEventId: e.eventId,
-    buildAttemptId: e.buildAttemptId, value: "denied" },
-  invalid(e, { type: "build-receipt", buildReceiptId: e.buildReceiptId })]);
+  if (receiptUsed(s, e.buildReceiptId)) return rejectTypedReplay(s, e,
+    { type: "build-receipt", buildReceiptId: e.buildReceiptId });
   if (s.projections.build !== null) {
     const conflict = s.buildFact?.result === null || !same(s.buildFact?.result, e.result);
     const effects: C.DeclaredEffect[] = [{ type: "late-receipt-retained", causalEventId: e.eventId,
@@ -854,18 +931,25 @@ const buildDeadline = (s: State, e: C.ReachBuildDeadline): QualificationTransiti
   [terminal(e, { type: "build", projection: build }), { type: "execution-gate-set",
     causalEventId: e.eventId, buildAttemptId: e.buildAttemptId, value: "denied" }]);
 };
+const consistencyInputInvalid = (s: State, e: C.RecordBuildConsistencyReceipt): boolean => {
+  const receiptBound = s.buildFact !== null && "buildReceiptId" in s.buildFact.projection &&
+    s.buildFact.projection.buildReceiptId === e.buildReceiptId;
+  const validMatch = e.result.type === "match" && s.buildFact?.projection.type === "succeeded" &&
+    receiptBound && s.buildFact.artifactDigest === e.result.artifactDigest;
+  const validNonArtifact = e.result.type === "non-artifact-match" && receiptBound &&
+    (s.buildFact?.result?.type === "failed" || s.buildFact?.result?.type === "no-output") &&
+    s.buildFact.result.type === e.result.buildResult;
+  return s.buildFact === null || e.result.type === "invalid" ||
+    e.result.type === "match" && !validMatch ||
+    e.result.type === "non-artifact-match" && !validNonArtifact ||
+    (e.result.type === "missing-build" || e.result.type === "unknown-build") && s.buildFact.result !== null ||
+    "buildReceiptId" in s.buildFact.projection && !receiptBound;
+};
 const consistency = (s: State, e: C.RecordBuildConsistencyReceipt): QualificationTransition => {
   const replay = receiptUsed(s, e.consistencyReceiptId);
   if (!buildMatches(s.registration!, e)) return reject(s, e, "wrong-binding");
-  if (replay) {
-    const effects: C.DeclaredEffect[] = [{ type: "denial-recorded", causalEventId: e.eventId,
-      reason: "receipt-replay", subject: { type: "build-attempt", buildAttemptId: e.buildAttemptId } }];
-    effects.push({ type: "execution-gate-set", causalEventId: e.eventId,
-      buildAttemptId: e.buildAttemptId, value: "denied" },
-    invalid(e, { type: "consistency-receipt", consistencyReceiptId: e.consistencyReceiptId }));
-    return accept(s, e, { consistencyReceipts: withSet(s.consistencyReceipts, e.consistencyReceiptId),
-      projections: { ...s.projections, claim: "invalid" } }, effects);
-  }
+  if (replay) return rejectTypedReplay(s, e,
+    { type: "consistency-receipt", consistencyReceiptId: e.consistencyReceiptId });
   if (s.projections.buildConsistency !== null) {
     const original = acceptedEvents(s).find((event): event is C.RecordBuildConsistencyReceipt =>
       event.type === "RecordBuildConsistencyReceipt" &&
@@ -883,7 +967,7 @@ const consistency = (s: State, e: C.RecordBuildConsistencyReceipt): Qualificatio
   if (e.authoritativeTick >= s.registration!.buildConsistencyDeadline) {
     const key = `consistency:${e.buildAttemptId}`;
     const lateValue = { buildReceiptId: e.buildReceiptId, result: e.result };
-    const conflict = lateConflict(s, key, lateValue);
+    const conflict = lateConflict(s, key, lateValue) || consistencyInputInvalid(s, e);
     const effects: C.DeclaredEffect[] = [
       { type: "late-receipt-retained", causalEventId: e.eventId, evidence: { type: "build-consistency",
         buildAttemptId: e.buildAttemptId, consistencyReceiptId: e.consistencyReceiptId, result: e.result } },
@@ -896,17 +980,7 @@ const consistency = (s: State, e: C.RecordBuildConsistencyReceipt): Qualificatio
       lateFacts: withMap(s.lateFacts, key, lateValue), projections: { ...s.projections,
         claim: conflict ? "invalid" : s.projections.claim === "invalid" ? "invalid" : "non-promotional" } }, effects);
   }
-  const receiptBound = s.buildFact?.projection !== undefined && "buildReceiptId" in s.buildFact.projection &&
-    s.buildFact.projection.buildReceiptId === e.buildReceiptId;
-  const validMatch = e.result.type === "match" && s.buildFact?.projection.type === "succeeded" &&
-    receiptBound && s.buildFact.artifactDigest === e.result.artifactDigest;
-  const validNonArtifact = e.result.type === "non-artifact-match" && receiptBound &&
-    (s.buildFact?.result?.type === "failed" || s.buildFact?.result?.type === "no-output") &&
-    s.buildFact.result.type === e.result.buildResult;
-  const invalidInput = s.buildFact === null || e.result.type === "invalid" ||
-    e.result.type === "match" && !validMatch || e.result.type === "non-artifact-match" && !validNonArtifact ||
-    (e.result.type === "missing-build" || e.result.type === "unknown-build") && s.buildFact.result !== null ||
-    s.buildFact?.projection !== undefined && "buildReceiptId" in s.buildFact.projection && !receiptBound;
+  const invalidInput = consistencyInputInvalid(s, e);
   const projection: C.BuildConsistencyTerminalProjection = invalidInput ?
     { type: "invalid", consistencyReceiptId: e.consistencyReceiptId } :
     { type: e.result.type, consistencyReceiptId: e.consistencyReceiptId };
@@ -1000,22 +1074,10 @@ const preserveReplayedRuntimeSafety = (s: State, e: C.ProtocolEvent,
     events: withMap(candidate.events, e.eventId, { event: e, result }) };
   return { state, result };
 };
-const postRetirementReconciliation = (s: State, e: C.ReconcileRuntime): QualificationTransition => {
-  const effects: C.DeclaredEffect[] = e.observation === "unknown" ? [
-    { type: "resource-quarantined", causalEventId: e.eventId,
-      sourceFamilyRootId: e.sourceFamilyRootId, runtimeId: e.runtimeId },
-    { type: "runtime-reconciliation-requested", causalEventId: e.eventId, runtimeId: e.runtimeId },
-  ] : e.observation === "live" ? [
-    { type: "runtime-termination-requested", causalEventId: e.eventId, runtimeId: e.runtimeId },
-  ] : [];
-  return accept(s, e, { postRetirementRuntime: e.observation }, effects);
-};
 const enforceTombstoneFinality = (s: State, e: C.ProtocolEvent, transition: QualificationTransition): QualificationTransition => {
   if (transition.result.decision === "rejected") {
     const reason = transition.result.effects.find(effect =>
       effect.type === "denial-recorded")?.reason;
-    if (e.type === "ReconcileRuntime" && s.postRetirementRuntime !== null && reason === "runtime-unresolved")
-      return postRetirementReconciliation(s, e);
     if (reason === "receipt-replay") {
       const result = { ...transition.result, terminalProjections: s.projections };
       const candidate = stateOf(transition.state);
@@ -1027,21 +1089,19 @@ const enforceTombstoneFinality = (s: State, e: C.ProtocolEvent, transition: Qual
       reject(s, e, "terminal-already-recorded");
   }
   const fx = transition.result.effects;
-  const typedReplay = (e.type === "RecordBuildResult" ||
-    e.type === "RecordBuildConsistencyReceipt") && fx.some(item =>
-    item.type === "denial-recorded" && item.reason === "receipt-replay");
-  if (typedReplay) return accept(s, e, {}, fx);
-  const unsafeLaunch = (e.type === "ReleaseProcess" || e.type === "RecordReleaseDenied") &&
-    fx.some(effect => effect.type === "late-receipt-retained") &&
-    fx.some(effect => effect.type === "claim-disposition-set" && effect.value === "invalid");
-  if (unsafeLaunch) return accept(s, e, { receipts: stateOf(transition.state).receipts,
-    postRetirementRuntime: "unknown" }, fx);
-  const lateEffects = fx.filter((effect): effect is C.LateReceiptRetainedEffect =>
-    effect.type === "late-receipt-retained");
-  if (lateEffects.length === 0) return reject(s, e, "terminal-already-recorded");
   const candidate = stateOf(transition.state);
+  const runtimeSafety = fx.some(effect => effect.type === "resource-quarantined" ||
+    effect.type === "runtime-reconciliation-requested" || effect.type === "runtime-termination-requested");
+  if (runtimeSafety || e.type === "ReconcileRuntime" && candidate.postRetirementRuntime !== null)
+    return accept(s, e, { receipts: candidate.receipts,
+      postRetirementRuntime: candidate.postRetirementRuntime ?? "unknown" }, fx);
+  const forensicEffects = fx.filter(effect => effect.type === "late-receipt-retained" ||
+    effect.type === "claim-disposition-set" && effect.value === "invalid" ||
+    effect.type === "execution-gate-set" && effect.value === "denied");
+  if (!forensicEffects.some(effect => effect.type === "late-receipt-retained"))
+    return reject(s, e, "terminal-already-recorded");
   return accept(s, e, { receipts: candidate.receipts, buildReceipts: candidate.buildReceipts,
-    consistencyReceipts: candidate.consistencyReceipts, lateFacts: candidate.lateFacts }, lateEffects);
+    consistencyReceipts: candidate.consistencyReceipts, lateFacts: candidate.lateFacts }, forensicEffects);
 };
 export const transitionQualificationEvent = (
   reducerState: QualificationReducerState, event: C.ProtocolEvent,

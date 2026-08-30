@@ -185,6 +185,8 @@ export interface RestartObserved extends EventEnvelope, RootBound {
 export interface ReconcileRuntime extends EventEnvelope, RootBound {
   readonly type: "ReconcileRuntime";
   readonly runtimeId: RuntimeId;
+  /** Exact latest event that made this runtime require reconciliation. */
+  readonly runtimeSafetyWatermarkEventId: EventId;
   readonly observation: "live" | "terminated" | "unknown";
   readonly proofId: ProofId;
 }
