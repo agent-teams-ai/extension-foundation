@@ -136,12 +136,6 @@ const subject = (event: C.ProtocolEvent): C.DenialSubject => {
   if (event.type === "RecordAdmission") return { type: "admission", admissionId: event.admissionId };
   return { type: "source-root", sourceFamilyRootId: event.sourceFamilyRootId };
 };
-const reject = (state: State, event: C.ProtocolEvent, reason: C.DenialReason): QualificationTransition => {
-  const result: C.TransitionResult = { decision: "rejected", effects: [{
-    type: "denial-recorded", causalEventId: event.eventId, reason, subject: subject(event),
-  }], terminalProjections: state.projections };
-  return { state: { ...state, events: withMap(state.events, event.eventId, { event, result }) } as State, result };
-};
 const accept = (state: State, event: C.ProtocolEvent, changes: Partial<State>,
   effects: readonly C.DeclaredEffect[]): QualificationTransition => {
   const changed: State = { ...state, ...changes, lastEventId: event.eventId,
@@ -152,10 +146,20 @@ const accept = (state: State, event: C.ProtocolEvent, changes: Partial<State>,
     events: withMap(state.events, event.eventId, { event, result }) };
   return { state: next, result };
 };
+const reject = (state: State, event: C.ProtocolEvent, reason: C.DenialReason): QualificationTransition => {
+  const denied: C.DeclaredEffect = { type: "denial-recorded", causalEventId: event.eventId, reason, subject: subject(event) };
+  const replay = reason === "receipt-replay", projections = replay ? { ...state.projections, claim: "invalid" as const } : state.projections;
+  const result: C.TransitionResult = { decision: "rejected", effects: replay ? [denied,
+    invalid(event, { type: "event", eventId: event.eventId })] : [denied], terminalProjections: projections };
+  return { state: { ...state, projections, events: withMap(state.events, event.eventId, { event, result }) } as State, result };
+};
 const terminal = (event: C.ProtocolEvent, value: C.TerminalReference): C.TerminalAppendedEffect => ({ type: "terminal-appended", causalEventId: event.eventId, terminal: value });
 const invalid = (event: C.ProtocolEvent, evidence: C.EvidenceReference): C.ClaimDispositionSetEffect => ({ type: "claim-disposition-set", causalEventId: event.eventId, value: "invalid", evidence });
 const nonPromotional = (event: C.ProtocolEvent, evidence: C.EvidenceReference): C.ClaimDispositionSetEffect =>
   ({ type: "claim-disposition-set", causalEventId: event.eventId, value: "non-promotional", evidence });
+const contain = (e: C.ReleaseProcess | C.RecordReleaseDenied): C.DeclaredEffect[] => [
+  { type: "resource-quarantined", causalEventId: e.eventId, sourceFamilyRootId: e.sourceFamilyRootId, runtimeId: e.runtimeId },
+  { type: "runtime-reconciliation-requested", causalEventId: e.eventId, runtimeId: e.runtimeId }, { type: "runtime-termination-requested", causalEventId: e.eventId, runtimeId: e.runtimeId }];
 const rootMatches = (r: Registration, e: { readonly sourceClaimFamilyId: C.SourceClaimFamilyId;
   readonly sourceFamilyRootId: C.SourceFamilyRootId }): boolean =>
   e.sourceClaimFamilyId === r.sourceClaimFamilyId && e.sourceFamilyRootId === r.sourceFamilyRootId;
@@ -352,9 +356,7 @@ const retainLateLaunch = (s: State, e: C.ReleaseProcess | C.RecordReleaseDenied,
   const result = e.type === "ReleaseProcess" ? "started" : "release-denied", receiptId = e.type === "ReleaseProcess" ? e.launchReceiptId : e.receiptId;
   const conflict = launch.type === "started" && result === "release-denied" || launch.type === "release-denied" && result === "started";
   const effects: C.DeclaredEffect[] = [{ type: "late-receipt-retained", causalEventId: e.eventId, evidence: { type: "launch", authorizationId: e.authorizationId, receiptId, result } }];
-  if (conflict) effects.push(invalid(e, { type: "receipt", receiptId }), { type: "resource-quarantined", causalEventId: e.eventId,
-    sourceFamilyRootId: e.sourceFamilyRootId, runtimeId: e.runtimeId }, { type: "runtime-reconciliation-requested", causalEventId: e.eventId, runtimeId: e.runtimeId },
-    { type: "runtime-termination-requested", causalEventId: e.eventId, runtimeId: e.runtimeId });
+  if (conflict) effects.push(invalid(e, { type: "receipt", receiptId }), ...contain(e));
   return accept(s, e, { receipts: withSet(s.receipts, receiptId), projections: conflict ? { ...s.projections,
     runtime: "unknown", resourceRetirement: { type: "quarantined" }, claim: "invalid" } : s.projections }, effects);
 };
@@ -368,6 +370,17 @@ const release = (s: State, e: C.ReleaseProcess): QualificationTransition => {
     if (a.consumedAt === null) return reject(s, e, "authorization-unavailable");
     if (receiptUsed(s, e.launchReceiptId)) return reject(s, e, "receipt-replay");
     return retainLateLaunch(s, e, a.launch);
+  }
+  if (a.consumedAt !== null && e.authoritativeTick >= s.registration!.launchDeadline) {
+    if (receiptUsed(s, e.launchReceiptId)) return reject(s, e, "receipt-replay");
+    const key = `launch:${e.authorizationId}`, conflict = lateConflict(s, key, "started");
+    const effects: C.DeclaredEffect[] = [{ type: "late-receipt-retained", causalEventId: e.eventId, evidence: { type: "launch",
+      authorizationId: e.authorizationId, receiptId: e.launchReceiptId, result: "started" } },
+      nonPromotional(e, { type: "receipt", receiptId: e.launchReceiptId }), ...contain(e)];
+    if (conflict) effects.push(invalid(e, { type: "receipt", receiptId: e.launchReceiptId }));
+    return accept(s, e, { receipts: withSet(s.receipts, e.launchReceiptId), lateFacts: withMap(s.lateFacts, key, "started"),
+      projections: { ...s.projections, runtime: "unknown", resourceRetirement: { type: "quarantined" },
+        claim: conflict ? "invalid" : s.projections.claim === "invalid" ? "invalid" : "non-promotional" } }, effects);
   }
   if (s.projections.resourceRetirement.type !== "active") return reject(s, e, "gate-closed");
   if (s.projections.runtime !== "not-started" && s.projections.runtime !== "terminated")
@@ -386,17 +399,6 @@ const release = (s: State, e: C.ReleaseProcess): QualificationTransition => {
     return reject(s, e, "build-not-executable");
   if (a.consumedAt === null) return reject(s, e, "authorization-unavailable");
   if (receiptUsed(s, e.launchReceiptId)) return reject(s, e, "receipt-replay");
-  if (e.authoritativeTick >= s.registration!.launchDeadline) {
-    const key = `launch:${e.authorizationId}`, conflict = lateConflict(s, key, "started");
-    const effects: C.DeclaredEffect[] = [
-      { type: "late-receipt-retained", causalEventId: e.eventId, evidence: { type: "launch",
-        authorizationId: e.authorizationId, receiptId: e.launchReceiptId, result: "started" } },
-      nonPromotional(e, { type: "receipt", receiptId: e.launchReceiptId })];
-    if (conflict) effects.push(invalid(e, { type: "receipt", receiptId: e.launchReceiptId }));
-    return accept(s, e, { receipts: withSet(s.receipts, e.launchReceiptId),
-      lateFacts: withMap(s.lateFacts, key, "started"), projections: { ...s.projections,
-        claim: conflict ? "invalid" : s.projections.claim === "invalid" ? "invalid" : "non-promotional" } }, effects);
-  }
   const launch: C.LaunchTerminalProjection = { type: "started", receiptId: e.launchReceiptId };
   const authorizations = withMap(s.authorizations, e.authorizationId, { ...a, launch });
   return accept(s, e, { authorizations, receipts: withSet(s.receipts, e.launchReceiptId),
@@ -892,6 +894,8 @@ const beforeTombstoneFinality = (reason: C.DenialReason | undefined): boolean =>
   reason === "credential-lineage-mismatch" || reason === "runtime-unresolved" || reason === "receipt-replay" || reason === "terminal-already-recorded";
 const enforceTombstoneFinality = (s: State, e: C.ProtocolEvent, transition: QualificationTransition): QualificationTransition => {
   if (transition.result.decision === "rejected") { const reason = transition.result.effects.find(effect => effect.type === "denial-recorded")?.reason;
+    if (reason === "receipt-replay") { const result = { ...transition.result, terminalProjections: s.projections };
+      return { state: { ...s, events: stateOf(transition.state).events } as State, result }; }
     return beforeTombstoneFinality(reason) ? transition : reject(s, e, "terminal-already-recorded"); } const fx = transition.result.effects;
   const typedReplay = (e.type === "RecordBuildResult" || e.type === "RecordBuildConsistencyReceipt") && fx.some(item => item.type === "denial-recorded" && item.reason === "receipt-replay");
   if (typedReplay) return accept(s, e, {}, fx);

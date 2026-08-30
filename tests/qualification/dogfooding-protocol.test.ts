@@ -540,9 +540,9 @@ test("direct start-unknown requests containment and reconciliation", () => { con
     launchDeadline("deadline")]), 8, trusted).results.at(-1)!;
   assert.deepEqual(result.effects.filter(effect => effect.type.endsWith("requested") || effect.type === "resource-quarantined").map(effect => effect.type).sort(),
   ["resource-quarantined", "runtime-reconciliation-requested", "runtime-termination-requested"]); });
-test("receipt primitive identity is unique across protocol receipt families", () => { const history = [...buildAuthorizedPrefix,
-    build("cross-namespace-receipt", "succeeded", C.buildReceiptId("receipt:close"))] as const;
-  const result = foldQualificationHistory(materialize(history), 64, trusted).results.at(-1)!; assert.equal(result.decision, "accepted"); assert.equal(result.terminalProjections.claim, "invalid");
+test("receipt primitive identity is unique across protocol receipt families", () => { const history = [...evaluationStartedPrefix,
+    rejected(detached(attemptReceipt("cross-namespace-receipt", "succeeded", receipt("close"))))] as const;
+  const result = foldQualificationHistory(materialize(history), 64, trusted).results.at(-1)!; assert.equal(result.decision, "rejected"); assert.equal(result.terminalProjections.claim, "invalid");
   assert.ok(result.effects.some(effect => effect.type === "denial-recorded" && effect.reason === "receipt-replay")); });
 test("cross-namespace build replay remains in the typed retirement evidence closure", () => { const replayReceipt = C.buildReceiptId("receipt:close");
   const beforeComplete = [...buildAuthorizedPrefix, build("build", "succeeded"), build("cross-namespace-replay", "succeeded", replayReceipt),
@@ -565,13 +565,14 @@ test("retirement freezes state mutations but retains explicit late forensic evid
   const results = foldQualificationHistory(materialize(history), 64, trusted).results; const finalized = results[beforeComplete.length]!.terminalProjections, late = results.at(-1)!;
   results.slice(beforeComplete.length + 1).forEach(result => assert.deepEqual(result.terminalProjections, finalized)); assert.equal(late.decision, "accepted");
   assert.ok(late.effects.some(effect => effect.type === "late-receipt-retained")); });
-test("launch deadline winner retains later start and denial receipts without rewriting terminals", () => { const longIssue = event("long-issue", "IssueAuthorization", {
-  ...authorization(sourceFence), expiresAt: tick(100) }); const prefix = [register, longIssue, consume("consume"), launchDeadline("launch-deadline")] as const;
-  const facts = [at(release("late-start", sourceFence), 61), at(releaseDenied("late-denial", sourceFence), 61)]; facts.forEach((fact, index) => {
-    const history = [...prefix, fact] as const; compareHistory(history, `post-deadline launch receipt ${index + 1}`);
-    const results = foldQualificationHistory(materialize(history), 64, trusted).results; assert.equal(results.at(-1)!.decision, "accepted");
-    assert.ok(results.at(-1)!.effects.some(effect => effect.type === "late-receipt-retained")); assert.deepEqual(
-      results.at(-1)!.terminalProjections, results.at(-2)!.terminalProjections); }); });
+test("late starts are contained", () => { const long = event("l", "IssueAuthorization", {
+  ...authorization(sourceFence), expiresAt: tick(100) }); const terminal = [register, long, consume("consume"), launchDeadline("deadline")] as const;
+  const histories = [[...terminal, at(release("late", sourceFence), 61)], [...terminal, at(releaseDenied("denied", sourceFence), 61)],
+    [register, issue("i"), consume("c"), at(release("fresh", sourceFence), 61)]] as const;
+  histories.forEach((history, index) => { compareHistory(history, `late ${index}`); const results = foldQualificationHistory(materialize(history), 64, trusted).results,
+      last = results.at(-1)!, p = last.terminalProjections, types = last.effects.map(effect => effect.type); assert.ok(types.includes("late-receipt-retained"));
+    if (index < 2) assert.deepEqual(p, results.at(-2)!.terminalProjections); else { assert.deepEqual([p.claim, p.runtime, p.resourceRetirement.type], ["non-promotional", "unknown", "quarantined"]);
+      assert.ok(types.includes("runtime-reconciliation-requested") && types.includes("runtime-termination-requested")); } }); });
 test("opposite late launch terminals invalidate and contain both orderings through retirement", () => {
   const assertContained = (item: C.TransitionResult, seen: C.ReceiptId, kind: "started" | "release-denied") => {
     assert.equal(item.decision, "accepted"); assert.deepEqual(item.effects.map(effect => effect.type).sort(), ["claim-disposition-set",
@@ -677,8 +678,7 @@ const targetTypes = (target: PerturbationTarget): readonly C.ProtocolEvent["type
   return target.operator === "order-swap" ? [events[target.index]!.type, events[target.index + 1]!.type]
     : [events[target.index]!.type]; };
 const requiredTargets = new Map<string, PerturbationTarget>();
-const requireTarget = (target: PerturbationTarget | undefined): void => {
-  assert.ok(target !== undefined, "every perturbation coverage target must exist");
+const requireTarget = (target: PerturbationTarget | undefined): void => { assert.ok(target !== undefined);
   requiredTargets.set(JSON.stringify(target), target); };
 for (const operator of mutationOperators)
   requireTarget(perturbationTargets.find(target => target.operator === operator));
@@ -690,8 +690,7 @@ const applyPerturbation = (target: PerturbationTarget, salt: number, tickStep: n
   const specs = scenarioHistories[target.scenario]!, baseline = materialize(specs, tickStep);
   if (target.operator === "order-swap") {
     const orderedSpecs = [...specs], records = [...baseline];
-    [orderedSpecs[target.index], orderedSpecs[target.index + 1]] =
-      [orderedSpecs[target.index + 1]!, orderedSpecs[target.index]!];
+    [orderedSpecs[target.index], orderedSpecs[target.index + 1]] = [orderedSpecs[target.index + 1]!, orderedSpecs[target.index]!];
     [records[target.index], records[target.index + 1]] = [records[target.index + 1]!, records[target.index]!];
     let predecessor: C.EventId | null = null;
     const events = records.map((record, index) => {
@@ -702,7 +701,7 @@ const applyPerturbation = (target: PerturbationTarget, salt: number, tickStep: n
       baseline[target.index]!.authenticatedPredecessorId);
     assert.equal(events[target.index + 1]!.authenticatedPredecessorId, events[target.index]!.eventId);
     assert.ok(events[target.index]!.authoritativeTick <= events[target.index + 1]!.authoritativeTick);
-    assert.notDeepEqual(events, baseline, "order mutant must change the history");
+    assert.notDeepEqual(events, baseline, "order mutation");
     return { baseline, events, types: targetTypes(target) }; }
   const events = [...baseline], selected = events[target.index]!, changed: Record<string, unknown> = { ...selected };
   if (target.operator === "custody-authority") changed.custodyAuthorityId = C.custodyAuthorityId(`generated-authority:${salt}`);
@@ -715,8 +714,8 @@ const applyPerturbation = (target: PerturbationTarget, salt: number, tickStep: n
     expectedGeneration: g(100 + salt) };
   else if (target.operator === "receipt-rewrite") changed[target.field!] = target.replacement;
   events[target.index] = changed as unknown as C.ProtocolEvent;
-  assert.notDeepEqual(events[target.index], baseline[target.index], `${target.operator} must change its record`);
-  assert.notDeepEqual(events, baseline, `${target.operator} mutant must change the history`);
+  assert.notDeepEqual(events[target.index], baseline[target.index], "record mutation");
+  assert.notDeepEqual(events, baseline, "history mutation");
   return { baseline, events, types: targetTypes(target) }; };
 for (const family of raceFamilies) for (const reverse of [false, true]) {
   test(`${family.name} / ${reverse ? "right-before-left" : "left-before-right"}`, () => {
@@ -732,7 +731,7 @@ test("every registered race family exercises distinct event orders", () => {
     assert.notDeepEqual(left, right, `${family.name} variant ${variant + 1}`);
   }
 });
-test("500 bounded randomized scenario perturbations agree with the independent oracle", () => {
+test("500 bounded perturbations agree with the oracle", () => {
   const entropy = fc.record({ selector: fc.nat(), salt: fc.nat(31), tickStep: fc.integer({ min: 1, max: 2 }) });
   fc.assert(fc.property(fc.array(entropy, { minLength: 500, maxLength: 500 }), batch => {
     const operators = new Set<MutationOperator>(), types = new Set<C.ProtocolEvent["type"]>();
@@ -740,12 +739,11 @@ test("500 bounded randomized scenario perturbations agree with the independent o
     batch.forEach(({ selector, salt, tickStep }, index) => {
       const target = required[index] ?? perturbationTargets[selector % perturbationTargets.length]!;
       const mutation = applyPerturbation(target, salt, tickStep);
-      assert.ok(mutation.events.length <= 32, "generated histories remain bounded");
-      const results = compareEvents(mutation.events,
-        `generated scenario ${target.scenario + 1} operator ${target.operator}`);
+      assert.ok(mutation.events.length <= 32);
+      const results = compareEvents(mutation.events, `generated ${JSON.stringify(target)}`);
       if (target.operator === "order-swap") assert.ok(!results[target.index]!.effects.some(effect =>
         effect.type === "denial-recorded" && effect.reason === "wrong-binding"),
-      "relinearized order swap must reach semantic ordering checks");
+      "order swap semantics");
       operators.add(target.operator);
       mutation.types.forEach(type => types.add(type));
       if (target.field !== undefined) fields.add(target.field);
