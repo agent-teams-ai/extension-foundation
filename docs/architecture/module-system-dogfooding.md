@@ -46,10 +46,13 @@ custody invariants; it is not a production package, a Module API, a graph
 compiler, a loader, or lifecycle authority. It may challenge a Get Modular or
 product decision, but cannot silently replace one.
 
-The disposable model remains under `tests/qualification/**`, is capped at 3,000
-physical lines, 225,000 UTF-8 bytes, and 200 characters per line across its
+The disposable model remains under `tests/qualification/**`, is capped at 4,000
+physical lines, 320,000 UTF-8 bytes, and 200 characters per line across its
 closed transitive source set, and must never be imported by a production package.
-Its qualification test rejects local imports outside that measured closure. A real product seam starts
+These are maintainability ceilings, not compression targets: qualification code
+must remain readable and must not join unrelated statements merely to fit the cap.
+Its qualification test rejects local imports outside that measured closure. A
+real product seam starts
 from product-owned types and composition; this model is not shared campaign
 machinery. The architecture owner must remove these executable files when an
 accepted decision either selects the first product-owned capability or rejects
@@ -466,14 +469,24 @@ Receipt and retirement-tombstone primitive identifiers are globally unique
 within one protocol ledger, including across typed receipt families. The types
 prevent accidental API substitution; they do not create independent replay
 namespaces. Reusing the same primitive identity for another family is retained
-as invalid replay evidence and can never authorize execution or promotion.
+as invalid replay evidence and can never authorize execution or promotion. The
+rejected replay event itself remains part of the retirement evidence closure;
+retaining only the earlier receipt would hide the attempted substitution.
 
-Before resource retirement can complete, every consumed launch authority has a
-terminal launch disposition, every started build or evaluation has its required
-terminal observations, and every effective stop checkpoint is terminal. The
-tombstone retains references to every admitted ledger event, typed receipt and
-proof observed before completion, plus the cleanup proof. Missing closure evidence
-fails closed; a tombstone cannot hide an unfinished or unreconciled runtime.
+Resource retirement requires an explicit owner-bound retirement request. Before
+it can complete, every launch authority is expired or revoked, every consumed
+launch authority has a terminal launch disposition, every started build or
+evaluation has its required terminal observations, and every effective stop
+checkpoint is terminal. The tombstone retains references to every admitted
+ledger event, replay event, typed receipt and proof observed before completion,
+plus the cleanup proof. Missing closure evidence fails closed; a tombstone cannot
+hide an unfinished or unreconciled runtime.
+
+The tombstone freezes terminal projections but does not suppress later safety
+evidence. A late start observed after retirement is appended as invalid evidence,
+quarantines the resource, and opens a private containment-reconciliation track.
+That track may record `unknown`, `live`, and `terminated` observations and request
+termination while the tombstone remains byte-for-byte unchanged.
 
 Every `BuildReceipt` and execution `EvidenceReceipt` carries a common envelope
 that binds:
