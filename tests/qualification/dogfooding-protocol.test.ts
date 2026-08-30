@@ -849,26 +849,31 @@ test("post-retirement replayed starts keep the tombstone frozen and open private
     retirement("retired-replay-retirement"), cleanup("retired-replay-cleanup")] as const;
   const finalized = complete("retired-replay-complete", beforeComplete,
     receipt("retired-replay-close"));
-  const candidate = at(release("post-retirement-replayed-start", sourceFence), 61);
-  const replayed = rejected(detached({ ...candidate, body: { ...candidate.body,
-    launchReceiptId: receipt("retired-replay-release") } }));
-  const stale = rejected(detached(reconcile("post-retirement-replayed-stale", "terminated")));
-  const history = [...beforeComplete, finalized, replayed, stale,
-    reconcile("post-retirement-replayed-live", "live"),
-    reconcile("post-retirement-replayed-terminated", "terminated")] as const;
-  const events = materialize(history).map(selected =>
-    selected.eventId === C.eventId("event:post-retirement-replayed-stale") ?
-      { ...selected, authoritativeTick: tick(60) } as C.ProtocolEvent : selected);
-  const results = compareEvents(events, "post-retirement replay containment");
-  const frozen = results[beforeComplete.length]!.terminalProjections;
-  results.slice(beforeComplete.length + 1).forEach(result =>
-    assert.deepEqual(result.terminalProjections, frozen));
-  assertReplayContainment(results[beforeComplete.length + 1]!);
-  assert.equal(results[beforeComplete.length + 2]!.effects.find(effect =>
-    effect.type === "denial-recorded")?.reason, "wrong-binding");
-  assert.ok(results.at(-2)!.effects.some(effect =>
-    effect.type === "runtime-termination-requested"));
-  assert.deepEqual(results.at(-1)!.effects, []);
+  const start = at(release("post-retirement-replayed-start", sourceFence), 61);
+  const unknown = at(launchDeadline("post-retirement-replayed-unknown", sourceFence), 61);
+  const cases = [{ name: "started", replayed: rejected(detached({ ...start,
+    body: { ...start.body, launchReceiptId: receipt("retired-replay-release") } })) },
+  { name: "start-unknown", replayed: rejected(detached({ ...unknown,
+    body: { ...unknown.body, observationReceiptId: receipt("retired-replay-release") } })) }] as const;
+  for (const selected of cases) {
+    const stale = rejected(detached(reconcile(`${selected.name}-replayed-stale`, "terminated")));
+    const history = [...beforeComplete, finalized, selected.replayed, stale,
+      reconcile(`${selected.name}-replayed-live`, "live"),
+      reconcile(`${selected.name}-replayed-terminated`, "terminated")] as const;
+    const events = materialize(history).map(candidate =>
+      candidate.eventId === C.eventId(`event:${selected.name}-replayed-stale`) ?
+        { ...candidate, authoritativeTick: tick(60) } as C.ProtocolEvent : candidate);
+    const results = compareEvents(events, `post-retirement ${selected.name} replay containment`);
+    const frozen = results[beforeComplete.length]!.terminalProjections;
+    results.slice(beforeComplete.length + 1).forEach(result =>
+      assert.deepEqual(result.terminalProjections, frozen));
+    assertReplayContainment(results[beforeComplete.length + 1]!);
+    assert.equal(results[beforeComplete.length + 2]!.effects.find(effect =>
+      effect.type === "denial-recorded")?.reason, "wrong-binding");
+    assert.ok(results.at(-2)!.effects.some(effect =>
+      effect.type === "runtime-termination-requested"));
+    assert.deepEqual(results.at(-1)!.effects, []);
+  }
 });
 test("exact replay after retirement is idempotent after finality rewriting", () => {
   const retired = [...retiredBeforeComplete,
