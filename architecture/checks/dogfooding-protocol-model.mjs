@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-import { readFileSync, realpathSync, statSync } from "node:fs";
+import { lstatSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseSync, Visitor } from "oxc-parser";
 
-const repositoryRoot = fileURLToPath(new URL("../../", import.meta.url));
+const repositoryRoot = realpathSync(fileURLToPath(new URL("../../", import.meta.url)));
 const modelFiles = [
   "tests/qualification/dogfooding-protocol-contract.ts",
   "tests/qualification/dogfooding-protocol-oracle.ts",
@@ -15,16 +15,33 @@ const modelFiles = [
 const modelEntry = "tests/qualification/dogfooding-protocol.test.ts";
 const limits = { physicalLines: 4_000, utf8Bytes: 320_000, charactersPerLine: 200 };
 const decode = new TextDecoder("utf-8", { fatal: true });
+const allowedExternalDependencies = new Set(["fast-check", "node:assert/strict", "node:test"]);
+const forbiddenRuntimeIdentifiers = new Set([
+  "createRequire", "eval", "fetch", "Function", "getBuiltinModule", "globalThis",
+  "importScripts", "module", "process", "Reflect", "require", "SharedWorker",
+  "WebAssembly", "Worker",
+]);
+const forbiddenRuntimeProperties = new Set(["constructor"]);
 
-const physicalLines = (text) => text.length === 0 ? 0
-  : (text.match(/\n/gu)?.length ?? 0) + (text.endsWith("\n") ? 0 : 1);
+const canonicalText = (text) => text.replace(/\r\n?|[\u2028\u2029]/gu, "\n");
+const physicalLines = (text) => {
+  const canonical = canonicalText(text);
+  return canonical.length === 0 ? 0
+    : (canonical.match(/\n/gu)?.length ?? 0) + (canonical.endsWith("\n") ? 0 : 1);
+};
 
 const sources = modelFiles.map((relativePath) => {
   const path = resolve(repositoryRoot, relativePath);
-  if (!statSync(path).isFile()) throw new Error(`${relativePath} must be a regular file`);
+  const metadata = lstatSync(path);
+  if (!metadata.isFile() || metadata.isSymbolicLink()) {
+    throw new Error(`${relativePath} must be a non-symlink regular file`);
+  }
   return { path: realpathSync(path), relativePath, text: decode.decode(readFileSync(path)) };
 });
 const modelPaths = new Set(sources.map(source => source.path));
+if (modelPaths.size !== modelFiles.length) {
+  throw new Error("dogfooding protocol model roster must contain four distinct files");
+}
 
 const dependencySpecifiers = (source) => {
   const parsed = parseSync(source.path, source.text, { sourceType: "module" });
@@ -39,28 +56,27 @@ const dependencySpecifiers = (source) => {
     }
     specifiers.push(node.value);
   };
-  const named = (node, name) => node.type === "Identifier" && node.name === name;
   new Visitor({
     ImportDeclaration: node => literal(node.source),
     ExportAllDeclaration: node => literal(node.source),
     ExportNamedDeclaration: node => { if (node.source !== null) literal(node.source); },
-    ImportExpression: node => literal(node.source),
+    ImportExpression: () => {
+      throw new Error(`${source.relativePath} contains unsupported dynamic module loading`);
+    },
     TSImportType: node => literal(node.source),
-    TSImportEqualsDeclaration: node => {
-      if (node.moduleReference.type === "TSExternalModuleReference") {
-        literal(node.moduleReference.expression);
+    TSImportEqualsDeclaration: () => {
+      throw new Error(`${source.relativePath} contains unsupported TypeScript import-equals`);
+    },
+    Identifier: node => {
+      if (forbiddenRuntimeIdentifiers.has(node.name)) {
+        throw new Error(`${source.relativePath} contains forbidden runtime loader primitive ${node.name}`);
       }
     },
-    CallExpression: node => {
-      const { callee } = node;
-      const member = callee.type === "MemberExpression" && !callee.computed ? callee : null;
-      const loader = named(callee, "require") || member !== null && (
-        named(member.object, "require") && named(member.property, "resolve") ||
-        named(member.object, "module") && named(member.property, "require") ||
-        member.object.type === "MetaProperty" && named(member.object.meta, "import") &&
-          named(member.object.property, "meta") && named(member.property, "resolve")
-      );
-      if (loader) literal(node.arguments[0]);
+    MemberExpression: node => {
+      const property = node.computed ? node.property?.value : node.property?.name;
+      if (typeof property === "string" && forbiddenRuntimeProperties.has(property)) {
+        throw new Error(`${source.relativePath} contains forbidden runtime loader property ${property}`);
+      }
     },
   }).visit(parsed.program);
   return specifiers;
@@ -70,15 +86,25 @@ const localDependencies = new Map();
 for (const source of sources) {
   const dependencies = [];
   for (const specifier of dependencySpecifiers(source)) {
-    const local = /^(?:\.{1,2}(?:[/\\]|$)|[/\\]|file:|#)/u.test(specifier);
-    if (!local) continue;
+    const fileUrl = /^file:/iu.test(specifier);
+    const local = /^(?:\.{1,2}(?:[/\\]|$)|[/\\]|#)/u.test(specifier) || fileUrl;
+    if (!local) {
+      if (!allowedExternalDependencies.has(specifier)) {
+        throw new Error(`${source.relativePath} imports unsupported external dependency ${specifier}`);
+      }
+      continue;
+    }
     if (specifier.startsWith("#")) {
       throw new Error(`${source.relativePath} uses unsupported local alias ${specifier}`);
     }
-    const target = specifier.startsWith("file:") ? fileURLToPath(specifier) :
+    const target = fileUrl ? fileURLToPath(specifier) :
       isAbsolute(specifier) ? specifier : resolve(dirname(source.path), specifier);
     let canonical;
     try {
+      const metadata = lstatSync(target);
+      if (!metadata.isFile() || metadata.isSymbolicLink()) {
+        throw new Error("not a non-symlink regular file");
+      }
       canonical = realpathSync(target);
     } catch {
       throw new Error(`${source.relativePath} has unresolvable local import ${specifier}`);
@@ -108,9 +134,9 @@ if (reachablePaths.size !== modelPaths.size || unreachableFiles.length > 0) {
 const measurements = {
   physicalLines: sources.reduce((sum, source) => sum + physicalLines(source.text), 0),
   utf8Bytes: sources.reduce((sum, source) =>
-    sum + Buffer.byteLength(source.text.replace(/\r\n?/gu, "\n"), "utf8"), 0),
+    sum + Buffer.byteLength(canonicalText(source.text), "utf8"), 0),
   charactersPerLine: Math.max(...sources.flatMap(source =>
-    source.text.split("\n").map(line => [...line.replace(/\r$/u, "")].length))),
+    canonicalText(source.text).split("\n").map(line => [...line].length))),
 };
 
 for (const [measurement, maximum] of Object.entries(limits)) {
