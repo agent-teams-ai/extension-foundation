@@ -537,14 +537,18 @@ const crash = (s: State, e: C.ObserveCrash): QualificationTransition => {
     { type: "runtime-termination-requested", causalEventId: e.eventId, runtimeId: e.runtimeId },
   ];
   if (a.authorizationFence.expectedGeneration !== e.expectedGeneration) return reject(s, e, "stale-generation");
-  if (a.consumedAt === null) return reject(s, e, "authorization-unavailable");
+  const contradictsNonStart = a.launch?.type === "release-denied" || a.launch?.type === "never-started";
   if (s.projections.resourceRetirement.type === "retired") {
+    if (contradictsNonStart) return accept(s, e, { postRetirementRuntime: "unknown" }, [
+      invalid(e, { type: "event", eventId: e.eventId }), ...containment]);
+    if (a.consumedAt === null) return reject(s, e, "authorization-unavailable");
     return accept(s, e, { postRetirementRuntime: "unknown" }, containment);
   }
-  if (a.launch?.type === "release-denied" || a.launch?.type === "never-started")
+  if (contradictsNonStart)
     return accept(s, e, { projections: { ...s.projections, runtime: "unknown",
       resourceRetirement: { type: "quarantined" }, claim: "invalid" } }, [
         invalid(e, { type: "event", eventId: e.eventId }), ...containment]);
+  if (a.consumedAt === null) return reject(s, e, "authorization-unavailable");
   if (s.projections.runtime !== "not-started" && s.projections.runtime !== "terminated")
     return reject(s, e, "runtime-unresolved");
   if (a.launch !== null) return reject(s, e, "terminal-already-recorded");
@@ -750,7 +754,8 @@ const replayReceiptReference = (event: C.ProtocolEvent): C.EvidenceReference | n
 };
 const expectedRetainedEvidence = (s: State, cleanupProofId: C.ProofId): readonly C.EvidenceReference[] => {
   const expected: C.EvidenceReference[] = [{ type: "proof", proofId: cleanupProofId }];
-  for (const observation of s.events.values()) if (observation.result.decision === "accepted" ||
+  for (const observation of s.events.values()) { const reservedProof = producedProof(observation.event);
+    if (observation.result.decision === "accepted" || reservedProof !== null && s.reservedProofs.has(reservedProof) ||
       observation.result.effects.some(effect => effect.type === "denial-recorded" &&
         effect.reason === "receipt-replay")) {
     expected.push({ type: "event", eventId: observation.event.eventId }, ...proofReferences(observation.event));
@@ -758,7 +763,7 @@ const expectedRetainedEvidence = (s: State, cleanupProofId: C.ProofId): readonly
       const replayReceipt = replayReceiptReference(observation.event);
       if (replayReceipt !== null) expected.push(replayReceipt);
     }
-  }
+  } }
   expected.push(...[...s.receipts].map(receiptId => ({ type: "receipt" as const, receiptId })),
     ...[...s.buildReceipts].map(buildReceiptId => ({ type: "build-receipt" as const, buildReceiptId })),
     ...[...s.consistencyReceipts].map(consistencyReceiptId =>

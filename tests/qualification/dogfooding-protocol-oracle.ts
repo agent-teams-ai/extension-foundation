@@ -296,10 +296,9 @@ const expectedRetainedEvidence = (
 history: OracleHistory,
 cleanupProofId: Extract<ProtocolEvent, { readonly type: "CompleteRetirement" }>["cleanupProofId"],
 ): readonly EvidenceReference[] => {
-const retainedRows = history.rows.filter(row => row.accepted || row.result.effects.some(effect =>
+const retainedRows = history.rows.filter(row => row.accepted || row.reservedProofId !== null || row.result.effects.some(effect =>
 effect.type === "denial-recorded" && effect.reason === "receipt-replay"));
-return [{ type: "proof", proofId: cleanupProofId },
-...retainedRows.flatMap(row => eventEvidence(row.event))];
+return [{ type: "proof", proofId: cleanupProofId }, ...retainedRows.flatMap(row => eventEvidence(row.event))];
 };
 const retirementEvidenceClosed = (history: OracleHistory): boolean => {
 const projection = currentProjection(history);
@@ -553,20 +552,25 @@ readonly type: "ReleaseProcess" | "RecordReleaseDenied" | "ObserveCrash" | "Reac
 if (event.type === "ObserveCrash") {
 if (!rootMatches(registration, event) || !same(event.runtimeId, registration.runtimeId)) {
 return denial(event, before, "wrong-binding"); } const view = authorization(history, event.authorizationId);
-if (view === null || !view.consumed) return denial(event, before, "authorization-unavailable");
+if (view === null) return denial(event, before, "authorization-unavailable");
 if (!same(view.issue.authorizationFence.expectedGeneration, event.expectedGeneration))
 return denial(event, before, "stale-generation");
+const launch = priorLaunchResult(history, event.authorizationId);
+const contradictsNonStart = launch === "release-denied" || launch === "never-started";
 if (before.resourceRetirement.type === "retired") {
+if (contradictsNonStart) return accept(before, [
+...invalidClaimEffects(event, { type: "event", eventId: event.eventId }), ...contain(event)]);
+if (!view.consumed) return denial(event, before, "authorization-unavailable");
 return accept(before, [
 { type: "resource-quarantined", causalEventId: event.eventId,
 sourceFamilyRootId: event.sourceFamilyRootId, runtimeId: event.runtimeId },
 { type: "runtime-reconciliation-requested", causalEventId: event.eventId, runtimeId: event.runtimeId },
 { type: "runtime-termination-requested", causalEventId: event.eventId, runtimeId: event.runtimeId }, ]); }
-const launch = priorLaunchResult(history, event.authorizationId);
-if (launch === "release-denied" || launch === "never-started")
+if (contradictsNonStart)
 return accept(withProjection(before, { claim: "invalid", runtime: "unknown",
 resourceRetirement: { type: "quarantined" } }), [
 ...invalidClaimEffects(event, { type: "event", eventId: event.eventId }), ...contain(event)]);
+if (!view.consumed) return denial(event, before, "authorization-unavailable");
 if (before.runtime !== "not-started" && before.runtime !== "terminated") return denial(event, before, "runtime-unresolved");
 if (view.launchTerminal) return denial(event, before, "terminal-already-recorded");
 return accept(

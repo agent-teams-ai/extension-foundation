@@ -499,7 +499,9 @@ A proof is opaque in this qualification model, so causal freshness cannot be
 reconstructed from its identifier. Every rejected reconciliation with an
 authenticated envelope and exact root/runtime binding therefore reserves its
 proof; every equivalently bound retirement-completion attempt reserves its
-cleanup proof. Identity-invalid or foreign-root attempts cannot reserve either.
+cleanup proof. The retirement closure retains each such exact-bound rejected
+event together with its reserved proof. Identity-invalid or foreign-root
+attempts cannot reserve either.
 
 Cleanup records one explicit basis. A `terminated` basis binds the exact current
 runtime-safety watermark and its accepted termination proof. A `never-released`
