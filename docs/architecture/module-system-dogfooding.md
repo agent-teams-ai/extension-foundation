@@ -47,7 +47,7 @@ compiler, a loader, or lifecycle authority. It may challenge a Get Modular or
 product decision, but cannot silently replace one.
 
 The disposable model remains under `tests/qualification/**`, is capped at 4,400
-physical lines, 330,000 UTF-8 bytes, and 200 characters per line across its
+physical lines, 332,000 UTF-8 bytes, and 200 characters per line across its
 closed transitive source set, and must never be imported by a production package.
 These are maintainability ceilings, not compression targets: qualification code
 must remain readable and must not join unrelated statements merely to fit the cap.
@@ -60,7 +60,10 @@ new event kinds or runtime scope. Reviews of `6aa1577` then found same-root
 invalid identity reservation, unstable replay of rejected collisions, and mixed root/unscoped
 IDs that made authenticated lineage ambiguous. A second 100-line and 10,000-byte
 allowance covers explicit identity reservation, chronological observations and
-their directed regressions. Both reviewers must evaluate the combined allowance
+their directed regressions. Review of `bc08a2d` additionally identified an exact
+future-predecessor retry hidden by an earlier unreserved rejection; its regression
+uses a further 2,000-byte allowance without increasing the line ceiling.
+Both reviewers must evaluate the combined allowance
 with the exact amended head; the line-width limit remains unchanged. Further
 increases require separately reviewed evidence rather than formatting churn.
 A repository-level architecture check derives the transitive local source closure,
@@ -520,8 +523,12 @@ registered coordinate reserve that identity; identity-invalid observations remai
 forensic without occupying it. Rejected bootstrap identities remain reserved:
 the same identity cannot later be reinterpreted as a valid registration.
 Observations retain arrival order, including when a formerly rejected ID is used
-by a trusted event. Exact retries reuse their original response subject to the
-existing tombstone-finality rule. Receipt and proof replay namespaces remain
+by a trusted event. Identity-reserving observations and collisions with an already
+reserved ID replay their original response subject to tombstone finality. An
+unreserved rejection is not a final replay authority: an exact retry must be
+reconsidered if its envelope and coordinates become qualified after its missing
+predecessor arrives. A subsequently qualified matching observation takes replay
+precedence over the earlier unreserved rejection. Receipt and proof replay namespaces remain
 ledger-wide.
 
 Cleanup records one explicit basis. A `terminated` basis binds the exact current

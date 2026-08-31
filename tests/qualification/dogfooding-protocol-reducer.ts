@@ -1197,7 +1197,9 @@ export const transitionQualificationEvent = (
   event = immutable(event);
   const s = stateOf(reducerState), prior = s.events.filter(observation =>
     observation.event.eventId === event.eventId);
-  const exact = prior.find(observation => same(observation.event, event));
+  const matches = prior.filter(observation => same(observation.event, event));
+  const exact = matches.find(observation => observation.reservesEventIdentity) ??
+    (prior.some(observation => observation.reservesEventIdentity) || !identityQualified(s, event) ? matches[0] : undefined);
   if (exact) return { state: s, result:
     s.projections.resourceRetirement.type === "retired" &&
     exact.result.terminalProjections.resourceRetirement.type !== "retired" ?

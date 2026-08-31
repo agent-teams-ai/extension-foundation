@@ -1137,6 +1137,25 @@ test("rootless events share the event-ID namespace and invalid envelopes cannot 
   assert.equal(results.at(-2)!.decision, "rejected"); assert.equal(results.at(-1)!.decision, "accepted");
   assert.equal(results.at(-2)!.effects.find(effect => effect.type === "denial-recorded")?.reason, "wrong-binding");
 });
+test("an unreserved future-predecessor observation is reconsidered when its lineage arrives", () => {
+  for (const retired of [false, true]) {
+    const prefix = retired ? [...retiredBeforeComplete, complete("future-complete", retiredBeforeComplete, receipt("close")),
+      restart("future-prior"), reconcile("future-terminated", "terminated", "future-prior")] : [register];
+    const parent = retired ? reconcile("future-parent", "terminated", "future-prior") : checkpoint("future-parent");
+    const specs = [...prefix, parent, restart("future-signal")], baseline = materialize(specs);
+    const parentEvent = baseline.at(-2)!, signal = baseline.at(-1)!, attack = [...baseline.slice(0, -2), signal, parentEvent, signal];
+    const results = compareEvents(attack, `future predecessor retired=${retired}`), final = results.at(-1)!;
+    assert.equal(results[prefix.length]!.decision, "rejected"); assert.equal(results[prefix.length + 1]!.decision, "accepted");
+    assert.equal(final.decision, "accepted"); assert.ok(final.effects.some(effect => effect.type === "runtime-termination-requested"));
+    assert.deepEqual(final, compareEvents(baseline, "ordered safety control").at(-1));
+    assert.deepEqual(compareEvents([...attack, signal], "qualified exact retry").at(-1), final);
+    if (retired) {
+      const stale = materialize([...specs, rejected(detached(cleanup("future-stale-cleanup", "future-parent", "future-prior")))]).at(-1)!;
+      const cleanupResult = compareEvents([...attack, stale], "future safety blocks stale cleanup").at(-1)!;
+      assert.equal(cleanupResult.decision, "rejected"); assert.deepEqual(final.terminalProjections, results[prefix.length - 1]!.terminalProjections);
+    }
+  }
+});
 test("a rejected exact-bound retirement completion reserves its cleanup proof", () => {
   const pending = [...sourceClosedPrefix, retirement("proof-retirement")],
     requested = cleanup("proof-cleanup", "source-terminated", "source-release"),

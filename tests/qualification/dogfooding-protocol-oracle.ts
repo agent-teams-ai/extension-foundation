@@ -1057,7 +1057,9 @@ export const initializeOracleHistory = (registration: RegisterProtocol,
 export const appendOracleEvent = (history: OracleHistory, event: ProtocolEvent): OracleStep => {
   event = immutable(event);
   const sameId = history.rows.filter(row => eventKey(row.event) === eventKey(event));
-  const exact = sameId.find(row => samePayload(row.event, event));
+  const matchingRows = sameId.filter(row => samePayload(row.event, event));
+  const exact = matchingRows.find(row => row.reservesEventIdentity) ??
+    (sameId.some(row => row.reservesEventIdentity) || !identityQualified(history, event) ? matchingRows[0] : undefined);
   if (exact !== undefined) {
     const before = currentProjection(history);
     const result = before.resourceRetirement.type === "retired" &&
