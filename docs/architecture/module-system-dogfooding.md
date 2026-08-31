@@ -17,7 +17,10 @@ evidence boundaries only. It does not admit a module engine, declaration
 grammar, runtime graph, lifecycle coordinator, public SPI, or product rollout.
 
 Dogfooding qualifies one implementation. It is not an independent consumer and
-cannot satisfy the semantic-extraction gate in ADR-0013.
+cannot satisfy the stable 1.0 consumer and conformance gates in
+[ADR-0015](../decisions/0015-authorize-get-modular-semantic-extraction.md).
+That accepted decision already authorizes independent Get Modular 0.x ownership;
+this proposed dogfooding protocol neither reopens nor blocks that authorization.
 
 The current baseline remains product-owned ports, literal imports, pure
 factories, closed dependency objects, and explicit composition roots. The
@@ -113,9 +116,9 @@ promotion evidence.
 | Clean Architecture | Product policy and outcomes remain inside the owning product. Candidate runtime and evaluation technology stay behind outer composition boundaries. |
 | SOLID | Candidate production, execution, evaluation, evidence custody, review, and product authorization are separate responsibilities. Implementations depend on stable contracts rather than framework types. |
 | DDD | A product owns its language, capability seam, invariants, and decision. Foundation does not create a universal module domain or import a product model. |
-| DRY | ADR-0013, ADR-0014, the productization dossier, and product decisions keep their existing responsibilities. A campaign links to them and records only campaign-specific facts. |
+| DRY | ADR-0015, the retained ADR-0013 discipline, ADR-0014, the productization dossier, and product decisions keep their existing responsibilities. A campaign links to them and records only campaign-specific facts. |
 
-The future semantic kernel remains an ordinary library. It does not become a
+The Get Modular semantic kernel remains an ordinary library. It does not become a
 module of itself and does not require its own graph, container, loader, or
 lifecycle coordinator to compile, test, or start.
 
@@ -177,15 +180,18 @@ establish independence. The campaign evidence binds authenticated role
 identities, control domains, and handoffs to the exact protocol, attempts,
 review, and decision.
 
-Foundation extraction has no role in a dogfooding campaign. If ADR-0013's
-independent-consumer and conformance gates are later satisfied, a separate
-accepted extraction decision names its authority. The product authorizer cannot
-authorize Foundation extraction.
+Foundation extraction has no role in a dogfooding campaign. ADR-0015 already
+assigns neutral composition semantics to independent Get Modular, not Extension
+Foundation. Stable 1.0 and public plugin SPI promotion retain their separate
+consumer, conformance, and review gates. The product authorizer cannot authorize
+Foundation extraction.
 
-No shared module-system owner exists at this level. The first owning product
-owns private identities, grammar, composition behavior, diagnostics, and any
-lifecycle semantics. A Foundation owner can be introduced only through the
-independent-consumer, conformance, and accepted-extraction process in ADR-0013.
+Get Modular owns neutral identities, declaration grammar, binding validation,
+graph compilation, canonical plans, and composition diagnostics. Products own
+concrete declarations, capability payloads, adapters, and operational lifecycle.
+Extension Foundation owns extension trust and lifecycle contracts, not a second
+composition core or the products' operational authority. This campaign consumes
+those boundaries without implementing or duplicating the module engine.
 
 ### Source dependency direction
 
@@ -417,9 +423,10 @@ sufficient. Before a treatment exists, the owning product measures the authoring
 or drift problem through existing composition without introducing the
 abstraction being justified. A product decision must then name and own every
 admission prerequisite. It may cite dossier evidence at an exact immutable
-revision, but mutable dossier fields never become authority. A candidate that
-introduces a new authoring grammar must remain within ADR-0014's accepted
-product-local ownership and the exact level-specific owning-product decision.
+revision, but mutable dossier fields never become authority. Candidate authoring
+must preserve ADR-0015's neutral Get Modular grammar ownership and ADR-0014's
+product-owned declaration instances, capability payloads, and exact level-specific
+owning-product decision. A product adapter cannot fork the neutral grammar.
 The campaign neither creates a successor governance gate nor authorizes shared
 Foundation extraction.
 
@@ -1026,8 +1033,9 @@ either invalidates admission. Together they contain all of the following:
   Every relied-upon product state must be equal across those records; an absent
   join, source outside the allowlisted delta, unresolved placeholder, foreign or
   missing receipt, or unequal value is a no-go;
-- evidence that any new authoring grammar remains product-local under ADR-0014
-  and its accepted level-specific owning-product decision.
+- evidence that neutral authoring grammar remains Get Modular-owned under
+  ADR-0015, while concrete declarations and capability payloads stay product-local
+  under ADR-0014 and the accepted level-specific owning-product decision.
 
 The consistency verifier also compares the complete Phase 2 qualification corpus
 with the complete final `E0` corpus under the preregistered domain-specific
@@ -1379,9 +1387,9 @@ rebuildable, baseline composition is restored, and any non-runtime cleanup
 backlog has an owner and deadline. An analytically final `unknown` attempt with
 an unresolved runtime blocks retirement completion.
 
-Foundation extraction remains blocked until two independently authored
-consumers, executable conformance, and an accepted extraction decision satisfy
-ADR-0013.
+Dogfooding cannot promote Get Modular to stable 1.0 or authorize a public plugin
+SPI. Those gates remain in ADR-0015 and its retained safety requirements; they
+do not block the independent pre-1.0 composition work already authorized there.
 
 #### Negative verification matrix
 
@@ -1854,9 +1862,12 @@ A future implementation conforms to this proposal only when:
 
 ## Related Decisions
 
+- [ADR-0015](../decisions/0015-authorize-get-modular-semantic-extraction.md)
+  authorizes independent Get Modular 0.x composition semantics and retains
+  separate stable 1.0 and public plugin SPI promotion gates.
 - [ADR-0013](../decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md)
-  keeps module semantics product-local until independent consumers and
-  conformance justify extraction.
+  retains feature, library, package, adapter, colocation, and evidence discipline
+  except for the extraction timing superseded by ADR-0015.
 - [ADR-0014](../decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md)
   defines current Pure DI, inert authoring, literal loading, and future
   generation guardrails without admitting a runtime.

@@ -2,7 +2,7 @@
   "name": "@agent-teams/extension-foundation-repository",
   "version": "0.0.0",
   "private": true,
-  "description": "Product-neutral extension contracts, OCI distribution, lifecycle primitives, and conformance tooling for Agent Teams products.",
+  "description": "Product-neutral extension artifact, trust, distribution, isolation, and conformance primitives for Agent Teams products.",
   "license": "Apache-2.0",
   "type": "module",
   "packageManager": "pnpm@11.18.0",

@@ -12,6 +12,12 @@ related:
 
 # Security And Lifecycle Threat Model
 
+> Historical qualification evidence. This page is non-operative. Use the
+> [current productization gate](../../module-system-v1-productization/README.md),
+> [ADR-0014](../../../decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md),
+> and [ADR-0015](../../../decisions/0015-authorize-get-modular-semantic-extraction.md)
+> for current authority and implementation gates.
+
 ## Scope
 
 The rehearsal admits two audited, co-released `T0` built-ins. Each is part of
@@ -81,8 +87,8 @@ before dispatch, and uncertain effects reconcile before dependent phases.
 - P1 authority freshness and stale-result checks must close in the rehearsal.
 - P1 process, supply-chain, containment, update, custody, distributed, and
   public-SPI findings remain explicit release blockers for their later phases.
-- ADR-0010 remains accepted; ADR-0011 remains proposed and cannot silently
-  repair or supersede it.
+- ADR-0011 supersedes ADR-0010 as the accepted conditional safety floor and
+  cannot silently admit a runtime or an inapplicable host profile.
 
 See the existing [trust and security](../trust-and-security.md),
 [lifecycle qualification](../lifecycle-and-concurrency.md), and the

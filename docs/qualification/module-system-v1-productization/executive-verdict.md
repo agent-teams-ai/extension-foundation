@@ -60,11 +60,13 @@ closure, readiness, generations, routing, recovery, or public contracts.
 
 ## Governance Boundary
 
-ADR-0013 assigns private module semantics to the first product, and ADR-0014 is
-the accepted product-local authoring authority under that assignment. They do
-not conflict, and qualification evidence adds no successor gate. Product-local
-adoption still requires the owning-product decisions and measured triggers that
-the accepted ADRs specify.
+ADR-0015 supersedes ADR-0013 only for extraction timing: an independent
+product-neutral Get Modular `0.x` is now authorized. ADR-0013's product-first,
+Pure DI, private-runtime trigger, public-SPI, and stop safeguards continue
+through ADR-0015, while ADR-0014 remains the product-local authoring authority.
+Product-local adoption still requires the owning-product decisions and measured
+triggers that those accepted decisions specify. Get Modular adoption adapters
+do not count as independent implementations of a public plugin SPI.
 
 The package-policy consumer-identity defect remains externally owned: two IDs
 from one repository can still satisfy its present independence calculation.

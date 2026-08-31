@@ -13,6 +13,11 @@ is [`current-roadmap.yaml`](current-roadmap.yaml). Neither file is implementatio
 authority. Accepted ADRs and owning-product decisions remain authoritative, and
 only an accepted owning-product decision may authorize a product step.
 
+ADR-0015 separately authorizes independent product-neutral Get Modular `0.x`.
+This roadmap continues to govern product-local adoption levels and any later
+Extension Foundation extraction; it does not reopen those gates merely because
+the neutral repository exists.
+
 ## Step 0: Preserve The Baseline
 
 Keep product-owned typed ports, literal imports, pure factories, and explicit
@@ -59,10 +64,11 @@ comparison of:
 2. schema-first inert JSON plus generated nominal handles; and
 3. handwritten JSON plus typed factory.
 
-ADR-0014 is the accepted product-local authoring authority under ADR-0013; this
-qualification recommendation adds no successor gate. No candidate is
-preselected. Generated output is a projection, not a second authority, and
-clean regeneration must be byte-identical.
+ADR-0014 remains the accepted product-local authoring authority under the
+safeguards retained by ADR-0015; this qualification recommendation adds no
+successor gate. No product-local candidate is preselected. Generated output is
+a projection, not a second authority, and clean regeneration must be
+byte-identical.
 
 Planning estimate only: `800-2,000 changed physical LOC`, counted across the
 private candidate, generated projections, diagnostics, fixtures, and

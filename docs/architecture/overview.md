@@ -24,6 +24,8 @@ flowchart LR
     Product["Orchestrator / AR / Frontend"] --> Port["Consumer-owned extension port"]
     Port --> Host["Product-owned extension host"]
     Host --> Foundation["Extension Foundation primitives"]
+    Product --> Modular["Get Modular composition plan"]
+    Modular -. no core dependency .- Foundation
     Foundation --> OCI["OCI Distribution adapter"]
     OCI --> GHCR["GHCR"]
     OCI --> Harbor["Harbor"]
@@ -41,12 +43,15 @@ flowchart LR
 Extension Foundation may own:
 
 - manifest, package, capability-request, and permission-request schemas;
-- extension, publisher, artifact, installation, and generation identities;
-- lifecycle protocol primitives and compatibility negotiation;
-- profile and lock-file schemas;
+- extension, publisher, artifact, installation, and extension-artifact
+  generation identities;
+- extension artifact and host-protocol lifecycle primitives and compatibility
+  negotiation;
+- extension artifact installation-profile and lock-file schemas;
 - OCI artifact resolution and registry conformance fixtures;
 - signature, provenance, digest, and revocation verification primitives;
-- shared test kits and AI-readable diagnostics.
+- shared extension artifact, trust, distribution, isolation, and host-protocol
+  test kits and AI-readable diagnostics.
 
 Extension Foundation does not own:
 
@@ -55,6 +60,11 @@ Extension Foundation does not own:
   execution;
 - Frontend layout, commands, views, routing, or application state;
 - Platform tenants, memberships, entitlements, placements, or managed rollout;
+- neutral module declaration grammar, dependency graph compilation, canonical
+  plans, plan digests, or composition diagnostics, which belong to
+  [`get-modular`](https://github.com/agent-teams-ai/get-modular);
+- product desired-profile revisions and candidate or runtime generation
+  identities;
 - a universal service locator, aggregate repository, or shared product database.
 
 ## Dependency Direction
@@ -63,6 +73,16 @@ Products depend on released Foundation contracts. Foundation never imports a
 product. Product-specific SPI remains physically located in the consuming
 product and maps to Foundation lifecycle primitives only at composition and host
 boundaries.
+
+Get Modular is a separate product-neutral composition core. Neither neutral
+repository imports the other. A product-owned adapter may translate verified
+extension contributions into inert Get Modular declarations, while executable
+loading, authorization, lifecycle, readiness, routing, and recovery remain in
+the product host. The accepted extraction boundary is
+[ADR-0015](../decisions/0015-authorize-get-modular-semantic-extraction.md).
+Extension, artifact, installation, contribution, Get Modular implementation,
+and product capability identities remain distinct; only the product adapter
+records an explicit mapping between applicable identities.
 
 Each product owns its exact feature-slice layout and composition profile.
 For Orchestrator, the canonical authority is its
@@ -85,11 +105,12 @@ deterministic scaffold plan and output, value-level `src/features/<feature>/`
 implementation, explicit feature entrypoint, and executable structural evidence
 under `test/features/<feature>/`. The same change must include a versioned
 `architecture/package-admissions/<encoded-package-id>.json` record that binds
-the accepted extraction decision, one explicit ADR-0013 package-admission basis, exact
-source commits, conformance results, implementation identities, and
-digest-bearing evidence references. A second-consumer basis requires two real
-consumer identities. A public-SPI basis requires two independently authored
-implementation identities. Independent replacement/release or
+the accepted extraction decision, one explicit package-admission basis retained
+by ADR-0015 from superseded ADR-0013, exact source commits, conformance results,
+implementation identities, and digest-bearing evidence references. A
+second-consumer basis requires two real consumer identities. A public-SPI basis
+requires two independently authored implementation identities. Independent
+replacement/release or
 deployment/isolation lifecycles may justify a package with one evidence record;
 they do not imply that its exports are a public extension SPI. Repository
 identities are canonical lowercase `owner/repository` values and reject
@@ -101,17 +122,16 @@ conflicting claimed digests, or mirrors of the same bytes cannot satisfy a gate
 twice.
 
 These checks prove topology and evidence syntax, not business completeness or
-the referenced evidence bytes. Package admission does not prove Foundation
-ownership of module declarations, graph semantics, lifecycle, or diagnostics;
-ADR-0013 separately requires two real independently authored consumers,
-cross-consumer conformance, and an accepted semantic-extraction decision. A
-non-empty catalog therefore fails closed until
-an executable admission verifier is supplied. That verifier must resolve each
-repository slug through its provider to a stable repository ID, prove the
-selected admission basis and any claimed implementation independence, and hash
-the evidence bytes before admission. Publication re-verifies the immutable
-receipt. The admitting ADR and review evidence establish that the slice is
-semantically real. Reserving empty packages or root-level
+the referenced evidence bytes. Package admission cannot transfer neutral module
+declaration, binding, graph, plan, digest, or diagnostic ownership away from Get
+Modular. It also does not authorize an extension SPI or production host. A
+non-empty catalog therefore fails closed until an executable admission verifier
+is supplied. That verifier must resolve each repository slug through its
+provider to a stable repository ID, prove the selected admission basis and any
+claimed implementation independence, and hash the evidence bytes before
+admission. Publication re-verifies the immutable receipt. The admitting ADR and
+review evidence establish that the slice is semantically real. Reserving empty
+packages or root-level
 `domain`, `application`, `contracts`, or `adapters` directories is not allowed.
 
 Feature-specific contracts and adapters stay inside their owning feature.
@@ -200,6 +220,11 @@ resolve as effective and accepted. The executable evidence adapter receives a
 request bound to package identity, the exact admission-record byte digest, and
 the derived required gate; it returns a receipt with those same coordinates.
 A bare boolean or receipt for another record or gate fails closed.
+
+ADR-0015 reserves Get Modular composition semantics to the independent Get
+Modular repository. The retained `foundation-module-semantics` admission class
+cannot be used for declarations, bindings, graph compilation, canonical plans,
+or plan digests owned there, and no package currently uses that class.
 
 The Engineering Foundation owns the source-graph and scaffolding protocols.
 This repository owns its package roles, catalog entries, allowed dependency

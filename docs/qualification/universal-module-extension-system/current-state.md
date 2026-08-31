@@ -63,9 +63,10 @@ ADR-0013 is the accepted cumulative successor to ADR-0012 and retains the useful
 library/module/plugin role boundaries while moving first-consumer semantics to
 the owning product. ADR-0012 is superseded historical authority, not an
 alternative Foundation implementation path. ADR-0014 records the static-first
-rehearsal direction. ADR-0006 through ADR-0009 remain historical and superseded
-by ADR-0010. ADR-0011 remains proposed and is not silently treated as accepted.
-Open decisions remain non-operative until their owners resolve them.
+rehearsal direction. ADR-0006 through ADR-0010 remain historical and superseded
+by ADR-0011. ADR-0011 is the accepted conditional production-extension-host
+safety floor; it does not admit a runtime or apply to static composition. Open
+decisions remain non-operative until their owners resolve them.
 
 The effective accepted direction is:
 

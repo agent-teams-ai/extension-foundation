@@ -85,6 +85,7 @@ const EXPECTED_NIGHTLY_STATUS_IDS = [
   "ADR-0012",
   "ADR-0013",
   "ADR-0014",
+  "ADR-0015",
   "OD-002",
   "OD-003",
   "UMEQ-009",
@@ -464,7 +465,7 @@ test("decision ledger is referentially sound and records current implementation 
   ].sort();
   assert.deepEqual((publicationGate.allOf ?? []).map(requirementKey).sort(), expectedPublicationRequirements);
   const publicationStatuses = new Map<string, string>([
-    ["ADR-0013", "accepted"],
+    ["ADR-0015", "accepted"],
     ["adr-0013-package-admission-basis", "proven"],
     ["immutable-package-admission-record", "verified"],
     ["independent-conformance", "passed"],
@@ -638,7 +639,7 @@ test("decision ledger is referentially sound and records current implementation 
   ]);
   assert.match(
     validateDecisionProjections([{ id: "ADR-0013", status: "proposed" }], authoritativeStatuses)[0] ?? "",
-    /disagrees with authoritative status accepted/,
+    /disagrees with authoritative status superseded/,
   );
   assert.throws(
     () => projectedDecisionStatuses("## Decision Status\n\n| Authority | Current status |\n| --- | --- |\n| ADR_0013 | `accepted` |\n"),
@@ -687,7 +688,7 @@ test("decision ledger is referentially sound and records current implementation 
 
   const serializedGates = JSON.stringify(ledger.implementationGates);
   assertMarkers(serializedGates, [
-    /ADR-0013/,
+    /ADR-0015/,
     /second-independent-consumer/,
     /foundation-(?:semantic-)?extraction-decision[^}]*accepted/i,
   ], "decision ledger gates");
@@ -695,7 +696,7 @@ test("decision ledger is referentially sound and records current implementation 
   assert.ok(phaseZeroGate, "phase-0 static composition rehearsal gate is required");
   assert.deepEqual(
     gateRequirements(phaseZeroGate).map(requirement => "decision" in requirement ? requirement.decision : null),
-    ["ADR-0013", "ADR-0014", "owning-product-feature-decision"],
+    ["ADR-0015", "ADR-0014", "owning-product-feature-decision"],
   );
   const phaseOneGate = ledger.implementationGates.find(gate => gate.id === "phase-1-static-module-authoring");
   assert.ok(phaseOneGate, "phase-1 static authoring gate is required");
@@ -742,10 +743,14 @@ test("decision ledger is referentially sound and records current implementation 
   }
 });
 
-test("accepted ADR-0013 cumulatively replaces ADR-0012 without premature extraction", async () => {
+test("superseded ADR-0013 retains its safeguards through accepted ADR-0015", async () => {
   const adr13 = await findDocumentById(decisions, "ADR-0013");
-  assert.equal(adr13.metadata.status, "accepted");
+  const adr15 = await findDocumentById(decisions, "ADR-0015");
+  assert.equal(adr13.metadata.status, "superseded");
+  assert.deepEqual(adr13.metadata.superseded_by, ["ADR-0015"]);
   assert.deepEqual(adr13.metadata.supersedes, ["ADR-0012"]);
+  assert.equal(adr15.metadata.status, "accepted");
+  assert.deepEqual(adr15.metadata.supersedes, ["ADR-0013"]);
 
   const decision = section(adr13.body, /^(?:Decision|Accepted Decision)$/i);
   assertMarkers(decision, [
@@ -761,6 +766,13 @@ test("accepted ADR-0013 cumulatively replaces ADR-0012 without premature extract
   assert.match(decision, /ADR-0012[\s\S]{0,160}(?:incorporat|preserv|cumulative)/i);
   assert.ok(hasExactPrivateGraphTrigger(decision), "ADR-0013 Decision must contain the exact private-graph trigger");
   assert.doesNotMatch(decision, /first consumer[^.]{0,160}(?:public SPI|Foundation package)[^.]{0,80}(?:publish|admit)/i);
+  const successorDecision = section(adr15.body, /^(?:Decision|Accepted Decision)$/i);
+  assert.match(successorDecision, /feature, library, package, module-adapter/i);
+  assert.match(successorDecision, /Get Modular is an independent product-neutral library/i);
+  assert.match(successorDecision, /Foundation does not become their[\s\S]{0,20}operational authority/i);
+  assert.match(successorDecision, /adoption adapters do not count as independent implementations/i);
+  assert.match(successorDecision, /stable public plugin SPI[\s\S]{0,180}independently authored implementations/i);
+  assert.match(successorDecision, /measured runtime-selection[\s\S]{0,20}or independent-lifecycle needs trigger it/i);
 });
 
 test("accepted ADR-0014 records evidence only and grants no production surface", async () => {
@@ -788,9 +800,11 @@ test("OD-003 stays open without embedding accepted normative decisions", async (
     : [];
   assert.ok(acceptedReferences.includes("ADR-0013"));
   assert.ok(acceptedReferences.includes("ADR-0014"));
+  assert.ok(acceptedReferences.includes("ADR-0015"));
   for (const id of acceptedReferences) {
     const adr = await findDocumentById(decisions, String(id));
-    assert.equal(adr.metadata.status, "accepted", `OD-003 points to non-accepted ${id}`);
+    const expectedStatus = id === "ADR-0013" ? "superseded" : "accepted";
+    assert.equal(adr.metadata.status, expectedStatus, `OD-003 has an invalid status for ${id}`);
   }
 });
 

@@ -8,6 +8,12 @@ summary: Defers Module Federation 2 and keeps any future loader Frontend-owned.
 
 # Module Federation 2 Verdict
 
+> Historical qualification evidence. This page is non-operative. Use the
+> [current productization gate](../../module-system-v1-productization/README.md),
+> [ADR-0014](../../../decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md),
+> and [ADR-0015](../../../decisions/0015-authorize-get-modular-semantic-extraction.md)
+> for current authority and implementation gates.
+
 **Verdict: defer Module Federation 2. It is not V1 architecture and never a
 Foundation runtime.**
 

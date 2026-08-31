@@ -16,7 +16,9 @@ baseline:
   integratedQualificationRevision: f2a3e33c6369412ab3b3926f4b5b738111250409
   redTeamReviewedRevision: c9a01739a3a0906bfd52d8573a76e9d0058568ca
   historicalRevisionPortability: non-portable-corroboration-unreachable-from-repository-refs
-  finalReviewedRevision: external-pr-head-evidence-required
+  finalReviewedRevision: 97662d634b5eebd9865099830c0d7f124c7dc133
+  finalReviewEvidence: external-pr-22-body
+  finalReviewScope: architecture-and-correctness
   branch: research/module-system-v1-productization
   stackedOn: none
   historicalFoundationPullRequest: 17
@@ -50,7 +52,7 @@ execution:
     attemptExecutions:
       observedManagedRunEnvelopesBeforeFinalReview: 62
       countingAuthority: subscription-runtime-managed-run-registry
-      finalExactHeadAttempts: external-pr-evidence-required
+      finalExactHeadAttempts: 2
   localSubagentsAllowed: false
   productionCodeMutable: false
   acceptedAdrsMutable: false
@@ -68,13 +70,14 @@ evidencePolicy:
   sharedExtractionRequiresIndependentProviderOwnership: true
 evidenceArtifacts:
   consumerSources: consumer-source-evidence.yaml
+  moduleAuthoringMeasurementProof: module-authoring-measurement-proof.md
   redTeamFindings: red-team-findings.md
   evidenceLedger: evidence-ledger.yaml
   currentRoadmap: current-roadmap.yaml
 redTeam:
   reviewedRevision: c9a01739a3a0906bfd52d8573a76e9d0058568ca
   independentAreas: 8
-  result: remediation-integrated-awaiting-final-exact-head-review
+  result: remediation-integrated-and-final-exact-head-reviewed
   replayNote: >-
     Completed reports were continued once after their objectives were changed,
     but the app-server goal replayed the prior result and produced no edits.
