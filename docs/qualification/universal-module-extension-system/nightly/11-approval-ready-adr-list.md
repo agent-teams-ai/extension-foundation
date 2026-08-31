@@ -24,9 +24,10 @@ resolved, or superseded by this dossier.
    completion evidence, or name a different capability, bounded context,
    accountable owner, two built-ins, authority exclusions, success measure,
    and deletion trigger.
-2. **Semantic ownership path.** Apply accepted ADR-0013's cumulative
-   first-consumer ownership model. ADR-0012 is historical authority, not a
-   competing Foundation graph path.
+2. **Semantic ownership path.** Apply accepted ADR-0015: independent Get Modular
+   `0.x` is authorized, while ADR-0013's product-first, runtime-trigger, public
+   SPI, and stop safeguards remain effective. ADR-0012 is historical authority,
+   not a competing Foundation graph path.
 3. **Rehearsal architecture.** Apply ADR-0014's direct-composition direction:
    the feature exports a pure `FeatureModuleFactory`, the application root owns
    implementation/configuration/lifetime, and no graph is built without
@@ -55,9 +56,10 @@ resolved, or superseded by this dossier.
 | Authority | Current status | W11 effect |
 | --- | --- | --- |
 | ADR-0012 | `superseded` | Preserved historical authority only |
-| ADR-0011 | `proposed` | Remains non-operative |
-| ADR-0013 | `accepted` | Cumulative product-local ownership is effective |
+| ADR-0011 | `accepted` | Conditional safety floor; does not admit a runtime |
+| ADR-0013 | `superseded` | Retained safeguards continue through ADR-0015 |
 | ADR-0014 | `accepted` | Static-first rehearsal direction is effective |
+| ADR-0015 | `accepted` | Independent Get Modular extraction is authorized |
 | OD-002 and OD-003 | `open` | Remain open |
 | UMEQ-009 through UMEQ-010 | `open` | Remain open |
 | UMEQ-011 | `accepted-existing` | Explicit provider binding is effective through ADR-0014 |

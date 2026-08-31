@@ -7,11 +7,14 @@ claims:
     sources:
       - docs/decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
       - docs/decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md
+      - docs/decisions/0015-authorize-get-modular-semantic-extraction.md
     result: >-
-      Accepted ADR-0013 assigns private module semantics to the first product,
-      and accepted ADR-0014 is the product-local authoring authority under that
-      assignment. Qualification evidence adds no successor gate. An accepted
-      owning-product decision is still required where ADR-0013 or ADR-0014 says so.
+      Accepted ADR-0015 supersedes ADR-0013 only for extraction timing: it
+      authorizes an independent product-neutral Get Modular 0.x while retaining
+      ADR-0013 and ADR-0014 product-first, Pure DI, runtime-trigger, public-SPI,
+      and owning-product safeguards. Qualification evidence adds no successor
+      gate. An accepted owning-product decision is still required where those
+      retained safeguards or ADR-0014 require one.
     reversalCondition: An accepted superseding ADR changes ownership or authoring policy.
   - id: existing-spike-coverage
     classification: partially-proved
@@ -23,7 +26,8 @@ claims:
       is substantial but does not establish a product grammar, production graph,
       durable runtime, or public SPI. Lifecycle remediation is committed as
       3c31341, is integrated in this branch, and passes the full local gate.
-      Final independent exact-head review remains external PR evidence.
+      Final independent exact-head review at
+      97662d634b5eebd9865099830c0d7f124c7dc133 remains external PR evidence.
     reversalCondition: Exact-head execution or review contradicts the recorded coverage.
   - id: agent-runtime-consumer-admission
     classification: level-separated
@@ -40,10 +44,11 @@ claims:
       remains a no-go measurement candidate and L2-L5 remain no-go.
     reversalCondition: >-
       Invalidate SOURCE_CUSTODY_BASELINE_RECORDED and block dossier-dependent
-      decisions if exact source verification fails. The ADR-0013 product-owned
-      Pure DI default remains authoritative. Reopen L1 only after a product-owned
-      decision and approved benchmark prove an authoring or drift problem;
-      higher levels retain their independent product triggers.
+      decisions if exact source verification fails. The ADR-0015-retained
+      product-owned Pure DI default remains authoritative. Reopen product-local
+      L1 only after a product-owned decision and approved benchmark prove an
+      authoring or drift problem; higher levels retain their independent product
+      triggers. Independent Get Modular 0.x follows ADR-0015 instead.
   - id: orchestrator-consumer-admission
     classification: no-go
     sources:
@@ -116,9 +121,15 @@ claims:
   - id: shared-foundation-extraction
     classification: no-go
     sources:
-      - docs/decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md
-    result: No portable evidence proves two independent implementations of one semantic contract with cross-consumer conformance.
-    reversalCondition: Two products independently implement the same candidate and pass executable cross-consumer conformance under a separate extraction decision.
+      - docs/decisions/0015-authorize-get-modular-semantic-extraction.md
+    result: >-
+      ADR-0015 authorizes an independent Get Modular 0.x, not semantic extraction
+      into Extension Foundation and not a public plugin SPI. No portable evidence
+      proves the independent implementations and conformance required for either
+      of those separate publication surfaces.
+    reversalCondition: >-
+      A separate accepted decision admits a named Foundation or public-SPI
+      contract after its independent-implementation and conformance gates pass.
   - id: evidence-custody-integrity
     classification: partially-proved
     sources:
@@ -130,7 +141,8 @@ claims:
       owner-only storage passes the full local gate. Historical corpus custody
       remains honestly unproven.
       V2 can invalidate evidence but cannot authorize promotion; final
-      independent exact-head review remains external PR evidence.
+      independent exact-head review at
+      97662d634b5eebd9865099830c0d7f124c7dc133 remains external PR evidence.
     reversalCondition: Integrated exact-head checks or review find unresolved fail-open behavior.
 jobEvidencePolicy:
   decisionAuthority: false
@@ -184,10 +196,12 @@ jobs:
   - { id: module-v1-redteam-evidence-r1, role: red-team-evidence, sourceRevision: c9a01739a3a0906bfd52d8573a76e9d0058568ca, status: completed-attempt-2, resultSha256: 436bf42f60d09bda35909693c692bac113740a4caa7b564f79d908edd1f5d6bc }
   - { id: module-v1-redteam-performance-r1, role: red-team-performance, sourceRevision: c9a01739a3a0906bfd52d8573a76e9d0058568ca, status: completed-attempt-2, resultSha256: 2c5141ef1a0de8cd36d561fd6333f375eac7e3517c7f57ec700d3e1961a8295d }
   - { id: module-v1-redteam-cross-consumer-r1, role: red-team-cross-consumer, sourceRevision: c9a01739a3a0906bfd52d8573a76e9d0058568ca, status: completed-attempt-2, resultSha256: c7fc6f8f8170f6f52dd829b5bd62fc35400878756b8a0e691961b783a08cd7e4 }
-  - { id: module-v1-final-architecture-r1, role: exact-head-architecture-review, sourceRevision: external-pr-head, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: pending-final-exact-head-review }
-  - { id: module-v1-final-lifecycle-r1, role: exact-head-lifecycle-review, sourceRevision: external-pr-head, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: pending-final-exact-head-review }
-  - { id: module-v1-final-security-r1, role: exact-head-security-review, sourceRevision: external-pr-head, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: pending-final-exact-head-review }
-  - { id: module-v1-final-product-r1, role: exact-head-product-review, sourceRevision: external-pr-head, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: pending-final-exact-head-review }
+  - { id: module-v1-final-architecture-r1, role: exact-head-architecture-review, sourceRevision: e1a3492e56aff33a1569d12b28e0ee3762cd8ba5, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: completed-non-portable-corroboration, evidenceLocator: https://github.com/agent-teams-ai/extension-foundation/pull/22#issuecomment-5451680508 }
+  - { id: module-v1-final-lifecycle-r1, role: exact-head-lifecycle-review, sourceRevision: e1a3492e56aff33a1569d12b28e0ee3762cd8ba5, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: completed-non-portable-corroboration, evidenceLocator: https://github.com/agent-teams-ai/extension-foundation/pull/22#issuecomment-5451680508 }
+  - { id: module-v1-final-security-r1, role: exact-head-security-review, sourceRevision: e1a3492e56aff33a1569d12b28e0ee3762cd8ba5, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: completed-non-portable-corroboration, evidenceLocator: https://github.com/agent-teams-ai/extension-foundation/pull/22#issuecomment-5451680508 }
+  - { id: module-v1-final-product-r1, role: exact-head-product-review, sourceRevision: e1a3492e56aff33a1569d12b28e0ee3762cd8ba5, previousSourceRevision: 4af823cdfd817660c4efe03fd62fb068ae8e9e49, status: completed-non-portable-corroboration, evidenceLocator: https://github.com/agent-teams-ai/extension-foundation/pull/22#issuecomment-5451680508 }
+  - { id: module-v1-final-architecture-r2, role: exact-head-architecture-review, sourceRevision: 97662d634b5eebd9865099830c0d7f124c7dc133, status: completed-external-pr-attestation, evidenceLocator: https://github.com/agent-teams-ai/extension-foundation/pull/22 }
+  - { id: module-v1-final-correctness-r1, role: exact-head-correctness-reliability-review, sourceRevision: 97662d634b5eebd9865099830c0d7f124c7dc133, status: completed-external-pr-attestation, evidenceLocator: https://github.com/agent-teams-ai/extension-foundation/pull/22 }
 followUpReports:
   lineage: historical-evidence-superseded-by-current-product-source-records
   status: corroboration-only-not-portable-evidence

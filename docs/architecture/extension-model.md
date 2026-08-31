@@ -10,7 +10,10 @@ summary: Defines extension terminology, contribution boundaries, integration bun
 
 ## Terms
 
-- **Extension** is a logical capability implementation with stable identity.
+- **Extension** is a logical independently distributable implementation with an
+  `ExtensionIdentity` used for artifact, admission, installation, and
+  retirement lineage. It is not a Get Modular `CapabilityId` or
+  `ImplementationId`.
 - **Plugin artifact** is an installable, signed, immutable OCI artifact.
 - **Contribution** is one implementation of one narrow consumer-owned extension
   point.
@@ -23,6 +26,12 @@ summary: Defines extension terminology, contribution boundaries, integration bun
   authority.
 - **Catalog snapshot** is a signed immutable publication or export of catalog
   state. It is not a writable source or product authorization.
+
+Identity namespaces remain distinct. A product-owned adapter may map an
+admitted `ExtensionIdentity` plus contribution identity to a Get Modular
+`ImplementationId` and a product-owned capability port. Equality or shared
+string values never create that mapping, and neither repository allocates the
+other's identities.
 
 ## Simple Plugin and Integration Bundle
 

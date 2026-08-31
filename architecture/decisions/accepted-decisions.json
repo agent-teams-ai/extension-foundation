@@ -53,6 +53,11 @@
       "immutableDigest": "sha256:a77916a5dc514d471840860a028875f4d30f220b5742661368593d8471fe894a"
     },
     {
+      "id": "ADR-0011",
+      "path": "docs/decisions/0011-extension-admission-custody-and-retirement-closure.md",
+      "immutableDigest": "sha256:4d64287788a53666abe9dc756c61ef4dd5184782f75a92647ce5d8d7c25c367c"
+    },
+    {
       "id": "ADR-0012",
       "path": "docs/decisions/0012-reusable-library-module-and-plugin-boundaries.md",
       "immutableDigest": "sha256:e7ccb534d6deea3da4546807e1e26902aaabaae2a7a384128e97a6a46aff9f36"
@@ -66,6 +71,11 @@
       "id": "ADR-0014",
       "path": "docs/decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md",
       "immutableDigest": "sha256:d1524a899f1b5424ca7503891064271a976c2d8c1c60d6724d0641c93460fff0"
+    },
+    {
+      "id": "ADR-0015",
+      "path": "docs/decisions/0015-authorize-get-modular-semantic-extraction.md",
+      "immutableDigest": "sha256:e34f1c05a692855a51c8f5f0c5626e4f295e9704ecc804024d3fbd432c752bab"
     }
   ]
 }

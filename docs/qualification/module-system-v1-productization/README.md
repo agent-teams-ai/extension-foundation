@@ -27,8 +27,10 @@ origins, commits, trees, and selected regular-file blobs. It does not interpret
 source, prove topology or semantics, attest remote publication, or grant product
 approval. The [research manifest](research-manifest.yaml) links to that lock and
 classifies historical hosted jobs as non-portable corroboration. The
-[evidence ledger](evidence-ledger.yaml) remains fail-closed:
-unknown or disputed claims are not promoted to decisions.
+[evidence ledger](evidence-ledger.yaml) remains fail-closed. Its completed
+exact-head reviews are external PR attestations and non-portable corroboration,
+not promotion authority; unknown or disputed claims are not promoted to
+decisions.
 
 The current follow-up records `SOURCE_CUSTODY_BASELINE_RECORDED` only. Static
 authoring remains a measurement candidate, while runtime
@@ -53,6 +55,7 @@ portable fallback with weaker symbolic-link or path-race guarantees.
 - [Consumer admission](consumer-admission.md)
 - [Executable candidate source evidence](consumer-source-evidence.yaml)
 - [Authoring API and gap matrix](authoring-api-and-gap-matrix.md)
+- [Synthetic two-fixture module authoring measurement proof](module-authoring-measurement-proof.md)
 - [Red-team findings](red-team-findings.md)
-- [Production roadmap](roadmap.md)
+- [Non-authoritative qualification roadmap](roadmap.md)
 - [Machine-readable qualification projection](current-roadmap.yaml)

@@ -10,7 +10,10 @@ summary: Compares private authoring candidates and records proved, missing, cont
 
 ## Current API Decision
 
-The current product-private contract is the baseline, not a new framework:
+For product-local runtime adoption, the current product-private contract remains
+the baseline. ADR-0015 separately authorizes independent product-neutral Get
+Modular `0.x`; this qualification projection neither defines nor blocks that
+repository's normative API.
 
 ```ts
 export interface FeatureDependencies {
@@ -60,7 +63,7 @@ qualified as such.
 | Completed `L1` authoring rehearsal | `missing` | No owning-product decision, approved benchmark, grammar, executable outcome, or exit evidence exists |
 | Orchestrator product rehearsal | `missing` | No portable owning-product evidence admits a rehearsal |
 | Product-owned authoring decision | `missing` | No portable owning-product decision accepts a module declaration/profile grammar |
-| Product-local authoring ownership | `accepted` | ADR-0013 assigns private semantics to the first product; ADR-0014 is the accepted product-local authoring authority under it, with no qualification-invented successor gate |
+| Product-local authoring ownership | `accepted` | ADR-0015 retains ADR-0013's product-first safeguards; ADR-0014 remains the accepted product-local authoring authority |
 | Runtime-selection trigger beyond static configuration | `missing` | No portable owning-product evidence admits runtime selection |
 | Independent module lifecycle trigger | `missing` | No portable owning-product evidence admits dependency-aware lifecycle coordination |
 | Required/optional/many production semantics | `missing` | Synthetic tests cover mechanism behavior only; no consumer-owned production semantics or product grammar is admitted |
@@ -81,11 +84,12 @@ an admitted product must resolve now. No portable owning-product evidence admits
 a descriptor compiler or runtime graph. The accepted ADR baseline already keeps
 static Pure DI product-local; exact source custody cannot prove a stronger need.
 
-A static compiler spike would be premature until an owning product measures an
-authoring problem and accepts a grammar. A selection-graph spike requires a
-separate runtime-selection trigger. A native/Cordis lifecycle spike requires
-independently managed resources. Repeating existing synthetic evidence would
-add volume without changing a decision.
+A product-local static compiler spike would be premature until an owning product
+measures an authoring problem and accepts a grammar. A product selection-graph
+spike requires a separate runtime-selection trigger. A native/Cordis lifecycle
+spike requires independently managed resources. Repeating existing synthetic
+evidence would add volume without changing a product adoption decision.
+Independent Get Modular `0.x` follows ADR-0015's separate scope.
 
 ## Future Declarative Candidate Constraints
 
