@@ -46,8 +46,8 @@ custody invariants; it is not a production package, a Module API, a graph
 compiler, a loader, or lifecycle authority. It may challenge a Get Modular or
 product decision, but cannot silently replace one.
 
-The disposable model remains under `tests/qualification/**`, is capped at 4,300
-physical lines, 320,000 UTF-8 bytes, and 200 characters per line across its
+The disposable model remains under `tests/qualification/**`, is capped at 4,400
+physical lines, 330,000 UTF-8 bytes, and 200 characters per line across its
 closed transitive source set, and must never be imported by a production package.
 These are maintainability ceilings, not compression targets: qualification code
 must remain readable and must not join unrelated statements merely to fit the cap.
@@ -56,8 +56,12 @@ A further 100-line allowance is proposed for five concrete findings from the two
 hosted reviews of `c137264`: restart without launch authority, foreign event-ID
 reservation, a late start contradicting an unconsumed terminal, nested proof pollution,
 and campaign revocation after a non-start terminal. It adds regression traces, not
-new event kinds or runtime scope; both reviewers must evaluate this allowance with
-the exact amended head. The byte and line-width limits remain unchanged. Further
+new event kinds or runtime scope. Reviews of `6aa1577` then found same-root
+invalid identity reservation, unstable replay of rejected collisions, and mixed root/unscoped
+IDs that made authenticated lineage ambiguous. A second 100-line and 10,000-byte
+allowance covers explicit identity reservation, chronological observations and
+their directed regressions. Both reviewers must evaluate the combined allowance
+with the exact amended head; the line-width limit remains unchanged. Further
 increases require separately reviewed evidence rather than formatting churn.
 A repository-level architecture check derives the transitive local source closure,
 rejects imports outside the exact four-file roster, and enforces all three limits,
@@ -509,10 +513,16 @@ bound retirement-completion attempt therefore reserves its proof. The
 retirement closure retains each such exact-bound rejected event together with
 its reserved proof and any top-level receipt. A rejected completion cannot add
 arbitrary nested termination proofs or retained-evidence references to that closure.
-Identity-invalid or foreign-root attempts cannot reserve a proof. Event replay
-identity is qualified by source-family root, so a rejected foreign-root event
-cannot occupy the registered root's event-ID namespace. Receipt and proof replay
-namespaces remain ledger-wide.
+Identity-invalid attempts cannot reserve a proof. Event IDs occupy one
+ledger-wide namespace across root-bound and rootless event kinds. Accepted events
+and rejected events with a qualified authenticated envelope and every applicable
+registered coordinate reserve that identity; identity-invalid observations remain
+forensic without occupying it. Rejected bootstrap identities remain reserved:
+the same identity cannot later be reinterpreted as a valid registration.
+Observations retain arrival order, including when a formerly rejected ID is used
+by a trusted event. Exact retries reuse their original response subject to the
+existing tombstone-finality rule. Receipt and proof replay namespaces remain
+ledger-wide.
 
 Cleanup records one explicit basis. A `terminated` basis binds the exact current
 runtime-safety watermark and its accepted termination proof. A `never-released`

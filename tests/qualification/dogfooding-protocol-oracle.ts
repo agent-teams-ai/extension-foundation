@@ -3,7 +3,8 @@ BuildReceiptId, BuildTerminalProjection, ClaimProjection, DeclaredEffect, Denial
 EvidenceReference, FenceGeneration, ProtocolEvent, RegisterProtocol, ResourceRetirementProjection, RuntimeProjection,
 ReceiptId, SourceEvidenceProjection, TerminalProjections, TransitionResult, TrustedProtocolCoordinates, } from "./dogfooding-protocol-contract.ts";
 interface LedgerRow { readonly event: ProtocolEvent; readonly result: TransitionResult;
-readonly accepted: boolean; readonly reservedProofId: ReturnType<typeof producedProof>; }
+readonly accepted: boolean; readonly reservedProofId: ReturnType<typeof producedProof>;
+readonly reservesEventIdentity: boolean; }
 export interface OracleHistory {
 readonly trusted: TrustedProtocolCoordinates; readonly registration: RegisterProtocol;
 readonly registrationAccepted: boolean; readonly rows: readonly LedgerRow[];
@@ -30,7 +31,7 @@ case "CompleteRetirement": return event.cleanupProofId; default: return null; } 
 const proofUsed = (history: OracleHistory, proofId: ReturnType<typeof producedProof>): boolean => proofId !== null &&
 history.rows.some(row => same(row.reservedProofId, proofId) || row.accepted && same(producedProof(row.event), proofId));
 const same = (left: unknown, right: unknown): boolean => left === right;
-const eventKey = (event: ProtocolEvent): string => "sourceFamilyRootId" in event ? JSON.stringify(["root", event.sourceFamilyRootId, event.eventId]) : JSON.stringify(["unscoped", event.eventId]);
+const eventKey = (event: ProtocolEvent): string => event.eventId;
 const samePayload = (left: unknown, right: unknown): boolean => {
 if (same(left, right)) return true;
 if (typeof left !== "object" || left === null || typeof right !== "object" || right === null) return false;
@@ -62,6 +63,20 @@ same(registered.launchDeadline, candidate.launchDeadline) &&
 same(registered.attemptDeadline, candidate.attemptDeadline) &&
 same(registered.stopDeadline, candidate.stopDeadline) && same(registered.buildDeadline, candidate.buildDeadline) &&
 same(registered.buildConsistencyDeadline, candidate.buildConsistencyDeadline);
+const identityQualified = (history: OracleHistory, event: ProtocolEvent): boolean => {
+if (event.type === "RegisterProtocol" && !history.registrationAccepted) return true;
+const registered = history.registration, predecessor = acceptedEvents(history).at(-1);
+if (!history.registrationAccepted || predecessor === undefined ||
+!same(event.protocolRevisionId, registered.protocolRevisionId) ||
+!same(event.custodyAuthorityId, registered.custodyAuthorityId) ||
+!same(event.authenticatedPredecessorId, predecessor.eventId) ||
+event.authoritativeTick < predecessor.authoritativeTick ||
+event.type === "RegisterProtocol" && !registrationMatches(registered, event)) return false;
+const candidate = event as unknown as Readonly<Record<string, unknown>>;
+const identity = registered as unknown as Readonly<Record<string, unknown>>;
+return ["sourceClaimFamilyId", "sourceFamilyRootId", "sourceSlotId", "attemptId", "runtimeId",
+"checkpointId", "buildAttemptId", "retirementOwnerId", "credentialLineageId", "admissionId"]
+.every(field => !(field in candidate) || same(candidate[field], identity[field])); };
 const withProjection = (
 before: TerminalProjections, patch: Partial<TerminalProjections>, ): TerminalProjections => ({ ...before, ...patch });
 const claimAfter = (current: ClaimProjection, proposed: ClaimProjection): ClaimProjection =>
@@ -1037,7 +1052,7 @@ export const initializeOracleHistory = (registration: RegisterProtocol,
       accept(projection) : denial(registration, withProjection(projection, { claim: "non-promotional" }), "wrong-binding");
   return Object.freeze({ trusted, registration, registrationAccepted: result.decision === "accepted",
     rows: Object.freeze([Object.freeze({ event: registration, result,
-      accepted: result.decision === "accepted", reservedProofId: null })]) });
+      accepted: result.decision === "accepted", reservedProofId: null, reservesEventIdentity: true })]) });
 };
 export const appendOracleEvent = (history: OracleHistory, event: ProtocolEvent): OracleStep => {
   event = immutable(event);
@@ -1051,7 +1066,7 @@ export const appendOracleEvent = (history: OracleHistory, event: ProtocolEvent):
     return { history, result }; }
   let result: TransitionResult, proofReservationEligible = false, registration = history.registration;
   let registrationAccepted = history.registrationAccepted;
-  if (sameId.length > 0) {
+  if (sameId.some(row => row.reservesEventIdentity)) {
     result = denial(event, currentProjection(history), "wrong-binding"); } else if (!history.registrationAccepted) {
     if (event.type !== "RegisterProtocol") {
       result = denial(event, currentProjection(history), "not-registered"); } else if (event.authenticatedPredecessorId !== null ||
@@ -1080,7 +1095,8 @@ export const appendOracleEvent = (history: OracleHistory, event: ProtocolEvent):
         candidate = replay(event, history);
       result = enforceRetiredHistoryFinality(history, event, candidate); } }
   const row: LedgerRow = { event, result, accepted: result.decision === "accepted",
-    reservedProofId: proofReservationEligible && result.decision === "rejected" ? producedProof(event) : null };
+    reservedProofId: proofReservationEligible && result.decision === "rejected" ? producedProof(event) : null,
+    reservesEventIdentity: result.decision === "accepted" || identityQualified(history, event) };
   return Object.freeze({ result, history: Object.freeze({ trusted: history.trusted, registration, registrationAccepted,
       rows: Object.freeze([...history.rows, Object.freeze(row)]) }) });
 };

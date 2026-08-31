@@ -24,13 +24,14 @@ interface Authorization {
 }
 interface Fence { readonly generation: C.FenceGeneration; readonly open: boolean } interface BuildFact { readonly projection: C.BuildTerminalProjection; readonly result: C.BuildResultInput | null;
   readonly artifactDigest: C.ArtifactDigest | null; }
-interface Observation { readonly event: C.ProtocolEvent; readonly result: C.TransitionResult; readonly reservedProofId: C.ProofId | null; }
+interface Observation { readonly event: C.ProtocolEvent; readonly result: C.TransitionResult;
+  readonly reservedProofId: C.ProofId | null; readonly reservesEventIdentity: boolean; }
 interface CleanupBinding { readonly requestEventId: C.EventId; readonly basis: C.RuntimeCleanupBasis; }
 interface State extends QualificationReducerState {
   readonly trusted: C.TrustedProtocolCoordinates; readonly registration: Registration | null;
   readonly sourceFence: Fence | null; readonly campaignFence: Fence | null; readonly familyFence: Fence | null;
   readonly authorizations: ReadonlyMap<C.AuthorizationId, Authorization>;
-  readonly events: ReadonlyMap<string, Observation>; readonly receipts: ReadonlySet<C.ReceiptId>;
+  readonly events: readonly Observation[]; readonly receipts: ReadonlySet<C.ReceiptId>;
   readonly buildReceipts: ReadonlySet<C.BuildReceiptId>; readonly consistencyReceipts: ReadonlySet<C.ConsistencyReceiptId>;
   readonly tombstones: ReadonlySet<C.TombstoneId>; readonly reservedProofs: ReadonlySet<C.ProofId>;
   readonly lateFacts: ReadonlyMap<string, unknown>; readonly lastEventId: C.EventId | null;
@@ -46,7 +47,11 @@ const emptyProjections = (): C.TerminalProjections => ({
 });
 const stateOf = (value: QualificationReducerState): State => value as State; const withSet = <T>(set: ReadonlySet<T>, value: T): ReadonlySet<T> => new Set([...set, value]);
 const withMap = <K, V>(map: ReadonlyMap<K, V>, key: K, value: V): ReadonlyMap<K, V> => new Map([...map, [key, value] as const]);
-const eventKey = (event: C.ProtocolEvent): string => "sourceFamilyRootId" in event ? JSON.stringify(["root", event.sourceFamilyRootId, event.eventId]) : JSON.stringify(["unscoped", event.eventId]);
+const withObservation = (events: State["events"], observation: Observation): State["events"] =>
+  [...events, observation];
+const withLatestObservation = (events: State["events"], observation: Observation): State["events"] =>
+  [...events.slice(0, -1), observation];
+const observations = (s: State): readonly Observation[] => s.events;
 const receiptUsed = (s: State, value: string): boolean => [...s.receipts, ...s.buildReceipts,
   ...s.consistencyReceipts, ...s.tombstones].some(candidate => candidate === value);
 const eventReceipt = (event: C.ProtocolEvent): string | null => {
@@ -79,9 +84,9 @@ const immutable = <T>(value: T): T => { const copy = structuredClone(value);
   const freeze = (item: unknown): void => { if (item !== null && typeof item === "object") {
     Object.values(item).forEach(freeze); Object.freeze(item); } }; freeze(copy); return copy; };
 const acceptedEvent = (s: State, predicate: (event: C.ProtocolEvent) => boolean): boolean =>
-  [...s.events.values()].some(observation => observation.result.decision === "accepted" &&
+  observations(s).some(observation => observation.result.decision === "accepted" &&
     predicate(observation.event));
-const acceptedEvents = (s: State): readonly C.ProtocolEvent[] => [...s.events.values()]
+const acceptedEvents = (s: State): readonly C.ProtocolEvent[] => observations(s)
   .filter(observation => observation.result.decision === "accepted")
   .map(observation => observation.event);
 const producedProof = (event: C.ProtocolEvent): C.ProofId | null => {
@@ -117,7 +122,7 @@ export const initializeQualificationReducer = (
 ): QualificationReducerState => {
   const state: State = { kind: "qualification-reducer-state", trusted, registration: null,
     sourceFence: null, campaignFence: null, familyFence: null, authorizations: new Map(),
-    events: new Map(), receipts: new Set(), buildReceipts: new Set(),
+    events: [], receipts: new Set(), buildReceipts: new Set(),
     consistencyReceipts: new Set(), tombstones: new Set(), reservedProofs: new Set(), lateFacts: new Map(),
     lastEventId: null, lastTick: null, projections: immutable(emptyProjections()),
     checkpointEffective: false, stopBarrier: false, retirementRequested: false,
@@ -153,7 +158,7 @@ const accept = (state: State, event: C.ProtocolEvent, changes: Partial<State>,
   const result = immutable<C.TransitionResult>({ decision: "accepted", effects, terminalProjections: raw.projections });
   const changed: State = { ...raw, projections: result.terminalProjections };
   const next: State = { ...changed,
-    events: withMap(state.events, eventKey(event), { event, result, reservedProofId: null }) };
+    events: withObservation(state.events, { event, result, reservedProofId: null, reservesEventIdentity: true }) };
   return { state: next, result };
 };
 const reject = (state: State, event: C.ProtocolEvent, reason: C.DenialReason): QualificationTransition => {
@@ -162,7 +167,7 @@ const reject = (state: State, event: C.ProtocolEvent, reason: C.DenialReason): Q
   const result = immutable<C.TransitionResult>({ decision: "rejected", effects: replay ? [denied,
     invalid(event, { type: "event", eventId: event.eventId })] : [denied], terminalProjections: projections });
   return { state: { ...state, projections: result.terminalProjections,
-    events: withMap(state.events, eventKey(event), { event, result, reservedProofId: null }) } as State, result };
+    events: withObservation(state.events, { event, result, reservedProofId: null, reservesEventIdentity: false }) } as State, result };
 };
 const rejectTypedReplay = (state: State,
   event: C.RecordBuildResult | C.RecordBuildConsistencyReceipt,
@@ -173,7 +178,7 @@ const rejectTypedReplay = (state: State,
       buildAttemptId: event.buildAttemptId, value: "denied" }, invalid(event, evidence)] });
   const candidate = stateOf(denied.state);
   const next: State = { ...candidate,
-    events: withMap(state.events, eventKey(event), { event, result, reservedProofId: null }) };
+    events: withObservation(state.events, { event, result, reservedProofId: null, reservesEventIdentity: false }) };
   return { state: next, result };
 };
 const terminal = (event: C.ProtocolEvent, value: C.TerminalReference): C.TerminalAppendedEffect => ({ type: "terminal-appended", causalEventId: event.eventId, terminal: value });
@@ -188,20 +193,40 @@ const contain = (e: RuntimeSafetyEvidence): C.DeclaredEffect[] => [
 const rootMatches = (r: Registration, e: { readonly sourceClaimFamilyId: C.SourceClaimFamilyId;
   readonly sourceFamilyRootId: C.SourceFamilyRootId }): boolean =>
   e.sourceClaimFamilyId === r.sourceClaimFamilyId && e.sourceFamilyRootId === r.sourceFamilyRootId;
+const identityQualified = (s: State, event: C.ProtocolEvent): boolean => {
+  if (event.type === "RegisterProtocol" && s.registration === null) return true;
+  const registered = s.registration; if (registered === null ||
+    event.protocolRevisionId !== registered.protocolRevisionId ||
+    event.custodyAuthorityId !== registered.custodyAuthorityId ||
+    event.authenticatedPredecessorId !== s.lastEventId ||
+    s.lastTick !== null && event.authoritativeTick < s.lastTick ||
+    event.type === "RegisterProtocol" && !registrationMatches(registered, event)) return false;
+  const candidate = event as unknown as Readonly<Record<string, unknown>>;
+  const identity = registered as unknown as Readonly<Record<string, unknown>>;
+  return ["sourceClaimFamilyId", "sourceFamilyRootId", "sourceSlotId", "attemptId", "runtimeId",
+    "checkpointId", "buildAttemptId", "retirementOwnerId", "credentialLineageId", "admissionId"]
+    .every(field => !(field in candidate) || candidate[field] === identity[field]);
+};
+const reserveEventIdentity = (transition: QualificationTransition): QualificationTransition => {
+  const candidate = stateOf(transition.state), observation = candidate.events.at(-1)!;
+  if (observation.reservesEventIdentity) return transition;
+  return { ...transition, state: { ...candidate, events: withLatestObservation(candidate.events,
+    { ...observation, reservesEventIdentity: true }) } as State };
+};
 const ownerMismatch = (r: Registration, e: { readonly retirementOwnerId: C.RetirementOwnerId;
   readonly credentialLineageId: C.CredentialLineageId }): C.DenialReason | null =>
   e.retirementOwnerId !== r.retirementOwnerId ? "retirement-owner-mismatch" :
     e.credentialLineageId !== r.credentialLineageId ? "credential-lineage-mismatch" : null;
 const reserveRejectedLifecycleProof = (s: State, e: C.ProtocolEvent, transition: QualificationTransition): QualificationTransition => {
-  if (transition.result.decision !== "rejected") return transition;
+  if (transition.result.decision !== "rejected" || !identityQualified(s, e)) return transition;
   const deniedRelease = e.type === "RecordReleaseDenied" ? s.authorizations.get(e.authorizationId) : undefined;
   const proof = e.type === "RecordReleaseDenied" && deniedRelease !== undefined && authorizationIdentity(s.registration!, e) === null &&
       bindingMatches(deniedRelease, e) ? e.proofId : e.type === "ReconcileRuntime" && rootMatches(s.registration!, e) &&
       e.runtimeId === s.registration!.runtimeId ? e.proofId : e.type === "CompleteRetirement" && rootMatches(s.registration!, e) &&
       e.runtimeId === s.registration!.runtimeId && ownerMismatch(s.registration!, e) === null ? e.cleanupProofId : null;
-  if (proof === null) return transition; const candidate = stateOf(transition.state), observation = candidate.events.get(eventKey(e))!;
+  if (proof === null) return transition; const candidate = stateOf(transition.state), observation = candidate.events.at(-1)!;
   return { ...transition, state: { ...candidate, reservedProofs: withSet(candidate.reservedProofs, proof),
-    events: withMap(candidate.events, eventKey(e), { ...observation, reservedProofId: proof }) } as State }; };
+    events: withLatestObservation(candidate.events, { ...observation, reservedProofId: proof }) } as State }; };
 const fence = (s: State, binding: C.AuthorizationFenceBinding): Fence =>
   (binding.scope === "source" ? s.sourceFence : s.campaignFence)!;
 const fenceReason = (s: State, binding: C.AuthorizationFenceBinding): C.DenialReason | null => {
@@ -604,7 +629,7 @@ interface RuntimeSafetyWatermark {
 }
 const runtimeSafetyWatermark = (s: State, runtimeId: C.RuntimeId): RuntimeSafetyWatermark | null => {
   let watermark: RuntimeSafetyWatermark | null = null;
-  for (const observation of s.events.values()) {
+  for (const observation of observations(s)) {
     const candidate = observation.event;
     const safetyEvidence = observation.result.effects.some(effect =>
       (effect.type === "process-release-requested" ||
@@ -748,7 +773,7 @@ const replayReceiptReference = (event: C.ProtocolEvent): C.EvidenceReference | n
 };
 const expectedRetainedEvidence = (s: State, cleanupProofId: C.ProofId): readonly C.EvidenceReference[] => {
   const expected: C.EvidenceReference[] = [{ type: "proof", proofId: cleanupProofId }];
-  for (const observation of s.events.values()) {
+  for (const observation of observations(s)) {
     if (observation.result.decision === "accepted" || observation.reservedProofId !== null ||
       observation.result.effects.some(effect => effect.type === "denial-recorded" && effect.reason === "receipt-replay")) {
     expected.push({ type: "event", eventId: observation.event.eventId }, ...(observation.reservedProofId === null ?
@@ -831,7 +856,7 @@ const complete = (s: State, e: C.CompleteRetirement): QualificationTransition =>
 const attemptReceipt = (s: State, e: C.RecordAttemptReceipt): QualificationTransition => {
   if (e.attemptId !== s.registration!.attemptId || e.runtimeId !== s.registration!.runtimeId)
     return reject(s, e, "wrong-binding");
-  const retainedStart = [...s.events.values()].some(observation =>
+  const retainedStart = observations(s).some(observation =>
     observation.event.type === "ReleaseProcess" && observation.event.launchPurpose === "evaluation" &&
     observation.event.attemptId === e.attemptId && observation.event.runtimeId === e.runtimeId &&
     observation.result.effects.some(effect => effect.type === "late-receipt-retained" &&
@@ -1133,7 +1158,7 @@ const preserveReplayedRuntimeSafety = (s: State, e: C.ProtocolEvent,
   const state: State = { ...candidate, projections: publicProjections,
     postRetirementRuntime: s.projections.resourceRetirement.type === "retired" ?
       "unknown" : candidate.postRetirementRuntime,
-    events: withMap(candidate.events, eventKey(e), { event: e, result, reservedProofId: null }) };
+    events: withLatestObservation(candidate.events, { event: e, result, reservedProofId: null, reservesEventIdentity: false }) };
   return { state, result };
 };
 const enforceTombstoneFinality = (s: State, e: C.ProtocolEvent, transition: QualificationTransition): QualificationTransition => {
@@ -1144,7 +1169,7 @@ const enforceTombstoneFinality = (s: State, e: C.ProtocolEvent, transition: Qual
     if (reason === "receipt-replay") {
       const result = immutable<C.TransitionResult>({ ...transition.result, terminalProjections: s.projections });
       const candidate = stateOf(transition.state);
-      const events = withMap(s.events, eventKey(e), { event: e, result, reservedProofId: null });
+      const events = withObservation(s.events, { event: e, result, reservedProofId: null, reservesEventIdentity: false });
       return { state: { ...s, postRetirementRuntime: candidate.postRetirementRuntime,
         events } as State, result };
     }
@@ -1170,14 +1195,14 @@ export const transitionQualificationEvent = (
   reducerState: QualificationReducerState, event: C.ProtocolEvent,
 ): QualificationTransition => {
   event = immutable(event);
-  const s = stateOf(reducerState), prior = s.events.get(eventKey(event));
-  if (prior) return same(prior.event, event) ? { state: s, result:
+  const s = stateOf(reducerState), prior = s.events.filter(observation =>
+    observation.event.eventId === event.eventId);
+  const exact = prior.find(observation => same(observation.event, event));
+  if (exact) return { state: s, result:
     s.projections.resourceRetirement.type === "retired" &&
-    prior.result.terminalProjections.resourceRetirement.type !== "retired" ?
-      immutable<C.TransitionResult>({ ...prior.result, effects: [], terminalProjections: s.projections }) : prior.result } :
-    { state: s, result: immutable<C.TransitionResult>({ decision: "rejected", effects: [{ type: "denial-recorded",
-      causalEventId: event.eventId, reason: "wrong-binding", subject: subject(event) }],
-    terminalProjections: s.projections }) };
+    exact.result.terminalProjections.resourceRetirement.type !== "retired" ?
+      immutable<C.TransitionResult>({ ...exact.result, effects: [], terminalProjections: s.projections }) : exact.result };
+  if (prior.some(observation => observation.reservesEventIdentity)) return reject(s, event, "wrong-binding");
   if (s.registration === null && event.type !== "RegisterProtocol") return reject(s, event, "not-registered");
   if (s.registration !== null && (event.protocolRevisionId !== s.registration.protocolRevisionId ||
     event.custodyAuthorityId !== s.registration.custodyAuthorityId ||
@@ -1198,7 +1223,8 @@ export const transitionQualificationEvent = (
   transition = preserveReplayedRuntimeSafety(s, event, transition);
   if (s.projections.resourceRetirement.type === "retired")
     transition = enforceTombstoneFinality(s, event, transition);
-  return reserveRejectedLifecycleProof(s, event, transition);
+  transition = reserveRejectedLifecycleProof(s, event, transition);
+  return identityQualified(s, event) ? reserveEventIdentity(transition) : transition;
 };
 export const foldQualificationHistory = (
   events: readonly C.ProtocolEvent[], maximumEvents: number, trusted: C.TrustedProtocolCoordinates,

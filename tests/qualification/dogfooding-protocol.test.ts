@@ -1057,6 +1057,86 @@ test("foreign event ID preplay cannot suppress exact-bound restart containment",
     assert.deepEqual(compareEvents([...events, events.at(-1)!], "exact replay after foreign preplay").at(-1), results.at(-1));
   }
 });
+test("identity-invalid collisions cannot occupy a trusted runtime event ID", () => {
+  const mutations = [
+    ["family", (event: C.ProtocolEvent) => ({ ...event, sourceClaimFamilyId: C.sourceClaimFamilyId("foreign-family") })],
+    ["root", (event: C.ProtocolEvent) => ({ ...event, sourceFamilyRootId: C.sourceFamilyRootId("foreign-root") })],
+    ["runtime", (event: C.ProtocolEvent) => ({ ...event, runtimeId: C.runtimeId("foreign-runtime") })],
+    ["authority", (event: C.ProtocolEvent) => ({ ...event, custodyAuthorityId: C.custodyAuthorityId("foreign-authority") })],
+    ["revision", (event: C.ProtocolEvent) => ({ ...event, protocolRevisionId: C.protocolRevisionId("foreign-revision") })],
+    ["predecessor", (event: C.ProtocolEvent) => ({ ...event, authenticatedPredecessorId: C.eventId("foreign-predecessor") })],
+    ["tick", (event: C.ProtocolEvent) => ({ ...event, authoritativeTick: tick(0) })],
+  ] as const;
+  for (const retired of [false, true]) for (const [name, mutate] of mutations) {
+    const prefix = retired ? [...retiredBeforeComplete, complete(`matrix-complete-${name}`, retiredBeforeComplete, receipt("close"))]
+      : [register, issue(`matrix-issue-${name}`), consume(`matrix-consume-${name}`)];
+    const label = `matrix-${retired ? "retired" : "active"}-${name}`;
+    const events = [...materialize([...prefix, rejected(detached(restart(label))), restart(label)])];
+    events[events.length - 2] = mutate(events.at(-2)!) as C.ProtocolEvent;
+    const results = compareEvents(events, `identity collision ${label}`), invalid = results.at(-2)!, trustedResult = results.at(-1)!;
+    assert.equal(invalid.decision, "rejected");
+    assert.equal(invalid.effects.find(effect => effect.type === "denial-recorded")?.reason, "wrong-binding");
+    assert.ok(!invalid.effects.some(effect => effect.type === "runtime-termination-requested"));
+    assert.equal(trustedResult.decision, "accepted");
+    assert.ok(trustedResult.effects.some(effect => effect.type === "runtime-termination-requested"));
+  }
+});
+test("arrival order, not first-seen event keys, selects an equal-tick safety watermark", () => {
+  const specs = [register, issue("ordered-issue"), consume("ordered-consume"),
+    rejected(detached({ ...restart("ordered-x"), body: { ...restart("ordered-x").body,
+      sourceFamilyRootId: C.sourceFamilyRootId("foreign") } })), restart("ordered-y"), restart("ordered-x"),
+    rejected(detached(reconcile("ordered-stale-y", "terminated", "ordered-y")))] as const;
+  const results = compareEvents(materialize(specs, 0), "flat observation order");
+  assert.equal(results.at(-3)!.decision, "accepted");
+  assert.equal(results.at(-2)!.decision, "accepted");
+  assert.equal(results.at(-1)!.decision, "rejected");
+  assert.equal(results.at(-1)!.effects.find(effect => effect.type === "denial-recorded")?.reason, "wrong-binding");
+});
+test("owner and credential denials cannot suppress cross-kind trusted safety", () => {
+  for (const retired of [false, true]) for (const [name, bad] of [
+    ["owner", retirement("owner-cross-kind", id.otherOwner, id.lineage)],
+    ["credential", retirement("credential-cross-kind", id.owner, id.otherLineage)],
+  ] as const) {
+    const prefix = retired ? [...retiredBeforeComplete, complete(`cross-kind-complete-${name}`, retiredBeforeComplete, receipt("close"))]
+      : [register];
+    const trustedSafety = restart(bad.label), events = materialize([...prefix, rejected(detached(bad)), trustedSafety]);
+    const results = compareEvents(events, `cross-kind ${name} retired=${retired}`);
+    assert.equal(results.at(-2)!.decision, "rejected"); assert.equal(results.at(-1)!.decision, "accepted");
+    assert.equal(results.at(-2)!.effects.find(effect => effect.type === "denial-recorded")?.reason,
+      name === "owner" ? "retirement-owner-mismatch" : "credential-lineage-mismatch");
+    assert.ok(results.at(-1)!.effects.some(effect => effect.type === "runtime-termination-requested"));
+  }
+});
+test("exact collision rejections replay unchanged after an intervening source terminal", () => {
+  const changed = rejected(detached({ ...issue("stable-collision"),
+    body: { ...issue("stable-collision").body, expiresAt: tick(49) } }));
+  const events = materialize([register, issue("stable-collision"), changed, abandon("stable-terminal")]);
+  const results = compareEvents([...events, events[2]!], "stable rejected collision replay");
+  assert.equal(results[2]!.decision, "rejected");
+  assert.equal(results[2]!.effects.find(effect => effect.type === "denial-recorded")?.reason, "wrong-binding");
+  assert.equal(results[3]!.decision, "accepted");
+  assert.deepEqual(results.at(-1), results[2]);
+});
+test("rootless events share the event-ID namespace and invalid envelopes cannot reserve proofs", () => {
+  const rootlessFirst = materialize([register, checkpoint("mixed-id"),
+    rejected(detached(restart("mixed-id")))]), rootFirst = materialize([register, restart("mixed-root"),
+    rejected(detached(checkpoint("mixed-root")))]);
+  for (const [events, name] of [[rootlessFirst, "rootless first"], [rootFirst, "root first"]] as const) {
+    const results = compareEvents(events, `${name} collision`), result = results.at(-1)!;
+    assert.equal(results[1]!.decision, "accepted"); assert.equal(result.decision, "rejected");
+    assert.equal(result.effects.find(effect => effect.type === "denial-recorded")?.reason, "wrong-binding");
+    const fresh = [...events.slice(0, -1), { ...events.at(-1)!, eventId: C.eventId(`fresh-${name}`) }];
+    assert.equal(compareEvents(fresh, `${name} fresh ID control`).at(-1)!.decision, "accepted");
+  }
+  const prefix = [register, issue("proof-isolation-issue"), consume("proof-isolation-consume"), crash("proof-isolation-crash")],
+    invalid = rejected(detached({ ...reconcile("proof-isolation-invalid", "terminated", "proof-isolation-crash", "proof-isolation"),
+      body: { ...reconcile("proof-isolation-invalid", "terminated", "proof-isolation-crash", "proof-isolation").body,
+        sourceClaimFamilyId: C.sourceClaimFamilyId("foreign-family") } })),
+    valid = reconcile("proof-isolation-valid", "terminated", "proof-isolation-crash", "proof-isolation");
+  const results = compareEvents(materialize([...prefix, invalid, valid]), "invalid identity proof isolation");
+  assert.equal(results.at(-2)!.decision, "rejected"); assert.equal(results.at(-1)!.decision, "accepted");
+  assert.equal(results.at(-2)!.effects.find(effect => effect.type === "denial-recorded")?.reason, "wrong-binding");
+});
 test("a rejected exact-bound retirement completion reserves its cleanup proof", () => {
   const pending = [...sourceClosedPrefix, retirement("proof-retirement")],
     requested = cleanup("proof-cleanup", "source-terminated", "source-release"),
