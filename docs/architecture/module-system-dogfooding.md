@@ -28,6 +28,87 @@ factories, closed dependency objects, and explicit composition roots. The
 records non-authoritative evidence, verdicts, and recommended triggers. Only
 accepted ADRs and owning-product decisions authorize implementation or use.
 
+## Repository And Authority Boundary
+
+Dogfooding does not transfer module-system ownership into Extension Foundation.
+The responsibilities remain deliberately separate:
+
+| Owner or candidate | Responsibility in this proposal |
+| --- | --- |
+| [Get Modular](https://github.com/agent-teams-ai/get-modular) | Independent ordinary library authorized by ADR-0015 for neutral module identities, declaration grammar, dependency bindings, deterministic graph compilation, canonical plans, diagnostics, and conformance vectors. Its 0.x implementation may be a dogfooding candidate; stable 1.0 promotion retains separate consumer and conformance gates. Product payloads and operational lifecycle remain product-owned. |
+| Extension Foundation | Product-neutral extension identities, immutable manifest and lifecycle values, distribution and isolation protocol contracts, verification envelopes, and conformance tooling. It does not decide admission or grants, orchestrate lifecycle, or store product installation or plugin-private state. |
+| OCI registry such as GHCR or Harbor | Immutable plugin artifact bytes addressed by digest. A registry does not decide product admission, grants, compatibility, or activation. |
+| Future Extension Catalog | Searchable publisher and extension metadata, moderation state, federation, and signed offline snapshots. A product can also install a digest-pinned artifact without this catalog. |
+| Owning product or tenant | Capability contracts, admission decisions, grants, enforcement, durable installation intent, canonical extension and plugin-private state, literal executable loaders, activation, readiness, generations, publication, routing, fencing, quarantine, drain, cleanup, retirement, recovery, and reconciliation. |
+| External qualification evidence | Candidate-neutral dogfooding protocol checks such as the disposable reducer, independent oracle, and adversarial race fixtures described by this proposal. |
+
+Get Modular and Extension Foundation do not import each other. A product-owned
+adapter may consume both without transferring operational authority to either library. The executable
+qualification model in this repository is external evidence about campaign and
+custody invariants; it is not a production package, a Module API, a graph
+compiler, a loader, or lifecycle authority. It may challenge a Get Modular or
+product decision, but cannot silently replace one.
+
+The disposable model remains under `tests/qualification/**`, is capped at 4,400
+physical lines, 332,000 UTF-8 bytes, and 200 characters per line across its
+closed transitive source set, and must never be imported by a production package.
+These are maintainability ceilings, not compression targets: qualification code
+must remain readable and must not join unrelated statements merely to fit the cap.
+The initial increase from 4,000 to 4,200 lines covered proof and crash remediation.
+A further 100-line allowance is proposed for five concrete findings from the two
+hosted reviews of `c137264`: restart without launch authority, foreign event-ID
+reservation, a late start contradicting an unconsumed terminal, nested proof pollution,
+and campaign revocation after a non-start terminal. It adds regression traces, not
+new event kinds or runtime scope. Reviews of `6aa1577` then found same-root
+invalid identity reservation, unstable replay of rejected collisions, and mixed root/unscoped
+IDs that made authenticated lineage ambiguous. A second 100-line and 10,000-byte
+allowance covers explicit identity reservation, chronological observations and
+their directed regressions. Review of `bc08a2d` additionally identified an exact
+future-predecessor retry hidden by an earlier unreserved rejection; its regression
+uses a further 2,000-byte allowance without increasing the line ceiling.
+Both reviewers must evaluate the combined allowance
+with the exact amended head; the line-width limit remains unchanged. Further
+increases require separately reviewed evidence rather than formatting churn.
+A repository-level architecture check derives the transitive local source closure,
+rejects imports outside the exact four-file roster, and enforces all three limits,
+so edits to the model cannot silently weaken their own guard. The roster consists of
+four distinct non-symlink regular files. Only literal static ESM and TypeScript
+dependencies plus an exact external allowlist are permitted; dynamic, CommonJS,
+factory, reflective, process, Worker, and WebAssembly loading paths fail closed.
+The contract imports no model code, reducer and oracle import only the contract,
+and the test entry imports all three; any other local edge fails the repository gate.
+A real product seam starts
+from product-owned types and composition; this model is not shared campaign
+machinery. The architecture owner must remove these executable files when an
+accepted decision either selects the first product-owned capability or rejects
+this campaign model. Audit retention moves an inert copy to
+`docs/evidence/archive/dogfooding-protocol/<decision-id>/`, outside TypeScript and
+test discovery, rather than leaving a second executable lifecycle authority.
+The reduced model recognizes only `expiry` and `analytic-stop` as generic
+`AdvanceFence` causes. Source closure, abandonment, explicit revocation, and
+retirement remain dedicated transitions so the model cannot silently invent a
+shared five-cause policy before an owning product decides it.
+
+The model starts only from product-supplied trusted protocol-revision and custody-
+authority coordinates; the first ledger event cannot appoint its own authority.
+Rejected bootstrap input neither registers the protocol nor advances its lineage;
+a later fresh registration may succeed only from the original trusted coordinates
+and null predecessor.
+Its authenticated predecessor orders admitted state transitions. Denial effects
+are compared and retained as evidence, but sequencing of the separate authenticated
+denial journal and its verifiable high-watermark remain a product-owned campaign
+requirement rather than evidence proved by this disposable model.
+
+Extension Foundation is a reusable library and protocol boundary, not an
+artifact store, catalog database, marketplace, or mandatory hosted service.
+
+Real product dogfooding therefore lives in the consuming product adapter and
+host. Get Modular supplies the composition subject and conformance vectors;
+Extension Foundation may supply admitted plugin inputs; the owning product
+performs activation and records outcomes. Keeping the evaluator outside the
+candidate repository prevents the module implementation from approving its own
+promotion evidence.
+
 ## Design Principles
 
 | Principle | Application here |
@@ -277,8 +358,10 @@ admission, source-preparation closure, treatment slot, build attempt and actual
 build receipt and records every expected-versus-observed repository, commit,
 tree, source, delta, recipe, toolchain, resolved dependency and build-material
 comparison. A missing, foreign, stale, or unequal comparison blocks `T1`
-execution. Build failure or product-base drift therefore remains visible before
-an artifact exists.
+execution. A failed or no-output build requires a positive consistency receipt
+matching that exact non-artifact result; `missing-build` is not a valid substitute
+for an observed failed build. Build failure or product-base drift therefore
+remains visible before an artifact exists.
 
 Before artifact execution, the custodian registers an `AttemptIdentity` against
 the exact `ProtocolRevision`, `B0` or verified `T1`, `E0`, and
@@ -287,9 +370,12 @@ links to its predecessor and retains the original `ExperimentalUnit`. A genuine
 independently randomized replication is registered as a new experimental unit
 and attempt, never relabeled as a retry.
 
-Each registration requests one one-use `LaunchAuthorization`. The custody
-transaction authority durably issues and atomically consumes it before committing
-the build or evaluation process-release decision. The external launch gate only
+Each registered launch purpose requests its own one-use `LaunchAuthorization`:
+`source-authoring`, `build`, or `evaluation`. At most one authority exists for a
+given purpose, slot, and prospective runtime, while different purposes never
+reuse one capability. The custody transaction authority durably issues and
+atomically consumes it before committing the matching process-release decision.
+A build receipt is accepted only for its consumed build authority. The external launch gate only
 enforces that committed decision before candidate-controlled code can execute; it
 cannot mutate authorization or fence state. Missing, reused, mismatched, or
 expired authorization blocks launch. Campaign authorizations expire no later than
@@ -380,8 +466,10 @@ are not independent consumers.
 The exact benchmark remains product-owned. Any deterministic campaign used for
 an evidence claim must register normalized inputs and expected outputs,
 non-stochastic oracle behavior, resource bounds, identical adapter treatment,
-and deliberate mutants. Mutation evidence supports only the bounded claim that
-the registered oracle rejects each registered mutant.
+and adversarial traces. The reduced executable model does not claim mutation
+coverage: stateful deliberate mutants become mandatory only in the first
+product-owned campaign harness, where they can mutate real candidate behavior
+rather than compare synthetic values after the fact.
 
 Any stochastic campaign must preregister its primary estimand, experimental
 unit, pairing and randomization schedule, analysis method, sample-size or power
@@ -402,8 +490,88 @@ dependency direction remain framework-neutral.
 The external custodian preregisters every expected build and execution attempt
 and records append-only terminal receipts. If no receipt arrives by the sealed
 deadline, the custodian records a separate missing or unknown observation.
+The authoritative deadline is inclusive: a receipt observed at or after it is
+retained only as late evidence and cannot create or rewrite the terminal result.
+The later deadline transition records the missing or unknown terminal and remains
+final; a late stop receipt also leaves the launch barrier closed.
 Absence alone is never reclassified as abandoned or invalid, and `E0` owns its
 attrition and analysis treatment.
+
+Receipt and retirement-tombstone primitive identifiers are globally unique
+within one protocol ledger, including across typed receipt families. The types
+prevent accidental API substitution; they do not create independent replay
+namespaces. Reusing the same primitive identity for another family is retained
+as invalid replay evidence and can never authorize execution or promotion. The
+rejected replay event itself remains part of the retirement evidence closure;
+retaining only the earlier receipt would hide the attempted substitution.
+Replay rejection also cannot suppress runtime-safety evidence. After the trusted
+envelope and its owner, root, slot, and runtime coordinates have been validated,
+a replayed `started` or `start-unknown` observation does not advance authenticated
+lineage or become a launch terminal, but it invalidates the claim and requests
+quarantine, reconciliation, and termination. Binding failure takes precedence,
+so an unrelated sender cannot trigger containment with a colliding identifier.
+After retirement the same rule opens only the private reconciliation track while
+the public tombstone and terminal projections remain unchanged. Reconciliation
+must bind the exact latest runtime-safety event and a fresh proof; a stale event,
+predating observation, or reused proof cannot clear containment. Cleanup likewise
+references the latest accepted terminated reconciliation for that same watermark.
+A proof is opaque in this qualification model, so causal freshness cannot be
+reconstructed from its identifier. Every rejected release-denial observation
+bound to an issued authorization, every rejected reconciliation with an
+authenticated envelope and exact root/runtime binding, and every equivalently
+bound retirement-completion attempt therefore reserves its proof. The
+retirement closure retains each such exact-bound rejected event together with
+its reserved proof and any top-level receipt. A rejected completion cannot add
+arbitrary nested termination proofs or retained-evidence references to that closure.
+Identity-invalid attempts cannot reserve a proof. Event IDs occupy one
+ledger-wide namespace across root-bound and rootless event kinds. Accepted events
+and rejected events with a qualified authenticated envelope and every applicable
+registered coordinate reserve that identity; identity-invalid observations remain
+forensic without occupying it. Rejected bootstrap identities remain reserved:
+the same identity cannot later be reinterpreted as a valid registration.
+Observations retain arrival order, including when a formerly rejected ID is used
+by a trusted event. Identity-reserving observations and collisions with an already
+reserved ID replay their original response subject to tombstone finality. An
+unreserved rejection is not a final replay authority: an exact retry must be
+reconsidered if its envelope and coordinates become qualified after its missing
+predecessor arrives. A subsequently qualified matching observation takes replay
+precedence over the earlier unreserved rejection. Receipt and proof replay namespaces remain
+ledger-wide.
+
+Cleanup records one explicit basis. A `terminated` basis binds the exact current
+runtime-safety watermark and its accepted termination proof. A `never-released`
+basis binds the exact source-terminal receipt and is accepted only when the ledger
+proves that no process release, runtime-safety watermark, or consumed unresolved
+authorization exists. Absence never receives a fabricated termination proof.
+An exact crash or restart observation that contradicts a `release-denied` or
+`never-started` terminal is retained as runtime-safety evidence, invalidates the
+claim, opens containment, and makes the `never-released` basis impossible.
+A trusted exact-root/runtime restart also defeats absence when no authorization
+was ever issued or consumed. It opens containment before retirement or the private
+reconciliation track after retirement, without rewriting the public tombstone.
+A late start contradicting an unconsumed `never-started` terminal follows the same
+rule; missing consumption cannot suppress trusted evidence of a runtime.
+Campaign fence advancement revokes consumed authority unless it actually reached
+`started`, including `release-denied` and `start-unknown` terminals.
+
+Resource retirement requires an explicit owner-bound retirement request. Before
+it can complete, every launch authority is expired or revoked, every consumed
+launch authority has a terminal launch disposition, every started build or
+evaluation has its required terminal observations, and every effective stop
+checkpoint is terminal. The tombstone retains references to every admitted
+ledger event, replay event, typed receipt and proof observed before completion,
+plus the exact cleanup request, its unchanged basis, and a fresh cleanup proof.
+Reconciliation can prove runtime termination but cannot invent a terminal launch
+disposition. Missing closure evidence fails closed; a tombstone cannot hide an
+unfinished or unreconciled runtime.
+
+The tombstone freezes terminal projections but does not suppress later safety
+evidence. A fresh `started` or `start-unknown` observation after retirement is
+appended as invalid evidence, quarantines the resource, and opens a private
+containment-reconciliation track. Contradictory trusted launch terminals trigger
+the same invalidation and containment immediately, not only after a deadline.
+That track may record `unknown`, `live`, and `terminated` observations and request
+termination while the tombstone remains byte-for-byte unchanged.
 
 Every `BuildReceipt` and execution `EvidenceReceipt` carries a common envelope
 that binds:
@@ -706,7 +874,9 @@ Resource retirement may begin after either evidence abandonment or successful
 evidence closure, including when campaign admission later fails. It reconciles
 every persisted authoring runtime identity, while workspaces and containment
 remain quarantined whenever a runtime is unknown. Cleanup is permitted only
-after the custody authority proves the exact runtime terminated or is absent.
+after the custody authority proves either exact termination or verified absence
+through the explicit cleanup bases above. Completion must bind the exact accepted
+cleanup request, preserve its basis unchanged, and add a fresh cleanup proof.
 The custodian then appends one source-preparation retirement tombstone that binds
 the immutable evidence terminal state and receipt, root, all lineages,
 authorizations, slot dispositions, revocations, reconciliation evidence,
