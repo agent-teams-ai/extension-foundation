@@ -30,6 +30,7 @@ case "CompleteRetirement": return event.cleanupProofId; default: return null; } 
 const proofUsed = (history: OracleHistory, proofId: ReturnType<typeof producedProof>): boolean => proofId !== null &&
 history.rows.some(row => same(row.reservedProofId, proofId) || row.accepted && same(producedProof(row.event), proofId));
 const same = (left: unknown, right: unknown): boolean => left === right;
+const eventKey = (event: ProtocolEvent): string => "sourceFamilyRootId" in event ? JSON.stringify(["root", event.sourceFamilyRootId, event.eventId]) : JSON.stringify(["unscoped", event.eventId]);
 const samePayload = (left: unknown, right: unknown): boolean => {
 if (same(left, right)) return true;
 if (typeof left !== "object" || left === null || typeof right !== "object" || right === null) return false;
@@ -619,16 +620,16 @@ if (!purposeMatchesFence(event.launchPurpose, event.authorizationFence)) return 
 if (usedReceipt(history, event.launchReceiptId)) return replay(event, history);
 return retainPostRetirementUnsafeLaunch(history, event, event.launchReceiptId, "started"); }
 if (view?.launchTerminal === true) {
-if (!view.consumed) return denial(event, before, "authorization-unavailable");
 const receiptId = event.type === "ReleaseProcess" ? event.launchReceiptId : event.receiptId;
 if (usedReceipt(history, receiptId)) return replay(event, history);
 const result = event.type === "ReleaseProcess" ? "started" as const : "release-denied" as const;
 const conflict = oppositeLaunchObserved(history, event.authorizationId, result) ||
-event.type === "ReleaseProcess" && acceptedOf(history, "ReachLaunchDeadline").some(candidate =>
+ event.type === "ReleaseProcess" && acceptedOf(history, "ReachLaunchDeadline").some(candidate =>
 same(candidate.authorizationId, event.authorizationId) && candidate.result === "never-started");
 const effects: DeclaredEffect[] = [{ type: "late-receipt-retained", causalEventId: event.eventId,
 evidence: { type: "launch", authorizationId: event.authorizationId, receiptId, result } }];
 if (conflict) effects.push(...invalidClaimEffects(event, { type: "receipt", receiptId }), ...contain(event));
+if (!view.consumed && !conflict) return denial(event, before, "authorization-unavailable");
 return accept(conflict ? withProjection(before, { claim: "invalid", runtime: "unknown",
 resourceRetirement: { type: "quarantined" } }) : before, effects); }
 if (event.type === "ReleaseProcess" && event.authoritativeTick >= registration.launchDeadline) {
@@ -700,7 +701,8 @@ const launch = priorLaunchResult(history, issue.authorizationId); return launch 
 if (contradiction) return accept(withProjection(before, { claim: "invalid", runtime: "unknown",
 resourceRetirement: { type: "quarantined" } }), [...invalidClaimEffects(event, { type: "event", eventId: event.eventId }), ...contain(event)]);
 const hasProspectiveRuntime = acceptedOf(history, "ConsumeAuthorization").length > 0 || before.runtime !== "not-started";
-if (!hasProspectiveRuntime) return denial(event, before, "runtime-unresolved"); return accept(
+if (!hasProspectiveRuntime) return accept(withProjection(before, { claim: "invalid", runtime: "unknown",
+resourceRetirement: { type: "quarantined" } }), [...invalidClaimEffects(event, { type: "event", eventId: event.eventId }), ...contain(event)]); return accept(
 withProjection(before, { runtime: "unknown", resourceRetirement: { type: "quarantined" } }), contain(event)); }
 if (before.resourceRetirement.type === "retired" || before.runtime === "not-started") {
 return denial(event, before, "runtime-unresolved"); }
@@ -1039,7 +1041,7 @@ export const initializeOracleHistory = (registration: RegisterProtocol,
 };
 export const appendOracleEvent = (history: OracleHistory, event: ProtocolEvent): OracleStep => {
   event = immutable(event);
-  const sameId = history.rows.filter(row => same(row.event.eventId, event.eventId));
+  const sameId = history.rows.filter(row => eventKey(row.event) === eventKey(event));
   const exact = sameId.find(row => samePayload(row.event, event));
   if (exact !== undefined) {
     const before = currentProjection(history);

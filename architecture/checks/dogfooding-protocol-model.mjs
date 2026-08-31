@@ -27,7 +27,7 @@ const expectedLocalDependencies = new Map([
     "tests/qualification/dogfooding-protocol-reducer.ts",
   ]],
 ]);
-const limits = { physicalLines: 4_200, utf8Bytes: 320_000, charactersPerLine: 200 };
+const limits = { physicalLines: 4_300, utf8Bytes: 320_000, charactersPerLine: 200 };
 const decode = new TextDecoder("utf-8", { fatal: true });
 const allowedExternalDependencies = new Set(["fast-check", "node:assert/strict", "node:test"]);
 const forbiddenRuntimeIdentifiers = new Set([

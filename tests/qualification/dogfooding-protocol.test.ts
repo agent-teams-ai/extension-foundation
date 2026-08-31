@@ -107,7 +107,8 @@ const reservesRejectedLifecycleProof = (spec: EventSpec, history: readonly Event
     body.type === "CompleteRetirement" && body.retirementOwnerId === id.owner && body.credentialLineageId === id.lineage); };
 const retainedEvidenceFor = (history: readonly EventSpec[], cleanupProof: C.ProofId): readonly C.EvidenceReference[] => {
   const references = history.filter((spec, index) => spec.accepted || spec.retainedAfterRejection === true || reservesRejectedLifecycleProof(spec, history, index)).flatMap(spec => [
-    { type: "event" as const, eventId: C.eventId(`event:${spec.label}`) }, ...bodyEvidence(spec.body)]);
+    { type: "event" as const, eventId: C.eventId(`event:${spec.label}`) }, ...bodyEvidence(!spec.accepted && spec.body.type === "CompleteRetirement" ?
+      { cleanupProofId: spec.body.cleanupProofId } : spec.body)]);
   references.push({ type: "proof", proofId: cleanupProof }); return references.filter((reference, index) => references.findIndex(candidate =>
     JSON.stringify(candidate) === JSON.stringify(reference)) === index);
 };
@@ -671,7 +672,8 @@ test("retirement freezes state mutations but retains explicit late forensic evid
 test("late starts are contained", () => { const long = event("l", "IssueAuthorization", {
   ...authorization(sourceFence), expiresAt: tick(100) }); const terminal = [register, long, consume("consume"), launchDeadline("deadline")] as const;
   const histories = [[...terminal, at(release("late", sourceFence), 61)], [...terminal, at(releaseDenied("denied", sourceFence), 61)],
-    [register, issue("i"), consume("c"), at(release("fresh", sourceFence), 61)]] as const;
+    [register, issue("i"), consume("c"), at(release("fresh", sourceFence), 61)],
+    [register, longIssue("unconsumed-terminal"), launchDeadline("never-terminal", sourceFence, "never-started"), at(release("contradictory-start", sourceFence), 61)]] as const;
   histories.forEach((history, index) => { compareHistory(history, `late ${index}`); const results = foldQualificationHistory(materialize(history), 64, trusted).results,
       last = results.at(-1)!, p = last.terminalProjections, types = last.effects.map(effect => effect.type); assert.ok(types.includes("late-receipt-retained"));
     if (index < 2) assert.deepEqual(p, results.at(-2)!.terminalProjections); else { assert.deepEqual([p.claim, p.runtime, p.resourceRetirement.type], ["invalid", "unknown", "quarantined"]);
@@ -1026,6 +1028,35 @@ test("post-retirement crash and restart contradictions preserve the tombstone an
     assert.equal(observed.decision, "accepted"); assert.deepEqual(observed.terminalProjections, tombstone);
     assert.ok(effects.some(effect => effect.type === "claim-disposition-set" && effect.value === "invalid") &&
       effects.some(effect => effect.type === "runtime-termination-requested")); } });
+test("trusted restart without any launch authority defeats absence before and after retirement", () => {
+  const pending = [register, abandon("absence-source"), retirement("absence-retirement"),
+    neverReleasedCleanup("absence-cleanup", "absence-source")] as const;
+  const finalized = complete("absence-complete", pending, receipt("absence-source"));
+  for (const retired of [false, true]) {
+    const prefix = retired ? [...pending, finalized] : pending;
+    const history = [...prefix, restart("absence-restart"),
+      rejected(detached(neverReleasedCleanup("absence-invalid-cleanup", "absence-source")))];
+    if (!retired) history.push(rejected(detached(finalized)));
+    const results = compareEvents(materialize(history), `restart without authority retired=${retired}`), observed = results[prefix.length]!;
+    assert.equal(observed.decision, "accepted");
+    assert.ok(observed.effects.some(effect => effect.type === "claim-disposition-set" && effect.value === "invalid"));
+    assert.ok(observed.effects.some(effect => effect.type === "runtime-termination-requested"));
+    assert.equal(results.at(-1)!.decision, "rejected");
+    if (retired) assert.deepEqual(observed.terminalProjections, results[prefix.length - 1]!.terminalProjections);
+    else assert.equal(observed.terminalProjections.resourceRetirement.type, "quarantined");
+  }
+});
+test("foreign event ID preplay cannot suppress exact-bound restart containment", () => {
+  for (const prefix of [[register, issue("collision-issue"), consume("collision-consume")],
+    [...retiredBeforeComplete, complete("collision-complete", retiredBeforeComplete, receipt("close"))]]) {
+    const signal = restart("colliding-restart"), foreign = rejected(detached({ ...signal,
+      body: { ...signal.body, sourceFamilyRootId: C.sourceFamilyRootId("foreign-root") } }));
+    const events = materialize([...prefix, foreign, signal]), results = compareEvents(events, "foreign event identity preplay");
+    assert.equal(results.at(-2)!.decision, "rejected"); assert.equal(results.at(-1)!.decision, "accepted");
+    assert.ok(results.at(-1)!.effects.some(effect => effect.type === "runtime-termination-requested"));
+    assert.deepEqual(compareEvents([...events, events.at(-1)!], "exact replay after foreign preplay").at(-1), results.at(-1));
+  }
+});
 test("a rejected exact-bound retirement completion reserves its cleanup proof", () => {
   const pending = [...sourceClosedPrefix, retirement("proof-retirement")],
     requested = cleanup("proof-cleanup", "source-terminated", "source-release"),
@@ -1049,10 +1080,13 @@ test("retirement evidence closes over rejected exact-bound completion proofs", (
   const pending = [...sourceClosedPrefix, retirement("reserved-completion-retirement")],
     cleanupRequest = cleanup("reserved-completion-cleanup", "source-terminated", "source-release"),
     prematureHistory = [...pending, cleanupRequest] as const,
-    rejectedCompletion = rejected(detached(complete("reserved-completion-attempt", prematureHistory, receipt("close"), "reserved-completion-proof"))),
+    premature = complete("reserved-completion-attempt", prematureHistory, receipt("close"), "reserved-completion-proof"),
+    rejectedCompletion = rejected(detached({ ...premature, body: { ...premature.body,
+      cleanupBasis: { type: "terminated", runtimeSafetyWatermarkEventId: C.eventId("event:source-release"), terminationProofId: proof("untrusted-nested") } } })),
     history = [...pending, rejectedCompletion, cleanupRequest] as const,
     candidate = complete("reserved-completion-final", history, receipt("close")), retainedEvidence = candidate.body.retainedEvidence as readonly C.EvidenceReference[];
   assert.ok(retainedEvidence.some(reference => reference.type === "proof" && reference.proofId === proof("reserved-completion-proof")));
+  assert.ok(!retainedEvidence.some(reference => reference.type === "proof" && reference.proofId === proof("untrusted-nested")));
   compareHistory([...history, candidate], "reserved completion proof closure");
   const omitted = rejected(detached({ ...candidate, label: "reserved-completion-omitted",
     body: { ...candidate.body, tombstoneId: C.tombstoneId("tombstone:reserved-completion-omitted"),
@@ -1137,13 +1171,18 @@ test("rejected bootstrap identities stay occupied", () => {
   const results = compareEvents([bad, retry], "occupied bootstrap identity");
   assert.equal(results.at(-1)!.decision, "rejected");
 });
-test("campaign fence closure revokes consumed unstarted build authority", () => {
-  const history = [...closedPrefix, issueWithId("pending-build-issue", id.buildAuthorization, campaignFence, "build"),
+test("campaign fence closure revokes consumed build authority unless actually released", () => {
+  const prefix = [...closedPrefix, issueWithId("pending-build-issue", id.buildAuthorization, campaignFence, "build"),
     event("pending-build-consume", "ConsumeAuthorization", { ...authorization(campaignFence, "build"),
-      authorizationId: id.buildAuthorization }), advance("pending-build-stop")] as const;
-  const result = compareEvents(materialize(history), "consumed build fence revocation").at(-1)!;
-  assert.ok(result.effects.some(effect => effect.type === "authorization-revoked" &&
-    effect.authorizationId === id.buildAuthorization));
+      authorizationId: id.buildAuthorization })] as const;
+  const denied = releaseDenied("pending-denied"), unknown = launchDeadline("pending-unknown", campaignFence);
+  const terminals = [[], [{ ...denied, body: { ...denied.body, authorizationId: id.buildAuthorization, launchPurpose: "build" } }],
+    [{ ...unknown, body: { ...unknown.body, authorizationId: id.buildAuthorization, launchPurpose: "build" } }],
+    [release("pending-started", campaignFence, "build", id.buildAuthorization)]];
+  terminals.forEach((terminal, index) => {
+    const result = compareEvents(materialize([...prefix, ...terminal, advance("pending-build-stop")]), `build fence terminal ${index}`).at(-1)!;
+    assert.equal(result.effects.some(effect => effect.type === "authorization-revoked" && effect.authorizationId === id.buildAuthorization), index !== 3);
+  });
 });
 test("typed build replay retains typed denial effects even while its gate is closed", () => {
   const collision = C.buildReceiptId("receipt:denied");

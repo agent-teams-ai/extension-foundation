@@ -46,13 +46,19 @@ custody invariants; it is not a production package, a Module API, a graph
 compiler, a loader, or lifecycle authority. It may challenge a Get Modular or
 product decision, but cannot silently replace one.
 
-The disposable model remains under `tests/qualification/**`, is capped at 4,200
+The disposable model remains under `tests/qualification/**`, is capped at 4,300
 physical lines, 320,000 UTF-8 bytes, and 200 characters per line across its
 closed transitive source set, and must never be imported by a production package.
 These are maintainability ceilings, not compression targets: qualification code
 must remain readable and must not join unrelated statements merely to fit the cap.
-The increase from 4,000 to 4,200 lines is one bounded remediation allowance;
-raising it again requires separately reviewed evidence rather than formatting churn.
+The initial increase from 4,000 to 4,200 lines covered proof and crash remediation.
+A further 100-line allowance is proposed for five concrete findings from the two
+hosted reviews of `c137264`: restart without launch authority, foreign event-ID
+reservation, a late start contradicting an unconsumed terminal, nested proof pollution,
+and campaign revocation after a non-start terminal. It adds regression traces, not
+new event kinds or runtime scope; both reviewers must evaluate this allowance with
+the exact amended head. The byte and line-width limits remain unchanged. Further
+increases require separately reviewed evidence rather than formatting churn.
 A repository-level architecture check derives the transitive local source closure,
 rejects imports outside the exact four-file roster, and enforces all three limits,
 so edits to the model cannot silently weaken their own guard. The roster consists of
@@ -501,8 +507,12 @@ bound to an issued authorization, every rejected reconciliation with an
 authenticated envelope and exact root/runtime binding, and every equivalently
 bound retirement-completion attempt therefore reserves its proof. The
 retirement closure retains each such exact-bound rejected event together with
-its reserved proof. Identity-invalid or foreign-root attempts cannot reserve
-one.
+its reserved proof and any top-level receipt. A rejected completion cannot add
+arbitrary nested termination proofs or retained-evidence references to that closure.
+Identity-invalid or foreign-root attempts cannot reserve a proof. Event replay
+identity is qualified by source-family root, so a rejected foreign-root event
+cannot occupy the registered root's event-ID namespace. Receipt and proof replay
+namespaces remain ledger-wide.
 
 Cleanup records one explicit basis. A `terminated` basis binds the exact current
 runtime-safety watermark and its accepted termination proof. A `never-released`
@@ -512,6 +522,13 @@ authorization exists. Absence never receives a fabricated termination proof.
 An exact crash or restart observation that contradicts a `release-denied` or
 `never-started` terminal is retained as runtime-safety evidence, invalidates the
 claim, opens containment, and makes the `never-released` basis impossible.
+A trusted exact-root/runtime restart also defeats absence when no authorization
+was ever issued or consumed. It opens containment before retirement or the private
+reconciliation track after retirement, without rewriting the public tombstone.
+A late start contradicting an unconsumed `never-started` terminal follows the same
+rule; missing consumption cannot suppress trusted evidence of a runtime.
+Campaign fence advancement revokes consumed authority unless it actually reached
+`started`, including `release-denied` and `start-unknown` terminals.
 
 Resource retirement requires an explicit owner-bound retirement request. Before
 it can complete, every launch authority is expired or revoked, every consumed
