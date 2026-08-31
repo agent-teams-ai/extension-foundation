@@ -35,7 +35,7 @@ The responsibilities remain deliberately separate:
 
 | Owner or candidate | Responsibility in this proposal |
 | --- | --- |
-| [Get Modular](https://github.com/agent-teams-ai/get-modular) | Qualification candidate ordinary library for portable module identities, inert declarations, dependency bindings, deterministic graph compilation, immutable plans, diagnostics, and conformance vectors. These semantics remain product-owned until ADR-0013's evidence gate and a separate accepted extraction decision are satisfied. |
+| [Get Modular](https://github.com/agent-teams-ai/get-modular) | Independent ordinary library authorized by ADR-0015 for neutral module identities, declaration grammar, dependency bindings, deterministic graph compilation, canonical plans, diagnostics, and conformance vectors. Its 0.x implementation may be a dogfooding candidate; stable 1.0 promotion retains separate consumer and conformance gates. Product payloads and operational lifecycle remain product-owned. |
 | Extension Foundation | Product-neutral extension identities, immutable manifest and lifecycle values, distribution and isolation protocol contracts, verification envelopes, and conformance tooling. It does not decide admission or grants, orchestrate lifecycle, or store product installation or plugin-private state. |
 | OCI registry such as GHCR or Harbor | Immutable plugin artifact bytes addressed by digest. A registry does not decide product admission, grants, compatibility, or activation. |
 | Future Extension Catalog | Searchable publisher and extension metadata, moderation state, federation, and signed offline snapshots. A product can also install a digest-pinned artifact without this catalog. |
@@ -43,7 +43,7 @@ The responsibilities remain deliberately separate:
 | External qualification evidence | Candidate-neutral dogfooding protocol checks such as the disposable reducer, independent oracle, and adversarial race fixtures described by this proposal. |
 
 Get Modular and Extension Foundation do not import each other. A product-owned
-adapter may consume both without making either candidate canonical. The executable
+adapter may consume both without transferring operational authority to either library. The executable
 qualification model in this repository is external evidence about campaign and
 custody invariants; it is not a production package, a Module API, a graph
 compiler, a loader, or lifecycle authority. It may challenge a Get Modular or
