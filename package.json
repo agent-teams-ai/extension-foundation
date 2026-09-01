@@ -56,8 +56,8 @@
     "typecheck": "tsc --project tsconfig.json --noEmit --pretty false && pnpm --recursive --filter \"./packages/**\" typecheck"
   },
   "devDependencies": {
-    "@agent-teams/docs-protocol": "0.2.0",
-    "@agent-teams/engineering-foundation": "0.20.0",
+    "@agent-teams/docs-protocol": "0.4.1",
+    "@agent-teams/engineering-foundation": "0.21.0",
     "@dagrejs/graphlib": "catalog:",
     "@deepseek-ai/cordis": "catalog:",
     "@extism/extism": "catalog:",
