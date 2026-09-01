@@ -9,7 +9,7 @@ test("managed integration owns a data-only v2 qualification contract and externa
     readFile(new URL("../architecture/foundation/document-authoring.yaml", import.meta.url), "utf8"),
   ]);
   assert.equal(integration.schemaVersion, 2);
-  assert.equal(integration.cohort.cohortId, "docs-2026-08-28-stable8");
+  assert.equal(integration.cohort.cohortId, "docs-2026-08-31-stable10");
   assert.deepEqual(integration.qualification, {
     contractPath: "architecture/foundation/docs-protocol-qualification.json",
     gateCommand: "pnpm docs:protocol:check",
