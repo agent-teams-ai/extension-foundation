@@ -60,6 +60,7 @@ Document discovery and create-only authoring use the canonical unified Docs
 Protocol profile at `architecture/foundation/docs-protocol.yaml`. Start with
 `pnpm docs:info`, then preview a new document with
 `pnpm docs:new -- --type <type> --id <id> --title <title> --owner <owner>
---summary <summary> --dry-run`. After review, replace `--dry-run` with `--apply`.
+--summary <summary> --dry-run --json`. After review, replace `--dry-run` with
+`--apply --expect <reviewed-result.planDigest>` and keep all intent inputs identical.
 The writer never edits indexes; add the exact reported link to the reported
 index. See the [authoring Skill](.agents/skills/docs-authoring/SKILL.md).

@@ -10,12 +10,14 @@ Protocol: `agent-teams.docs-protocol/v1`.
 ## Required workflow
 
 - Read the current types, owners, placement, metadata, and index policy with `pnpm docs:info`.
-- Search first with `pnpm docs:find -- --text query`.
+- Search first with the installed CLI: `pnpm exec docs-protocol find --consumer . --profile architecture/foundation/docs-protocol.yaml --text "query"`.
 - Reuse or relate existing authority instead of creating a competing source.
-- Preview with `pnpm docs:new -- --type TYPE --id ID --title TITLE --owner OWNER --summary SUMMARY --dry-run`.
+- Preview with `pnpm exec docs-protocol new --consumer . --profile architecture/foundation/docs-protocol.yaml --type TYPE --id ID --title "TITLE" --owner OWNER --summary "SUMMARY" --dry-run --json`.
 - Review the exact destination, metadata, relations, anchors, and diagnostics.
-- Apply with `pnpm docs:new -- --type TYPE --id ID --title TITLE --owner OWNER --summary SUMMARY --apply` after review.
-- Manually update the reported index/link exactly when reachability requires it.
+- Apply with `pnpm exec docs-protocol new --consumer . --profile architecture/foundation/docs-protocol.yaml --type TYPE --id ID --title "TITLE" --owner OWNER --summary "SUMMARY" --apply --expect "$PLAN_DIGEST" --json` after setting PLAN_DIGEST to the reviewed preview result.planDigest.
+- When reachability.state is `manual-required`, add the exact reported `markdownLink` to the reported `indexPath`; the writer never updates indexes.
+- Refresh context with `pnpm exec docs-protocol context --consumer . --profile architecture/foundation/docs-protocol.yaml --text "query"` after the index is current.
+- Validate with `pnpm exec docs-protocol check --consumer . --profile architecture/foundation/docs-protocol.yaml`.
 - For edits, preserve canonical frontmatter and sidecar ownership; use the repository's governed review flow rather than bypassing the create-only writer.
 - For accepted authority, record supersession explicitly instead of silently rewriting history.
 - Finish with the full consumer gate `pnpm docs:protocol:check` after the index is current.
@@ -23,7 +25,7 @@ Protocol: `agent-teams.docs-protocol/v1`.
 ## Rules
 - Never invent owners, types, statuses, paths, or metadata outside `docs:info`.
 - If dependencies are absent, use only `pnpm install --frozen-lockfile`; never use npx, dlx, or latest tags.
-- Keep preview and apply inputs identical.
+- Keep preview and apply intent inputs identical, including relations and anchors; a changed intent requires a fresh preview and reviewed plan digest.
 - Stop when recovery is required; use `pnpm docs:doctor` before `pnpm docs:recover`.
 - Resolve required anchors and blockers before apply.
 - Do not bypass repository scripts or hand-edit transaction evidence.
