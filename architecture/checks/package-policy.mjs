@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
-import { docsFind } from "@agent-teams/docs-protocol";
+import { docsFindV2 } from "@agent-teams/docs-protocol";
 import { parse as parseYaml } from "yaml";
 
 import { parseStrictJson } from "./strict-json.mjs";
@@ -243,7 +243,7 @@ export async function requireValidPackagePolicy(root) {
 export function createDocsOwnerCatalog(root) {
   const decisions = acceptedDecisionSource();
   return createOwnerCatalog({
-    loadDocuments: async () => ownerEvidenceFromDocsExecution(await docsFind({
+    loadDocuments: async () => ownerEvidenceFromDocsExecution(await docsFindV2({
       consumerRoot: root,
       profilePath: DOCS_PROFILE_PATH,
       query: {},
