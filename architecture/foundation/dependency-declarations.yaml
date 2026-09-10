@@ -17,6 +17,6 @@ policies:
     - fast-check
     - markdownlint-cli2
   exactRegistryDevelopmentOnlyPackages:
-    - "@agent-teams/docs-protocol-agent-teams"
     - "@agent-teams/docs-protocol"
+    - "@agent-teams/docs-protocol-agent-teams"
     - "@agent-teams/engineering-foundation"
