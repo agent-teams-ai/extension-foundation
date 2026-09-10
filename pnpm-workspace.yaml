@@ -19,8 +19,8 @@ minimumReleaseAge: 1440
 minimumReleaseAgeStrict: true
 
 minimumReleaseAgeExclude:
-  - "@agent-teams/docs-protocol-agent-teams@0.2.0"
-  - "@agent-teams/engineering-foundation@1.1.0"
+  - "@agent-teams/docs-protocol-agent-teams@0.2.4"
+  - "@agent-teams/engineering-foundation@1.2.0"
   - "@agent-teams/docs-protocol@0.6.0"
   - "@agent-teams/document-authoring@0.3.0"
   - "@agent-teams/repository-mutation@0.2.0"
