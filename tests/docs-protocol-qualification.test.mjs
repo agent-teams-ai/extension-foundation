@@ -2,14 +2,17 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("managed integration owns a data-only v2 qualification contract and external gate", async () => {
+test("managed integration owns a data-only v3 qualification contract and external gate", async () => {
   const [integration, qualification, activeProfile] = await Promise.all([
     readFile(new URL("../architecture/foundation/docs-consumer-integration.json", import.meta.url), "utf8").then(JSON.parse),
     readFile(new URL("../architecture/foundation/docs-protocol-qualification.json", import.meta.url), "utf8").then(JSON.parse),
     readFile(new URL("../architecture/foundation/document-authoring.yaml", import.meta.url), "utf8"),
   ]);
-  assert.equal(integration.schemaVersion, 2);
-  assert.equal(integration.cohort.cohortId, "docs-2026-08-31-stable10");
+  assert.equal(integration.schemaVersion, 3);
+  assert.equal(integration.cohort.schemaVersion, 2);
+  assert.equal(integration.cohort.cohortId, "docs-2026-09-10-stable18");
+  assert.equal(integration.cohort.schemas.managedState, 2);
+  assert.equal(integration.cohort.workflow.revision, "757122cb08ed15aba6c9eef1b1f655b77d1ac54b");
   assert.deepEqual(integration.qualification, {
     contractPath: "architecture/foundation/docs-protocol-qualification.json",
     gateCommand: "pnpm docs:protocol:check",

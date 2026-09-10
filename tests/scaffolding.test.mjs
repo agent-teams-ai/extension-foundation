@@ -29,10 +29,9 @@ const execFileAsync = promisify(execFile);
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 const foundationScaffoldingUrl = import.meta.resolve("@agent-teams/engineering-foundation/scaffolding");
 const scaffoldAdapterUrl = new URL("../architecture/checks/scaffold.mjs", import.meta.url).href;
-const foundationScaffoldingInternalUrl = new URL(
-  "./adapters/node/filesystem-authority-workspace.js",
-  foundationScaffoldingUrl,
-).href;
+const foundationScaffoldingQualificationUrl = import.meta.resolve(
+  "@agent-teams/engineering-foundation/scaffolding/qualification",
+);
 const foundationCli = fileURLToPath(new URL("./cli.js", import.meta.resolve("@agent-teams/engineering-foundation")));
 const typescriptCli = fileURLToPath(new URL("./bin/tsc", import.meta.resolve("typescript/package.json")));
 
@@ -840,14 +839,14 @@ test("every scaffold fault point converges or fails closed without overwriting e
         });
         const writer = `
           import { planScaffoldFromFile } from ${JSON.stringify(foundationScaffoldingUrl)};
-          import { applyAuthorityFilesystemScaffoldWithFaultInjection } from ${JSON.stringify(foundationScaffoldingInternalUrl)};
+          import { runScaffoldCrashQualification } from ${JSON.stringify(foundationScaffoldingQualificationUrl)};
           const root = process.argv[1];
           const phase = process.argv[2];
           const plan = await planScaffoldFromFile({
             consumerRoot: root,
             intentPath: "architecture/scaffolding-intents/example.yaml",
           });
-          await applyAuthorityFilesystemScaffoldWithFaultInjection(root, plan, async point => {
+          await runScaffoldCrashQualification(root, plan, async point => {
             if (point.phase === phase) process.exit(73);
           });
         `;
