@@ -51,6 +51,7 @@ import {
 } from "./recovery-spike.ts";
 
 const fixtureRoot = fileURLToPath(new URL("./fixtures", import.meta.url));
+const toyPackageRoot = fileURLToPath(new URL("../../fixtures/qualification-toy-package", import.meta.url));
 const qualificationRoot = fileURLToPath(new URL("./", import.meta.url));
 const testAuthorityScope = "tenant:test/project:test";
 const protocolAuthority = Object.freeze({
@@ -3672,11 +3673,11 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
     }));
     await rm(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   });
-  const fixtureManifest = JSON.parse(await readFile(join(fixtureRoot, "toy-package", "package.json"), "utf8")) as {
+  const fixtureManifest = JSON.parse(await readFile(join(toyPackageRoot, "package.json"), "utf8")) as {
     readonly private?: unknown;
   };
   assert.equal(fixtureManifest.private, true, "qualification fixture must not be publishable");
-  const pack = spawn(process.execPath, npmArguments(["pack", join(fixtureRoot, "toy-package"), "--json", "--ignore-scripts", "--pack-destination", root]), {
+  const pack = spawn(process.execPath, npmArguments(["pack", toyPackageRoot, "--json", "--ignore-scripts", "--pack-destination", root]), {
     stdio: ["ignore", "pipe", "pipe"],
   });
   children.add(pack);
