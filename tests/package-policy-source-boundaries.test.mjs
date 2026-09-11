@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,7 +14,11 @@ const skipExpensiveIntegration = process.env.PACKAGE_POLICY_TEST_MODE === "fast"
   ? "skipped in package-policy fast mode"
   : false;
 const governedFiles = [
+  "architecture/checks/dogfooding-protocol-model.mjs",
+  "architecture/checks/evidence-custody-cli.mjs",
+  "architecture/checks/evidence-custody.mjs",
   "architecture/checks/package-artifacts.mjs",
+  "architecture/checks/package-policy.d.mts",
   "architecture/checks/package-policy.mjs",
   "architecture/checks/package-policy/accepted-decision-policy.mjs",
   "architecture/checks/package-policy/accepted-decision-source.mjs",
@@ -24,14 +28,41 @@ const governedFiles = [
   "architecture/checks/package-policy/ownership-policy.mjs",
   "architecture/checks/package-policy/repository-policy-source.mjs",
   "architecture/checks/package-topology.mjs",
+  "architecture/checks/product-source-evidence-cli.mjs",
+  "architecture/checks/product-source-evidence.d.mts",
+  "architecture/checks/product-source-evidence.mjs",
   "architecture/checks/scaffold.mjs",
   "architecture/checks/source-safety.mjs",
   "architecture/checks/strict-json.mjs",
+  "architecture/tooling/markdownlint-cli2.mjs",
   "tests/architecture-topology.test.mjs",
   "tests/docs-protocol-qualification.test.mjs",
   "tests/document-authoring.test.mjs",
+  "tests/evidence-custody.test.mjs",
   "tests/package-policy-characterization.test.mjs",
   "tests/package-policy-source-boundaries.test.mjs",
+  "tests/qualification/dogfooding-protocol-contract.ts",
+  "tests/qualification/dogfooding-protocol-oracle.ts",
+  "tests/qualification/dogfooding-protocol-reducer.ts",
+  "tests/qualification/dogfooding-protocol.test.ts",
+  "tests/qualification/dossier.test.ts",
+  "tests/qualification/extism-feasibility.mjs",
+  "tests/qualification/fixtures/portable-browser-worker.mjs",
+  "tests/qualification/fixtures/portable-worker.mjs",
+  "tests/qualification/fixtures/process-child.mjs",
+  "tests/qualification/fixtures/standalone-lifecycle-deadline.mjs",
+  "fixtures/qualification-toy-package/index.d.ts",
+  "fixtures/qualification-toy-package/index.js",
+  "fixtures/qualification-toy-package/package.json",
+  "tests/qualification/graph-spike.ts",
+  "tests/qualification/lifecycle-spike.ts",
+  "tests/qualification/portable-protocol.d.mts",
+  "tests/qualification/portable-protocol.mjs",
+  "tests/qualification/product-source-evidence.test.ts",
+  "tests/qualification/productization.test.ts",
+  "tests/qualification/protocol-spike.ts",
+  "tests/qualification/recovery-spike.ts",
+  "tests/qualification/spikes.test.ts",
   "tests/scaffolding.test.mjs",
 ];
 
@@ -97,6 +128,21 @@ test("official checker rejects forbidden pure dependencies", { skip: skipExpensi
       `import ${JSON.stringify(dependency)};\nexport const value = true;\n`,
       rule,
     ));
+  }
+});
+
+test("source v3 rejects includeRootPackage as an unknown public field", { skip: skipExpensiveIntegration }, async () => {
+  const root = await checkerFixture();
+  try {
+    const policyPath = join(root, "architecture/foundation/source-dependencies.yaml");
+    const policy = await readFile(policyPath, "utf8");
+    await writeFile(policyPath, policy.replace("rootPackage: true\n", "includeRootPackage: true\n"));
+    const report = await runChecker(root);
+    assert.notEqual(report.summary.outcome ?? report.outcome, "passed");
+    const text = JSON.stringify(report);
+    assert.match(text, /includeRootPackage|unknown property|invalid-input/iu);
+  } finally {
+    await rm(root, { recursive: true, force: true });
   }
 });
 

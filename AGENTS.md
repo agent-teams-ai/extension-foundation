@@ -49,7 +49,23 @@ production dependencies. Use:
 
 - `pnpm check:changed` while editing;
 - `pnpm check:fast` before handoff;
-- `pnpm check` as the complete gate;
+- `pnpm check` as the complete gate, including the installed
+  `architecture.source-dependencies` gate on the v3 `rootPackage` / `packageRoots`
+  policy;
+
+When the Foundation gate reports a boundary violation, fix the source rather
+than shrinking scope or adding a baseline:
+
+- forbidden domain/tooling dependency -> introduce a consumer-owned port and
+  adapter, do not import filesystem, environment, network SDK, or a concrete
+  adapter into the constrained boundary;
+- deep import -> use the public entrypoint listed for that boundary;
+- new root or package -> add an owner, `packageRoots`/`rootPackage` mapping, and
+  a non-overlapping boundary, never an exclusion;
+- unknown `includeRootPackage` in YAML -> that field is internal TypeScript only;
+  public v3 config uses `rootPackage: true`;
+- CI greening by dropping a governed root, pending a root silently, or adding an
+  unbounded suppression is forbidden.
 - `pnpm foundation:attach -- /absolute/path/to/engineering-foundation` only for
   explicit local Foundation development;
 - `pnpm foundation:detach` before commit, followed by

@@ -36,7 +36,7 @@
     "docs:info": "agent-teams-docs info --consumer . --profile architecture/foundation/docs-protocol.yaml",
     "docs:new": "agent-teams-docs new --consumer . --profile architecture/foundation/docs-protocol.yaml",
     "docs:protocol:check": "pnpm docs:check && pnpm docs:quality && pnpm docs:contract-test",
-    "docs:quality": "markdownlint-cli2 && cspell --config .cspell.json --no-progress",
+    "docs:quality": "markdownlint-cli2 --config architecture/tooling/markdownlint-cli2.mjs && cspell --config .cspell.json --no-progress",
     "docs:recover": "agent-teams-docs recover --consumer . --profile architecture/foundation/docs-protocol.yaml",
     "foundation:assert-dev-only": "agent-teams-foundation assert-dev-only",
     "foundation:assert-registry": "agent-teams-foundation assert-registry",
