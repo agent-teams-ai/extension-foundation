@@ -136,7 +136,10 @@ test("source v3 rejects includeRootPackage as an unknown public field", { skip: 
   try {
     const policyPath = join(root, "architecture/foundation/source-dependencies.yaml");
     const policy = await readFile(policyPath, "utf8");
-    await writeFile(policyPath, policy.replace("rootPackage: true\n", "includeRootPackage: true\n"));
+    await writeFile(
+      policyPath,
+      policy.replace(/rootPackage:\s*true\r?\n/, "includeRootPackage: true\n"),
+    );
     const report = await runChecker(root);
     assert.notEqual(report.summary.outcome ?? report.outcome, "passed");
     const text = JSON.stringify(report);
