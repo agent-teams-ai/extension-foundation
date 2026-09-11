@@ -53,7 +53,7 @@ async function disposableRepository() {
   return fixture;
 }
 
-test("unified info and check expose the qualified Extension authority", () => {
+test("unified info and check expose the declared Extension authority", () => {
   const info = run(repositoryRoot, "info");
   assert.equal(info.command, "docs.info");
   assert.equal(info.result.projectId, "extension-foundation");
@@ -127,12 +127,21 @@ test("new previews and applies every supported type only inside a disposable rep
     assert.equal(preview.result.reachability.indexPath, "docs/decisions/README.md");
     assert.equal(await exists(adrTarget), false);
 
-    const applied = run(fixture, ...adrArgs, "--apply");
+    assert.match(preview.result.planDigest, /^sha256:[0-9a-f]{64}$/u);
+    const stale = execute(fixture, ...adrArgs, "--apply", "--expect", `sha256:${"0".repeat(64)}`);
+    assert.equal(stale.status, 1, stale.stderr || stale.stdout);
+    const staleEnvelope = JSON.parse(stale.stdout);
+    assert.equal(staleEnvelope.outcome, "authority-stale");
+    assert.ok(staleEnvelope.diagnostics.some(({ ruleId }) => ruleId === "docs.new.plan-digest-stale"));
+    assert.equal(await exists(adrTarget), false);
+    assert.equal(await readFile(indexPath, "utf8"), indexBefore);
+
+    const applied = run(fixture, ...adrArgs, "--apply", "--expect", preview.result.planDigest);
     assert.equal(applied.result.writeState, "applied");
     assert.equal(await exists(adrTarget), true);
     assert.equal(await readFile(indexPath, "utf8"), indexBefore);
 
-    const repeated = run(fixture, ...adrArgs, "--apply");
+    const repeated = run(fixture, ...adrArgs, "--apply", "--expect", preview.result.planDigest);
     assert.equal(repeated.result.writeState, "already-applied");
 
     const openDecisionArgs = [
@@ -146,7 +155,7 @@ test("new previews and applies every supported type only inside a disposable rep
     );
     assert.equal(openDecision.result.documentPath, "docs/open-decisions/OD-099-disposable-open-choice.md");
     assert.equal(openDecision.result.reachability.indexPath, "docs/open-decisions/README.md");
-    const appliedOpenDecision = run(fixture, ...openDecisionArgs, "--apply");
+    const appliedOpenDecision = run(fixture, ...openDecisionArgs, "--apply", "--expect", openDecision.result.planDigest);
     assert.equal(appliedOpenDecision.result.writeState, "applied");
     assert.equal(await exists(join(fixture, appliedOpenDecision.result.documentPath)), true);
 
@@ -158,9 +167,19 @@ test("new previews and applies every supported type only inside a disposable rep
     const architecture = run(fixture, ...architectureArgs, "--dry-run");
     assert.equal(architecture.result.documentPath, "docs/architecture/disposable-architecture.md");
     assert.equal(architecture.result.reachability.indexPath, "docs/README.md");
-    const appliedArchitecture = run(fixture, ...architectureArgs, "--apply");
+    const appliedArchitecture = run(fixture, ...architectureArgs, "--apply", "--expect", architecture.result.planDigest);
     assert.equal(appliedArchitecture.result.writeState, "applied");
     assert.equal(await exists(join(fixture, appliedArchitecture.result.documentPath)), true);
+
+    for (const result of [applied.result, appliedOpenDecision.result, appliedArchitecture.result]) {
+      assert.equal(result.reachability.state, "manual-required");
+      assert.equal(typeof result.reachability.markdownLink, "string");
+      const index = join(fixture, result.reachability.indexPath);
+      await writeFile(index, `${await readFile(index, "utf8")}\n- ${result.reachability.markdownLink}\n`);
+    }
+    const context = run(fixture, "context", "--text", "disposable");
+    assert.equal(context.command, "docs.context");
+    assert.equal(run(fixture, "check").result.valid, true);
 
     const doctor = run(fixture, "doctor");
     assert.equal(doctor.result.transaction.state, "idle");
@@ -218,6 +237,22 @@ test("invalid owner, metadata, and duplicate identity fail without mutation", as
     );
     assert.notEqual(duplicate.status, 0);
     assert.equal(await exists(target), false);
+  } finally {
+    await rm(fixture, { recursive: true, force: true });
+  }
+});
+
+
+test("portable adoption rejects a Skill without executable context guidance", async () => {
+  const fixture = await disposableRepository();
+  try {
+    const skillPath = join(fixture, ".agents/skills/docs-authoring/SKILL.md");
+    const skill = await readFile(skillPath, "utf8");
+    await writeFile(skillPath, skill.split("\n").filter(line => !line.includes("docs-protocol context")).join("\n"));
+    const result = execute(fixture, "check");
+    assert.equal(result.status, 1, result.stderr || result.stdout);
+    const envelope = JSON.parse(result.stdout);
+    assert.ok(envelope.diagnostics.some(({ ruleId }) => ruleId === "docs.adoption.invalid"));
   } finally {
     await rm(fixture, { recursive: true, force: true });
   }

@@ -7,6 +7,9 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import test from "node:test";
 
+import { docsFindV2 } from "@agent-teams/docs-protocol";
+import { parse as parseYaml } from "yaml";
+
 import {
   hasCanonicalPackageRootExports,
   loadAllowedPackageRoles,
@@ -400,4 +403,65 @@ test("topology and artifact CLIs preserve validation failure output and exit 1",
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+
+test("installed Docs public V2 enumeration preserves consumer ownership evidence", async () => {
+  const execution = await docsFindV2({
+    consumerRoot: repositoryRoot,
+    profilePath: "architecture/foundation/docs-protocol.yaml",
+    query: {},
+  });
+  assert.equal(execution.envelope.outcome, "success");
+  const documents = execution.envelope.result.documents;
+  assert.ok(documents.some(document => document.metadata.type === "adr"));
+  assert.deepEqual(ownerEvidenceFromDocsExecution(execution), documents.map(document => ({
+    id: document.id,
+    type: String(document.metadata.type ?? ""),
+    status: String(document.metadata.status ?? ""),
+    supersededBy: document.metadata.superseded_by,
+    supersedes: document.metadata.supersedes,
+    packageOwnership: document.metadata.package_ownership,
+    repositoryPath: document.repositoryPath,
+  })));
+});
+
+test("installed Docs public V2 failures cannot become ownership evidence", async () => {
+  const root = await mkdtemp(join(tmpdir(), "extension-docs-public-api-"));
+  try {
+    await assert.rejects(async () => ownerEvidenceFromDocsExecution(await docsFindV2({
+      consumerRoot: root,
+      profilePath: "missing-profile.yaml",
+      query: {},
+    })), { code: "ENOENT" });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("managed roots retain exact development coordinates and narrow age exceptions", async () => {
+  const manifest = JSON.parse(await readFile(join(repositoryRoot, "package.json"), "utf8"));
+  const workspace = parseYaml(await readFile(join(repositoryRoot, "pnpm-workspace.yaml"), "utf8"));
+  const roots = {
+    "@agent-teams/engineering-foundation": "1.2.0",
+    "@agent-teams/docs-protocol": "0.6.0",
+    "@agent-teams/docs-protocol-agent-teams": "0.2.5",
+  };
+  for (const [name, version] of Object.entries(roots)) {
+    assert.equal(manifest.devDependencies[name], version);
+    assert.equal(manifest.dependencies?.[name], undefined);
+    assert.equal(manifest.optionalDependencies?.[name], undefined);
+  }
+  for (const name of ["document-authoring", "repository-mutation", "docs-protocol-mcp"]) {
+    for (const section of ["dependencies", "devDependencies", "optionalDependencies"]) {
+      assert.equal(manifest[section]?.[`@agent-teams/${name}`], undefined);
+    }
+  }
+  assert.equal(workspace.minimumReleaseAge, 1440);
+  assert.equal(workspace.minimumReleaseAgeStrict, true);
+  assert.deepEqual([...workspace.minimumReleaseAgeExclude].sort(), [
+    ...Object.entries(roots).map(([name, version]) => `${name}@${version}`),
+    "@agent-teams/document-authoring@0.3.0",
+    "@agent-teams/repository-mutation@0.2.0",
+  ].sort());
 });

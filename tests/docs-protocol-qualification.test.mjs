@@ -10,7 +10,7 @@ test("managed integration owns a data-only v3 qualification contract and externa
   ]);
   assert.equal(integration.schemaVersion, 3);
   assert.equal(integration.cohort.schemaVersion, 2);
-  assert.equal(integration.cohort.cohortId, "docs-2026-09-10-stable18");
+  assert.equal(integration.cohort.cohortId, "docs-2026-09-10-stable19");
   assert.equal(integration.cohort.schemas.managedState, 2);
   assert.equal(integration.cohort.workflow.revision, "757122cb08ed15aba6c9eef1b1f655b77d1ac54b");
   assert.deepEqual(integration.qualification, {
