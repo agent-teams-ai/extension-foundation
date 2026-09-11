@@ -445,7 +445,7 @@ test("managed roots retain exact development coordinates and narrow age exceptio
   const roots = {
     "@agent-teams/engineering-foundation": "1.2.0",
     "@agent-teams/docs-protocol": "0.6.0",
-    "@agent-teams/docs-protocol-agent-teams": "0.2.5",
+    "@agent-teams/docs-protocol-agent-teams": "0.2.7",
   };
   for (const [name, version] of Object.entries(roots)) {
     assert.equal(manifest.devDependencies[name], version);
