@@ -457,7 +457,7 @@ test("managed roots retain exact development coordinates while release-age waiti
       assert.equal(manifest[section]?.[`@agent-teams/${name}`], undefined);
     }
   }
-  assert.equal(workspace.minimumReleaseAge, undefined);
+  assert.equal(workspace.minimumReleaseAge, 0);
   assert.equal(workspace.minimumReleaseAgeStrict, undefined);
   assert.deepEqual([...workspace.minimumReleaseAgeExclude].sort(), [
     ...Object.entries(roots).map(([name, version]) => `${name}@${version}`),
