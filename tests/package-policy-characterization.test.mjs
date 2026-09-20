@@ -439,7 +439,7 @@ test("installed Docs public V2 failures cannot become ownership evidence", async
   }
 });
 
-test("managed roots retain exact development coordinates and narrow age exceptions", async () => {
+test("managed roots retain exact development coordinates while release-age waiting stays disabled", async () => {
   const manifest = JSON.parse(await readFile(join(repositoryRoot, "package.json"), "utf8"));
   const workspace = parseYaml(await readFile(join(repositoryRoot, "pnpm-workspace.yaml"), "utf8"));
   const roots = {
@@ -457,8 +457,8 @@ test("managed roots retain exact development coordinates and narrow age exceptio
       assert.equal(manifest[section]?.[`@agent-teams/${name}`], undefined);
     }
   }
-  assert.equal(workspace.minimumReleaseAge, 1440);
-  assert.equal(workspace.minimumReleaseAgeStrict, true);
+  assert.equal(workspace.minimumReleaseAge, undefined);
+  assert.equal(workspace.minimumReleaseAgeStrict, undefined);
   assert.deepEqual([...workspace.minimumReleaseAgeExclude].sort(), [
     ...Object.entries(roots).map(([name, version]) => `${name}@${version}`),
     "@agent-teams/document-authoring@0.3.0",
