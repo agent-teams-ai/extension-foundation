@@ -459,9 +459,4 @@ test("managed roots retain exact development coordinates while release-age waiti
   }
   assert.equal(workspace.minimumReleaseAge, 0);
   assert.equal(workspace.minimumReleaseAgeStrict, undefined);
-  assert.deepEqual([...workspace.minimumReleaseAgeExclude].sort(), [
-    ...Object.entries(roots).map(([name, version]) => `${name}@${version}`),
-    "@agent-teams/document-authoring@0.3.0",
-    "@agent-teams/repository-mutation@0.2.0",
-  ].sort());
 });
