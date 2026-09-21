@@ -89,6 +89,27 @@ cleanup, and restart-required behavior. It must remain compatible with
 ADR-0014's distinct plan-content, candidate-generation, and active-head
 identities.
 
+### Owner Discussion TODO: Shared Host Mechanics
+
+TODO: discuss the shared implementation boundary with the product owner before
+selecting the first cross-product Host mechanism. Keep this choice open while
+the Agent Runtime Host architecture is being designed.
+
+Product ownership of authorization and lifecycle does not require a separate
+copy of every technical implementation. Evaluate common protocol validation,
+request correlation, cancellation transport and conformance fixtures first.
+Consider shared mechanical grant or lifecycle checks only when the same
+invariant is demonstrated across materially different uses. Product permission
+decisions, canonical state and operational authority retain their accepted
+owners; shared code must not become a second coordinator or global registry.
+
+The discussion should choose the first real uses, the common contract and its
+owner, per-instance state and dependency direction, platform-specific adapters,
+failure guarantees, conformance evidence and bounded implementation estimate.
+Distinguish a narrow reusable contract or test kit from a general Host runtime.
+Do not treat this TODO as approval of a package, public SPI, transport, storage
+engine or production runtime, or as a new blocker for existing static modules.
+
 ### Production Hosts And Invocation Protocols
 
 Decide trusted in-process resource adapters separately from isolated Worker,

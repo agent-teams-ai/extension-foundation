@@ -7,7 +7,9 @@ summary: Defines the generated and product-owned conformance suites required bef
 related:
   - ADR-0001
   - ADR-0010
+  - ADR-0011
   - ADR-0012
+  - ADR-0014
   - OD-003
 ---
 
@@ -149,6 +151,76 @@ At a production-host governance gate, only durable independently observable
 evidence from the named production host can mark the host requirement
 `production-proven`. Non-production fixtures, in-memory models, smoke tests,
 planned work, and aspirational documentation cannot satisfy it.
+
+## Product Host Regression Scenarios
+
+These scenarios make existing acceptance requirements concrete. They follow
+[ADR-0011](../../decisions/0011-extension-admission-custody-and-retirement-closure.md)
+and [ADR-0014](../../decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md).
+They do not select a Host architecture, authorize a production runtime or new
+Foundation package, or mark any production gate passed. An owning product maps
+each applicable scenario to its existing conformance suite and exact evidence;
+unsupported profiles remain explicitly outside that product's claim.
+
+### Fault containment
+
+For a Host that promises an independent extension failure boundary, a disposable
+extension crashes, blocks its own execution, ignores cancellation, and returns a
+late result. An unrelated Host operation must remain usable. Prove the declared
+process-tree cleanup and resource limits through the actual placement adapter.
+Distinguish caller timeout, requested cancellation, proven termination and an
+unknown external outcome; never retry an unknown effect automatically.
+Use controlled barriers and a finite watchdog rather than timing-only sleeps.
+Trusted in-process composition makes no arbitrary JavaScript unload guarantee;
+a process or Worker alone does not prove hostile-code isolation.
+
+### Independent capability contracts
+
+When a Host adds a separately owned contribution kind, identify its consumer
+port and the necessary composition changes. Prove that unrelated consumers do
+not acquire its SDK, transport types or internal Host dependencies. A negative
+fixture must reject a forbidden dependency or incompatible capability binding
+through the existing source or type gate, without adding another analyzer.
+Use Get Modular for the adopted composition scope; keep product capability
+payloads and adapters product-owned. Two contribution kinds do not constitute
+two independent implementations of one public SPI.
+
+### Independent Host instances
+
+If a product supports independent Host instances in one process, construct two
+in that same process with equal local module or extension names but distinct
+authority scopes and state ownership. Construction failure, routing, disposal
+and supported replacement in one instance must not affect the other instance's
+capabilities or state. Give the fixture disjoint mutable resource ownership.
+Running each Host in a separate process cannot prove this property. Immutable
+caches may be shared; ambient mutable authority or a global Host fallback may
+not select the other instance's handlers. Construction-attempt isolation alone
+does not prove that product factories returned independent resource owners.
+
+### Saved state handles after replacement
+
+For a Host with replaceable stateful extensions, retain every supported state
+handle and detached method from generation A. Publish B with the same durable
+data identity and custody owner, while changing execution authority. New
+read, write, delete and clear operations through A after admission is sealed
+must fail before accessing B's state. Check every exposed operation, including
+transaction entry points, rather than only rejecting new handle creation.
+
+Separately exercise an operation accepted before sealing according to its
+declared bounded lease and reconciliation policy. Coordinate a pending write
+across the fence transition and prove atomic fence enforcement at the actual
+effect owner; a check before an asynchronous call is insufficient. Validate
+B's state through independent readback and prove that B's authorized handle
+still works. A failed unpublished candidate preserves A's existing authority.
+Reactivation must not revive a previously revoked handle. Explicitly authorized
+migration or repair remains separate from ordinary extension authority.
+
+These cases instantiate generation and invocation rules even when custody
+ownership does not change. Pure model tests remain model evidence; the product
+must prove its real storage and lifecycle boundary before claiming protection.
+Get Modular construction handles are not invocation leases. Foundation defines
+the neutral requirements; the product owns grants, processes, persistence,
+publication, fencing and reconciliation. Accepted ADR bytes remain unchanged.
 
 ## Adapter Matrix
 
