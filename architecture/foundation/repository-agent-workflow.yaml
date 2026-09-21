@@ -18,6 +18,7 @@ fullScanPaths:
   - architecture/checks
   - architecture/foundation
   - architecture/package-catalog.json
+  - architecture/feature-module-standard-profile.json
   - package.json
   - packages
   - tests

@@ -16,6 +16,7 @@ Read by responsibility:
 | Concern | Document |
 | --- | --- |
 | Product boundary and topology | [Architecture overview](architecture/overview.md) |
+| Feature ownership, standard identity and scoped checks | [Feature Module Standard Profile](architecture/feature-module-standard-profile.md) |
 | Extension terminology and ownership | [Extension model](architecture/extension-model.md) |
 | Proposed module-system dogfooding boundary | [Module System Dogfooding](architecture/module-system-dogfooding.md) |
 | Module and plugin safety rules | [ADR-0011](decisions/0011-extension-admission-custody-and-retirement-closure.md) is the accepted cumulative safety floor for explicitly admitted product-owned production extension host profiles; static composition and Get Modular remain outside its operational scope |

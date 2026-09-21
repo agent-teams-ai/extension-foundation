@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "standard": {
+    "id": "agent-teams.feature-module-standard",
+    "version": "v1",
+    "repository": "agent-teams-ai/.github",
+    "revision": "41ed61bfad895d7f46041532538de64202a1ec68",
+    "path": "docs/architecture/feature-module-standard/v1.md",
+    "gitBlob": "d0bfff2033faf544fe65268c1dcdfd524d093015",
+    "sha256": "851653f96643cf0466b67ab22963661976b00de44840fa3144a48a8c054f95fa"
+  },
+  "owner": "architecture",
+  "status": "pre-production",
+  "profileDocument": "docs/architecture/feature-module-standard-profile.md",
+  "scope": {
+    "productionRoots": ["packages"],
+    "moduleRoots": ["packages/*"],
+    "applicationRoots": [],
+    "excludedRoots": ["architecture", "docs", "tests", "fixtures"]
+  },
+  "mapping": {
+    "sourceRoot": "src",
+    "featureRoot": "src/features/<feature>",
+    "moduleComposition": "src/index.ts",
+    "publicEntrypoint": "src/index.ts",
+    "testRoot": "test/features/<feature>"
+  },
+  "localExtensions": {
+    "language": "typescript",
+    "packaging": "closed-package-catalog-with-owned-features",
+    "transport": "none-adopted",
+    "composition": "static-library-module-entrypoint",
+    "applicationComposition": "not-applicable"
+  },
+  "authorities": [
+    "docs/architecture/overview.md",
+    "docs/decisions/0015-authorize-get-modular-semantic-extraction.md",
+    "docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md"
+  ],
+  "deviations": [],
+  "conformance": {"structural": "not-claimed", "runtime": "not-claimed"},
+  "enforcement": {
+    "profile": "architecture:feature-module-profile",
+    "profileTests": "architecture:feature-module-profile:test",
+    "topology": "architecture:topology:check",
+    "dependencies": "architecture:source-dependencies:check"
+  },
+  "pendingProductionEvidence": [
+    "valid-feature-per-adopted-role",
+    "role-specific-layer-direction",
+    "cross-feature-deep-import-rejection",
+    "undeclared-edge-and-cycle-rejection",
+    "empty-layer-rejection",
+    "owned-module-exception-rejection"
+  ]
+}

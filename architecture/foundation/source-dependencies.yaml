@@ -17,6 +17,7 @@ boundaries:
       - architecture/checks/dogfooding-protocol-model.mjs
       - architecture/checks/evidence-custody-cli.mjs
       - architecture/checks/evidence-custody.mjs
+      - architecture/checks/feature-module-standard-profile.mjs
       - architecture/checks/package-artifacts.mjs
       - architecture/checks/package-topology.mjs
       - architecture/checks/product-source-evidence-cli.mjs
@@ -26,6 +27,7 @@ boundaries:
       - architecture/checks/source-safety.mjs
     entrypoints:
       - architecture/checks/evidence-custody.mjs
+      - architecture/checks/feature-module-standard-profile.mjs
       - architecture/checks/package-artifacts.mjs
       - architecture/checks/package-topology.mjs
       - architecture/checks/product-source-evidence.mjs
@@ -147,6 +149,7 @@ boundaries:
       - tests/docs-protocol-qualification.test.mjs
       - tests/document-authoring.test.mjs
       - tests/evidence-custody.test.mjs
+      - tests/feature-module-standard-profile.test.mjs
       - tests/package-policy-characterization.test.mjs
       - tests/package-policy-source-boundaries.test.mjs
       - tests/qualification/dogfooding-protocol-contract.ts
@@ -174,6 +177,7 @@ boundaries:
       - tests/docs-protocol-qualification.test.mjs
       - tests/document-authoring.test.mjs
       - tests/evidence-custody.test.mjs
+      - tests/feature-module-standard-profile.test.mjs
       - tests/package-policy-characterization.test.mjs
       - tests/package-policy-source-boundaries.test.mjs
       - tests/scaffolding.test.mjs

@@ -6,6 +6,7 @@ products. Start with:
 - [Repository overview](README.md)
 - [Documentation index](docs/README.md)
 - [Architecture overview](docs/architecture/overview.md)
+- [Feature Module Standard profile](docs/architecture/feature-module-standard-profile.md)
 - [Extension model](docs/architecture/extension-model.md)
 - [Architecture decisions](docs/decisions/README.md)
 - [Open decisions](docs/open-decisions/README.md)

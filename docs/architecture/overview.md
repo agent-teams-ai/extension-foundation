@@ -84,12 +84,12 @@ Extension, artifact, installation, contribution, Get Modular implementation,
 and product capability identities remain distinct; only the product adapter
 records an explicit mapping between applicable identities.
 
-Each product owns its exact feature-slice layout and composition profile.
-For Orchestrator, the canonical authority is its
-[Feature Module Standard](https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/main/docs/architecture/feature-module-standard.md).
-This repository links to that product standard instead of copying its folder
-tree, DDD depth, adapter placement, or composition rules. Foundation contracts
-and conformance tooling must not silently redefine that product-owned profile.
+The organization owns the immutable Feature Module Standard. Each adopting
+repository maps that standard to its exact feature layout and checks. This
+repository's [local profile](feature-module-standard-profile.md) pins that
+authority, preserves the existing package policy and records the current
+pre-production scope. Product-specific composition profiles remain
+product-owned; Foundation contracts and tooling must not redefine them.
 
 Full DDD belongs inside products where business invariants exist. This
 repository uses domain modelling only for real extension lifecycle and trust
