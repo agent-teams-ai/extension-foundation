@@ -210,7 +210,7 @@ Separately exercise an operation accepted before sealing according to its
 declared bounded lease and reconciliation policy. Coordinate a pending write
 across the fence transition and prove atomic fence enforcement at the actual
 effect owner; a check before an asynchronous call is insufficient. Validate
-B's state through independent readback and prove that B's authorized handle
+B's state through independent reads and prove that B's authorized handle
 still works. A failed unpublished candidate preserves A's existing authority.
 Reactivation must not revive a previously revoked handle. Explicitly authorized
 migration or repair remains separate from ordinary extension authority.
