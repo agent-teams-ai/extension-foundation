@@ -7,7 +7,7 @@
   "type": "module",
   "packageManager": "pnpm@11.18.0",
   "engines": {
-    "node": ">=24.18.0 <25",
+    "node": ">=24.18.0 <25 || >=26.10.0 <27",
     "pnpm": ">=11.17.0 <12"
   },
   "repository": {
@@ -27,9 +27,9 @@
     "architecture:topology:check": "node architecture/checks/package-topology.mjs",
     "evidence:custody": "node architecture/checks/evidence-custody-cli.mjs",
     "evidence:custody:test": "node --test --test-concurrency=1 tests/evidence-custody.test.mjs",
-    "check": "pnpm foundation:check && pnpm docs:protocol:check && pnpm architecture:check && pnpm typecheck && pnpm qualification:check && pnpm packages:check",
+    "check": "pnpm foundation:check && pnpm docs:protocol:check && pnpm node-compatibility:check && pnpm architecture:check && pnpm typecheck && pnpm qualification:check && pnpm packages:check",
     "check:changed": "agent-teams-foundation agent-workflow changed --consumer .",
-    "check:fast": "pnpm foundation:check && pnpm docs:protocol:check && pnpm architecture:check:fast && pnpm typecheck && pnpm packages:check",
+    "check:fast": "pnpm foundation:check && pnpm docs:protocol:check && pnpm node-compatibility:check && pnpm architecture:check:fast && pnpm typecheck && pnpm packages:check",
     "docs:changed": "pnpm docs:check && pnpm docs:quality",
     "docs:check": "agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml",
     "docs:contract-test": "node --test tests/document-authoring.test.mjs tests/docs-protocol-qualification.test.mjs",
@@ -46,6 +46,7 @@
     "foundation:check": "agent-teams-foundation check && pnpm foundation:assert-dev-only && pnpm foundation:assert-registry",
     "foundation:detach": "agent-teams-foundation detach",
     "foundation:status": "agent-teams-foundation status",
+    "node-compatibility:check": "node --test --test-concurrency=1 tests/node-compatibility.test.mjs",
     "packages:artifacts:check": "pnpm architecture:package-artifacts:check",
     "packages:check": "pnpm --recursive --filter \"./packages/**\" check && pnpm packages:artifacts:check",
     "qualification:check": "pnpm qualification:typecheck && pnpm qualification:dogfooding-model:check && node --test --test-concurrency=1 tests/qualification/*.test.ts",
