@@ -31,11 +31,11 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
-      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies
       - run: pnpm check
 
-  node-26-compatibility:
-    name: node-26-compatibility
+  node-26-prerequisite:
+    name: node-26-prerequisite
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -50,9 +50,9 @@ jobs:
         with:
           node-version: 26.10.0
           cache: pnpm
-      - name: Strict frozen install
-        run: pnpm install --frozen-lockfile --ignore-scripts
-      - run: pnpm check
+      # The pinned Foundation and Docs artifacts require Node 24. This lane
+      # exercises policy evidence only until compatible published successors exist.
+      - run: node --test --test-concurrency=1 tests/node-compatibility.test.mjs
 
   product-sources:
     name: product-sources
@@ -88,7 +88,7 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
-      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies
       - name: Verify exact product sources
         env:
           AGENT_RUNTIME_SOURCE: ${{ github.workspace }}/.product-sources/agent-runtime
@@ -116,7 +116,7 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
-      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies
       - run: pnpm architecture:check
       - run: pnpm qualification:check
       - run: pnpm packages:check
@@ -137,7 +137,7 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
-      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies
       - run: pnpm architecture:check
       - run: pnpm qualification:check
       - run: pnpm packages:check

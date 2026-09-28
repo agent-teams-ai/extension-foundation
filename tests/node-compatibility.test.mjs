@@ -19,10 +19,69 @@ test("runtime policy keeps Node 24 default and skips Node 25", async () => {
   const manifest = JSON.parse(manifestText);
 
   assert.equal(defaultVersion.trim(), "24.18.0");
-  assert.equal(manifest.engines.node, ">=24.18.0 <25 || >=26.10.0 <27");
+  assert.equal(manifest.engines.node, ">=24.18.0 <25");
 });
 
-test("package export resolution remains stable across supported Node runtimes", async t => {
+test("pnpm 11 workspace engine policy rejects an incompatible local dependency", async t => {
+  const root = await mkdtemp(join(tmpdir(), "extension-engine-policy-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+
+  const dependencyRoot = join(root, "incompatible");
+  await mkdir(dependencyRoot);
+  await writeFile(join(root, "pnpm-workspace.yaml"), await readFile(join(repositoryRoot, "pnpm-workspace.yaml")));
+  await writeFile(join(root, "package.json"), `${JSON.stringify({
+    name: "@agent-teams/engine-policy-fixture",
+    version: "1.0.0",
+    private: true,
+    devDependencies: { "@agent-teams/incompatible-engine-fixture": "file:./incompatible" },
+  })}\n`);
+  await writeFile(join(dependencyRoot, "package.json"), `${JSON.stringify({
+    name: "@agent-teams/incompatible-engine-fixture",
+    version: "1.0.0",
+    engines: { node: ">=99" },
+  })}\n`);
+
+  await assert.rejects(
+    execFileAsync("pnpm", ["install", "--offline", "--ignore-scripts"], { cwd: root, encoding: "utf8" }),
+    error => {
+      assert.match(`${error.stdout}\n${error.stderr}`, /ERR_PNPM_UNSUPPORTED_ENGINE/u);
+      assert.match(`${error.stdout}\n${error.stderr}`, /file:incompatible/u);
+      return true;
+    },
+  );
+});
+
+test("pnpm 11 workspace peer policy rejects an incompatible local dependency", async t => {
+  const root = await mkdtemp(join(tmpdir(), "extension-peer-policy-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+
+  await mkdir(join(root, "host"));
+  await mkdir(join(root, "consumer"));
+  await writeFile(join(root, "pnpm-workspace.yaml"), await readFile(join(repositoryRoot, "pnpm-workspace.yaml")));
+  await writeFile(join(root, "package.json"), `${JSON.stringify({
+    name: "@agent-teams/peer-policy-fixture",
+    version: "1.0.0",
+    private: true,
+    dependencies: { host: "file:./host", consumer: "file:./consumer" },
+  })}\n`);
+  await writeFile(join(root, "host", "package.json"), `${JSON.stringify({ name: "host", version: "1.0.0" })}\n`);
+  await writeFile(join(root, "consumer", "package.json"), `${JSON.stringify({
+    name: "consumer",
+    version: "1.0.0",
+    peerDependencies: { host: "^2.0.0" },
+  })}\n`);
+
+  await assert.rejects(
+    execFileAsync("pnpm", ["install", "--offline", "--ignore-scripts"], { cwd: root, encoding: "utf8" }),
+    error => {
+      assert.match(`${error.stdout}\n${error.stderr}`, /ERR_PNPM_PEER_DEP_ISSUES/u);
+      assert.match(`${error.stdout}\n${error.stderr}`, /unmet peer host/u);
+      return true;
+    },
+  );
+});
+
+test("synthetic package export resolution preserves artifact bytes", async t => {
   const root = await mkdtemp(join(tmpdir(), "extension-node-compatibility-"));
   t.after(() => rm(root, { recursive: true, force: true }));
 
