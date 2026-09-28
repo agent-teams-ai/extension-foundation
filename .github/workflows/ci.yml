@@ -32,6 +32,7 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies
+      - run: pnpm lockfile:peers:check
       - run: pnpm check
 
   node-26-prerequisite:
@@ -89,6 +90,7 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies
+      - run: pnpm lockfile:peers:check
       - name: Verify exact product sources
         env:
           AGENT_RUNTIME_SOURCE: ${{ github.workspace }}/.product-sources/agent-runtime
@@ -117,6 +119,7 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies
+      - run: pnpm lockfile:peers:check
       - run: pnpm architecture:check
       - run: pnpm qualification:check
       - run: pnpm packages:check
@@ -138,6 +141,7 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies
+      - run: pnpm lockfile:peers:check
       - run: pnpm architecture:check
       - run: pnpm qualification:check
       - run: pnpm packages:check

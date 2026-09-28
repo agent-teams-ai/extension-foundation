@@ -3,13 +3,60 @@ import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { lstat, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { delimiter, dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import test from "node:test";
 
 const execFileAsync = promisify(execFile);
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
+
+async function pnpmCliPath() {
+  const directories = [
+    ...(process.env.npm_execpath ? [dirname(process.env.npm_execpath)] : []),
+    ...(process.env.PATH ?? "").split(delimiter),
+  ];
+  const candidates = [
+    ...(process.env.npm_execpath ? [process.env.npm_execpath] : []),
+    ...directories.flatMap(directory => [
+      join(directory, "pnpm"),
+      join(directory, "pnpm.mjs"),
+      join(directory, "pnpm.cjs"),
+      // pnpm/action-setup exposes .cmd shims on Windows beside node_modules/pnpm.
+      join(directory, "..", "pnpm", "bin", "pnpm.mjs"),
+      join(directory, "..", "pnpm", "bin", "pnpm.cjs"),
+    ]),
+  ];
+
+  for (const candidate of candidates) {
+    let resolved;
+    try {
+      resolved = await realpath(candidate);
+    } catch (error) {
+      if (error.code === "ENOENT") continue;
+      throw error;
+    }
+    if (!/\.([cm]?js)$/u.test(resolved)) continue;
+
+    const [repositoryManifest, pnpmManifest] = await Promise.all([
+      readFile(join(repositoryRoot, "package.json"), "utf8").then(JSON.parse),
+      readFile(join(dirname(dirname(resolved)), "package.json"), "utf8").then(JSON.parse),
+    ]);
+    assert.equal(pnpmManifest.name, "pnpm");
+    assert.equal(repositoryManifest.packageManager, "pnpm@11.18.0");
+    assert.equal(repositoryManifest.packageManager, `pnpm@${pnpmManifest.version}`);
+    return resolved;
+  }
+  throw new Error("Cannot resolve the pinned pnpm JavaScript CLI from npm_execpath or PATH");
+}
+
+async function runPnpm(cwd, args) {
+  return execFileAsync(process.execPath, [await pnpmCliPath(), ...args], {
+    cwd,
+    encoding: "utf8",
+    maxBuffer: 1024 * 1024,
+  });
+}
 
 test("runtime policy keeps Node 24 default and skips Node 25", async () => {
   const [defaultVersion, manifestText] = await Promise.all([
@@ -33,6 +80,7 @@ test("pnpm 11 workspace engine policy rejects an incompatible local dependency",
     name: "@agent-teams/engine-policy-fixture",
     version: "1.0.0",
     private: true,
+    packageManager: "pnpm@11.18.0",
     devDependencies: { "@agent-teams/incompatible-engine-fixture": "file:./incompatible" },
   })}\n`);
   await writeFile(join(dependencyRoot, "package.json"), `${JSON.stringify({
@@ -42,7 +90,7 @@ test("pnpm 11 workspace engine policy rejects an incompatible local dependency",
   })}\n`);
 
   await assert.rejects(
-    execFileAsync("pnpm", ["install", "--offline", "--ignore-scripts"], { cwd: root, encoding: "utf8" }),
+    runPnpm(root, ["install", "--offline", "--ignore-scripts"]),
     error => {
       assert.match(`${error.stdout}\n${error.stderr}`, /ERR_PNPM_UNSUPPORTED_ENGINE/u);
       assert.match(`${error.stdout}\n${error.stderr}`, /file:incompatible/u);
@@ -62,6 +110,7 @@ test("pnpm 11 workspace peer policy rejects an incompatible local dependency", a
     name: "@agent-teams/peer-policy-fixture",
     version: "1.0.0",
     private: true,
+    packageManager: "pnpm@11.18.0",
     dependencies: { host: "file:./host", consumer: "file:./consumer" },
   })}\n`);
   await writeFile(join(root, "host", "package.json"), `${JSON.stringify({ name: "host", version: "1.0.0" })}\n`);
@@ -72,10 +121,47 @@ test("pnpm 11 workspace peer policy rejects an incompatible local dependency", a
   })}\n`);
 
   await assert.rejects(
-    execFileAsync("pnpm", ["install", "--offline", "--ignore-scripts"], { cwd: root, encoding: "utf8" }),
+    runPnpm(root, ["install", "--offline", "--ignore-scripts"]),
     error => {
       assert.match(`${error.stdout}\n${error.stderr}`, /ERR_PNPM_PEER_DEP_ISSUES/u);
       assert.match(`${error.stdout}\n${error.stderr}`, /unmet peer host/u);
+      return true;
+    },
+  );
+});
+
+test("strict frozen install is followed by rejecting locked peer graph validation", async t => {
+  const root = await mkdtemp(join(tmpdir(), "extension-frozen-peer-policy-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+
+  const hostRoot = join(root, "host");
+  const consumerRoot = join(root, "consumer");
+  await mkdir(hostRoot);
+  await mkdir(consumerRoot);
+  await writeFile(join(root, "pnpm-workspace.yaml"), await readFile(join(repositoryRoot, "pnpm-workspace.yaml")));
+  await writeFile(join(hostRoot, "package.json"), `${JSON.stringify({ name: "host", version: "1.0.0" })}\n`);
+  await writeFile(join(consumerRoot, "package.json"), `${JSON.stringify({
+    name: "consumer", version: "1.0.0", peerDependencies: { host: "^2.0.0" },
+  })}\n`);
+
+  await runPnpm(hostRoot, ["pack", "--pack-destination", root]);
+  await runPnpm(consumerRoot, ["pack", "--pack-destination", root]);
+  await writeFile(join(root, "package.json"), `${JSON.stringify({
+    name: "@agent-teams/frozen-peer-policy-fixture",
+    version: "1.0.0",
+    private: true,
+    packageManager: "pnpm@11.18.0",
+    dependencies: { host: "file:./host-1.0.0.tgz", consumer: "file:./consumer-1.0.0.tgz" },
+  })}\n`);
+
+  await runPnpm(root, ["install", "--lockfile-only", "--offline", "--ignore-scripts", "--strict-peer-dependencies=false"]);
+  await runPnpm(root, ["install", "--frozen-lockfile", "--offline", "--ignore-scripts", "--engine-strict", "--strict-peer-dependencies"]);
+  await assert.rejects(
+    runPnpm(root, ["peers", "check", "--lockfile-only"]),
+    error => {
+      assert.match(`${error.stdout}\n${error.stderr}`, /unmet peer host/u);
+      assert.match(`${error.stdout}\n${error.stderr}`, /Installed: 1\.0\.0/u);
+      assert.match(`${error.stdout}\n${error.stderr}`, /\^2\.0\.0/u);
       return true;
     },
   );
