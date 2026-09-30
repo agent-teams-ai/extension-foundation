@@ -12,6 +12,8 @@ const execFileAsync = promisify(execFile);
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 
 async function pnpmCliPath() {
+  const repositoryManifest = JSON.parse(await readFile(join(repositoryRoot, "package.json"), "utf8"));
+  assert.equal(repositoryManifest.packageManager, "pnpm@11.18.0");
   const directories = [
     ...(process.env.npm_execpath ? [dirname(process.env.npm_execpath)] : []),
     ...(process.env.PATH ?? "").split(delimiter),
@@ -33,22 +35,58 @@ async function pnpmCliPath() {
     try {
       resolved = await realpath(candidate);
     } catch (error) {
-      if (error.code === "ENOENT") continue;
+      // A PATH entry can itself be a pnpm shim file, not a directory.
+      if (error.code === "ENOENT" || error.code === "ENOTDIR") continue;
       throw error;
     }
     if (!/\.([cm]?js)$/u.test(resolved)) continue;
 
-    const [repositoryManifest, pnpmManifest] = await Promise.all([
-      readFile(join(repositoryRoot, "package.json"), "utf8").then(JSON.parse),
-      readFile(join(dirname(dirname(resolved)), "package.json"), "utf8").then(JSON.parse),
-    ]);
-    assert.equal(pnpmManifest.name, "pnpm");
-    assert.equal(repositoryManifest.packageManager, "pnpm@11.18.0");
-    assert.equal(repositoryManifest.packageManager, `pnpm@${pnpmManifest.version}`);
+    let pnpmManifest;
+    try {
+      pnpmManifest = JSON.parse(await readFile(join(dirname(dirname(resolved)), "package.json"), "utf8"));
+    } catch (error) {
+      if (error.code === "ENOENT" || error.code === "ENOTDIR") continue;
+      throw error;
+    }
+    // Corepack's own JS shim is not the pinned pnpm CLI.
+    if (pnpmManifest.name !== "pnpm" || repositoryManifest.packageManager !== `pnpm@${pnpmManifest.version}`) continue;
     return resolved;
   }
   throw new Error("Cannot resolve the pinned pnpm JavaScript CLI from npm_execpath or PATH");
 }
+
+test("pnpm CLI discovery skips file shims and resolves the pinned package", async t => {
+  const root = await mkdtemp(join(tmpdir(), "extension-pnpm-discovery-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const oldPath = process.env.PATH;
+  const oldExecPath = process.env.npm_execpath;
+  t.after(() => {
+    if (oldPath === undefined) delete process.env.PATH;
+    else process.env.PATH = oldPath;
+    if (oldExecPath === undefined) delete process.env.npm_execpath;
+    else process.env.npm_execpath = oldExecPath;
+  });
+
+  const binDirectory = join(root, "node_modules", ".bin");
+  const packageDirectory = join(root, "node_modules", "pnpm");
+  const cli = join(packageDirectory, "bin", "pnpm.cjs");
+  const shim = join(binDirectory, "pnpm");
+  await mkdir(binDirectory, { recursive: true });
+  await mkdir(dirname(cli), { recursive: true });
+  await writeFile(shim, "#!/bin/sh\n");
+  await writeFile(cli, "// pinned pnpm fixture\n");
+  await writeFile(join(packageDirectory, "package.json"), JSON.stringify({ name: "pnpm", version: "11.18.0" }));
+
+  // Corepack can supply npm_execpath while action-setup supplies a file shim on PATH.
+  const corepackCli = join(root, "corepack", "dist", "pnpm.js");
+  await mkdir(dirname(corepackCli), { recursive: true });
+  await writeFile(corepackCli, "// Corepack shim fixture\n");
+  await writeFile(join(root, "corepack", "package.json"), JSON.stringify({ name: "corepack", version: "0.1.0" }));
+  process.env.npm_execpath = corepackCli;
+  process.env.PATH = [shim, binDirectory].join(delimiter);
+
+  assert.equal(await pnpmCliPath(), await realpath(cli));
+});
 
 async function runPnpm(cwd, args) {
   return execFileAsync(process.execPath, [await pnpmCliPath(), ...args], {
