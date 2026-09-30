@@ -24,6 +24,8 @@ async function pnpmCliPath() {
       join(directory, "pnpm"),
       join(directory, "pnpm.mjs"),
       join(directory, "pnpm.cjs"),
+      // action-setup can put the pnpm package root itself on PATH.
+      join(directory, "bin", "pnpm"),
       // pnpm/action-setup exposes .cmd shims on Windows beside node_modules/pnpm.
       join(directory, "..", "pnpm", "bin", "pnpm.mjs"),
       join(directory, "..", "pnpm", "bin", "pnpm.cjs"),
@@ -39,7 +41,17 @@ async function pnpmCliPath() {
       if (error.code === "ENOENT" || error.code === "ENOTDIR") continue;
       throw error;
     }
-    if (!/\.([cm]?js)$/u.test(resolved)) continue;
+    if (!/\.([cm]?js)$/u.test(resolved)) {
+      if (candidate !== join(dirname(dirname(candidate)), "bin", "pnpm")) continue;
+      let source;
+      try {
+        source = await readFile(resolved, "utf8");
+      } catch (error) {
+        if (error.code === "ENOENT" || error.code === "ENOTDIR" || error.code === "EISDIR") continue;
+        throw error;
+      }
+      if (!/^#![^\n]*\bnode\b/u.test(source)) continue;
+    }
 
     let pnpmManifest;
     try {
@@ -86,6 +98,43 @@ test("pnpm CLI discovery skips file shims and resolves the pinned package", asyn
   process.env.PATH = [shim, binDirectory].join(delimiter);
 
   assert.equal(await pnpmCliPath(), await realpath(cli));
+});
+
+test("pnpm CLI discovery resolves action-setup's package-root bin layout", async t => {
+  const root = await mkdtemp(join(tmpdir(), "extension-pnpm-action-setup-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const oldPath = process.env.PATH;
+  const oldExecPath = process.env.npm_execpath;
+  t.after(() => {
+    if (oldPath === undefined) delete process.env.PATH;
+    else process.env.PATH = oldPath;
+    if (oldExecPath === undefined) delete process.env.npm_execpath;
+    else process.env.npm_execpath = oldExecPath;
+  });
+
+  const binDirectory = join(root, "setup-pnpm", "node_modules", ".bin");
+  const cli = join(binDirectory, "bin", "pnpm");
+  const shim = join(binDirectory, "pnpm");
+  await mkdir(dirname(cli), { recursive: true });
+  await writeFile(shim, "#!/bin/sh\n");
+  await writeFile(cli, "#!/usr/bin/env node\n// pinned pnpm fixture\n");
+  await writeFile(join(binDirectory, "package.json"), JSON.stringify({ name: "pnpm", version: "11.18.0" }));
+
+  const corepackCli = join(root, "corepack", "dist", "pnpm.js");
+  await mkdir(dirname(corepackCli), { recursive: true });
+  await writeFile(corepackCli, "// Corepack shim fixture\n");
+  await writeFile(join(root, "corepack", "package.json"), JSON.stringify({ name: "corepack", version: "0.1.0" }));
+  process.env.npm_execpath = corepackCli;
+  process.env.PATH = [shim, binDirectory].join(delimiter);
+  assert.equal(await pnpmCliPath(), await realpath(cli));
+
+  await writeFile(cli, "#!/bin/sh\n");
+  await assert.rejects(pnpmCliPath(), /Cannot resolve the pinned pnpm JavaScript CLI/u);
+  await writeFile(cli, "#!/usr/bin/env node\n// pinned pnpm fixture\n");
+  await writeFile(join(binDirectory, "package.json"), JSON.stringify({ name: "corepack", version: "11.18.0" }));
+  await assert.rejects(pnpmCliPath(), /Cannot resolve the pinned pnpm JavaScript CLI/u);
+  await writeFile(join(binDirectory, "package.json"), JSON.stringify({ name: "pnpm", version: "11.17.0" }));
+  await assert.rejects(pnpmCliPath(), /Cannot resolve the pinned pnpm JavaScript CLI/u);
 });
 
 async function runPnpm(cwd, args) {
