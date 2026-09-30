@@ -41,6 +41,7 @@ const governedFiles = [
   "tests/document-authoring.test.mjs",
   "tests/evidence-custody.test.mjs",
   "tests/feature-module-standard-profile.test.mjs",
+  "tests/node-compatibility.test.mjs",
   "tests/package-policy-characterization.test.mjs",
   "tests/package-policy-source-boundaries.test.mjs",
   "tests/qualification/dogfooding-protocol-contract.ts",
