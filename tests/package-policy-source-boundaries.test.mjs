@@ -200,9 +200,11 @@ test("installed source gate includes dist source explicitly governed by a bounda
     await mkdir(join(root, path), { recursive: true });
     await writeFile(join(root, path, "hidden.js"), 'import "node:fs";\n');
     const policyPath = join(root, "architecture/foundation/source-dependencies.yaml");
-    const policy = await readFile(policyPath, "utf8");
+    const policy = (await readFile(policyPath, "utf8")).replace(/\r\n/gu, "\n");
+    const governedRoot = "    roots:\n      - fixtures/qualification-toy-package\n";
+    assert.ok(policy.includes(governedRoot), "fixture declares the expected package root");
     await writeFile(policyPath, policy.replace(
-      "    roots:\n      - fixtures/qualification-toy-package\n",
+      governedRoot,
       `    roots:\n      - fixtures/qualification-toy-package/index.js\n      - fixtures/qualification-toy-package/index.d.ts\n      - ${path}\n`,
     ));
     const report = await runChecker(root);
