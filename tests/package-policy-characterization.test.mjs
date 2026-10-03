@@ -443,9 +443,9 @@ test("managed roots retain exact development coordinates while release-age waiti
   const manifest = JSON.parse(await readFile(join(repositoryRoot, "package.json"), "utf8"));
   const workspace = parseYaml(await readFile(join(repositoryRoot, "pnpm-workspace.yaml"), "utf8"));
   const roots = {
-    "@agent-teams/engineering-foundation": "1.4.2",
-    "@agent-teams/docs-protocol": "0.6.0",
-    "@agent-teams/docs-protocol-agent-teams": "0.2.9",
+    "@agent-teams/engineering-foundation": "1.7.2",
+    "@agent-teams/docs-protocol": "0.6.2",
+    "@agent-teams/docs-protocol-agent-teams": "0.3.2",
   };
   for (const [name, version] of Object.entries(roots)) {
     assert.equal(manifest.devDependencies[name], version);

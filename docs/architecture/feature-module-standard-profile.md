@@ -126,6 +126,67 @@ and invokes existing checks, as other consumers' profiles do. It introduces no
 second AST analyzer, runtime framework or cross-repository policy owner.
 Production source-coverage activation remains separate and pending its real scope.
 
+## Foundation 1.7.2 tooling migration
+
+The official managed Docs Protocol upgrade through published adapter 0.3.2 has
+applied cohort `docs-2026-10-03-stable31`. The consumer integration and managed
+state bind these exact published coordinates:
+
+| Package | Version |
+| --- | --- |
+| `@agent-teams/repository-mutation` | `0.2.2` |
+| `@agent-teams/document-authoring` | `0.3.2` |
+| `@agent-teams/docs-protocol` | `0.6.2` |
+| `@agent-teams/docs-protocol-agent-teams` | `0.3.2` |
+| `@agent-teams/engineering-foundation` | `1.7.2` |
+
+The root manifest keeps Foundation, Docs Protocol and its adapter as exact
+development dependencies. Document Authoring and Repository Mutation remain
+transitive tooling dependencies. The registry lock binds the same versions and
+integrities. The managed caller in `.github/workflows/docs-protocol.yml` invokes
+the shared `agent-teams-ai/.github` Docs Protocol workflow at
+`b30455e32cf5d54ade6d8301637701347e4ce57c`.
+
+The public `agent-teams-node-test` execution event contract requires Node 24.21.0
+or newer within Node 24. CI follows `.node-version` at 24.21.0.
+
+`pnpm evidence:custody:test` runs the existing custody suite through that public
+runner. Three exact identities in
+`architecture/foundation/required-node-tests.json` protect external manifest
+identity, clean-root capture, and Windows verifier-only behavior. The contract
+admits only the existing OS-specific skips. The profile gate binds the entire
+selected entry file list and requires this execution-backed test gate in both
+architecture command chains.
+
+The existing `tests/foundation-upgrade.test.mjs` regression exercises the public
+installed runner with the inherited parent `NODE_TEST_CONTEXT`. It checks actual
+completion and rejects omitted, skipped, unfinished and misidentified tests,
+while admitting only exact OS exceptions. The shared nested-context
+CLI fix for [Foundation issue 363](https://github.com/agent-teams-ai/engineering-foundation/issues/363)
+was released in 1.7.2 through [PR 365](https://github.com/agent-teams-ai/engineering-foundation/pull/365).
+The former 1.7.1 standalone disposable-run and failure receipts remain historical
+evidence. Existing source-gate regressions cover unavailable inputs and forbidden
+source explicitly governed beneath `dist`.
+
+Delivery requires operators to retain full-gate results, independent review and
+live consumer evidence for the final revision. OS-specific and canary
+qualification require their own executed evidence.
+
+All source-policy boundaries remain development boundaries. The empty package
+catalog and pre-production guard leave no typed production scope for
+`quality.source-coverage` or its default unknown assertion bridge check.
+Qualification TypeScript still runs through `qualification:typecheck`; it is
+TEST evidence. No bridge admission, SDK growth grant or production qualification
+is introduced. The first real package must qualify its applicable production
+coverage and typed routes before promotion.
+
+The retained CMS delta review compares the digest-matching historical packet
+with upstream snapshot `4b56072ec6ca269fb16e3fdf131d31423af804bd` and document
+commit `9c722ceff4ede307d06d7a4b63fdebe615f54c53`. The current whole-document
+digest is `33b41d5babf0a431c97e8e596a56e6ec1557ba1a0b26d39bf23e13d9a19e1fbd`.
+The added optional dynamic Host lifecycle candidate is outside this consumer
+scope. The reviewed CMS pin above remains unchanged.
+
 ## Related decisions
 
 [ADR-0015](../decisions/0015-authorize-get-modular-semantic-extraction.md) preserves

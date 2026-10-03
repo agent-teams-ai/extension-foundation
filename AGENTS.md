@@ -46,7 +46,11 @@ products. Start with:
 ## Engineering Workflow
 
 Engineering Foundation is an exact development dependency and must never enter
-production dependencies. Use:
+production dependencies. Foundation 1.7.2 uses Node 24.21.0 or newer in the Node 24
+family for the installed mandatory Node test runner. `pnpm evidence:custody:test`
+protects exact critical identities in `architecture/foundation/required-node-tests.json`;
+the profile gate also binds its complete selected entry file list. Preserve that
+execution route in both architecture gates and keep OS exceptions exact. Use:
 
 - `pnpm check:changed` while editing;
 - `pnpm check:fast` before handoff;

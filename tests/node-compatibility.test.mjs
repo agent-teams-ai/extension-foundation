@@ -311,8 +311,8 @@ test("runtime policy keeps Node 24 default and skips Node 25", async () => {
   ]);
   const manifest = JSON.parse(manifestText);
 
-  assert.equal(defaultVersion.trim(), "24.18.0");
-  assert.equal(manifest.engines.node, ">=24.18.0 <25");
+  assert.equal(defaultVersion.trim(), "24.21.0");
+  assert.equal(manifest.engines.node, ">=24.21.0 <25");
 });
 
 test("pnpm 11 workspace engine policy rejects an incompatible local dependency", async t => {
