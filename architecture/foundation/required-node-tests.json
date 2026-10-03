@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "required": [
+    {
+      "file": "tests/evidence-custody.test.mjs",
+      "names": [
+        "manifest verification requires externally supplied exact manifest identity"
+      ],
+      "kind": "test"
+    },
+    {
+      "file": "tests/evidence-custody.test.mjs",
+      "names": [
+        "capture requires a canonical clean repository root"
+      ],
+      "kind": "test"
+    },
+    {
+      "file": "tests/evidence-custody.test.mjs",
+      "names": [
+        "Windows remains verifier-only and rejects capture before source I/O"
+      ],
+      "kind": "test"
+    }
+  ],
+  "exceptions": [
+    {
+      "file": "tests/evidence-custody.test.mjs",
+      "names": [
+        "capture requires a canonical clean repository root"
+      ],
+      "kind": "test",
+      "status": "skipped",
+      "reason": "Strict evidence capture supports Linux and macOS only; Windows is verifier-only.",
+      "applicability": {
+        "platforms": [
+          "win32"
+        ]
+      }
+    },
+    {
+      "file": "tests/evidence-custody.test.mjs",
+      "names": [
+        "Windows remains verifier-only and rejects capture before source I/O"
+      ],
+      "kind": "test",
+      "status": "skipped",
+      "reason": "This rejection exercises the Windows-only verifier policy; POSIX capture is supported.",
+      "applicability": {
+        "platforms": [
+          "linux",
+          "darwin"
+        ]
+      }
+    }
+  ]
+}

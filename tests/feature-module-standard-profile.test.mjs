@@ -55,6 +55,10 @@ test("rejects authority drift, silent scope changes and false conformance", asyn
 
 test("rejects removed, no-op and nonblocking enforcement", async t => {
   const mutations = [
+    ["mandatory file removed", value => { value.manifest.scripts["evidence:custody:test"] = "agent-teams-node-test --contract architecture/foundation/required-node-tests.json -- tests/architecture-topology.test.mjs"; }],
+    ["mandatory runner replaced", value => { value.manifest.scripts["evidence:custody:test"] = "node --test tests/evidence-custody.test.mjs"; }],
+    ["critical full gate removed", value => { value.manifest.scripts["architecture:check"] = value.manifest.scripts["architecture:check"].replace("pnpm evidence:custody:test && ", ""); }],
+    ["critical fast gate removed", value => { value.manifest.scripts["architecture:check:fast"] = value.manifest.scripts["architecture:check:fast"].replace("pnpm evidence:custody:test && ", ""); }],
     ["missing leaf", value => { delete value.manifest.scripts["architecture:feature-module-profile"]; }],
     ["no-op leaf", value => { value.manifest.scripts["architecture:topology:check"] = "node -e ''"; }],
     ["missing full path", value => { value.manifest.scripts.check = "pnpm typecheck"; }],

@@ -51,8 +51,8 @@ jobs:
         with:
           node-version: 26.10.0
           cache: pnpm
-      # The pinned Foundation and Docs artifacts require Node 24. This lane
-      # exercises policy evidence only until compatible published successors exist.
+      # Docs Protocol still requires Node 24. This lane exercises policy
+      # evidence only until its compatible published successor exists.
       - run: node --test --test-concurrency=1 tests/node-compatibility.test.mjs
 
   product-sources:

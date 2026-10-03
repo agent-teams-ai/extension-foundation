@@ -7,7 +7,7 @@
   "type": "module",
   "packageManager": "pnpm@11.18.0",
   "engines": {
-    "node": ">=24.18.0 <25",
+    "node": ">=24.21.0 <25",
     "pnpm": ">=11.17.0 <12"
   },
   "repository": {
@@ -15,8 +15,8 @@
     "url": "git+https://github.com/agent-teams-ai/extension-foundation.git"
   },
   "scripts": {
-    "architecture:check": "pnpm architecture:feature-module-profile && pnpm architecture:feature-module-profile:test && pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && node --import=\"data:text/javascript,process.env.PACKAGE_POLICY_TEST_MODE='full'\" --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/evidence-custody.test.mjs tests/package-policy-characterization.test.mjs tests/package-policy-source-boundaries.test.mjs tests/scaffolding.test.mjs",
-    "architecture:check:fast": "pnpm architecture:feature-module-profile && pnpm architecture:feature-module-profile:test && pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && node --import=\"data:text/javascript,process.env.PACKAGE_POLICY_TEST_MODE='fast'\" --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/evidence-custody.test.mjs tests/package-policy-characterization.test.mjs tests/package-policy-source-boundaries.test.mjs tests/scaffolding.test.mjs",
+    "architecture:check": "pnpm architecture:feature-module-profile && pnpm architecture:feature-module-profile:test && pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && pnpm evidence:custody:test && node --import=\"data:text/javascript,process.env.PACKAGE_POLICY_TEST_MODE='full'\" --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/package-policy-characterization.test.mjs tests/package-policy-source-boundaries.test.mjs tests/scaffolding.test.mjs tests/foundation-upgrade.test.mjs",
+    "architecture:check:fast": "pnpm architecture:feature-module-profile && pnpm architecture:feature-module-profile:test && pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && pnpm evidence:custody:test && node --import=\"data:text/javascript,process.env.PACKAGE_POLICY_TEST_MODE='fast'\" --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/package-policy-characterization.test.mjs tests/package-policy-source-boundaries.test.mjs tests/scaffolding.test.mjs tests/foundation-upgrade.test.mjs",
     "architecture:feature-module-profile": "node architecture/checks/feature-module-standard-profile.mjs",
     "architecture:feature-module-profile:test": "node --test tests/feature-module-standard-profile.test.mjs",
     "architecture:package-artifacts:check": "node architecture/checks/package-artifacts.mjs",
@@ -26,7 +26,7 @@
     "architecture:source-dependencies:check": "agent-teams-foundation check architecture.source-dependencies",
     "architecture:topology:check": "node architecture/checks/package-topology.mjs",
     "evidence:custody": "node architecture/checks/evidence-custody-cli.mjs",
-    "evidence:custody:test": "node --test --test-concurrency=1 tests/evidence-custody.test.mjs",
+    "evidence:custody:test": "agent-teams-node-test --contract architecture/foundation/required-node-tests.json -- tests/evidence-custody.test.mjs",
     "check": "pnpm lockfile:peers:check && pnpm foundation:check && pnpm docs:protocol:check && pnpm node-compatibility:check && pnpm architecture:check && pnpm typecheck && pnpm qualification:check && pnpm packages:check",
     "check:changed": "agent-teams-foundation agent-workflow changed --consumer .",
     "check:fast": "pnpm lockfile:peers:check && pnpm foundation:check && pnpm docs:protocol:check && pnpm node-compatibility:check && pnpm architecture:check:fast && pnpm typecheck && pnpm packages:check",
@@ -60,9 +60,9 @@
     "typecheck": "tsc --project tsconfig.json --noEmit --pretty false && pnpm --recursive --filter \"./packages/**\" typecheck"
   },
   "devDependencies": {
-    "@agent-teams/docs-protocol": "0.6.0",
-    "@agent-teams/docs-protocol-agent-teams": "0.2.9",
-    "@agent-teams/engineering-foundation": "1.4.2",
+    "@agent-teams/docs-protocol": "0.6.2",
+    "@agent-teams/docs-protocol-agent-teams": "0.3.2",
+    "@agent-teams/engineering-foundation": "1.7.2",
     "@dagrejs/graphlib": "catalog:",
     "@deepseek-ai/cordis": "catalog:",
     "@extism/extism": "catalog:",

@@ -126,6 +126,50 @@ and invokes existing checks, as other consumers' profiles do. It introduces no
 second AST analyzer, runtime framework or cross-repository policy owner.
 Production source-coverage activation remains separate and pending its real scope.
 
+## Foundation 1.7.2 tooling migration
+
+The root manifest pins exact published Engineering Foundation 1.7.2 as a
+development dependency. This source-only candidate retains the preliminary
+1.7.1 lock binding; final installation and full qualification remain pending.
+The tooling default remains within Node 24 at 24.21.0
+for the public `agent-teams-node-test` execution event contract. CI follows
+`.node-version`; the Node 26 prerequisite lane remains separate. Historical
+qualification receipts and the Docs Protocol cohort retain their original pins.
+The authentic managed Docs cohort still requires Foundation 1.4.2 and rejects
+this candidate lock. The public Docs adapter 0.3.2 does not itself migrate this
+consumer. The Docs owner must transition the clean origin through that adapter,
+compose this quality delta, and regenerate the final lock before frozen
+installation and final gates.
+
+`pnpm evidence:custody:test` runs the existing custody suite through that public
+runner. Three exact identities protect external manifest identity, clean-root
+capture, and Windows verifier-only behavior. The contract admits only the
+existing OS-specific skips. The profile gate binds the entire selected file
+list and requires this test gate in both architecture command chains. Installed
+runner checks retained from 1.7.1 standalone disposable runs rejected omitted,
+skipped, unfinished and misidentified tests. The shared nested `NODE_TEST_CONTEXT`
+CLI fix for [Foundation issue 363](https://github.com/agent-teams-ai/engineering-foundation/issues/363)
+was released in 1.7.2 through [PR 365](https://github.com/agent-teams-ai/engineering-foundation/pull/365).
+The consumer regression preserves the parent context; its installed 1.7.2
+qualification remains pending. Historical 1.7.1 failure receipts remain historical
+evidence. Existing source-gate regressions cover unavailable inputs and forbidden
+source explicitly governed beneath `dist`.
+
+All source-policy boundaries remain development boundaries. The empty package
+catalog and pre-production guard leave no typed production scope for
+`quality.source-coverage` or its default unknown assertion bridge check.
+Qualification TypeScript still runs through `qualification:typecheck`; it is
+TEST evidence. No bridge admission, SDK growth grant or production qualification
+is introduced. The first real package must qualify its applicable production
+coverage and typed routes before promotion.
+
+The retained CMS delta review compares the digest-matching historical packet
+with upstream snapshot `4b56072ec6ca269fb16e3fdf131d31423af804bd` and document
+commit `9c722ceff4ede307d06d7a4b63fdebe615f54c53`. The current whole-document
+digest is `33b41d5babf0a431c97e8e596a56e6ec1557ba1a0b26d39bf23e13d9a19e1fbd`.
+The added optional dynamic Host lifecycle candidate is outside this consumer
+scope. The reviewed CMS pin above remains unchanged.
+
 ## Related decisions
 
 [ADR-0015](../decisions/0015-authorize-get-modular-semantic-extraction.md) preserves

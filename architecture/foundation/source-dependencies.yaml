@@ -150,6 +150,7 @@ boundaries:
       - tests/document-authoring.test.mjs
       - tests/evidence-custody.test.mjs
       - tests/feature-module-standard-profile.test.mjs
+      - tests/foundation-upgrade.test.mjs
       - tests/node-compatibility.test.mjs
       - tests/package-policy-characterization.test.mjs
       - tests/package-policy-source-boundaries.test.mjs
@@ -179,6 +180,7 @@ boundaries:
       - tests/document-authoring.test.mjs
       - tests/evidence-custody.test.mjs
       - tests/feature-module-standard-profile.test.mjs
+      - tests/foundation-upgrade.test.mjs
       - tests/package-policy-characterization.test.mjs
       - tests/package-policy-source-boundaries.test.mjs
       - tests/scaffolding.test.mjs

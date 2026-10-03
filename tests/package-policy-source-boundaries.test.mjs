@@ -41,6 +41,7 @@ const governedFiles = [
   "tests/document-authoring.test.mjs",
   "tests/evidence-custody.test.mjs",
   "tests/feature-module-standard-profile.test.mjs",
+  "tests/foundation-upgrade.test.mjs",
   "tests/node-compatibility.test.mjs",
   "tests/package-policy-characterization.test.mjs",
   "tests/package-policy-source-boundaries.test.mjs",
@@ -96,9 +97,9 @@ async function runChecker(root) {
       "--format",
       "json",
     ], { cwd: root, maxBuffer: 16 * 1024 * 1024 });
-    return JSON.parse(stdout);
+    return { ...JSON.parse(stdout), exitCode: 0 };
   } catch (error) {
-    return JSON.parse(error.stdout);
+    return { ...JSON.parse(error.stdout), exitCode: error.code };
   }
 }
 
@@ -163,4 +164,53 @@ test("official checker rejects consumer deep imports and production test imports
     'import "../../tests/package-policy-characterization.test.mjs";\n',
     "architecture.source-dependencies.forbidden-boundary-dependency",
   );
+});
+
+test("installed source gate rejects unavailable declared inputs", async t => {
+  for (const [name, mutate, expected] of [
+    ["missing boundary source", root => rm(join(root, "architecture/checks/product-source-evidence.d.mts")), /product-source-evidence\.d\.mts/u],
+    ["missing governed root", root => rm(join(root, "architecture/tooling"), { recursive: true }), /architecture\/tooling/u],
+    ["missing policy", root => rm(join(root, "architecture/foundation/source-dependencies.yaml")), /source-dependencies\.yaml/u],
+    ["nonregular policy", async root => {
+      const path = join(root, "architecture/foundation/source-dependencies.yaml");
+      await rm(path);
+      await mkdir(path);
+    }, /source-dependencies\.yaml/u],
+  ]) {
+    await t.test(name, async () => {
+      const root = await checkerFixture();
+      try {
+        await mutate(root);
+        const report = await runChecker(root);
+        assert.notEqual(report.exitCode, 0, JSON.stringify(report));
+        assert.equal(report.outcome, "invalid-input", JSON.stringify(report));
+        assert.ok(report.capabilities[0].problem, JSON.stringify(report));
+        assert.match(JSON.stringify(report), expected);
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    });
+  }
+});
+
+test("installed source gate includes dist source explicitly governed by a boundary", async () => {
+  const root = await checkerFixture();
+  try {
+    const path = "fixtures/qualification-toy-package/dist";
+    await mkdir(join(root, path), { recursive: true });
+    await writeFile(join(root, path, "hidden.js"), 'import "node:fs";\n');
+    const policyPath = join(root, "architecture/foundation/source-dependencies.yaml");
+    const policy = await readFile(policyPath, "utf8");
+    await writeFile(policyPath, policy.replace(
+      "    roots:\n      - fixtures/qualification-toy-package\n",
+      `    roots:\n      - fixtures/qualification-toy-package/index.js\n      - fixtures/qualification-toy-package/index.d.ts\n      - ${path}\n`,
+    ));
+    const report = await runChecker(root);
+    assert.notEqual(report.exitCode, 0, JSON.stringify(report));
+    assert.ok(report.capabilities.flatMap(capability => capability.diagnostics).some(diagnostic =>
+      diagnostic.ruleId === "architecture.source-dependencies.forbidden-builtin-dependency"
+      && diagnostic.location.path === `${path}/hidden.js`), JSON.stringify(report));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });

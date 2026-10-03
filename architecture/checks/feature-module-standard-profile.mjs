@@ -57,6 +57,9 @@ const LEAVES = {
   "architecture:feature-module-profile:test": "node --test tests/feature-module-standard-profile.test.mjs",
   "architecture:topology:check": "node architecture/checks/package-topology.mjs",
   "architecture:source-dependencies:check": "agent-teams-foundation check architecture.source-dependencies",
+  // Bind the complete selected entry list: the installed runner protects identities
+  // only in selected files, so dropping a file must fail this consumer gate.
+  "evidence:custody:test": "agent-teams-node-test --contract architecture/foundation/required-node-tests.json -- tests/evidence-custody.test.mjs",
 };
 
 function requireCondition(condition, message) {
@@ -103,7 +106,7 @@ export function validateFeatureModuleProfile({ profile, manifest, catalog, docum
   requireChain(manifest.scripts?.check, ["architecture:check"], "check");
   requireChain(manifest.scripts?.["check:fast"], ["architecture:check:fast"], "check:fast");
   for (const gate of ["architecture:check", "architecture:check:fast"]) {
-    requireChain(manifest.scripts?.[gate], Object.values(ENFORCEMENT), gate);
+    requireChain(manifest.scripts?.[gate], [...Object.values(ENFORCEMENT), "evidence:custody:test"], gate);
   }
   const ci = workflow?.jobs?.check;
   requireCondition(ci?.if === undefined && ci?.["continue-on-error"] === undefined
