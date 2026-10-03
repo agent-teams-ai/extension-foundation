@@ -128,32 +128,49 @@ Production source-coverage activation remains separate and pending its real scop
 
 ## Foundation 1.7.2 tooling migration
 
-The root manifest pins exact published Engineering Foundation 1.7.2 as a
-development dependency. This source-only candidate retains the preliminary
-1.7.1 lock binding; final installation and full qualification remain pending.
-The tooling default remains within Node 24 at 24.21.0
-for the public `agent-teams-node-test` execution event contract. CI follows
-`.node-version`; the Node 26 prerequisite lane remains separate. Historical
-qualification receipts and the Docs Protocol cohort retain their original pins.
-The authentic managed Docs cohort still requires Foundation 1.4.2 and rejects
-this candidate lock. The public Docs adapter 0.3.2 does not itself migrate this
-consumer. The Docs owner must transition the clean origin through that adapter,
-compose this quality delta, and regenerate the final lock before frozen
-installation and final gates.
+The official managed Docs Protocol upgrade through published adapter 0.3.2 has
+applied cohort `docs-2026-10-03-stable31`. The consumer integration and managed
+state bind these exact published coordinates:
+
+| Package | Version |
+| --- | --- |
+| `@agent-teams/repository-mutation` | `0.2.2` |
+| `@agent-teams/document-authoring` | `0.3.2` |
+| `@agent-teams/docs-protocol` | `0.6.2` |
+| `@agent-teams/docs-protocol-agent-teams` | `0.3.2` |
+| `@agent-teams/engineering-foundation` | `1.7.2` |
+
+The root manifest keeps Foundation, Docs Protocol and its adapter as exact
+development dependencies. Document Authoring and Repository Mutation remain
+transitive tooling dependencies. The registry lock binds the same versions and
+integrities. The managed caller in `.github/workflows/docs-protocol.yml` invokes
+the shared `agent-teams-ai/.github` Docs Protocol workflow at
+`b30455e32cf5d54ade6d8301637701347e4ce57c`.
+
+The public `agent-teams-node-test` execution event contract requires Node 24.21.0
+or newer within Node 24. CI follows `.node-version` at 24.21.0.
 
 `pnpm evidence:custody:test` runs the existing custody suite through that public
-runner. Three exact identities protect external manifest identity, clean-root
-capture, and Windows verifier-only behavior. The contract admits only the
-existing OS-specific skips. The profile gate binds the entire selected file
-list and requires this test gate in both architecture command chains. Installed
-runner checks retained from 1.7.1 standalone disposable runs rejected omitted,
-skipped, unfinished and misidentified tests. The shared nested `NODE_TEST_CONTEXT`
+runner. Three exact identities in
+`architecture/foundation/required-node-tests.json` protect external manifest
+identity, clean-root capture, and Windows verifier-only behavior. The contract
+admits only the existing OS-specific skips. The profile gate binds the entire
+selected entry file list and requires this execution-backed test gate in both
+architecture command chains.
+
+The existing `tests/foundation-upgrade.test.mjs` regression exercises the public
+installed runner with the inherited parent `NODE_TEST_CONTEXT`. It checks actual
+completion and rejects omitted, skipped, unfinished and misidentified tests,
+while admitting only exact OS exceptions. The shared nested-context
 CLI fix for [Foundation issue 363](https://github.com/agent-teams-ai/engineering-foundation/issues/363)
 was released in 1.7.2 through [PR 365](https://github.com/agent-teams-ai/engineering-foundation/pull/365).
-The consumer regression preserves the parent context; its installed 1.7.2
-qualification remains pending. Historical 1.7.1 failure receipts remain historical
+The former 1.7.1 standalone disposable-run and failure receipts remain historical
 evidence. Existing source-gate regressions cover unavailable inputs and forbidden
 source explicitly governed beneath `dist`.
+
+Delivery requires operators to retain full-gate results, independent review and
+live consumer evidence for the final revision. OS-specific and canary
+qualification require their own executed evidence.
 
 All source-policy boundaries remain development boundaries. The empty package
 catalog and pre-production guard leave no typed production scope for
