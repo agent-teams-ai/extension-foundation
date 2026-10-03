@@ -10,9 +10,9 @@ test("managed integration owns a data-only v3 qualification contract and externa
   ]);
   assert.equal(integration.schemaVersion, 3);
   assert.equal(integration.cohort.schemaVersion, 2);
-  assert.equal(integration.cohort.cohortId, "docs-2026-09-21-stable26");
+  assert.equal(integration.cohort.cohortId, "docs-2026-10-03-stable31");
   assert.equal(integration.cohort.schemas.managedState, 2);
-  assert.equal(integration.cohort.workflow.revision, "757122cb08ed15aba6c9eef1b1f655b77d1ac54b");
+  assert.equal(integration.cohort.workflow.revision, "b30455e32cf5d54ade6d8301637701347e4ce57c");
   assert.deepEqual(integration.qualification, {
     contractPath: "architecture/foundation/docs-protocol-qualification.json",
     gateCommand: "pnpm docs:protocol:check",
