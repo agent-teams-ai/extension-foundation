@@ -35,8 +35,8 @@ jobs:
       - run: pnpm lockfile:peers:check
       - run: pnpm check
 
-  node-26-prerequisite:
-    name: node-26-prerequisite
+  node-26-check:
+    name: node-26-check
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -51,9 +51,9 @@ jobs:
         with:
           node-version: 26.10.0
           cache: pnpm
-      # Docs Protocol still requires Node 24. This lane exercises policy
-      # evidence only until its compatible published successor exists.
-      - run: node --test --test-concurrency=1 tests/node-compatibility.test.mjs
+      - run: pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies
+      - run: pnpm lockfile:peers:check
+      - run: pnpm check
 
   product-sources:
     name: product-sources

@@ -147,8 +147,17 @@ integrities. The managed caller in `.github/workflows/docs-protocol.yml` invokes
 the shared `agent-teams-ai/.github` Docs Protocol workflow at
 `b30455e32cf5d54ade6d8301637701347e4ce57c`.
 
-The public `agent-teams-node-test` execution event contract requires Node 24.21.0
-or newer within Node 24. CI follows `.node-version` at 24.21.0.
+The installed public `agent-teams-node-test` execution event contract admits both
+supported tooling runtimes: Node 24.21.0 or newer within Node 24, and Node 26.10.0
+or newer within Node 26. CI keeps `.node-version` at 24.21.0 for the default
+`check` job; `node-26-check` uses 26.10.0. Both run the strict frozen install,
+locked peer validation and full `pnpm check` with the same exact dependencies.
+Node 25 and Node 27 remain outside the supported policy.
+
+These gates use the standard `agent-teams-docs` CLI. The exact managed adapter
+0.3.2 consumer check and plan still require Node 24; managed integration runtime
+qualification remains a separate shared-owner concern. Repository tooling
+compatibility does not qualify that managed execution path.
 
 `pnpm evidence:custody:test` runs the existing custody suite through that public
 runner. Three exact identities in
