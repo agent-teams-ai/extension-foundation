@@ -47,8 +47,8 @@ products. Start with:
 
 Engineering Foundation is an exact development dependency and must never enter
 production dependencies. The supported tooling runtimes are Node 24.21.0 or newer
-within Node 24, and Node 26.10.0 or newer within Node 26, including the installed
-Foundation 1.7.2 mandatory Node test runner. Node 24.21.0 remains the default.
+within Node 24, and Node 26.11.1 or newer within Node 26, including the installed
+Foundation 1.7.2 mandatory Node test runner. Node 26.11.1 is the default.
 `pnpm evidence:custody:test`
 protects exact critical identities in `architecture/foundation/required-node-tests.json`;
 the profile gate also binds its complete selected entry file list. Preserve that

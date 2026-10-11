@@ -148,9 +148,9 @@ the shared `agent-teams-ai/.github` Docs Protocol workflow at
 `b30455e32cf5d54ade6d8301637701347e4ce57c`.
 
 The installed public `agent-teams-node-test` execution event contract admits both
-supported tooling runtimes: Node 24.21.0 or newer within Node 24, and Node 26.10.0
-or newer within Node 26. CI keeps `.node-version` at 24.21.0 for the default
-`check` job; `node-26-check` uses 26.10.0. Both run the strict frozen install,
+supported tooling runtimes: Node 24.21.0 or newer within Node 24, and Node 26.11.1
+or newer within Node 26. The default is `.node-version` at 26.11.1, used by the
+`check` job; `node-26-check` pins the same 26.11.1. Both run the strict frozen install,
 locked peer validation and full `pnpm check` with the same exact dependencies.
 Node 25 and Node 27 remain outside the supported policy.
 

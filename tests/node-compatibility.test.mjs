@@ -304,14 +304,14 @@ async function runPnpm(cwd, args) {
   });
 }
 
-test("runtime policy keeps Node 24 default", async () => {
+test("runtime policy defaults to Node 26", async () => {
   const [defaultVersion, manifestText] = await Promise.all([
     readFile(join(repositoryRoot, ".node-version"), "utf8"),
     readFile(join(repositoryRoot, "package.json"), "utf8"),
   ]);
   const manifest = JSON.parse(manifestText);
 
-  assert.equal(defaultVersion.trim(), "24.21.0");
+  assert.equal(defaultVersion.trim(), "26.11.1");
   assert.equal(manifest.packageManager, "pnpm@11.18.0");
 });
 
@@ -352,7 +352,7 @@ test("pinned pnpm rejects Node 25 and 27 and versions below each supported minim
         const output = `${error.stdout}\n${error.stderr}`;
         assert.match(output, /ERR_PNPM_UNSUPPORTED_ENGINE/u);
         assert.ok(output.includes(root));
-        assert.ok(output.includes("Expected version: >=24.21.0 <25 || >=26.10.0 <27"));
+        assert.ok(output.includes("Expected version: >=24.21.0 <25 || >=26.11.1 <27"));
         assert.ok(output.includes(`Got: ${version}`));
         return true;
       },
