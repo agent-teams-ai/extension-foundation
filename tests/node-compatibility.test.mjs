@@ -304,15 +304,60 @@ async function runPnpm(cwd, args) {
   });
 }
 
-test("runtime policy keeps Node 24 default and skips Node 25", async () => {
+test("runtime policy defaults to Node 26", async () => {
   const [defaultVersion, manifestText] = await Promise.all([
     readFile(join(repositoryRoot, ".node-version"), "utf8"),
     readFile(join(repositoryRoot, "package.json"), "utf8"),
   ]);
   const manifest = JSON.parse(manifestText);
 
-  assert.equal(defaultVersion.trim(), "24.21.0");
-  assert.equal(manifest.engines.node, ">=24.21.0 <25");
+  assert.equal(defaultVersion.trim(), "26.11.1");
+  assert.equal(manifest.packageManager, "pnpm@11.18.0");
+});
+
+test("pinned pnpm strictly installs the runtime policy under the executing Node 24 or 26", async t => {
+  const root = await mkdtemp(join(tmpdir(), "extension-supported-runtime-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const manifest = JSON.parse(await readFile(join(repositoryRoot, "package.json"), "utf8"));
+  assert.ok([24, 26].includes(Number(process.versions.node.split(".")[0])));
+  await writeFile(join(root, "pnpm-workspace.yaml"), await readFile(join(repositoryRoot, "pnpm-workspace.yaml")));
+  await writeFile(join(root, "package.json"), `${JSON.stringify({
+    name: "@agent-teams/supported-runtime-fixture", version: "1.0.0", private: true,
+    packageManager: manifest.packageManager, engines: manifest.engines,
+  })}\n`);
+  const strictInstall = ["install", "--offline", "--ignore-scripts", "--engine-strict", "--strict-peer-dependencies"];
+  await runPnpm(root, [...strictInstall, "--lockfile-only"]);
+  const lockfile = await readFile(join(root, "pnpm-lock.yaml"));
+  await runPnpm(root, [...strictInstall, "--frozen-lockfile"]);
+  await runPnpm(root, ["peers", "check", "--lockfile-only"]);
+  assert.deepEqual(await readFile(join(root, "pnpm-lock.yaml")), lockfile);
+});
+
+test("pinned pnpm rejects Node 25 and 27 and versions below each supported minimum", async t => {
+  const root = await mkdtemp(join(tmpdir(), "extension-rejected-runtime-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const manifest = JSON.parse(await readFile(join(repositoryRoot, "package.json"), "utf8"));
+  await writeFile(join(root, "pnpm-workspace.yaml"), await readFile(join(repositoryRoot, "pnpm-workspace.yaml")));
+  await writeFile(join(root, "package.json"), `${JSON.stringify({
+    name: "@agent-teams/rejected-runtime-fixture", version: "1.0.0", private: true,
+    packageManager: manifest.packageManager, engines: manifest.engines,
+  })}\n`);
+  // pnpm's engine-policy input simulates unsupported versions without changing
+  // the actual test runtime or relaxing strictness. Positive installs use it unset.
+  for (const version of ["24.20.0", "25.0.0", "26.9.0", "27.0.0"]) {
+    await assert.rejects(
+      runPnpm(root, ["install", "--offline", "--ignore-scripts", "--engine-strict",
+        "--strict-peer-dependencies", `--config.node-version=${version}`]),
+      error => {
+        const output = `${error.stdout}\n${error.stderr}`;
+        assert.match(output, /ERR_PNPM_UNSUPPORTED_ENGINE/u);
+        assert.ok(output.includes(root));
+        assert.ok(output.includes("Expected version: >=24.21.0 <25 || >=26.11.1 <27"));
+        assert.ok(output.includes(`Got: ${version}`));
+        return true;
+      },
+    );
+  }
 });
 
 test("pnpm 11 workspace engine policy rejects an incompatible local dependency", async t => {
