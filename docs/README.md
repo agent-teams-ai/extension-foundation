@@ -28,6 +28,20 @@ Read by responsibility:
 | Unresolved decisions | [Open decision index](open-decisions/README.md) |
 | Dependency qualification evidence | [Qualification index](qualification/README.md) |
 
+## Plugin system research
+
+These source-backed references are evidence and design recommendations. They do
+not accept a runtime, publish a package, or replace an approved ADR.
+
+- [Plugin System Research Reference](research/plugin-system-research-reference.md)
+- [Hot Reload and Generation Replacement](research/hot-reload-and-generation-replacement.md)
+- [OpenClaw Plugin and Reload Audit](research/openclaw-plugin-and-reload-audit.md)
+- [Production Reload System Evidence](research/production-reload-system-evidence.md)
+- [Plugin Platform Reload Evidence](research/plugin-platform-reload-evidence.md)
+- [Plugin Ecosystem Scale and Composition](research/plugin-ecosystem-scale-and-composition.md)
+- [Plugin Research Review and Decision Record](research/plugin-research-review-and-decision-record.md)
+- [Stateful Upgrade and Recovery Evidence](research/stateful-upgrade-and-recovery-evidence.md)
+
 ## Ownership At A Glance
 
 | Owner | Owns |

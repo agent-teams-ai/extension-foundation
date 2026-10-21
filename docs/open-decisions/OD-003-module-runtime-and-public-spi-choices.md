@@ -133,6 +133,16 @@ do not move into Foundation.
 
 ## Required Evidence
 
+The maintained [plugin research reference](../research/plugin-system-research-reference.md)
+collects industry evidence and counterexamples. The
+[hot-reload proposal](../research/hot-reload-and-generation-replacement.md)
+defines a bounded candidate qualification target, failure matrix, alternatives
+and estimated scope. The [independent review record](../research/plugin-research-review-and-decision-record.md)
+records corrections and preserves consumer adoption provenance. These are
+research inputs to this open decision, not a resolving decision or authority to
+implement a production Host. Exclusive resources, state migration and emergency
+revocation require their own explicit guarantees.
+
 A resolving decision must name the exact product trigger, owner, implementation
 or public surface, applicable host placements, compatibility and migration
 rules, negative cases, immutable evidence, and conformance results. Runtime,

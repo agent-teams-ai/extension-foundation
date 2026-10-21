@@ -230,6 +230,7 @@ capabilities:
     "docs/templates/adr.md",
     "docs/templates/architecture.md",
     "docs/templates/open-decision.md",
+    "docs/templates/research.md",
     ".agents/skills/docs-authoring/SKILL.md",
   ]) {
     await writeFixture(root, path, await readFile(join(repositoryRoot, path), "utf8"));
