@@ -8,11 +8,41 @@ summary: Maintained source-backed lessons for module composition, plugin systems
 
 # Plugin System Research Reference
 
-**Evidence cut: 2026-10-21.** This is the maintained cross-repository reference for
+**Evidence cut: 2026-10-22; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
 module composition, extension ecosystems and production hot replacement. It
 preserves industry experience so future agents can use the same evidence,
 counterexamples and qualification scenarios. Research is not an accepted ADR,
 a released runtime, a security audit or a performance qualification.
+
+## Current synthesis
+
+Design a demonstrated shared replacement concern as an independently useful
+library from its first real delivery. First subtract the accepted local kernel
+and fitting execution/RPC mechanisms; only then select a residual shared driver,
+protocol or conformance responsibility. GM's existing dependency-free kernel
+candidate remains in its accepted owner. EF owns this neutral evidence and
+protocol discussion; each product retains extension contracts and operational
+authority. Independent package use does not require a new repository.
+
+One product-authorized operation can use neutral reusable driver code. Do not
+duplicate authoritative phase, active-head, grants or effects, and do not run
+two independently advancing drivers for one operation epoch. Temporal can
+schedule a warranted rollout outside ordinary invocation; Rust can improve a
+specific custody/engine/computation boundary with evidence. Neither technology
+supplies the missing product authority by itself.
+
+The first hot-replacement target remains a trusted, overlap-safe bounded request
+cohort. Deep customization also includes ordinary contributions, explicit
+provider substitution and build-time/restart profiles. These useful authoring
+paths must not inherit all Host durability machinery.
+
+The executed adapter study retained eight single-worker cases and an unchanged
+repeat, plus one independently targeted two-worker rejecting case. It found
+workerpool termination fulfillment before task completion, and Piscina 5.3.2
+multiworker close fulfillment while another started task was terminated.
+Therefore no generic close-success result stands for natural drain or complete
+retirement. Exact observations, original failed assumptions and compiler limits
+are preserved in the [experiment](worker-adapter-replacement-experiment.md).
 
 ## Start with the owning question
 
@@ -20,6 +50,11 @@ a released runtime, a security audit or a performance qualification.
 | --- | --- | --- |
 | How should ordinary modules be declared, composed and tested? | [Current GM authoring guide](https://github.com/agent-teams-ai/get-modular/blob/main/docs/guides/module-authoring.md), [Consumer Module Standard](https://github.com/agent-teams-ai/get-modular/blob/main/docs/architecture/common-assembly.md#consumer-module-standard) | Get Modular semantics; each product's adoption profile |
 | What bounded production hot-reload profile is worth qualifying first? | [Hot Reload and Generation Replacement](hot-reload-and-generation-replacement.md) | Product Host; EF [OD-003](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md) and product lifecycle decision |
+| Can replacement be an ordinary reusable library, and which mechanics already exist? | [Reusable Generation Mechanisms and Ownership](reusable-generation-mechanisms-and-ownership.md) | Existing kernel/execution owners; residual mechanism owner only after its real boundary is shown |
+| Can Temporal replace custom rollout scheduling, including local deployments? | [Temporal and Rollout Orchestration](temporal-and-rollout-orchestration.md) | Owning product operation and scheduling adapter; existing hosted/local adoption |
+| Which critical components justify Rust or another language? | [Critical Components and Language Boundaries](critical-components-and-language-boundaries.md) | Existing responsibility owner and exact language/runtime adoption |
+| How can authors customize deeply without forking or implementing the Host? | [Customization Without Forks and Scale](customization-without-forks-and-scale.md) | Consumer-owned extension points, provider contracts and deployment capacity |
+| What did the actual executor experiment prove or reject? | [Worker Adapter Replacement Experiment](worker-adapter-replacement-experiment.md) | Exact tested package/runtime and future adapter qualification |
 | What does current OpenClaw do well, and which limitations should we test against? | [OpenClaw Plugin and Reload Audit](openclaw-plugin-and-reload-audit.md) | Product Host qualification; no imported competitor architecture |
 | What do IDE and RPC plugin platforms teach about references, unload and restart? | [Plugin Platform Reload Evidence](plugin-platform-reload-evidence.md) | Capability and execution-boundary owner |
 | What do servers, VMs, workers and controllers guarantee during replacement? | [Production Reload System Evidence](production-reload-system-evidence.md) | Product admission, recovery and retirement adapters |
@@ -79,6 +114,10 @@ proposed rejecting scenario.
 | PR-12 | Separate trusted execution rotation from hostile-code enforcement | Describe workers, ports, permission requests or signed artifacts as a universal sandbox | Chrome/Backstage in [ecosystem evidence](plugin-ecosystem-scale-and-composition.md), Node in [system evidence](production-reload-system-evidence.md); security/deployment owner |
 | PR-13 | Test packed independently released providers and consumers with independent oracles | Monorepo hoisting hides duplicate tokens; expected wiring is generated from actual wiring | [Ecosystem conformance scenarios](plugin-ecosystem-scale-and-composition.md); SDK/contract qualification |
 | PR-14 | Keep normal upgrade, emergency revocation and state transfer as distinct operations | Drain compromised code indefinitely; use a generic state hook for incompatible snapshots | Temporal/Flink in [stateful evidence](stateful-upgrade-and-recovery-evidence.md); security and state owners |
+| PR-15 | Subtract existing kernel/executor/RPC responsibilities before defining a shared library | A new generic manager duplicates an accepted owner or merely renames commodity APIs | [Reuse analysis](reusable-generation-mechanisms-and-ownership.md); shared mechanism owner |
+| PR-16 | Use durable scheduling at the operation boundary with receiver-enforced epochs | Every call becomes a workflow, or a stale Activity continues advancing a replaced driver | [Temporal analysis](temporal-and-rollout-orchestration.md); scheduling and command receivers |
+| PR-17 | Select native implementation for a demonstrated boundary benefit and full release cost | Rewrite a pure TS state machine because it is critical; treat memory safety as distributed correctness | [Language boundaries](critical-components-and-language-boundaries.md); existing component owner |
+| PR-18 | Define supported customization seams and aggregate capacity scope | Ordinary authors implement Host durability; per-cohort caps hide tenant/replica multiplication or live failed candidates | [Customization and scale](customization-without-forks-and-scale.md), [bounded protocol](hot-reload-and-generation-replacement.md); contract and capacity owners |
 
 ## Qualification target and claims discipline
 
@@ -99,6 +138,10 @@ A scalability statement must report installed descriptors, active modules and
 instances, dependency edges/closure, feature nesting, tenants, worker/process
 count, in-flight work, independent package versions, compiler/editor workload,
 and reload churn. Do not infer any of these from a marketplace's plugin count.
+Caps must name their denominator. A per-cohort generation cap is not a Host or
+tenant aggregate limit; failed preparation retains capacity while its actual
+execution/custody remains unresolved. Sharing execution realms changes failure
+and authority scope, not only cost.
 The current GM qualification and open growth work remain their actual evidence;
 this research does not claim that a thousand-module authoring or runtime profile
 passed. Compare OpenClaw using equivalent scenarios and measured envelopes,
@@ -112,6 +155,12 @@ explicitly retains the separate supported TypeScript 7.0.2 compiler blocker.
 This supersedes earlier pending-source-check status; it does not establish
 N1000 compiler/runtime qualification, process RSS or hot-reload retention limits.
 Earlier pinned observations remain historical evidence.
+
+The 2026-10-22 central backend reference and Orchestrator's accepted local
+persistence profile have different choices pending explicit consumer adoption.
+The [Temporal supplement](temporal-and-rollout-orchestration.md#existing-authority-and-evidence)
+records native PostgreSQL reference scope versus accepted per-context SQLite,
+without rewriting either or requiring a local Temporal deployment.
 
 ## Maintenance instructions for future agents
 

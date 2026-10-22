@@ -8,7 +8,7 @@ summary: Independent critique dispositions, adoption conflicts and scoped implem
 
 # Plugin Research Review and Decision Record
 
-**Date:** 2026-10-21. **Status:** non-normative research synthesis; no new architecture approval, runtime qualification, or merge authorization. This record combines the platform, production-system, ecosystem-scale, stateful-update and OpenClaw research with independent lifecycle, scale/security, and adoption/documentation critiques. Researchers supplied comparison evidence; critics challenged lifecycle promises, security and scale claims, and adoption provenance. Primary sources were retrieved by those reviewers on this date; this synthesis distinguishes their source facts, historical reports and unexecuted test assertions from recommendations, without claiming independent reproduction.
+**Initial review:** 2026-10-21. **Follow-up:** 2026-10-22, recorded in its own section below. **Status:** non-normative research synthesis; no new architecture approval, production-runtime qualification, or merge authorization. The initial review combines the platform, production-system, ecosystem-scale, stateful-update and OpenClaw research with independent lifecycle, scale/security, and adoption/documentation critiques. Researchers supplied comparison evidence; critics challenged lifecycle promises, security and scale claims, and adoption provenance. Each dated record distinguishes source facts, historical reports, unexecuted assertions, executed experiments and recommendations.
 
 ## Recommendation and authority
 
@@ -91,7 +91,7 @@ Scores are engineering judgment, not measured availability: confidence means fit
 | Approved static GM seam migration; controlled restart on revision | 8 | 8 | 4 | 120–300 | 250–700 |
 | Trusted local in-process cohort; no durable/publication or physical-unload claim | 8 | 7 | 4 | 900–1,800 | 1,800–3,500 |
 | Proposed trusted Node-worker cohort, including durable publication/recovery and bounded retirement | 7 | 8 | 6 | 3,000–5,500 | 5,000–9,000 |
-| Same bounded cohort in supervised process, explicit descendant policy | 7 | 9 | 7 | 4,000–7,000 | 6,500–11,000 |
+| Same bounded cohort in supervised process, explicit descendant policy | 7 | 8 within the same logical promise | 7 | 4,000–7,000 | 6,500–11,000 |
 | Browser counterpart with narrower termination evidence | 7 | 8 for stated claim | 6 | +800–1,600 | +1,500–3,000 |
 | Broad rebinding/retained consumers and migration | 4 | 5 | 9 | 8,000–16,000 before domain migrations | 12,000–24,000 |
 | Universal hostile JavaScript across targets; automatic effect/state reversal | 1 | 1 for the unsupported promise | 10 | No defensible estimate | No finite universal proof suite |
@@ -108,7 +108,150 @@ These questions concern executable scope, not settled GM/FMS selection:
 4. Which exact package train and supported envelope will qualify the first activation against the preserved adopted standard and its documented delta?
 5. What independent integrations satisfy Orchestrator's production EF gate, and what packed N/N+1 provider/consumer, optional-dependency and duplicate-copy fixtures demonstrate compatibility without monorepo hoisting?
 
-EF ordinary-library admission, GM 0.x authorization, stable-GM qualification and public-SPI publication are different gates. Orchestrator [OD-041][o41] still requires two independent product integrations for production EF adoption; EF-local permission does not waive it. The current research/documentation repair can finish without answering all activation questions. This synthesis records source review and recommendations only: it reports no new test execution, final check result, PR creation, merge or production qualification.
+EF ordinary-library admission, GM 0.x authorization, stable-GM qualification and public-SPI publication are different gates. Orchestrator [OD-041][o41] still requires two independent product integrations for production EF adoption; EF-local permission does not waive it. The research/documentation repair can finish without answering all activation questions. The initial 2026-10-21 synthesis reported source review and recommendations only. The separate follow-up below records its actual bounded experiments without treating them as complete runtime qualification.
+
+## Follow-up review: reusable mechanisms, language and customization
+
+**Date: 2026-10-22.** Three parallel research assignments covered ready-made
+replacement/execution mechanisms, Temporal scheduling and selective native
+boundaries. Three independent critics challenged the same complete vision and
+authorities from ownership/reuse, lifecycle-failure and customization/scale
+perspectives. Two fresh final critics independently checked architecture and
+evidence; a separate review reconciled the organization language guidance with
+new upstream references. These agents used the requested **GPT-6.1 Sol xhigh**
+configuration and received the full shared user vision/authority brief. A
+separate bounded executor experiment and the final evidence critic's one
+targeted rejecting fixture supplied executed evidence. Reviewer agreement is
+not itself evidence that production requirements passed.
+
+### Retained reports and source material
+
+The complete twelve original research, critique, experiment and workflow
+diagnosis reports, shared context, pinned Comlink source/identity material and
+organization-policy validation log are frozen in
+[plugin-portability-review-20261022.tar.gz](evidence/plugin-portability-review-20261022.tar.gz)
+(**266,717 bytes**, SHA-256
+`2bb8303207cc29c8c9f16391985f72428395afcb55793a2faefe65bc513b7699`).
+The archive contains 23 files and a SHA-256 manifest; every entry was verified
+byte-for-byte after packaging. Earlier report inferences remain historical and
+may be superseded by the dispositions here. They are not parallel authorities.
+
+Executable inputs and complete original/follow-up results have their own
+verified archive in the [Worker Adapter Replacement Experiment](worker-adapter-replacement-experiment.md).
+It retains exact tarball integrities, manifests/lock, ordinary TypeScript source,
+environment, compiler failures, corrected harness assumptions and final logs.
+No accepted ADR or dependency pin was changed by this research.
+
+The governed reading route is now:
+
+| Question | Maintained synthesis |
+| --- | --- |
+| What can be reused, and where should an independent library live? | [Reusable Generation Mechanisms and Ownership](reusable-generation-mechanisms-and-ownership.md) |
+| When does a Temporal adapter reduce custom durable scheduling? | [Temporal and Rollout Orchestration](temporal-and-rollout-orchestration.md) |
+| Which native boundary improves the actual guarantee, and what does it cost? | [Critical Components and Language Boundaries](critical-components-and-language-boundaries.md) |
+| How do ordinary authors customize deeply while preserving scale and ownership? | [Customization Without Forks and Scale](customization-without-forks-and-scale.md) |
+| What did executing the exact packages reveal? | [Worker Adapter Replacement Experiment](worker-adapter-replacement-experiment.md) |
+
+### Findings and dispositions from overlapping reviews
+
+The IDs below refer to their full archived reports. **Incorporated** means the
+research was corrected; it does not select an executor, publish a package or
+waive an adoption gate.
+
+| Finding | Disposition and concrete consequence |
+| --- | --- |
+| Ownership F1/F4; CS-01/07; final architecture: the residual shared mechanism is a hypothesis | **Incorporated.** Subtract existing kernel, executor and RPC first. An actual repeated generation-bound invariant may justify one neutral shared driver/protocol/test kit; method renaming does not. Library-first applies from the real delivery, without a speculative new repository. |
+| Several critics: one product authority was being confused with product-local code copies | **Incorporated.** Neutral code may implement the single product-authorized lifecycle operation. Reject independently advancing drivers and duplicate authoritative kernel/canonical records, not reusable sequencing itself. |
+| Ownership admission review: ordinary-library source admission, stable SPI and product production gates were conflated | **Resolved as distinct claims.** Existing EF package admission can coexist with a real consumer and ordinary external fixture. Stable extension SPI and Orchestrator OD-041 retain their stronger independent evidence. No new approval deadlock is introduced. |
+| LF-01: a `checkCall` followed by an await leaves a dispatch gap | **Incorporated in the central protocol.** After the last await/user conversion, one Host agent rechecks and performs the exact endpoint/owned-queue handoff without another gap. Queue handoff differs from CPU start; thrown/missing ACK does not automatically prove non-dispatch. |
+| LF-02: an old accepted Boolean can recreate authority after Host restart | **Incorporated.** Acceptance binds operation, generation, execution/Host incarnation and authority policy. Recover exact prior execution/effects before a new attempt. Already accepted predecessor work need not remain the current head. |
+| LF-03: replacing a scheduler does not stop an old Activity | **Incorporated.** Command receivers enforce the current scheduler epoch and exact target; stopping old starts alone is insufficient. Temporal progress, kernel facts and product state remain separate. |
+| LF-04: forced exit can make cleanup completion impossible | **Incorporated.** Separate execution absence, interrupted callback, local custody disposition and external debt. Preserve actual cooperative finally obligations; neither fabricate success nor retain an impossible Promise as the only physical-stop criterion. |
+| CS-03 and executed workerpool 10.0.3 evidence | **Corrected.** Default termination rejects preexisting queued work but admitted a new task during termination. Timeout termination fulfilled and fired its hook while the task remained live. Neither hook, stats nor fulfillment is actual Node exit evidence in this case. Earlier README-derived forced-timeout interpretations are superseded for this exact version/thread mode. |
+| FE-01: Piscina 5.3.2 multiworker close can terminate another started task without a timeout error | **Incorporated; wider claim rejected.** One separately retained two-worker case confirmed it. The candidate is explicitly single-worker; multiworker close-alone drain is disproved for the case. An upstream resolution or separately demonstrated Host task-accounting strategy is needed for that wider promise. |
+| FE-04; CS-01/02: message correlation/proxy reuse already exists, with lifetime escapes | **Incorporated.** Comlink 4.4.2 source/metadata is pinned; it was not installed or TS7-qualified. Reuse correlation only when the execution API lacks it. Proxy release is not cancellation/settlement/exit, and callbacks/ports cannot escape the first data-request profile. |
+| CS-04/05; ownership F5: ordinary authoring and ordered-many semantics were underspecified | **Incorporated.** Contribution and provider-substitution recipes use existing consumer contracts. Authors do not implement canonical Host durability to add a menu item. A real ordered contract defines `next`, effects, failure and cancellation; missing seams use upstream contract evolution. |
+| CS-06/FE-06: per-cohort caps do not bound tenant/cohort/replica multiplication | **Incorporated.** Name each cap's scope and use the existing product aggregate capacity owner. Installed descriptors do not allocate execution realms, and trusted sharing changes failure/authority scope. |
+| FA-01: a failed candidate may evade the predecessor cap | **Incorporated.** Failed/timed-out preparation keeps its candidate/retained-owner slot while startup or cleanup remains live. Observer completion does not release capacity. Unresolved custody can honestly block later updates. |
+| Ownership F3/FE-02: adapter cost was incorrectly called net | **Corrected.** Temporal and alternative scheduling allowances are gross new adapter/fixture estimates. Subtract replaced direct scheduling work before claiming a net difference. No measured savings or mandatory additive total is asserted. |
+| Ownership F6/FE-03: preferred Protobuf direction was called an approved keeper schema | **Corrected.** Exact keeper schema/transport remains open. `prost` is a candidate codec once its owner selects that contract; Protobuf does not choose gRPC. |
+| Ownership F7/final architecture: a process row implied greater logical reliability solely from placement | **Corrected.** The earlier process row is normalized to 8/10 within the same bounded logical promise. Physical containment is an additional scoped capability, not an automatic 9/10 result. |
+| Final language/FE-05: central local PostgreSQL reference differs from adopted product SQLite | **Recorded, not silently resolved.** Central scope requires local adoption; accepted Orchestrator ADR-0048/0049 retain authority. OD-035 is open and preserves the current local workflow qualification direction. A future local PostgreSQL adoption needs the owning successor/adoption route. |
+
+### Updated technical conclusion
+
+Keep the existing GM synchronous kernel identity and its independent package
+boundary. EF retains neutral research and extension protocol/conformance
+ownership. Products define real extension families, grants, canonical state,
+admission, recovery and supported operational envelopes. A shared neutral driver
+can carry one demonstrated mechanical responsibility without inheriting those
+authorities. A separate repository is an optional release/ownership shape for a
+proven boundary, not a prerequisite for independent use.
+
+Temporal is a useful optional rollout scheduler when the admitted deployment
+already has it or the operation needs durable cross-host coordination. It stays
+outside ordinary per-call invocation and outside the generation closure it
+controls. Do not introduce another workflow engine, generic outbox or bespoke
+durability platform solely for a local update. Current OpenWorkflow research is
+updated in its source ledger; old missing-feature observations remain historical.
+
+The language guidance keeps TypeScript for the main application while requiring
+agents to consider a concrete native advantage. Reuse an existing engine or the
+physical-custody owner, name complete lifecycle/release cost, and distinguish
+memory safety from distributed authority. Deferred Rust migration and synthetic
+evidence do not establish an available qualified keeper. The first official
+Orchestrator Temporal worker remains under its existing TypeScript SDK choice.
+
+For ecosystem design, qualify owned contributions, explicit substitutable
+providers, justified ordered behavior and plugin-owned small points. Build-time
+or restart-required customization is useful; not every feature needs dynamic
+replacement. Ordinary authors must see actionable conflicts and compatibility
+rules rather than another universal Host interface. Claims about thousands of
+plugins need selected runtime/tenant/retention and compiler evidence, not a
+descriptor count.
+
+### Execution and verification limits
+
+The original executor harness passed eight scenarios and the same unchanged
+repeat on Linux x64, Node26.11.1, TS7.0.2, Piscina5.3.2 and workerpool10.0.3.
+The final evidence critic independently verified both tarball identities and
+original source hashes, then ran one separate two-worker rejecting case. Its
+one successful failure-mode assertion does not make graceful multiworker drain
+qualified. The compiler report retains Piscina's declaration mismatch under
+`exactOptionalPropertyTypes`/full dependency checking; the final strict source
+fixtures used `skipLibCheck:true`. The selected owner's declaration policy
+determines adoption requirements; no repository setting or package was patched.
+
+No complete generation runtime, product admission/recovery suite, churn/RSS
+benchmark, browser/Windows/macOS executor parity, hostile sandbox, native build,
+Comlink consumer or new Temporal plugin workflow was qualified. OD-005's two
+35/35 runs remain its prior retained evidence. Documentation and ordinary-module
+work can finish without claiming any of those stronger results.
+
+Docs Protocol created the five new records through reviewed preview/apply and
+manual index updates. The original checkout's published transaction could not
+be recovered under its observed identity residue; it remains untouched. The
+same supported workflow succeeded in an independent clean checkout with the
+same base and frozen dependencies. The archived diagnosis states the known
+mechanism and unproven underlying cause. No manual transaction edit, dependency
+patch or reduced gate was used.
+
+### Concrete owner choices that remain
+
+Select the first actual extension family and the useful update promise:
+controlled restart or overlap-safe bounded replacement. Identify any residual
+shared contract after executor/RPC/kernel subtraction, then assign its package
+and release owner. Set the real aggregate resource/degraded-update envelope.
+Choose Temporal scheduling only for a concrete admitted operation. These
+questions determine real implementation scope; routine helper signatures,
+correlation mappings and documentation corrections need no additional approval.
+The scoped comparison tables in the linked records give confidence, achievable
+reliability and complexity out of ten, with production and test LOC separately.
+
+If fully local PostgreSQL is now intended for Orchestrator, explicitly reconcile
+accepted ADR-0048/0049 and OD-035 rather than changing them through this research.
+This future adoption choice does not block the neutral plugin research or
+current static GM work.
 
 [gm-kernel]: https://github.com/agent-teams-ai/get-modular/blob/7131d0d7a6bb5dd4c3e8906ccac065c0be0e0333/docs/decisions/0029-admit-an-optional-lifecycle-kernel-candidate.md
 [gm39]: https://github.com/agent-teams-ai/get-modular/blob/7131d0d7a6bb5dd4c3e8906ccac065c0be0e0333/docs/decisions/0039-retain-observation-load-drain-until-its-run-settles.md

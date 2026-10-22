@@ -8,7 +8,7 @@ summary: Research options, invariants, failure traces and qualification scenario
 
 # Hot Reload and Generation Replacement
 
-Research synthesis, **2026-10-21**. This document recommends a concrete research target; it does not implement, adopt, publish, or approve a runtime. Accepted ADRs retain their exact authority. Repository contracts were checked at GM `7131d0d7a6bb5dd4c3e8906ccac065c0be0e0333` and EF `9ea7024672ae06a15c701fa1e23bf6db37975e20`. External findings derive from the companion primary-source memos; no runtime, failure-injection suite, or comparative benchmark was executed. Scores and costs below are engineering judgments.
+Initial research synthesis, **2026-10-21**, with independent-review clarifications on **2026-10-22**. This document recommends a concrete research target; it does not implement, adopt, publish, or approve a runtime. Accepted ADRs retain their exact authority. The initial repository-contract cut was GM `7131d0d7a6bb5dd4c3e8906ccac065c0be0e0333` and EF `9ea7024672ae06a15c701fa1e23bf6db37975e20`; the follow-up records preserve their exact newer evidence identities. The [bounded Worker adapter experiment](worker-adapter-replacement-experiment.md) tests library readiness/closure observations only. No complete replacement runtime, canonical-admission failure suite or comparative benchmark was executed. Scores and costs below are engineering judgments.
 
 ## Recommendation and ownership
 
@@ -24,6 +24,13 @@ This makes executable replacement a first-class target while keeping one owner p
 | Feature/domain owner | Capability behavior, state meaning, migration compatibility and business-effect reconciliation. |
 
 These boundaries follow EF ADR-0015 and ADR-0014. GM ADR-0029 admits only a candidate synchronous bookkeeping kernel, with separate public qualification, release and production-adoption gates. Do not copy that kernel into a new generic manager or treat this research as satisfying its gates. Product adapters may use both neutral cores; the cores do not import each other. [E1, E3, G1]
+
+One product-authorized lifecycle operation may be implemented by neutral reusable
+driver code through narrow ports and the existing kernel. Product authority does
+not require duplicated technical sequencing. Exclude a second independently
+advancing coordinator or duplicate authoritative phase, active-head, grant or
+effect records. The [reuse analysis](reusable-generation-mechanisms-and-ownership.md)
+compares actual execution/RPC libraries before proposing any residual package.
 
 ## What the industry evidence supports
 
@@ -58,6 +65,19 @@ One accepted request captures one generation before execution. Its internal grap
 
 The following numerical envelope is an **unmeasured qualification proposal**, to be replaced or accepted by the real capability owner before production: one active worker, one candidate and at most one unresolved predecessor; 64 concurrent pending-admission or accepted requests; 128 queued ingress requests; 1 MiB maximum request/result; 64 MiB retained artifact bytes per generation; 30 seconds candidate preparation; 60 seconds accepted-call lifetime; 5 seconds cancellation grace; 5 seconds termination-observation wait. No next candidate starts while the predecessor slot remains unresolved. Overflow rejects or delays explicitly. Observation expiry records uncertainty; it never fabricates retirement. Memory/RSS and host-call budgets require separate measured limits because worker JS limits are incomplete. Any changed envelope belongs to a new explicit profile revision.
 
+The worker/generation, in-flight and queue limits above are **per cohort**; the
+byte limits are per message or generation as stated, and deadlines are per
+operation. They do not bound a deployment. The existing product capacity owner
+must also admit aggregate resources across tenants, selected cohorts, retained
+generations and pool replicas. Distinguish an immutable graph generation from
+each execution incarnation. A failed preparation whose startup or cleanup is
+still live continues to occupy its candidate/retained-owner budget; a timeout or
+rejected rollout does not free the slot. Release follows the owning profile's
+actual custody/retirement disposition. Physical absence and remaining failure
+or effect debt need separate bounded accounting; neither is silently discarded.
+An unresolved predecessor can therefore block further replacements indefinitely;
+the deadline bounds observation/escalation, not guaranteed update availability.
+
 1. **Record and validate intent.** Allocate durable lifecycle-operation and candidate identities; bind expected head, exact affected closure, artifacts, profile and admission evidence. Validate inert declarations, trust, compatibility and authorization before executable evaluation under the declared gate. Reject unsupported migration, exclusivity and self/indirect reload before teardown. A reload requested from affected admitted work cannot await its own drain; initially reject it.
 
 2. **Prepare privately.** Establish resource custody before acquisition. Create a candidate-owned worker/scope, construct its immutable graph from selected authorized factories and test its actual dependencies. Candidate readiness uses a private control path; it cannot await ordinary admission or notifications emitted only after publication. Candidate has no ordinary route or effect grant. Keep underlying startup completion owned even if an observer times out.
@@ -70,9 +90,46 @@ The following numerical envelope is an **unmeasured qualification proposal**, to
 
 6. **Prove terminal conditions.** Record Node exit separately from cleanup completion, zero local leases, durable-work disposition and external-effect outcomes. Reacquire bounded fences and revalidate closure and terminal predicates. Unknown termination/effect outcomes block dependent detach, deletion or exclusive reassignment. Clear handles and artifact references only under exact ownership. A caller's bounded wait can finish with retirement pending; the operation report must say so. [E2]
 
+Forced execution exit can make a worker-local cleanup continuation impossible.
+Record interruption/unfulfilled cleanup under the owning profile; do not report
+that callback as completed or wait for an impossible Promise as the only exit
+criterion. Apply only the profile's qualified exact-owner absence/custody
+disposition, retaining unresolved external effect or cleanup debt separately.
+Cooperative GM Resources/Observation finally-settlement obligations remain their
+actual obligations; forced exit is a different observation, not a forged
+successful cleanup return. Both the direct Worker and pool experiment skipped
+task `finally` under forced termination.
+
 The Host adapter must bridge local lease acquisition and canonical invocation acceptance explicitly. One possible ordering obtains an actual `beginCall(G)` lease while G is active and retains its exact token in a Host-owned operation record before attempting canonical acceptance for the same operation and generation. “Provisional” describes only the Host's pending product admission; GM has no separate reservation state. Pending attempts consume the same bounded in-flight capacity as accepted requests and have a bounded cancellation policy. Dispatch requires confirmed canonical acceptance under its defined authority policy and a successful current `checkCall` on the retained token at the local dispatch boundary. If retirement has revoked the token, do not dispatch; reconcile/cancel the accepted but undispatched operation under that policy. Definite rejection releases the token once dispatch is impossible. Lost acknowledgment or an observer timeout does not prove rejection: reconcile the same operation identity and prevent duplicate dispatch. The real owner releases the token after actual completion of owned work, or after proving that the attempt cannot dispatch and owns no live continuation; abort, exception, timeout and GC do not release it automatically. Canonical acceptance must not leave an operation needing its first `beginCall` after quiesce. This is a product bridge over existing GM bookkeeping, not atomicity between a database transaction and a WeakMap update. [G1, G2, E2]
 
+Define the local handoff as acceptance by the exact retained generation endpoint
+or an owned queue that irrevocably captures that endpoint and operation custody.
+After the last asynchronous wait or user-code conversion before handoff, the
+same Host agent revalidates token and operation disposition, records the dispatch
+attempt and enqueues without another asynchronous or user callback gap. Prepare
+and validate the payload before that final check. Confirm handoff only under the
+adapter's real contract; a throw or missing acknowledgment need not prove that
+nothing was sent. A queue that selects the generation later is not this handoff.
+This is local ordering, not atomicity with another execution agent or database.
+Accepted, handed-off work can remain in its closed cohort while quiescing; the
+worker's eventual CPU start is not a new ordinary admission.
+
+Canonical acceptance/readback binds the operation, runtime generation, original
+execution/Host incarnation and applicable authority/deadline policy. It is not
+a reusable Boolean and need not require that an accepted predecessor still be
+the current head. After Host restart, an old accepted record cannot itself mint
+a new local token, reattach arbitrary handles or authorize another dispatch.
+Reconcile original execution/effects and fence stale authority first; permitted
+recovery uses an explicit disposition and fresh runtime identity. A repeatable
+read may have a product-approved retry policy, but the library cannot infer it.
+
 Local leases track in-process authority and retention. They do not fence a disconnected writer. A distributed ownership claim needs monotonic epochs/finite leases checked by the resource or authoritative effect gateway at the relevant acceptance/commit point. `checkPermission(); await send()` leaves a race; process exit does not recall a previously accepted remote action. EF's declared publication scope is not a fleet-wide atomic switch; multi-scope rollout is a product saga. [E2]
+
+If a durable scheduling adapter drives replacement, command receivers enforce
+the operation's current scheduler epoch and exact target identity. Disabling old
+workflow starts does not stop a timed-out Activity or stale cleanup retry. See
+the [Temporal analysis](temporal-and-rollout-orchestration.md) for scheduling
+progress versus kernel facts and canonical product authority.
 
 Platform extensions retain their exact evidence limits. Browser workers have normative termination, but `terminate()` supplies no Node-like exit acknowledgment; a cooperative “stopped” message is a different fact. A process supervisor must separately address descendants and inherited authority. Neither counterpart inherits stronger retirement guarantees merely by sharing a request schema. [P3, P6]
 
@@ -114,7 +171,7 @@ Confidence rates fit/estimate confidence; reliability rates achievable behavior 
 | Static graph plus controlled restart | 9 | 8 | 2 | 150–500 | 300–900 |
 | Local in-process immutable cohort; cooperative logical replacement, no physical unload | 8 | 7 | 4 | 900–1,800 | 1,800–3,500 |
 | **Recommended Node-worker cohort with durable publication/admission/recovery above** | **7** | **8** | **6** | **3,000–5,500** | **5,000–9,000** |
-| Supervised child-process counterpart; explicit descendants policy, sandbox separate | 7 | 9 | 7 | 4,000–7,000 | 6,500–11,000 |
+| Supervised child-process counterpart; explicit descendants policy, sandbox separate | 7 | 8 within the same logical promise | 7 | 4,000–7,000 | 6,500–11,000 |
 | Stable existing fenced exclusive-resource broker extension | 5 | 8 | 7 | +1,500–3,500 | +2,500–5,000 |
 | Explicit stop/reconstruct capability with service gap/recovery failure | 6 | 7 | 7 | 3,500–6,500 | 6,000–10,000 |
 | Broad retained consumers, dynamic rebinding and state migration | 4 | 5 | 9 | 8,000–16,000 before domain migration | 12,000–24,000 |
