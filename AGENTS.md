@@ -10,6 +10,15 @@ products. Start with:
 - [Extension model](docs/architecture/extension-model.md)
 - [Architecture decisions](docs/decisions/README.md)
 - [Open decisions](docs/open-decisions/README.md)
+- [Plugin system research reference](docs/research/plugin-system-research-reference.md)
+
+Before designing plugin lifecycle, hot replacement, compatibility or scale,
+follow the research reference to relevant primary evidence and critic
+dispositions. Retain good patterns, counterexamples and fixed historical
+incidents there so future agents can reuse the reasoning. Research remains
+non-normative; implementation still follows the owning accepted decisions.
+Update current navigation and installation recipes without rewriting immutable
+source snapshots, approved adoption pins or historical qualification evidence.
 
 ## Hard Boundaries
 

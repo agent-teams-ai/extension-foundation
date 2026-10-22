@@ -20,7 +20,7 @@ test("managed integration owns a data-only v3 qualification contract and externa
   assert.equal(qualification.schemaVersion, 2);
   assert.deepEqual(Object.keys(qualification).sort(), ["scenarios", "schemaVersion"]);
   assert.deepEqual(qualification.scenarios.map(({ type }) => type).sort(), [
-    "adr", "architecture", "open-decision",
+    "adr", "architecture", "open-decision", "research",
   ]);
   assert.deepEqual(
     [...activeProfile.matchAll(/^    - type: ([a-z-]+)$/gmu)].map(([, type]) => type).sort(),
