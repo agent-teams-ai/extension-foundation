@@ -49,9 +49,10 @@ custody invariants; it is not a production package, a Module API, a graph
 compiler, a loader, or lifecycle authority. It may challenge a Get Modular or
 product decision, but cannot silently replace one.
 
-The disposable model remains under `tests/qualification/**`, is capped at 4,400
-physical lines, 332,000 UTF-8 bytes, and 200 characters per line across its
-closed transitive source set, and must never be imported by a production package.
+The disposable model remains under `tests/qualification/**` and must never be
+imported by a production package. Its closed transitive source set is capped at
+50,546 structural syntax nodes, 10,520 canonical physical lines, 370,975 canonical
+UTF-8 bytes, and 200 Unicode code points per line.
 These are maintainability ceilings, not compression targets: qualification code
 must remain readable and must not join unrelated statements merely to fit the cap.
 The initial increase from 4,000 to 4,200 lines covered proof and crash remediation.
@@ -66,11 +67,35 @@ allowance covers explicit identity reservation, chronological observations and
 their directed regressions. Review of `bc08a2d` additionally identified an exact
 future-predecessor retry hidden by an earlier unreserved rejection; its regression
 uses a further 2,000-byte allowance without increasing the line ceiling.
-Both reviewers must evaluate the combined allowance
-with the exact amended head; the line-width limit remains unchanged. Further
-increases require separately reviewed evidence rather than formatting churn.
+Those historical allowances ended at 4,400 lines and 332,000 bytes. The bounded
+2026-10-25 formatting migration from `9ea7024672ae06a15c701fa1e23bf6db37975e20`
+changes only their representation: the four model files move from 4,388 lines and
+330,552 bytes to exactly 10,520 lines and 370,975 bytes. The unused 12-line and
+1,448-byte allowance is retired, not converted into structural headroom.
+
+Structural metric version 1 uses the existing pinned OXC parser 0.146.0 with TS
+module AST, preserved parentheses, and semantic diagnostics enabled. It counts
+syntax nodes through parser-owned visitor keys. Parenthesized expression/type
+wrappers do not count. At only an if consequent/alternate or loop body, a block
+with exactly one expression, return, throw, break, continue, empty, if, or loop
+statement is transparent; direct string expressions, declarations, and labels
+are excluded. Function, try/catch, standalone, nested, empty, multi-statement,
+and declaration-bearing blocks still count. Unknown AST shapes, unclean input,
+or an unsupported parser/metric version refuse.
+
+Applying the same metric to exact base and formatted bytes yields equal counts:
+contract 3,163; oracle 14,036; reducer 15,612; test entry 17,735; total 50,546.
+That reviewed before total is the fixed ceiling. There is no structural growth
+allowance. Any structural, physical-envelope, or width growth requires separately
+reviewed concrete evidence through this architecture-owned proposal. This is a
+stricter new policy, not an equivalent conversion of the old physical allowance.
+Same-count behavior changes still require source review and full qualification;
+this syntax metric does not establish semantic equivalence or runtime complexity.
+Parser, formatter, or metric changes require unchanged-source recalibration,
+never an automatic baseline update.
+
 A repository-level architecture check derives the transitive local source closure,
-rejects imports outside the exact four-file roster, and enforces all three limits,
+rejects imports outside the exact four-file roster, and enforces all four limits,
 so edits to the model cannot silently weaken their own guard. The roster consists of
 four distinct non-symlink regular files. Only literal static ESM and TypeScript
 dependencies plus an exact external allowlist are permitted; dynamic, CommonJS,

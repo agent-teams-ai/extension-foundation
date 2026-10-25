@@ -9,10 +9,11 @@ import test from "node:test";
 
 const execFileAsync = promisify(execFile);
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
-const foundationCli = fileURLToPath(new URL("./cli.js", import.meta.resolve("@agent-teams/engineering-foundation")));
-const skipExpensiveIntegration = process.env.PACKAGE_POLICY_TEST_MODE === "fast"
-  ? "skipped in package-policy fast mode"
-  : false;
+const foundationCli = fileURLToPath(
+  new URL("./cli.js", import.meta.resolve("@agent-teams/engineering-foundation")),
+);
+const skipExpensiveIntegration =
+  process.env.PACKAGE_POLICY_TEST_MODE === "fast" ? "skipped in package-policy fast mode" : false;
 const governedFiles = [
   "architecture/checks/dogfooding-protocol-model.mjs",
   "architecture/checks/evidence-custody-cli.mjs",
@@ -90,13 +91,11 @@ async function checkerFixture() {
 
 async function runChecker(root) {
   try {
-    const { stdout } = await execFileAsync(process.execPath, [
-      foundationCli,
-      "check",
-      "architecture.source-dependencies",
-      "--format",
-      "json",
-    ], { cwd: root, maxBuffer: 16 * 1024 * 1024 });
+    const { stdout } = await execFileAsync(
+      process.execPath,
+      [foundationCli, "check", "architecture.source-dependencies", "--format", "json"],
+      { cwd: root, maxBuffer: 16 * 1024 * 1024 },
+    );
     return { ...JSON.parse(stdout), exitCode: 0 };
   } catch (error) {
     return { ...JSON.parse(error.stdout), exitCode: error.code };
@@ -108,74 +107,119 @@ async function withMutation(path, source, expectedRule) {
   try {
     await writeFile(join(root, path), source);
     const report = await runChecker(root);
-    const diagnostics = report.capabilities.flatMap(capability => capability.diagnostics);
-    assert.ok(diagnostics.some(diagnostic => diagnostic.ruleId === expectedRule), JSON.stringify(report));
+    const diagnostics = report.capabilities.flatMap((capability) => capability.diagnostics);
+    assert.ok(
+      diagnostics.some((diagnostic) => diagnostic.ruleId === expectedRule),
+      JSON.stringify(report),
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }
 }
 
-test("official checker accepts the stable package-policy boundary", { skip: skipExpensiveIntegration }, async () => {
-  const report = await runChecker(repositoryRoot);
-  assert.equal(report.summary.errors, 0, JSON.stringify(report));
-});
+test(
+  "official checker accepts the stable package-policy boundary",
+  { skip: skipExpensiveIntegration },
+  async () => {
+    const report = await runChecker(repositoryRoot);
+    assert.equal(report.summary.errors, 0, JSON.stringify(report));
+  },
+);
 
-test("official checker rejects forbidden pure dependencies", { skip: skipExpensiveIntegration }, async t => {
-  for (const [name, dependency, rule] of [
-    ["Node", "node:fs/promises", "architecture.source-dependencies.forbidden-builtin-dependency"],
-    ["YAML", "yaml", "architecture.source-dependencies.forbidden-package-dependency"],
-    ["Docs Protocol", "@agent-teams/docs-protocol", "architecture.source-dependencies.forbidden-package-dependency"],
-    ["source adapter", "./repository-policy-source.mjs", "architecture.source-dependencies.forbidden-boundary-dependency"],
-  ]) {
-    await t.test(name, () => withMutation(
-      "architecture/checks/package-policy/catalog-policy.mjs",
-      `import ${JSON.stringify(dependency)};\nexport const value = true;\n`,
-      rule,
-    ));
-  }
-});
+test(
+  "official checker rejects forbidden pure dependencies",
+  { skip: skipExpensiveIntegration },
+  async (t) => {
+    for (const [name, dependency, rule] of [
+      ["Node", "node:fs/promises", "architecture.source-dependencies.forbidden-builtin-dependency"],
+      ["YAML", "yaml", "architecture.source-dependencies.forbidden-package-dependency"],
+      [
+        "Docs Protocol",
+        "@agent-teams/docs-protocol",
+        "architecture.source-dependencies.forbidden-package-dependency",
+      ],
+      [
+        "source adapter",
+        "./repository-policy-source.mjs",
+        "architecture.source-dependencies.forbidden-boundary-dependency",
+      ],
+    ]) {
+      await t.test(name, () =>
+        withMutation(
+          "architecture/checks/package-policy/catalog-policy.mjs",
+          `import ${JSON.stringify(dependency)};\nexport const value = true;\n`,
+          rule,
+        ),
+      );
+    }
+  },
+);
 
-test("source v3 rejects includeRootPackage as an unknown public field", { skip: skipExpensiveIntegration }, async () => {
-  const root = await checkerFixture();
-  try {
-    const policyPath = join(root, "architecture/foundation/source-dependencies.yaml");
-    const policy = await readFile(policyPath, "utf8");
-    await writeFile(
-      policyPath,
-      policy.replace(/rootPackage:\s*true\r?\n/, "includeRootPackage: true\n"),
+test(
+  "source v3 rejects includeRootPackage as an unknown public field",
+  { skip: skipExpensiveIntegration },
+  async () => {
+    const root = await checkerFixture();
+    try {
+      const policyPath = join(root, "architecture/foundation/source-dependencies.yaml");
+      const policy = await readFile(policyPath, "utf8");
+      await writeFile(
+        policyPath,
+        policy.replace(/rootPackage:\s*true\r?\n/, "includeRootPackage: true\n"),
+      );
+      const report = await runChecker(root);
+      assert.notEqual(report.summary.outcome ?? report.outcome, "passed");
+      const text = JSON.stringify(report);
+      assert.match(text, /includeRootPackage|unknown property|invalid-input/iu);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
+  "official checker rejects consumer deep imports and production test imports",
+  { skip: skipExpensiveIntegration },
+  async () => {
+    await withMutation(
+      "architecture/checks/package-artifacts.mjs",
+      'import "./package-policy/catalog-policy.mjs";\n',
+      "architecture.source-dependencies.forbidden-boundary-dependency",
     );
-    const report = await runChecker(root);
-    assert.notEqual(report.summary.outcome ?? report.outcome, "passed");
-    const text = JSON.stringify(report);
-    assert.match(text, /includeRootPackage|unknown property|invalid-input/iu);
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
-});
+    await withMutation(
+      "architecture/checks/package-artifacts.mjs",
+      'import "../../tests/package-policy-characterization.test.mjs";\n',
+      "architecture.source-dependencies.forbidden-boundary-dependency",
+    );
+  },
+);
 
-test("official checker rejects consumer deep imports and production test imports", { skip: skipExpensiveIntegration }, async () => {
-  await withMutation(
-    "architecture/checks/package-artifacts.mjs",
-    'import "./package-policy/catalog-policy.mjs";\n',
-    "architecture.source-dependencies.forbidden-boundary-dependency",
-  );
-  await withMutation(
-    "architecture/checks/package-artifacts.mjs",
-    'import "../../tests/package-policy-characterization.test.mjs";\n',
-    "architecture.source-dependencies.forbidden-boundary-dependency",
-  );
-});
-
-test("installed source gate rejects unavailable declared inputs", async t => {
+test("installed source gate rejects unavailable declared inputs", async (t) => {
   for (const [name, mutate, expected] of [
-    ["missing boundary source", root => rm(join(root, "architecture/checks/product-source-evidence.d.mts")), /product-source-evidence\.d\.mts/u],
-    ["missing governed root", root => rm(join(root, "architecture/tooling"), { recursive: true }), /architecture\/tooling/u],
-    ["missing policy", root => rm(join(root, "architecture/foundation/source-dependencies.yaml")), /source-dependencies\.yaml/u],
-    ["nonregular policy", async root => {
-      const path = join(root, "architecture/foundation/source-dependencies.yaml");
-      await rm(path);
-      await mkdir(path);
-    }, /source-dependencies\.yaml/u],
+    [
+      "missing boundary source",
+      (root) => rm(join(root, "architecture/checks/product-source-evidence.d.mts")),
+      /product-source-evidence\.d\.mts/u,
+    ],
+    [
+      "missing governed root",
+      (root) => rm(join(root, "architecture/tooling"), { recursive: true }),
+      /architecture\/tooling/u,
+    ],
+    [
+      "missing policy",
+      (root) => rm(join(root, "architecture/foundation/source-dependencies.yaml")),
+      /source-dependencies\.yaml/u,
+    ],
+    [
+      "nonregular policy",
+      async (root) => {
+        const path = join(root, "architecture/foundation/source-dependencies.yaml");
+        await rm(path);
+        await mkdir(path);
+      },
+      /source-dependencies\.yaml/u,
+    ],
   ]) {
     await t.test(name, async () => {
       const root = await checkerFixture();
@@ -203,15 +247,25 @@ test("installed source gate includes dist source explicitly governed by a bounda
     const policy = (await readFile(policyPath, "utf8")).replace(/\r\n/gu, "\n");
     const governedRoot = "    roots:\n      - fixtures/qualification-toy-package\n";
     assert.ok(policy.includes(governedRoot), "fixture declares the expected package root");
-    await writeFile(policyPath, policy.replace(
-      governedRoot,
-      `    roots:\n      - fixtures/qualification-toy-package/index.js\n      - fixtures/qualification-toy-package/index.d.ts\n      - ${path}\n`,
-    ));
+    await writeFile(
+      policyPath,
+      policy.replace(
+        governedRoot,
+        `    roots:\n      - fixtures/qualification-toy-package/index.js\n      - fixtures/qualification-toy-package/index.d.ts\n      - ${path}\n`,
+      ),
+    );
     const report = await runChecker(root);
     assert.notEqual(report.exitCode, 0, JSON.stringify(report));
-    assert.ok(report.capabilities.flatMap(capability => capability.diagnostics).some(diagnostic =>
-      diagnostic.ruleId === "architecture.source-dependencies.forbidden-builtin-dependency"
-      && diagnostic.location.path === `${path}/hidden.js`), JSON.stringify(report));
+    assert.ok(
+      report.capabilities
+        .flatMap((capability) => capability.diagnostics)
+        .some(
+          (diagnostic) =>
+            diagnostic.ruleId === "architecture.source-dependencies.forbidden-builtin-dependency" &&
+            diagnostic.location.path === `${path}/hidden.js`,
+        ),
+      JSON.stringify(report),
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }

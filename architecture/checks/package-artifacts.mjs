@@ -14,12 +14,17 @@ const execFileAsync = promisify(execFile);
 
 function contained(root, candidate) {
   const relation = relative(root, candidate);
-  return relation === "" || (!isAbsolute(relation) && relation !== ".." && !relation.startsWith(`..${sep}`));
+  return (
+    relation === "" ||
+    (!isAbsolute(relation) && relation !== ".." && !relation.startsWith(`..${sep}`))
+  );
 }
 
 export async function validateBuiltPackageArtifacts({ root }) {
   const policy = await loadPackagePolicy(root);
-  if (policy.errors.length !== 0) return policy.errors;
+  if (policy.errors.length !== 0) {
+    return policy.errors;
+  }
   const errors = [];
   for (const entry of policy.entries) {
     const errorCountBeforeEntry = errors.length;
@@ -27,11 +32,15 @@ export async function validateBuiltPackageArtifacts({ root }) {
     try {
       manifest = JSON.parse(await readFile(join(root, entry.path, "package.json"), "utf8"));
     } catch (error) {
-      errors.push(`${entry.path}/package.json: ${error instanceof Error ? error.message : String(error)}`);
+      errors.push(
+        `${entry.path}/package.json: ${error instanceof Error ? error.message : String(error)}`,
+      );
       continue;
     }
     if (!hasCanonicalPackageRootExports(manifest)) {
-      errors.push(`${entry.path}: package exports must be the canonical root import and types targets`);
+      errors.push(
+        `${entry.path}: package exports must be the canonical root import and types targets`,
+      );
       continue;
     }
     const targets = packageExportTargets(manifest.exports);
@@ -54,11 +63,19 @@ export async function validateBuiltPackageArtifacts({ root }) {
       try {
         const metadata = await lstat(artifactPath);
         const canonicalArtifact = await realpath(artifactPath);
-        if (metadata.isSymbolicLink() || !metadata.isFile() || !contained(distRoot, canonicalArtifact)) {
-          errors.push(`${entry.path}: export target is not one regular package artifact: ${target}`);
+        if (
+          metadata.isSymbolicLink() ||
+          !metadata.isFile() ||
+          !contained(distRoot, canonicalArtifact)
+        ) {
+          errors.push(
+            `${entry.path}: export target is not one regular package artifact: ${target}`,
+          );
         }
       } catch (error) {
-        errors.push(`${entry.path}: built export target is missing: ${target} (${error?.code ?? "unknown"})`);
+        errors.push(
+          `${entry.path}: built export target is missing: ${target} (${error?.code ?? "unknown"})`,
+        );
       }
     }
     const runtimeTarget = manifest.exports?.["."]?.import;
@@ -77,19 +94,19 @@ export async function validateBuiltPackageArtifacts({ root }) {
         }
       `;
       try {
-        await execFileAsync(process.execPath, [
-          "--input-type=module",
-          "--eval",
-          verification,
-          entry.package_name,
-          expectedUrl,
-        ], {
-          cwd: packageRoot,
-          encoding: "utf8",
-          maxBuffer: 4 * 1024 * 1024,
-        });
+        await execFileAsync(
+          process.execPath,
+          ["--input-type=module", "--eval", verification, entry.package_name, expectedUrl],
+          {
+            cwd: packageRoot,
+            encoding: "utf8",
+            maxBuffer: 4 * 1024 * 1024,
+          },
+        );
       } catch (error) {
-        errors.push(`${entry.path}: built package root cannot be consumed through declared exports (${error?.stderr?.trim() || error?.message || "unknown"})`);
+        errors.push(
+          `${entry.path}: built package root cannot be consumed through declared exports (${error?.stderr?.trim() || error?.message || "unknown"})`,
+        );
       }
     }
   }
@@ -103,7 +120,9 @@ async function runCli() {
     console.log("Built package artifact check passed.");
     return;
   }
-  for (const error of errors) console.error(`ERROR ${error}`);
+  for (const error of errors) {
+    console.error(`ERROR ${error}`);
+  }
   process.exitCode = 1;
 }
 

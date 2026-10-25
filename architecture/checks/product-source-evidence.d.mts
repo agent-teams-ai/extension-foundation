@@ -16,7 +16,11 @@ export interface ProductSourceVerificationReport {
   readonly repositoryRoot: string;
   readonly commit: string;
   readonly tree: string;
-  readonly files: readonly { readonly path: string; readonly blob: string; readonly bytes: number }[];
+  readonly files: readonly {
+    readonly path: string;
+    readonly blob: string;
+    readonly bytes: number;
+  }[];
   readonly totalBlobBytes: number;
 }
 

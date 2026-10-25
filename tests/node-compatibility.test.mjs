@@ -1,7 +1,18 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { lstat, mkdir, mkdtemp, readFile, readdir, realpath, rm, stat, symlink, writeFile } from "node:fs/promises";
+import {
+  lstat,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  realpath,
+  rm,
+  stat,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { delimiter, dirname, isAbsolute, join, relative, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -13,7 +24,9 @@ const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 const nodeShebang = /^#!\/(?:usr\/bin\/env[ \t]+node|usr\/bin\/node|bin\/node)(?:[ \t]|\r?\n)/u;
 
 async function pnpmCliPath() {
-  const repositoryManifest = JSON.parse(await readFile(join(repositoryRoot, "package.json"), "utf8"));
+  const repositoryManifest = JSON.parse(
+    await readFile(join(repositoryRoot, "package.json"), "utf8"),
+  );
   assert.equal(repositoryManifest.packageManager, "pnpm@11.18.0");
   const directories = [
     ...(process.env.npm_execpath ? [dirname(process.env.npm_execpath)] : []),
@@ -21,7 +34,7 @@ async function pnpmCliPath() {
   ];
   const candidates = [
     ...(process.env.npm_execpath ? [process.env.npm_execpath] : []),
-    ...directories.flatMap(directory => [
+    ...directories.flatMap((directory) => [
       join(directory, "pnpm"),
       join(directory, "pnpm.mjs"),
       join(directory, "pnpm.cjs"),
@@ -39,30 +52,47 @@ async function pnpmCliPath() {
       resolved = await realpath(candidate);
     } catch (error) {
       // A PATH entry can itself be a pnpm shim file, not a directory.
-      if (error.code === "ENOENT" || error.code === "ENOTDIR") continue;
+      if (error.code === "ENOENT" || error.code === "ENOTDIR") {
+        continue;
+      }
       throw error;
     }
     if (!/\.([cm]?js)$/u.test(resolved)) {
-      if (candidate !== join(dirname(dirname(candidate)), "bin", "pnpm")) continue;
+      if (candidate !== join(dirname(dirname(candidate)), "bin", "pnpm")) {
+        continue;
+      }
       let source;
       try {
         source = await readFile(resolved, "utf8");
       } catch (error) {
-        if (error.code === "ENOENT" || error.code === "ENOTDIR" || error.code === "EISDIR") continue;
+        if (error.code === "ENOENT" || error.code === "ENOTDIR" || error.code === "EISDIR") {
+          continue;
+        }
         throw error;
       }
-      if (!nodeShebang.test(source)) continue;
+      if (!nodeShebang.test(source)) {
+        continue;
+      }
     }
 
     let pnpmManifest;
     try {
-      pnpmManifest = JSON.parse(await readFile(join(dirname(dirname(resolved)), "package.json"), "utf8"));
+      pnpmManifest = JSON.parse(
+        await readFile(join(dirname(dirname(resolved)), "package.json"), "utf8"),
+      );
     } catch (error) {
-      if (error.code === "ENOENT" || error.code === "ENOTDIR") continue;
+      if (error.code === "ENOENT" || error.code === "ENOTDIR") {
+        continue;
+      }
       throw error;
     }
     // Corepack's own JS shim is not the pinned pnpm CLI.
-    if (pnpmManifest.name !== "pnpm" || repositoryManifest.packageManager !== `pnpm@${pnpmManifest.version}`) continue;
+    if (
+      pnpmManifest.name !== "pnpm" ||
+      repositoryManifest.packageManager !== `pnpm@${pnpmManifest.version}`
+    ) {
+      continue;
+    }
     return resolved;
   }
 
@@ -72,16 +102,20 @@ async function pnpmCliPath() {
     let home;
     let versionRoot;
     let versions;
-    const withinHome = path => {
+    const withinHome = (path) => {
       const remainder = relative(home, path);
       return remainder !== ".." && !remainder.startsWith(`..${sep}`) && !isAbsolute(remainder);
     };
     try {
       home = await realpath(process.env.PNPM_HOME);
       versionRoot = await realpath(join(home, "global", "v11"));
-      if (withinHome(versionRoot)) versions = await readdir(versionRoot);
+      if (withinHome(versionRoot)) {
+        versions = await readdir(versionRoot);
+      }
     } catch (error) {
-      if (error.code !== "ENOENT" && error.code !== "ENOTDIR") throw error;
+      if (error.code !== "ENOENT" && error.code !== "ENOTDIR") {
+        throw error;
+      }
     }
     if (versions) {
       // The self-update uses one hash directory. Cap the scan to avoid treating
@@ -98,7 +132,9 @@ async function pnpmCliPath() {
           resolvedCli = await realpath(cli);
           resolvedManifest = await realpath(join(packageRoot, "package.json"));
         } catch (error) {
-          if (error.code === "ENOENT" || error.code === "ENOTDIR") continue;
+          if (error.code === "ENOENT" || error.code === "ENOTDIR") {
+            continue;
+          }
           throw error;
         }
         if (!withinHome(resolvedPackageRoot)) {
@@ -107,35 +143,72 @@ async function pnpmCliPath() {
           let metadata;
           let storeRoot;
           try {
-            if (!withinHome(await realpath(modulesFile))) continue;
-            if ((await stat(modulesFile)).size > 65536) continue;
+            if (!withinHome(await realpath(modulesFile))) {
+              continue;
+            }
+            if ((await stat(modulesFile)).size > 65536) {
+              continue;
+            }
             metadata = JSON.parse(await readFile(modulesFile, "utf8"));
-            if (typeof metadata?.storeDir !== "string" || !isAbsolute(metadata.storeDir) ||
-              typeof metadata.packageManager !== "string" || !/^pnpm@11\.\d+\.\d+$/u.test(metadata.packageManager)) continue;
+            if (
+              typeof metadata?.storeDir !== "string" ||
+              !isAbsolute(metadata.storeDir) ||
+              typeof metadata.packageManager !== "string" ||
+              !/^pnpm@11\.\d+\.\d+$/u.test(metadata.packageManager)
+            ) {
+              continue;
+            }
             storeRoot = await realpath(metadata.storeDir);
           } catch (error) {
-            if (error.code === "ENOENT" || error.code === "ENOTDIR" || error instanceof SyntaxError) continue;
+            if (
+              error.code === "ENOENT" ||
+              error.code === "ENOTDIR" ||
+              error instanceof SyntaxError
+            ) {
+              continue;
+            }
             throw error;
           }
           const storePackage = relative(storeRoot, resolvedPackageRoot).split(sep);
-          if (storePackage.length !== 7 || storePackage[0] !== "links" || storePackage[1] !== "@" ||
-            storePackage[2] !== "pnpm" || storePackage[3] !== "11.18.0" ||
+          if (
+            storePackage.length !== 7 ||
+            storePackage[0] !== "links" ||
+            storePackage[1] !== "@" ||
+            storePackage[2] !== "pnpm" ||
+            storePackage[3] !== "11.18.0" ||
             !/^[a-zA-Z0-9_-]+$/u.test(storePackage[4]) ||
-            storePackage[5] !== "node_modules" || storePackage[6] !== "pnpm") continue;
+            storePackage[5] !== "node_modules" ||
+            storePackage[6] !== "pnpm"
+          ) {
+            continue;
+          }
         }
-        if (resolvedCli !== join(resolvedPackageRoot, "bin", "pnpm.mjs") ||
-          resolvedManifest !== join(resolvedPackageRoot, "package.json")) continue;
+        if (
+          resolvedCli !== join(resolvedPackageRoot, "bin", "pnpm.mjs") ||
+          resolvedManifest !== join(resolvedPackageRoot, "package.json")
+        ) {
+          continue;
+        }
         let manifest;
         let source;
         try {
           manifest = JSON.parse(await readFile(resolvedManifest, "utf8"));
           source = await readFile(resolvedCli, "utf8");
         } catch (error) {
-          if (error.code === "ENOENT" || error.code === "ENOTDIR" || error.code === "EISDIR") continue;
+          if (error.code === "ENOENT" || error.code === "ENOTDIR" || error.code === "EISDIR") {
+            continue;
+          }
           throw error;
         }
-        if (manifest.name !== "pnpm" || repositoryManifest.packageManager !== `pnpm@${manifest.version}`) continue;
-        if (!nodeShebang.test(source)) continue;
+        if (
+          manifest.name !== "pnpm" ||
+          repositoryManifest.packageManager !== `pnpm@${manifest.version}`
+        ) {
+          continue;
+        }
+        if (!nodeShebang.test(source)) {
+          continue;
+        }
         return resolvedCli;
       }
     }
@@ -143,19 +216,28 @@ async function pnpmCliPath() {
   throw new Error("Cannot resolve the pinned pnpm JavaScript CLI from npm_execpath or PATH");
 }
 
-test("pnpm CLI discovery skips file shims and resolves the pinned package", async t => {
+test("pnpm CLI discovery skips file shims and resolves the pinned package", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "extension-pnpm-discovery-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   const oldPath = process.env.PATH;
   const oldExecPath = process.env.npm_execpath;
   const oldPnpmHome = process.env.PNPM_HOME;
   t.after(() => {
-    if (oldPath === undefined) delete process.env.PATH;
-    else process.env.PATH = oldPath;
-    if (oldExecPath === undefined) delete process.env.npm_execpath;
-    else process.env.npm_execpath = oldExecPath;
-    if (oldPnpmHome === undefined) delete process.env.PNPM_HOME;
-    else process.env.PNPM_HOME = oldPnpmHome;
+    if (oldPath === undefined) {
+      delete process.env.PATH;
+    } else {
+      process.env.PATH = oldPath;
+    }
+    if (oldExecPath === undefined) {
+      delete process.env.npm_execpath;
+    } else {
+      process.env.npm_execpath = oldExecPath;
+    }
+    if (oldPnpmHome === undefined) {
+      delete process.env.PNPM_HOME;
+    } else {
+      process.env.PNPM_HOME = oldPnpmHome;
+    }
   });
   delete process.env.PNPM_HOME;
 
@@ -167,32 +249,47 @@ test("pnpm CLI discovery skips file shims and resolves the pinned package", asyn
   await mkdir(dirname(cli), { recursive: true });
   await writeFile(shim, "#!/bin/sh\n");
   await writeFile(cli, "// pinned pnpm fixture\n");
-  await writeFile(join(packageDirectory, "package.json"), JSON.stringify({ name: "pnpm", version: "11.18.0" }));
+  await writeFile(
+    join(packageDirectory, "package.json"),
+    JSON.stringify({ name: "pnpm", version: "11.18.0" }),
+  );
 
   // Corepack can supply npm_execpath while action-setup supplies a file shim on PATH.
   const corepackCli = join(root, "corepack", "dist", "pnpm.js");
   await mkdir(dirname(corepackCli), { recursive: true });
   await writeFile(corepackCli, "// Corepack shim fixture\n");
-  await writeFile(join(root, "corepack", "package.json"), JSON.stringify({ name: "corepack", version: "0.1.0" }));
+  await writeFile(
+    join(root, "corepack", "package.json"),
+    JSON.stringify({ name: "corepack", version: "0.1.0" }),
+  );
   process.env.npm_execpath = corepackCli;
   process.env.PATH = [shim, binDirectory].join(delimiter);
 
   assert.equal(await pnpmCliPath(), await realpath(cli));
 });
 
-test("pnpm CLI discovery resolves action-setup's package-root bin layout", async t => {
+test("pnpm CLI discovery resolves action-setup's package-root bin layout", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "extension-pnpm-action-setup-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   const oldPath = process.env.PATH;
   const oldExecPath = process.env.npm_execpath;
   const oldPnpmHome = process.env.PNPM_HOME;
   t.after(() => {
-    if (oldPath === undefined) delete process.env.PATH;
-    else process.env.PATH = oldPath;
-    if (oldExecPath === undefined) delete process.env.npm_execpath;
-    else process.env.npm_execpath = oldExecPath;
-    if (oldPnpmHome === undefined) delete process.env.PNPM_HOME;
-    else process.env.PNPM_HOME = oldPnpmHome;
+    if (oldPath === undefined) {
+      delete process.env.PATH;
+    } else {
+      process.env.PATH = oldPath;
+    }
+    if (oldExecPath === undefined) {
+      delete process.env.npm_execpath;
+    } else {
+      process.env.npm_execpath = oldExecPath;
+    }
+    if (oldPnpmHome === undefined) {
+      delete process.env.PNPM_HOME;
+    } else {
+      process.env.PNPM_HOME = oldPnpmHome;
+    }
   });
   delete process.env.PNPM_HOME;
 
@@ -202,12 +299,18 @@ test("pnpm CLI discovery resolves action-setup's package-root bin layout", async
   await mkdir(dirname(cli), { recursive: true });
   await writeFile(shim, "#!/bin/sh\n");
   await writeFile(cli, "#!/usr/bin/env node\n// pinned pnpm fixture\n");
-  await writeFile(join(binDirectory, "package.json"), JSON.stringify({ name: "pnpm", version: "11.18.0" }));
+  await writeFile(
+    join(binDirectory, "package.json"),
+    JSON.stringify({ name: "pnpm", version: "11.18.0" }),
+  );
 
   const corepackCli = join(root, "corepack", "dist", "pnpm.js");
   await mkdir(dirname(corepackCli), { recursive: true });
   await writeFile(corepackCli, "// Corepack shim fixture\n");
-  await writeFile(join(root, "corepack", "package.json"), JSON.stringify({ name: "corepack", version: "0.1.0" }));
+  await writeFile(
+    join(root, "corepack", "package.json"),
+    JSON.stringify({ name: "corepack", version: "0.1.0" }),
+  );
   process.env.npm_execpath = corepackCli;
   process.env.PATH = [shim, binDirectory].join(delimiter);
   assert.equal(await pnpmCliPath(), await realpath(cli));
@@ -215,20 +318,31 @@ test("pnpm CLI discovery resolves action-setup's package-root bin layout", async
   await writeFile(cli, "#!/bin/sh\n");
   await assert.rejects(pnpmCliPath(), /Cannot resolve the pinned pnpm JavaScript CLI/u);
   await writeFile(cli, "#!/usr/bin/env node\n// pinned pnpm fixture\n");
-  await writeFile(join(binDirectory, "package.json"), JSON.stringify({ name: "corepack", version: "11.18.0" }));
+  await writeFile(
+    join(binDirectory, "package.json"),
+    JSON.stringify({ name: "corepack", version: "11.18.0" }),
+  );
   await assert.rejects(pnpmCliPath(), /Cannot resolve the pinned pnpm JavaScript CLI/u);
-  await writeFile(join(binDirectory, "package.json"), JSON.stringify({ name: "pnpm", version: "11.17.0" }));
+  await writeFile(
+    join(binDirectory, "package.json"),
+    JSON.stringify({ name: "pnpm", version: "11.17.0" }),
+  );
   await assert.rejects(pnpmCliPath(), /Cannot resolve the pinned pnpm JavaScript CLI/u);
 });
 
-test("pnpm CLI discovery resolves action-setup's self-updated global/v11 CLI", async t => {
+test("pnpm CLI discovery resolves action-setup's self-updated global/v11 CLI", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "extension-pnpm-self-update-"));
   t.after(() => rm(root, { recursive: true, force: true }));
-  const previous = Object.fromEntries(["PATH", "npm_execpath", "PNPM_HOME"].map(key => [key, process.env[key]]));
+  const previous = Object.fromEntries(
+    ["PATH", "npm_execpath", "PNPM_HOME"].map((key) => [key, process.env[key]]),
+  );
   t.after(() => {
     for (const [key, value] of Object.entries(previous)) {
-      if (value === undefined) delete process.env[key];
-      else process.env[key] = value;
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
     }
   });
 
@@ -236,7 +350,16 @@ test("pnpm CLI discovery resolves action-setup's self-updated global/v11 CLI", a
   const packageRoot = join(home, "global", "v11", "pinned-hash", "node_modules", "pnpm");
   const modulesFile = join(dirname(packageRoot), ".modules.yaml");
   const storeRoot = join(root, ".pnpm-store", "v11");
-  const storePackageRoot = join(storeRoot, "links", "@", "pnpm", "11.18.0", "store-hash", "node_modules", "pnpm");
+  const storePackageRoot = join(
+    storeRoot,
+    "links",
+    "@",
+    "pnpm",
+    "11.18.0",
+    "store-hash",
+    "node_modules",
+    "pnpm",
+  );
   const cli = join(packageRoot, "bin", "pnpm.mjs");
   const manifest = join(packageRoot, "package.json");
   const shim = join(home, "bin", "pnpm");
@@ -244,14 +367,20 @@ test("pnpm CLI discovery resolves action-setup's self-updated global/v11 CLI", a
   await mkdir(dirname(packageRoot), { recursive: true });
   await mkdir(join(storePackageRoot, "bin"), { recursive: true });
   await symlink(storePackageRoot, packageRoot, "dir");
-  await writeFile(modulesFile, JSON.stringify({ storeDir: storeRoot, packageManager: "pnpm@11.7.0" }));
+  await writeFile(
+    modulesFile,
+    JSON.stringify({ storeDir: storeRoot, packageManager: "pnpm@11.7.0" }),
+  );
   await mkdir(dirname(shim), { recursive: true });
   await mkdir(dirname(corepackCli), { recursive: true });
   await writeFile(cli, "#!/usr/bin/env node\n// pinned pnpm fixture\n");
   await writeFile(manifest, JSON.stringify({ name: "pnpm", version: "11.18.0" }));
   await writeFile(shim, `#!/bin/sh\n# cmd-shim-target=${cli}\n`);
   await writeFile(corepackCli, "// Corepack fixture\n");
-  await writeFile(join(root, "corepack", "package.json"), JSON.stringify({ name: "corepack", version: "0.1.0" }));
+  await writeFile(
+    join(root, "corepack", "package.json"),
+    JSON.stringify({ name: "corepack", version: "0.1.0" }),
+  );
   process.env.PNPM_HOME = home;
   process.env.npm_execpath = corepackCli;
   process.env.PATH = [shim, join(home, "bin")].join(delimiter);
@@ -267,14 +396,23 @@ test("pnpm CLI discovery resolves action-setup's self-updated global/v11 CLI", a
   await assert.rejects(pnpmCliPath(), /Cannot resolve the pinned pnpm JavaScript CLI/u);
   await writeFile(cli, "#!/usr/bin/env node\n// pinned pnpm fixture\n");
 
-  await writeFile(modulesFile, JSON.stringify({ storeDir: join(root, "other-store"), packageManager: "pnpm@11.7.0" }));
+  await writeFile(
+    modulesFile,
+    JSON.stringify({ storeDir: join(root, "other-store"), packageManager: "pnpm@11.7.0" }),
+  );
   await assert.rejects(pnpmCliPath(), /Cannot resolve the pinned pnpm JavaScript CLI/u);
-  await writeFile(modulesFile, JSON.stringify({ storeDir: storeRoot, packageManager: "pnpm@11.7.0" }));
+  await writeFile(
+    modulesFile,
+    JSON.stringify({ storeDir: storeRoot, packageManager: "pnpm@11.7.0" }),
+  );
 
   const unrelatedPackage = join(root, "outside", "pnpm-package");
   await mkdir(join(unrelatedPackage, "bin"), { recursive: true });
   await writeFile(join(unrelatedPackage, "bin", "pnpm.mjs"), "#!/usr/bin/env node\n");
-  await writeFile(join(unrelatedPackage, "package.json"), JSON.stringify({ name: "pnpm", version: "11.18.0" }));
+  await writeFile(
+    join(unrelatedPackage, "package.json"),
+    JSON.stringify({ name: "pnpm", version: "11.18.0" }),
+  );
   await rm(packageRoot);
   await symlink(unrelatedPackage, packageRoot, "dir");
   await assert.rejects(pnpmCliPath(), /Cannot resolve the pinned pnpm JavaScript CLI/u);
@@ -315,17 +453,32 @@ test("runtime policy defaults to Node 26", async () => {
   assert.equal(manifest.packageManager, "pnpm@11.18.0");
 });
 
-test("pinned pnpm strictly installs the runtime policy under the executing Node 24 or 26", async t => {
+test("pinned pnpm strictly installs the runtime policy under the executing Node 24 or 26", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "extension-supported-runtime-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   const manifest = JSON.parse(await readFile(join(repositoryRoot, "package.json"), "utf8"));
   assert.ok([24, 26].includes(Number(process.versions.node.split(".")[0])));
-  await writeFile(join(root, "pnpm-workspace.yaml"), await readFile(join(repositoryRoot, "pnpm-workspace.yaml")));
-  await writeFile(join(root, "package.json"), `${JSON.stringify({
-    name: "@agent-teams/supported-runtime-fixture", version: "1.0.0", private: true,
-    packageManager: manifest.packageManager, engines: manifest.engines,
-  })}\n`);
-  const strictInstall = ["install", "--offline", "--ignore-scripts", "--engine-strict", "--strict-peer-dependencies"];
+  await writeFile(
+    join(root, "pnpm-workspace.yaml"),
+    await readFile(join(repositoryRoot, "pnpm-workspace.yaml")),
+  );
+  await writeFile(
+    join(root, "package.json"),
+    `${JSON.stringify({
+      name: "@agent-teams/supported-runtime-fixture",
+      version: "1.0.0",
+      private: true,
+      packageManager: manifest.packageManager,
+      engines: manifest.engines,
+    })}\n`,
+  );
+  const strictInstall = [
+    "install",
+    "--offline",
+    "--ignore-scripts",
+    "--engine-strict",
+    "--strict-peer-dependencies",
+  ];
   await runPnpm(root, [...strictInstall, "--lockfile-only"]);
   const lockfile = await readFile(join(root, "pnpm-lock.yaml"));
   await runPnpm(root, [...strictInstall, "--frozen-lockfile"]);
@@ -333,22 +486,37 @@ test("pinned pnpm strictly installs the runtime policy under the executing Node 
   assert.deepEqual(await readFile(join(root, "pnpm-lock.yaml")), lockfile);
 });
 
-test("pinned pnpm rejects Node 25 and 27 and versions below each supported minimum", async t => {
+test("pinned pnpm rejects Node 25 and 27 and versions below each supported minimum", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "extension-rejected-runtime-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   const manifest = JSON.parse(await readFile(join(repositoryRoot, "package.json"), "utf8"));
-  await writeFile(join(root, "pnpm-workspace.yaml"), await readFile(join(repositoryRoot, "pnpm-workspace.yaml")));
-  await writeFile(join(root, "package.json"), `${JSON.stringify({
-    name: "@agent-teams/rejected-runtime-fixture", version: "1.0.0", private: true,
-    packageManager: manifest.packageManager, engines: manifest.engines,
-  })}\n`);
+  await writeFile(
+    join(root, "pnpm-workspace.yaml"),
+    await readFile(join(repositoryRoot, "pnpm-workspace.yaml")),
+  );
+  await writeFile(
+    join(root, "package.json"),
+    `${JSON.stringify({
+      name: "@agent-teams/rejected-runtime-fixture",
+      version: "1.0.0",
+      private: true,
+      packageManager: manifest.packageManager,
+      engines: manifest.engines,
+    })}\n`,
+  );
   // pnpm's engine-policy input simulates unsupported versions without changing
   // the actual test runtime or relaxing strictness. Positive installs use it unset.
   for (const version of ["24.20.0", "25.0.0", "26.9.0", "27.0.0"]) {
     await assert.rejects(
-      runPnpm(root, ["install", "--offline", "--ignore-scripts", "--engine-strict",
-        "--strict-peer-dependencies", `--config.node-version=${version}`]),
-      error => {
+      runPnpm(root, [
+        "install",
+        "--offline",
+        "--ignore-scripts",
+        "--engine-strict",
+        "--strict-peer-dependencies",
+        `--config.node-version=${version}`,
+      ]),
+      (error) => {
         const output = `${error.stdout}\n${error.stderr}`;
         assert.match(output, /ERR_PNPM_UNSUPPORTED_ENGINE/u);
         assert.ok(output.includes(root));
@@ -360,68 +528,83 @@ test("pinned pnpm rejects Node 25 and 27 and versions below each supported minim
   }
 });
 
-test("pnpm 11 workspace engine policy rejects an incompatible local dependency", async t => {
+test("pnpm 11 workspace engine policy rejects an incompatible local dependency", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "extension-engine-policy-"));
   t.after(() => rm(root, { recursive: true, force: true }));
 
   const dependencyRoot = join(root, "incompatible");
   await mkdir(dependencyRoot);
-  await writeFile(join(root, "pnpm-workspace.yaml"), await readFile(join(repositoryRoot, "pnpm-workspace.yaml")));
-  await writeFile(join(root, "package.json"), `${JSON.stringify({
-    name: "@agent-teams/engine-policy-fixture",
-    version: "1.0.0",
-    private: true,
-    packageManager: "pnpm@11.18.0",
-    devDependencies: { "@agent-teams/incompatible-engine-fixture": "file:./incompatible" },
-  })}\n`);
-  await writeFile(join(dependencyRoot, "package.json"), `${JSON.stringify({
-    name: "@agent-teams/incompatible-engine-fixture",
-    version: "1.0.0",
-    engines: { node: ">=99" },
-  })}\n`);
-
-  await assert.rejects(
-    runPnpm(root, ["install", "--offline", "--ignore-scripts"]),
-    error => {
-      assert.match(`${error.stdout}\n${error.stderr}`, /ERR_PNPM_UNSUPPORTED_ENGINE/u);
-      assert.match(`${error.stdout}\n${error.stderr}`, /file:incompatible/u);
-      return true;
-    },
+  await writeFile(
+    join(root, "pnpm-workspace.yaml"),
+    await readFile(join(repositoryRoot, "pnpm-workspace.yaml")),
   );
+  await writeFile(
+    join(root, "package.json"),
+    `${JSON.stringify({
+      name: "@agent-teams/engine-policy-fixture",
+      version: "1.0.0",
+      private: true,
+      packageManager: "pnpm@11.18.0",
+      devDependencies: { "@agent-teams/incompatible-engine-fixture": "file:./incompatible" },
+    })}\n`,
+  );
+  await writeFile(
+    join(dependencyRoot, "package.json"),
+    `${JSON.stringify({
+      name: "@agent-teams/incompatible-engine-fixture",
+      version: "1.0.0",
+      engines: { node: ">=99" },
+    })}\n`,
+  );
+
+  await assert.rejects(runPnpm(root, ["install", "--offline", "--ignore-scripts"]), (error) => {
+    assert.match(`${error.stdout}\n${error.stderr}`, /ERR_PNPM_UNSUPPORTED_ENGINE/u);
+    assert.match(`${error.stdout}\n${error.stderr}`, /file:incompatible/u);
+    return true;
+  });
 });
 
-test("pnpm 11 workspace peer policy rejects an incompatible local dependency", async t => {
+test("pnpm 11 workspace peer policy rejects an incompatible local dependency", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "extension-peer-policy-"));
   t.after(() => rm(root, { recursive: true, force: true }));
 
   await mkdir(join(root, "host"));
   await mkdir(join(root, "consumer"));
-  await writeFile(join(root, "pnpm-workspace.yaml"), await readFile(join(repositoryRoot, "pnpm-workspace.yaml")));
-  await writeFile(join(root, "package.json"), `${JSON.stringify({
-    name: "@agent-teams/peer-policy-fixture",
-    version: "1.0.0",
-    private: true,
-    packageManager: "pnpm@11.18.0",
-    dependencies: { host: "file:./host", consumer: "file:./consumer" },
-  })}\n`);
-  await writeFile(join(root, "host", "package.json"), `${JSON.stringify({ name: "host", version: "1.0.0" })}\n`);
-  await writeFile(join(root, "consumer", "package.json"), `${JSON.stringify({
-    name: "consumer",
-    version: "1.0.0",
-    peerDependencies: { host: "^2.0.0" },
-  })}\n`);
-
-  await assert.rejects(
-    runPnpm(root, ["install", "--offline", "--ignore-scripts"]),
-    error => {
-      assert.match(`${error.stdout}\n${error.stderr}`, /ERR_PNPM_PEER_DEP_ISSUES/u);
-      assert.match(`${error.stdout}\n${error.stderr}`, /unmet peer host/u);
-      return true;
-    },
+  await writeFile(
+    join(root, "pnpm-workspace.yaml"),
+    await readFile(join(repositoryRoot, "pnpm-workspace.yaml")),
   );
+  await writeFile(
+    join(root, "package.json"),
+    `${JSON.stringify({
+      name: "@agent-teams/peer-policy-fixture",
+      version: "1.0.0",
+      private: true,
+      packageManager: "pnpm@11.18.0",
+      dependencies: { host: "file:./host", consumer: "file:./consumer" },
+    })}\n`,
+  );
+  await writeFile(
+    join(root, "host", "package.json"),
+    `${JSON.stringify({ name: "host", version: "1.0.0" })}\n`,
+  );
+  await writeFile(
+    join(root, "consumer", "package.json"),
+    `${JSON.stringify({
+      name: "consumer",
+      version: "1.0.0",
+      peerDependencies: { host: "^2.0.0" },
+    })}\n`,
+  );
+
+  await assert.rejects(runPnpm(root, ["install", "--offline", "--ignore-scripts"]), (error) => {
+    assert.match(`${error.stdout}\n${error.stderr}`, /ERR_PNPM_PEER_DEP_ISSUES/u);
+    assert.match(`${error.stdout}\n${error.stderr}`, /unmet peer host/u);
+    return true;
+  });
 });
 
-test("strict frozen install is followed by rejecting locked peer graph validation", async t => {
+test("strict frozen install is followed by rejecting locked peer graph validation", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "extension-frozen-peer-policy-"));
   t.after(() => rm(root, { recursive: true, force: true }));
 
@@ -429,36 +612,60 @@ test("strict frozen install is followed by rejecting locked peer graph validatio
   const consumerRoot = join(root, "consumer");
   await mkdir(hostRoot);
   await mkdir(consumerRoot);
-  await writeFile(join(root, "pnpm-workspace.yaml"), await readFile(join(repositoryRoot, "pnpm-workspace.yaml")));
-  await writeFile(join(hostRoot, "package.json"), `${JSON.stringify({ name: "host", version: "1.0.0" })}\n`);
-  await writeFile(join(consumerRoot, "package.json"), `${JSON.stringify({
-    name: "consumer", version: "1.0.0", peerDependencies: { host: "^2.0.0" },
-  })}\n`);
+  await writeFile(
+    join(root, "pnpm-workspace.yaml"),
+    await readFile(join(repositoryRoot, "pnpm-workspace.yaml")),
+  );
+  await writeFile(
+    join(hostRoot, "package.json"),
+    `${JSON.stringify({ name: "host", version: "1.0.0" })}\n`,
+  );
+  await writeFile(
+    join(consumerRoot, "package.json"),
+    `${JSON.stringify({
+      name: "consumer",
+      version: "1.0.0",
+      peerDependencies: { host: "^2.0.0" },
+    })}\n`,
+  );
 
   await runPnpm(hostRoot, ["pack", "--pack-destination", root]);
   await runPnpm(consumerRoot, ["pack", "--pack-destination", root]);
-  await writeFile(join(root, "package.json"), `${JSON.stringify({
-    name: "@agent-teams/frozen-peer-policy-fixture",
-    version: "1.0.0",
-    private: true,
-    packageManager: "pnpm@11.18.0",
-    dependencies: { host: "file:./host-1.0.0.tgz", consumer: "file:./consumer-1.0.0.tgz" },
-  })}\n`);
-
-  await runPnpm(root, ["install", "--lockfile-only", "--offline", "--ignore-scripts", "--strict-peer-dependencies=false"]);
-  await runPnpm(root, ["install", "--frozen-lockfile", "--offline", "--ignore-scripts", "--engine-strict", "--strict-peer-dependencies"]);
-  await assert.rejects(
-    runPnpm(root, ["peers", "check", "--lockfile-only"]),
-    error => {
-      assert.match(`${error.stdout}\n${error.stderr}`, /unmet peer host/u);
-      assert.match(`${error.stdout}\n${error.stderr}`, /Installed: 1\.0\.0/u);
-      assert.match(`${error.stdout}\n${error.stderr}`, /\^2\.0\.0/u);
-      return true;
-    },
+  await writeFile(
+    join(root, "package.json"),
+    `${JSON.stringify({
+      name: "@agent-teams/frozen-peer-policy-fixture",
+      version: "1.0.0",
+      private: true,
+      packageManager: "pnpm@11.18.0",
+      dependencies: { host: "file:./host-1.0.0.tgz", consumer: "file:./consumer-1.0.0.tgz" },
+    })}\n`,
   );
+
+  await runPnpm(root, [
+    "install",
+    "--lockfile-only",
+    "--offline",
+    "--ignore-scripts",
+    "--strict-peer-dependencies=false",
+  ]);
+  await runPnpm(root, [
+    "install",
+    "--frozen-lockfile",
+    "--offline",
+    "--ignore-scripts",
+    "--engine-strict",
+    "--strict-peer-dependencies",
+  ]);
+  await assert.rejects(runPnpm(root, ["peers", "check", "--lockfile-only"]), (error) => {
+    assert.match(`${error.stdout}\n${error.stderr}`, /unmet peer host/u);
+    assert.match(`${error.stdout}\n${error.stderr}`, /Installed: 1\.0\.0/u);
+    assert.match(`${error.stdout}\n${error.stderr}`, /\^2\.0\.0/u);
+    return true;
+  });
 });
 
-test("synthetic package export resolution preserves artifact bytes", async t => {
+test("synthetic package export resolution preserves artifact bytes", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "extension-node-compatibility-"));
   t.after(() => rm(root, { recursive: true, force: true }));
 
@@ -470,26 +677,36 @@ test("synthetic package export resolution preserves artifact bytes", async t => 
   const source = "export const compatibilityValue = 42;\n";
 
   await mkdir(distRoot, { recursive: true });
-  await writeFile(join(packageRoot, "package.json"), `${JSON.stringify({
-    name: packageName,
-    type: "module",
-    exports: {
-      ".": {
-        import: "./dist/index.js",
+  await writeFile(
+    join(packageRoot, "package.json"),
+    `${JSON.stringify({
+      name: packageName,
+      type: "module",
+      exports: {
+        ".": {
+          import: "./dist/index.js",
+        },
       },
-    },
-  })}\n`);
+    })}\n`,
+  );
   await writeFile(artifactPath, source);
   await symlink(artifactPath, aliasPath, "file");
 
   const metadata = await lstat(aliasPath);
   const canonicalAlias = await realpath(aliasPath);
   const canonicalArtifact = await realpath(artifactPath);
-  const digest = createHash("sha256").update(await readFile(aliasPath)).digest("hex");
+  const digest = createHash("sha256")
+    .update(await readFile(aliasPath))
+    .digest("hex");
 
   assert.equal(metadata.isSymbolicLink(), true);
   assert.equal(canonicalAlias, canonicalArtifact);
-  assert.equal(createHash("sha256").update(await readFile(canonicalAlias)).digest("hex"), digest);
+  assert.equal(
+    createHash("sha256")
+      .update(await readFile(canonicalAlias))
+      .digest("hex"),
+    digest,
+  );
 
   const verification = `
     const specifier = process.argv[1];
@@ -512,16 +729,20 @@ test("synthetic package export resolution preserves artifact bytes", async t => 
     }
   `;
 
-  await execFileAsync(process.execPath, [
-    "--input-type=module",
-    "--eval",
-    verification,
-    packageName,
-    pathToFileURL(artifactPath).href,
-    digest,
-  ], {
-    cwd: packageRoot,
-    encoding: "utf8",
-    maxBuffer: 1024 * 1024,
-  });
+  await execFileAsync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "--eval",
+      verification,
+      packageName,
+      pathToFileURL(artifactPath).href,
+      digest,
+    ],
+    {
+      cwd: packageRoot,
+      encoding: "utf8",
+      maxBuffer: 1024 * 1024,
+    },
+  );
 });

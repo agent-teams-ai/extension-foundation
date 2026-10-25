@@ -23,7 +23,10 @@ export type TombstoneId = Branded<string, "TombstoneId">;
 export type AuthoritativeTick = Branded<number, "AuthoritativeTick">;
 export type FenceGeneration = Branded<number, "FenceGeneration">;
 function validatedBrand<Value extends string | number, Result extends Branded<Value, string>>(
-  name: string, value: Value, valid: (candidate: Value) => boolean, expectation: string,
+  name: string,
+  value: Value,
+  valid: (candidate: Value) => boolean,
+  expectation: string,
 ): Result {
   if (!valid(value)) {
     throw new TypeError(`Invalid ${name}: expected ${expectation}.`);
@@ -33,28 +36,50 @@ function validatedBrand<Value extends string | number, Result extends Branded<Va
 }
 const nonEmpty = (value: string): boolean => value.length > 0;
 const ordinal = (value: number): boolean => Number.isSafeInteger(value) && value >= 0;
-export const eventId = (value: string): EventId => validatedBrand("EventId", value, nonEmpty, "a non-empty string");
-export const protocolRevisionId = (value: string): ProtocolRevisionId => validatedBrand("ProtocolRevisionId", value, nonEmpty, "a non-empty string");
-export const custodyAuthorityId = (value: string): CustodyAuthorityId => validatedBrand("CustodyAuthorityId", value, nonEmpty, "a non-empty string");
-export const sourceClaimFamilyId = (value: string): SourceClaimFamilyId => validatedBrand("SourceClaimFamilyId", value, nonEmpty, "a non-empty string");
-export const sourceFamilyRootId = (value: string): SourceFamilyRootId => validatedBrand("SourceFamilyRootId", value, nonEmpty, "a non-empty string");
-export const sourceSlotId = (value: string): SourceSlotId => validatedBrand("SourceSlotId", value, nonEmpty, "a non-empty string");
-export const authorizationId = (value: string): AuthorizationId => validatedBrand("AuthorizationId", value, nonEmpty, "a non-empty string");
-export const attemptId = (value: string): AttemptId => validatedBrand("AttemptId", value, nonEmpty, "a non-empty string");
-export const runtimeId = (value: string): RuntimeId => validatedBrand("RuntimeId", value, nonEmpty, "a non-empty string");
-export const checkpointId = (value: string): CheckpointId => validatedBrand("CheckpointId", value, nonEmpty, "a non-empty string");
-export const receiptId = (value: string): ReceiptId => validatedBrand("ReceiptId", value, nonEmpty, "a non-empty string");
-export const buildAttemptId = (value: string): BuildAttemptId => validatedBrand("BuildAttemptId", value, nonEmpty, "a non-empty string");
-export const buildReceiptId = (value: string): BuildReceiptId => validatedBrand("BuildReceiptId", value, nonEmpty, "a non-empty string");
-export const consistencyReceiptId = (value: string): ConsistencyReceiptId => validatedBrand("ConsistencyReceiptId", value, nonEmpty, "a non-empty string");
-export const retirementOwnerId = (value: string): RetirementOwnerId => validatedBrand("RetirementOwnerId", value, nonEmpty, "a non-empty string");
-export const credentialLineageId = (value: string): CredentialLineageId => validatedBrand("CredentialLineageId", value, nonEmpty, "a non-empty string");
-export const admissionId = (value: string): AdmissionId => validatedBrand("AdmissionId", value, nonEmpty, "a non-empty string");
-export const artifactDigest = (value: string): ArtifactDigest => validatedBrand("ArtifactDigest", value, nonEmpty, "a non-empty string");
-export const proofId = (value: string): ProofId => validatedBrand("ProofId", value, nonEmpty, "a non-empty string");
-export const tombstoneId = (value: string): TombstoneId => validatedBrand("TombstoneId", value, nonEmpty, "a non-empty string");
-export const authoritativeTick = (value: number): AuthoritativeTick => validatedBrand("AuthoritativeTick", value, ordinal, "a non-negative safe integer");
-export const fenceGeneration = (value: number): FenceGeneration => validatedBrand("FenceGeneration", value, ordinal, "a non-negative safe integer");
+export const eventId = (value: string): EventId =>
+  validatedBrand("EventId", value, nonEmpty, "a non-empty string");
+export const protocolRevisionId = (value: string): ProtocolRevisionId =>
+  validatedBrand("ProtocolRevisionId", value, nonEmpty, "a non-empty string");
+export const custodyAuthorityId = (value: string): CustodyAuthorityId =>
+  validatedBrand("CustodyAuthorityId", value, nonEmpty, "a non-empty string");
+export const sourceClaimFamilyId = (value: string): SourceClaimFamilyId =>
+  validatedBrand("SourceClaimFamilyId", value, nonEmpty, "a non-empty string");
+export const sourceFamilyRootId = (value: string): SourceFamilyRootId =>
+  validatedBrand("SourceFamilyRootId", value, nonEmpty, "a non-empty string");
+export const sourceSlotId = (value: string): SourceSlotId =>
+  validatedBrand("SourceSlotId", value, nonEmpty, "a non-empty string");
+export const authorizationId = (value: string): AuthorizationId =>
+  validatedBrand("AuthorizationId", value, nonEmpty, "a non-empty string");
+export const attemptId = (value: string): AttemptId =>
+  validatedBrand("AttemptId", value, nonEmpty, "a non-empty string");
+export const runtimeId = (value: string): RuntimeId =>
+  validatedBrand("RuntimeId", value, nonEmpty, "a non-empty string");
+export const checkpointId = (value: string): CheckpointId =>
+  validatedBrand("CheckpointId", value, nonEmpty, "a non-empty string");
+export const receiptId = (value: string): ReceiptId =>
+  validatedBrand("ReceiptId", value, nonEmpty, "a non-empty string");
+export const buildAttemptId = (value: string): BuildAttemptId =>
+  validatedBrand("BuildAttemptId", value, nonEmpty, "a non-empty string");
+export const buildReceiptId = (value: string): BuildReceiptId =>
+  validatedBrand("BuildReceiptId", value, nonEmpty, "a non-empty string");
+export const consistencyReceiptId = (value: string): ConsistencyReceiptId =>
+  validatedBrand("ConsistencyReceiptId", value, nonEmpty, "a non-empty string");
+export const retirementOwnerId = (value: string): RetirementOwnerId =>
+  validatedBrand("RetirementOwnerId", value, nonEmpty, "a non-empty string");
+export const credentialLineageId = (value: string): CredentialLineageId =>
+  validatedBrand("CredentialLineageId", value, nonEmpty, "a non-empty string");
+export const admissionId = (value: string): AdmissionId =>
+  validatedBrand("AdmissionId", value, nonEmpty, "a non-empty string");
+export const artifactDigest = (value: string): ArtifactDigest =>
+  validatedBrand("ArtifactDigest", value, nonEmpty, "a non-empty string");
+export const proofId = (value: string): ProofId =>
+  validatedBrand("ProofId", value, nonEmpty, "a non-empty string");
+export const tombstoneId = (value: string): TombstoneId =>
+  validatedBrand("TombstoneId", value, nonEmpty, "a non-empty string");
+export const authoritativeTick = (value: number): AuthoritativeTick =>
+  validatedBrand("AuthoritativeTick", value, ordinal, "a non-negative safe integer");
+export const fenceGeneration = (value: number): FenceGeneration =>
+  validatedBrand("FenceGeneration", value, ordinal, "a non-negative safe integer");
 export interface EventEnvelope {
   readonly eventId: EventId;
   readonly protocolRevisionId: ProtocolRevisionId;
@@ -284,8 +309,11 @@ export interface ReachBuildDeadline extends EventEnvelope, RootBound {
 }
 export type BuildConsistencyInput =
   | { readonly type: "match"; readonly artifactDigest: ArtifactDigest }
-  | { readonly type: "non-artifact-match"; readonly buildResult: "failed" | "no-output";
-      readonly proofId: ProofId }
+  | {
+      readonly type: "non-artifact-match";
+      readonly buildResult: "failed" | "no-output";
+      readonly proofId: ProofId;
+    }
   | { readonly type: "missing-build"; readonly proofId: ProofId }
   | { readonly type: "unknown-build"; readonly proofId: ProofId }
   | { readonly type: "invalid"; readonly proofId: ProofId };
@@ -341,7 +369,11 @@ export type ProtocolEvent =
   | RecordAdmission;
 export type SourceEvidenceProjection =
   | { readonly type: "open" }
-  | { readonly type: "closed"; readonly receiptId: ReceiptId; readonly sourceDigest: ArtifactDigest }
+  | {
+      readonly type: "closed";
+      readonly receiptId: ReceiptId;
+      readonly sourceDigest: ArtifactDigest;
+    }
   | { readonly type: "abandoned"; readonly receiptId: ReceiptId; readonly proofId: ProofId };
 export type RuntimeProjection = "not-started" | "live" | "unknown" | "terminated";
 export type LaunchTerminalResult = "started" | "release-denied" | "start-unknown" | "never-started";
@@ -494,14 +526,21 @@ export type TerminalReference =
   | { readonly type: "stop"; readonly projection: StopTerminalProjection }
   | { readonly type: "build"; readonly projection: BuildTerminalProjection }
   | { readonly type: "build-consistency"; readonly projection: BuildConsistencyTerminalProjection }
-  | { readonly type: "admission"; readonly projection: Exclude<AdmissionProjection, { readonly type: "pending" }> };
+  | {
+      readonly type: "admission";
+      readonly projection: Exclude<AdmissionProjection, { readonly type: "pending" }>;
+    };
 export interface TerminalAppendedEffect extends EffectEnvelope {
   readonly type: "terminal-appended";
   readonly terminal: TerminalReference;
 }
 export type LateEvidenceReference =
-  | { readonly type: "launch"; readonly authorizationId: AuthorizationId; readonly receiptId: ReceiptId;
-      readonly result: LaunchTerminalResult }
+  | {
+      readonly type: "launch";
+      readonly authorizationId: AuthorizationId;
+      readonly receiptId: ReceiptId;
+      readonly result: LaunchTerminalResult;
+    }
   | {
       readonly type: "attempt";
       readonly attemptId: AttemptId;

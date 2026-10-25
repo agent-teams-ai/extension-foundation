@@ -93,4 +93,6 @@ export declare function handlePortableWorkerFrame(
   }>,
 ): ProtocolEnvelope;
 export declare function encodeLengthPrefixedFrame(value: unknown): Uint8Array;
-export declare function decodeLengthPrefixedFrame(value: Uint8Array | ArrayBuffer): ProtocolEnvelope;
+export declare function decodeLengthPrefixedFrame(
+  value: Uint8Array | ArrayBuffer,
+): ProtocolEnvelope;

@@ -41,7 +41,9 @@ interface ObservedCandidateIdentity {
 
 export type ObservedCandidate =
   | { readonly state: "absent" }
-  | ({ readonly state: "running" | "ready" | "terminated" | "unknown" } & ObservedCandidateIdentity);
+  | ({
+      readonly state: "running" | "ready" | "terminated" | "unknown";
+    } & ObservedCandidateIdentity);
 
 export interface ObservedOldGeneration {
   readonly operationId: string;
@@ -83,7 +85,14 @@ export type RecoveryAction =
 
 const recoveryCheckpointSchema = "qualification.recovery-checkpoint/v2";
 
-const lifecyclePhases = new Set<unknown>(["prepared", "started", "ready", "published", "draining", "retired"]);
+const lifecyclePhases = new Set<unknown>([
+  "prepared",
+  "started",
+  "ready",
+  "published",
+  "draining",
+  "retired",
+]);
 const publicationEvidenceStates = new Set<unknown>(["none", "committed", "uncertain"]);
 const externalOutcomeStates = new Set<unknown>(["none", "confirmed", "uncertain"]);
 const candidateStates = new Set<unknown>(["absent", "running", "ready", "terminated", "unknown"]);
@@ -132,22 +141,23 @@ function snapshotState(state: DurableLifecycleState): DurableLifecycleState {
 function snapshotObserved(observed: ObservedHostState): ObservedHostState {
   const sourceCandidate = observed.candidate;
   const candidateState = sourceCandidate.state;
-  const candidate: ObservedCandidate = candidateState === "absent"
-    ? Object.freeze({ state: "absent" })
-    : Object.freeze({
-      state: candidateState,
-      operationId: sourceCandidate.operationId,
-      intentDigest: sourceCandidate.intentDigest,
-      generation: sourceCandidate.generation,
-      runtimeGeneration: sourceCandidate.runtimeGeneration,
-      moduleId: sourceCandidate.moduleId,
-      moduleActivationGeneration: sourceCandidate.moduleActivationGeneration,
-      attemptId: sourceCandidate.attemptId,
-      hostIncarnation: sourceCandidate.hostIncarnation,
-      authorityScope: sourceCandidate.authorityScope,
-      graphDigest: sourceCandidate.graphDigest,
-      sinkFence: sourceCandidate.sinkFence,
-    });
+  const candidate: ObservedCandidate =
+    candidateState === "absent"
+      ? Object.freeze({ state: "absent" })
+      : Object.freeze({
+          state: candidateState,
+          operationId: sourceCandidate.operationId,
+          intentDigest: sourceCandidate.intentDigest,
+          generation: sourceCandidate.generation,
+          runtimeGeneration: sourceCandidate.runtimeGeneration,
+          moduleId: sourceCandidate.moduleId,
+          moduleActivationGeneration: sourceCandidate.moduleActivationGeneration,
+          attemptId: sourceCandidate.attemptId,
+          hostIncarnation: sourceCandidate.hostIncarnation,
+          authorityScope: sourceCandidate.authorityScope,
+          graphDigest: sourceCandidate.graphDigest,
+          sinkFence: sourceCandidate.sinkFence,
+        });
   const sourceOld = observed.oldGeneration;
   return Object.freeze({
     queryOperationId: observed.queryOperationId,
@@ -175,20 +185,26 @@ function snapshotObserved(observed: ObservedHostState): ObservedHostState {
 }
 
 function hasValidRuntimeShape(state: DurableLifecycleState, observed: ObservedHostState): boolean {
-  if (!isRecord(state) || !isRecord(observed) || !isRecord(observed.candidate) || !isRecord(observed.oldGeneration)) {
+  if (
+    !isRecord(state) ||
+    !isRecord(observed) ||
+    !isRecord(observed.candidate) ||
+    !isRecord(observed.oldGeneration)
+  ) {
     return false;
   }
   const candidate = observed.candidate;
   const identifiedCandidate = candidate as ObservedCandidate & Partial<ObservedCandidateIdentity>;
-  return nonEmptyString(state.operationId)
-    && nonEmptyString(state.intentDigest)
-    && nonEmptyString(state.authorityScope)
-    && nonEmptyString(state.graphDigest)
-    && nonEmptyString(state.candidateModuleId)
-    && nonEmptyString(state.candidateAttemptId)
-    && nonEmptyString(state.candidateHostIncarnation)
-    && nonEmptyString(state.expectedActiveHostIncarnation)
-    && [
+  return (
+    nonEmptyString(state.operationId) &&
+    nonEmptyString(state.intentDigest) &&
+    nonEmptyString(state.authorityScope) &&
+    nonEmptyString(state.graphDigest) &&
+    nonEmptyString(state.candidateModuleId) &&
+    nonEmptyString(state.candidateAttemptId) &&
+    nonEmptyString(state.candidateHostIncarnation) &&
+    nonEmptyString(state.expectedActiveHostIncarnation) &&
+    [
       state.candidateGeneration,
       state.candidateRuntimeGeneration,
       state.candidateModuleActivationGeneration,
@@ -202,119 +218,127 @@ function hasValidRuntimeShape(state: DurableLifecycleState, observed: ObservedHo
       observed.oldGeneration.sinkFence,
       observed.queryRuntimeGeneration,
       observed.queryModuleActivationGeneration,
-    ].every(nonNegativeInteger)
-    && typeof state.operationDeadlineExpired === "boolean"
-    && typeof state.drainDeadlineExpired === "boolean"
-    && typeof observed.oldGeneration.inFlight === "boolean"
-    && lifecyclePhases.has(state.phase)
-    && publicationEvidenceStates.has(state.publicationEvidence)
-    && externalOutcomeStates.has(state.externalOutcome)
-    && candidateStates.has(candidate.state)
-    && terminationEvidenceStates.has(observed.oldGeneration.terminationEvidence)
-    && cleanupEvidenceStates.has(observed.oldGeneration.cleanupEvidence)
-    && nonEmptyString(observed.queryOperationId)
-    && nonEmptyString(observed.queryIntentDigest)
-    && nonEmptyString(observed.queryAuthorityScope)
-    && nonEmptyString(observed.queryGraphDigest)
-    && nonEmptyString(observed.queryHostIncarnation)
-    && nonEmptyString(observed.queryModuleId)
-    && nonEmptyString(observed.queryAttemptId)
-    && nonEmptyString(observed.oldGeneration.operationId)
-    && nonEmptyString(observed.oldGeneration.intentDigest)
-    && nonEmptyString(observed.oldGeneration.hostIncarnation)
-    && nonEmptyString(observed.oldGeneration.authorityScope)
-    && (candidate.state === "absent" || (
-      nonEmptyString(identifiedCandidate.operationId)
-      && nonEmptyString(identifiedCandidate.intentDigest)
-      && nonNegativeInteger(identifiedCandidate.generation)
-      && nonNegativeInteger(identifiedCandidate.runtimeGeneration)
-      && nonEmptyString(identifiedCandidate.moduleId)
-      && nonNegativeInteger(identifiedCandidate.moduleActivationGeneration)
-      && nonEmptyString(identifiedCandidate.attemptId)
-      && nonEmptyString(identifiedCandidate.hostIncarnation)
-      && nonEmptyString(identifiedCandidate.authorityScope)
-      && nonEmptyString(identifiedCandidate.graphDigest)
-      && nonNegativeInteger(identifiedCandidate.sinkFence)
-    ));
+    ].every(nonNegativeInteger) &&
+    typeof state.operationDeadlineExpired === "boolean" &&
+    typeof state.drainDeadlineExpired === "boolean" &&
+    typeof observed.oldGeneration.inFlight === "boolean" &&
+    lifecyclePhases.has(state.phase) &&
+    publicationEvidenceStates.has(state.publicationEvidence) &&
+    externalOutcomeStates.has(state.externalOutcome) &&
+    candidateStates.has(candidate.state) &&
+    terminationEvidenceStates.has(observed.oldGeneration.terminationEvidence) &&
+    cleanupEvidenceStates.has(observed.oldGeneration.cleanupEvidence) &&
+    nonEmptyString(observed.queryOperationId) &&
+    nonEmptyString(observed.queryIntentDigest) &&
+    nonEmptyString(observed.queryAuthorityScope) &&
+    nonEmptyString(observed.queryGraphDigest) &&
+    nonEmptyString(observed.queryHostIncarnation) &&
+    nonEmptyString(observed.queryModuleId) &&
+    nonEmptyString(observed.queryAttemptId) &&
+    nonEmptyString(observed.oldGeneration.operationId) &&
+    nonEmptyString(observed.oldGeneration.intentDigest) &&
+    nonEmptyString(observed.oldGeneration.hostIncarnation) &&
+    nonEmptyString(observed.oldGeneration.authorityScope) &&
+    (candidate.state === "absent" ||
+      (nonEmptyString(identifiedCandidate.operationId) &&
+        nonEmptyString(identifiedCandidate.intentDigest) &&
+        nonNegativeInteger(identifiedCandidate.generation) &&
+        nonNegativeInteger(identifiedCandidate.runtimeGeneration) &&
+        nonEmptyString(identifiedCandidate.moduleId) &&
+        nonNegativeInteger(identifiedCandidate.moduleActivationGeneration) &&
+        nonEmptyString(identifiedCandidate.attemptId) &&
+        nonEmptyString(identifiedCandidate.hostIncarnation) &&
+        nonEmptyString(identifiedCandidate.authorityScope) &&
+        nonEmptyString(identifiedCandidate.graphDigest) &&
+        nonNegativeInteger(identifiedCandidate.sinkFence)))
+  );
 }
 
 function reconcileLifecycleUnsafe(
   state: DurableLifecycleState,
   observed: ObservedHostState,
 ): RecoveryAction {
-  if (!hasValidRuntimeShape(state, observed)) return "CONTROLLED_RECOVERY";
+  if (!hasValidRuntimeShape(state, observed)) {
+    return "CONTROLLED_RECOVERY";
+  }
 
   if (
-    state.candidateGeneration <= state.expectedActiveGeneration
-    || state.candidateSinkFence <= state.expectedSinkFence
-    || state.externalOutcome === "uncertain"
-    || state.publicationEvidence === "uncertain"
-    || observed.candidate.state === "unknown"
-    || observed.queryOperationId !== state.operationId
-    || observed.queryIntentDigest !== state.intentDigest
-    || observed.queryAuthorityScope !== state.authorityScope
-    || observed.queryGraphDigest !== state.graphDigest
-    || observed.queryHostIncarnation !== state.candidateHostIncarnation
-    || observed.queryRuntimeGeneration !== state.candidateRuntimeGeneration
-    || observed.queryModuleId !== state.candidateModuleId
-    || observed.queryModuleActivationGeneration !== state.candidateModuleActivationGeneration
-    || observed.queryAttemptId !== state.candidateAttemptId
-    || observed.oldGeneration.operationId !== state.operationId
-    || observed.oldGeneration.intentDigest !== state.intentDigest
-    || observed.oldGeneration.generation !== state.expectedActiveGeneration
-    || observed.oldGeneration.hostIncarnation !== state.expectedActiveHostIncarnation
-    || observed.oldGeneration.authorityScope !== state.authorityScope
-    || observed.oldGeneration.sinkFence !== state.expectedSinkFence
+    state.candidateGeneration <= state.expectedActiveGeneration ||
+    state.candidateSinkFence <= state.expectedSinkFence ||
+    state.externalOutcome === "uncertain" ||
+    state.publicationEvidence === "uncertain" ||
+    observed.candidate.state === "unknown" ||
+    observed.queryOperationId !== state.operationId ||
+    observed.queryIntentDigest !== state.intentDigest ||
+    observed.queryAuthorityScope !== state.authorityScope ||
+    observed.queryGraphDigest !== state.graphDigest ||
+    observed.queryHostIncarnation !== state.candidateHostIncarnation ||
+    observed.queryRuntimeGeneration !== state.candidateRuntimeGeneration ||
+    observed.queryModuleId !== state.candidateModuleId ||
+    observed.queryModuleActivationGeneration !== state.candidateModuleActivationGeneration ||
+    observed.queryAttemptId !== state.candidateAttemptId ||
+    observed.oldGeneration.operationId !== state.operationId ||
+    observed.oldGeneration.intentDigest !== state.intentDigest ||
+    observed.oldGeneration.generation !== state.expectedActiveGeneration ||
+    observed.oldGeneration.hostIncarnation !== state.expectedActiveHostIncarnation ||
+    observed.oldGeneration.authorityScope !== state.authorityScope ||
+    observed.oldGeneration.sinkFence !== state.expectedSinkFence
   ) {
     return "CONTROLLED_RECOVERY";
   }
 
   if (
-    (observed.oldGeneration.inFlight && observed.oldGeneration.terminationEvidence === "stopped")
-    || (observed.oldGeneration.cleanupEvidence === "confirmed"
-      && (observed.oldGeneration.inFlight || observed.oldGeneration.terminationEvidence !== "stopped"))
+    (observed.oldGeneration.inFlight && observed.oldGeneration.terminationEvidence === "stopped") ||
+    (observed.oldGeneration.cleanupEvidence === "confirmed" &&
+      (observed.oldGeneration.inFlight || observed.oldGeneration.terminationEvidence !== "stopped"))
   ) {
     return "CONTROLLED_RECOVERY";
   }
 
   if (
-    observed.candidate.state !== "absent"
-    && (
-      observed.candidate.operationId !== state.operationId
-      || observed.candidate.intentDigest !== state.intentDigest
-      || observed.candidate.generation !== state.candidateGeneration
-      || observed.candidate.runtimeGeneration !== state.candidateRuntimeGeneration
-      || observed.candidate.moduleId !== state.candidateModuleId
-      || observed.candidate.moduleActivationGeneration !== state.candidateModuleActivationGeneration
-      || observed.candidate.attemptId !== state.candidateAttemptId
-      || observed.candidate.hostIncarnation !== state.candidateHostIncarnation
-      || observed.candidate.authorityScope !== state.authorityScope
-      || observed.candidate.graphDigest !== state.graphDigest
-      || observed.candidate.sinkFence !== state.candidateSinkFence
-    )
+    observed.candidate.state !== "absent" &&
+    (observed.candidate.operationId !== state.operationId ||
+      observed.candidate.intentDigest !== state.intentDigest ||
+      observed.candidate.generation !== state.candidateGeneration ||
+      observed.candidate.runtimeGeneration !== state.candidateRuntimeGeneration ||
+      observed.candidate.moduleId !== state.candidateModuleId ||
+      observed.candidate.moduleActivationGeneration !== state.candidateModuleActivationGeneration ||
+      observed.candidate.attemptId !== state.candidateAttemptId ||
+      observed.candidate.hostIncarnation !== state.candidateHostIncarnation ||
+      observed.candidate.authorityScope !== state.authorityScope ||
+      observed.candidate.graphDigest !== state.graphDigest ||
+      observed.candidate.sinkFence !== state.candidateSinkFence)
   ) {
     return "CONTROLLED_RECOVERY";
   }
 
-  const beforePublication = state.phase === "prepared" || state.phase === "started" || state.phase === "ready";
-  const expectedPrePublicationState = state.activeGeneration === state.expectedActiveGeneration
-    && state.routeHeadGeneration === state.expectedActiveGeneration
-    && state.sinkFence === state.expectedSinkFence
-    && state.publicationEvidence === "none";
-  const expectedPublishedState = state.activeGeneration === state.candidateGeneration
-    && state.routeHeadGeneration === state.candidateGeneration
-    && state.sinkFence === state.candidateSinkFence
-    && state.publicationEvidence === "committed";
-  if ((beforePublication && !expectedPrePublicationState) || (!beforePublication && !expectedPublishedState)) {
+  const beforePublication =
+    state.phase === "prepared" || state.phase === "started" || state.phase === "ready";
+  const expectedPrePublicationState =
+    state.activeGeneration === state.expectedActiveGeneration &&
+    state.routeHeadGeneration === state.expectedActiveGeneration &&
+    state.sinkFence === state.expectedSinkFence &&
+    state.publicationEvidence === "none";
+  const expectedPublishedState =
+    state.activeGeneration === state.candidateGeneration &&
+    state.routeHeadGeneration === state.candidateGeneration &&
+    state.sinkFence === state.candidateSinkFence &&
+    state.publicationEvidence === "committed";
+  if (
+    (beforePublication && !expectedPrePublicationState) ||
+    (!beforePublication && !expectedPublishedState)
+  ) {
     return "CONTROLLED_RECOVERY";
   }
 
   if (state.phase === "retired") {
-    if (observed.oldGeneration.inFlight
-      || observed.oldGeneration.terminationEvidence !== "stopped"
-      || observed.oldGeneration.cleanupEvidence !== "confirmed"
-      || observed.candidate.state === "absent"
-      || observed.candidate.state === "terminated") {
+    if (
+      observed.oldGeneration.inFlight ||
+      observed.oldGeneration.terminationEvidence !== "stopped" ||
+      observed.oldGeneration.cleanupEvidence !== "confirmed" ||
+      observed.candidate.state === "absent" ||
+      observed.candidate.state === "terminated"
+    ) {
       return "CONTROLLED_RECOVERY";
     }
     return "RETURN_RETIRED_RESULT";
@@ -323,12 +347,24 @@ function reconcileLifecycleUnsafe(
     if (observed.candidate.state !== "ready" && observed.candidate.state !== "running") {
       return "CONTROLLED_RECOVERY";
     }
-    if (observed.oldGeneration.terminationEvidence === "unknown"
-      || observed.oldGeneration.cleanupEvidence === "uncertain") return "CONTROLLED_RECOVERY";
-    if (observed.oldGeneration.inFlight && state.drainDeadlineExpired) return "CONTROLLED_RECOVERY";
-    if (observed.oldGeneration.inFlight) return "RESUME_DRAIN";
-    if (observed.oldGeneration.terminationEvidence === "running") return "STOP_OLD_GENERATION";
-    if (observed.oldGeneration.cleanupEvidence === "pending") return "RECONCILE_OLD_CLEANUP";
+    if (
+      observed.oldGeneration.terminationEvidence === "unknown" ||
+      observed.oldGeneration.cleanupEvidence === "uncertain"
+    ) {
+      return "CONTROLLED_RECOVERY";
+    }
+    if (observed.oldGeneration.inFlight && state.drainDeadlineExpired) {
+      return "CONTROLLED_RECOVERY";
+    }
+    if (observed.oldGeneration.inFlight) {
+      return "RESUME_DRAIN";
+    }
+    if (observed.oldGeneration.terminationEvidence === "running") {
+      return "STOP_OLD_GENERATION";
+    }
+    if (observed.oldGeneration.cleanupEvidence === "pending") {
+      return "RECONCILE_OLD_CLEANUP";
+    }
     return "RECORD_RETIREMENT";
   }
   if (state.operationDeadlineExpired) {
@@ -336,8 +372,12 @@ function reconcileLifecycleUnsafe(
       ? "ABORT_CANDIDATE"
       : "INSPECT_CANDIDATE";
   }
-  if (state.phase === "ready" && observed.candidate.state === "ready") return "PUBLISH_CANDIDATE";
-  if (observed.candidate.state === "absent" && state.phase === "prepared") return "RETRY_IDEMPOTENT_PREPARE";
+  if (state.phase === "ready" && observed.candidate.state === "ready") {
+    return "PUBLISH_CANDIDATE";
+  }
+  if (observed.candidate.state === "absent" && state.phase === "prepared") {
+    return "RETRY_IDEMPOTENT_PREPARE";
+  }
   return "INSPECT_CANDIDATE";
 }
 
@@ -357,9 +397,7 @@ export interface RecoveryCoordinator {
   reconcile(observed: ObservedHostState): RecoveryAction;
 }
 
-export function createRecoveryCoordinator(
-  state: DurableLifecycleState,
-): RecoveryCoordinator {
+export function createRecoveryCoordinator(state: DurableLifecycleState): RecoveryCoordinator {
   const durableState = snapshotState(state);
   return Object.freeze({
     checkpoint: () => JSON.stringify({ schema: recoveryCheckpointSchema, state: durableState }),
@@ -371,9 +409,10 @@ export function restoreRecoveryCoordinator(checkpoint: string): RecoveryCoordina
   let restored: unknown;
   try {
     const envelope = JSON.parse(checkpoint) as unknown;
-    restored = isRecord(envelope) && envelope.schema === recoveryCheckpointSchema
-      ? envelope.state
-      : undefined;
+    restored =
+      isRecord(envelope) && envelope.schema === recoveryCheckpointSchema
+        ? envelope.state
+        : undefined;
   } catch {
     restored = undefined;
   }

@@ -2,14 +2,18 @@ import { compileGraph } from "../graph-spike.ts";
 import { GenerationLifecycle, inertHooks } from "../lifecycle-spike.ts";
 
 const phase = process.argv[2];
-if (!["prepare", "start", "blocking-start", "stop"].includes(phase)) throw new Error("UNKNOWN_PHASE");
+if (!["prepare", "start", "blocking-start", "stop"].includes(phase)) {
+  throw new Error("UNKNOWN_PHASE");
+}
 
 const authorityScope = "tenant:test/project:test";
 const lifecycle = new GenerationLifecycle(authorityScope);
 const lifecycleDeadlineMs = 500;
-const compile = id => {
+const compile = (id) => {
   const result = compileGraph([{ id, requires: [] }]);
-  if (!result.ok) throw new Error(JSON.stringify(result.diagnostics));
+  if (!result.ok) {
+    throw new Error(JSON.stringify(result.diagnostics));
+  }
   return result.plan;
 };
 const request = (operationId, plan, hooks) => ({
@@ -31,7 +35,7 @@ const request = (operationId, plan, hooks) => ({
 });
 const never = () => new Promise(() => undefined);
 let enteredPhase;
-const enterAndNeverSettle = requestedPhase => {
+const enterAndNeverSettle = (requestedPhase) => {
   enteredPhase = requestedPhase;
   return never();
 };
@@ -39,16 +43,23 @@ const enterAndNeverSettle = requestedPhase => {
 let result;
 if (phase === "stop") {
   const oldPlan = compile("old");
-  await lifecycle.activate(request("old", oldPlan, new Map([["old", inertHooks({
-    stop: () => enterAndNeverSettle("stop"),
-  })]])));
+  await lifecycle.activate(
+    request(
+      "old",
+      oldPlan,
+      new Map([
+        [
+          "old",
+          inertHooks({
+            stop: () => enterAndNeverSettle("stop"),
+          }),
+        ],
+      ]),
+    ),
+  );
   const candidatePlan = compile("candidate");
   result = await lifecycle.activate(
-    request(
-      "candidate",
-      candidatePlan,
-      new Map([["candidate", inertHooks()]]),
-    ),
+    request("candidate", candidatePlan, new Map([["candidate", inertHooks()]])),
     { absoluteDeadline: lifecycle.deadlineAfter(1_000) },
   );
 } else if (phase === "blocking-start") {
@@ -57,16 +68,21 @@ if (phase === "stop") {
     request(
       phase,
       plan,
-      new Map([["candidate", inertHooks({
-        start: () => {
-          enteredPhase = "blocking-start";
-          const deadline = Date.now() + lifecycleDeadlineMs + 100;
-          while (Date.now() < deadline) {
-            // Deliberately block the event loop to qualify cooperative T0 deadlines.
-          }
-        },
-        stop: () => undefined,
-      })]]),
+      new Map([
+        [
+          "candidate",
+          inertHooks({
+            start: () => {
+              enteredPhase = "blocking-start";
+              const deadline = Date.now() + lifecycleDeadlineMs + 100;
+              while (Date.now() < deadline) {
+                // Deliberately block the event loop to qualify cooperative T0 deadlines.
+              }
+            },
+            stop: () => undefined,
+          }),
+        ],
+      ]),
     ),
     { absoluteDeadline: lifecycle.deadlineAfter(1_000) },
   );
