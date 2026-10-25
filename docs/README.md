@@ -53,6 +53,8 @@ not accept a runtime, publish a package, or replace an approved ADR.
 
 ### Executed evidence and independent review
 
+- [Static Composition and Controlled Restart Validation](research/static-composition-and-controlled-restart-validation.md)
+
 - [Worker Adapter Replacement Experiment](research/worker-adapter-replacement-experiment.md)
 - [Plugin Research Review and Decision Record](research/plugin-research-review-and-decision-record.md)
 

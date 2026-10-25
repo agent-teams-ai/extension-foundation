@@ -54,6 +54,17 @@ Foundation package, production graph runtime, or public SPI by implication.
 - Every production host remains subject to the accepted production-host safety
   closure and its own authority and termination evidence.
 
+## Owner-confirmed baseline, 2026-10-25
+
+The owner selected **static composition with controlled restart** as the
+baseline, with an **optional Temporal adapter for the same product-authorized
+operation** where qualified infrastructure and durable coordination justify it.
+The [validation record](../research/static-composition-and-controlled-restart-validation.md)
+separates this confirmed direction, current PostgreSQL/Temporal authority,
+executed scenarios and remaining production qualifications. This resolves the
+baseline-versus-immediate-overlap question; it does not select a public SPI,
+create a second Host authority, publish a package or qualify state migration.
+
 ## Open Choices
 
 ### Public Extension SPI And Compatibility

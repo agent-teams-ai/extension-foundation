@@ -10,6 +10,16 @@ summary: Independent critique dispositions, adoption conflicts and scoped implem
 
 **Initial review:** 2026-10-21. **Follow-up:** 2026-10-22, recorded in its own section below. **Status:** non-normative research synthesis; no new architecture approval, production-runtime qualification, or merge authorization. The initial review combines the platform, production-system, ecosystem-scale, stateful-update and OpenClaw research with independent lifecycle, scale/security, and adoption/documentation critiques. Researchers supplied comparison evidence; critics challenged lifecycle promises, security and scale claims, and adoption provenance. Each dated record distinguishes source facts, historical reports, unexecuted assertions, executed experiments and recommendations.
 
+## Current disposition, 2026-10-25
+
+The owner has now chosen static composition with controlled restart as the
+baseline and permits a Temporal rollout adapter where useful. The
+[new validation record](static-composition-and-controlled-restart-validation.md)
+contains executable evidence and a failing stop-admission counterexample.
+Fresh main ADR-0114/0115 resolves the previously reported PostgreSQL adoption
+gap; accepted ADR-0116 in unmerged PR90 selects native Temporal for Fully Local.
+Earlier review sections retain their dates and source pins as history.
+
 ## Recommendation and authority
 
 Complete the authorized installation, research and navigation repairs. Preserve the approved direction: immutable Get Modular (GM) graphs, mandatory GM/static Feature Module Standard v1.1 in Orchestrator under ADR-0110, neutral Extension Foundation (EF) primitives, and product-owned executable admission, routing, recovery and retirement. Make production hot replacement a first-class **qualification target** for a bounded capability; do not present it as an already delivered library guarantee.
@@ -176,7 +186,7 @@ waive an adoption gate.
 | Ownership F3/FE-02: adapter cost was incorrectly called net | **Corrected.** Temporal and alternative scheduling allowances are gross new adapter/fixture estimates. Subtract replaced direct scheduling work before claiming a net difference. No measured savings or mandatory additive total is asserted. |
 | Ownership F6/FE-03: preferred Protobuf direction was called an approved keeper schema | **Corrected.** Exact keeper schema/transport remains open. `prost` is a candidate codec once its owner selects that contract; Protobuf does not choose gRPC. |
 | Ownership F7/final architecture: a process row implied greater logical reliability solely from placement | **Corrected.** The earlier process row is normalized to 8/10 within the same bounded logical promise. Physical containment is an additional scoped capability, not an automatic 9/10 result. |
-| Final language/FE-05: central local PostgreSQL reference differs from adopted product SQLite | **Recorded, not silently resolved.** Central scope requires local adoption; accepted Orchestrator ADR-0048/0049 retain authority. OD-035 is open and preserves the current local workflow qualification direction. A future local PostgreSQL adoption needs the owning successor/adoption route. |
+| Final language/FE-05: central local PostgreSQL reference differs from adopted product SQLite | **Superseded 2026-10-25 by fresh owning authority.** Main ADR-0114/0115 adopts PostgreSQL locally, preserving unaffected earlier invariants. Accepted ADR-0116 closes OD-035 on unmerged PR90. The original review used older source pins. |
 
 ### Updated technical conclusion
 
@@ -192,8 +202,8 @@ Temporal is a useful optional rollout scheduler when the admitted deployment
 already has it or the operation needs durable cross-host coordination. It stays
 outside ordinary per-call invocation and outside the generation closure it
 controls. Do not introduce another workflow engine, generic outbox or bespoke
-durability platform solely for a local update. Current OpenWorkflow research is
-updated in its source ledger; old missing-feature observations remain historical.
+durability platform solely for a local update. OpenWorkflow source observations remain comparative history; the later native
+Temporal product choice is recorded in the current authority map.
 
 The language guidance keeps TypeScript for the main application while requiring
 agents to consider a concrete native advantage. Reuse an existing engine or the
@@ -238,8 +248,8 @@ patch or reduced gate was used.
 
 ### Concrete owner choices that remain
 
-Select the first actual extension family and the useful update promise:
-controlled restart or overlap-safe bounded replacement. Identify any residual
+The owner selected controlled restart on 2026-10-25. Select the first actual
+extension family and its concrete availability and restart contract. Identify any residual
 shared contract after executor/RPC/kernel subtraction, then assign its package
 and release owner. Set the real aggregate resource/degraded-update envelope.
 Choose Temporal scheduling only for a concrete admitted operation. These
@@ -248,10 +258,10 @@ correlation mappings and documentation corrections need no additional approval.
 The scoped comparison tables in the linked records give confidence, achievable
 reliability and complexity out of ten, with production and test LOC separately.
 
-If fully local PostgreSQL is now intended for Orchestrator, explicitly reconcile
-accepted ADR-0048/0049 and OD-035 rather than changing them through this research.
-This future adoption choice does not block the neutral plugin research or
-current static GM work.
+The earlier request to reconcile a future local PostgreSQL adoption is
+superseded by accepted main ADR-0114/0115. PR90 records the subsequent accepted
+native Temporal choice; its merge status remains separate from acceptance.
+This research preserves historical accepted texts and the bounded adoption map.
 
 [gm-kernel]: https://github.com/agent-teams-ai/get-modular/blob/7131d0d7a6bb5dd4c3e8906ccac065c0be0e0333/docs/decisions/0029-admit-an-optional-lifecycle-kernel-candidate.md
 [gm39]: https://github.com/agent-teams-ai/get-modular/blob/7131d0d7a6bb5dd4c3e8906ccac065c0be0e0333/docs/decisions/0039-retain-observation-load-drain-until-its-run-settles.md

@@ -8,13 +8,18 @@ summary: Maintained source-backed lessons for module composition, plugin systems
 
 # Plugin System Research Reference
 
-**Evidence cut: 2026-10-22; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
+**Current follow-up: 2026-10-25; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
 module composition, extension ecosystems and production hot replacement. It
 preserves industry experience so future agents can use the same evidence,
 counterexamples and qualification scenarios. Research is not an accepted ADR,
 a released runtime, a security audit or a performance qualification.
 
 ## Current synthesis
+
+The owner confirmed static composition with controlled restart and an optional
+Temporal rollout adapter on 2026-10-25. Start with the
+[current validation and authority record](static-composition-and-controlled-restart-validation.md)
+for fresh source pins, executable results, counterexamples and remaining gates.
 
 Design a demonstrated shared replacement concern as an independently useful
 library from its first real delivery. First subtract the accepted local kernel
@@ -156,11 +161,20 @@ This supersedes earlier pending-source-check status; it does not establish
 N1000 compiler/runtime qualification, process RSS or hot-reload retention limits.
 Earlier pinned observations remain historical evidence.
 
-The 2026-10-22 central backend reference and Orchestrator's accepted local
-persistence profile have different choices pending explicit consumer adoption.
-The [Temporal supplement](temporal-and-rollout-orchestration.md#existing-authority-and-evidence)
-records native PostgreSQL reference scope versus accepted per-context SQLite,
-without rewriting either or requiring a local Temporal deployment.
+**Authority correction, 2026-10-25:** Orchestrator accepted ADR-0114/0115
+already adopt native PostgreSQL for hosted and Fully Local profiles. The
+`embedded-postgres` launcher approach is selected, while exact production
+bundles remain subject to qualification. Owner-accepted ADR-0116 in open PR90
+selects native Temporal plus PostgreSQL for Fully Local; the branch is not yet
+merged. The [current authority map](static-composition-and-controlled-restart-validation.md#current-storage-and-workflow-authority)
+supersedes this research's earlier SQLite/OpenWorkflow adoption-gap conclusion.
+
+**Growth correction, 2026-10-25:** current GM main `b70ba393` includes the newer
+ADR-0041 descriptor-union recipe and its 2026-10-23 compiler/runtime evidence
+through N1000. The historical source-check-only/compiler-blocker statement
+above belongs to the older recipe and snapshot. It is not a current universal
+N1000 blocker. Fresh bounded repetition is tracked in the validation record;
+neither series establishes active-plugin capacity, RSS or reload retention.
 
 ## Maintenance instructions for future agents
 

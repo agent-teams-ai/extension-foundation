@@ -10,13 +10,23 @@ summary: Optional durable rollout coordination without transferring generation o
 
 Research cut: **2026-10-22**. Research and engineering judgment, not adoption, release approval, a new public SPI, or newly executed qualification. No accepted ADR is amended here. The [prior EF research family][ER] was read at `466e35a62481a6b21f2062524bb92c7eb221bb8c`; newer source pins below supplement their 2026-10-21 evidence.
 
+## Current authority correction, 2026-10-25
+
+The [new validation record](static-composition-and-controlled-restart-validation.md)
+records owner-confirmed static restart and optional rollout scheduling, fresh
+PostgreSQL/Temporal authority and newly executed evidence. Orchestrator main
+ADR-0114/0115 already adopt native PostgreSQL including Fully Local Desktop.
+Owner-accepted ADR-0116 in **unmerged PR90** selects full native Temporal Service
+plus PostgreSQL for that product profile. Earlier OpenWorkflow/SQLite direction
+below is retained only where explicitly historical; it is not current guidance.
+
 ## Recommendation
 
 **Yes: Temporal can implement an adapter that durably coordinates a plugin-generation replacement. It should schedule and observe product Host operations, rather than become the generation runtime or request-admission authority.** It buys durable waits, crash recovery of coordination, retries, execution history and operational visibility. It does not make retained JavaScript references disappear, atomically switch product routes, fence a stale writer, migrate arbitrary plugin state, or prove physical cleanup. Those facts remain with their existing owners.
 
 Use it where the product already operates Temporal or where a concrete replacement crosses processes/hosts and genuinely needs long-lived recovery. Do not adopt an orchestration platform merely to rotate one local worker. Keep the per-call execution path independent of the rollout workflow. A thousand plugin packages do not imply a thousand Temporal deployments, task queues or workflows continuously processing every invocation.
 
-For this organization, the technology choice is substantially narrower than a fresh platform selection. Orchestrator [ADR-0027][O27] already accepts Temporal as a **replaceable Run Orchestration adapter**, with authoritative application persistence and application-owned authorization, idempotency and invariants. [OD-005][O05] already chooses TypeScript SDK first and records prior retained spike evidence. [OD-035][O35] separately prefers an OpenWorkflow qualification spike for future fully local Desktop, explicitly avoiding a bundled local Temporal service. Extending scheduling to a plugin rollout needs its own owning feature/profile; it does not move plugin lifecycle business ownership into Run Orchestration or reopen the approved hosted/local split.
+For this organization, the technology choice is substantially narrower than a fresh platform selection. Orchestrator [ADR-0027][O27] already accepts Temporal as a **replaceable Run Orchestration adapter**, with authoritative application persistence and application-owned authorization, idempotency and invariants. [OD-005][O05] already chooses TypeScript SDK first and records prior retained spike evidence. The earlier [OD-035 snapshot][O35] preferred an OpenWorkflow spike; the owner-accepted ADR-0116 in unmerged PR90 supersedes that branch direction with full native Temporal plus PostgreSQL. Extending scheduling to a plugin rollout needs its own owning feature/profile; it does not move plugin lifecycle business ownership into Run Orchestration or reopen the product workflow engine decision.
 
 The reusable concern should follow the organization's [library-first rule][Q]: one neutral mechanism and conformance contract from the outset, validated with an ordinary disposable external project and at least one real consumer in the same delivery. **Do not recreate GM's existing lifecycle kernel inside a new library or workflow.** A separately owned library/repository may be justified for cross-platform generation execution adapters, replacement coordination contracts and conformance, if that concrete scope is admitted. Its useful identity is the responsibility it owns, not a universal plugin manager. Generic consumers should not need Agent Teams catalogs, credentials or governance records. Product policy, durable records and grants remain adapters supplied by the consumer. EF public-package qualification and GM release gates remain exactly as recorded. EF [OD-003][EOD] already requires rejecting an overlapping lifecycle state machine and contains the shared Host mechanics discussion; a workflow adapter must fit that discussion, not resolve it by implication.
 
@@ -31,18 +41,14 @@ Local source reviewed:
 | `get-modular` / `docs/plugin-research-latest-20261021` | `8249c674ad53458b31d6ad06803ceb76e29ff4c7` | [ADR-0029][G29] and actual kernel; no new runtime authority. |
 | `agent-teams-orchestrator` / `docs/plugin-research-adoption-20261021` | `477b3445c4c66416121559894cf6f393c9450c72` | ADR0027, OD005, OD035 and deployment profiles read at this revision. |
 
-**Later central-reference update, 2026-10-22:** the organization
-[backend stack at `86a85d6`](https://github.com/agent-teams-ai/.github/blob/86a85d6beda07e6e5ee7806646f700bc4e4db173/docs/backend-stack.md)
-selects native PostgreSQL for server and fully local backend reference profiles.
-Its scope explicitly requires reviewed consumer adoption and preserves accepted
-ADRs; it separately leaves the local workflow engine to its owner. Orchestrator
-[accepted ADR-0048](https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/477b3445c4c66416121559894cf6f393c9450c72/docs/decisions/0048-single-persistence-authority-and-logical-transfer.md)
-still specifies per-context SQLite for local authority, with OD035's SQLite and
-OpenWorkflow qualification direction. Statements about that local route below
-describe this retained product profile, not a universal current organization
-stack. A local PostgreSQL adoption would need an explicit product successor or
-adoption decision and revised qualification; this research selects neither
-migration nor a bundled Temporal service.
+**Supersession of the 2026-10-22 authority assessment:** the earlier comparison
+used Orchestrator `477b3445` and central reference `86a85d6`. Fresh main
+ADR-0114/0115 supplies the explicit adoption previously reported missing. Its
+bounded replacement preserves the earlier single-authority, logical-transfer
+and exact-value requirements while adopting PostgreSQL locally. The
+[current authority map](static-composition-and-controlled-restart-validation.md#current-storage-and-workflow-authority)
+retains exact adopted references and distinguishes main from accepted PR90.
+No accepted ADR body is changed by this correction.
 
 OD005 reports **two independent 35/35 Temporal spike runs**. Its manifest records 70/70 and fingerprint `f8818afbd39e507b849ec697cb8eb6186f09bbdeee4cdc5b9bfa4aa9ce1eef5f`. Covered cases include worker death/replay, failure before/after application commit, overlapping timeout retries, stale/duplicate signals, product cancellation, late completion fencing, bounded Continue-as-New, pinned routing, readiness and application-command equivalence. **These are prior retained results, not rerun by this researcher and not a plugin-replacement qualification.** OD005 also records that `Worker.create()` did not prove server registration of a pinned build; start readiness required registration verification or retrying the same idempotent workflow start. [O05], [OE]
 
@@ -158,7 +164,7 @@ State migration remains a domain contract: stable identity, schemas/serializers,
 | Hosted Node server | Good fit when Temporal already runs. TS workers use Node and a native SDK Core bridge; consumers deploy/operate their application workers even with Cloud. Keep workflow workers independent of the plugin generation they control. |
 | Browser / Web client | Ordinary UI calls product APIs. The reviewed TypeScript SDK officially supports Node 20/22/24; its Worker requires Node-API native modules and Node execution facilities. A browser Web Worker is not a Temporal worker. Host protocol types and outcome semantics can be shared; runtime implementation and termination evidence differ. |
 | Desktop connected to hosted authority | Client surface does not determine placement. Server-side Temporal may coordinate rollout, but a disconnected device cannot acquire fresh local permission from the hosted workflow. Define bounded offline/degraded authority separately. |
-| Future fully local Desktop | Existing OD035 requires SQLite, crash recovery, signed redistribution, Windows/macOS/Linux qualification and **no external service, Docker or manual DB setup**. Do not replace this with bundled Temporal. OpenWorkflow remains the preferred unaccepted spike candidate. |
+| Fully Local Desktop | Main ADR-0114/0115 adopt bundled native PostgreSQL. Accepted ADR-0116 in unmerged PR90 selects full native Temporal Service. Signed redistribution, lifecycle, crash/upgrade/restore and Windows/macOS/Linux qualification remain exact product gates. |
 | Self-hosted server | Production Temporal service or Cloud plus application workers is required. Self-hosting adds service persistence, upgrades, backups, TLS, capacity and monitoring. SQLite/start-dev is development/test infrastructure, not a production Desktop packaging argument. |
 
 These distinctions follow product [deployment profiles][OP] and Temporal's [runtime support][TS], [production deployment][TPR] and [persistence][TPS] docs. An adapter contract can preserve portable semantics without pretending every platform has identical local capabilities.
@@ -180,7 +186,7 @@ The common bounded Node-worker replacement planning envelope remains the prior e
 | Static immutable graph + controlled restart; no dynamic-cohort promise | 9 | 8 | 2 | 150–500 total | 300–900 total |
 | Shared bounded mechanism + direct feature-specific driver using existing product persistence/scheduler | 8 | 8 | 6 | 3,000–5,500 total | 5,000–9,000 total |
 | Same safety mechanism + Temporal rollout adapter, existing qualified Temporal infrastructure | 8 | 8 | 7 | 600–1,400 gross adapter allowance; net difference unknown | 1,200–2,500 gross adapter fixtures; net difference unknown |
-| Same mechanism + OpenWorkflow local scheduling adapter, after OD035 qualification | 6 | 7 | 7 | 800–1,800 gross adapter allowance | 1,800–3,500 gross adapter fixtures; OS qualification additional |
+| Historical OpenWorkflow local adapter alternative; superseded product selection | 6 | 7 | 7 | 800–1,800 gross adapter allowance | 1,800–3,500 gross adapter fixtures; OS qualification additional |
 | Same mechanism + Restate coordinator, if Restate already operated | 6 | 8 | 7 | 900–2,000 gross adapter allowance | 2,000–4,000 gross adapter fixtures |
 | Same mechanism + DBOS coordinator, if Postgres/DBOS already selected | 6 | 8 | 7 | 800–1,800 gross adapter allowance | 1,800–3,500 gross adapter fixtures |
 | Same mechanism + Dapr Workflow, if Dapr already selected | 5 | 7 | 8 | 1,000–2,200 gross adapter allowance | 2,000–4,000 gross adapter fixtures |
@@ -188,13 +194,13 @@ The common bounded Node-worker replacement planning envelope remains the prior e
 
 Temporal's gross adapter allowance is identity/schema mapping, idempotent Activity commands, scheduler fencing, workflow/replay fixtures, operational readiness and failure reconciliation. It may reduce a direct driver's timer/retry/wake-up code, but its workers, histories and deployment versioning add real maintenance. Mature infrastructure is most economical when shared across genuine durable workflows. The right comparison is **existing persistence + bounded feature driver versus existing persistence + existing workflow adapter**. The actual net difference is the new adapter, replay and operational work minus the direct scheduling code it replaces; that subtraction was not measured. Adding the entire allowance to the earlier total is only a conservative budgeting scenario, not an established total or a minimum safety floor.
 
-### OpenWorkflow: preserve the chosen local research track
+### OpenWorkflow: retained comparative evidence
 
-OD035's August 0.9.2 observation is historical. Current primary release is **0.11.0** (2026-10-12), commit `80d90b8d06b0cd43023dd324caa51fe35de4588f`. It adds cron/reruns and stale-step-completion fixes; current documentation includes OpenTelemetry. Do not repeat the old roadmap omissions as current absence. The release requires Node **22.22+**, which needs comparison with the actual Desktop runtime baseline. [OWR], [OWP]
+The selected local direction is now native Temporal in accepted PR90; the following observations preserve the 2026-10-22 comparison. OD035's August 0.9.2 observation is historical. The release reviewed then is **0.11.0** (2026-10-12), commit `80d90b8d06b0cd43023dd324caa51fe35de4588f`. It adds cron/reruns and stale-step-completion fixes; current documentation includes OpenTelemetry. Do not repeat the old roadmap omissions as current absence. The release requires Node **22.22+**, which needs comparison with the actual Desktop runtime baseline. [OWR], [OWP]
 
 It runs workers against SQLite/Postgres without another orchestration server and matches workflow name/version; missing versions are retried. Cancellation records workflow cancellation but an in-progress step may complete. Signals are **not buffered**: delivery with no waiter can be lost. A rollout adapter must reconcile the durable product operation after waking and use authoritative state/timers or an already owned inbox rather than rely on a one-shot notification. [OWV], [OWC], [OWS]
 
-Pinned 0.11.0 worker code maintains per-execution leases/heartbeats and uses claim identity for writes; this does not fence arbitrary external calls after lease loss. Its CI file at the same commit runs Ubuntu Node and Bun jobs, not a Windows/macOS matrix. These are concrete OD035 spike concerns, not reasons to substitute another engine without evidence. Current SQLite docs recommend it for low-throughput single-server use; full crash/corruption/upgrade/packaging parity remains the product gate. [OWI], [OWCI], [OWSQL]
+Pinned 0.11.0 worker code maintains per-execution leases/heartbeats and uses claim identity for writes; this does not fence arbitrary external calls after lease loss. Its CI file at the same commit runs Ubuntu Node and Bun jobs, not a Windows/macOS matrix. These were concrete concerns for the earlier OD035 spike; they do not reopen the later native Temporal selection. Current SQLite docs recommend it for low-throughput single-server use; full crash/corruption/upgrade/packaging parity remains the product gate. [OWI], [OWCI], [OWSQL]
 
 ### Restate, DBOS and Dapr: alternatives worth understanding, not new recommendations
 
@@ -222,7 +228,7 @@ No Rust rewrite is justified by the orchestration question. The official TS SDK 
 4. Admission/publication cannot be implemented under existing canonical persistence/grant/fence owners: no workflow provider can compensate for that missing authority boundary; the LOC estimate is invalid.
 5. A capability owns exclusive native state or irreversible effects: the first overlap-safe read-only profile no longer applies; state/effect owners must define handoff/recovery before implementation.
 6. Required throughput, latency, history retention or operational cost fails representative measurement: regroup workflows/versions or keep control scheduling direct, without weakening admission evidence.
-7. OpenWorkflow fails the actual OD035 OS/crash/upgrade/ambiguity matrix: investigate its bounded exit strategy or another local adapter through the existing decision, not ad hoc fallbacks.
+7. The selected native Temporal/PostgreSQL bundle fails its actual OS/crash/upgrade/restore matrix: retain the failing qualification and address it through the owning product decision, without an implicit fallback engine.
 
 ## Focused qualification before adoption
 
