@@ -33,9 +33,8 @@ import {
 const BASE_SHA = "0836f62a386e253b156271f0b8f7defc969f3580";
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 const execFileAsync = promisify(execFile);
-const skipExpensiveIntegration = process.env.PACKAGE_POLICY_TEST_MODE === "fast"
-  ? "skipped in package-policy fast mode"
-  : false;
+const skipExpensiveIntegration =
+  process.env.PACKAGE_POLICY_TEST_MODE === "fast" ? "skipped in package-policy fast mode" : false;
 
 test("policy facade loaders retain async non-constructible signatures", () => {
   for (const loader of [loadAllowedPackageRoles, loadPackagePolicy]) {
@@ -64,34 +63,48 @@ function entry(overrides = {}) {
 async function policyFixture(catalog = { version: 1, packages: [entry()] }) {
   const root = await mkdtemp(join(tmpdir(), "extension-policy-characterization-"));
   await writeFixture(root, "architecture/package-catalog.json", `${JSON.stringify(catalog)}\n`);
-  await writeFixture(root, "architecture/foundation/scaffolding.yaml", `compositions:
+  await writeFixture(
+    root,
+    "architecture/foundation/scaffolding.yaml",
+    `compositions:
   - id: fixture
     targetRoles: [foundation-component]
-`);
+`,
+  );
   for (const catalogEntry of catalog.packages ?? []) {
-    if (!/^[a-z0-9][a-z0-9.-]*$/.test(catalogEntry?.id ?? "")
-      || typeof catalogEntry.owner_document !== "string") continue;
-    await writeFixture(root, packageAdmissionPath(catalogEntry), `${JSON.stringify({
-      schema_version: 4,
-      admission_basis: "independent-deployment-or-isolation",
-      package_id: catalogEntry.id,
-      owner_repository: "agent-teams-ai/extension-foundation",
-      extraction_decision: catalogEntry.owner_document,
-      neutrality_claim: "Fixture neutrality claim.",
-      release_policy: "Fixture release policy.",
-      semantic_classification: "ordinary-library",
-      semantic_extraction_decision: "not-applicable",
-      conformance_version: "1.0.0",
-      consumer_evidence: [{
-        consumer_id: "consumer.fixture",
-        implementation_id: "implementation.fixture",
-        consumer_repository: "agent-teams-ai/consumer-fixture",
-        evidence_kind: "product-slice",
-        source_revision: "1111111111111111111111111111111111111111",
-        conformance_result: "passed",
-        evidence_reference: `docs/evidence/fixture.json#sha256=${"a".repeat(64)}`,
-      }],
-    })}\n`);
+    if (
+      !/^[a-z0-9][a-z0-9.-]*$/.test(catalogEntry?.id ?? "") ||
+      typeof catalogEntry.owner_document !== "string"
+    ) {
+      continue;
+    }
+    await writeFixture(
+      root,
+      packageAdmissionPath(catalogEntry),
+      `${JSON.stringify({
+        schema_version: 4,
+        admission_basis: "independent-deployment-or-isolation",
+        package_id: catalogEntry.id,
+        owner_repository: "agent-teams-ai/extension-foundation",
+        extraction_decision: catalogEntry.owner_document,
+        neutrality_claim: "Fixture neutrality claim.",
+        release_policy: "Fixture release policy.",
+        semantic_classification: "ordinary-library",
+        semantic_extraction_decision: "not-applicable",
+        conformance_version: "1.0.0",
+        consumer_evidence: [
+          {
+            consumer_id: "consumer.fixture",
+            implementation_id: "implementation.fixture",
+            consumer_repository: "agent-teams-ai/consumer-fixture",
+            evidence_kind: "product-slice",
+            source_revision: "1111111111111111111111111111111111111111",
+            conformance_result: "passed",
+            evidence_reference: `docs/evidence/fixture.json#sha256=${"a".repeat(64)}`,
+          },
+        ],
+      })}\n`,
+    );
   }
   return root;
 }
@@ -101,7 +114,13 @@ test(`catalog policy diagnostics are characterized at ${BASE_SHA}`, async () => 
     version: 1,
     packages: [
       entry(),
-      entry({ id: "bad/id", role: "unknown", path: "packages/example/child", package_name: "wrong", owner_document: "OD-1" }),
+      entry({
+        id: "bad/id",
+        role: "unknown",
+        path: "packages/example/child",
+        package_name: "wrong",
+        owner_document: "OD-1",
+      }),
       entry({ id: "module.example", path: "packages/other" }),
       { ...entry(), unknown: true },
     ],
@@ -129,10 +148,7 @@ test(`catalog policy diagnostics are characterized at ${BASE_SHA}`, async () => 
 test("duplicate package paths retain their exact diagnostics and order", async () => {
   const root = await policyFixture({
     version: 1,
-    packages: [
-      entry(),
-      entry({ id: "module.other", package_name: "@agent-teams/other" }),
-    ],
+    packages: [entry(), entry({ id: "module.other", package_name: "@agent-teams/other" })],
   });
   try {
     assert.deepEqual((await loadPackagePolicy(root)).errors, [
@@ -147,10 +163,7 @@ test("duplicate package paths retain their exact diagnostics and order", async (
 test("admission diagnostics retain their position before catalog relationship diagnostics", async () => {
   const root = await policyFixture({
     version: 1,
-    packages: [
-      entry(),
-      entry({ id: "module.other", package_name: "@agent-teams/other" }),
-    ],
+    packages: [entry(), entry({ id: "module.other", package_name: "@agent-teams/other" })],
   });
   try {
     const admissionPath = join(root, packageAdmissionPath(entry()));
@@ -195,7 +208,11 @@ test("policy filesystem sources are fresh and preserve JSON/YAML failures", asyn
   const root = await policyFixture({ version: 1, packages: [] });
   try {
     assert.deepEqual((await loadPackagePolicy(root)).entries, []);
-    await writeFixture(root, "architecture/package-catalog.json", `${JSON.stringify({ version: 1, packages: [entry()] })}\n`);
+    await writeFixture(
+      root,
+      "architecture/package-catalog.json",
+      `${JSON.stringify({ version: 1, packages: [entry()] })}\n`,
+    );
     assert.equal((await loadPackagePolicy(root)).entries.length, 1);
     await writeFixture(root, "architecture/package-catalog.json", "{");
     await assert.rejects(loadPackagePolicy(root), SyntaxError);
@@ -215,9 +232,10 @@ test("missing catalog and scaffolding policy files preserve filesystem failures"
     const root = await policyFixture({ version: 1, packages: [] });
     try {
       await rm(join(root, missingPath));
-      await assert.rejects(loadPackagePolicy(root), error => (
-        error?.code === "ENOENT" && error.path === join(root, missingPath)
-      ));
+      await assert.rejects(
+        loadPackagePolicy(root),
+        (error) => error?.code === "ENOENT" && error.path === join(root, missingPath),
+      );
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -235,11 +253,14 @@ test("invalid package policy does not invoke Docs ownership lookup", async () =>
     throw new Error("Docs lookup must not run");
   };
   try {
-    assert.deepEqual(await validatePackageTopology({
-      root,
-      resolveOwner: bomb,
-      listEffectiveOwners: bomb,
-    }), ["module.example: unknown role unknown"]);
+    assert.deepEqual(
+      await validatePackageTopology({
+        root,
+        resolveOwner: bomb,
+        listEffectiveOwners: bomb,
+      }),
+      ["module.example: unknown role unknown"],
+    );
     assert.equal(docsCalls, 0);
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -247,24 +268,44 @@ test("invalid package policy does not invoke Docs ownership lookup", async () =>
 });
 
 test("pure value helpers retain exact export and ownership behavior", () => {
-  assert.equal(hasCanonicalPackageRootExports({ exports: { ".": { import: "./dist/index.js", types: "./dist/index.d.ts" } } }), true);
-  assert.equal(hasCanonicalPackageRootExports({ exports: { ".": { import: "./dist/index.js", types: "./dist/index.d.ts", default: "./dist/index.js" } } }), false);
-  assert.deepEqual(packageExportTargets({ import: ["./dist/a.js", { default: "./dist/b.js" }] }), ["./dist/a.js", "./dist/b.js"]);
+  assert.equal(
+    hasCanonicalPackageRootExports({
+      exports: { ".": { import: "./dist/index.js", types: "./dist/index.d.ts" } },
+    }),
+    true,
+  );
+  assert.equal(
+    hasCanonicalPackageRootExports({
+      exports: {
+        ".": { import: "./dist/index.js", types: "./dist/index.d.ts", default: "./dist/index.js" },
+      },
+    }),
+    false,
+  );
+  assert.deepEqual(packageExportTargets({ import: ["./dist/a.js", { default: "./dist/b.js" }] }), [
+    "./dist/a.js",
+    "./dist/b.js",
+  ]);
   assert.equal(packageExportTargets({ import: 1 }), undefined);
-  assert.deepEqual(packageOwnerFeatures(entry(), {
-    id: "ADR-0099",
-    type: "adr",
-    status: "accepted",
-    supersededBy: [],
-    packageOwnershipErrors: [],
-    packageOwnership: [{
-      packageId: "module.example",
-      packageName: "@agent-teams/example",
-      packagePath: "packages/example",
-      semanticClassification: "ordinary-library",
-      features: ["alpha"],
-    }],
-  }), ["alpha"]);
+  assert.deepEqual(
+    packageOwnerFeatures(entry(), {
+      id: "ADR-0099",
+      type: "adr",
+      status: "accepted",
+      supersededBy: [],
+      packageOwnershipErrors: [],
+      packageOwnership: [
+        {
+          packageId: "module.example",
+          packageName: "@agent-teams/example",
+          packagePath: "packages/example",
+          semanticClassification: "ordinary-library",
+          features: ["alpha"],
+        },
+      ],
+    }),
+    ["alpha"],
+  );
 });
 
 test("Docs envelopes, supersession, duplicates, and per-instance caching are characterized", async () => {
@@ -272,62 +313,111 @@ test("Docs envelopes, supersession, duplicates, and per-instance caching are cha
     id,
     metadata: { type: "adr", status: "accepted", ...metadata },
   });
-  const evidence = ownerEvidenceFromDocsExecution({ envelope: { outcome: "success", result: { documents: [
-    document("ADR-0097", { superseded_by: ["ADR-0101"] }),
-    document("ADR-0098"),
-    document("ADR-0099", { package_ownership: [{
-      package_id: "module.example",
-      package_name: "@agent-teams/example",
-      package_path: "packages/example",
-      semantic_classification: "ordinary-library",
-      features: ["zeta", "alpha"],
-    }] }),
-    document("ADR-0100", { supersedes: ["ADR-0098"] }),
-    document("ADR-0101"),
-  ] } } });
+  const evidence = ownerEvidenceFromDocsExecution({
+    envelope: {
+      outcome: "success",
+      result: {
+        documents: [
+          document("ADR-0097", { superseded_by: ["ADR-0101"] }),
+          document("ADR-0098"),
+          document("ADR-0099", {
+            package_ownership: [
+              {
+                package_id: "module.example",
+                package_name: "@agent-teams/example",
+                package_path: "packages/example",
+                semantic_classification: "ordinary-library",
+                features: ["zeta", "alpha"],
+              },
+            ],
+          }),
+          document("ADR-0100", { supersedes: ["ADR-0098"] }),
+          document("ADR-0101"),
+        ],
+      },
+    },
+  });
   let calls = 0;
-  const catalog = createOwnerCatalog({ loadDocuments: async () => { calls += 1; return evidence; } });
-  const [owner, effective] = await Promise.all([catalog.resolve("ADR-0099"), catalog.listEffective()]);
+  const catalog = createOwnerCatalog({
+    loadDocuments: async () => {
+      calls += 1;
+      return evidence;
+    },
+  });
+  const [owner, effective] = await Promise.all([
+    catalog.resolve("ADR-0099"),
+    catalog.listEffective(),
+  ]);
   assert.deepEqual(owner.packageOwnership[0].features, ["alpha", "zeta"]);
-  assert.deepEqual(effective.map(item => item.id), ["ADR-0099", "ADR-0100", "ADR-0101"]);
+  assert.deepEqual(
+    effective.map((item) => item.id),
+    ["ADR-0099", "ADR-0100", "ADR-0101"],
+  );
   assert.deepEqual((await catalog.resolve("ADR-0097")).supersededBy, ["ADR-0101"]);
   assert.deepEqual((await catalog.resolve("ADR-0098")).supersededBy, ["ADR-0100"]);
   assert.equal(calls, 1);
-  assert.equal(await createOwnerCatalog({ loadDocuments: async () => [evidence[2], evidence[2]] }).resolve("ADR-0099"), undefined);
+  assert.equal(
+    await createOwnerCatalog({ loadDocuments: async () => [evidence[2], evidence[2]] }).resolve(
+      "ADR-0099",
+    ),
+    undefined,
+  );
 
   let rejectionCalls = 0;
-  const rejected = createOwnerCatalog({ loadDocuments: async () => { rejectionCalls += 1; throw new Error("Docs failed"); } });
+  const rejected = createOwnerCatalog({
+    loadDocuments: async () => {
+      rejectionCalls += 1;
+      throw new Error("Docs failed");
+    },
+  });
   await assert.rejects(rejected.resolve("ADR-0099"), /Docs failed/u);
   await assert.rejects(rejected.listEffective(), /Docs failed/u);
   assert.equal(rejectionCalls, 1);
   const governanceFailure = createOwnerCatalog({
-    loadDocuments: async () => { throw new Error("Docs failed"); },
-    loadAcceptedDecisionAuthority: async () => { throw new Error("Governance failed"); },
+    loadDocuments: async () => {
+      throw new Error("Docs failed");
+    },
+    loadAcceptedDecisionAuthority: async () => {
+      throw new Error("Governance failed");
+    },
   });
   await assert.rejects(governanceFailure.resolve("ADR-0099"), /Governance failed/u);
-  assert.equal((await createOwnerCatalog({ loadDocuments: async () => evidence }).resolve("ADR-0099")).id, "ADR-0099");
-  assert.throws(() => ownerEvidenceFromDocsExecution({ envelope: { outcome: "failure" } }), /could not enumerate/u);
-  assert.throws(() => ownerEvidenceFromDocsExecution({ envelope: { outcome: "success" } }), TypeError);
+  assert.equal(
+    (await createOwnerCatalog({ loadDocuments: async () => evidence }).resolve("ADR-0099")).id,
+    "ADR-0099",
+  );
+  assert.throws(
+    () => ownerEvidenceFromDocsExecution({ envelope: { outcome: "failure" } }),
+    /could not enumerate/u,
+  );
+  assert.throws(
+    () => ownerEvidenceFromDocsExecution({ envelope: { outcome: "success" } }),
+    TypeError,
+  );
 });
 
 test("accepted-decision authority caching is isolated per repository root", async () => {
   const calls = [];
   const source = createAcceptedDecisionSource({
-    loadLedger: async root => {
+    loadLedger: async (root) => {
       calls.push(`ledger:${root}`);
       const id = root === "root-a" ? "ADR-0001" : "ADR-0002";
       return {
         schemaVersion: 1,
         algorithm: "sha256",
-        decisions: [{ id, path: `docs/decisions/${id}.md`, immutableDigest: `sha256:${"a".repeat(64)}` }],
+        decisions: [
+          { id, path: `docs/decisions/${id}.md`, immutableDigest: `sha256:${"a".repeat(64)}` },
+        ],
       };
     },
-    loadDecisionIndex: async root => {
+    loadDecisionIndex: async (root) => {
       calls.push(`index:${root}`);
       const id = root === "root-a" ? "ADR-0001" : "ADR-0002";
       return `## Proposed decisions\n\n## Accepted decisions\n\n- [${id}: fixture](./fixture.md)\n\n## Superseded decisions\n`;
     },
-    assertGovernance: async root => { calls.push(`governance:${root}`); },
+    assertGovernance: async (root) => {
+      calls.push(`governance:${root}`);
+    },
   });
   const first = await source.loadAuthority("root-a");
   const second = await source.loadAuthority("root-b");
@@ -344,67 +434,101 @@ test("accepted-decision authority caching is isolated per repository root", asyn
   ]);
 });
 
-test("production CLIs preserve process output and exit codes", { skip: skipExpensiveIntegration }, async () => {
-  for (const [path, expected] of [
-    ["architecture/checks/package-topology.mjs", "Package topology check passed.\n"],
-    ["architecture/checks/package-artifacts.mjs", "Built package artifact check passed.\n"],
-  ]) {
-    const result = await execFileAsync(process.execPath, [join(repositoryRoot, path)], { cwd: repositoryRoot });
-    assert.equal(result.stdout, expected);
-    assert.equal(result.stderr, "");
-  }
-  await assert.rejects(
-    execFileAsync(process.execPath, [join(repositoryRoot, "architecture/checks/scaffold.mjs"), "invalid"], { cwd: repositoryRoot }),
-    error => error.code === 2 && error.stdout === "" && error.stderr === "SCAFFOLD_POLICY_REJECTED: usage: scaffold.mjs plan <intent> <plan> | apply <plan> <plan-digest> | recover\n",
-  );
-});
+test(
+  "production CLIs preserve process output and exit codes",
+  { skip: skipExpensiveIntegration },
+  async () => {
+    for (const [path, expected] of [
+      ["architecture/checks/package-topology.mjs", "Package topology check passed.\n"],
+      ["architecture/checks/package-artifacts.mjs", "Built package artifact check passed.\n"],
+    ]) {
+      const result = await execFileAsync(process.execPath, [join(repositoryRoot, path)], {
+        cwd: repositoryRoot,
+      });
+      assert.equal(result.stdout, expected);
+      assert.equal(result.stderr, "");
+    }
+    await assert.rejects(
+      execFileAsync(
+        process.execPath,
+        [join(repositoryRoot, "architecture/checks/scaffold.mjs"), "invalid"],
+        { cwd: repositoryRoot },
+      ),
+      (error) =>
+        error.code === 2 &&
+        error.stdout === "" &&
+        error.stderr ===
+          "SCAFFOLD_POLICY_REJECTED: usage: scaffold.mjs plan <intent> <plan> | apply <plan> <plan-digest> | recover\n",
+    );
+  },
+);
 
-test("topology and artifact CLIs preserve validation failure output and exit 1", { skip: skipExpensiveIntegration }, async () => {
-  const root = await mkdtemp(join(repositoryRoot, ".package-policy-cli-"));
-  try {
-    await cp(join(repositoryRoot, "architecture/checks"), join(root, "architecture/checks"), { recursive: true });
-    await writeFixture(root, "architecture/package-catalog.json", `${JSON.stringify({
-      version: 1,
-      packages: [entry({ role: "unknown" })],
-    })}\n`);
-    await writeFixture(root, "architecture/foundation/scaffolding.yaml", `compositions:
+test(
+  "topology and artifact CLIs preserve validation failure output and exit 1",
+  { skip: skipExpensiveIntegration },
+  async () => {
+    const root = await mkdtemp(join(repositoryRoot, ".package-policy-cli-"));
+    try {
+      await cp(join(repositoryRoot, "architecture/checks"), join(root, "architecture/checks"), {
+        recursive: true,
+      });
+      await writeFixture(
+        root,
+        "architecture/package-catalog.json",
+        `${JSON.stringify({
+          version: 1,
+          packages: [entry({ role: "unknown" })],
+        })}\n`,
+      );
+      await writeFixture(
+        root,
+        "architecture/foundation/scaffolding.yaml",
+        `compositions:
   - id: fixture
     targetRoles: [foundation-component]
-`);
-    await writeFixture(root, "architecture/package-admissions/module-dot-example.json", `${JSON.stringify({
-      schema_version: 4,
-      admission_basis: "independent-deployment-or-isolation",
-      package_id: "module.example",
-      owner_repository: "agent-teams-ai/extension-foundation",
-      extraction_decision: "ADR-0099",
-      neutrality_claim: "Fixture neutrality claim.",
-      release_policy: "Fixture release policy.",
-      semantic_classification: "ordinary-library",
-      semantic_extraction_decision: "not-applicable",
-      conformance_version: "1.0.0",
-      consumer_evidence: [{
-        consumer_id: "consumer.fixture",
-        implementation_id: "implementation.fixture",
-        consumer_repository: "agent-teams-ai/consumer-fixture",
-        evidence_kind: "product-slice",
-        source_revision: "1111111111111111111111111111111111111111",
-        conformance_result: "passed",
-        evidence_reference: `docs/evidence/fixture.json#sha256=${"a".repeat(64)}`,
-      }],
-    })}\n`);
-    for (const path of ["package-topology.mjs", "package-artifacts.mjs"]) {
-      await assert.rejects(
-        execFileAsync(process.execPath, [join(root, "architecture/checks", path)]),
-        error => error.code === 1
-          && error.stdout === ""
-          && error.stderr === "ERROR module.example: unknown role unknown\n",
+`,
       );
+      await writeFixture(
+        root,
+        "architecture/package-admissions/module-dot-example.json",
+        `${JSON.stringify({
+          schema_version: 4,
+          admission_basis: "independent-deployment-or-isolation",
+          package_id: "module.example",
+          owner_repository: "agent-teams-ai/extension-foundation",
+          extraction_decision: "ADR-0099",
+          neutrality_claim: "Fixture neutrality claim.",
+          release_policy: "Fixture release policy.",
+          semantic_classification: "ordinary-library",
+          semantic_extraction_decision: "not-applicable",
+          conformance_version: "1.0.0",
+          consumer_evidence: [
+            {
+              consumer_id: "consumer.fixture",
+              implementation_id: "implementation.fixture",
+              consumer_repository: "agent-teams-ai/consumer-fixture",
+              evidence_kind: "product-slice",
+              source_revision: "1111111111111111111111111111111111111111",
+              conformance_result: "passed",
+              evidence_reference: `docs/evidence/fixture.json#sha256=${"a".repeat(64)}`,
+            },
+          ],
+        })}\n`,
+      );
+      for (const path of ["package-topology.mjs", "package-artifacts.mjs"]) {
+        await assert.rejects(
+          execFileAsync(process.execPath, [join(root, "architecture/checks", path)]),
+          (error) =>
+            error.code === 1 &&
+            error.stdout === "" &&
+            error.stderr === "ERROR module.example: unknown role unknown\n",
+        );
+      }
+    } finally {
+      await rm(root, { recursive: true, force: true });
     }
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
-});
-
+  },
+);
 
 test("installed Docs public V2 enumeration preserves consumer ownership evidence", async () => {
   const execution = await docsFindV2({
@@ -414,26 +538,35 @@ test("installed Docs public V2 enumeration preserves consumer ownership evidence
   });
   assert.equal(execution.envelope.outcome, "success");
   const documents = execution.envelope.result.documents;
-  assert.ok(documents.some(document => document.metadata.type === "adr"));
-  assert.deepEqual(ownerEvidenceFromDocsExecution(execution), documents.map(document => ({
-    id: document.id,
-    type: String(document.metadata.type ?? ""),
-    status: String(document.metadata.status ?? ""),
-    supersededBy: document.metadata.superseded_by,
-    supersedes: document.metadata.supersedes,
-    packageOwnership: document.metadata.package_ownership,
-    repositoryPath: document.repositoryPath,
-  })));
+  assert.ok(documents.some((document) => document.metadata.type === "adr"));
+  assert.deepEqual(
+    ownerEvidenceFromDocsExecution(execution),
+    documents.map((document) => ({
+      id: document.id,
+      type: String(document.metadata.type ?? ""),
+      status: String(document.metadata.status ?? ""),
+      supersededBy: document.metadata.superseded_by,
+      supersedes: document.metadata.supersedes,
+      packageOwnership: document.metadata.package_ownership,
+      repositoryPath: document.repositoryPath,
+    })),
+  );
 });
 
 test("installed Docs public V2 failures cannot become ownership evidence", async () => {
   const root = await mkdtemp(join(tmpdir(), "extension-docs-public-api-"));
   try {
-    await assert.rejects(async () => ownerEvidenceFromDocsExecution(await docsFindV2({
-      consumerRoot: root,
-      profilePath: "missing-profile.yaml",
-      query: {},
-    })), { code: "ENOENT" });
+    await assert.rejects(
+      async () =>
+        ownerEvidenceFromDocsExecution(
+          await docsFindV2({
+            consumerRoot: root,
+            profilePath: "missing-profile.yaml",
+            query: {},
+          }),
+        ),
+      { code: "ENOENT" },
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }

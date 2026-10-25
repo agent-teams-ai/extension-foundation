@@ -51,7 +51,9 @@ import {
 } from "./recovery-spike.ts";
 
 const fixtureRoot = fileURLToPath(new URL("./fixtures", import.meta.url));
-const toyPackageRoot = fileURLToPath(new URL("../../fixtures/qualification-toy-package", import.meta.url));
+const toyPackageRoot = fileURLToPath(
+  new URL("../../fixtures/qualification-toy-package", import.meta.url),
+);
 const qualificationRoot = fileURLToPath(new URL("./", import.meta.url));
 const testAuthorityScope = "tenant:test/project:test";
 const protocolAuthority = Object.freeze({
@@ -73,7 +75,9 @@ const responseAuthority = Object.freeze({
 
 function requirePlan(descriptors: readonly ModuleDescriptor[]) {
   const result = compileGraph(descriptors);
-  if (!result.ok) assert.fail(JSON.stringify(result.diagnostics));
+  if (!result.ok) {
+    assert.fail(JSON.stringify(result.diagnostics));
+  }
   return result.plan;
 }
 
@@ -120,7 +124,9 @@ function proveCdpConnection(socket: WebSocket, milliseconds: number): Promise<vo
   return new Promise((resolve, reject) => {
     let settled = false;
     const finish = (callback: () => void): void => {
-      if (settled) return;
+      if (settled) {
+        return;
+      }
       settled = true;
       clearTimeout(timer);
       socket.removeEventListener("message", onMessage);
@@ -134,7 +140,9 @@ function proveCdpConnection(socket: WebSocket, milliseconds: number): Promise<vo
           readonly id?: number;
           readonly error?: { readonly message?: string };
         };
-        if (message.id !== 1) return;
+        if (message.id !== 1) {
+          return;
+        }
         if (message.error) {
           finish(() => reject(new Error(message.error?.message ?? "BROWSER_CDP_PROBE_FAILED")));
           return;
@@ -162,10 +170,16 @@ function proveCdpConnection(socket: WebSocket, milliseconds: number): Promise<vo
   });
 }
 
-async function waitUntil(predicate: () => boolean, milliseconds: number, errorCode: string): Promise<void> {
+async function waitUntil(
+  predicate: () => boolean,
+  milliseconds: number,
+  errorCode: string,
+): Promise<void> {
   const deadline = Date.now() + milliseconds;
   while (!predicate()) {
-    if (Date.now() >= deadline) throw new Error(errorCode);
+    if (Date.now() >= deadline) {
+      throw new Error(errorCode);
+    }
     await delay(1);
   }
 }
@@ -213,14 +227,17 @@ function activationRequest(
       authorityScope: options.authorityScope ?? testAuthorityScope,
       profileLockDigest: options.profileLockDigest ?? "sha256:profile-lock-1",
       configurationFingerprint: "sha256:configuration-1",
-      productAuthorizationRevision: options.productAuthorizationRevision ?? "product-authorization-revision-1",
+      productAuthorizationRevision:
+        options.productAuthorizationRevision ?? "product-authorization-revision-1",
       grantRevision: options.grantRevision ?? "grant-revision-1",
       hostPolicyRevision: options.hostPolicyRevision ?? "host-policy-revision-1",
     },
     plan,
     hooks,
     absoluteDeadline: lifecycle.deadlineAfter(options.deadlineMs ?? 1_000),
-    ...(options.cleanupTimeoutMs === undefined ? {} : { cleanupTimeoutMs: options.cleanupTimeoutMs }),
+    ...(options.cleanupTimeoutMs === undefined
+      ? {}
+      : { cleanupTimeoutMs: options.cleanupTimeoutMs }),
   };
 }
 
@@ -233,14 +250,20 @@ test("invalid ID-DAG inputs produce deterministic diagnostics without loading ho
   const secondDuplicate = compileGraph([...duplicateDefinitions].reverse());
   assert.equal(firstDuplicate.ok, false);
   assert.deepEqual(firstDuplicate, secondDuplicate);
-  assert.deepEqual(firstDuplicate.diagnostics.map(diagnostic => diagnostic.code), ["DUPLICATE_MODULE"]);
+  assert.deepEqual(
+    firstDuplicate.diagnostics.map((diagnostic) => diagnostic.code),
+    ["DUPLICATE_MODULE"],
+  );
 
   const missingDefinitions = [{ id: "consumer", requires: ["missing"] }];
   const firstMissing = compileGraph(missingDefinitions);
   const secondMissing = compileGraph([...missingDefinitions].reverse());
   assert.equal(firstMissing.ok, false);
   assert.deepEqual(firstMissing, secondMissing);
-  assert.deepEqual(firstMissing.diagnostics.map(diagnostic => diagnostic.code), ["MISSING_PROVIDER"]);
+  assert.deepEqual(
+    firstMissing.diagnostics.map((diagnostic) => diagnostic.code),
+    ["MISSING_PROVIDER"],
+  );
 });
 
 test("graph plan uses stable batches and reverse dependency cleanup", () => {
@@ -267,55 +290,68 @@ test("compiled ID-DAG plan is deeply immutable and serializable", () => {
 });
 
 test("permutations produce the same graph plan and digest", () => {
-  fc.assert(fc.property(
-    fc.shuffledSubarray(["a", "b", "c", "d"], { minLength: 4, maxLength: 4 }),
-    order => {
-      const descriptors = new Map<string, ModuleDescriptor>([
-        ["a", { id: "a", requires: [] }],
-        ["b", { id: "b", requires: ["a"] }],
-        ["c", { id: "c", requires: ["a"] }],
-        ["d", { id: "d", requires: ["b", "c"] }],
-      ]);
-      const result = compileGraph(order.map(id => descriptors.get(id)!));
-      if (!result.ok) assert.fail(JSON.stringify(result.diagnostics));
-      assert.deepEqual(result.plan.startBatches, [["a"], ["b", "c"], ["d"]]);
-      assert.equal(result.plan.digest, requirePlan([...descriptors.values()]).digest);
-    },
-  ), { numRuns: 200, seed: 0x51a71c });
+  fc.assert(
+    fc.property(
+      fc.shuffledSubarray(["a", "b", "c", "d"], { minLength: 4, maxLength: 4 }),
+      (order) => {
+        const descriptors = new Map<string, ModuleDescriptor>([
+          ["a", { id: "a", requires: [] }],
+          ["b", { id: "b", requires: ["a"] }],
+          ["c", { id: "c", requires: ["a"] }],
+          ["d", { id: "d", requires: ["b", "c"] }],
+        ]);
+        const result = compileGraph(order.map((id) => descriptors.get(id)!));
+        if (!result.ok) {
+          assert.fail(JSON.stringify(result.diagnostics));
+        }
+        assert.deepEqual(result.plan.startBatches, [["a"], ["b", "c"], ["d"]]);
+        assert.equal(result.plan.digest, requirePlan([...descriptors.values()]).digest);
+      },
+    ),
+    { numRuns: 200, seed: 0x51a71c },
+  );
 });
 
 test("native compiler agrees with Graphlib on generated directed-graph validity", () => {
-  const arbitraryGraph = fc.array(fc.tuple(
-    fc.integer({ min: 0, max: 7 }),
-    fc.integer({ min: 0, max: 7 }),
-  ), { maxLength: 40 });
+  const arbitraryGraph = fc.array(
+    fc.tuple(fc.integer({ min: 0, max: 7 }), fc.integer({ min: 0, max: 7 })),
+    { maxLength: 40 },
+  );
 
-  fc.assert(fc.property(arbitraryGraph, pairs => {
-    const ids = Array.from({ length: 8 }, (_, index) => `n${index}`);
-    const edges = [...new Set(pairs.map(([from, to]) => `${from}:${to}`))]
-      .map(value => value.split(":").map(Number) as [number, number]);
-    const dependencies = new Map(ids.map(id => [id, [] as string[]]));
-    const oracle = new Graph({ directed: true });
-    ids.forEach(id => oracle.setNode(id));
-    for (const [provider, consumer] of edges) {
-      dependencies.get(ids[consumer]!)?.push(ids[provider]!);
-      oracle.setEdge(ids[provider]!, ids[consumer]!);
-    }
-    const result = compileGraph(ids.map(id => ({ id, requires: dependencies.get(id) ?? [] })));
-    assert.equal(result.ok, alg.isAcyclic(oracle));
-    if (!result.ok) return;
-    const plan = result.plan;
-    const oracleOrder = alg.topsort(oracle);
-    const nativePosition = new Map(plan.startOrder.map((id, index) => [id, index]));
-    const oraclePosition = new Map((oracleOrder as string[]).map((id: string, index: number) => [id, index]));
-    for (const [provider, consumer] of edges) {
-      assert.ok(nativePosition.get(ids[provider]!)! < nativePosition.get(ids[consumer]!)!);
-      assert.ok(oraclePosition.get(ids[provider]!)! < oraclePosition.get(ids[consumer]!)!);
-    }
-  }), { numRuns: 500, seed: 0x6d0d01 });
+  fc.assert(
+    fc.property(arbitraryGraph, (pairs) => {
+      const ids = Array.from({ length: 8 }, (_, index) => `n${index}`);
+      const edges = [...new Set(pairs.map(([from, to]) => `${from}:${to}`))].map(
+        (value) => value.split(":").map(Number) as [number, number],
+      );
+      const dependencies = new Map(ids.map((id) => [id, [] as string[]]));
+      const oracle = new Graph({ directed: true });
+      ids.forEach((id) => oracle.setNode(id));
+      for (const [provider, consumer] of edges) {
+        dependencies.get(ids[consumer]!)?.push(ids[provider]!);
+        oracle.setEdge(ids[provider]!, ids[consumer]!);
+      }
+      const result = compileGraph(ids.map((id) => ({ id, requires: dependencies.get(id) ?? [] })));
+      assert.equal(result.ok, alg.isAcyclic(oracle));
+      if (!result.ok) {
+        return;
+      }
+      const plan = result.plan;
+      const oracleOrder = alg.topsort(oracle);
+      const nativePosition = new Map(plan.startOrder.map((id, index) => [id, index]));
+      const oraclePosition = new Map(
+        (oracleOrder as string[]).map((id: string, index: number) => [id, index]),
+      );
+      for (const [provider, consumer] of edges) {
+        assert.ok(nativePosition.get(ids[provider]!)! < nativePosition.get(ids[consumer]!)!);
+        assert.ok(oraclePosition.get(ids[provider]!)! < oraclePosition.get(ids[consumer]!)!);
+      }
+    }),
+    { numRuns: 500, seed: 0x6d0d01 },
+  );
 });
 
-test("ID-DAG chain compilation remains stack-safe and reports non-gating timings", t => {
+test("ID-DAG chain compilation remains stack-safe and reports non-gating timings", (t) => {
   const count = 10_000;
   const chain = Array.from({ length: count }, (_, index) => ({
     id: `module-${String(index).padStart(5, "0")}`,
@@ -336,20 +372,21 @@ test("ID-DAG chain compilation remains stack-safe and reports non-gating timings
   const oneThousandSamples = measure(1_000);
   const heapBefore = process.memoryUsage().heapUsed;
   const tenThousandSamples = measure(10_000);
-  const observedHeapDeltaBytes = Math.max(
-    0,
-    process.memoryUsage().heapUsed - heapBefore,
-  );
+  const observedHeapDeltaBytes = Math.max(0, process.memoryUsage().heapUsed - heapBefore);
   t.diagnostic(
     `id-dag-chain-1k maxOfFiveMs=${oneThousandSamples.at(-1)?.toFixed(2)} id-dag-chain-10k maxOfFiveMs=${tenThousandSamples.at(-1)?.toFixed(2)} diagnosticHeapDeltaBytes=${observedHeapDeltaBytes}`,
   );
 
-  const cyclic = chain.map((descriptor, index) => index === 0
-    ? { ...descriptor, requires: [`module-${String(count - 1).padStart(5, "0")}`] }
-    : descriptor);
+  const cyclic = chain.map((descriptor, index) =>
+    index === 0
+      ? { ...descriptor, requires: [`module-${String(count - 1).padStart(5, "0")}`] }
+      : descriptor,
+  );
   const result = compileGraph(cyclic);
   assert.equal(result.ok, false);
-  if (result.ok) assert.fail("expected a cycle");
+  if (result.ok) {
+    assert.fail("expected a cycle");
+  }
   assert.equal(result.diagnostics[0]?.code, "HARD_CYCLE");
   assert.ok((result.diagnostics[0]?.dependencyPath.length ?? 0) > 1);
 });
@@ -378,17 +415,19 @@ test("qualification bindings preserve required, optional, and ordered-many seman
   const second = compileQualificationBindings([...modules].reverse(), [...bindings].reverse());
   assert.equal(first.ok, true);
   assert.deepEqual(first, second);
-  if (!first.ok) return;
+  if (!first.ok) {
+    return;
+  }
   assert.equal(Object.isFrozen(first.plan), true);
   assert.equal(Object.isFrozen(first.plan.resolved), true);
   assert.deepEqual(
-    first.plan.resolved.find(binding => binding.slot === "telemetry")?.providers,
+    first.plan.resolved.find((binding) => binding.slot === "telemetry")?.providers,
     [],
   );
   assert.deepEqual(
-    first.plan.resolved.find(binding => binding.slot === "transform")?.providers.map(
-      provider => provider.moduleId,
-    ),
+    first.plan.resolved
+      .find((binding) => binding.slot === "transform")
+      ?.providers.map((provider) => provider.moduleId),
     ["transform-b", "transform-a"],
   );
   assert.deepEqual(first.plan.graph.startBatches, [
@@ -399,11 +438,15 @@ test("qualification bindings preserve required, optional, and ordered-many seman
 });
 
 test("qualification bindings distinguish a missing optional binding from explicit unbound", () => {
-  const modules: QualificationBindingModule[] = [{
-    id: "consumer",
-    consumes: [{ slot: "telemetry", cardinality: "optional", compatibleContractVersions: ["v1"] }],
-    provides: [],
-  }];
+  const modules: QualificationBindingModule[] = [
+    {
+      id: "consumer",
+      consumes: [
+        { slot: "telemetry", cardinality: "optional", compatibleContractVersions: ["v1"] },
+      ],
+      provides: [],
+    },
+  ];
   const missing = compileQualificationBindings(modules, []);
   assert.equal(missing.ok, false);
   if (!missing.ok) {
@@ -447,13 +490,13 @@ test("qualification bindings fail closed on cardinality and compatibility errors
     { consumerId: "consumer", slot: "undeclared", providerIds: ["provider"] },
   ]);
   assert.equal(result.ok, false);
-  if (result.ok) return;
-  assert.deepEqual(result.diagnostics.map(item => item.code), [
-    "CARDINALITY_MISMATCH",
-    "INCOMPATIBLE_PROVIDER",
-    "MISSING_BINDING",
-    "UNDECLARED_BINDING",
-  ]);
+  if (result.ok) {
+    return;
+  }
+  assert.deepEqual(
+    result.diagnostics.map((item) => item.code),
+    ["CARDINALITY_MISMATCH", "INCOMPATIBLE_PROVIDER", "MISSING_BINDING", "UNDECLARED_BINDING"],
+  );
 });
 
 test("qualification bindings fail closed on duplicate demand declarations", () => {
@@ -477,7 +520,9 @@ test("qualification bindings fail closed on duplicate demand declarations", () =
   );
 
   assert.equal(result.ok, false);
-  if (result.ok) return;
+  if (result.ok) {
+    return;
+  }
   assert.deepEqual(result.diagnostics, [
     { code: "DUPLICATE_DEMAND", consumerId: "consumer", slot: "source" },
   ]);
@@ -486,9 +531,7 @@ test("qualification bindings fail closed on duplicate demand declarations", () =
 test("qualification bindings reject every provider ambiguity before activation", () => {
   const baseConsumer: QualificationBindingModule = {
     id: "consumer",
-    consumes: [
-      { slot: "source", cardinality: "required", compatibleContractVersions: ["v1"] },
-    ],
+    consumes: [{ slot: "source", cardinality: "required", compatibleContractVersions: ["v1"] }],
     provides: [],
   };
   const baseProvider: QualificationBindingModule = {
@@ -510,19 +553,18 @@ test("qualification bindings reject every provider ambiguity before activation",
       modules: [baseConsumer, baseProvider],
     },
     {
-      bindings: [
-        { consumerId: "consumer", slot: "source", providerIds: ["provider", "provider"] },
-      ],
+      bindings: [{ consumerId: "consumer", slot: "source", providerIds: ["provider", "provider"] }],
       code: "AMBIGUOUS_BINDING",
       modules: [
-        { ...baseConsumer, consumes: [{ ...baseConsumer.consumes[0]!, cardinality: "ordered-many" }] },
+        {
+          ...baseConsumer,
+          consumes: [{ ...baseConsumer.consumes[0]!, cardinality: "ordered-many" }],
+        },
         baseProvider,
       ],
     },
     {
-      bindings: [
-        { consumerId: "consumer", slot: "source", providerIds: ["provider"] },
-      ],
+      bindings: [{ consumerId: "consumer", slot: "source", providerIds: ["provider"] }],
       code: "DUPLICATE_OFFER",
       modules: [
         baseConsumer,
@@ -536,9 +578,7 @@ test("qualification bindings reject every provider ambiguity before activation",
       ],
     },
     {
-      bindings: [
-        { consumerId: "consumer", slot: "source", providerIds: ["missing"] },
-      ],
+      bindings: [{ consumerId: "consumer", slot: "source", providerIds: ["missing"] }],
       code: "MISSING_PROVIDER",
       modules: [baseConsumer],
     },
@@ -552,8 +592,10 @@ test("qualification bindings reject every provider ambiguity before activation",
     );
     assert.equal(first.ok, false);
     assert.deepEqual(first, second);
-    if (first.ok) continue;
-    assert.ok(first.diagnostics.some(diagnostic => diagnostic.code === fixture.code));
+    if (first.ok) {
+      continue;
+    }
+    assert.ok(first.diagnostics.some((diagnostic) => diagnostic.code === fixture.code));
   }
 });
 
@@ -606,16 +648,12 @@ test("qualification binding coordinates are collision-free and duplicate offers 
   const modules: readonly QualificationBindingModule[] = [
     {
       id: "a\0b",
-      consumes: [
-        { slot: "c", cardinality: "required", compatibleContractVersions: ["v1"] },
-      ],
+      consumes: [{ slot: "c", cardinality: "required", compatibleContractVersions: ["v1"] }],
       provides: [],
     },
     {
       id: "a",
-      consumes: [
-        { slot: "b\0c", cardinality: "required", compatibleContractVersions: ["v1"] },
-      ],
+      consumes: [{ slot: "b\0c", cardinality: "required", compatibleContractVersions: ["v1"] }],
       provides: [],
     },
     {
@@ -635,10 +673,15 @@ test("qualification binding coordinates are collision-free and duplicate offers 
   ];
   const compiled = compileQualificationBindings(modules, bindings);
   assert.equal(compiled.ok, true);
-  if (!compiled.ok) return;
+  if (!compiled.ok) {
+    return;
+  }
   assert.deepEqual(
-    compiled.plan.resolved.map(binding => [binding.consumerId, binding.slot]),
-    [["a", "b\0c"], ["a\0b", "c"]],
+    compiled.plan.resolved.map((binding) => [binding.consumerId, binding.slot]),
+    [
+      ["a", "b\0c"],
+      ["a\0b", "c"],
+    ],
   );
 
   const duplicateOffer = compileQualificationBindings(
@@ -671,38 +714,44 @@ test("two fixed T0 built-ins publish a detached result and release the source re
   const resource = { prepared: false, started: false, value: "" };
   let detached: Readonly<{ value: string }> | undefined;
   const hooks = new Map<string, ModuleHooks>([
-    ["synthetic-source", {
-      readiness: "probe",
-      prepare() {
-        resource.prepared = true;
+    [
+      "synthetic-source",
+      {
+        readiness: "probe",
+        prepare() {
+          resource.prepared = true;
+        },
+        start() {
+          assert.equal(resource.prepared, true);
+          resource.started = true;
+          resource.value = "source-generation-value";
+        },
+        ready() {
+          return resource.started;
+        },
+        stop() {
+          resource.prepared = false;
+          resource.started = false;
+          resource.value = "";
+        },
       },
-      start() {
-        assert.equal(resource.prepared, true);
-        resource.started = true;
-        resource.value = "source-generation-value";
+    ],
+    [
+      "synthetic-consumer",
+      {
+        readiness: "probe",
+        start() {
+          assert.equal(resource.started, true);
+          detached = Object.freeze({ value: resource.value });
+        },
+        ready() {
+          return detached?.value === "source-generation-value";
+        },
+        stop() {
+          detached = detached === undefined ? undefined : Object.freeze({ ...detached });
+        },
       },
-      ready() {
-        return resource.started;
-      },
-      stop() {
-        resource.prepared = false;
-        resource.started = false;
-        resource.value = "";
-      },
-    }],
-    ["synthetic-consumer", {
-      readiness: "probe",
-      start() {
-        assert.equal(resource.started, true);
-        detached = Object.freeze({ value: resource.value });
-      },
-      ready() {
-        return detached?.value === "source-generation-value";
-      },
-      stop() {
-        detached = detached === undefined ? undefined : Object.freeze({ ...detached });
-      },
-    }],
+    ],
   ]);
   const activation = await lifecycle.activate(
     activationRequest(lifecycle, "two-built-ins", plan, hooks),
@@ -711,7 +760,7 @@ test("two fixed T0 built-ins publish a detached result and release the source re
   assert.deepEqual(detached, { value: "source-generation-value" });
   assert.equal(Object.isFrozen(detached), true);
   assert.deepEqual(
-    activation.traces.map(trace => [trace.phase, trace.moduleId ?? "host", trace.outcome]),
+    activation.traces.map((trace) => [trace.phase, trace.moduleId ?? "host", trace.outcome]),
     [
       ["prepare", "synthetic-source", "started"],
       ["start", "synthetic-source", "started"],
@@ -736,9 +785,7 @@ test("two fixed T0 built-ins publish a detached result and release the source re
   assert.equal(resource.started, false);
   assert.deepEqual(detached, { value: "source-generation-value" });
   assert.deepEqual(
-    replacement.traces
-      .filter(trace => trace.phase === "stop")
-      .map(trace => trace.moduleId),
+    replacement.traces.filter((trace) => trace.phase === "stop").map((trace) => trace.moduleId),
     ["synthetic-consumer", "synthetic-source"],
   );
 });
@@ -750,15 +797,31 @@ test("shutdown drains admitted work and stops dependencies in reverse order", as
     { id: "consumer", requires: ["source"] },
   ]);
   const stopped: string[] = [];
-  const activation = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "shutdown-source-consumer",
-    plan,
-    new Map([
-      ["source", inertHooks({ stop: () => { stopped.push("source"); } })],
-      ["consumer", inertHooks({ stop: () => { stopped.push("consumer"); } })],
-    ]),
-  ));
+  const activation = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "shutdown-source-consumer",
+      plan,
+      new Map([
+        [
+          "source",
+          inertHooks({
+            stop: () => {
+              stopped.push("source");
+            },
+          }),
+        ],
+        [
+          "consumer",
+          inertHooks({
+            stop: () => {
+              stopped.push("consumer");
+            },
+          }),
+        ],
+      ]),
+    ),
+  );
   assert.equal(activation.ok, true);
   const admitted = lifecycle.acquireInvocation();
 
@@ -767,15 +830,18 @@ test("shutdown drains admitted work and stops dependencies in reverse order", as
   assert.equal(first, concurrent);
   assert.throws(() => lifecycle.acquireInvocation(), /NO_ACTIVE_GENERATION/);
   assert.throws(
-    () => lifecycle.activate(activationRequest(
-      lifecycle,
-      "activation-during-shutdown",
-      plan,
-      new Map([
-        ["source", inertHooks()],
-        ["consumer", inertHooks()],
-      ]),
-    )),
+    () =>
+      lifecycle.activate(
+        activationRequest(
+          lifecycle,
+          "activation-during-shutdown",
+          plan,
+          new Map([
+            ["source", inertHooks()],
+            ["consumer", inertHooks()],
+          ]),
+        ),
+      ),
     /LIFECYCLE_SHUTTING_DOWN/,
   );
   lifecycle.assertInMemoryFence(admitted);
@@ -785,7 +851,7 @@ test("shutdown drains admitted work and stops dependencies in reverse order", as
   assert.equal(result.ok, true);
   assert.equal(result.termination, "proven");
   assert.deepEqual(
-    result.traces.map(trace => [trace.phase, trace.moduleId ?? "host", trace.outcome]),
+    result.traces.map((trace) => [trace.phase, trace.moduleId ?? "host", trace.outcome]),
     [
       ["drain", "host", "confirmed"],
       ["stop", "consumer", "confirmed"],
@@ -802,15 +868,18 @@ test("shutdown drains admitted work and stops dependencies in reverse order", as
   assert.equal(replay.termination, "proven");
   assert.equal(replay, result);
   assert.throws(
-    () => lifecycle.activate(activationRequest(
-      lifecycle,
-      "activation-after-shutdown",
-      plan,
-      new Map([
-        ["source", inertHooks()],
-        ["consumer", inertHooks()],
-      ]),
-    )),
+    () =>
+      lifecycle.activate(
+        activationRequest(
+          lifecycle,
+          "activation-after-shutdown",
+          plan,
+          new Map([
+            ["source", inertHooks()],
+            ["consumer", inertHooks()],
+          ]),
+        ),
+      ),
     /LIFECYCLE_SHUTTING_DOWN/,
   );
 });
@@ -827,19 +896,27 @@ test("shutdown single-flight is reserved before an injected clock can reenter", 
       }
       return performance.now();
     },
-    sleep: milliseconds => delay(milliseconds),
+    sleep: (milliseconds) => delay(milliseconds),
   });
   const plan = requirePlan([{ id: "module", requires: [] }]);
   let stops = 0;
-  await lifecycle.activate(activationRequest(
-    lifecycle,
-    "shutdown-reentrant-activation",
-    plan,
-    new Map([[
-      "module",
-      inertHooks({ stop: () => { stops += 1; } }),
-    ]]),
-  ));
+  await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "shutdown-reentrant-activation",
+      plan,
+      new Map([
+        [
+          "module",
+          inertHooks({
+            stop: () => {
+              stops += 1;
+            },
+          }),
+        ],
+      ]),
+    ),
+  );
 
   armed = true;
   const outer = lifecycle.shutdown(100);
@@ -929,18 +1006,23 @@ test("one hundred concurrent starts share one activation and one cutover", async
   const plan = requirePlan([{ id: "module", requires: [] }]);
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   let starts = 0;
-  const hooks = new Map<string, ModuleHooks>([["module", inertHooks({
-    async start() {
-      starts += 1;
-      await delay(5);
-    },
-  })]]);
+  const hooks = new Map<string, ModuleHooks>([
+    [
+      "module",
+      inertHooks({
+        async start() {
+          starts += 1;
+          await delay(5);
+        },
+      }),
+    ],
+  ]);
   const request = activationRequest(lifecycle, "activation-single-flight", plan, hooks);
   const calls = Array.from({ length: 100 }, () => lifecycle.activate(request));
   const results = await Promise.all(calls);
   assert.equal(starts, 1);
   assert.equal(lifecycle.cutovers, 1);
-  assert.equal(new Set(results.map(result => result.generation)).size, 1);
+  assert.equal(new Set(results.map((result) => result.generation)).size, 1);
 });
 
 test("single-flight is reserved before an injected clock can reenter activation", async () => {
@@ -955,7 +1037,7 @@ test("single-flight is reserved before an injected clock can reenter activation"
       }
       return performance.now();
     },
-    sleep: milliseconds => delay(milliseconds),
+    sleep: (milliseconds) => delay(milliseconds),
   });
   const plan = requirePlan([{ id: "module", requires: [] }]);
   let starts = 0;
@@ -963,7 +1045,16 @@ test("single-flight is reserved before an injected clock can reenter activation"
     lifecycle,
     "reentrant-single-flight",
     plan,
-    new Map([["module", inertHooks({ start: () => { starts += 1; } })]]),
+    new Map([
+      [
+        "module",
+        inertHooks({
+          start: () => {
+            starts += 1;
+          },
+        }),
+      ],
+    ]),
   );
   armed = true;
   const outer = lifecycle.activate(request);
@@ -982,7 +1073,17 @@ test("a waiter deadline detaches without cancelling the shared activation", asyn
     lifecycle,
     "waiter-detach",
     plan,
-    new Map([["module", inertHooks({ start: async () => { starts += 1; await delay(20); } })]]),
+    new Map([
+      [
+        "module",
+        inertHooks({
+          start: async () => {
+            starts += 1;
+            await delay(20);
+          },
+        }),
+      ],
+    ]),
   );
   const impatient = lifecycle.activate(request, lifecycle.deadlineAfter(3));
   const patient = lifecycle.activate(request, lifecycle.deadlineAfter(250));
@@ -999,15 +1100,20 @@ test("a waiter deadline remains fail-closed after event-loop blocking", async ()
     lifecycle,
     "waiter-event-loop-block",
     plan,
-    new Map([["module", inertHooks({
-      start: () => {
-        starts += 1;
-        const blockedUntil = performance.now() + 50;
-        while (performance.now() < blockedUntil) {
-          // Synchronous module code can delay the timer queue beyond the waiter deadline.
-        }
-      },
-    })]]),
+    new Map([
+      [
+        "module",
+        inertHooks({
+          start: () => {
+            starts += 1;
+            const blockedUntil = performance.now() + 50;
+            while (performance.now() < blockedUntil) {
+              // Synchronous module code can delay the timer queue beyond the waiter deadline.
+            }
+          },
+        }),
+      ],
+    ]),
   );
 
   const impatient = lifecycle.activate(request, lifecycle.deadlineAfter(5));
@@ -1025,7 +1131,17 @@ test("a cancelled waiter detaches without cancelling the shared activation", asy
     lifecycle,
     "waiter-cancel",
     plan,
-    new Map([["module", inertHooks({ start: async () => { starts += 1; await delay(20); } })]]),
+    new Map([
+      [
+        "module",
+        inertHooks({
+          start: async () => {
+            starts += 1;
+            await delay(20);
+          },
+        }),
+      ],
+    ]),
   );
   const controller = new AbortController();
   const cancelled = lifecycle.activate(request, { signal: controller.signal });
@@ -1052,10 +1168,19 @@ test("same operation with changed authority inputs is an idempotency conflict", 
   });
   assert.throws(() => lifecycle.activate(changedSource), /ACTIVATION_IDEMPOTENCY_CONFLICT/);
 
-  const changedProductAuthorization = activationRequest(lifecycle, "activation-conflict", plan, hooks, {
-    productAuthorizationRevision: "product-authorization-revision-2",
-  });
-  assert.throws(() => lifecycle.activate(changedProductAuthorization), /ACTIVATION_IDEMPOTENCY_CONFLICT/);
+  const changedProductAuthorization = activationRequest(
+    lifecycle,
+    "activation-conflict",
+    plan,
+    hooks,
+    {
+      productAuthorizationRevision: "product-authorization-revision-2",
+    },
+  );
+  assert.throws(
+    () => lifecycle.activate(changedProductAuthorization),
+    /ACTIVATION_IDEMPOTENCY_CONFLICT/,
+  );
 
   const changedGrant = activationRequest(lifecycle, "activation-conflict", plan, hooks, {
     grantRevision: "grant-revision-2",
@@ -1077,13 +1202,26 @@ test("lifecycle is bound to one authority scope and snapshots hook bindings", as
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const firstPlan = requirePlan([{ id: "first", requires: [] }]);
   const stopped: string[] = [];
-  const mutableHooks = new Map<string, ModuleHooks>([[
-    "first",
-    inertHooks({ stop: () => { stopped.push("original"); } }),
-  ]]);
+  const mutableHooks = new Map<string, ModuleHooks>([
+    [
+      "first",
+      inertHooks({
+        stop: () => {
+          stopped.push("original");
+        },
+      }),
+    ],
+  ]);
   const first = activationRequest(lifecycle, "scope-first", firstPlan, mutableHooks);
   await lifecycle.activate(first);
-  mutableHooks.set("first", inertHooks({ stop: () => { stopped.push("mutated"); } }));
+  mutableHooks.set(
+    "first",
+    inertHooks({
+      stop: () => {
+        stopped.push("mutated");
+      },
+    }),
+  );
 
   const wrongScope = activationRequest(lifecycle, "wrong-scope", firstPlan, mutableHooks, {
     authorityScope: "tenant:other/project:other",
@@ -1091,12 +1229,9 @@ test("lifecycle is bound to one authority scope and snapshots hook bindings", as
   assert.throws(() => lifecycle.activate(wrongScope), /AUTHORITY_SCOPE_MISMATCH/);
 
   const secondPlan = requirePlan([{ id: "second", requires: [] }]);
-  await lifecycle.activate(activationRequest(
-    lifecycle,
-    "scope-second",
-    secondPlan,
-    new Map([["second", inertHooks()]]),
-  ));
+  await lifecycle.activate(
+    activationRequest(lifecycle, "scope-second", secondPlan, new Map([["second", inertHooks()]])),
+  );
   assert.deepEqual(stopped, ["original"]);
 });
 
@@ -1104,20 +1239,16 @@ test("invocation handles are scope-bound in-memory capabilities, not structural 
   const plan = requirePlan([{ id: "module", requires: [] }]);
   const first = new GenerationLifecycle("tenant:first/project:first");
   const second = new GenerationLifecycle("tenant:second/project:second");
-  await first.activate(activationRequest(
-    first,
-    "first-scope",
-    plan,
-    new Map([["module", inertHooks()]]),
-    { authorityScope: "tenant:first/project:first" },
-  ));
-  await second.activate(activationRequest(
-    second,
-    "second-scope",
-    plan,
-    new Map([["module", inertHooks()]]),
-    { authorityScope: "tenant:second/project:second" },
-  ));
+  await first.activate(
+    activationRequest(first, "first-scope", plan, new Map([["module", inertHooks()]]), {
+      authorityScope: "tenant:first/project:first",
+    }),
+  );
+  await second.activate(
+    activationRequest(second, "second-scope", plan, new Map([["module", inertHooks()]]), {
+      authorityScope: "tenant:second/project:second",
+    }),
+  );
   const firstHandle = first.acquireInvocation();
   const secondHandle = second.acquireInvocation();
   first.assertInMemoryFence(firstHandle);
@@ -1132,7 +1263,9 @@ test("same completed operation returns its retained result without a second star
   let now = 0;
   const lifecycle = new GenerationLifecycle(testAuthorityScope, {
     now: () => now,
-    sleep: async milliseconds => { now += milliseconds; },
+    sleep: async (milliseconds) => {
+      now += milliseconds;
+    },
   });
   const plan = requirePlan([{ id: "module", requires: [] }]);
   let starts = 0;
@@ -1140,7 +1273,16 @@ test("same completed operation returns its retained result without a second star
     lifecycle,
     "activation-replay",
     plan,
-    new Map([["module", inertHooks({ start: () => { starts += 1; } })]]),
+    new Map([
+      [
+        "module",
+        inertHooks({
+          start: () => {
+            starts += 1;
+          },
+        }),
+      ],
+    ]),
   );
   const first = await lifecycle.activate(request);
   now = request.absoluteDeadline + 1_000;
@@ -1170,31 +1312,33 @@ test("different operation identities are separate candidates and only one publis
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "candidate", requires: [] }]);
   let starts = 0;
-  const hooks = new Map([["candidate", inertHooks({
-    start: async () => {
-      starts += 1;
-      await delay(10);
-    },
-  })]]);
+  const hooks = new Map([
+    [
+      "candidate",
+      inertHooks({
+        start: async () => {
+          starts += 1;
+          await delay(10);
+        },
+      }),
+    ],
+  ]);
   const expectedActiveGeneration = lifecycle.activeGeneration;
-  const first = activationRequest(
-    lifecycle,
-    "candidate-first",
-    plan,
-    hooks,
-    { expectedActiveGeneration },
-  );
-  const second = activationRequest(
-    lifecycle,
-    "candidate-second",
-    plan,
-    hooks,
-    { expectedActiveGeneration },
-  );
+  const first = activationRequest(lifecycle, "candidate-first", plan, hooks, {
+    expectedActiveGeneration,
+  });
+  const second = activationRequest(lifecycle, "candidate-second", plan, hooks, {
+    expectedActiveGeneration,
+  });
   const results = await Promise.all([lifecycle.activate(first), lifecycle.activate(second)]);
   assert.equal(starts, 2, "distinct operation identities were incorrectly deduplicated");
-  assert.equal(results.filter(result => result.ok).length, 1);
-  assert.equal(results.filter(result => result.errors.some(error => error.message === "STALE_ACTIVE_GENERATION")).length, 1);
+  assert.equal(results.filter((result) => result.ok).length, 1);
+  assert.equal(
+    results.filter((result) =>
+      result.errors.some((error) => error.message === "STALE_ACTIVE_GENERATION"),
+    ).length,
+    1,
+  );
   assert.equal(lifecycle.cutovers, 1);
 });
 
@@ -1203,57 +1347,89 @@ test("activation snapshots caller-owned identity before publication races", asyn
   const plan = requirePlan([{ id: "candidate", requires: [] }]);
   let releaseStart!: () => void;
   let reportStarted!: () => void;
-  const startGate = new Promise<void>(resolve => { releaseStart = resolve; });
-  const started = new Promise<void>(resolve => { reportStarted = resolve; });
+  const startGate = new Promise<void>((resolve) => {
+    releaseStart = resolve;
+  });
+  const started = new Promise<void>((resolve) => {
+    reportStarted = resolve;
+  });
   const mutableRequest = activationRequest(
     lifecycle,
     "mutable-candidate",
     plan,
-    new Map([["candidate", inertHooks({ start: async () => { reportStarted(); await startGate; } })]]),
+    new Map([
+      [
+        "candidate",
+        inertHooks({
+          start: async () => {
+            reportStarted();
+            await startGate;
+          },
+        }),
+      ],
+    ]),
   );
   const first = lifecycle.activate(mutableRequest);
   await started;
-  const winner = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "race-winner",
-    plan,
-    new Map([["candidate", inertHooks()]]),
-  ));
-  (mutableRequest.identity as { expectedActiveGeneration: number }).expectedActiveGeneration = winner.generation;
+  const winner = await lifecycle.activate(
+    activationRequest(lifecycle, "race-winner", plan, new Map([["candidate", inertHooks()]])),
+  );
+  (mutableRequest.identity as { expectedActiveGeneration: number }).expectedActiveGeneration =
+    winner.generation;
   releaseStart();
   const stale = await first;
   assert.equal(stale.ok, false);
-  assert.ok(stale.errors.some(error => error.message === "STALE_ACTIVE_GENERATION"));
+  assert.ok(stale.errors.some((error) => error.message === "STALE_ACTIVE_GENERATION"));
   assert.equal(lifecycle.activeGeneration, winner.generation);
   assert.equal(lifecycle.cutovers, 1);
 });
 
 test("activation snapshots and canonically revalidates the compiled plan before effects", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
-  const mutablePlan = structuredClone(requirePlan([
-    { id: "provider", requires: [] },
-    { id: "consumer", requires: ["provider"] },
-  ]));
-  let releasePrepare!: () => void;
-  const prepareReleased = new Promise<void>(resolve => { releasePrepare = resolve; });
-  let providerPreparing!: () => void;
-  const providerStartedPreparing = new Promise<void>(resolve => { providerPreparing = resolve; });
-  const starts: string[] = [];
-  const activation = lifecycle.activate(activationRequest(
-    lifecycle,
-    "plan-snapshot",
-    mutablePlan,
-    new Map<string, ModuleHooks>([
-      ["provider", inertHooks({
-        prepare: async () => {
-          providerPreparing();
-          await prepareReleased;
-        },
-        start: () => { starts.push("provider"); },
-      })],
-      ["consumer", inertHooks({ start: () => { starts.push("consumer"); } })],
+  const mutablePlan = structuredClone(
+    requirePlan([
+      { id: "provider", requires: [] },
+      { id: "consumer", requires: ["provider"] },
     ]),
-  ));
+  );
+  let releasePrepare!: () => void;
+  const prepareReleased = new Promise<void>((resolve) => {
+    releasePrepare = resolve;
+  });
+  let providerPreparing!: () => void;
+  const providerStartedPreparing = new Promise<void>((resolve) => {
+    providerPreparing = resolve;
+  });
+  const starts: string[] = [];
+  const activation = lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "plan-snapshot",
+      mutablePlan,
+      new Map<string, ModuleHooks>([
+        [
+          "provider",
+          inertHooks({
+            prepare: async () => {
+              providerPreparing();
+              await prepareReleased;
+            },
+            start: () => {
+              starts.push("provider");
+            },
+          }),
+        ],
+        [
+          "consumer",
+          inertHooks({
+            start: () => {
+              starts.push("consumer");
+            },
+          }),
+        ],
+      ]),
+    ),
+  );
   await providerStartedPreparing;
   (mutablePlan.startBatches as string[][]).splice(1);
   (mutablePlan.stopBatches as string[][]).splice(0, 1);
@@ -1264,21 +1440,35 @@ test("activation snapshots and canonically revalidates the compiled plan before 
 
   const nonCanonical = structuredClone(requirePlan([{ id: "only", requires: [] }]));
   (nonCanonical.startOrder as string[]).push("shadow");
-  assert.throws(() => lifecycle.activate(activationRequest(
-    lifecycle,
-    "non-canonical-plan",
-    nonCanonical,
-    new Map([["only", inertHooks()]]),
-  )), /NON_CANONICAL_COMPILED_PLAN/);
+  assert.throws(
+    () =>
+      lifecycle.activate(
+        activationRequest(
+          lifecycle,
+          "non-canonical-plan",
+          nonCanonical,
+          new Map([["only", inertHooks()]]),
+        ),
+      ),
+    /NON_CANONICAL_COMPILED_PLAN/,
+  );
 
-  const unknownField = structuredClone(requirePlan([{ id: "only", requires: [] }])) as CompiledGraph & { shadow?: string };
+  const unknownField = structuredClone(
+    requirePlan([{ id: "only", requires: [] }]),
+  ) as CompiledGraph & { shadow?: string };
   unknownField.shadow = "not-canonical";
-  assert.throws(() => lifecycle.activate(activationRequest(
-    lifecycle,
-    "unknown-plan-field",
-    unknownField,
-    new Map([["only", inertHooks()]]),
-  )), /NON_CANONICAL_COMPILED_PLAN/);
+  assert.throws(
+    () =>
+      lifecycle.activate(
+        activationRequest(
+          lifecycle,
+          "unknown-plan-field",
+          unknownField,
+          new Map([["only", inertHooks()]]),
+        ),
+      ),
+    /NON_CANONICAL_COMPILED_PLAN/,
+  );
 
   const accessorPlan = structuredClone(requirePlan([{ id: "only", requires: [] }]));
   let accessorEffects = 0;
@@ -1289,24 +1479,35 @@ test("activation snapshots and canonically revalidates the compiled plan before 
       return "sha256:untrusted";
     },
   });
-  assert.throws(() => lifecycle.activate(activationRequest(
-    lifecycle,
-    "accessor-plan",
-    accessorPlan,
-    new Map([["only", inertHooks()]]),
-  )), /INVALID_COMPILED_PLAN/);
+  assert.throws(
+    () =>
+      lifecycle.activate(
+        activationRequest(
+          lifecycle,
+          "accessor-plan",
+          accessorPlan,
+          new Map([["only", inertHooks()]]),
+        ),
+      ),
+    /INVALID_COMPILED_PLAN/,
+  );
   assert.equal(accessorEffects, 0);
 });
 
 test("activation snapshots identity accessors once before validating them", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "candidate", requires: [] }]);
-  const request = activationRequest(lifecycle, "identity-accessor", plan, new Map([["candidate", inertHooks()]]));
+  const request = activationRequest(
+    lifecycle,
+    "identity-accessor",
+    plan,
+    new Map([["candidate", inertHooks()]]),
+  );
   let authorityReads = 0;
   Object.defineProperty(request.identity, "authorityScope", {
     enumerable: true,
     configurable: true,
-    get: () => ++authorityReads === 1 ? testAuthorityScope : "tenant:other/project:other",
+    get: () => (++authorityReads === 1 ? testAuthorityScope : "tenant:other/project:other"),
   });
   const result = await lifecycle.activate(request);
   assert.equal(result.ok, true);
@@ -1317,43 +1518,57 @@ test("hook contexts are runtime-immutable across activation and cleanup", async 
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const first = requirePlan([{ id: "first", requires: [] }]);
   const observed: Array<readonly [string, number, string]> = [];
-  const assertFrozenContext = (phase: string) => (context: Parameters<NonNullable<ModuleHooks["start"]>>[0]): void => {
-    observed.push([phase, context.generation, context.phase]);
-    assert.equal(Object.isFrozen(context), true);
-    assert.throws(() => {
-      (context as { generation: number }).generation = 999;
-    }, TypeError);
-  };
-  await lifecycle.activate(activationRequest(
-    lifecycle,
-    "immutable-context-first",
-    first,
-    new Map([["first", inertHooks({
-      start: assertFrozenContext("start"),
-      stop: assertFrozenContext("stop"),
-    })]]),
-  ));
+  const assertFrozenContext =
+    (phase: string) =>
+    (context: Parameters<NonNullable<ModuleHooks["start"]>>[0]): void => {
+      observed.push([phase, context.generation, context.phase]);
+      assert.equal(Object.isFrozen(context), true);
+      assert.throws(() => {
+        (context as { generation: number }).generation = 999;
+      }, TypeError);
+    };
+  await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "immutable-context-first",
+      first,
+      new Map([
+        [
+          "first",
+          inertHooks({
+            start: assertFrozenContext("start"),
+            stop: assertFrozenContext("stop"),
+          }),
+        ],
+      ]),
+    ),
+  );
   const second = requirePlan([{ id: "second", requires: [] }]);
-  await lifecycle.activate(activationRequest(
-    lifecycle,
-    "immutable-context-second",
-    second,
-    new Map([["second", inertHooks()]]),
-  ));
-  assert.deepEqual(observed.map(item => item[0]), ["start", "stop"]);
+  await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "immutable-context-second",
+      second,
+      new Map([["second", inertHooks()]]),
+    ),
+  );
+  assert.deepEqual(
+    observed.map((item) => item[0]),
+    ["start", "stop"],
+  );
   assert.equal(observed[0]?.[1], observed[1]?.[1]);
-  assert.deepEqual(observed.map(item => item[2]), ["activation", "cleanup"]);
+  assert.deepEqual(
+    observed.map((item) => item[2]),
+    ["activation", "cleanup"],
+  );
 });
 
 test("readiness blocks dependents and failed candidate leaves routing unchanged", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const base = requirePlan([{ id: "base", requires: [] }]);
-  const baseResult = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "base-activation",
-    base,
-    new Map([["base", inertHooks()]]),
-  ));
+  const baseResult = await lifecycle.activate(
+    activationRequest(lifecycle, "base-activation", base, new Map([["base", inertHooks()]])),
+  );
   assert.equal(baseResult.ok, true);
   const previous = lifecycle.activeGeneration;
 
@@ -1362,15 +1577,24 @@ test("readiness blocks dependents and failed candidate leaves routing unchanged"
     { id: "consumer", requires: ["provider"] },
   ]);
   let consumerStarts = 0;
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "candidate-not-ready",
-    candidate,
-    new Map<string, ModuleHooks>([
-      ["provider", { readiness: "probe", ready: () => false }],
-      ["consumer", inertHooks({ start: () => { consumerStarts += 1; } })],
-    ]),
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "candidate-not-ready",
+      candidate,
+      new Map<string, ModuleHooks>([
+        ["provider", { readiness: "probe", ready: () => false }],
+        [
+          "consumer",
+          inertHooks({
+            start: () => {
+              consumerStarts += 1;
+            },
+          }),
+        ],
+      ]),
+    ),
+  );
   assert.equal(result.ok, false);
   assert.equal(consumerStarts, 0);
   assert.equal(lifecycle.activeGeneration, previous);
@@ -1383,15 +1607,17 @@ test("readiness is fail-closed for unknown discriminators and non-boolean probe 
   ] as const) {
     const lifecycle = new GenerationLifecycle(testAuthorityScope);
     const plan = requirePlan([{ id: "candidate", requires: [] }]);
-    const result = await lifecycle.activate(activationRequest(
-      lifecycle,
-      operationId,
-      plan,
-      new Map([["candidate", hooks as unknown as ModuleHooks]]),
-    ));
+    const result = await lifecycle.activate(
+      activationRequest(
+        lifecycle,
+        operationId,
+        plan,
+        new Map([["candidate", hooks as unknown as ModuleHooks]]),
+      ),
+    );
     assert.equal(result.ok, false);
     assert.equal(lifecycle.activeGeneration, 0);
-    assert.ok(result.errors.some(error => /INVALID_READINESS|NOT_READY/.test(error.message)));
+    assert.ok(result.errors.some((error) => /INVALID_READINESS|NOT_READY/.test(error.message)));
   }
 });
 
@@ -1399,45 +1625,66 @@ test("readiness shape is validated before prepare or start effects", async () =>
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "candidate", requires: [] }]);
   let effects = 0;
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "invalid-readiness-preflight",
-    plan,
-    new Map([[
-      "candidate",
-      {
-        readiness: "unknown",
-        prepare: () => { effects += 1; },
-        start: () => { effects += 1; },
-      } as unknown as ModuleHooks,
-    ]]),
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "invalid-readiness-preflight",
+      plan,
+      new Map([
+        [
+          "candidate",
+          {
+            readiness: "unknown",
+            prepare: () => {
+              effects += 1;
+            },
+            start: () => {
+              effects += 1;
+            },
+          } as unknown as ModuleHooks,
+        ],
+      ]),
+    ),
+  );
   assert.equal(result.ok, false);
   assert.equal(effects, 0);
-  assert.deepEqual(result.errors, [{
-    message: "INVALID_READINESS:candidate",
-    moduleId: "candidate",
-    phase: "preflight",
-  }]);
+  assert.deepEqual(result.errors, [
+    {
+      message: "INVALID_READINESS:candidate",
+      moduleId: "candidate",
+      phase: "preflight",
+    },
+  ]);
 });
 
 test("effectful module without stop evidence cannot claim proven termination", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "candidate", requires: [] }]);
   let lateEffects = 0;
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "missing-stop-evidence",
-    plan,
-    new Map([["candidate", {
-      readiness: "probe",
-      start: () => { setTimeout(() => { lateEffects += 1; }, 25); },
-      ready: () => false,
-    }]]),
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "missing-stop-evidence",
+      plan,
+      new Map([
+        [
+          "candidate",
+          {
+            readiness: "probe",
+            start: () => {
+              setTimeout(() => {
+                lateEffects += 1;
+              }, 25);
+            },
+            ready: () => false,
+          },
+        ],
+      ]),
+    ),
+  );
   assert.equal(result.ok, false);
   assert.equal(result.termination, "termination_unproven");
-  assert.ok(result.errors.some(error => error.message === "MISSING_STOP_EVIDENCE:candidate"));
+  assert.ok(result.errors.some((error) => error.message === "MISSING_STOP_EVIDENCE:candidate"));
   await delay(35);
   assert.equal(lateEffects, 1);
 });
@@ -1446,33 +1693,41 @@ test("readiness-only effects without stop evidence cannot claim proven replaceme
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const oldPlan = requirePlan([{ id: "old", requires: [] }]);
   let lateEffects = 0;
-  const initial = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "readiness-only-old",
-    oldPlan,
-    new Map([[
-      "old",
-      {
-        readiness: "probe",
-        ready: () => {
-          setTimeout(() => { lateEffects += 1; }, 25);
-          return true;
-        },
-      },
-    ]]),
-  ));
+  const initial = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "readiness-only-old",
+      oldPlan,
+      new Map([
+        [
+          "old",
+          {
+            readiness: "probe",
+            ready: () => {
+              setTimeout(() => {
+                lateEffects += 1;
+              }, 25);
+              return true;
+            },
+          },
+        ],
+      ]),
+    ),
+  );
   assert.equal(initial.ok, true);
 
   const replacementPlan = requirePlan([{ id: "replacement", requires: [] }]);
-  const replacement = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "readiness-only-replacement",
-    replacementPlan,
-    new Map([["replacement", inertHooks()]]),
-  ));
+  const replacement = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "readiness-only-replacement",
+      replacementPlan,
+      new Map([["replacement", inertHooks()]]),
+    ),
+  );
   assert.equal(replacement.ok, true);
   assert.equal(replacement.termination, "termination_unproven");
-  assert.ok(replacement.errors.some(error => error.message === "MISSING_STOP_EVIDENCE:old"));
+  assert.ok(replacement.errors.some((error) => error.message === "MISSING_STOP_EVIDENCE:old"));
   await delay(35);
   assert.equal(lateEffects, 1);
 });
@@ -1481,153 +1736,210 @@ test("failed readiness-only effects without stop evidence cannot claim proven te
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "candidate", requires: [] }]);
   let lateEffects = 0;
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "readiness-only-failure",
-    plan,
-    new Map([[
-      "candidate",
-      {
-        readiness: "probe",
-        ready: () => {
-          setTimeout(() => { lateEffects += 1; }, 25);
-          return false;
-        },
-      },
-    ]]),
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "readiness-only-failure",
+      plan,
+      new Map([
+        [
+          "candidate",
+          {
+            readiness: "probe",
+            ready: () => {
+              setTimeout(() => {
+                lateEffects += 1;
+              }, 25);
+              return false;
+            },
+          },
+        ],
+      ]),
+    ),
+  );
   assert.equal(result.ok, false);
   assert.equal(result.termination, "termination_unproven");
-  assert.ok(result.errors.some(error => error.message === "MISSING_STOP_EVIDENCE:candidate"));
+  assert.ok(result.errors.some((error) => error.message === "MISSING_STOP_EVIDENCE:candidate"));
   await delay(35);
   assert.equal(lateEffects, 1);
 });
 
-test("absolute deadline prevents late publication and cleanup is bounded", { timeout: 2_000 }, async () => {
-  const lifecycle = new GenerationLifecycle(testAuthorityScope);
-  const plan = requirePlan([{ id: "slow", requires: [] }]);
-  const entered = Promise.withResolvers<void>();
-  const release = Promise.withResolvers<void>();
-  const activation = lifecycle.activate(activationRequest(
-    lifecycle,
-    "slow-timeout",
-    plan,
-    new Map([["slow", inertHooks({
-      start: async () => {
-        entered.resolve();
-        await release.promise;
-      },
-      stop: async () => new Promise(() => undefined),
-    })]]),
-    { deadlineMs: 100, cleanupTimeoutMs: 20 },
-  ));
-  try {
-    await Promise.race([entered.promise, rejectAfter(500, () => new Error("START_NOT_ENTERED"))]);
-    const result = await activation;
-    assert.equal(result.ok, false);
-    assert.equal(result.termination, "termination_unproven");
-    assert.equal(lifecycle.activeGeneration, 0);
-    assert.ok(result.errors.some(error => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
-    assert.ok(result.errors.some(error => error.message === "IN_FLIGHT_HOOK_UNSETTLED:slow"));
-  } finally {
-    release.resolve();
-  }
-});
+test(
+  "absolute deadline prevents late publication and cleanup is bounded",
+  { timeout: 2_000 },
+  async () => {
+    const lifecycle = new GenerationLifecycle(testAuthorityScope);
+    const plan = requirePlan([{ id: "slow", requires: [] }]);
+    const entered = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const activation = lifecycle.activate(
+      activationRequest(
+        lifecycle,
+        "slow-timeout",
+        plan,
+        new Map([
+          [
+            "slow",
+            inertHooks({
+              start: async () => {
+                entered.resolve();
+                await release.promise;
+              },
+              stop: async () => new Promise(() => undefined),
+            }),
+          ],
+        ]),
+        { deadlineMs: 100, cleanupTimeoutMs: 20 },
+      ),
+    );
+    try {
+      await Promise.race([entered.promise, rejectAfter(500, () => new Error("START_NOT_ENTERED"))]);
+      const result = await activation;
+      assert.equal(result.ok, false);
+      assert.equal(result.termination, "termination_unproven");
+      assert.equal(lifecycle.activeGeneration, 0);
+      assert.ok(result.errors.some((error) => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
+      assert.ok(result.errors.some((error) => error.message === "IN_FLIGHT_HOOK_UNSETTLED:slow"));
+    } finally {
+      release.resolve();
+    }
+  },
+);
 
 test("absolute deadline wins when blocking module code throws after expiry", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "blocking", requires: [] }]);
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "blocking-error-after-deadline",
-    plan,
-    new Map([["blocking", inertHooks({
-      start: () => {
-        const blockedUntil = performance.now() + 50;
-        while (performance.now() < blockedUntil) {
-          // Force promise settlement ahead of the overdue timer callback.
-        }
-        throw new Error("START_FAILED_AFTER_DEADLINE");
-      },
-      stop: () => undefined,
-    })]]),
-    { deadlineMs: 5, cleanupTimeoutMs: 20 },
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "blocking-error-after-deadline",
+      plan,
+      new Map([
+        [
+          "blocking",
+          inertHooks({
+            start: () => {
+              const blockedUntil = performance.now() + 50;
+              while (performance.now() < blockedUntil) {
+                // Force promise settlement ahead of the overdue timer callback.
+              }
+              throw new Error("START_FAILED_AFTER_DEADLINE");
+            },
+            stop: () => undefined,
+          }),
+        ],
+      ]),
+      { deadlineMs: 5, cleanupTimeoutMs: 20 },
+    ),
+  );
 
   assert.equal(result.ok, false);
   assert.equal(lifecycle.activeGeneration, 0);
-  assert.ok(result.errors.some(error => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
-  assert.ok(!result.errors.some(error => error.message === "START_FAILED_AFTER_DEADLINE"));
+  assert.ok(result.errors.some((error) => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
+  assert.ok(!result.errors.some((error) => error.message === "START_FAILED_AFTER_DEADLINE"));
 });
 
-test("a queued sibling cannot begin its hook after another hook blocks past the deadline", { timeout: 2_000 }, async () => {
-  const lifecycle = new GenerationLifecycle(testAuthorityScope);
-  const plan = requirePlan([
-    { id: "a-blocking", requires: [] },
-    { id: "b-late", requires: [] },
-  ]);
-  let lateStarts = 0;
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "queued-hook-deadline",
-    plan,
-    new Map<string, ModuleHooks>([
-      ["a-blocking", inertHooks({
-        start: () => {
-          const blockedUntil = performance.now() + 50;
-          while (performance.now() < blockedUntil) {
-            // Hold the event loop so the sibling's queued hook reaches its guard late.
-          }
-        },
-        stop: () => undefined,
-      })],
-      ["b-late", inertHooks({
-        start: () => { lateStarts += 1; },
-        stop: () => undefined,
-      })],
-    ]),
-    { deadlineMs: 5, cleanupTimeoutMs: 20 },
-  ));
-  assert.equal(result.ok, false);
-  assert.equal(lifecycle.activeGeneration, 0);
-  assert.equal(lateStarts, 0);
-  assert.ok(result.errors.some(error => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
-});
+test(
+  "a queued sibling cannot begin its hook after another hook blocks past the deadline",
+  { timeout: 2_000 },
+  async () => {
+    const lifecycle = new GenerationLifecycle(testAuthorityScope);
+    const plan = requirePlan([
+      { id: "a-blocking", requires: [] },
+      { id: "b-late", requires: [] },
+    ]);
+    let lateStarts = 0;
+    const result = await lifecycle.activate(
+      activationRequest(
+        lifecycle,
+        "queued-hook-deadline",
+        plan,
+        new Map<string, ModuleHooks>([
+          [
+            "a-blocking",
+            inertHooks({
+              start: () => {
+                const blockedUntil = performance.now() + 50;
+                while (performance.now() < blockedUntil) {
+                  // Hold the event loop so the sibling's queued hook reaches its guard late.
+                }
+              },
+              stop: () => undefined,
+            }),
+          ],
+          [
+            "b-late",
+            inertHooks({
+              start: () => {
+                lateStarts += 1;
+              },
+              stop: () => undefined,
+            }),
+          ],
+        ]),
+        { deadlineMs: 5, cleanupTimeoutMs: 20 },
+      ),
+    );
+    assert.equal(result.ok, false);
+    assert.equal(lifecycle.activeGeneration, 0);
+    assert.equal(lateStarts, 0);
+    assert.ok(result.errors.some((error) => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
+  },
+);
 
-test("a prepare hook rejected at admission emits no started trace or cleanup effect", { timeout: 2_000 }, async () => {
-  const lifecycle = new GenerationLifecycle(testAuthorityScope);
-  const plan = requirePlan([
-    { id: "a-blocking", requires: [] },
-    { id: "b-rejected", requires: [] },
-  ]);
-  let rejectedPrepares = 0;
-  let rejectedStops = 0;
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "prepare-admission-deadline",
-    plan,
-    new Map<string, ModuleHooks>([
-      ["a-blocking", inertHooks({
-        prepare: () => {
-          const blockedUntil = performance.now() + 50;
-          while (performance.now() < blockedUntil) {
-            // Delay the sibling until its pre-invocation authority check rejects it.
-          }
-        },
-        stop: () => undefined,
-      })],
-      ["b-rejected", inertHooks({
-        prepare: () => { rejectedPrepares += 1; },
-        stop: () => { rejectedStops += 1; },
-      })],
-    ]),
-    { deadlineMs: 5, cleanupTimeoutMs: 20 },
-  ));
-  assert.equal(result.ok, false);
-  assert.equal(rejectedPrepares, 0);
-  assert.equal(rejectedStops, 0);
-  assert.equal(result.traces.some(trace => trace.moduleId === "b-rejected"), false);
-});
+test(
+  "a prepare hook rejected at admission emits no started trace or cleanup effect",
+  { timeout: 2_000 },
+  async () => {
+    const lifecycle = new GenerationLifecycle(testAuthorityScope);
+    const plan = requirePlan([
+      { id: "a-blocking", requires: [] },
+      { id: "b-rejected", requires: [] },
+    ]);
+    let rejectedPrepares = 0;
+    let rejectedStops = 0;
+    const result = await lifecycle.activate(
+      activationRequest(
+        lifecycle,
+        "prepare-admission-deadline",
+        plan,
+        new Map<string, ModuleHooks>([
+          [
+            "a-blocking",
+            inertHooks({
+              prepare: () => {
+                const blockedUntil = performance.now() + 50;
+                while (performance.now() < blockedUntil) {
+                  // Delay the sibling until its pre-invocation authority check rejects it.
+                }
+              },
+              stop: () => undefined,
+            }),
+          ],
+          [
+            "b-rejected",
+            inertHooks({
+              prepare: () => {
+                rejectedPrepares += 1;
+              },
+              stop: () => {
+                rejectedStops += 1;
+              },
+            }),
+          ],
+        ]),
+        { deadlineMs: 5, cleanupTimeoutMs: 20 },
+      ),
+    );
+    assert.equal(result.ok, false);
+    assert.equal(rejectedPrepares, 0);
+    assert.equal(rejectedStops, 0);
+    assert.equal(
+      result.traces.some((trace) => trace.moduleId === "b-rejected"),
+      false,
+    );
+  },
+);
 
 test("a latched activation failure prevents later queued hooks after a transient clock error", async () => {
   let failNextClockRead = false;
@@ -1647,22 +1959,43 @@ test("a latched activation failure prevents later queued hooks after a transient
     { id: "c-rejected", requires: [] },
   ]);
   const invoked: string[] = [];
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "transient-clock-queued-hooks",
-    plan,
-    new Map<string, ModuleHooks>([
-      ["a-arm-clock", inertHooks({ prepare: () => {
-        invoked.push("a-arm-clock");
-        failNextClockRead = true;
-      } })],
-      ["b-timeout", inertHooks({ prepare: () => { invoked.push("b-timeout"); } })],
-      ["c-rejected", inertHooks({ prepare: () => { invoked.push("c-rejected"); } })],
-    ]),
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "transient-clock-queued-hooks",
+      plan,
+      new Map<string, ModuleHooks>([
+        [
+          "a-arm-clock",
+          inertHooks({
+            prepare: () => {
+              invoked.push("a-arm-clock");
+              failNextClockRead = true;
+            },
+          }),
+        ],
+        [
+          "b-timeout",
+          inertHooks({
+            prepare: () => {
+              invoked.push("b-timeout");
+            },
+          }),
+        ],
+        [
+          "c-rejected",
+          inertHooks({
+            prepare: () => {
+              invoked.push("c-rejected");
+            },
+          }),
+        ],
+      ]),
+    ),
+  );
   assert.equal(result.ok, false);
   assert.deepEqual(invoked, ["a-arm-clock"]);
-  assert.ok(result.errors.some(error => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
+  assert.ok(result.errors.some((error) => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
 });
 
 test("cleanup cap cannot refresh the operation absolute deadline", async () => {
@@ -1673,33 +2006,46 @@ test("cleanup cap cannot refresh the operation absolute deadline", async () => {
   });
   const plan = requirePlan([{ id: "slow", requires: [] }]);
   let stopCalls = 0;
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "no-cleanup-refresh",
-    plan,
-    new Map([["slow", inertHooks({
-      start: () => { now = 20; },
-      stop: () => { stopCalls += 1; },
-    })]]),
-    { deadlineMs: 10, cleanupTimeoutMs: 80 },
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "no-cleanup-refresh",
+      plan,
+      new Map([
+        [
+          "slow",
+          inertHooks({
+            start: () => {
+              now = 20;
+            },
+            stop: () => {
+              stopCalls += 1;
+            },
+          }),
+        ],
+      ]),
+      { deadlineMs: 10, cleanupTimeoutMs: 80 },
+    ),
+  );
   assert.equal(result.ok, false);
   assert.equal(result.termination, "termination_unproven");
   assert.equal(stopCalls, 0);
-  assert.ok(result.errors.some(error => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
-  assert.ok(result.errors.some(error => error.message === "CLEANUP_TIMEOUT:slow"));
+  assert.ok(result.errors.some((error) => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
+  assert.ok(result.errors.some((error) => error.message === "CLEANUP_TIMEOUT:slow"));
 });
 
 test("deadlines beyond the Node timer limit are re-armed rather than clamped to one millisecond", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "candidate", requires: [] }]);
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "long-deadline",
-    plan,
-    new Map([["candidate", inertHooks({ start: async () => delay(5) })]]),
-    { deadlineMs: 2_147_483_647 + 1_000 },
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "long-deadline",
+      plan,
+      new Map([["candidate", inertHooks({ start: async () => delay(5) })]]),
+      { deadlineMs: 2_147_483_647 + 1_000 },
+    ),
+  );
   assert.equal(result.ok, true);
 });
 
@@ -1709,17 +2055,29 @@ test("waiter clock failure leaves the retained terminal result replayable", asyn
   const lifecycle = new GenerationLifecycle(testAuthorityScope, {
     now: () => {
       reads += 1;
-      if (reads >= 4) throw new Error("CLOCK_FAILED");
+      if (reads >= 4) {
+        throw new Error("CLOCK_FAILED");
+      }
       return performance.now();
     },
-    sleep: milliseconds => delay(milliseconds),
+    sleep: (milliseconds) => delay(milliseconds),
   });
   const plan = requirePlan([{ id: "candidate", requires: [] }]);
   const request = activationRequest(
     lifecycle,
     "waiter-clock-failure",
     plan,
-    new Map([["candidate", inertHooks({ start: async () => { starts += 1; await delay(5); } })]]),
+    new Map([
+      [
+        "candidate",
+        inertHooks({
+          start: async () => {
+            starts += 1;
+            await delay(5);
+          },
+        }),
+      ],
+    ]),
   );
   await assert.rejects(lifecycle.activate(request), /WAITER_DEADLINE_EXCEEDED/);
   await delay(20);
@@ -1733,10 +2091,12 @@ test("a waiter clock failure cannot leave a hidden rejected activation flight", 
   let clockAvailable = true;
   const lifecycle = new GenerationLifecycle(testAuthorityScope, {
     now: () => {
-      if (!clockAvailable) throw new Error("CLOCK_FAILED");
+      if (!clockAvailable) {
+        throw new Error("CLOCK_FAILED");
+      }
       return performance.now();
     },
-    sleep: milliseconds => delay(milliseconds),
+    sleep: (milliseconds) => delay(milliseconds),
   });
   const plan = requirePlan([{ id: "candidate", requires: [] }]);
   const request = activationRequest(
@@ -1746,7 +2106,9 @@ test("a waiter clock failure cannot leave a hidden rejected activation flight", 
     new Map([["candidate", inertHooks()]]),
   );
   const unhandled: unknown[] = [];
-  const onUnhandled = (error: unknown): void => { unhandled.push(error); };
+  const onUnhandled = (error: unknown): void => {
+    unhandled.push(error);
+  };
   process.on("unhandledRejection", onUnhandled);
   try {
     clockAvailable = false;
@@ -1763,11 +2125,13 @@ test("waiter deadline expiry during timer arming removes its abort listener", as
   let expiryReads = 0;
   const lifecycle = new GenerationLifecycle(testAuthorityScope, {
     now: () => {
-      if (!expiryMode) return performance.now();
+      if (!expiryMode) {
+        return performance.now();
+      }
       expiryReads += 1;
       return expiryReads <= 2 ? 100 : 1_000;
     },
-    sleep: milliseconds => delay(milliseconds),
+    sleep: (milliseconds) => delay(milliseconds),
   });
   const plan = requirePlan([{ id: "candidate", requires: [] }]);
   const request = activationRequest(
@@ -1796,67 +2160,81 @@ test("waiter deadline expiry during timer arming removes its abort listener", as
   assert.equal(listeners.size, 0);
 });
 
-test("hostile abort-listener cleanup cannot strand a completed waiter", { timeout: 2_000 }, async () => {
-  const lifecycle = new GenerationLifecycle(testAuthorityScope);
-  const plan = requirePlan([{ id: "candidate", requires: [] }]);
-  const request = activationRequest(
-    lifecycle,
-    "hostile-waiter-listener-cleanup",
-    plan,
-    new Map([["candidate", inertHooks()]]),
-  );
-  const completed = await lifecycle.activate(request);
-  const controller = new AbortController();
-  Object.defineProperty(controller.signal, "removeEventListener", {
-    value: () => { throw new Error("REMOVE_LISTENER_FAILED"); },
-  });
+test(
+  "hostile abort-listener cleanup cannot strand a completed waiter",
+  { timeout: 2_000 },
+  async () => {
+    const lifecycle = new GenerationLifecycle(testAuthorityScope);
+    const plan = requirePlan([{ id: "candidate", requires: [] }]);
+    const request = activationRequest(
+      lifecycle,
+      "hostile-waiter-listener-cleanup",
+      plan,
+      new Map([["candidate", inertHooks()]]),
+    );
+    const completed = await lifecycle.activate(request);
+    const controller = new AbortController();
+    Object.defineProperty(controller.signal, "removeEventListener", {
+      value: () => {
+        throw new Error("REMOVE_LISTENER_FAILED");
+      },
+    });
 
-  const replay = await Promise.race([
-    lifecycle.activate(request, {
-      absoluteDeadline: lifecycle.deadlineAfter(1_000),
-      signal: controller.signal,
-    }),
-    rejectAfter(200, () => new Error("WAITER_STRANDED")),
-  ]);
-  assert.strictEqual(replay, completed);
-});
-
-test("a hostile aborted getter rejects rather than stranding the waiter", { timeout: 2_000 }, async () => {
-  const lifecycle = new GenerationLifecycle(testAuthorityScope);
-  const plan = requirePlan([{ id: "candidate", requires: [] }]);
-  const request = activationRequest(
-    lifecycle,
-    "hostile-waiter-aborted-getter",
-    plan,
-    new Map([["candidate", inertHooks()]]),
-  );
-  await lifecycle.activate(request);
-  const controller = new AbortController();
-  let abortedReads = 0;
-  Object.defineProperty(controller.signal, "aborted", {
-    get: () => {
-      abortedReads += 1;
-      if (abortedReads >= 3) throw new Error("ABORTED_GETTER_FAILED");
-      return false;
-    },
-  });
-  const unhandled: unknown[] = [];
-  const onUnhandled = (error: unknown): void => { unhandled.push(error); };
-  process.on("unhandledRejection", onUnhandled);
-  try {
-    await assert.rejects(
+    const replay = await Promise.race([
       lifecycle.activate(request, {
         absoluteDeadline: lifecycle.deadlineAfter(1_000),
         signal: controller.signal,
       }),
-      /ABORTED_GETTER_FAILED/,
+      rejectAfter(200, () => new Error("WAITER_STRANDED")),
+    ]);
+    assert.strictEqual(replay, completed);
+  },
+);
+
+test(
+  "a hostile aborted getter rejects rather than stranding the waiter",
+  { timeout: 2_000 },
+  async () => {
+    const lifecycle = new GenerationLifecycle(testAuthorityScope);
+    const plan = requirePlan([{ id: "candidate", requires: [] }]);
+    const request = activationRequest(
+      lifecycle,
+      "hostile-waiter-aborted-getter",
+      plan,
+      new Map([["candidate", inertHooks()]]),
     );
-    await delay(0);
-    assert.deepEqual(unhandled, []);
-  } finally {
-    process.removeListener("unhandledRejection", onUnhandled);
-  }
-});
+    await lifecycle.activate(request);
+    const controller = new AbortController();
+    let abortedReads = 0;
+    Object.defineProperty(controller.signal, "aborted", {
+      get: () => {
+        abortedReads += 1;
+        if (abortedReads >= 3) {
+          throw new Error("ABORTED_GETTER_FAILED");
+        }
+        return false;
+      },
+    });
+    const unhandled: unknown[] = [];
+    const onUnhandled = (error: unknown): void => {
+      unhandled.push(error);
+    };
+    process.on("unhandledRejection", onUnhandled);
+    try {
+      await assert.rejects(
+        lifecycle.activate(request, {
+          absoluteDeadline: lifecycle.deadlineAfter(1_000),
+          signal: controller.signal,
+        }),
+        /ABORTED_GETTER_FAILED/,
+      );
+      await delay(0);
+      assert.deepEqual(unhandled, []);
+    } finally {
+      process.removeListener("unhandledRejection", onUnhandled);
+    }
+  },
+);
 
 test("failed parallel batch settles siblings before reverse cleanup", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
@@ -1866,21 +2244,35 @@ test("failed parallel batch settles siblings before reverse cleanup", async () =
   ]);
   let siblingFinished = false;
   let siblingStops = 0;
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "parallel-failure",
-    plan,
-    new Map<string, ModuleHooks>([
-    ["fails", inertHooks({ start: () => { throw new Error("START_FAILED"); } })],
-    ["slow-sibling", inertHooks({
-      start: async () => {
-        await delay(20);
-        siblingFinished = true;
-      },
-      stop: () => { siblingStops += 1; },
-    })],
-    ]),
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "parallel-failure",
+      plan,
+      new Map<string, ModuleHooks>([
+        [
+          "fails",
+          inertHooks({
+            start: () => {
+              throw new Error("START_FAILED");
+            },
+          }),
+        ],
+        [
+          "slow-sibling",
+          inertHooks({
+            start: async () => {
+              await delay(20);
+              siblingFinished = true;
+            },
+            stop: () => {
+              siblingStops += 1;
+            },
+          }),
+        ],
+      ]),
+    ),
+  );
   assert.equal(result.ok, false);
   assert.equal(siblingFinished, true);
   assert.equal(siblingStops, 1);
@@ -1893,19 +2285,40 @@ test("parallel activation reports every sibling failure", async () => {
     { id: "fails-a", requires: [] },
     { id: "fails-b", requires: [] },
   ]);
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "parallel-multiple-failures",
-    plan,
-    new Map<string, ModuleHooks>([
-      ["fails-a", inertHooks({ start: () => { throw new Error("A_FAILED"); }, stop: () => undefined })],
-      ["fails-b", inertHooks({ start: () => { throw new Error("B_FAILED"); }, stop: () => undefined })],
-    ]),
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "parallel-multiple-failures",
+      plan,
+      new Map<string, ModuleHooks>([
+        [
+          "fails-a",
+          inertHooks({
+            start: () => {
+              throw new Error("A_FAILED");
+            },
+            stop: () => undefined,
+          }),
+        ],
+        [
+          "fails-b",
+          inertHooks({
+            start: () => {
+              throw new Error("B_FAILED");
+            },
+            stop: () => undefined,
+          }),
+        ],
+      ]),
+    ),
+  );
   assert.equal(result.ok, false);
-  assert.deepEqual(new Set(result.errors.map(error => error.message)), new Set(["A_FAILED", "B_FAILED"]));
   assert.deepEqual(
-    new Set(result.errors.map(error => `${error.moduleId}:${error.phase}`)),
+    new Set(result.errors.map((error) => error.message)),
+    new Set(["A_FAILED", "B_FAILED"]),
+  );
+  assert.deepEqual(
+    new Set(result.errors.map((error) => `${error.moduleId}:${error.phase}`)),
     new Set(["fails-a:start", "fails-b:start"]),
   );
 });
@@ -1917,39 +2330,56 @@ test("hook bindings are complete before any module effect starts", async () => {
     { id: "consumer", requires: ["provider"] },
   ]);
   let effects = 0;
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "missing-hook-preflight",
-    plan,
-    new Map([["provider", inertHooks({ prepare: () => { effects += 1; } })]]),
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "missing-hook-preflight",
+      plan,
+      new Map([
+        [
+          "provider",
+          inertHooks({
+            prepare: () => {
+              effects += 1;
+            },
+          }),
+        ],
+      ]),
+    ),
+  );
   assert.equal(result.ok, false);
   assert.equal(effects, 0);
-  assert.deepEqual(result.errors, [{
-    message: "MISSING_HOOKS:consumer",
-    moduleId: "consumer",
-    phase: "preflight",
-  }]);
+  assert.deepEqual(result.errors, [
+    {
+      message: "MISSING_HOOKS:consumer",
+      moduleId: "consumer",
+      phase: "preflight",
+    },
+  ]);
 });
 
 test("unplanned hook bindings fail preflight with module attribution", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "candidate", requires: [] }]);
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "unplanned-hook-preflight",
-    plan,
-    new Map([
-      ["candidate", inertHooks()],
-      ["unplanned", inertHooks()],
-    ]),
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "unplanned-hook-preflight",
+      plan,
+      new Map([
+        ["candidate", inertHooks()],
+        ["unplanned", inertHooks()],
+      ]),
+    ),
+  );
   assert.equal(result.ok, false);
-  assert.deepEqual(result.errors, [{
-    message: "UNPLANNED_HOOKS:unplanned",
-    moduleId: "unplanned",
-    phase: "preflight",
-  }]);
+  assert.deepEqual(result.errors, [
+    {
+      message: "UNPLANNED_HOOKS:unplanned",
+      moduleId: "unplanned",
+      phase: "preflight",
+    },
+  ]);
 });
 
 test("hook preflight rejects accessors without invoking them", async () => {
@@ -1964,19 +2394,23 @@ test("hook preflight rejects accessors without invoking them", async () => {
       return () => undefined;
     },
   });
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "accessor-hook-preflight",
-    plan,
-    new Map([["candidate", hooks as unknown as ModuleHooks]]),
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "accessor-hook-preflight",
+      plan,
+      new Map([["candidate", hooks as unknown as ModuleHooks]]),
+    ),
+  );
   assert.equal(result.ok, false);
   assert.equal(getterEffects, 0);
-  assert.deepEqual(result.errors, [{
-    message: "ACCESSOR_HOOK_FIELD:candidate:start",
-    moduleId: "candidate",
-    phase: "preflight",
-  }]);
+  assert.deepEqual(result.errors, [
+    {
+      message: "ACCESSOR_HOOK_FIELD:candidate:start",
+      moduleId: "candidate",
+      phase: "preflight",
+    },
+  ]);
 });
 
 test("hook preflight rejects prototype methods instead of silently dropping them", async () => {
@@ -1994,19 +2428,23 @@ test("hook preflight rejects prototype methods instead of silently dropping them
       effects += 1;
     }
   }
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "prototype-hook-preflight",
-    plan,
-    new Map([["candidate", new PrototypeHooks()]]),
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "prototype-hook-preflight",
+      plan,
+      new Map([["candidate", new PrototypeHooks()]]),
+    ),
+  );
   assert.equal(result.ok, false);
   assert.equal(effects, 0);
-  assert.deepEqual(result.errors, [{
-    message: "NON_PLAIN_HOOKS:candidate",
-    moduleId: "candidate",
-    phase: "preflight",
-  }]);
+  assert.deepEqual(result.errors, [
+    {
+      message: "NON_PLAIN_HOOKS:candidate",
+      moduleId: "candidate",
+      phase: "preflight",
+    },
+  ]);
 });
 
 test("hook preflight rejects a Proxy that disguises prototype methods", async () => {
@@ -2023,28 +2461,34 @@ test("hook preflight rejects a Proxy that disguises prototype methods", async ()
   const disguised = new Proxy(new PrototypeHooks(), {
     getPrototypeOf: () => Object.prototype,
   });
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "proxy-hook-preflight",
-    plan,
-    new Map([["candidate", disguised]]),
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(lifecycle, "proxy-hook-preflight", plan, new Map([["candidate", disguised]])),
+  );
   assert.equal(result.ok, false);
   assert.equal(effects, 0);
-  assert.deepEqual(result.errors, [{
-    message: "PROXY_HOOKS:candidate",
-    moduleId: "candidate",
-    phase: "preflight",
-  }]);
+  assert.deepEqual(result.errors, [
+    {
+      message: "PROXY_HOOKS:candidate",
+      moduleId: "candidate",
+      phase: "preflight",
+    },
+  ]);
 });
 
 test("hostile preflight errors are normalized and retained without escaping activation", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "candidate", requires: [] }]);
-  const hostileError = new Proxy({}, {
-    getPrototypeOf: () => { throw new Error("HOSTILE_PROTOTYPE"); },
-    get: () => { throw new Error("HOSTILE_PROPERTY"); },
-  });
+  const hostileError = new Proxy(
+    {},
+    {
+      getPrototypeOf: () => {
+        throw new Error("HOSTILE_PROTOTYPE");
+      },
+      get: () => {
+        throw new Error("HOSTILE_PROPERTY");
+      },
+    },
+  );
   class HostileMap extends Map<string, ModuleHooks> {
     override [Symbol.iterator](): MapIterator<[string, ModuleHooks]> {
       throw hostileError;
@@ -2076,23 +2520,36 @@ test("the validated hook snapshot cannot omit a planned module before effects", 
     }
   }
   const hooks = new InconsistentMap([
-    ["provider", inertHooks({ start: () => { effects += 1; } })],
-    ["consumer", inertHooks({ start: () => { effects += 1; } })],
+    [
+      "provider",
+      inertHooks({
+        start: () => {
+          effects += 1;
+        },
+      }),
+    ],
+    [
+      "consumer",
+      inertHooks({
+        start: () => {
+          effects += 1;
+        },
+      }),
+    ],
   ]);
 
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "snapshot-must-cover-plan",
-    plan,
-    hooks,
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(lifecycle, "snapshot-must-cover-plan", plan, hooks),
+  );
   assert.equal(result.ok, false);
   assert.equal(effects, 0);
-  assert.deepEqual(result.errors, [{
-    message: "MISSING_HOOKS:consumer",
-    moduleId: "consumer",
-    phase: "preflight",
-  }]);
+  assert.deepEqual(result.errors, [
+    {
+      message: "MISSING_HOOKS:consumer",
+      moduleId: "consumer",
+      phase: "preflight",
+    },
+  ]);
 });
 
 test("an empty AggregateError remains visible as failure evidence", async () => {
@@ -2103,12 +2560,14 @@ test("an empty AggregateError remains visible as failure evidence", async () => 
       throw new AggregateError([], "EMPTY_AGGREGATE");
     }
   }
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "empty-aggregate-evidence",
-    plan,
-    new EmptyAggregateMap([["candidate", inertHooks()]]),
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "empty-aggregate-evidence",
+      plan,
+      new EmptyAggregateMap([["candidate", inertHooks()]]),
+    ),
+  );
   assert.equal(result.ok, false);
   assert.deepEqual(result.errors, [{ message: "EMPTY_AGGREGATE" }]);
 });
@@ -2121,85 +2580,133 @@ test("a fast sibling failure promptly aborts cooperative siblings before cleanup
   ]);
   let cooperativeAborted = false;
   let stops = 0;
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "prompt-sibling-abort",
-    plan,
-    new Map<string, ModuleHooks>([
-      ["fails", inertHooks({
-        start: async () => {
-          await delay(5);
-          throw new Error("FAST_FAILURE");
-        },
-        stop: () => { stops += 1; },
-      })],
-      ["cooperative", inertHooks({
-        start: ({ signal }) => new Promise<void>(resolve => {
-          if (signal.aborted) {
-            cooperativeAborted = true;
-            resolve();
-            return;
-          }
-          signal.addEventListener("abort", () => {
-            cooperativeAborted = true;
-            resolve();
-          }, { once: true });
-        }),
-        stop: () => { stops += 1; },
-      })],
-    ]),
-    { deadlineMs: 200, cleanupTimeoutMs: 80 },
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "prompt-sibling-abort",
+      plan,
+      new Map<string, ModuleHooks>([
+        [
+          "fails",
+          inertHooks({
+            start: async () => {
+              await delay(5);
+              throw new Error("FAST_FAILURE");
+            },
+            stop: () => {
+              stops += 1;
+            },
+          }),
+        ],
+        [
+          "cooperative",
+          inertHooks({
+            start: ({ signal }) =>
+              new Promise<void>((resolve) => {
+                if (signal.aborted) {
+                  cooperativeAborted = true;
+                  resolve();
+                  return;
+                }
+                signal.addEventListener(
+                  "abort",
+                  () => {
+                    cooperativeAborted = true;
+                    resolve();
+                  },
+                  { once: true },
+                );
+              }),
+            stop: () => {
+              stops += 1;
+            },
+          }),
+        ],
+      ]),
+      { deadlineMs: 200, cleanupTimeoutMs: 80 },
+    ),
+  );
   assert.equal(result.ok, false);
   assert.equal(cooperativeAborted, true);
   assert.equal(stops, 2);
-  assert.deepEqual(result.errors.map(error => error.message), ["FAST_FAILURE"]);
+  assert.deepEqual(
+    result.errors.map((error) => error.message),
+    ["FAST_FAILURE"],
+  );
 });
 
-test("a failed prepare prevents siblings from entering later activation phases", { timeout: 2_000 }, async () => {
-  const lifecycle = new GenerationLifecycle(testAuthorityScope);
-  const plan = requirePlan([
-    { id: "fails", requires: [] },
-    { id: "sibling", requires: [] },
-  ]);
-  const failingPrepareEntered = Promise.withResolvers<void>();
-  const siblingPrepareFinished = Promise.withResolvers<void>();
-  const releaseFailure = Promise.withResolvers<void>();
-  let siblingStarts = 0;
-  let siblingReadinessChecks = 0;
-  const activation = lifecycle.activate(activationRequest(
-    lifecycle,
-    "prepare-sibling-abort",
-    plan,
-    new Map<string, ModuleHooks>([
-      ["fails", inertHooks({
-        prepare: async () => {
-          failingPrepareEntered.resolve();
-          await releaseFailure.promise;
-          throw new Error("PREPARE_FAILURE");
-        },
-        stop: () => undefined,
-      })],
-      ["sibling", {
-        readiness: "probe",
-        prepare: () => { siblingPrepareFinished.resolve(); },
-        start: () => { siblingStarts += 1; },
-        ready: () => { siblingReadinessChecks += 1; return true; },
-        stop: () => undefined,
-      }],
-    ]),
-    { deadlineMs: 200, cleanupTimeoutMs: 80 },
-  ));
-  await Promise.all([failingPrepareEntered.promise, siblingPrepareFinished.promise]);
-  releaseFailure.resolve();
-  const result = await activation;
-  assert.equal(result.ok, false);
-  assert.equal(siblingStarts, 0);
-  assert.equal(siblingReadinessChecks, 0);
-  assert.deepEqual(result.errors.map(error => error.message), ["PREPARE_FAILURE"]);
-  assert.equal(result.traces.some(trace => trace.moduleId === "sibling" && trace.phase === "start"), false);
-  assert.equal(result.traces.some(trace => trace.moduleId === "sibling" && trace.phase === "ready"), false);
-});
+test(
+  "a failed prepare prevents siblings from entering later activation phases",
+  { timeout: 2_000 },
+  async () => {
+    const lifecycle = new GenerationLifecycle(testAuthorityScope);
+    const plan = requirePlan([
+      { id: "fails", requires: [] },
+      { id: "sibling", requires: [] },
+    ]);
+    const failingPrepareEntered = Promise.withResolvers<void>();
+    const siblingPrepareFinished = Promise.withResolvers<void>();
+    const releaseFailure = Promise.withResolvers<void>();
+    let siblingStarts = 0;
+    let siblingReadinessChecks = 0;
+    const activation = lifecycle.activate(
+      activationRequest(
+        lifecycle,
+        "prepare-sibling-abort",
+        plan,
+        new Map<string, ModuleHooks>([
+          [
+            "fails",
+            inertHooks({
+              prepare: async () => {
+                failingPrepareEntered.resolve();
+                await releaseFailure.promise;
+                throw new Error("PREPARE_FAILURE");
+              },
+              stop: () => undefined,
+            }),
+          ],
+          [
+            "sibling",
+            {
+              readiness: "probe",
+              prepare: () => {
+                siblingPrepareFinished.resolve();
+              },
+              start: () => {
+                siblingStarts += 1;
+              },
+              ready: () => {
+                siblingReadinessChecks += 1;
+                return true;
+              },
+              stop: () => undefined,
+            },
+          ],
+        ]),
+        { deadlineMs: 200, cleanupTimeoutMs: 80 },
+      ),
+    );
+    await Promise.all([failingPrepareEntered.promise, siblingPrepareFinished.promise]);
+    releaseFailure.resolve();
+    const result = await activation;
+    assert.equal(result.ok, false);
+    assert.equal(siblingStarts, 0);
+    assert.equal(siblingReadinessChecks, 0);
+    assert.deepEqual(
+      result.errors.map((error) => error.message),
+      ["PREPARE_FAILURE"],
+    );
+    assert.equal(
+      result.traces.some((trace) => trace.moduleId === "sibling" && trace.phase === "start"),
+      false,
+    );
+    assert.equal(
+      result.traces.some((trace) => trace.moduleId === "sibling" && trace.phase === "ready"),
+      false,
+    );
+  },
+);
 
 test("a failed start prevents siblings from entering readiness", { timeout: 2_000 }, async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
@@ -2211,155 +2718,233 @@ test("a failed start prevents siblings from entering readiness", { timeout: 2_00
   const siblingStartFinished = Promise.withResolvers<void>();
   const releaseFailure = Promise.withResolvers<void>();
   let siblingReadinessChecks = 0;
-  const activation = lifecycle.activate(activationRequest(
-    lifecycle,
-    "start-sibling-abort",
-    plan,
-    new Map<string, ModuleHooks>([
-      ["fails", inertHooks({
-        start: async () => {
-          failingStartEntered.resolve();
-          await releaseFailure.promise;
-          throw new Error("START_FAILURE");
-        },
-        stop: () => undefined,
-      })],
-      ["sibling", {
-        readiness: "probe",
-        start: () => { siblingStartFinished.resolve(); },
-        ready: () => { siblingReadinessChecks += 1; return true; },
-        stop: () => undefined,
-      }],
-    ]),
-    { deadlineMs: 200, cleanupTimeoutMs: 80 },
-  ));
+  const activation = lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "start-sibling-abort",
+      plan,
+      new Map<string, ModuleHooks>([
+        [
+          "fails",
+          inertHooks({
+            start: async () => {
+              failingStartEntered.resolve();
+              await releaseFailure.promise;
+              throw new Error("START_FAILURE");
+            },
+            stop: () => undefined,
+          }),
+        ],
+        [
+          "sibling",
+          {
+            readiness: "probe",
+            start: () => {
+              siblingStartFinished.resolve();
+            },
+            ready: () => {
+              siblingReadinessChecks += 1;
+              return true;
+            },
+            stop: () => undefined,
+          },
+        ],
+      ]),
+      { deadlineMs: 200, cleanupTimeoutMs: 80 },
+    ),
+  );
   await Promise.all([failingStartEntered.promise, siblingStartFinished.promise]);
   releaseFailure.resolve();
   const result = await activation;
   assert.equal(result.ok, false);
   assert.equal(siblingReadinessChecks, 0);
-  assert.deepEqual(result.errors.map(error => error.message), ["START_FAILURE"]);
-  assert.equal(result.traces.some(trace => trace.moduleId === "sibling" && trace.phase === "start"), true);
-  assert.equal(result.traces.some(trace => trace.moduleId === "sibling" && trace.phase === "ready"), false);
+  assert.deepEqual(
+    result.errors.map((error) => error.message),
+    ["START_FAILURE"],
+  );
+  assert.equal(
+    result.traces.some((trace) => trace.moduleId === "sibling" && trace.phase === "start"),
+    true,
+  );
+  assert.equal(
+    result.traces.some((trace) => trace.moduleId === "sibling" && trace.phase === "ready"),
+    false,
+  );
 });
 
-test("ignored activation cancellation is bounded without refreshing cleanup time", { timeout: 2_000 }, async () => {
-  const lifecycle = new GenerationLifecycle(testAuthorityScope);
-  const plan = requirePlan([{ id: "slow", requires: [] }]);
-  const entered = Promise.withResolvers<void>();
-  const release = Promise.withResolvers<void>();
-  const finished = Promise.withResolvers<void>();
-  let startRunning = false;
-  let cleanupOverlapped = false;
-  const activation = lifecycle.activate(activationRequest(
-    lifecycle,
-    "ignored-start-cancellation",
-    plan,
-    new Map([["slow", inertHooks({
-      start: async () => {
-        startRunning = true;
-        entered.resolve();
-        await release.promise;
-        startRunning = false;
-        finished.resolve();
+test(
+  "ignored activation cancellation is bounded without refreshing cleanup time",
+  { timeout: 2_000 },
+  async () => {
+    const lifecycle = new GenerationLifecycle(testAuthorityScope);
+    const plan = requirePlan([{ id: "slow", requires: [] }]);
+    const entered = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const finished = Promise.withResolvers<void>();
+    let startRunning = false;
+    let cleanupOverlapped = false;
+    const activation = lifecycle.activate(
+      activationRequest(
+        lifecycle,
+        "ignored-start-cancellation",
+        plan,
+        new Map([
+          [
+            "slow",
+            inertHooks({
+              start: async () => {
+                startRunning = true;
+                entered.resolve();
+                await release.promise;
+                startRunning = false;
+                finished.resolve();
+              },
+              stop: () => {
+                cleanupOverlapped = startRunning;
+              },
+            }),
+          ],
+        ]),
+        { deadlineMs: 100, cleanupTimeoutMs: 20 },
+      ),
+    );
+    await entered.promise;
+    const result = await activation;
+    assert.equal(result.ok, false);
+    assert.equal(result.termination, "termination_unproven");
+    assert.equal(startRunning, true);
+    assert.equal(cleanupOverlapped, false);
+    release.resolve();
+    await finished.promise;
+    assert.equal(startRunning, false);
+  },
+);
+
+test(
+  "a transient clock timeout cannot overlap cleanup with an unsettled hook",
+  { timeout: 2_000 },
+  async () => {
+    let clockReads = 0;
+    let failNextRead = false;
+    const lifecycle = new GenerationLifecycle(testAuthorityScope, {
+      now: () => {
+        clockReads += 1;
+        if (failNextRead) {
+          failNextRead = false;
+          throw new Error("TRANSIENT_CLOCK_FAILURE");
+        }
+        return clockReads <= 2 ? 0 : 995;
       },
-      stop: () => { cleanupOverlapped = startRunning; },
-    })]]),
-    { deadlineMs: 100, cleanupTimeoutMs: 20 },
-  ));
-  await entered.promise;
-  const result = await activation;
-  assert.equal(result.ok, false);
-  assert.equal(result.termination, "termination_unproven");
-  assert.equal(startRunning, true);
-  assert.equal(cleanupOverlapped, false);
-  release.resolve();
-  await finished.promise;
-  assert.equal(startRunning, false);
-});
+      sleep: (milliseconds) => delay(milliseconds),
+    });
+    const plan = requirePlan([{ id: "slow", requires: [] }]);
+    const release = Promise.withResolvers<void>();
+    let startRunning = false;
+    let stopCalls = 0;
+    const result = await lifecycle.activate(
+      activationRequest(
+        lifecycle,
+        "transient-clock-unsettled-hook",
+        plan,
+        new Map([
+          [
+            "slow",
+            inertHooks({
+              start: async () => {
+                startRunning = true;
+                failNextRead = true;
+                await release.promise;
+                startRunning = false;
+              },
+              stop: () => {
+                stopCalls += 1;
+              },
+            }),
+          ],
+        ]),
+        { deadlineMs: 1_000, cleanupTimeoutMs: 50 },
+      ),
+    );
 
-test("a transient clock timeout cannot overlap cleanup with an unsettled hook", { timeout: 2_000 }, async () => {
-  let clockReads = 0;
-  let failNextRead = false;
-  const lifecycle = new GenerationLifecycle(testAuthorityScope, {
-    now: () => {
-      clockReads += 1;
-      if (failNextRead) {
-        failNextRead = false;
-        throw new Error("TRANSIENT_CLOCK_FAILURE");
-      }
-      return clockReads <= 2 ? 0 : 995;
-    },
-    sleep: milliseconds => delay(milliseconds),
-  });
-  const plan = requirePlan([{ id: "slow", requires: [] }]);
-  const release = Promise.withResolvers<void>();
-  let startRunning = false;
-  let stopCalls = 0;
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "transient-clock-unsettled-hook",
-    plan,
-    new Map([["slow", inertHooks({
-      start: async () => {
-        startRunning = true;
-        failNextRead = true;
-        await release.promise;
-        startRunning = false;
-      },
-      stop: () => { stopCalls += 1; },
-    })]]),
-    { deadlineMs: 1_000, cleanupTimeoutMs: 50 },
-  ));
+    assert.equal(result.ok, false);
+    assert.equal(result.termination, "termination_unproven");
+    assert.equal(startRunning, true);
+    assert.equal(stopCalls, 0);
+    assert.ok(result.errors.some((error) => error.message === "IN_FLIGHT_HOOK_UNSETTLED:slow"));
+    release.resolve();
+    await delay(0);
+    assert.equal(startRunning, false);
+  },
+);
 
-  assert.equal(result.ok, false);
-  assert.equal(result.termination, "termination_unproven");
-  assert.equal(startRunning, true);
-  assert.equal(stopCalls, 0);
-  assert.ok(result.errors.some(error => error.message === "IN_FLIGHT_HOOK_UNSETTLED:slow"));
-  release.resolve();
-  await delay(0);
-  assert.equal(startRunning, false);
-});
-
-test("multi-level rollback keeps reverse levels, aggregates failures, and shares one cleanup deadline", { timeout: 2_000 }, async () => {
-  const lifecycle = new GenerationLifecycle(testAuthorityScope);
-  const plan = requirePlan([
-    { id: "provider-a", requires: [] },
-    { id: "provider-b", requires: [] },
-    { id: "consumer", requires: ["provider-a", "provider-b"] },
-    { id: "leaf", requires: ["consumer"] },
-  ]);
-  const stopped: string[] = [];
-  const hooks = new Map<string, ModuleHooks>([
-    ["provider-a", inertHooks({ stop: () => { stopped.push("provider-a"); throw new Error("STOP_A_FAILED"); } })],
-    ["provider-b", inertHooks({ stop: async () => { stopped.push("provider-b"); await new Promise(() => undefined); } })],
-    ["consumer", inertHooks({ stop: () => { stopped.push("consumer"); } })],
-    ["leaf", inertHooks({
-      start: () => { throw new Error("LEAF_START_FAILED"); },
-      stop: () => { stopped.push("leaf"); },
-    })],
-  ]);
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "multi-level-rollback",
-    plan,
-    hooks,
-    { cleanupTimeoutMs: 20 },
-  ));
-  assert.equal(result.ok, false);
-  assert.equal(result.errors[0]?.message, "LEAF_START_FAILED");
-  assert.deepEqual(stopped.slice(0, 2), ["leaf", "consumer"]);
-  assert.deepEqual(new Set(stopped.slice(2)), new Set(["provider-a", "provider-b"]));
-  assert.ok(result.errors.some(error => error.message === "STOP_A_FAILED"));
-  assert.ok(result.errors.some(error => error.message === "CLEANUP_TIMEOUT:provider-b"));
-  assert.equal(result.termination, "termination_unproven");
-});
+test(
+  "multi-level rollback keeps reverse levels, aggregates failures, and shares one cleanup deadline",
+  { timeout: 2_000 },
+  async () => {
+    const lifecycle = new GenerationLifecycle(testAuthorityScope);
+    const plan = requirePlan([
+      { id: "provider-a", requires: [] },
+      { id: "provider-b", requires: [] },
+      { id: "consumer", requires: ["provider-a", "provider-b"] },
+      { id: "leaf", requires: ["consumer"] },
+    ]);
+    const stopped: string[] = [];
+    const hooks = new Map<string, ModuleHooks>([
+      [
+        "provider-a",
+        inertHooks({
+          stop: () => {
+            stopped.push("provider-a");
+            throw new Error("STOP_A_FAILED");
+          },
+        }),
+      ],
+      [
+        "provider-b",
+        inertHooks({
+          stop: async () => {
+            stopped.push("provider-b");
+            await new Promise(() => undefined);
+          },
+        }),
+      ],
+      [
+        "consumer",
+        inertHooks({
+          stop: () => {
+            stopped.push("consumer");
+          },
+        }),
+      ],
+      [
+        "leaf",
+        inertHooks({
+          start: () => {
+            throw new Error("LEAF_START_FAILED");
+          },
+          stop: () => {
+            stopped.push("leaf");
+          },
+        }),
+      ],
+    ]);
+    const result = await lifecycle.activate(
+      activationRequest(lifecycle, "multi-level-rollback", plan, hooks, { cleanupTimeoutMs: 20 }),
+    );
+    assert.equal(result.ok, false);
+    assert.equal(result.errors[0]?.message, "LEAF_START_FAILED");
+    assert.deepEqual(stopped.slice(0, 2), ["leaf", "consumer"]);
+    assert.deepEqual(new Set(stopped.slice(2)), new Set(["provider-a", "provider-b"]));
+    assert.ok(result.errors.some((error) => error.message === "STOP_A_FAILED"));
+    assert.ok(result.errors.some((error) => error.message === "CLEANUP_TIMEOUT:provider-b"));
+    assert.equal(result.termination, "termination_unproven");
+  },
+);
 
 test("wall time preserves one absolute activation budget when an injected clock stalls", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope, {
     now: () => 0,
-    sleep: milliseconds => delay(milliseconds),
+    sleep: (milliseconds) => delay(milliseconds),
   });
   const plan = requirePlan([
     { id: "a", requires: [] },
@@ -2368,26 +2953,33 @@ test("wall time preserves one absolute activation budget when an injected clock 
     { id: "d", requires: ["c"] },
   ]);
   const started: string[] = [];
-  const hooks = new Map(plan.nodes.map(node => [node.id, inertHooks({
-    start: async () => { started.push(node.id); await delay(30); },
-  })]));
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "stalled-clock-activation",
-    plan,
-    hooks,
-    { deadlineMs: 50, cleanupTimeoutMs: 20 },
-  ));
+  const hooks = new Map(
+    plan.nodes.map((node) => [
+      node.id,
+      inertHooks({
+        start: async () => {
+          started.push(node.id);
+          await delay(30);
+        },
+      }),
+    ]),
+  );
+  const result = await lifecycle.activate(
+    activationRequest(lifecycle, "stalled-clock-activation", plan, hooks, {
+      deadlineMs: 50,
+      cleanupTimeoutMs: 20,
+    }),
+  );
   assert.equal(result.ok, false);
   assert.equal(lifecycle.activeGeneration, 0);
   assert.ok(started.length < plan.nodes.length);
-  assert.ok(result.errors.some(error => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
+  assert.ok(result.errors.some((error) => error.message === "ABSOLUTE_DEADLINE_EXCEEDED"));
 });
 
 test("wall time preserves one cleanup budget across reverse batches when an injected clock stalls", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope, {
     now: () => 0,
-    sleep: milliseconds => delay(milliseconds),
+    sleep: (milliseconds) => delay(milliseconds),
   });
   const plan = requirePlan([
     { id: "a", requires: [] },
@@ -2396,33 +2988,51 @@ test("wall time preserves one cleanup budget across reverse batches when an inje
     { id: "d", requires: ["c"] },
   ]);
   const stopped: string[] = [];
-  const hooks = new Map(plan.nodes.map(node => {
-    const stop = async (): Promise<void> => { stopped.push(node.id); await delay(30); };
-    const moduleHooks = node.id === "d"
-      ? inertHooks({ start: () => { throw new Error("START_FAILED"); }, stop })
-      : inertHooks({ stop });
-    return [node.id, moduleHooks] as const;
-  }));
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "stalled-clock-cleanup",
-    plan,
-    hooks,
-    { cleanupTimeoutMs: 50 },
-  ));
+  const hooks = new Map(
+    plan.nodes.map((node) => {
+      const stop = async (): Promise<void> => {
+        stopped.push(node.id);
+        await delay(30);
+      };
+      const moduleHooks =
+        node.id === "d"
+          ? inertHooks({
+              start: () => {
+                throw new Error("START_FAILED");
+              },
+              stop,
+            })
+          : inertHooks({ stop });
+      return [node.id, moduleHooks] as const;
+    }),
+  );
+  const result = await lifecycle.activate(
+    activationRequest(lifecycle, "stalled-clock-cleanup", plan, hooks, { cleanupTimeoutMs: 50 }),
+  );
   assert.equal(result.ok, false);
   assert.equal(result.termination, "termination_unproven");
   assert.ok(stopped.length < plan.nodes.length);
-  assert.ok(result.errors.some(error => error.message.startsWith("CLEANUP_TIMEOUT:")));
+  assert.ok(result.errors.some((error) => error.message.startsWith("CLEANUP_TIMEOUT:")));
 });
 
 test("invalid lifecycle deadlines fail before generation allocation or publication", () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const plan = requirePlan([{ id: "candidate", requires: [] }]);
-  const request = activationRequest(lifecycle, "invalid-deadline", plan, new Map([["candidate", inertHooks()]]));
-  assert.throws(() => lifecycle.activate({ ...request, absoluteDeadline: Number.NaN }), /INVALID_ABSOLUTE_DEADLINE/);
+  const request = activationRequest(
+    lifecycle,
+    "invalid-deadline",
+    plan,
+    new Map([["candidate", inertHooks()]]),
+  );
+  assert.throws(
+    () => lifecycle.activate({ ...request, absoluteDeadline: Number.NaN }),
+    /INVALID_ABSOLUTE_DEADLINE/,
+  );
   for (const cleanupTimeoutMs of [Number.NaN, Number.POSITIVE_INFINITY, -1]) {
-    assert.throws(() => lifecycle.activate({ ...request, cleanupTimeoutMs }), /INVALID_CLEANUP_TIMEOUT/);
+    assert.throws(
+      () => lifecycle.activate({ ...request, cleanupTimeoutMs }),
+      /INVALID_CLEANUP_TIMEOUT/,
+    );
   }
   assert.equal(lifecycle.activeGeneration, 0);
   assert.equal(lifecycle.cutovers, 0);
@@ -2431,52 +3041,58 @@ test("invalid lifecycle deadlines fail before generation allocation or publicati
 test("bounded drain emits in-memory debt evidence before fencing an old generation", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const first = requirePlan([{ id: "first", requires: [] }]);
-  await lifecycle.activate(activationRequest(lifecycle, "drain-first", first, new Map([["first", inertHooks()]])));
+  await lifecycle.activate(
+    activationRequest(lifecycle, "drain-first", first, new Map([["first", inertHooks()]])),
+  );
   const oldGeneration = lifecycle.activeGeneration;
   const lease = lifecycle.acquireInvocation();
 
   const second = requirePlan([{ id: "second", requires: [] }]);
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "drain-second",
-    second,
-    new Map([["second", inertHooks()]]),
-    { cleanupTimeoutMs: 5 },
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(lifecycle, "drain-second", second, new Map([["second", inertHooks()]]), {
+      cleanupTimeoutMs: 5,
+    }),
+  );
   assert.equal(result.ok, true);
   assert.equal(result.termination, "termination_unproven");
-  assert.ok(result.errors.some(error => error.message === `DRAIN_TIMEOUT:${oldGeneration}`));
-  assert.ok(result.traces.some(trace => trace.phase === "drain" && trace.outcome === "timed-out"));
+  assert.ok(result.errors.some((error) => error.message === `DRAIN_TIMEOUT:${oldGeneration}`));
+  assert.ok(
+    result.traces.some((trace) => trace.phase === "drain" && trace.outcome === "timed-out"),
+  );
   assert.throws(() => lifecycle.assertInMemoryFence(lease), /STALE_GENERATION/);
   lease.release();
 });
 
-test("drain cutoff rejects an admitted write even while the event loop delays fencing", { timeout: 2_000 }, async () => {
-  const lifecycle = new GenerationLifecycle(testAuthorityScope);
-  const first = requirePlan([{ id: "first", requires: [] }]);
-  await lifecycle.activate(activationRequest(lifecycle, "cutoff-first", first, new Map([["first", inertHooks()]])));
-  const oldGeneration = lifecycle.activeGeneration;
-  const lease = lifecycle.acquireInvocation();
-  const second = requirePlan([{ id: "second", requires: [] }]);
-  const replacement = lifecycle.activate(activationRequest(
-    lifecycle,
-    "cutoff-second",
-    second,
-    new Map([["second", inertHooks()]]),
-    { cleanupTimeoutMs: 5 },
-  ));
-  await waitUntil(() => lifecycle.activeGeneration !== oldGeneration, 100, "DRAIN_DID_NOT_START");
-  const blockedUntil = performance.now() + 30;
-  while (performance.now() < blockedUntil) {
-    // Keep the overdue drain timer from fencing before the commit-time assertion.
-  }
-  assert.throws(() => lifecycle.assertInMemoryFence(lease), /STALE_GENERATION/);
-  lease.release();
-  const result = await replacement;
-  assert.equal(result.ok, true);
-  assert.equal(result.termination, "termination_unproven");
-  assert.ok(result.errors.some(error => error.message === `DRAIN_TIMEOUT:${oldGeneration}`));
-});
+test(
+  "drain cutoff rejects an admitted write even while the event loop delays fencing",
+  { timeout: 2_000 },
+  async () => {
+    const lifecycle = new GenerationLifecycle(testAuthorityScope);
+    const first = requirePlan([{ id: "first", requires: [] }]);
+    await lifecycle.activate(
+      activationRequest(lifecycle, "cutoff-first", first, new Map([["first", inertHooks()]])),
+    );
+    const oldGeneration = lifecycle.activeGeneration;
+    const lease = lifecycle.acquireInvocation();
+    const second = requirePlan([{ id: "second", requires: [] }]);
+    const replacement = lifecycle.activate(
+      activationRequest(lifecycle, "cutoff-second", second, new Map([["second", inertHooks()]]), {
+        cleanupTimeoutMs: 5,
+      }),
+    );
+    await waitUntil(() => lifecycle.activeGeneration !== oldGeneration, 100, "DRAIN_DID_NOT_START");
+    const blockedUntil = performance.now() + 30;
+    while (performance.now() < blockedUntil) {
+      // Keep the overdue drain timer from fencing before the commit-time assertion.
+    }
+    assert.throws(() => lifecycle.assertInMemoryFence(lease), /STALE_GENERATION/);
+    lease.release();
+    const result = await replacement;
+    assert.equal(result.ok, true);
+    assert.equal(result.termination, "termination_unproven");
+    assert.ok(result.errors.some((error) => error.message === `DRAIN_TIMEOUT:${oldGeneration}`));
+  },
+);
 
 test("transient drain clock failure fences the old generation before queued commits", async () => {
   let lifecycle: GenerationLifecycle;
@@ -2507,197 +3123,284 @@ test("transient drain clock failure fences the old generation before queued comm
   };
   lifecycle = new GenerationLifecycle(testAuthorityScope, clock);
   const first = requirePlan([{ id: "first", requires: [] }]);
-  await lifecycle.activate(activationRequest(lifecycle, "transient-drain-first", first, new Map([[
-    "first",
-    inertHooks(),
-  ]])));
+  await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "transient-drain-first",
+      first,
+      new Map([["first", inertHooks()]]),
+    ),
+  );
   oldGeneration = lifecycle.activeGeneration;
   oldLease = lifecycle.acquireInvocation();
   const second = requirePlan([{ id: "second", requires: [] }]);
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "transient-drain-second",
-    second,
-    new Map([["second", inertHooks()]]),
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "transient-drain-second",
+      second,
+      new Map([["second", inertHooks()]]),
+    ),
+  );
   await Promise.resolve();
   assert.equal(result.ok, true);
   assert.equal(result.termination, "termination_unproven");
   assert.equal(commitAccepted, false);
   assert.match(String(commitError), /STALE_GENERATION/);
-  assert.ok(result.errors.some(error => error.message === `DRAIN_TIMEOUT:${oldGeneration}`));
+  assert.ok(result.errors.some((error) => error.message === `DRAIN_TIMEOUT:${oldGeneration}`));
 });
 
 test("hostile drain errors cannot bypass old-generation stop", async () => {
   let failSleep = false;
-  const hostileError = new Proxy({}, {
-    getPrototypeOf: () => { throw new Error("HOSTILE_PROTOTYPE"); },
-    get: () => { throw new Error("HOSTILE_PROPERTY"); },
-  });
+  const hostileError = new Proxy(
+    {},
+    {
+      getPrototypeOf: () => {
+        throw new Error("HOSTILE_PROTOTYPE");
+      },
+      get: () => {
+        throw new Error("HOSTILE_PROPERTY");
+      },
+    },
+  );
   const lifecycle = new GenerationLifecycle(testAuthorityScope, {
     now: () => performance.now(),
-    sleep: async milliseconds => {
-      if (failSleep) throw hostileError;
+    sleep: async (milliseconds) => {
+      if (failSleep) {
+        throw hostileError;
+      }
       await delay(milliseconds);
     },
   });
   const first = requirePlan([{ id: "first", requires: [] }]);
   let stops = 0;
-  await lifecycle.activate(activationRequest(
-    lifecycle,
-    "hostile-drain-first",
-    first,
-    new Map([["first", inertHooks({ stop: () => { stops += 1; } })]]),
-  ));
+  await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "hostile-drain-first",
+      first,
+      new Map([
+        [
+          "first",
+          inertHooks({
+            stop: () => {
+              stops += 1;
+            },
+          }),
+        ],
+      ]),
+    ),
+  );
   const lease = lifecycle.acquireInvocation();
   failSleep = true;
   const second = requirePlan([{ id: "second", requires: [] }]);
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "hostile-drain-second",
-    second,
-    new Map([["second", inertHooks()]]),
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "hostile-drain-second",
+      second,
+      new Map([["second", inertHooks()]]),
+    ),
+  );
   lease.release();
   assert.equal(result.ok, true);
   assert.equal(result.termination, "termination_unproven");
   assert.equal(stops, 1);
-  assert.ok(result.errors.some(error => error.message === "UNREADABLE_ERROR"));
+  assert.ok(result.errors.some((error) => error.message === "UNREADABLE_ERROR"));
 });
 
 test("successful cutover reports old-generation cleanup timeout as termination unproven", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const first = requirePlan([{ id: "first", requires: [] }]);
-  await lifecycle.activate(activationRequest(
-    lifecycle,
-    "cleanup-timeout-first",
-    first,
-    new Map([["first", inertHooks({ stop: async () => new Promise(() => undefined) })]]),
-  ));
+  await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "cleanup-timeout-first",
+      first,
+      new Map([["first", inertHooks({ stop: async () => new Promise(() => undefined) })]]),
+    ),
+  );
   const second = requirePlan([{ id: "second", requires: [] }]);
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "cleanup-timeout-second",
-    second,
-    new Map([["second", inertHooks()]]),
-    { cleanupTimeoutMs: 5 },
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "cleanup-timeout-second",
+      second,
+      new Map([["second", inertHooks()]]),
+      { cleanupTimeoutMs: 5 },
+    ),
+  );
   assert.equal(result.ok, true);
   assert.equal(result.termination, "termination_unproven");
-  assert.ok(result.errors.some(error => error.message === "CLEANUP_TIMEOUT:first"));
+  assert.ok(result.errors.some((error) => error.message === "CLEANUP_TIMEOUT:first"));
 });
 
 test("post-publication drain failure becomes cleanup debt without aborting the active candidate", async () => {
   const clock = {
     now: () => 0,
-    sleep: async () => { throw new Error("DRAIN_CLOCK_FAILED"); },
+    sleep: async () => {
+      throw new Error("DRAIN_CLOCK_FAILED");
+    },
   };
   const lifecycle = new GenerationLifecycle(testAuthorityScope, clock);
   const first = requirePlan([{ id: "first", requires: [] }]);
   let firstStops = 0;
-  await lifecycle.activate(activationRequest(
-    lifecycle,
-    "post-publication-first",
-    first,
-    new Map([["first", inertHooks({ stop: () => { firstStops += 1; } })]]),
-  ));
+  await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "post-publication-first",
+      first,
+      new Map([
+        [
+          "first",
+          inertHooks({
+            stop: () => {
+              firstStops += 1;
+            },
+          }),
+        ],
+      ]),
+    ),
+  );
   const oldLease = lifecycle.acquireInvocation();
   const second = requirePlan([{ id: "second", requires: [] }]);
   let secondStops = 0;
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "post-publication-second",
-    second,
-    new Map([["second", inertHooks({ stop: () => { secondStops += 1; } })]]),
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "post-publication-second",
+      second,
+      new Map([
+        [
+          "second",
+          inertHooks({
+            stop: () => {
+              secondStops += 1;
+            },
+          }),
+        ],
+      ]),
+    ),
+  );
   assert.equal(result.ok, true);
   assert.equal(result.termination, "termination_unproven");
   assert.equal(lifecycle.activeGeneration, result.generation);
   assert.equal(firstStops, 1);
   assert.equal(secondStops, 0);
-  assert.ok(result.errors.some(error => error.message === "DRAIN_CLOCK_FAILED"));
-  assert.ok(result.traces.some(trace => trace.phase === "drain" && trace.outcome === "termination_unproven"));
+  assert.ok(result.errors.some((error) => error.message === "DRAIN_CLOCK_FAILED"));
+  assert.ok(
+    result.traces.some(
+      (trace) => trace.phase === "drain" && trace.outcome === "termination_unproven",
+    ),
+  );
   assert.throws(() => lifecycle.assertInMemoryFence(oldLease), /STALE_GENERATION/);
   const currentLease = lifecycle.acquireInvocation();
   assert.equal(currentLease.generation, result.generation);
   currentLease.release();
 });
 
-test("post-publication drain remains bounded when the injected clock sleep never settles", { timeout: 2_000 }, async () => {
-  const clock = {
-    now: () => 0,
-    sleep: () => new Promise<void>(() => undefined),
-  };
-  const lifecycle = new GenerationLifecycle(testAuthorityScope, clock);
-  const first = requirePlan([{ id: "first", requires: [] }]);
-  await lifecycle.activate(activationRequest(
-    lifecycle,
-    "hung-drain-first",
-    first,
-    new Map([["first", inertHooks()]]),
-  ));
-  const oldLease = lifecycle.acquireInvocation();
-  const second = requirePlan([{ id: "second", requires: [] }]);
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "hung-drain-second",
-    second,
-    new Map([["second", inertHooks()]]),
-    { cleanupTimeoutMs: 10 },
-  ));
-  assert.equal(result.ok, true);
-  assert.equal(result.termination, "termination_unproven");
-  assert.ok(result.errors.some(error => error.message === `DRAIN_TIMEOUT:${oldLease.generation}`));
-  assert.equal(lifecycle.activeGeneration, result.generation);
-  assert.throws(() => lifecycle.assertInMemoryFence(oldLease), /STALE_GENERATION/);
-  oldLease.release();
-});
+test(
+  "post-publication drain remains bounded when the injected clock sleep never settles",
+  { timeout: 2_000 },
+  async () => {
+    const clock = {
+      now: () => 0,
+      sleep: () => new Promise<void>(() => undefined),
+    };
+    const lifecycle = new GenerationLifecycle(testAuthorityScope, clock);
+    const first = requirePlan([{ id: "first", requires: [] }]);
+    await lifecycle.activate(
+      activationRequest(lifecycle, "hung-drain-first", first, new Map([["first", inertHooks()]])),
+    );
+    const oldLease = lifecycle.acquireInvocation();
+    const second = requirePlan([{ id: "second", requires: [] }]);
+    const result = await lifecycle.activate(
+      activationRequest(
+        lifecycle,
+        "hung-drain-second",
+        second,
+        new Map([["second", inertHooks()]]),
+        { cleanupTimeoutMs: 10 },
+      ),
+    );
+    assert.equal(result.ok, true);
+    assert.equal(result.termination, "termination_unproven");
+    assert.ok(
+      result.errors.some((error) => error.message === `DRAIN_TIMEOUT:${oldLease.generation}`),
+    );
+    assert.equal(lifecycle.activeGeneration, result.generation);
+    assert.throws(() => lifecycle.assertInMemoryFence(oldLease), /STALE_GENERATION/);
+    oldLease.release();
+  },
+);
 
 test("hostile error objects become bounded cleanup debt rather than escaping after publication", async () => {
   const hostile = new Error("hidden");
-  Object.defineProperty(hostile, "message", { get: () => { throw new Error("MESSAGE_GETTER_FAILED"); } });
+  Object.defineProperty(hostile, "message", {
+    get: () => {
+      throw new Error("MESSAGE_GETTER_FAILED");
+    },
+  });
   const lifecycle = new GenerationLifecycle(testAuthorityScope, {
     now: () => 0,
-    sleep: async () => { throw hostile; },
+    sleep: async () => {
+      throw hostile;
+    },
   });
   const first = requirePlan([{ id: "first", requires: [] }]);
-  await lifecycle.activate(activationRequest(lifecycle, "hostile-error-first", first, new Map([["first", inertHooks()]])));
+  await lifecycle.activate(
+    activationRequest(lifecycle, "hostile-error-first", first, new Map([["first", inertHooks()]])),
+  );
   const oldLease = lifecycle.acquireInvocation();
   const second = requirePlan([{ id: "second", requires: [] }]);
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "hostile-error-second",
-    second,
-    new Map([["second", inertHooks()]]),
-    { cleanupTimeoutMs: 10 },
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "hostile-error-second",
+      second,
+      new Map([["second", inertHooks()]]),
+      { cleanupTimeoutMs: 10 },
+    ),
+  );
   assert.equal(result.ok, true);
   assert.equal(result.termination, "termination_unproven");
-  assert.ok(result.errors.some(error => error.message === "UNREADABLE_ERROR"));
+  assert.ok(result.errors.some((error) => error.message === "UNREADABLE_ERROR"));
   assert.equal(lifecycle.activeGeneration, result.generation);
   oldLease.release();
 });
 
-test("standalone lifecycle deadlines record async hangs and finite event-loop blocking", async t => {
+test("standalone lifecycle deadlines record async hangs and finite event-loop blocking", async (t) => {
   const children = new Set<ReturnType<typeof spawn>>();
   t.after(async () => {
-    await Promise.all([...children].map(async child => {
-      if (child.exitCode !== null || child.signalCode !== null) return;
-      child.kill("SIGKILL");
-      await once(child, "exit", { signal: AbortSignal.timeout(2_000) }).catch(() => undefined);
-    }));
+    await Promise.all(
+      [...children].map(async (child) => {
+        if (child.exitCode !== null || child.signalCode !== null) {
+          return;
+        }
+        child.kill("SIGKILL");
+        await once(child, "exit", { signal: AbortSignal.timeout(2_000) }).catch(() => undefined);
+      }),
+    );
   });
   for (const phase of ["prepare", "start", "blocking-start", "stop"] as const) {
-    const child = spawn(process.execPath, [join(fixtureRoot, "standalone-lifecycle-deadline.mjs"), phase], {
-      stdio: ["ignore", "pipe", "pipe"],
-    });
+    const child = spawn(
+      process.execPath,
+      [join(fixtureRoot, "standalone-lifecycle-deadline.mjs"), phase],
+      {
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    );
     children.add(child);
     let stdout = "";
     let stderr = "";
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
-    child.stdout.on("data", chunk => { stdout += chunk; });
-    child.stderr.on("data", chunk => { stderr += chunk; });
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
     const [code] = await once(child, "close", { signal: AbortSignal.timeout(10_000) });
     children.delete(child);
     assert.equal(code, 0, `${phase}:${stderr}`);
@@ -2715,7 +3418,12 @@ test("standalone lifecycle deadlines record async hangs and finite event-loop bl
     const { result } = observation;
     assert.equal(result.ok, phase === "stop", phase);
     assert.equal(result.termination, "termination_unproven", phase);
-    assert.ok(result.errors.some(error => /(?:ABSOLUTE|CLEANUP)_TIMEOUT|DEADLINE_EXCEEDED/.test(error.message)), phase);
+    assert.ok(
+      result.errors.some((error) =>
+        /(?:ABSOLUTE|CLEANUP)_TIMEOUT|DEADLINE_EXCEEDED/.test(error.message),
+      ),
+      phase,
+    );
   }
 });
 
@@ -2723,12 +3431,9 @@ test("future generations cannot be externally pre-sealed", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   assert.equal("drain" in lifecycle, false);
   const plan = requirePlan([{ id: "candidate", requires: [] }]);
-  const result = await lifecycle.activate(activationRequest(
-    lifecycle,
-    "not-pre-sealed",
-    plan,
-    new Map([["candidate", inertHooks()]]),
-  ));
+  const result = await lifecycle.activate(
+    activationRequest(lifecycle, "not-pre-sealed", plan, new Map([["candidate", inertHooks()]])),
+  );
   assert.equal(result.ok, true);
   const lease = lifecycle.acquireInvocation();
   assert.equal(lease.generation, result.generation);
@@ -2738,7 +3443,9 @@ test("future generations cannot be externally pre-sealed", async () => {
 test("replacement drains admitted work, cuts over once, and fences stale writes", async () => {
   const lifecycle = new GenerationLifecycle(testAuthorityScope);
   const first = requirePlan([{ id: "first", requires: [] }]);
-  await lifecycle.activate(activationRequest(lifecycle, "replacement-first", first, new Map([["first", inertHooks()]])));
+  await lifecycle.activate(
+    activationRequest(lifecycle, "replacement-first", first, new Map([["first", inertHooks()]])),
+  );
   const oldGeneration = lifecycle.activeGeneration;
   const lease = lifecycle.acquireInvocation();
   let oldWrite = 0;
@@ -2746,13 +3453,15 @@ test("replacement drains admitted work, cuts over once, and fences stale writes"
   oldWrite += 1;
 
   const second = requirePlan([{ id: "second", requires: [] }]);
-  const replacement = lifecycle.activate(activationRequest(
-    lifecycle,
-    "replacement-second",
-    second,
-    new Map([["second", inertHooks()]]),
-    { cleanupTimeoutMs: 100 },
-  ));
+  const replacement = lifecycle.activate(
+    activationRequest(
+      lifecycle,
+      "replacement-second",
+      second,
+      new Map([["second", inertHooks()]]),
+      { cleanupTimeoutMs: 100 },
+    ),
+  );
   await delay(5);
   const newGeneration = lifecycle.activeGeneration;
   assert.notEqual(newGeneration, oldGeneration);
@@ -2846,20 +3555,23 @@ test("crash recovery decisions bind readiness to runtime and module attempts at 
     queryModuleId: overrides.queryModuleId ?? "module-a",
     queryModuleActivationGeneration: overrides.queryModuleActivationGeneration ?? 17,
     queryAttemptId: overrides.queryAttemptId ?? "module-attempt-1",
-    candidate: candidateState === "absent" ? { state: "absent" } : {
-      state: candidateState,
-      operationId: overrides.candidateOperationId ?? "activation-1",
-      intentDigest: overrides.candidateIntentDigest ?? "sha256:intent-1",
-      generation: overrides.candidateGeneration ?? 2,
-      runtimeGeneration: overrides.candidateRuntimeGeneration ?? 11,
-      moduleId: overrides.candidateModuleId ?? "module-a",
-      moduleActivationGeneration: overrides.candidateModuleActivationGeneration ?? 17,
-      attemptId: overrides.candidateAttemptId ?? "module-attempt-1",
-      hostIncarnation: overrides.candidateHostIncarnation ?? "host-incarnation-1",
-      authorityScope: overrides.candidateAuthorityScope ?? testAuthorityScope,
-      graphDigest: overrides.candidateGraphDigest ?? "sha256:graph-1",
-      sinkFence: overrides.candidateSinkFence ?? 42,
-    },
+    candidate:
+      candidateState === "absent"
+        ? { state: "absent" }
+        : {
+            state: candidateState,
+            operationId: overrides.candidateOperationId ?? "activation-1",
+            intentDigest: overrides.candidateIntentDigest ?? "sha256:intent-1",
+            generation: overrides.candidateGeneration ?? 2,
+            runtimeGeneration: overrides.candidateRuntimeGeneration ?? 11,
+            moduleId: overrides.candidateModuleId ?? "module-a",
+            moduleActivationGeneration: overrides.candidateModuleActivationGeneration ?? 17,
+            attemptId: overrides.candidateAttemptId ?? "module-attempt-1",
+            hostIncarnation: overrides.candidateHostIncarnation ?? "host-incarnation-1",
+            authorityScope: overrides.candidateAuthorityScope ?? testAuthorityScope,
+            graphDigest: overrides.candidateGraphDigest ?? "sha256:graph-1",
+            sinkFence: overrides.candidateSinkFence ?? 42,
+          },
     oldGeneration: {
       operationId: overrides.oldOperationId ?? "activation-1",
       intentDigest: overrides.oldIntentDigest ?? "sha256:intent-1",
@@ -2879,43 +3591,131 @@ test("crash recovery decisions bind readiness to runtime and module attempts at 
     [published, observed("ready", true), "RESUME_DRAIN"],
     [{ ...published, phase: "draining" }, observed("ready", true), "RESUME_DRAIN"],
     [published, observed("ready", false), "STOP_OLD_GENERATION"],
-    [published, observed("ready", false, { oldTerminationEvidence: "stopped" }), "RECONCILE_OLD_CLEANUP"],
-    [published, observed("ready", false, {
-      oldTerminationEvidence: "stopped",
-      oldCleanupEvidence: "confirmed",
-    }), "RECORD_RETIREMENT"],
-    [{ ...published, phase: "retired" }, observed("ready", false, {
-      oldTerminationEvidence: "stopped",
-      oldCleanupEvidence: "confirmed",
-    }), "RETURN_RETIRED_RESULT"],
-    [{ ...baseline, externalOutcome: "uncertain" }, observed("running", false), "CONTROLLED_RECOVERY"],
+    [
+      published,
+      observed("ready", false, { oldTerminationEvidence: "stopped" }),
+      "RECONCILE_OLD_CLEANUP",
+    ],
+    [
+      published,
+      observed("ready", false, {
+        oldTerminationEvidence: "stopped",
+        oldCleanupEvidence: "confirmed",
+      }),
+      "RECORD_RETIREMENT",
+    ],
+    [
+      { ...published, phase: "retired" },
+      observed("ready", false, {
+        oldTerminationEvidence: "stopped",
+        oldCleanupEvidence: "confirmed",
+      }),
+      "RETURN_RETIRED_RESULT",
+    ],
+    [
+      { ...baseline, externalOutcome: "uncertain" },
+      observed("running", false),
+      "CONTROLLED_RECOVERY",
+    ],
     [{ ...published, routeHeadGeneration: 1 }, observed("ready", false), "CONTROLLED_RECOVERY"],
-    [{ ...published, phase: "draining", drainDeadlineExpired: true }, observed("ready", true), "CONTROLLED_RECOVERY"],
+    [
+      { ...published, phase: "draining", drainDeadlineExpired: true },
+      observed("ready", true),
+      "CONTROLLED_RECOVERY",
+    ],
     [{ ...published, drainDeadlineExpired: true }, observed("ready", true), "CONTROLLED_RECOVERY"],
-    [baseline, observed("ready", false, { candidateHostIncarnation: "stale-host" }), "CONTROLLED_RECOVERY"],
-    [baseline, observed("ready", false, { candidateOperationId: "activation-other" }), "CONTROLLED_RECOVERY"],
-    [baseline, observed("ready", false, { candidateIntentDigest: "sha256:intent-other" }), "CONTROLLED_RECOVERY"],
+    [
+      baseline,
+      observed("ready", false, { candidateHostIncarnation: "stale-host" }),
+      "CONTROLLED_RECOVERY",
+    ],
+    [
+      baseline,
+      observed("ready", false, { candidateOperationId: "activation-other" }),
+      "CONTROLLED_RECOVERY",
+    ],
+    [
+      baseline,
+      observed("ready", false, { candidateIntentDigest: "sha256:intent-other" }),
+      "CONTROLLED_RECOVERY",
+    ],
     [baseline, observed("ready", false, { candidateRuntimeGeneration: 12 }), "CONTROLLED_RECOVERY"],
     [baseline, observed("ready", false, { candidateModuleId: "module-b" }), "CONTROLLED_RECOVERY"],
-    [baseline, observed("ready", false, { candidateModuleActivationGeneration: 18 }), "CONTROLLED_RECOVERY"],
-    [baseline, observed("ready", false, { candidateAttemptId: "module-attempt-replayed" }), "CONTROLLED_RECOVERY"],
+    [
+      baseline,
+      observed("ready", false, { candidateModuleActivationGeneration: 18 }),
+      "CONTROLLED_RECOVERY",
+    ],
+    [
+      baseline,
+      observed("ready", false, { candidateAttemptId: "module-attempt-replayed" }),
+      "CONTROLLED_RECOVERY",
+    ],
     [baseline, observed("ready", false, { candidateSinkFence: 43 }), "CONTROLLED_RECOVERY"],
-    [baseline, observed("absent", false, { queryOperationId: "activation-other" }), "CONTROLLED_RECOVERY"],
-    [baseline, observed("absent", false, { queryIntentDigest: "sha256:intent-other" }), "CONTROLLED_RECOVERY"],
-    [baseline, observed("absent", false, { queryHostIncarnation: "stale-host" }), "CONTROLLED_RECOVERY"],
-    [baseline, observed("absent", false, { queryAuthorityScope: "tenant:other/project:other" }), "CONTROLLED_RECOVERY"],
-    [baseline, observed("absent", false, { queryGraphDigest: "sha256:wrong-graph" }), "CONTROLLED_RECOVERY"],
+    [
+      baseline,
+      observed("absent", false, { queryOperationId: "activation-other" }),
+      "CONTROLLED_RECOVERY",
+    ],
+    [
+      baseline,
+      observed("absent", false, { queryIntentDigest: "sha256:intent-other" }),
+      "CONTROLLED_RECOVERY",
+    ],
+    [
+      baseline,
+      observed("absent", false, { queryHostIncarnation: "stale-host" }),
+      "CONTROLLED_RECOVERY",
+    ],
+    [
+      baseline,
+      observed("absent", false, { queryAuthorityScope: "tenant:other/project:other" }),
+      "CONTROLLED_RECOVERY",
+    ],
+    [
+      baseline,
+      observed("absent", false, { queryGraphDigest: "sha256:wrong-graph" }),
+      "CONTROLLED_RECOVERY",
+    ],
     [baseline, observed("ready", false, { queryRuntimeGeneration: 12 }), "CONTROLLED_RECOVERY"],
     [baseline, observed("ready", false, { queryModuleId: "module-b" }), "CONTROLLED_RECOVERY"],
-    [baseline, observed("ready", false, { queryModuleActivationGeneration: 18 }), "CONTROLLED_RECOVERY"],
-    [baseline, observed("ready", false, { queryAttemptId: "module-attempt-replayed" }), "CONTROLLED_RECOVERY"],
+    [
+      baseline,
+      observed("ready", false, { queryModuleActivationGeneration: 18 }),
+      "CONTROLLED_RECOVERY",
+    ],
+    [
+      baseline,
+      observed("ready", false, { queryAttemptId: "module-attempt-replayed" }),
+      "CONTROLLED_RECOVERY",
+    ],
     [baseline, observed("absent", false, { oldGeneration: 9 }), "CONTROLLED_RECOVERY"],
-    [baseline, observed("absent", false, { oldOperationId: "activation-other" }), "CONTROLLED_RECOVERY"],
-    [baseline, observed("absent", false, { oldIntentDigest: "sha256:intent-other" }), "CONTROLLED_RECOVERY"],
-    [baseline, observed("absent", false, { oldHostIncarnation: "host-incarnation-replayed" }), "CONTROLLED_RECOVERY"],
+    [
+      baseline,
+      observed("absent", false, { oldOperationId: "activation-other" }),
+      "CONTROLLED_RECOVERY",
+    ],
+    [
+      baseline,
+      observed("absent", false, { oldIntentDigest: "sha256:intent-other" }),
+      "CONTROLLED_RECOVERY",
+    ],
+    [
+      baseline,
+      observed("absent", false, { oldHostIncarnation: "host-incarnation-replayed" }),
+      "CONTROLLED_RECOVERY",
+    ],
     [baseline, observed("absent", false, { oldSinkFence: 2 }), "CONTROLLED_RECOVERY"],
-    [published, observed("ready", false, { oldTerminationEvidence: "unknown" }), "CONTROLLED_RECOVERY"],
-    [published, observed("ready", false, { oldCleanupEvidence: "uncertain" }), "CONTROLLED_RECOVERY"],
+    [
+      published,
+      observed("ready", false, { oldTerminationEvidence: "unknown" }),
+      "CONTROLLED_RECOVERY",
+    ],
+    [
+      published,
+      observed("ready", false, { oldCleanupEvidence: "uncertain" }),
+      "CONTROLLED_RECOVERY",
+    ],
   ] as const;
   for (const [state, observed, expected] of cases) {
     assert.equal(reconcileLifecycle(state, observed), expected);
@@ -2932,30 +3732,37 @@ test("crash recovery decisions bind readiness to runtime and module attempts at 
     "CONTROLLED_RECOVERY",
   );
   assert.equal(
-    restoreRecoveryCoordinator(JSON.stringify({ schema: "unknown", state: baseline }))
-      .reconcile(observed("absent", false)),
+    restoreRecoveryCoordinator(JSON.stringify({ schema: "unknown", state: baseline })).reconcile(
+      observed("absent", false),
+    ),
     "CONTROLLED_RECOVERY",
   );
-  assert.equal(reconcileLifecycle(
-    { ...baseline, candidateGeneration: Number.POSITIVE_INFINITY },
-    observed("absent", false),
-  ), "CONTROLLED_RECOVERY");
-  assert.equal(reconcileLifecycle(
-    { ...baseline, phase: "invalid" } as unknown as DurableLifecycleState,
-    observed("absent", false),
-  ), "CONTROLLED_RECOVERY");
-  assert.equal(reconcileLifecycle(
-    baseline,
-    {
+  assert.equal(
+    reconcileLifecycle(
+      { ...baseline, candidateGeneration: Number.POSITIVE_INFINITY },
+      observed("absent", false),
+    ),
+    "CONTROLLED_RECOVERY",
+  );
+  assert.equal(
+    reconcileLifecycle(
+      { ...baseline, phase: "invalid" } as unknown as DurableLifecycleState,
+      observed("absent", false),
+    ),
+    "CONTROLLED_RECOVERY",
+  );
+  assert.equal(
+    reconcileLifecycle(baseline, {
       ...observed("absent", false),
       oldGeneration: { ...observed("absent", false).oldGeneration, sinkFence: 1.5 },
-    },
-  ), "CONTROLLED_RECOVERY");
+    }),
+    "CONTROLLED_RECOVERY",
+  );
   for (const malformed of [null, {}, { candidate: null }, { oldGeneration: null }]) {
-    assert.equal(reconcileLifecycle(
-      baseline,
-      malformed as unknown as ObservedHostState,
-    ), "CONTROLLED_RECOVERY");
+    assert.equal(
+      reconcileLifecycle(baseline, malformed as unknown as ObservedHostState),
+      "CONTROLLED_RECOVERY",
+    );
   }
   for (const missingIdentityField of [
     "runtimeGeneration",
@@ -2967,10 +3774,10 @@ test("crash recovery decisions bind readiness to runtime and module attempts at 
       candidate: Record<string, unknown>;
     };
     delete incompleteReadiness.candidate[missingIdentityField];
-    assert.equal(reconcileLifecycle(
-      baseline,
-      incompleteReadiness as unknown as ObservedHostState,
-    ), "CONTROLLED_RECOVERY");
+    assert.equal(
+      reconcileLifecycle(baseline, incompleteReadiness as unknown as ObservedHostState),
+      "CONTROLLED_RECOVERY",
+    );
   }
   for (const missingQueryIdentityField of [
     "queryRuntimeGeneration",
@@ -2978,65 +3785,114 @@ test("crash recovery decisions bind readiness to runtime and module attempts at 
     "queryModuleActivationGeneration",
     "queryAttemptId",
   ]) {
-    const incompleteReadiness = structuredClone(observed("ready", false)) as unknown as Record<string, unknown>;
+    const incompleteReadiness = structuredClone(observed("ready", false)) as unknown as Record<
+      string,
+      unknown
+    >;
     delete incompleteReadiness[missingQueryIdentityField];
-    assert.equal(reconcileLifecycle(
-      baseline,
-      incompleteReadiness as unknown as ObservedHostState,
-    ), "CONTROLLED_RECOVERY");
+    assert.equal(
+      reconcileLifecycle(baseline, incompleteReadiness as unknown as ObservedHostState),
+      "CONTROLLED_RECOVERY",
+    );
   }
-  assert.equal(reconcileLifecycle(
-    published,
-    observed("ready", true, {
-      oldTerminationEvidence: "stopped",
-      oldCleanupEvidence: "confirmed",
-    }),
-  ), "CONTROLLED_RECOVERY");
-  assert.equal(reconcileLifecycle(
-    published,
-    observed("ready", false, {
-      oldTerminationEvidence: "running",
-      oldCleanupEvidence: "confirmed",
-    }),
-  ), "CONTROLLED_RECOVERY");
+  assert.equal(
+    reconcileLifecycle(
+      published,
+      observed("ready", true, {
+        oldTerminationEvidence: "stopped",
+        oldCleanupEvidence: "confirmed",
+      }),
+    ),
+    "CONTROLLED_RECOVERY",
+  );
+  assert.equal(
+    reconcileLifecycle(
+      published,
+      observed("ready", false, {
+        oldTerminationEvidence: "running",
+        oldCleanupEvidence: "confirmed",
+      }),
+    ),
+    "CONTROLLED_RECOVERY",
+  );
   const throwingObservation = Object.defineProperty({}, "candidate", {
     enumerable: true,
-    get: () => { throw new Error("OBSERVATION_GETTER_FAILED"); },
+    get: () => {
+      throw new Error("OBSERVATION_GETTER_FAILED");
+    },
   });
-  assert.equal(reconcileLifecycle(
-    baseline,
-    throwingObservation as unknown as ObservedHostState,
-  ), "CONTROLLED_RECOVERY");
+  assert.equal(
+    reconcileLifecycle(baseline, throwingObservation as unknown as ObservedHostState),
+    "CONTROLLED_RECOVERY",
+  );
 
   const candidateStates = ["ready", "absent", "ready", "absent", "ready"];
   const hostileCandidate = Object.defineProperty({}, "state", {
     enumerable: true,
     get: () => candidateStates.shift(),
   });
-  assert.equal(reconcileLifecycle(
-    { ...baseline, phase: "ready" },
-    { ...observed("ready", false), candidate: hostileCandidate } as unknown as ObservedHostState,
-  ), "CONTROLLED_RECOVERY");
+  assert.equal(
+    reconcileLifecycle({ ...baseline, phase: "ready" }, {
+      ...observed("ready", false),
+      candidate: hostileCandidate,
+    } as unknown as ObservedHostState),
+    "CONTROLLED_RECOVERY",
+  );
 });
 
 test("portable protocol rejects stale, expired, malformed, oversized, and miscorrelated frames", () => {
   const tracker = createDispatchTracker();
   const authority = { ...protocolAuthority, now: Date.now() };
   const accepted = handlePortableWorkerFrame(frame(), authority);
-  assert.throws(() => handlePortableWorkerFrame(frame({ kind: "result" }), authority), /INVALID_REQUEST_KIND/);
+  assert.throws(
+    () => handlePortableWorkerFrame(frame({ kind: "result" }), authority),
+    /INVALID_REQUEST_KIND/,
+  );
   assert.equal(accepted.kind, "result");
   assert.equal(accepted.senderId, "extension-host");
   assert.equal(accepted.audience, "product-host");
-  assert.deepEqual(validateAuthorizedEnvelope(accepted, { ...responseAuthority, now: Date.now() }), accepted);
-  assert.throws(() => handlePortableWorkerFrame(frame({ authorityScope: "tenant:other/project:other" }), authority), /AUTHORITY_SCOPE_MISMATCH/);
-  assert.throws(() => handlePortableWorkerFrame(frame({ extensionInstanceId: "extension-instance-2" }), authority), /EXTENSION_INSTANCE_MISMATCH/);
-  assert.throws(() => handlePortableWorkerFrame(frame({ graphGeneration: 2 }), authority), /STALE_GRAPH_GENERATION/);
-  assert.throws(() => handlePortableWorkerFrame(frame({ moduleActivationGeneration: 6 }), authority), /STALE_MODULE_ACTIVATION_GENERATION/);
-  assert.throws(() => handlePortableWorkerFrame(frame({ hostIncarnation: "stale-host" }), authority), /STALE_HOST_INCARNATION/);
-  assert.throws(() => handlePortableWorkerFrame(frame({ senderId: "unauthenticated-peer" }), authority), /AUTHENTICATED_PEER_MISMATCH/);
-  assert.throws(() => handlePortableWorkerFrame(frame({ audience: "different-host" }), authority), /AUDIENCE_MISMATCH/);
-  assert.throws(() => handlePortableWorkerFrame(frame({ absoluteDeadline: authority.now - 1 }), authority), /DEADLINE_EXCEEDED/);
-  assert.throws(() => handlePortableWorkerFrame(frame(), { ...authority, now: Number.NaN }), /INVALID_AUTHORITY_NOW/);
+  assert.deepEqual(
+    validateAuthorizedEnvelope(accepted, { ...responseAuthority, now: Date.now() }),
+    accepted,
+  );
+  assert.throws(
+    () =>
+      handlePortableWorkerFrame(frame({ authorityScope: "tenant:other/project:other" }), authority),
+    /AUTHORITY_SCOPE_MISMATCH/,
+  );
+  assert.throws(
+    () =>
+      handlePortableWorkerFrame(frame({ extensionInstanceId: "extension-instance-2" }), authority),
+    /EXTENSION_INSTANCE_MISMATCH/,
+  );
+  assert.throws(
+    () => handlePortableWorkerFrame(frame({ graphGeneration: 2 }), authority),
+    /STALE_GRAPH_GENERATION/,
+  );
+  assert.throws(
+    () => handlePortableWorkerFrame(frame({ moduleActivationGeneration: 6 }), authority),
+    /STALE_MODULE_ACTIVATION_GENERATION/,
+  );
+  assert.throws(
+    () => handlePortableWorkerFrame(frame({ hostIncarnation: "stale-host" }), authority),
+    /STALE_HOST_INCARNATION/,
+  );
+  assert.throws(
+    () => handlePortableWorkerFrame(frame({ senderId: "unauthenticated-peer" }), authority),
+    /AUTHENTICATED_PEER_MISMATCH/,
+  );
+  assert.throws(
+    () => handlePortableWorkerFrame(frame({ audience: "different-host" }), authority),
+    /AUDIENCE_MISMATCH/,
+  );
+  assert.throws(
+    () => handlePortableWorkerFrame(frame({ absoluteDeadline: authority.now - 1 }), authority),
+    /DEADLINE_EXCEEDED/,
+  );
+  assert.throws(
+    () => handlePortableWorkerFrame(frame(), { ...authority, now: Number.NaN }),
+    /INVALID_AUTHORITY_NOW/,
+  );
   for (const invalidId of ["\0", "request\nforged", " padded", "padded "]) {
     assert.throws(() => validateEnvelope(frame({ requestId: invalidId })), /INVALID_REQUESTID/);
   }
@@ -3045,14 +3901,35 @@ test("portable protocol rejects stale, expired, malformed, oversized, and miscor
   const cyclicPayload: Record<string, unknown> = {};
   cyclicPayload.self = cyclicPayload;
   assert.throws(() => validateEnvelope(frame({ payload: cyclicPayload })), /JSON_LIMIT_EXCEEDED/);
-  assert.throws(() => validateEnvelope(frame({ payload: { text: "x".repeat(70_000) } })), /FRAME_TOO_LARGE/);
-  assert.throws(() => validateEnvelope(frame({ payload: { value: Number.NaN } })), /INVALID_JSON_NUMBER/);
+  assert.throws(
+    () => validateEnvelope(frame({ payload: { text: "x".repeat(70_000) } })),
+    /FRAME_TOO_LARGE/,
+  );
+  assert.throws(
+    () => validateEnvelope(frame({ payload: { value: Number.NaN } })),
+    /INVALID_JSON_NUMBER/,
+  );
   assert.throws(() => validateEnvelope(frame({ payload: { value: -0 } })), /INVALID_JSON_NUMBER/);
-  assert.throws(() => validateEnvelope(frame({ payload: { value: Number.MAX_SAFE_INTEGER + 1 } })), /INVALID_JSON_NUMBER/);
-  assert.throws(() => validateEnvelope(frame({ payload: { value: "\ud800" } })), /INVALID_UNICODE_STRING/);
-  assert.throws(() => validateEnvelope(frame({ payload: { ["\ud800"]: true } })), /INVALID_UNICODE_STRING/);
-  assert.throws(() => validateEnvelope(frame({ payload: { value: undefined } })), /INVALID_JSON_VALUE/);
-  assert.throws(() => validateEnvelope(frame({ payload: new Map() as unknown as Record<string, unknown> })), /INVALID_JSON_OBJECT/);
+  assert.throws(
+    () => validateEnvelope(frame({ payload: { value: Number.MAX_SAFE_INTEGER + 1 } })),
+    /INVALID_JSON_NUMBER/,
+  );
+  assert.throws(
+    () => validateEnvelope(frame({ payload: { value: "\ud800" } })),
+    /INVALID_UNICODE_STRING/,
+  );
+  assert.throws(
+    () => validateEnvelope(frame({ payload: { ["\ud800"]: true } })),
+    /INVALID_UNICODE_STRING/,
+  );
+  assert.throws(
+    () => validateEnvelope(frame({ payload: { value: undefined } })),
+    /INVALID_JSON_VALUE/,
+  );
+  assert.throws(
+    () => validateEnvelope(frame({ payload: new Map() as unknown as Record<string, unknown> })),
+    /INVALID_JSON_OBJECT/,
+  );
   const accessor = {} as Record<string, unknown>;
   Object.defineProperty(accessor, "value", { enumerable: true, get: () => "must-not-run" });
   assert.throws(() => validateEnvelope(frame({ payload: accessor })), /INVALID_JSON_OBJECT/);
@@ -3062,10 +3939,16 @@ test("portable protocol rejects stale, expired, malformed, oversized, and miscor
   const arrayAccessor: unknown[] = [];
   Object.defineProperty(arrayAccessor, "0", { enumerable: true, get: () => "must-not-run" });
   arrayAccessor.length = 1;
-  assert.throws(() => validateEnvelope(frame({ payload: { arrayAccessor } })), /INVALID_JSON_ARRAY/);
+  assert.throws(
+    () => validateEnvelope(frame({ payload: { arrayAccessor } })),
+    /INVALID_JSON_ARRAY/,
+  );
   const extraArrayProperty: unknown[] & { extra?: string } = [];
   extraArrayProperty.extra = "unexpected";
-  assert.throws(() => validateEnvelope(frame({ payload: { extraArrayProperty } })), /INVALID_JSON_ARRAY/);
+  assert.throws(
+    () => validateEnvelope(frame({ payload: { extraArrayProperty } })),
+    /INVALID_JSON_ARRAY/,
+  );
   const proxyArray = new Proxy([1], {});
   assert.throws(() => validateEnvelope(frame({ payload: { proxyArray } })), /INVALID_JSON_VALUE/);
   const normalized = validateEnvelope(frame({ payload: { nested: { value: 1 } } }));
@@ -3084,7 +3967,10 @@ test("portable protocol rejects stale, expired, malformed, oversized, and miscor
     '"operationId":"operation-1"',
     '"operationId":"operation-1","operationId":"operation-2"',
   );
-  assert.throws(() => decodeLengthPrefixedFrame(rawFrame(duplicateOperation)), /INVALID_JSON_FRAME/);
+  assert.throws(
+    () => decodeLengthPrefixedFrame(rawFrame(duplicateOperation)),
+    /INVALID_JSON_FRAME/,
+  );
   const unsafeInteger = JSON.stringify(frame()).replace(
     '"payload":{}',
     '"payload":{"value":9007199254740993}',
@@ -3094,130 +3980,218 @@ test("portable protocol rejects stale, expired, malformed, oversized, and miscor
     '"graphGeneration":1',
     '"graphGeneration":1.00000000000000001',
   );
-  assert.throws(() => decodeLengthPrefixedFrame(rawFrame(aliasedGeneration)), /INVALID_JSON_NUMBER/);
+  assert.throws(
+    () => decodeLengthPrefixedFrame(rawFrame(aliasedGeneration)),
+    /INVALID_JSON_NUMBER/,
+  );
   const invalidUtf8 = Uint8Array.from([0, 0, 0, 2, 0xc3, 0x28]);
   assert.throws(() => decodeLengthPrefixedFrame(invalidUtf8), /INVALID_JSON_FRAME/);
 
   const request = frame({ kind: "prepare" });
   assert.throws(
-    () => handlePortableWorkerFrame(frame({ kind: "ready" }), { ...protocolAuthority, now: Date.now() }),
+    () =>
+      handlePortableWorkerFrame(frame({ kind: "ready" }), {
+        ...protocolAuthority,
+        now: Date.now(),
+      }),
     /INVALID_REQUEST_KIND/,
   );
-  assert.throws(() => tracker.createDispatch(
-    request,
-    { ...protocolAuthority, now: Date.now() },
-    "stop" as never,
-  ), /INVALID_EXPECTED_RESPONSE_KIND/);
+  assert.throws(
+    () =>
+      tracker.createDispatch(request, { ...protocolAuthority, now: Date.now() }, "stop" as never),
+    /INVALID_EXPECTED_RESPONSE_KIND/,
+  );
   const prepared = dispatch(tracker, request);
-  const response = handlePortableWorkerFrame(prepared.request, { ...protocolAuthority, now: Date.now() });
+  const response = handlePortableWorkerFrame(prepared.request, {
+    ...protocolAuthority,
+    now: Date.now(),
+  });
   assert.throws(() => dispatch(tracker, request), /DISPATCH_ALREADY_PENDING/);
-  assert.throws(() => tracker.validateResponseEnvelope(
-    { ...response, requestId: "wrong-request" },
-    { ...responseAuthority, now: Date.now() },
-    prepared.receipt,
-  ), /RESPONSE_REQUEST_MISMATCH/);
-  assert.throws(() => tracker.validateResponseEnvelope(
-    { ...response, dispatchNonce: "forged-dispatch" },
-    { ...responseAuthority, now: Date.now() },
-    prepared.receipt,
-  ), /RESPONSE_DISPATCH_NONCE_MISMATCH/);
-  assert.throws(() => tracker.validateResponseEnvelope(
-    { ...response, authorityScope: "tenant:other/project:other" },
-    { ...responseAuthority, authorityScope: "tenant:other/project:other", now: Date.now() },
-    prepared.receipt,
-  ), /RESPONSE_AUTHORITY_SCOPE_MISMATCH/);
-  assert.throws(() => tracker.validateResponseEnvelope(
-    { ...response, extensionInstanceId: "extension-instance-2" },
-    { ...responseAuthority, extensionInstanceId: "extension-instance-2", now: Date.now() },
-    prepared.receipt,
-  ), /RESPONSE_EXTENSION_INSTANCE_MISMATCH/);
-  assert.throws(() => tracker.validateResponseEnvelope(
-    { ...response, graphGeneration: response.graphGeneration + 1 },
-    { ...responseAuthority, graphGeneration: response.graphGeneration + 1, now: Date.now() },
-    prepared.receipt,
-  ), /RESPONSE_GRAPH_GENERATION_MISMATCH/);
-  assert.throws(() => tracker.validateResponseEnvelope(
-    { ...response, moduleActivationGeneration: response.moduleActivationGeneration + 1 },
-    { ...responseAuthority, moduleActivationGeneration: response.moduleActivationGeneration + 1, now: Date.now() },
-    prepared.receipt,
-  ), /RESPONSE_MODULE_ACTIVATION_GENERATION_MISMATCH/);
-  assert.throws(() => tracker.validateResponseEnvelope(
-    { ...response, hostIncarnation: "host-incarnation-replayed" },
-    { ...responseAuthority, hostIncarnation: "host-incarnation-replayed", now: Date.now() },
-    prepared.receipt,
-  ), /RESPONSE_HOST_INCARNATION_MISMATCH/);
-  assert.throws(() => tracker.validateResponseEnvelope(
-    { ...response, senderId: "product-host", audience: "extension-host" },
-    { ...responseAuthority, authenticatedPeerId: "product-host", audience: "extension-host", now: Date.now() },
-    prepared.receipt,
-  ), /RESPONSE_ENDPOINT_DIRECTION_MISMATCH/);
-  assert.throws(() => tracker.validateResponseEnvelope(
-    { ...response, absoluteDeadline: response.absoluteDeadline + 1 },
-    { ...responseAuthority, now: Date.now() },
-    prepared.receipt,
-  ), /RESPONSE_DEADLINE_MISMATCH/);
-  assert.throws(() => tracker.validateResponseEnvelope(
-    { ...response, kind: "ready" },
-    { ...responseAuthority, now: Date.now() },
-    prepared.receipt,
-  ), /UNEXPECTED_RESPONSE_KIND/);
-  assert.throws(() => tracker.validateResponseEnvelope(
-    response,
-    { ...responseAuthority, now: Date.now() },
-    { ...prepared.receipt },
-  ), /INVALID_DISPATCH_RECEIPT/);
-  assert.equal(tracker.validateResponseEnvelope(
-    response,
-    { ...responseAuthority, now: Date.now() },
-    prepared.receipt,
-  ).payload.acceptedKind, "prepare");
-  assert.throws(() => tracker.validateResponseEnvelope(
-    response,
-    { ...responseAuthority, now: Date.now() },
-    prepared.receipt,
-  ), /INVALID_DISPATCH_RECEIPT/);
-  const cancelled = dispatch(tracker, frame({ requestId: "cancelled-request", operationId: "cancelled-operation", kind: "prepare" }));
+  assert.throws(
+    () =>
+      tracker.validateResponseEnvelope(
+        { ...response, requestId: "wrong-request" },
+        { ...responseAuthority, now: Date.now() },
+        prepared.receipt,
+      ),
+    /RESPONSE_REQUEST_MISMATCH/,
+  );
+  assert.throws(
+    () =>
+      tracker.validateResponseEnvelope(
+        { ...response, dispatchNonce: "forged-dispatch" },
+        { ...responseAuthority, now: Date.now() },
+        prepared.receipt,
+      ),
+    /RESPONSE_DISPATCH_NONCE_MISMATCH/,
+  );
+  assert.throws(
+    () =>
+      tracker.validateResponseEnvelope(
+        { ...response, authorityScope: "tenant:other/project:other" },
+        { ...responseAuthority, authorityScope: "tenant:other/project:other", now: Date.now() },
+        prepared.receipt,
+      ),
+    /RESPONSE_AUTHORITY_SCOPE_MISMATCH/,
+  );
+  assert.throws(
+    () =>
+      tracker.validateResponseEnvelope(
+        { ...response, extensionInstanceId: "extension-instance-2" },
+        { ...responseAuthority, extensionInstanceId: "extension-instance-2", now: Date.now() },
+        prepared.receipt,
+      ),
+    /RESPONSE_EXTENSION_INSTANCE_MISMATCH/,
+  );
+  assert.throws(
+    () =>
+      tracker.validateResponseEnvelope(
+        { ...response, graphGeneration: response.graphGeneration + 1 },
+        { ...responseAuthority, graphGeneration: response.graphGeneration + 1, now: Date.now() },
+        prepared.receipt,
+      ),
+    /RESPONSE_GRAPH_GENERATION_MISMATCH/,
+  );
+  assert.throws(
+    () =>
+      tracker.validateResponseEnvelope(
+        { ...response, moduleActivationGeneration: response.moduleActivationGeneration + 1 },
+        {
+          ...responseAuthority,
+          moduleActivationGeneration: response.moduleActivationGeneration + 1,
+          now: Date.now(),
+        },
+        prepared.receipt,
+      ),
+    /RESPONSE_MODULE_ACTIVATION_GENERATION_MISMATCH/,
+  );
+  assert.throws(
+    () =>
+      tracker.validateResponseEnvelope(
+        { ...response, hostIncarnation: "host-incarnation-replayed" },
+        { ...responseAuthority, hostIncarnation: "host-incarnation-replayed", now: Date.now() },
+        prepared.receipt,
+      ),
+    /RESPONSE_HOST_INCARNATION_MISMATCH/,
+  );
+  assert.throws(
+    () =>
+      tracker.validateResponseEnvelope(
+        { ...response, senderId: "product-host", audience: "extension-host" },
+        {
+          ...responseAuthority,
+          authenticatedPeerId: "product-host",
+          audience: "extension-host",
+          now: Date.now(),
+        },
+        prepared.receipt,
+      ),
+    /RESPONSE_ENDPOINT_DIRECTION_MISMATCH/,
+  );
+  assert.throws(
+    () =>
+      tracker.validateResponseEnvelope(
+        { ...response, absoluteDeadline: response.absoluteDeadline + 1 },
+        { ...responseAuthority, now: Date.now() },
+        prepared.receipt,
+      ),
+    /RESPONSE_DEADLINE_MISMATCH/,
+  );
+  assert.throws(
+    () =>
+      tracker.validateResponseEnvelope(
+        { ...response, kind: "ready" },
+        { ...responseAuthority, now: Date.now() },
+        prepared.receipt,
+      ),
+    /UNEXPECTED_RESPONSE_KIND/,
+  );
+  assert.throws(
+    () =>
+      tracker.validateResponseEnvelope(
+        response,
+        { ...responseAuthority, now: Date.now() },
+        { ...prepared.receipt },
+      ),
+    /INVALID_DISPATCH_RECEIPT/,
+  );
+  assert.equal(
+    tracker.validateResponseEnvelope(
+      response,
+      { ...responseAuthority, now: Date.now() },
+      prepared.receipt,
+    ).payload.acceptedKind,
+    "prepare",
+  );
+  assert.throws(
+    () =>
+      tracker.validateResponseEnvelope(
+        response,
+        { ...responseAuthority, now: Date.now() },
+        prepared.receipt,
+      ),
+    /INVALID_DISPATCH_RECEIPT/,
+  );
+  const cancelled = dispatch(
+    tracker,
+    frame({ requestId: "cancelled-request", operationId: "cancelled-operation", kind: "prepare" }),
+  );
   assert.equal(tracker.cancelDispatch(cancelled.receipt), true);
   assert.equal(tracker.cancelDispatch(cancelled.receipt), false);
-  assert.throws(() => tracker.validateResponseEnvelope(
-    handlePortableWorkerFrame(cancelled.request, { ...protocolAuthority, now: Date.now() }),
-    { ...responseAuthority, now: Date.now() },
-    cancelled.receipt,
-  ), /INVALID_DISPATCH_RECEIPT/);
+  assert.throws(
+    () =>
+      tracker.validateResponseEnvelope(
+        handlePortableWorkerFrame(cancelled.request, { ...protocolAuthority, now: Date.now() }),
+        { ...responseAuthority, now: Date.now() },
+        cancelled.receipt,
+      ),
+    /INVALID_DISPATCH_RECEIPT/,
+  );
 
   const mutableRequest = frame({ requestId: "mutable-request", kind: "prepare" });
   const immutableDispatch = dispatch(tracker, mutableRequest);
-  const mutationResponse = handlePortableWorkerFrame(
-    immutableDispatch.request,
-    { ...protocolAuthority, now: Date.now() },
-  );
+  const mutationResponse = handlePortableWorkerFrame(immutableDispatch.request, {
+    ...protocolAuthority,
+    now: Date.now(),
+  });
   (mutableRequest as { graphGeneration: number }).graphGeneration += 1;
-  assert.equal(tracker.validateResponseEnvelope(
-    mutationResponse,
-    { ...responseAuthority, now: Date.now() },
-    immutableDispatch.receipt,
-  ).requestId, "mutable-request");
+  assert.equal(
+    tracker.validateResponseEnvelope(
+      mutationResponse,
+      { ...responseAuthority, now: Date.now() },
+      immutableDispatch.receipt,
+    ).requestId,
+    "mutable-request",
+  );
 });
 
-test("process-host smoke acknowledges hello and readiness over bounded length-prefixed JSON", async t => {
+test("process-host smoke acknowledges hello and readiness over bounded length-prefixed JSON", async (t) => {
   const tracker = createDispatchTracker();
-  const child = spawn(process.execPath, [join(fixtureRoot, "process-child.mjs")], { stdio: ["pipe", "pipe", "pipe"] });
+  const child = spawn(process.execPath, [join(fixtureRoot, "process-child.mjs")], {
+    stdio: ["pipe", "pipe", "pipe"],
+  });
   t.after(() => child.kill("SIGKILL"));
   const responses: ProtocolEnvelope[] = [];
   let childFailure: Error | undefined;
-  child.once("error", error => { childFailure = error; });
+  child.once("error", (error) => {
+    childFailure = error;
+  });
   let buffer = Buffer.alloc(0);
-  child.stdout.on("data", chunk => {
+  child.stdout.on("data", (chunk) => {
     buffer = Buffer.concat([buffer, chunk]);
     for (;;) {
-      if (buffer.byteLength < 4) break;
+      if (buffer.byteLength < 4) {
+        break;
+      }
       const length = buffer.readUInt32BE(0);
       if (length > maxFrameBytes) {
         childFailure = new Error("PROCESS_FRAME_TOO_LARGE");
         child.kill("SIGKILL");
         break;
       }
-      if (buffer.byteLength < length + 4) break;
+      if (buffer.byteLength < length + 4) {
+        break;
+      }
       responses.push(decodeLengthPrefixedFrame(buffer.subarray(0, length + 4)));
       buffer = buffer.subarray(length + 4);
     }
@@ -3231,49 +4205,77 @@ test("process-host smoke acknowledges hello and readiness over bounded length-pr
   child.stdin.write(encodeLengthPrefixedFrame(helloDispatch.request));
   child.stdin.write(encodeLengthPrefixedFrame(prepareDispatch.request));
   child.stdin.write(encodeLengthPrefixedFrame(drainDispatch.request));
-  await waitUntil(() => responses.length >= 3 || childFailure !== undefined, 2_000, "PROCESS_RESPONSE_TIMEOUT");
-  if (childFailure) throw childFailure;
-  assert.equal(tracker.validateResponseEnvelope(
-    responses[0],
-    { ...responseAuthority, now: Date.now() },
-    helloDispatch.receipt,
-  ).kind, "result");
-  assert.equal(tracker.validateResponseEnvelope(
-    responses[1],
-    { ...responseAuthority, now: Date.now() },
-    prepareDispatch.receipt,
-  ).kind, "ready");
-  assert.equal(tracker.validateResponseEnvelope(
-    responses[2],
-    { ...responseAuthority, now: Date.now() },
-    drainDispatch.receipt,
-  ).payload.drained, true);
+  await waitUntil(
+    () => responses.length >= 3 || childFailure !== undefined,
+    2_000,
+    "PROCESS_RESPONSE_TIMEOUT",
+  );
+  if (childFailure) {
+    throw childFailure;
+  }
+  assert.equal(
+    tracker.validateResponseEnvelope(
+      responses[0],
+      { ...responseAuthority, now: Date.now() },
+      helloDispatch.receipt,
+    ).kind,
+    "result",
+  );
+  assert.equal(
+    tracker.validateResponseEnvelope(
+      responses[1],
+      { ...responseAuthority, now: Date.now() },
+      prepareDispatch.receipt,
+    ).kind,
+    "ready",
+  );
+  assert.equal(
+    tracker.validateResponseEnvelope(
+      responses[2],
+      { ...responseAuthority, now: Date.now() },
+      drainDispatch.receipt,
+    ).payload.drained,
+    true,
+  );
   const stopRequest = frame({ requestId: "request-4", kind: "stop" });
   const stopDispatch = dispatch(tracker, stopRequest);
   const exit = once(child, "exit", { signal: AbortSignal.timeout(2_000) });
   child.stdin.write(encodeLengthPrefixedFrame(stopDispatch.request));
-  await waitUntil(() => responses.length >= 4 || childFailure !== undefined, 2_000, "PROCESS_STOP_RESPONSE_TIMEOUT");
-  if (childFailure) throw childFailure;
-  assert.equal(tracker.validateResponseEnvelope(
-    responses[3],
-    { ...responseAuthority, now: Date.now() },
-    stopDispatch.receipt,
-  ).payload.stopped, true);
+  await waitUntil(
+    () => responses.length >= 4 || childFailure !== undefined,
+    2_000,
+    "PROCESS_STOP_RESPONSE_TIMEOUT",
+  );
+  if (childFailure) {
+    throw childFailure;
+  }
+  assert.equal(
+    tracker.validateResponseEnvelope(
+      responses[3],
+      { ...responseAuthority, now: Date.now() },
+      stopDispatch.receipt,
+    ).payload.stopped,
+    true,
+  );
   const [exitCode] = await exit;
   assert.equal(exitCode, 0);
 });
 
-test("process-host stop is a terminal receive barrier for already-buffered frames", async t => {
+test("process-host stop is a terminal receive barrier for already-buffered frames", async (t) => {
   const tracker = createDispatchTracker();
-  const child = spawn(process.execPath, [join(fixtureRoot, "process-child.mjs")], { stdio: ["pipe", "pipe", "pipe"] });
+  const child = spawn(process.execPath, [join(fixtureRoot, "process-child.mjs")], {
+    stdio: ["pipe", "pipe", "pipe"],
+  });
   t.after(() => child.kill("SIGKILL"));
   const responses: ProtocolEnvelope[] = [];
   let buffer = Buffer.alloc(0);
-  child.stdout.on("data", chunk => {
+  child.stdout.on("data", (chunk) => {
     buffer = Buffer.concat([buffer, chunk]);
     while (buffer.byteLength >= 4) {
       const length = buffer.readUInt32BE(0);
-      if (length > maxFrameBytes || buffer.byteLength < length + 4) return;
+      if (length > maxFrameBytes || buffer.byteLength < length + 4) {
+        return;
+      }
       responses.push(decodeLengthPrefixedFrame(buffer.subarray(0, length + 4)));
       buffer = buffer.subarray(length + 4);
     }
@@ -3282,26 +4284,35 @@ test("process-host stop is a terminal receive barrier for already-buffered frame
   const prepareAfterStop = frame({ requestId: "after-stop", kind: "prepare" });
   const stopDispatch = dispatch(tracker, stopRequest);
   const prepareAfterStopDispatch = dispatch(tracker, prepareAfterStop, "ready");
-  child.stdin.write(Buffer.concat([
-    encodeLengthPrefixedFrame(stopDispatch.request),
-    encodeLengthPrefixedFrame(prepareAfterStopDispatch.request),
-  ]));
+  child.stdin.write(
+    Buffer.concat([
+      encodeLengthPrefixedFrame(stopDispatch.request),
+      encodeLengthPrefixedFrame(prepareAfterStopDispatch.request),
+    ]),
+  );
   const [exitCode] = await once(child, "close", { signal: AbortSignal.timeout(2_000) });
   assert.equal(exitCode, 0);
   assert.equal(responses.length, 1);
-  assert.equal(tracker.validateResponseEnvelope(
-    responses[0],
-    { ...responseAuthority, now: Date.now() },
-    stopDispatch.receipt,
-  ).payload.stopped, true);
+  assert.equal(
+    tracker.validateResponseEnvelope(
+      responses[0],
+      { ...responseAuthority, now: Date.now() },
+      stopDispatch.receipt,
+    ).payload.stopped,
+    true,
+  );
   assert.equal(tracker.pendingCount, 1);
   assert.equal(tracker.close(), 1);
   assert.equal(tracker.close(), 0);
-  assert.throws(() => tracker.validateResponseEnvelope(
-    responses[0],
-    { ...responseAuthority, now: Date.now() },
-    prepareAfterStopDispatch.receipt,
-  ), /DISPATCH_TRACKER_CLOSED/);
+  assert.throws(
+    () =>
+      tracker.validateResponseEnvelope(
+        responses[0],
+        { ...responseAuthority, now: Date.now() },
+        prepareAfterStopDispatch.receipt,
+      ),
+    /DISPATCH_TRACKER_CLOSED/,
+  );
   assert.throws(() => dispatch(tracker, prepareAfterStop), /DISPATCH_TRACKER_CLOSED/);
 
   const restartedTracker = createDispatchTracker();
@@ -3312,20 +4323,26 @@ test("process-host stop is a terminal receive barrier for already-buffered frame
   restartedTracker.close();
 });
 
-test("process-host fixture enforces deadline and authority before handling", async t => {
-  const child = spawn(process.execPath, [join(fixtureRoot, "process-child.mjs")], { stdio: ["pipe", "pipe", "pipe"] });
+test("process-host fixture enforces deadline and authority before handling", async (t) => {
+  const child = spawn(process.execPath, [join(fixtureRoot, "process-child.mjs")], {
+    stdio: ["pipe", "pipe", "pipe"],
+  });
   t.after(() => child.kill("SIGKILL"));
   child.stdin.write(encodeLengthPrefixedFrame(frame({ absoluteDeadline: Date.now() - 1 })));
   const [code] = await once(child, "exit", { signal: AbortSignal.timeout(2_000) });
   assert.notEqual(code, 0);
 });
 
-test("process-host fixture rejects a truncated frame at EOF", async t => {
-  const child = spawn(process.execPath, [join(fixtureRoot, "process-child.mjs")], { stdio: ["pipe", "pipe", "pipe"] });
+test("process-host fixture rejects a truncated frame at EOF", async (t) => {
+  const child = spawn(process.execPath, [join(fixtureRoot, "process-child.mjs")], {
+    stdio: ["pipe", "pipe", "pipe"],
+  });
   t.after(() => child.kill("SIGKILL"));
   let stderr = "";
   child.stderr.setEncoding("utf8");
-  child.stderr.on("data", chunk => { stderr += chunk; });
+  child.stderr.on("data", (chunk) => {
+    stderr += chunk;
+  });
   const packet = encodeLengthPrefixedFrame(frame());
   const close = once(child, "close", { signal: AbortSignal.timeout(2_000) });
   child.stdin.end(packet.subarray(0, packet.byteLength - 1));
@@ -3334,12 +4351,16 @@ test("process-host fixture rejects a truncated frame at EOF", async t => {
   assert.match(stderr, /TRUNCATED_FRAME_AT_EOF/);
 });
 
-test("process-host fixture rejects a clean frame boundary without stop", async t => {
-  const child = spawn(process.execPath, [join(fixtureRoot, "process-child.mjs")], { stdio: ["pipe", "pipe", "pipe"] });
+test("process-host fixture rejects a clean frame boundary without stop", async (t) => {
+  const child = spawn(process.execPath, [join(fixtureRoot, "process-child.mjs")], {
+    stdio: ["pipe", "pipe", "pipe"],
+  });
   t.after(() => child.kill("SIGKILL"));
   let stderr = "";
   child.stderr.setEncoding("utf8");
-  child.stderr.on("data", chunk => { stderr += chunk; });
+  child.stderr.on("data", (chunk) => {
+    stderr += chunk;
+  });
   const close = once(child, "close", { signal: AbortSignal.timeout(2_000) });
   child.stdin.end(encodeLengthPrefixedFrame(frame()));
   const [code] = await close;
@@ -3347,7 +4368,7 @@ test("process-host fixture rejects a clean frame boundary without stop", async t
   assert.match(stderr, /STOP_NOT_ACKNOWLEDGED_AT_EOF/);
 });
 
-test("Worker structured-clone boundary preserves validation and stale rejection", async t => {
+test("Worker structured-clone boundary preserves validation and stale rejection", async (t) => {
   const tracker = createDispatchTracker();
   const worker = new Worker(new URL("./fixtures/portable-worker.mjs", import.meta.url), {
     workerData: protocolAuthority,
@@ -3360,16 +4381,26 @@ test("Worker structured-clone boundary preserves validation and stale rejection"
   });
   const responses: unknown[] = [];
   let workerFailure: Error | undefined;
-  worker.on("message", message => responses.push(message));
-  worker.once("error", error => { workerFailure = error; });
-  worker.once("exit", code => {
-    if (code !== 0) workerFailure = new Error(`WORKER_EXITED:${code}`);
+  worker.on("message", (message) => responses.push(message));
+  worker.once("error", (error) => {
+    workerFailure = error;
+  });
+  worker.once("exit", (code) => {
+    if (code !== 0) {
+      workerFailure = new Error(`WORKER_EXITED:${code}`);
+    }
   });
   const request = frame({ kind: "prepare" });
   const workerDispatch = dispatch(tracker, request);
   worker.postMessage(structuredClone(workerDispatch.request));
-  await waitUntil(() => responses.length >= 1 || workerFailure !== undefined, 2_000, "WORKER_RESPONSE_TIMEOUT");
-  if (workerFailure) throw workerFailure;
+  await waitUntil(
+    () => responses.length >= 1 || workerFailure !== undefined,
+    2_000,
+    "WORKER_RESPONSE_TIMEOUT",
+  );
+  if (workerFailure) {
+    throw workerFailure;
+  }
   const workerResponse = responses[0] as { readonly ok?: unknown; readonly frame?: unknown };
   assert.equal(workerResponse.ok, true);
   const validatedResponse = tracker.validateResponseEnvelope(
@@ -3385,320 +4416,490 @@ test("Worker structured-clone boundary preserves validation and stale rejection"
     payload: { acceptedKind: "prepare" },
   });
   worker.postMessage(frame({ moduleActivationGeneration: 6 }));
-  await waitUntil(() => responses.length >= 2 || workerFailure !== undefined, 2_000, "WORKER_STALE_RESPONSE_TIMEOUT");
-  if (workerFailure) throw workerFailure;
+  await waitUntil(
+    () => responses.length >= 2 || workerFailure !== undefined,
+    2_000,
+    "WORKER_STALE_RESPONSE_TIMEOUT",
+  );
+  if (workerFailure) {
+    throw workerFailure;
+  }
   assert.deepEqual(responses[1], { ok: false, error: "STALE_MODULE_ACTIVATION_GENERATION" });
 });
 
-test("browser Worker carries a portable generation-bound frame", { timeout: 300_000 }, async t => {
-  const isCi = process.env.CI?.trim().toLowerCase() === "true";
-  const debuggerStartupTimeoutMs = isCi ? 30_000 : 10_000;
-  const pageDiscoveryTimeoutMs = isCi ? 20_000 : 8_000;
-  const discoveryRequestTimeoutMs = isCi ? 2_000 : 500;
-  const candidates = process.platform === "darwin"
-    ? [
-        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
-        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-      ]
-    : process.platform === "win32"
-      ? [
-          join(process.env.PROGRAMFILES ?? "C:\\Program Files", "Google", "Chrome", "Application", "chrome.exe"),
-          join(process.env["PROGRAMFILES(X86)"] ?? "C:\\Program Files (x86)", "Google", "Chrome", "Application", "chrome.exe"),
-          join(process.env.PROGRAMFILES ?? "C:\\Program Files", "Microsoft", "Edge", "Application", "msedge.exe"),
-          join(process.env["PROGRAMFILES(X86)"] ?? "C:\\Program Files (x86)", "Microsoft", "Edge", "Application", "msedge.exe"),
-        ]
-      : ["/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"];
-  const availableBrowsers: string[] = [];
-  const canonicalBrowserPaths = new Set<string>();
-  for (const candidate of candidates) {
-    try {
-      await access(candidate);
-      const canonicalPath = await realpath(candidate);
-      const identity = process.platform === "win32" ? canonicalPath.toLowerCase() : canonicalPath;
-      if (!canonicalBrowserPaths.has(identity)) {
-        canonicalBrowserPaths.add(identity);
-        availableBrowsers.push(canonicalPath);
-      }
-    } catch {
-      continue;
-    }
-  }
-  if (availableBrowsers.length === 0) {
-    if (isCi) assert.fail("CI_BROWSER_NOT_AVAILABLE");
-    t.skip("no supported Chromium browser is installed");
-    return;
-  }
-
-  const allowedFiles = new Map([
-    ["/fixtures/browser-worker.html", join(fixtureRoot, "browser-worker.html")],
-    ["/fixtures/portable-browser-worker.mjs", join(fixtureRoot, "portable-browser-worker.mjs")],
-    ["/portable-protocol.mjs", join(qualificationRoot, "portable-protocol.mjs")],
-  ]);
-  const server = createServer(async (request, response) => {
-    const pathname = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
-    const file = allowedFiles.get(pathname);
-    if (!file) {
-      response.writeHead(404).end();
-      return;
-    }
-    response.setHeader("Content-Type", pathname.endsWith(".html") ? "text/html" : "text/javascript");
-    response.end(await readFile(file));
-  });
-  server.listen(0, "127.0.0.1");
-  await once(server, "listening");
-  t.after(async () => {
-    server.closeAllConnections();
-    if (!server.listening) return;
-    await new Promise<void>((resolve, reject) => {
-      server.close(error => error ? reject(error) : resolve());
-    });
-  });
-  const address = server.address() as AddressInfo;
-  const page = `http://127.0.0.1:${address.port}/fixtures/browser-worker.html`;
-  let child: ReturnType<typeof spawn> | undefined;
-  let childExit: Promise<void> | undefined;
-  let profile: string | undefined;
-  let debuggerUrl: string | undefined;
-  let pageTarget: { readonly url?: string; readonly webSocketDebuggerUrl?: string } | undefined;
-  let socket: WebSocket | undefined;
-  let readBrowserStderr = (): string => "";
-  const startupErrors: string[] = [];
-  for (const browser of availableBrowsers) {
-    const candidateProfile = await mkdtemp(join(tmpdir(), "extension-browser-worker-"));
-    const candidateChild = spawn(browser, [
-      "--headless=new",
-      "--disable-gpu",
-      "--disable-background-timer-throttling",
-      "--disable-background-networking",
-      "--disable-component-update",
-      "--disable-default-apps",
-      "--disable-extensions",
-      "--disable-sync",
-      ...(isCi && process.platform === "linux" ? ["--disable-dev-shm-usage"] : []),
-      "--no-first-run",
-      "--no-default-browser-check",
-      ...(isCi && process.platform === "linux" ? ["--no-sandbox"] : []),
-      "--remote-debugging-port=0",
-      `--user-data-dir=${candidateProfile}`,
-      page,
-    ], { stdio: ["ignore", "ignore", "pipe"] });
-    let candidateFailure: Error | undefined;
-    let candidateStderr = "";
-    candidateChild.stderr.setEncoding("utf8");
-    candidateChild.stderr.on("data", chunk => { candidateStderr += chunk; });
-    candidateChild.once("error", error => { candidateFailure = error; });
-    const candidateExit = new Promise<void>(resolve => {
-      candidateChild.once("close", () => resolve());
-    });
-    let candidateDebuggerUrl: string | undefined;
-    const debuggerDeadline = performance.now() + debuggerStartupTimeoutMs;
-    while (performance.now() < debuggerDeadline) {
+test(
+  "browser Worker carries a portable generation-bound frame",
+  { timeout: 300_000 },
+  async (t) => {
+    const isCi = process.env.CI?.trim().toLowerCase() === "true";
+    const debuggerStartupTimeoutMs = isCi ? 30_000 : 10_000;
+    const pageDiscoveryTimeoutMs = isCi ? 20_000 : 8_000;
+    const discoveryRequestTimeoutMs = isCi ? 2_000 : 500;
+    const candidates =
+      process.platform === "darwin"
+        ? [
+            "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+          ]
+        : process.platform === "win32"
+          ? [
+              join(
+                process.env.PROGRAMFILES ?? "C:\\Program Files",
+                "Google",
+                "Chrome",
+                "Application",
+                "chrome.exe",
+              ),
+              join(
+                process.env["PROGRAMFILES(X86)"] ?? "C:\\Program Files (x86)",
+                "Google",
+                "Chrome",
+                "Application",
+                "chrome.exe",
+              ),
+              join(
+                process.env.PROGRAMFILES ?? "C:\\Program Files",
+                "Microsoft",
+                "Edge",
+                "Application",
+                "msedge.exe",
+              ),
+              join(
+                process.env["PROGRAMFILES(X86)"] ?? "C:\\Program Files (x86)",
+                "Microsoft",
+                "Edge",
+                "Application",
+                "msedge.exe",
+              ),
+            ]
+          : ["/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"];
+    const availableBrowsers: string[] = [];
+    const canonicalBrowserPaths = new Set<string>();
+    for (const candidate of candidates) {
       try {
-        const [portLine, pathLine] = (await readFile(join(candidateProfile, "DevToolsActivePort"), "utf8")).trim().split(/\r?\n/, 2);
-        const port = Number(portLine);
-        if (Number.isInteger(port) && port > 0 && port <= 65_535 && pathLine?.startsWith("/devtools/browser/")) {
-          candidateDebuggerUrl = `ws://127.0.0.1:${port}${pathLine}`;
-          break;
+        await access(candidate);
+        const canonicalPath = await realpath(candidate);
+        const identity = process.platform === "win32" ? canonicalPath.toLowerCase() : canonicalPath;
+        if (!canonicalBrowserPaths.has(identity)) {
+          canonicalBrowserPaths.add(identity);
+          availableBrowsers.push(canonicalPath);
         }
       } catch {
-        // Chromium publishes DevToolsActivePort atomically after its debugger is ready.
+        continue;
       }
-      if (candidateFailure || candidateChild.exitCode !== null || candidateChild.signalCode !== null) break;
-      await delay(25);
     }
-    let candidatePageTarget: typeof pageTarget;
-    let discoveryError: unknown;
-    if (candidateDebuggerUrl) {
-      const debuggerHttp = new URL(candidateDebuggerUrl);
-      debuggerHttp.protocol = "http:";
-      debuggerHttp.pathname = "/json/list";
-      debuggerHttp.search = "";
-      debuggerHttp.hash = "";
-      const discoveryDeadline = performance.now() + pageDiscoveryTimeoutMs;
-      while (performance.now() < discoveryDeadline) {
+    if (availableBrowsers.length === 0) {
+      if (isCi) {
+        assert.fail("CI_BROWSER_NOT_AVAILABLE");
+      }
+      t.skip("no supported Chromium browser is installed");
+      return;
+    }
+
+    const allowedFiles = new Map([
+      ["/fixtures/browser-worker.html", join(fixtureRoot, "browser-worker.html")],
+      ["/fixtures/portable-browser-worker.mjs", join(fixtureRoot, "portable-browser-worker.mjs")],
+      ["/portable-protocol.mjs", join(qualificationRoot, "portable-protocol.mjs")],
+    ]);
+    const server = createServer(async (request, response) => {
+      const pathname = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
+      const file = allowedFiles.get(pathname);
+      if (!file) {
+        response.writeHead(404).end();
+        return;
+      }
+      response.setHeader(
+        "Content-Type",
+        pathname.endsWith(".html") ? "text/html" : "text/javascript",
+      );
+      response.end(await readFile(file));
+    });
+    server.listen(0, "127.0.0.1");
+    await once(server, "listening");
+    t.after(async () => {
+      server.closeAllConnections();
+      if (!server.listening) {
+        return;
+      }
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+      });
+    });
+    const address = server.address() as AddressInfo;
+    const page = `http://127.0.0.1:${address.port}/fixtures/browser-worker.html`;
+    let child: ReturnType<typeof spawn> | undefined;
+    let childExit: Promise<void> | undefined;
+    let profile: string | undefined;
+    let debuggerUrl: string | undefined;
+    let pageTarget: { readonly url?: string; readonly webSocketDebuggerUrl?: string } | undefined;
+    let socket: WebSocket | undefined;
+    let readBrowserStderr = (): string => "";
+    const startupErrors: string[] = [];
+    for (const browser of availableBrowsers) {
+      const candidateProfile = await mkdtemp(join(tmpdir(), "extension-browser-worker-"));
+      const candidateChild = spawn(
+        browser,
+        [
+          "--headless=new",
+          "--disable-gpu",
+          "--disable-background-timer-throttling",
+          "--disable-background-networking",
+          "--disable-component-update",
+          "--disable-default-apps",
+          "--disable-extensions",
+          "--disable-sync",
+          ...(isCi && process.platform === "linux" ? ["--disable-dev-shm-usage"] : []),
+          "--no-first-run",
+          "--no-default-browser-check",
+          ...(isCi && process.platform === "linux" ? ["--no-sandbox"] : []),
+          "--remote-debugging-port=0",
+          `--user-data-dir=${candidateProfile}`,
+          page,
+        ],
+        { stdio: ["ignore", "ignore", "pipe"] },
+      );
+      let candidateFailure: Error | undefined;
+      let candidateStderr = "";
+      candidateChild.stderr.setEncoding("utf8");
+      candidateChild.stderr.on("data", (chunk) => {
+        candidateStderr += chunk;
+      });
+      candidateChild.once("error", (error) => {
+        candidateFailure = error;
+      });
+      const candidateExit = new Promise<void>((resolve) => {
+        candidateChild.once("close", () => resolve());
+      });
+      let candidateDebuggerUrl: string | undefined;
+      const debuggerDeadline = performance.now() + debuggerStartupTimeoutMs;
+      while (performance.now() < debuggerDeadline) {
         try {
-          const targets = await fetch(debuggerHttp, { signal: AbortSignal.timeout(discoveryRequestTimeoutMs) }).then(response => response.json()) as readonly {
-            readonly type?: string;
-            readonly url?: string;
-            readonly webSocketDebuggerUrl?: string;
-          }[];
-          candidatePageTarget = targets.find(target => target.type === "page" && target.url === page);
-          if (candidatePageTarget?.webSocketDebuggerUrl) break;
+          const [portLine, pathLine] = (
+            await readFile(join(candidateProfile, "DevToolsActivePort"), "utf8")
+          )
+            .trim()
+            .split(/\r?\n/, 2);
+          const port = Number(portLine);
+          if (
+            Number.isInteger(port) &&
+            port > 0 &&
+            port <= 65_535 &&
+            pathLine?.startsWith("/devtools/browser/")
+          ) {
+            candidateDebuggerUrl = `ws://127.0.0.1:${port}${pathLine}`;
+            break;
+          }
+        } catch {
+          // Chromium publishes DevToolsActivePort atomically after its debugger is ready.
+        }
+        if (
+          candidateFailure ||
+          candidateChild.exitCode !== null ||
+          candidateChild.signalCode !== null
+        ) {
+          break;
+        }
+        await delay(25);
+      }
+      let candidatePageTarget: typeof pageTarget;
+      let discoveryError: unknown;
+      if (candidateDebuggerUrl) {
+        const debuggerHttp = new URL(candidateDebuggerUrl);
+        debuggerHttp.protocol = "http:";
+        debuggerHttp.pathname = "/json/list";
+        debuggerHttp.search = "";
+        debuggerHttp.hash = "";
+        const discoveryDeadline = performance.now() + pageDiscoveryTimeoutMs;
+        while (performance.now() < discoveryDeadline) {
+          try {
+            const targets = (await fetch(debuggerHttp, {
+              signal: AbortSignal.timeout(discoveryRequestTimeoutMs),
+            }).then((response) => response.json())) as readonly {
+              readonly type?: string;
+              readonly url?: string;
+              readonly webSocketDebuggerUrl?: string;
+            }[];
+            candidatePageTarget = targets.find(
+              (target) => target.type === "page" && target.url === page,
+            );
+            if (candidatePageTarget?.webSocketDebuggerUrl) {
+              break;
+            }
+          } catch (error) {
+            discoveryError = error;
+          }
+          await delay(50);
+        }
+      }
+      let candidateSocket: WebSocket | undefined;
+      if (candidateDebuggerUrl && candidatePageTarget?.webSocketDebuggerUrl) {
+        try {
+          candidateSocket = new WebSocket(candidatePageTarget.webSocketDebuggerUrl);
+          await Promise.race([
+            new Promise<void>((resolve, reject) => {
+              candidateSocket!.addEventListener("open", () => resolve(), { once: true });
+              candidateSocket!.addEventListener(
+                "error",
+                () => reject(new Error("BROWSER_CDP_SOCKET_ERROR")),
+                { once: true },
+              );
+            }),
+            rejectAfter(2_000, () => new Error("BROWSER_CDP_SOCKET_TIMEOUT")),
+          ]);
+          if (candidateSocket.readyState !== WebSocket.OPEN) {
+            throw new Error("BROWSER_CDP_SOCKET_NOT_OPEN");
+          }
+          await proveCdpConnection(candidateSocket, 2_000);
         } catch (error) {
           discoveryError = error;
+          candidateSocket?.close();
+          candidateSocket = undefined;
         }
-        await delay(50);
       }
-    }
-    let candidateSocket: WebSocket | undefined;
-    if (candidateDebuggerUrl && candidatePageTarget?.webSocketDebuggerUrl) {
-      try {
-        candidateSocket = new WebSocket(candidatePageTarget.webSocketDebuggerUrl);
-        await Promise.race([
-          new Promise<void>((resolve, reject) => {
-            candidateSocket!.addEventListener("open", () => resolve(), { once: true });
-            candidateSocket!.addEventListener("error", () => reject(new Error("BROWSER_CDP_SOCKET_ERROR")), { once: true });
-          }),
-          rejectAfter(2_000, () => new Error("BROWSER_CDP_SOCKET_TIMEOUT")),
-        ]);
-        if (candidateSocket.readyState !== WebSocket.OPEN) throw new Error("BROWSER_CDP_SOCKET_NOT_OPEN");
-        await proveCdpConnection(candidateSocket, 2_000);
-      } catch (error) {
-        discoveryError = error;
-        candidateSocket?.close();
-        candidateSocket = undefined;
+      if (candidateDebuggerUrl && candidatePageTarget?.webSocketDebuggerUrl && candidateSocket) {
+        child = candidateChild;
+        childExit = candidateExit;
+        profile = candidateProfile;
+        debuggerUrl = candidateDebuggerUrl;
+        pageTarget = candidatePageTarget;
+        socket = candidateSocket;
+        readBrowserStderr = () => candidateStderr;
+        break;
       }
+      const startupState =
+        candidateFailure?.message ??
+        String(
+          candidateChild.exitCode ??
+            candidateChild.signalCode ??
+            (candidateDebuggerUrl ? "page-target-timeout" : "debugger-timeout"),
+        );
+      startupErrors.push(
+        `${browser}:${startupState}:${discoveryError instanceof Error ? discoveryError.message : String(discoveryError ?? "")}:${candidateStderr}`,
+      );
+      if (candidateChild.exitCode === null && candidateChild.signalCode === null) {
+        candidateChild.kill("SIGKILL");
+      }
+      await Promise.race([
+        candidateExit,
+        rejectAfter(2_000, () => new Error("BROWSER_CANDIDATE_TERMINATION_TIMEOUT")),
+      ]);
+      await rm(candidateProfile, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
     }
-    if (candidateDebuggerUrl && candidatePageTarget?.webSocketDebuggerUrl && candidateSocket) {
-      child = candidateChild;
-      childExit = candidateExit;
-      profile = candidateProfile;
-      debuggerUrl = candidateDebuggerUrl;
-      pageTarget = candidatePageTarget;
-      socket = candidateSocket;
-      readBrowserStderr = () => candidateStderr;
-      break;
+    if (
+      !child ||
+      !childExit ||
+      !profile ||
+      !debuggerUrl ||
+      !pageTarget?.webSocketDebuggerUrl ||
+      !socket
+    ) {
+      throw new Error(`CI_BROWSER_START_FAILED:${startupErrors.join("|")}`);
     }
-    const startupState = candidateFailure?.message
-      ?? String(candidateChild.exitCode ?? candidateChild.signalCode
-        ?? (candidateDebuggerUrl ? "page-target-timeout" : "debugger-timeout"));
-    startupErrors.push(`${browser}:${startupState}:${discoveryError instanceof Error ? discoveryError.message : String(discoveryError ?? "")}:${candidateStderr}`);
-    if (candidateChild.exitCode === null && candidateChild.signalCode === null) candidateChild.kill("SIGKILL");
-    await Promise.race([
-      candidateExit,
-      rejectAfter(2_000, () => new Error("BROWSER_CANDIDATE_TERMINATION_TIMEOUT")),
-    ]);
-    await rm(candidateProfile, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
-  }
-  if (!child || !childExit || !profile || !debuggerUrl || !pageTarget?.webSocketDebuggerUrl || !socket) {
-    throw new Error(`CI_BROWSER_START_FAILED:${startupErrors.join("|")}`);
-  }
-  const activeChild = child;
-  const activeChildExit = childExit;
-  const activeProfile = profile;
-  t.after(async () => {
-    if (activeChild.exitCode === null && activeChild.signalCode === null) activeChild.kill("SIGKILL");
-    await Promise.race([
-      activeChildExit,
-      rejectAfter(2_000, () => new Error("BROWSER_PROCESS_TERMINATION_TIMEOUT")),
-    ]);
-    await rm(activeProfile, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
-  });
-  const activeSocket = socket;
-  t.after(async () => {
-    if (activeSocket.readyState === WebSocket.CLOSED) return;
-    const closed = new Promise<void>((resolve, reject) => {
-      activeSocket.addEventListener("close", () => resolve(), { once: true });
-      activeSocket.addEventListener("error", () => reject(new Error("BROWSER_CDP_SOCKET_CLOSE_FAILED")), { once: true });
+    const activeChild = child;
+    const activeChildExit = childExit;
+    const activeProfile = profile;
+    t.after(async () => {
+      if (activeChild.exitCode === null && activeChild.signalCode === null) {
+        activeChild.kill("SIGKILL");
+      }
+      await Promise.race([
+        activeChildExit,
+        rejectAfter(2_000, () => new Error("BROWSER_PROCESS_TERMINATION_TIMEOUT")),
+      ]);
+      await rm(activeProfile, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
     });
-    activeSocket.close();
-    await Promise.race([
-      closed,
-      rejectAfter(2_000, () => new Error("BROWSER_CDP_SOCKET_CLOSE_TIMEOUT")),
-    ]);
-  });
-  let nextCommandId = 1;
-  const pendingCommands = new Map<number, {
-    readonly resolve: (value: Record<string, unknown>) => void;
-    readonly reject: (error: Error) => void;
-    readonly timer: ReturnType<typeof setTimeout>;
-  }>();
-  const rejectPendingCommands = (error: Error): void => {
-    for (const [id, pending] of pendingCommands) {
-      clearTimeout(pending.timer);
-      pending.reject(error);
-      pendingCommands.delete(id);
-    }
-  };
-  activeSocket.addEventListener("close", () => rejectPendingCommands(new Error("BROWSER_CDP_SOCKET_CLOSED")));
-  activeSocket.addEventListener("error", () => rejectPendingCommands(new Error("BROWSER_CDP_SOCKET_ERROR")));
-  activeSocket.addEventListener("message", event => {
-    const message = JSON.parse(String(event.data)) as {
-      readonly id?: number;
-      readonly result?: Record<string, unknown>;
-      readonly error?: { readonly message?: string };
+    const activeSocket = socket;
+    t.after(async () => {
+      if (activeSocket.readyState === WebSocket.CLOSED) {
+        return;
+      }
+      const closed = new Promise<void>((resolve, reject) => {
+        activeSocket.addEventListener("close", () => resolve(), { once: true });
+        activeSocket.addEventListener(
+          "error",
+          () => reject(new Error("BROWSER_CDP_SOCKET_CLOSE_FAILED")),
+          { once: true },
+        );
+      });
+      activeSocket.close();
+      await Promise.race([
+        closed,
+        rejectAfter(2_000, () => new Error("BROWSER_CDP_SOCKET_CLOSE_TIMEOUT")),
+      ]);
+    });
+    let nextCommandId = 1;
+    const pendingCommands = new Map<
+      number,
+      {
+        readonly resolve: (value: Record<string, unknown>) => void;
+        readonly reject: (error: Error) => void;
+        readonly timer: ReturnType<typeof setTimeout>;
+      }
+    >();
+    const rejectPendingCommands = (error: Error): void => {
+      for (const [id, pending] of pendingCommands) {
+        clearTimeout(pending.timer);
+        pending.reject(error);
+        pendingCommands.delete(id);
+      }
     };
-    if (message.id === undefined) return;
-    const pending = pendingCommands.get(message.id);
-    if (!pending) return;
-    pendingCommands.delete(message.id);
-    clearTimeout(pending.timer);
-    if (message.error) pending.reject(new Error(message.error.message ?? "BROWSER_CDP_ERROR"));
-    else pending.resolve(message.result ?? {});
-  });
-  const evaluate = (expression: string): Promise<Record<string, unknown>> => new Promise((resolve, reject) => {
-    const id = nextCommandId++;
-    const timer = setTimeout(() => {
-      pendingCommands.delete(id);
-      reject(new Error("BROWSER_CDP_COMMAND_TIMEOUT"));
-    }, 2_000);
-    timer.unref();
-    pendingCommands.set(id, { resolve, reject, timer });
-    try {
-      activeSocket.send(JSON.stringify({ id, method: "Runtime.evaluate", params: { expression, returnByValue: true } }));
-    } catch (error) {
-      clearTimeout(timer);
-      pendingCommands.delete(id);
-      reject(error);
+    activeSocket.addEventListener("close", () =>
+      rejectPendingCommands(new Error("BROWSER_CDP_SOCKET_CLOSED")),
+    );
+    activeSocket.addEventListener("error", () =>
+      rejectPendingCommands(new Error("BROWSER_CDP_SOCKET_ERROR")),
+    );
+    activeSocket.addEventListener("message", (event) => {
+      const message = JSON.parse(String(event.data)) as {
+        readonly id?: number;
+        readonly result?: Record<string, unknown>;
+        readonly error?: { readonly message?: string };
+      };
+      if (message.id === undefined) {
+        return;
+      }
+      const pending = pendingCommands.get(message.id);
+      if (!pending) {
+        return;
+      }
+      pendingCommands.delete(message.id);
+      clearTimeout(pending.timer);
+      if (message.error) {
+        pending.reject(new Error(message.error.message ?? "BROWSER_CDP_ERROR"));
+      } else {
+        pending.resolve(message.result ?? {});
+      }
+    });
+    const evaluate = (expression: string): Promise<Record<string, unknown>> =>
+      new Promise((resolve, reject) => {
+        const id = nextCommandId++;
+        const timer = setTimeout(() => {
+          pendingCommands.delete(id);
+          reject(new Error("BROWSER_CDP_COMMAND_TIMEOUT"));
+        }, 2_000);
+        timer.unref();
+        pendingCommands.set(id, { resolve, reject, timer });
+        try {
+          activeSocket.send(
+            JSON.stringify({
+              id,
+              method: "Runtime.evaluate",
+              params: { expression, returnByValue: true },
+            }),
+          );
+        } catch (error) {
+          clearTimeout(timer);
+          pendingCommands.delete(id);
+          reject(error);
+        }
+      });
+    let output = "pending";
+    for (let attempt = 0; attempt < 200; attempt += 1) {
+      const evaluation = await evaluate('document.querySelector("#result")?.textContent');
+      const result = evaluation.result as { readonly value?: unknown } | undefined;
+      if (typeof result?.value === "string") {
+        output = result.value;
+      }
+      if (output !== "pending") {
+        break;
+      }
+      await delay(25);
     }
-  });
-  let output = "pending";
-  for (let attempt = 0; attempt < 200; attempt += 1) {
-    const evaluation = await evaluate('document.querySelector("#result")?.textContent');
-    const result = evaluation.result as { readonly value?: unknown } | undefined;
-    if (typeof result?.value === "string") output = result.value;
-    if (output !== "pending") break;
-    await delay(25);
-  }
-  assert.notEqual(output, "pending", `BROWSER_WORKER_RESULT_TIMEOUT:${readBrowserStderr()}`);
-  const parsed = JSON.parse(output) as { readonly ok?: unknown; readonly frame?: ProtocolEnvelope; readonly error?: unknown };
-  assert.equal(parsed.ok, true, String(parsed.error ?? output));
-  assert.equal(parsed.frame?.moduleActivationGeneration, 7);
-  assert.equal(parsed.frame?.senderId, "extension-host");
-  assert.equal(parsed.frame?.audience, "product-host");
-  assert.equal(parsed.frame?.kind, "result");
-});
+    assert.notEqual(output, "pending", `BROWSER_WORKER_RESULT_TIMEOUT:${readBrowserStderr()}`);
+    const parsed = JSON.parse(output) as {
+      readonly ok?: unknown;
+      readonly frame?: ProtocolEnvelope;
+      readonly error?: unknown;
+    };
+    assert.equal(parsed.ok, true, String(parsed.error ?? output));
+    assert.equal(parsed.frame?.moduleActivationGeneration, 7);
+    assert.equal(parsed.frame?.senderId, "extension-host");
+    assert.equal(parsed.frame?.audience, "product-host");
+    assert.equal(parsed.frame?.kind, "result");
+  },
+);
 
-test("packed toy package exercises an isolated consumer without Foundation, Cordis, or plugin dependencies", async t => {
+test("packed toy package exercises an isolated consumer without Foundation, Cordis, or plugin dependencies", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "extension packed consumer-"));
   const packageManagerTimeoutMs = process.platform === "win32" ? 90_000 : 30_000;
   const children = new Set<ReturnType<typeof spawn>>();
   const npmCli = await resolveNpmCli();
   const npmArguments = (args: readonly string[]): string[] => [npmCli, ...args];
   t.after(async () => {
-    await Promise.all([...children].map(async child => {
-      if (child.exitCode !== null || child.signalCode !== null) return;
-      child.kill("SIGKILL");
-      await once(child, "exit", { signal: AbortSignal.timeout(2_000) }).catch(() => undefined);
-    }));
+    await Promise.all(
+      [...children].map(async (child) => {
+        if (child.exitCode !== null || child.signalCode !== null) {
+          return;
+        }
+        child.kill("SIGKILL");
+        await once(child, "exit", { signal: AbortSignal.timeout(2_000) }).catch(() => undefined);
+      }),
+    );
     await rm(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   });
-  const fixtureManifest = JSON.parse(await readFile(join(toyPackageRoot, "package.json"), "utf8")) as {
+  const fixtureManifest = JSON.parse(
+    await readFile(join(toyPackageRoot, "package.json"), "utf8"),
+  ) as {
     readonly private?: unknown;
   };
   assert.equal(fixtureManifest.private, true, "qualification fixture must not be publishable");
-  const pack = spawn(process.execPath, npmArguments(["pack", toyPackageRoot, "--json", "--ignore-scripts", "--pack-destination", root]), {
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  const pack = spawn(
+    process.execPath,
+    npmArguments([
+      "pack",
+      toyPackageRoot,
+      "--json",
+      "--ignore-scripts",
+      "--pack-destination",
+      root,
+    ]),
+    {
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
   children.add(pack);
   let stdout = "";
   pack.stdout.setEncoding("utf8");
-  pack.stdout.on("data", chunk => { stdout += chunk; });
-  const [packCode] = await once(pack, "close", { signal: AbortSignal.timeout(packageManagerTimeoutMs) });
+  pack.stdout.on("data", (chunk) => {
+    stdout += chunk;
+  });
+  const [packCode] = await once(pack, "close", {
+    signal: AbortSignal.timeout(packageManagerTimeoutMs),
+  });
   children.delete(pack);
   assert.equal(packCode, 0);
   const packed = JSON.parse(stdout) as Array<{ filename: string; files: Array<{ path: string }> }>;
-  assert.deepEqual(packed[0]?.files.map(file => file.path).sort(), ["index.d.ts", "index.js", "package.json"]);
+  assert.deepEqual(packed[0]?.files.map((file) => file.path).sort(), [
+    "index.d.ts",
+    "index.js",
+    "package.json",
+  ]);
 
   const consumer = join(root, "consumer");
   await mkdir(consumer);
-  await writeFile(join(consumer, "package.json"), JSON.stringify({ private: true, type: "module" }));
-  const install = spawn(process.execPath, npmArguments(["install", "--ignore-scripts", "--package-lock=false", "--no-audit", "--offline", join(root, packed[0]!.filename)]), {
-    cwd: consumer,
-    stdio: "ignore",
-  });
+  await writeFile(
+    join(consumer, "package.json"),
+    JSON.stringify({ private: true, type: "module" }),
+  );
+  const install = spawn(
+    process.execPath,
+    npmArguments([
+      "install",
+      "--ignore-scripts",
+      "--package-lock=false",
+      "--no-audit",
+      "--offline",
+      join(root, packed[0]!.filename),
+    ]),
+    {
+      cwd: consumer,
+      stdio: "ignore",
+    },
+  );
   children.add(install);
-  const [installCode] = await once(install, "close", { signal: AbortSignal.timeout(packageManagerTimeoutMs) });
+  const [installCode] = await once(install, "close", {
+    signal: AbortSignal.timeout(packageManagerTimeoutMs),
+  });
   children.delete(install);
   assert.equal(installCode, 0);
   const list = spawn(process.execPath, npmArguments(["ls", "--all", "--json"]), {
@@ -3710,9 +4911,15 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
   let listError = "";
   list.stdout.setEncoding("utf8");
   list.stderr.setEncoding("utf8");
-  list.stdout.on("data", chunk => { listOutput += chunk; });
-  list.stderr.on("data", chunk => { listError += chunk; });
-  const [listCode] = await once(list, "close", { signal: AbortSignal.timeout(packageManagerTimeoutMs) });
+  list.stdout.on("data", (chunk) => {
+    listOutput += chunk;
+  });
+  list.stderr.on("data", (chunk) => {
+    listError += chunk;
+  });
+  const [listCode] = await once(list, "close", {
+    signal: AbortSignal.timeout(packageManagerTimeoutMs),
+  });
   children.delete(list);
   assert.equal(listCode, 0, listError);
   const dependencyNames = new Set<string>();
@@ -3726,15 +4933,21 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
   };
   visitDependencies(JSON.parse(listOutput) as { readonly dependencies?: Record<string, unknown> });
   assert.deepEqual([...dependencyNames].sort(), ["@agent-teams/qualification-toy-package"]);
-  const execute = spawn(process.execPath, [
-    "--input-type=module",
-    "--eval",
-    'import { createCounter } from "@agent-teams/qualification-toy-package"; process.stdout.write(String(createCounter(3).next()));',
-  ], { cwd: consumer, stdio: ["ignore", "pipe", "pipe"] });
+  const execute = spawn(
+    process.execPath,
+    [
+      "--input-type=module",
+      "--eval",
+      'import { createCounter } from "@agent-teams/qualification-toy-package"; process.stdout.write(String(createCounter(3).next()));',
+    ],
+    { cwd: consumer, stdio: ["ignore", "pipe", "pipe"] },
+  );
   children.add(execute);
   let result = "";
   execute.stdout.setEncoding("utf8");
-  execute.stdout.on("data", chunk => { result += chunk; });
+  execute.stdout.on("data", (chunk) => {
+    result += chunk;
+  });
   const [executeCode] = await once(execute, "close", { signal: AbortSignal.timeout(10_000) });
   children.delete(execute);
   assert.equal(executeCode, 0);
@@ -3744,10 +4957,13 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
 test("Cordis qualifies only as a private scoped-resource candidate", async () => {
   const events: string[] = [];
   const root = new Context();
-  const plugin = (ctx: Context) => ctx.effect(() => {
-    events.push("start");
-    return () => { events.push("stop"); };
-  }, "qualification-resource");
+  const plugin = (ctx: Context) =>
+    ctx.effect(() => {
+      events.push("start");
+      return () => {
+        events.push("stop");
+      };
+    }, "qualification-resource");
   const fiber = await root.plugin(plugin);
   assert.deepEqual(events, ["start"]);
   assert.equal("ready" in fiber, false);
@@ -3761,52 +4977,69 @@ test("Cordis hooks preserve the coordinator-owned trace shape in an applicabilit
   const first = requirePlan([{ id: "stable-module", requires: [] }]);
   const second = requirePlan([{ id: "stable-module", requires: [] }]);
   const native = new GenerationLifecycle(testAuthorityScope);
-  await native.activate(activationRequest(native, "native-first", first, new Map([
-    ["stable-module", inertHooks()],
-  ])));
-  const nativeResult = await native.activate(activationRequest(
-    native,
-    "native-replacement",
-    second,
-    new Map([["stable-module", inertHooks()]]),
-  ));
+  await native.activate(
+    activationRequest(native, "native-first", first, new Map([["stable-module", inertHooks()]])),
+  );
+  const nativeResult = await native.activate(
+    activationRequest(
+      native,
+      "native-replacement",
+      second,
+      new Map([["stable-module", inertHooks()]]),
+    ),
+  );
 
   const root = new Context();
   const resourceEvents: string[] = [];
   const disposers = new Map<string, () => Promise<void>>();
-  const cordisHooks = (moduleId: string): ModuleHooks => inertHooks({
-    async start(context) {
-      const fiber = await root.plugin((ctx: Context) => ctx.effect(() => {
-        resourceEvents.push(`${context.authorityScope}:${context.generation}:${context.moduleId}:start`);
-        return () => {
-          resourceEvents.push(`${context.authorityScope}:${context.generation}:${context.moduleId}:stop`);
-        };
-      }, context.activationIdentity));
-      assert.equal(context.moduleId, moduleId);
-      disposers.set(context.activationIdentity, () => fiber.dispose());
-    },
-    async stop(context) {
-      await disposers.get(context.activationIdentity)?.();
-      disposers.delete(context.activationIdentity);
-    },
-  });
+  const cordisHooks = (moduleId: string): ModuleHooks =>
+    inertHooks({
+      async start(context) {
+        const fiber = await root.plugin((ctx: Context) =>
+          ctx.effect(() => {
+            resourceEvents.push(
+              `${context.authorityScope}:${context.generation}:${context.moduleId}:start`,
+            );
+            return () => {
+              resourceEvents.push(
+                `${context.authorityScope}:${context.generation}:${context.moduleId}:stop`,
+              );
+            };
+          }, context.activationIdentity),
+        );
+        assert.equal(context.moduleId, moduleId);
+        disposers.set(context.activationIdentity, () => fiber.dispose());
+      },
+      async stop(context) {
+        await disposers.get(context.activationIdentity)?.();
+        disposers.delete(context.activationIdentity);
+      },
+    });
   const cordis = new GenerationLifecycle(testAuthorityScope);
-  await cordis.activate(activationRequest(cordis, "cordis-first", first, new Map([
-    ["stable-module", cordisHooks("stable-module")],
-  ])));
-  const cordisResult = await cordis.activate(activationRequest(
-    cordis,
-    "cordis-replacement",
-    second,
-    new Map([["stable-module", cordisHooks("stable-module")]]),
-  ));
+  await cordis.activate(
+    activationRequest(
+      cordis,
+      "cordis-first",
+      first,
+      new Map([["stable-module", cordisHooks("stable-module")]]),
+    ),
+  );
+  const cordisResult = await cordis.activate(
+    activationRequest(
+      cordis,
+      "cordis-replacement",
+      second,
+      new Map([["stable-module", cordisHooks("stable-module")]]),
+    ),
+  );
 
-  const semanticTrace = (result: typeof nativeResult) => result.traces.map(trace => ({
-    phase: trace.phase,
-    moduleId: trace.moduleId,
-    generation: trace.generation,
-    outcome: trace.outcome,
-  }));
+  const semanticTrace = (result: typeof nativeResult) =>
+    result.traces.map((trace) => ({
+      phase: trace.phase,
+      moduleId: trace.moduleId,
+      generation: trace.generation,
+      outcome: trace.outcome,
+    }));
   assert.deepEqual(semanticTrace(cordisResult), semanticTrace(nativeResult));
   assert.deepEqual(resourceEvents, [
     `${testAuthorityScope}:1:stable-module:start`,
@@ -3815,14 +5048,20 @@ test("Cordis hooks preserve the coordinator-owned trace shape in an applicabilit
   ]);
   const otherAuthorityScope = "tenant:other/project:other";
   const other = new GenerationLifecycle(otherAuthorityScope);
-  await other.activate(activationRequest(
-    other,
-    "cordis-other-scope",
-    first,
-    new Map([["stable-module", cordisHooks("stable-module")]]),
-    { authorityScope: otherAuthorityScope },
-  ));
-  assert.equal(disposers.size, 2, "same module and generation in distinct scopes must not share a disposer");
+  await other.activate(
+    activationRequest(
+      other,
+      "cordis-other-scope",
+      first,
+      new Map([["stable-module", cordisHooks("stable-module")]]),
+      { authorityScope: otherAuthorityScope },
+    ),
+  );
+  assert.equal(
+    disposers.size,
+    2,
+    "same module and generation in distinct scopes must not share a disposer",
+  );
   await cordis.shutdown();
   await other.shutdown();
   assert.deepEqual(resourceEvents, [
@@ -3843,31 +5082,40 @@ test("Cordis cleanup identity isolates overlapping coordinator incarnations in o
   const root = new Context();
   const disposers = new Map<string, () => Promise<void>>();
   const events: string[] = [];
-  const hooks = (): ModuleHooks => inertHooks({
-    async start(context) {
-      const fiber = await root.plugin((ctx: Context) => ctx.effect(() => {
-        events.push(`start:${context.activationIdentity}`);
-        return () => { events.push(`stop:${context.activationIdentity}`); };
-      }, context.activationIdentity));
-      if (disposers.has(context.activationIdentity)) throw new Error("ACTIVATION_IDENTITY_COLLISION");
-      disposers.set(context.activationIdentity, () => fiber.dispose());
-    },
-    async stop(context) {
-      const dispose = disposers.get(context.activationIdentity);
-      if (!dispose) throw new Error("MISSING_SCOPED_DISPOSER");
-      await dispose();
-      disposers.delete(context.activationIdentity);
-    },
-  });
+  const hooks = (): ModuleHooks =>
+    inertHooks({
+      async start(context) {
+        const fiber = await root.plugin((ctx: Context) =>
+          ctx.effect(() => {
+            events.push(`start:${context.activationIdentity}`);
+            return () => {
+              events.push(`stop:${context.activationIdentity}`);
+            };
+          }, context.activationIdentity),
+        );
+        if (disposers.has(context.activationIdentity)) {
+          throw new Error("ACTIVATION_IDENTITY_COLLISION");
+        }
+        disposers.set(context.activationIdentity, () => fiber.dispose());
+      },
+      async stop(context) {
+        const dispose = disposers.get(context.activationIdentity);
+        if (!dispose) {
+          throw new Error("MISSING_SCOPED_DISPOSER");
+        }
+        await dispose();
+        disposers.delete(context.activationIdentity);
+      },
+    });
   const first = new GenerationLifecycle(testAuthorityScope, undefined, firstIncarnation);
   const second = new GenerationLifecycle(testAuthorityScope, undefined, secondIncarnation);
 
-  await first.activate(activationRequest(first, "same-scope-first", plan, new Map([
-    ["stable-module", hooks()],
-  ])));
-  await second.activate(activationRequest(second, "same-scope-second", plan, new Map([
-    ["stable-module", hooks()],
-  ])));
+  await first.activate(
+    activationRequest(first, "same-scope-first", plan, new Map([["stable-module", hooks()]])),
+  );
+  await second.activate(
+    activationRequest(second, "same-scope-second", plan, new Map([["stable-module", hooks()]])),
+  );
   assert.equal(disposers.size, 2);
   assert.deepEqual(events, [
     `start:${JSON.stringify([testAuthorityScope, firstIncarnation, 1, "stable-module"])}`,
@@ -3875,10 +5123,14 @@ test("Cordis cleanup identity isolates overlapping coordinator incarnations in o
   ]);
 
   await first.shutdown();
-  assert.equal(disposers.size, 1, "stopping one coordinator must not dispose the other's generation");
+  assert.equal(
+    disposers.size,
+    1,
+    "stopping one coordinator must not dispose the other's generation",
+  );
   await second.shutdown();
   assert.equal(disposers.size, 0);
-  assert.equal(events.filter(event => event.startsWith("stop:")).length, 2);
+  assert.equal(events.filter((event) => event.startsWith("stop:")).length, 2);
 });
 
 test("canonical activation identity resists embedded-separator collisions during rollback", async () => {
@@ -3886,59 +5138,104 @@ test("canonical activation identity resists embedded-separator collisions during
   const secondIncarnation = "coordinator";
   const firstModuleId = "stable-module";
   const secondModuleId = "1\u0000stable-module";
-  const legacyFirstIdentity = [testAuthorityScope, firstIncarnation, 1, firstModuleId].join("\u0000");
-  const legacySecondIdentity = [testAuthorityScope, secondIncarnation, 2, secondModuleId].join("\u0000");
-  assert.equal(legacyFirstIdentity, legacySecondIdentity, "fixture must reproduce the old NUL-join collision");
+  const legacyFirstIdentity = [testAuthorityScope, firstIncarnation, 1, firstModuleId].join(
+    "\u0000",
+  );
+  const legacySecondIdentity = [testAuthorityScope, secondIncarnation, 2, secondModuleId].join(
+    "\u0000",
+  );
+  assert.equal(
+    legacyFirstIdentity,
+    legacySecondIdentity,
+    "fixture must reproduce the old NUL-join collision",
+  );
 
   const resources = new Map<string, string>();
   const startIdentities: string[] = [];
   const stopIdentities: string[] = [];
-  const trackedHooks = (): ModuleHooks => inertHooks({
-    start(context) {
-      assert.equal(resources.has(context.activationIdentity), false, "canonical identity must not collide");
-      resources.set(context.activationIdentity, context.moduleId);
-      startIdentities.push(context.activationIdentity);
-    },
-    stop(context) {
-      assert.equal(resources.get(context.activationIdentity), context.moduleId);
-      resources.delete(context.activationIdentity);
-      stopIdentities.push(context.activationIdentity);
-    },
-  });
+  const trackedHooks = (): ModuleHooks =>
+    inertHooks({
+      start(context) {
+        assert.equal(
+          resources.has(context.activationIdentity),
+          false,
+          "canonical identity must not collide",
+        );
+        resources.set(context.activationIdentity, context.moduleId);
+        startIdentities.push(context.activationIdentity);
+      },
+      stop(context) {
+        assert.equal(resources.get(context.activationIdentity), context.moduleId);
+        resources.delete(context.activationIdentity);
+        stopIdentities.push(context.activationIdentity);
+      },
+    });
   const first = new GenerationLifecycle(testAuthorityScope, undefined, firstIncarnation);
   const second = new GenerationLifecycle(testAuthorityScope, undefined, secondIncarnation);
   const firstPlan = requirePlan([{ id: firstModuleId, requires: [] }]);
   const bootstrapPlan = requirePlan([{ id: "bootstrap", requires: [] }]);
 
-  await first.activate(activationRequest(first, "separator-first", firstPlan, new Map([
-    [firstModuleId, trackedHooks()],
-  ])));
-  await second.activate(activationRequest(second, "separator-bootstrap", bootstrapPlan, new Map([
-    ["bootstrap", trackedHooks()],
-  ])));
+  await first.activate(
+    activationRequest(
+      first,
+      "separator-first",
+      firstPlan,
+      new Map([[firstModuleId, trackedHooks()]]),
+    ),
+  );
+  await second.activate(
+    activationRequest(
+      second,
+      "separator-bootstrap",
+      bootstrapPlan,
+      new Map([["bootstrap", trackedHooks()]]),
+    ),
+  );
 
   const rollbackPlan = requirePlan([
     { id: secondModuleId, requires: [] },
     { id: "rollback-failure", requires: [secondModuleId] },
   ]);
-  const rollback = await second.activate(activationRequest(
-    second,
-    "separator-rollback",
-    rollbackPlan,
-    new Map([
-      [secondModuleId, trackedHooks()],
-      ["rollback-failure", inertHooks({
-        start: () => { throw new Error("ROLLBACK_FAILURE"); },
-        stop: () => undefined,
-      })],
-    ]),
-  ));
+  const rollback = await second.activate(
+    activationRequest(
+      second,
+      "separator-rollback",
+      rollbackPlan,
+      new Map([
+        [secondModuleId, trackedHooks()],
+        [
+          "rollback-failure",
+          inertHooks({
+            start: () => {
+              throw new Error("ROLLBACK_FAILURE");
+            },
+            stop: () => undefined,
+          }),
+        ],
+      ]),
+    ),
+  );
 
-  const expectedFirstIdentity = JSON.stringify([testAuthorityScope, firstIncarnation, 1, firstModuleId]);
-  const expectedBootstrapIdentity = JSON.stringify([testAuthorityScope, secondIncarnation, 1, "bootstrap"]);
-  const expectedRollbackIdentity = JSON.stringify([testAuthorityScope, secondIncarnation, 2, secondModuleId]);
+  const expectedFirstIdentity = JSON.stringify([
+    testAuthorityScope,
+    firstIncarnation,
+    1,
+    firstModuleId,
+  ]);
+  const expectedBootstrapIdentity = JSON.stringify([
+    testAuthorityScope,
+    secondIncarnation,
+    1,
+    "bootstrap",
+  ]);
+  const expectedRollbackIdentity = JSON.stringify([
+    testAuthorityScope,
+    secondIncarnation,
+    2,
+    secondModuleId,
+  ]);
   assert.equal(rollback.ok, false);
-  assert.ok(rollback.errors.some(error => error.message === "ROLLBACK_FAILURE"));
+  assert.ok(rollback.errors.some((error) => error.message === "ROLLBACK_FAILURE"));
   assert.deepEqual(startIdentities, [
     expectedFirstIdentity,
     expectedBootstrapIdentity,
@@ -3954,11 +5251,9 @@ test("canonical activation identity resists embedded-separator collisions during
 
 test("WASM boundary accepts an inert numeric component but grants no host capability", async () => {
   const bytes = Uint8Array.from([
-    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00,
-    0x01, 0x07, 0x01, 0x60, 0x02, 0x7f, 0x7f, 0x01, 0x7f,
-    0x03, 0x02, 0x01, 0x00,
-    0x07, 0x07, 0x01, 0x03, 0x61, 0x64, 0x64, 0x00, 0x00,
-    0x0a, 0x09, 0x01, 0x07, 0x00, 0x20, 0x00, 0x20, 0x01, 0x6a, 0x0b,
+    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x07, 0x01, 0x60, 0x02, 0x7f, 0x7f, 0x01,
+    0x7f, 0x03, 0x02, 0x01, 0x00, 0x07, 0x07, 0x01, 0x03, 0x61, 0x64, 0x64, 0x00, 0x00, 0x0a, 0x09,
+    0x01, 0x07, 0x00, 0x20, 0x00, 0x20, 0x01, 0x6a, 0x0b,
   ]);
   const instance = await WebAssembly.instantiate(bytes, {});
   const add = instance.instance.exports.add as (left: number, right: number) => number;

@@ -49,11 +49,17 @@ async function initialize(root: string): Promise<void> {
   await git(root, ["remote", "add", "origin", "https://github.com/example/product.git"]);
 }
 
-async function snapshot(root: string): Promise<{ commit: string; tree: string; blob(path: string): Promise<string> }> {
+async function snapshot(
+  root: string,
+): Promise<{ commit: string; tree: string; blob(path: string): Promise<string> }> {
   await git(root, ["add", "."]);
   await git(root, ["commit", "--quiet", "-m", "test: exact source fixture"]);
   const commit = await git(root, ["rev-parse", "HEAD"]);
-  return { commit, tree: await git(root, ["rev-parse", `${commit}^{tree}`]), blob: path => git(root, ["rev-parse", `${commit}:${path}`]) };
+  return {
+    commit,
+    tree: await git(root, ["rev-parse", `${commit}^{tree}`]),
+    blob: (path) => git(root, ["rev-parse", `${commit}:${path}`]),
+  };
 }
 
 function envelope(product: ProductRecord) {
@@ -103,15 +109,28 @@ test("fixed claim, authority, limitations, and promotion boundary fail closed", 
   try {
     const evidence = await fixture(root);
     for (const mutate of [
-      (copy: any) => { copy.claim.kind = "runtime-semantics-proved"; },
-      (copy: any) => { copy.verification.authority = "product-approval"; },
-      (copy: any) => { copy.verification.promotionAuthority = true; },
-      (copy: any) => { copy.limitations = ["none"]; },
-      (copy: any) => { copy.products.fixture.claim = "semantic dataflow verified"; },
+      (copy: any) => {
+        copy.claim.kind = "runtime-semantics-proved";
+      },
+      (copy: any) => {
+        copy.verification.authority = "product-approval";
+      },
+      (copy: any) => {
+        copy.verification.promotionAuthority = true;
+      },
+      (copy: any) => {
+        copy.limitations = ["none"];
+      },
+      (copy: any) => {
+        copy.products.fixture.claim = "semantic dataflow verified";
+      },
     ]) {
       const copy = structuredClone(evidence);
       mutate(copy);
-      await assert.rejects(verifyProductSourceEvidence(copy, { fixture: root }), /E-(?:CLAIM|AUTHORITY|STATUS|LIMITATIONS|SCHEMA)/u);
+      await assert.rejects(
+        verifyProductSourceEvidence(copy, { fixture: root }),
+        /E-(?:CLAIM|AUTHORITY|STATUS|LIMITATIONS|SCHEMA)/u,
+      );
     }
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -129,7 +148,10 @@ test("exact tree, blob, origin, and repository mappings fail closed", async () =
     wrongBlob.products.fixture.files[0]!.blob = "0".repeat(40);
     await assert.rejects(verifyProductSourceEvidence(wrongBlob, { fixture: root }), /E-BLOB/u);
     await assert.rejects(verifyProductSourceEvidence(evidence, {}), /E-REPOSITORY/u);
-    await assert.rejects(verifyProductSourceEvidence(evidence, { fixture: root, inferredSibling: root }), /E-REPOSITORY/u);
+    await assert.rejects(
+      verifyProductSourceEvidence(evidence, { fixture: root, inferredSibling: root }),
+      /E-REPOSITORY/u,
+    );
     const duplicate = structuredClone(evidence) as typeof evidence & {
       products: Record<string, ProductRecord>;
     };
@@ -147,7 +169,12 @@ test("exact tree, blob, origin, and repository mappings fail closed", async () =
     await assert.rejects(verifyProductSourceEvidence(evidence, { fixture: root }), /E-REPOSITORY/u);
     await git(root, ["remote", "set-url", "origin", "file://github.com/example/product.git"]);
     await assert.rejects(verifyProductSourceEvidence(evidence, { fixture: root }), /E-REPOSITORY/u);
-    await git(root, ["remote", "set-url", "origin", "ssh://git:secret@github.com/example/product.git"]);
+    await git(root, [
+      "remote",
+      "set-url",
+      "origin",
+      "ssh://git:secret@github.com/example/product.git",
+    ]);
     await assert.rejects(verifyProductSourceEvidence(evidence, { fixture: root }), /E-REPOSITORY/u);
     await git(root, ["remote", "set-url", "origin", "https://github.com:8443/example/product.git"]);
     await assert.rejects(verifyProductSourceEvidence(evidence, { fixture: root }), /E-REPOSITORY/u);
@@ -215,8 +242,16 @@ test("gitlinks cannot masquerade as reviewed files", async () => {
     await git(root, ["commit", "--quiet", "-m", "test: add gitlink"]);
     const commit = await git(root, ["rev-parse", "HEAD"]);
     const tree = await git(root, ["rev-parse", `${commit}^{tree}`]);
-    const gitlink = envelope({ repository: "example/product", commit, tree, files: [{ path: "linked-product", blob: target }] });
-    await assert.rejects(verifyProductSourceEvidence(gitlink, { fixture: root }), /E-MODE.*160000 commit/u);
+    const gitlink = envelope({
+      repository: "example/product",
+      commit,
+      tree,
+      files: [{ path: "linked-product", blob: target }],
+    });
+    await assert.rejects(
+      verifyProductSourceEvidence(gitlink, { fixture: root }),
+      /E-MODE.*160000 commit/u,
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -228,12 +263,24 @@ test("a forged regular-file tree entry cannot point at a non-blob object", async
     const evidence = await fixture(root);
     const realTree = evidence.products.fixture.tree;
     const rawTreePath = join(root, "forged-tree.raw");
-    await writeFile(rawTreePath, Buffer.concat([
-      Buffer.from("100644 forged.ts\0"),
-      Buffer.from(realTree, "hex"),
-    ]));
-    const forgedTree = await git(root, ["hash-object", "-t", "tree", "-w", "--literally", rawTreePath]);
-    const forgedCommit = await git(root, ["commit-tree", forgedTree, "-m", "test: forged tree entry"]);
+    await writeFile(
+      rawTreePath,
+      Buffer.concat([Buffer.from("100644 forged.ts\0"), Buffer.from(realTree, "hex")]),
+    );
+    const forgedTree = await git(root, [
+      "hash-object",
+      "-t",
+      "tree",
+      "-w",
+      "--literally",
+      rawTreePath,
+    ]);
+    const forgedCommit = await git(root, [
+      "commit-tree",
+      forgedTree,
+      "-m",
+      "test: forged tree entry",
+    ]);
     const forged = envelope({
       repository: "example/product",
       commit: forgedCommit,
@@ -250,7 +297,13 @@ test("a forged regular-file tree entry cannot point at a non-blob object", async
 });
 
 test("portable path and blob-size bounds reject adversarial custody records", async () => {
-  const invalidPaths = ["src/NUL.ts", "src/bad?.ts", "src/trailing. ", "src/tab\t.ts", "src/../escape.ts"];
+  const invalidPaths = [
+    "src/NUL.ts",
+    "src/bad?.ts",
+    "src/trailing. ",
+    "src/tab\t.ts",
+    "src/../escape.ts",
+  ];
   for (const invalidPath of invalidPaths) {
     const root = await mkdtemp(join(tmpdir(), "exact-git-path-"));
     try {
@@ -266,7 +319,12 @@ test("portable path and blob-size bounds reject adversarial custody records", as
     await initialize(root);
     await put(root, "large.bin", Buffer.alloc(2 * 1024 * 1024 + 1));
     const exact = await snapshot(root);
-    const evidence = envelope({ repository: "example/product", commit: exact.commit, tree: exact.tree, files: [{ path: "large.bin", blob: await exact.blob("large.bin") }] });
+    const evidence = envelope({
+      repository: "example/product",
+      commit: exact.commit,
+      tree: exact.tree,
+      files: [{ path: "large.bin", blob: await exact.blob("large.bin") }],
+    });
     await assert.rejects(verifyProductSourceEvidence(evidence, { fixture: root }), /E-BOUNDS/u);
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -285,49 +343,96 @@ test("CLI requires explicit absolute repository mappings and emits custody-only 
     const evidencePath = join(root, "evidence.yaml");
     const evidence = await fixture(root);
     await writeFile(evidencePath, JSON.stringify(evidence));
-    await assert.rejects(execFileAsync(process.execPath, ["architecture/checks/product-source-evidence-cli.mjs", evidencePath], { cwd: process.cwd() }), /usage/u);
-    await assert.rejects(execFileAsync(process.execPath, ["architecture/checks/product-source-evidence-cli.mjs", evidencePath, "--repository", "fixture=relative"], { cwd: process.cwd() }), /absolute path/u);
+    await assert.rejects(
+      execFileAsync(
+        process.execPath,
+        ["architecture/checks/product-source-evidence-cli.mjs", evidencePath],
+        { cwd: process.cwd() },
+      ),
+      /usage/u,
+    );
+    await assert.rejects(
+      execFileAsync(
+        process.execPath,
+        [
+          "architecture/checks/product-source-evidence-cli.mjs",
+          evidencePath,
+          "--repository",
+          "fixture=relative",
+        ],
+        { cwd: process.cwd() },
+      ),
+      /absolute path/u,
+    );
     const oversizedPath = join(root, "oversized.yaml");
     await writeFile(oversizedPath, Buffer.alloc(1024 * 1024 + 1, "x"));
-    await assert.rejects(execFileAsync(process.execPath, [
-      "architecture/checks/product-source-evidence-cli.mjs",
-      oversizedPath,
-      "--repository",
-      `fixture=${root}`,
-    ], { cwd: process.cwd() }), /no larger than 1048576 bytes/u);
+    await assert.rejects(
+      execFileAsync(
+        process.execPath,
+        [
+          "architecture/checks/product-source-evidence-cli.mjs",
+          oversizedPath,
+          "--repository",
+          `fixture=${root}`,
+        ],
+        { cwd: process.cwd() },
+      ),
+      /no larger than 1048576 bytes/u,
+    );
     const multiChunkPath = join(root, "multi-chunk.yaml");
     await writeFile(multiChunkPath, `${JSON.stringify(evidence)}${" ".repeat(70 * 1024)}`);
-    const multiChunk = await execFileAsync(process.execPath, [
-      "architecture/checks/product-source-evidence-cli.mjs",
-      multiChunkPath,
-      "--repository",
-      `fixture=${root}`,
-    ], { cwd: process.cwd(), encoding: "utf8" });
+    const multiChunk = await execFileAsync(
+      process.execPath,
+      [
+        "architecture/checks/product-source-evidence-cli.mjs",
+        multiChunkPath,
+        "--repository",
+        `fixture=${root}`,
+      ],
+      { cwd: process.cwd(), encoding: "utf8" },
+    );
     assert.equal(JSON.parse(multiChunk.stdout).proofMode, PRODUCT_SOURCE_PROOF_MODE);
 
     const secret = "sentinel-origin-secret";
-    await git(root, ["remote", "set-url", "origin", `https://user:${secret}@github.com/example/product.git`]);
-    await assert.rejects(execFileAsync(process.execPath, [
-      "architecture/checks/product-source-evidence-cli.mjs",
-      evidencePath,
-      "--repository",
-      `fixture=${root}`,
-    ], { cwd: process.cwd(), encoding: "utf8" }), (error: unknown) => {
-      const stderr = typeof error === "object" && error !== null && "stderr" in error
-        ? String(error.stderr)
-        : String(error);
-      assert.match(stderr, /E-REPOSITORY/u);
-      assert.equal(stderr.includes(secret), false);
-      return true;
-    });
+    await git(root, [
+      "remote",
+      "set-url",
+      "origin",
+      `https://user:${secret}@github.com/example/product.git`,
+    ]);
+    await assert.rejects(
+      execFileAsync(
+        process.execPath,
+        [
+          "architecture/checks/product-source-evidence-cli.mjs",
+          evidencePath,
+          "--repository",
+          `fixture=${root}`,
+        ],
+        { cwd: process.cwd(), encoding: "utf8" },
+      ),
+      (error: unknown) => {
+        const stderr =
+          typeof error === "object" && error !== null && "stderr" in error
+            ? String(error.stderr)
+            : String(error);
+        assert.match(stderr, /E-REPOSITORY/u);
+        assert.equal(stderr.includes(secret), false);
+        return true;
+      },
+    );
     await git(root, ["remote", "set-url", "origin", "https://github.com/example/product.git"]);
-    const result = await execFileAsync(process.execPath, [
-      "architecture/checks/product-source-evidence-cli.mjs",
-      evidencePath,
-      "--",
-      "--repository",
-      `fixture=${root}`,
-    ], { cwd: process.cwd(), encoding: "utf8" });
+    const result = await execFileAsync(
+      process.execPath,
+      [
+        "architecture/checks/product-source-evidence-cli.mjs",
+        evidencePath,
+        "--",
+        "--repository",
+        `fixture=${root}`,
+      ],
+      { cwd: process.cwd(), encoding: "utf8" },
+    );
     const report = JSON.parse(result.stdout);
     assert.equal(report.proofMode, PRODUCT_SOURCE_PROOF_MODE);
     assert.equal(report.claimKind, PRODUCT_SOURCE_CLAIM_KIND);

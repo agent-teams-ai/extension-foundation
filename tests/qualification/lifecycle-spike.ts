@@ -5,8 +5,22 @@ import { types as nodeTypes } from "node:util";
 
 import { compileGraph, type CompiledGraph, type ModuleDescriptor } from "./graph-spike.ts";
 
-export type LifecyclePhase = "preflight" | "prepare" | "start" | "ready" | "publish" | "drain" | "stop" | "abort";
-export type LifecycleOutcome = "started" | "confirmed" | "failed" | "timed-out" | "stale" | "termination_unproven";
+export type LifecyclePhase =
+  | "preflight"
+  | "prepare"
+  | "start"
+  | "ready"
+  | "publish"
+  | "drain"
+  | "stop"
+  | "abort";
+export type LifecycleOutcome =
+  | "started"
+  | "confirmed"
+  | "failed"
+  | "timed-out"
+  | "stale"
+  | "termination_unproven";
 
 export interface LifecycleTrace {
   readonly phase: LifecyclePhase;
@@ -38,10 +52,11 @@ interface CommonModuleHooks {
   stop?(context: ActivationContext): void | Promise<void>;
 }
 
-export type ModuleHooks = CommonModuleHooks & (
-  | { readonly readiness: "inert"; readonly ready?: never }
-  | { readonly readiness: "probe"; ready(context: ActivationContext): boolean | Promise<boolean> }
-);
+export type ModuleHooks = CommonModuleHooks &
+  (
+    | { readonly readiness: "inert"; readonly ready?: never }
+    | { readonly readiness: "probe"; ready(context: ActivationContext): boolean | Promise<boolean> }
+  );
 
 export interface ActivationIdentity {
   readonly operationId: string;
@@ -121,12 +136,14 @@ const maxTimerMilliseconds = 2_147_483_647;
 
 const defaultClock: MonotonicClock = {
   now: () => performance.now(),
-  sleep: milliseconds => delay(milliseconds),
+  sleep: (milliseconds) => delay(milliseconds),
 };
 
 function errorMessage(error: unknown): string {
   try {
-    if (error instanceof Error && typeof error.message === "string") return error.message;
+    if (error instanceof Error && typeof error.message === "string") {
+      return error.message;
+    }
   } catch {
     return "UNREADABLE_ERROR";
   }
@@ -138,7 +155,9 @@ function errorMessage(error: unknown): string {
 }
 
 function assertNonEmptyIdentityString(value: unknown, errorCode: string): asserts value is string {
-  if (typeof value !== "string" || value.length === 0) throw new Error(errorCode);
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(errorCode);
+  }
 }
 
 function moduleActivationContext(seed: ActivationContextSeed, moduleId: string): ActivationContext {
@@ -164,11 +183,7 @@ class AttributedLifecycleError extends Error {
   readonly moduleId: string | undefined;
   readonly phase: LifecyclePhase | undefined;
 
-  constructor(
-    message: string,
-    moduleId?: string,
-    phase?: LifecyclePhase,
-  ) {
+  constructor(message: string, moduleId?: string, phase?: LifecyclePhase) {
     super(message);
     this.moduleId = moduleId;
     this.phase = phase;
@@ -200,7 +215,9 @@ function attributedError(error: unknown, moduleId: string, phase: LifecyclePhase
 
 function aggregateErrors(error: unknown): readonly Error[] {
   try {
-    if (!(error instanceof AggregateError)) return [asError(error)];
+    if (!(error instanceof AggregateError)) {
+      return [asError(error)];
+    }
   } catch {
     return [asError(error)];
   }
@@ -231,37 +248,65 @@ function fingerprint(request: ActivationRequest): string {
 }
 
 function snapshotPlan(plan: CompiledGraph): CompiledGraph {
-  const exactDataRecord = (value: unknown, expectedKeys: readonly string[]): Readonly<Record<string, PropertyDescriptor>> => {
-    if (typeof value !== "object" || value === null || Array.isArray(value) || nodeTypes.isProxy(value)) {
+  const exactDataRecord = (
+    value: unknown,
+    expectedKeys: readonly string[],
+  ): Readonly<Record<string, PropertyDescriptor>> => {
+    if (
+      typeof value !== "object" ||
+      value === null ||
+      Array.isArray(value) ||
+      nodeTypes.isProxy(value)
+    ) {
       throw new Error("INVALID_COMPILED_PLAN");
     }
     const prototype = Object.getPrototypeOf(value);
-    if (prototype !== Object.prototype && prototype !== null) throw new Error("INVALID_COMPILED_PLAN");
+    if (prototype !== Object.prototype && prototype !== null) {
+      throw new Error("INVALID_COMPILED_PLAN");
+    }
     const descriptors = Object.getOwnPropertyDescriptors(value);
     const keys = Reflect.ownKeys(descriptors);
-    if (keys.some(key => typeof key !== "string")
-      || (keys as string[]).sort().join("|") !== [...expectedKeys].sort().join("|")) {
+    if (
+      keys.some((key) => typeof key !== "string") ||
+      (keys as string[]).sort().join("|") !== [...expectedKeys].sort().join("|")
+    ) {
       throw new Error("NON_CANONICAL_COMPILED_PLAN");
     }
     for (const descriptor of Object.values(descriptors)) {
-      if (!("value" in descriptor) || descriptor.get !== undefined || descriptor.set !== undefined) {
+      if (
+        !("value" in descriptor) ||
+        descriptor.get !== undefined ||
+        descriptor.set !== undefined
+      ) {
         throw new Error("INVALID_COMPILED_PLAN");
       }
     }
     return descriptors;
   };
   const dataArray = (value: unknown): readonly unknown[] => {
-    if (!Array.isArray(value) || nodeTypes.isProxy(value)) throw new Error("INVALID_COMPILED_PLAN");
+    if (!Array.isArray(value) || nodeTypes.isProxy(value)) {
+      throw new Error("INVALID_COMPILED_PLAN");
+    }
     const descriptors = Object.getOwnPropertyDescriptors(value);
-    const expectedKeys = [...Array.from({ length: value.length }, (_, index) => String(index)), "length"];
+    const expectedKeys = [
+      ...Array.from({ length: value.length }, (_, index) => String(index)),
+      "length",
+    ];
     const keys = Reflect.ownKeys(descriptors);
-    if (keys.some(key => typeof key !== "string")
-      || (keys as string[]).sort().join("|") !== expectedKeys.sort().join("|")) {
+    if (
+      keys.some((key) => typeof key !== "string") ||
+      (keys as string[]).sort().join("|") !== expectedKeys.sort().join("|")
+    ) {
       throw new Error("NON_CANONICAL_COMPILED_PLAN");
     }
     return Array.from({ length: value.length }, (_, index) => {
       const descriptor = descriptors[index];
-      if (!descriptor || !("value" in descriptor) || descriptor.get !== undefined || descriptor.set !== undefined) {
+      if (
+        !descriptor ||
+        !("value" in descriptor) ||
+        descriptor.get !== undefined ||
+        descriptor.set !== undefined
+      ) {
         throw new Error("INVALID_COMPILED_PLAN");
       }
       return descriptor.value;
@@ -269,20 +314,31 @@ function snapshotPlan(plan: CompiledGraph): CompiledGraph {
   };
   const stringArray = (value: unknown): readonly string[] => {
     const values = dataArray(value);
-    if (!values.every(item => typeof item === "string" && item.length > 0)) {
+    if (!values.every((item) => typeof item === "string" && item.length > 0)) {
       throw new Error("INVALID_COMPILED_PLAN");
     }
     return values as readonly string[];
   };
 
   try {
-    const root = exactDataRecord(plan, ["digest", "nodes", "startBatches", "startOrder", "stopBatches", "stopOrder"]);
+    const root = exactDataRecord(plan, [
+      "digest",
+      "nodes",
+      "startBatches",
+      "startOrder",
+      "stopBatches",
+      "stopOrder",
+    ]);
     const digest = root.digest!.value;
-    if (typeof digest !== "string") throw new Error("INVALID_COMPILED_PLAN");
-    const descriptors: ModuleDescriptor[] = dataArray(root.nodes!.value).map(node => {
+    if (typeof digest !== "string") {
+      throw new Error("INVALID_COMPILED_PLAN");
+    }
+    const descriptors: ModuleDescriptor[] = dataArray(root.nodes!.value).map((node) => {
       const record = exactDataRecord(node, ["id", "requires"]);
       const id = record.id!.value;
-      if (typeof id !== "string" || id.length === 0) throw new Error("INVALID_COMPILED_PLAN");
+      if (typeof id !== "string" || id.length === 0) {
+        throw new Error("INVALID_COMPILED_PLAN");
+      }
       return { id, requires: stringArray(record.requires!.value) };
     });
     const snapshot = {
@@ -293,17 +349,31 @@ function snapshotPlan(plan: CompiledGraph): CompiledGraph {
       stopOrder: stringArray(root.stopOrder!.value),
     };
     const compiled = compileGraph(descriptors);
-    if (!compiled.ok) throw new Error("INVALID_COMPILED_PLAN");
+    if (!compiled.ok) {
+      throw new Error("INVALID_COMPILED_PLAN");
+    }
     const canonical = compiled.plan;
-    const derivedFields = ["nodes", "startBatches", "startOrder", "stopBatches", "stopOrder"] as const;
-    if (digest !== canonical.digest
-      || derivedFields.some(field => JSON.stringify(snapshot[field]) !== JSON.stringify(canonical[field]))) {
+    const derivedFields = [
+      "nodes",
+      "startBatches",
+      "startOrder",
+      "stopBatches",
+      "stopOrder",
+    ] as const;
+    if (
+      digest !== canonical.digest ||
+      derivedFields.some(
+        (field) => JSON.stringify(snapshot[field]) !== JSON.stringify(canonical[field]),
+      )
+    ) {
       throw new Error("NON_CANONICAL_COMPILED_PLAN");
     }
     return canonical;
   } catch (error) {
-    if (error instanceof Error
-      && (error.message === "INVALID_COMPILED_PLAN" || error.message === "NON_CANONICAL_COMPILED_PLAN")) {
+    if (
+      error instanceof Error &&
+      (error.message === "INVALID_COMPILED_PLAN" || error.message === "NON_CANONICAL_COMPILED_PLAN")
+    ) {
       throw error;
     }
     throw new Error("INVALID_COMPILED_PLAN");
@@ -327,10 +397,18 @@ function snapshotHooks(hooks: ReadonlyMap<string, ModuleHooks>): ReadonlyMap<str
     const descriptors = Object.getOwnPropertyDescriptors(moduleHooks);
     for (const [field, descriptor] of Object.entries(descriptors)) {
       if (!allowedFields.has(field)) {
-        throw new AttributedLifecycleError(`UNKNOWN_HOOK_FIELD:${moduleId}:${field}`, moduleId, "preflight");
+        throw new AttributedLifecycleError(
+          `UNKNOWN_HOOK_FIELD:${moduleId}:${field}`,
+          moduleId,
+          "preflight",
+        );
       }
       if (descriptor.get !== undefined || descriptor.set !== undefined) {
-        throw new AttributedLifecycleError(`ACCESSOR_HOOK_FIELD:${moduleId}:${field}`, moduleId, "preflight");
+        throw new AttributedLifecycleError(
+          `ACCESSOR_HOOK_FIELD:${moduleId}:${field}`,
+          moduleId,
+          "preflight",
+        );
       }
     }
     const readiness = descriptors.readiness?.value;
@@ -341,24 +419,43 @@ function snapshotHooks(hooks: ReadonlyMap<string, ModuleHooks>): ReadonlyMap<str
     const start = descriptors.start?.value;
     const stop = descriptors.stop?.value;
     const ready = descriptors.ready?.value;
-    for (const [field, hook] of [["prepare", prepare], ["start", start], ["stop", stop]] as const) {
+    for (const [field, hook] of [
+      ["prepare", prepare],
+      ["start", start],
+      ["stop", stop],
+    ] as const) {
       if (hook !== undefined && typeof hook !== "function") {
-        throw new AttributedLifecycleError(`INVALID_HOOK_FIELD:${moduleId}:${field}`, moduleId, "preflight");
+        throw new AttributedLifecycleError(
+          `INVALID_HOOK_FIELD:${moduleId}:${field}`,
+          moduleId,
+          "preflight",
+        );
       }
     }
     if (readiness === "probe" && typeof ready !== "function") {
-      throw new AttributedLifecycleError(`INVALID_HOOK_FIELD:${moduleId}:ready`, moduleId, "preflight");
+      throw new AttributedLifecycleError(
+        `INVALID_HOOK_FIELD:${moduleId}:ready`,
+        moduleId,
+        "preflight",
+      );
     }
     if (readiness === "inert" && ready !== undefined) {
-      throw new AttributedLifecycleError(`INVALID_HOOK_FIELD:${moduleId}:ready`, moduleId, "preflight");
+      throw new AttributedLifecycleError(
+        `INVALID_HOOK_FIELD:${moduleId}:ready`,
+        moduleId,
+        "preflight",
+      );
     }
-    snapshots.set(moduleId, Object.freeze({
-      readiness,
-      ...(prepare === undefined ? {} : { prepare }),
-      ...(start === undefined ? {} : { start }),
-      ...(ready === undefined ? {} : { ready }),
-      ...(stop === undefined ? {} : { stop }),
-    }) as ModuleHooks);
+    snapshots.set(
+      moduleId,
+      Object.freeze({
+        readiness,
+        ...(prepare === undefined ? {} : { prepare }),
+        ...(start === undefined ? {} : { start }),
+        ...(ready === undefined ? {} : { ready }),
+        ...(stop === undefined ? {} : { stop }),
+      }) as ModuleHooks,
+    );
   }
   return snapshots;
 }
@@ -374,22 +471,28 @@ function freezeResult(
     ok,
     generation,
     termination,
-    traces: Object.freeze(traces.map(trace => Object.freeze({ ...trace }))),
-    errors: Object.freeze(errors.map(error => Object.freeze({
-      message: errorMessage(error),
-      ...(error instanceof AttributedLifecycleError && error.moduleId !== undefined
-        ? { moduleId: error.moduleId }
-        : {}),
-      ...(error instanceof AttributedLifecycleError && error.phase !== undefined
-        ? { phase: error.phase }
-        : {}),
-    }))),
+    traces: Object.freeze(traces.map((trace) => Object.freeze({ ...trace }))),
+    errors: Object.freeze(
+      errors.map((error) =>
+        Object.freeze({
+          message: errorMessage(error),
+          ...(error instanceof AttributedLifecycleError && error.moduleId !== undefined
+            ? { moduleId: error.moduleId }
+            : {}),
+          ...(error instanceof AttributedLifecycleError && error.phase !== undefined
+            ? { phase: error.phase }
+            : {}),
+        }),
+      ),
+    ),
   });
 }
 
 function absoluteDeadlineBudget(absoluteDeadline: number, clock: MonotonicClock): DeadlineBudget {
   const now = clock.now();
-  if (!Number.isFinite(now)) throw new Error("INVALID_CLOCK_NOW");
+  if (!Number.isFinite(now)) {
+    throw new Error("INVALID_CLOCK_NOW");
+  }
   return Object.freeze({
     clockDeadline: absoluteDeadline,
     wallDeadline: performance.now() + Math.max(0, absoluteDeadline - now),
@@ -400,7 +503,9 @@ function relativeDeadlineBudget(milliseconds: number, clock: MonotonicClock): De
   let clockDeadline: number | undefined;
   try {
     const now = clock.now();
-    if (Number.isFinite(now)) clockDeadline = now + milliseconds;
+    if (Number.isFinite(now)) {
+      clockDeadline = now + milliseconds;
+    }
   } catch {
     // The independent wall deadline still bounds cleanup after clock failure.
   }
@@ -416,11 +521,12 @@ function boundedDeadlineBudget(
   clock: MonotonicClock,
 ): DeadlineBudget {
   const relative = relativeDeadlineBudget(milliseconds, clock);
-  const clockDeadline = parent.clockDeadline === undefined
-    ? relative.clockDeadline
-    : relative.clockDeadline === undefined
-      ? parent.clockDeadline
-      : Math.min(parent.clockDeadline, relative.clockDeadline);
+  const clockDeadline =
+    parent.clockDeadline === undefined
+      ? relative.clockDeadline
+      : relative.clockDeadline === undefined
+        ? parent.clockDeadline
+        : Math.min(parent.clockDeadline, relative.clockDeadline);
   return Object.freeze({
     ...(clockDeadline === undefined ? {} : { clockDeadline }),
     wallDeadline: Math.min(parent.wallDeadline, relative.wallDeadline),
@@ -432,7 +538,9 @@ function remainingBeforeDeadline(deadline: DeadlineBudget, clock: MonotonicClock
   if (deadline.clockDeadline !== undefined) {
     try {
       const now = clock.now();
-      if (!Number.isFinite(now)) return 0;
+      if (!Number.isFinite(now)) {
+        return 0;
+      }
       remaining = Math.min(remaining, deadline.clockDeadline - now);
     } catch {
       return 0;
@@ -442,8 +550,12 @@ function remainingBeforeDeadline(deadline: DeadlineBudget, clock: MonotonicClock
 }
 
 function deadlineExpired(deadline: DeadlineBudget, clock: MonotonicClock): boolean {
-  if (performance.now() >= deadline.wallDeadline) return true;
-  if (deadline.clockDeadline === undefined) return false;
+  if (performance.now() >= deadline.wallDeadline) {
+    return true;
+  }
+  if (deadline.clockDeadline === undefined) {
+    return false;
+  }
   try {
     const now = clock.now();
     return !Number.isFinite(now) || now >= deadline.clockDeadline;
@@ -479,13 +591,17 @@ function runBeforeDeadline<T>(
       timer = setTimeout(armTimeout, Math.min(currentRemaining, maxTimerMilliseconds));
     };
     armTimeout();
-    if (expired) return;
+    if (expired) {
+      return;
+    }
     Promise.resolve()
       .then(() => {
         if (expired || deadlineExpired(deadline, clock)) {
           if (!expired) {
             expired = true;
-            if (timer) clearTimeout(timer);
+            if (timer) {
+              clearTimeout(timer);
+            }
             onTimeout();
           }
           throw new Error(timeoutCode);
@@ -493,8 +609,10 @@ function runBeforeDeadline<T>(
         return operation();
       })
       .then(
-        value => {
-          if (timer) clearTimeout(timer);
+        (value) => {
+          if (timer) {
+            clearTimeout(timer);
+          }
           if (deadlineExpired(deadline, clock)) {
             onTimeout();
             reject(new Error(timeoutCode));
@@ -502,8 +620,10 @@ function runBeforeDeadline<T>(
           }
           resolve(value);
         },
-        error => {
-          if (timer) clearTimeout(timer);
+        (error) => {
+          if (timer) {
+            clearTimeout(timer);
+          }
           if (!expired && deadlineExpired(deadline, clock)) {
             expired = true;
             onTimeout();
@@ -560,9 +680,13 @@ export class GenerationLifecycle {
   }
 
   deadlineAfter(milliseconds: number): number {
-    if (!Number.isFinite(milliseconds) || milliseconds < 0) throw new Error("INVALID_DEADLINE_DURATION");
+    if (!Number.isFinite(milliseconds) || milliseconds < 0) {
+      throw new Error("INVALID_DEADLINE_DURATION");
+    }
     const now = this.#clock.now();
-    if (!Number.isFinite(now)) throw new Error("INVALID_CLOCK_NOW");
+    if (!Number.isFinite(now)) {
+      throw new Error("INVALID_CLOCK_NOW");
+    }
     return now + milliseconds;
   }
 
@@ -587,15 +711,29 @@ export class GenerationLifecycle {
       grantRevision: requestIdentity.grantRevision,
       hostPolicyRevision: requestIdentity.hostPolicyRevision,
     });
-    if (!Number.isFinite(absoluteDeadline)) throw new Error("INVALID_ABSOLUTE_DEADLINE");
-    if (!Number.isFinite(cleanupTimeoutMs) || cleanupTimeoutMs < 0) throw new Error("INVALID_CLEANUP_TIMEOUT");
-    if (!Number.isSafeInteger(identity.expectedActiveGeneration)
-      || identity.expectedActiveGeneration < 0) throw new Error("INVALID_EXPECTED_ACTIVE_GENERATION");
-    for (const [field, value] of Object.entries(identity)) {
-      if (field === "expectedActiveGeneration") continue;
-      if (typeof value !== "string" || value.length === 0) throw new Error(`INVALID_ACTIVATION_IDENTITY:${field}`);
+    if (!Number.isFinite(absoluteDeadline)) {
+      throw new Error("INVALID_ABSOLUTE_DEADLINE");
     }
-    if (identity.authorityScope !== this.#authorityScope) throw new Error("AUTHORITY_SCOPE_MISMATCH");
+    if (!Number.isFinite(cleanupTimeoutMs) || cleanupTimeoutMs < 0) {
+      throw new Error("INVALID_CLEANUP_TIMEOUT");
+    }
+    if (
+      !Number.isSafeInteger(identity.expectedActiveGeneration) ||
+      identity.expectedActiveGeneration < 0
+    ) {
+      throw new Error("INVALID_EXPECTED_ACTIVE_GENERATION");
+    }
+    for (const [field, value] of Object.entries(identity)) {
+      if (field === "expectedActiveGeneration") {
+        continue;
+      }
+      if (typeof value !== "string" || value.length === 0) {
+        throw new Error(`INVALID_ACTIVATION_IDENTITY:${field}`);
+      }
+    }
+    if (identity.authorityScope !== this.#authorityScope) {
+      throw new Error("AUTHORITY_SCOPE_MISMATCH");
+    }
     const plan = snapshotPlan(request.plan);
     const normalizedRequest: ActivationRequest = Object.freeze({
       identity,
@@ -620,7 +758,9 @@ export class GenerationLifecycle {
     const operationId = identity.operationId;
     const key = fingerprint(normalizedRequest);
     const previousKey = this.#operationFingerprints.get(operationId);
-    if (previousKey !== undefined && previousKey !== key) throw new Error("ACTIVATION_IDEMPOTENCY_CONFLICT");
+    if (previousKey !== undefined && previousKey !== key) {
+      throw new Error("ACTIVATION_IDEMPOTENCY_CONFLICT");
+    }
     this.#operationFingerprints.set(operationId, key);
 
     const existing = this.#flights.get(operationId);
@@ -640,7 +780,9 @@ export class GenerationLifecycle {
           waiterSignal,
         );
       }
-      if (waiterSignal?.aborted) return Promise.reject(new Error("WAITER_CANCELLED"));
+      if (waiterSignal?.aborted) {
+        return Promise.reject(new Error("WAITER_CANCELLED"));
+      }
       return Promise.resolve(completed);
     }
 
@@ -654,15 +796,22 @@ export class GenerationLifecycle {
       const activationDeadline = absoluteDeadlineBudget(absoluteDeadline, this.#clock);
       const generation = this.#nextGeneration++;
       void this.#activate(generation, normalizedRequest, activationDeadline)
-        .then(value => {
-          this.#operationResults.set(operationId, value);
-          deferred.resolve(value);
-        }, error => deferred.reject(error))
+        .then(
+          (value) => {
+            this.#operationResults.set(operationId, value);
+            deferred.resolve(value);
+          },
+          (error) => deferred.reject(error),
+        )
         .finally(() => {
-          if (this.#flights.get(operationId) === flight) this.#flights.delete(operationId);
+          if (this.#flights.get(operationId) === flight) {
+            this.#flights.delete(operationId);
+          }
         });
     } catch (error) {
-      if (this.#flights.get(operationId) === flight) this.#flights.delete(operationId);
+      if (this.#flights.get(operationId) === flight) {
+        this.#flights.delete(operationId);
+      }
       deferred.reject(error);
     }
     return this.#waitForFlight(
@@ -715,7 +864,9 @@ export class GenerationLifecycle {
       id: lease.id,
       authorityScope: lease.authorityScope,
       release: () => {
-        if (lease.released) return;
+        if (lease.released) {
+          return;
+        }
         lease.released = true;
         this.#leases.delete(lease);
       },
@@ -726,16 +877,19 @@ export class GenerationLifecycle {
 
   assertInMemoryFence(handle: InvocationHandle): void {
     const lease = this.#leaseByHandle.get(handle);
-    const drainDeadline = lease === undefined ? undefined : this.#drainDeadlines.get(lease.generation);
-    if (lease === undefined
-      || lease.lifecycleToken !== this.#lifecycleToken
-      || lease.authorityScope !== this.#authorityScope
-      || handle.authorityScope !== lease.authorityScope
-      || handle.generation !== lease.generation
-      || handle.id !== lease.id
-      || lease.released
-      || !this.#leases.has(lease)
-      || (drainDeadline !== undefined && deadlineExpired(drainDeadline, this.#clock))) {
+    const drainDeadline =
+      lease === undefined ? undefined : this.#drainDeadlines.get(lease.generation);
+    if (
+      lease === undefined ||
+      lease.lifecycleToken !== this.#lifecycleToken ||
+      lease.authorityScope !== this.#authorityScope ||
+      handle.authorityScope !== lease.authorityScope ||
+      handle.generation !== lease.generation ||
+      handle.id !== lease.id ||
+      lease.released ||
+      !this.#leases.has(lease) ||
+      (drainDeadline !== undefined && deadlineExpired(drainDeadline, this.#clock))
+    ) {
       throw new Error("STALE_GENERATION");
     }
   }
@@ -746,27 +900,32 @@ export class GenerationLifecycle {
     const timeoutCode = `DRAIN_TIMEOUT:${generation}`;
     const markDrainTimeout = (): void => this.#fenceGeneration(generation);
     try {
-      return await runBeforeDeadline(async () => {
-        while ([...this.#leases].some(lease => lease.generation === generation)) {
-          if (deadlineExpired(deadline, this.#clock)) {
-            markDrainTimeout();
-            return false;
+      return await runBeforeDeadline(
+        async () => {
+          while ([...this.#leases].some((lease) => lease.generation === generation)) {
+            if (deadlineExpired(deadline, this.#clock)) {
+              markDrainTimeout();
+              return false;
+            }
+            await this.#clock.sleep(1);
           }
-          await this.#clock.sleep(1);
-        }
-        return true;
-      }, deadline, this.#clock, markDrainTimeout, timeoutCode);
+          return true;
+        },
+        deadline,
+        this.#clock,
+        markDrainTimeout,
+        timeoutCode,
+      );
     } catch (error) {
       markDrainTimeout();
-      if (errorMessage(error) === timeoutCode) return false;
+      if (errorMessage(error) === timeoutCode) {
+        return false;
+      }
       throw error;
     }
   }
 
-  async #shutdown(
-    active: ActiveGraph,
-    cleanupTimeoutMs: number,
-  ): Promise<ActivationResult> {
+  async #shutdown(active: ActiveGraph, cleanupTimeoutMs: number): Promise<ActivationResult> {
     const generation = active.generation;
     const traces: LifecycleTrace[] = [];
     const errors: Error[] = [];
@@ -830,7 +989,9 @@ export class GenerationLifecycle {
     waiterDeadline: number,
     signal?: AbortSignal,
   ): Promise<ActivationResult> {
-    if (signal?.aborted) throw new Error("WAITER_CANCELLED");
+    if (signal?.aborted) {
+      throw new Error("WAITER_CANCELLED");
+    }
     let waiterBudget: DeadlineBudget;
     try {
       waiterBudget = absoluteDeadlineBudget(waiterDeadline, this.#clock);
@@ -838,14 +999,20 @@ export class GenerationLifecycle {
       throw new Error("WAITER_DEADLINE_EXCEEDED");
     }
     const remaining = remainingBeforeDeadline(waiterBudget, this.#clock);
-    if (remaining <= 0) throw new Error("WAITER_DEADLINE_EXCEEDED");
+    if (remaining <= 0) {
+      throw new Error("WAITER_DEADLINE_EXCEEDED");
+    }
     return new Promise<ActivationResult>((resolve, reject) => {
       let settled = false;
       let timer: NodeJS.Timeout | undefined;
       const finish = (callback: () => void): void => {
-        if (settled) return;
+        if (settled) {
+          return;
+        }
         settled = true;
-        if (timer) clearTimeout(timer);
+        if (timer) {
+          clearTimeout(timer);
+        }
         try {
           signal?.removeEventListener("abort", onAbort);
         } catch {
@@ -886,10 +1053,12 @@ export class GenerationLifecycle {
         return;
       }
       armTimeout();
-      void result.then(
-        value => settleFromFlight(() => resolve(value)),
-        error => settleFromFlight(() => reject(error)),
-      ).catch(error => finish(() => reject(asError(error))));
+      void result
+        .then(
+          (value) => settleFromFlight(() => resolve(value)),
+          (error) => settleFromFlight(() => reject(error)),
+        )
+        .catch((error) => finish(() => reject(asError(error))));
     });
   }
 
@@ -918,9 +1087,13 @@ export class GenerationLifecycle {
       activationController.abort("ABSOLUTE_DEADLINE_EXCEEDED");
     };
     const assertActivationAdmitted = (): void => {
-      if (!activationController.signal.aborted) return;
+      if (!activationController.signal.aborted) {
+        return;
+      }
       const reason = activationController.signal.reason;
-      if (reason instanceof Error) throw reason;
+      if (reason instanceof Error) {
+        throw reason;
+      }
       throw new Error(typeof reason === "string" ? reason : "ACTIVATION_ABORTED");
     };
     const checkDeadline = (): void => {
@@ -931,7 +1104,7 @@ export class GenerationLifecycle {
     };
 
     try {
-      const planModuleIds = new Set(plan.nodes.map(node => node.id));
+      const planModuleIds = new Set(plan.nodes.map((node) => node.id));
       hooks = snapshotHooks(hooks);
       for (const moduleId of planModuleIds) {
         if (!hooks.has(moduleId)) {
@@ -948,7 +1121,10 @@ export class GenerationLifecycle {
         throw new Error("STALE_ACTIVE_GENERATION");
       }
 
-      const invokeTracked = async <T>(moduleId: string, operation: () => T | Promise<T>): Promise<T> => {
+      const invokeTracked = async <T>(
+        moduleId: string,
+        operation: () => T | Promise<T>,
+      ): Promise<T> => {
         unsettledHookModules.add(moduleId);
         try {
           return await operation();
@@ -961,72 +1137,93 @@ export class GenerationLifecycle {
         batch: readonly string[],
         phase: "prepare" | "start" | "ready",
       ): Promise<void> => {
-        const outcomes = await Promise.all(batch.map(async (moduleId): Promise<{
-          localTraces: LifecycleTrace[];
-          error?: Error;
-        }> => {
-          const localTraces: LifecycleTrace[] = [];
-          try {
-            checkDeadline();
-            if (activationController.signal.aborted) return { localTraces };
-            const module = hooks.get(moduleId);
-            if (!module) throw new Error(`MISSING_HOOKS:${moduleId}`);
-            const context = moduleActivationContext(activationContext, moduleId);
-            if (phase === "prepare") {
-              await runBeforeDeadline(
-                () => {
-                  assertActivationAdmitted();
-                  cleanupCandidates.add(moduleId);
-                  localTraces.push({ phase, moduleId, generation, outcome: "started" });
-                  return invokeTracked(moduleId, () => module.prepare?.(context));
-                },
-                activationDeadline,
-                this.#clock,
-                markActivationTimeout,
-              );
-            } else if (phase === "start") {
-              await runBeforeDeadline(
-                () => {
-                  assertActivationAdmitted();
-                  localTraces.push({ phase, moduleId, generation, outcome: "started" });
-                  return invokeTracked(moduleId, () => module.start?.(context));
-                },
-                activationDeadline,
-                this.#clock,
-                markActivationTimeout,
-              );
-            } else {
-              if (module.readiness !== "inert" && module.readiness !== "probe") {
-                throw new Error(`INVALID_READINESS:${moduleId}`);
+        const outcomes = await Promise.all(
+          batch.map(
+            async (
+              moduleId,
+            ): Promise<{
+              localTraces: LifecycleTrace[];
+              error?: Error;
+            }> => {
+              const localTraces: LifecycleTrace[] = [];
+              try {
+                checkDeadline();
+                if (activationController.signal.aborted) {
+                  return { localTraces };
+                }
+                const module = hooks.get(moduleId);
+                if (!module) {
+                  throw new Error(`MISSING_HOOKS:${moduleId}`);
+                }
+                const context = moduleActivationContext(activationContext, moduleId);
+                if (phase === "prepare") {
+                  await runBeforeDeadline(
+                    () => {
+                      assertActivationAdmitted();
+                      cleanupCandidates.add(moduleId);
+                      localTraces.push({ phase, moduleId, generation, outcome: "started" });
+                      return invokeTracked(moduleId, () => module.prepare?.(context));
+                    },
+                    activationDeadline,
+                    this.#clock,
+                    markActivationTimeout,
+                  );
+                } else if (phase === "start") {
+                  await runBeforeDeadline(
+                    () => {
+                      assertActivationAdmitted();
+                      localTraces.push({ phase, moduleId, generation, outcome: "started" });
+                      return invokeTracked(moduleId, () => module.start?.(context));
+                    },
+                    activationDeadline,
+                    this.#clock,
+                    markActivationTimeout,
+                  );
+                } else {
+                  if (module.readiness !== "inert" && module.readiness !== "probe") {
+                    throw new Error(`INVALID_READINESS:${moduleId}`);
+                  }
+                  if (module.readiness === "probe") {
+                    const ready = await runBeforeDeadline(
+                      () => {
+                        assertActivationAdmitted();
+                        return invokeTracked(moduleId, () => module.ready(context));
+                      },
+                      activationDeadline,
+                      this.#clock,
+                      markActivationTimeout,
+                    );
+                    if (ready !== true) {
+                      throw new Error(`NOT_READY:${moduleId}`);
+                    }
+                  }
+                }
+                checkDeadline();
+                if (activationController.signal.aborted) {
+                  return { localTraces };
+                }
+                if (phase === "ready") {
+                  localTraces.push({ phase, moduleId, generation, outcome: "confirmed" });
+                }
+                return { localTraces };
+              } catch (error) {
+                activationController.abort(error);
+                return { localTraces, error: attributedError(error, moduleId, phase) };
               }
-              if (module.readiness === "probe") {
-                const ready = await runBeforeDeadline(
-                  () => {
-                    assertActivationAdmitted();
-                    return invokeTracked(moduleId, () => module.ready(context));
-                  },
-                  activationDeadline,
-                  this.#clock,
-                  markActivationTimeout,
-                );
-                if (ready !== true) throw new Error(`NOT_READY:${moduleId}`);
-              }
-            }
-            checkDeadline();
-            if (activationController.signal.aborted) return { localTraces };
-            if (phase === "ready") {
-              localTraces.push({ phase, moduleId, generation, outcome: "confirmed" });
-            }
-            return { localTraces };
-          } catch (error) {
-            activationController.abort(error);
-            return { localTraces, error: attributedError(error, moduleId, phase) };
-          }
-        }));
-        for (const outcome of outcomes) traces.push(...outcome.localTraces);
-        const failures = outcomes.flatMap(outcome => outcome.error === undefined ? [] : [outcome.error]);
+            },
+          ),
+        );
+        for (const outcome of outcomes) {
+          traces.push(...outcome.localTraces);
+        }
+        const failures = outcomes.flatMap((outcome) =>
+          outcome.error === undefined ? [] : [outcome.error],
+        );
         if (failures.length > 0) {
-          throw new AggregateError(failures, `START_BATCH_FAILED:${failures.map(errorMessage).join("|")}`);
+          throw new AggregateError(
+            failures,
+            `START_BATCH_FAILED:${failures.map(errorMessage).join("|")}`,
+          );
         }
       };
 
@@ -1051,7 +1248,11 @@ export class GenerationLifecycle {
       const failure = asError(error);
       const failures = aggregateErrors(error);
       errors.push(...failures);
-      const cleanupDeadline = boundedDeadlineBudget(activationDeadline, cleanupTimeoutMs, this.#clock);
+      const cleanupDeadline = boundedDeadlineBudget(
+        activationDeadline,
+        cleanupTimeoutMs,
+        this.#clock,
+      );
       const cleanupController = new AbortController();
       const cleanupContext: ActivationContextSeed = Object.freeze({
         coordinatorIncarnation: this.#coordinatorIncarnation,
@@ -1072,12 +1273,14 @@ export class GenerationLifecycle {
         cleanupCandidates,
         unsettledHookModules,
       );
-      const termination = !cleanupProven || unsettledHookModules.size > 0
-        ? "termination_unproven"
-        : "proven";
-      const outcome: LifecycleOutcome = termination === "termination_unproven"
-        ? "termination_unproven"
-        : failure.message === "STALE_ACTIVE_GENERATION" ? "stale" : "failed";
+      const termination =
+        !cleanupProven || unsettledHookModules.size > 0 ? "termination_unproven" : "proven";
+      const outcome: LifecycleOutcome =
+        termination === "termination_unproven"
+          ? "termination_unproven"
+          : failure.message === "STALE_ACTIVE_GENERATION"
+            ? "stale"
+            : "failed";
       traces.push({ phase: "abort", generation, outcome });
       return freezeResult(false, generation, termination, traces, errors);
     }
@@ -1085,7 +1288,11 @@ export class GenerationLifecycle {
     let terminationProven = true;
     if (previous) {
       try {
-        const cleanupDeadline = boundedDeadlineBudget(activationDeadline, cleanupTimeoutMs, this.#clock);
+        const cleanupDeadline = boundedDeadlineBudget(
+          activationDeadline,
+          cleanupTimeoutMs,
+          this.#clock,
+        );
         const cleanupController = new AbortController();
         const cleanupContext: ActivationContextSeed = Object.freeze({
           coordinatorIncarnation: this.#coordinatorIncarnation,
@@ -1096,14 +1303,22 @@ export class GenerationLifecycle {
         });
         try {
           const drained = await this.#drainGeneration(previous.generation, cleanupDeadline);
-          traces.push({ phase: "drain", generation: previous.generation, outcome: drained ? "confirmed" : "timed-out" });
+          traces.push({
+            phase: "drain",
+            generation: previous.generation,
+            outcome: drained ? "confirmed" : "timed-out",
+          });
           if (!drained) {
             errors.push(new Error(`DRAIN_TIMEOUT:${previous.generation}`));
             terminationProven = false;
           }
         } catch (drainError) {
           errors.push(asError(drainError));
-          traces.push({ phase: "drain", generation: previous.generation, outcome: "termination_unproven" });
+          traces.push({
+            phase: "drain",
+            generation: previous.generation,
+            outcome: "termination_unproven",
+          });
           terminationProven = false;
         }
         this.#fenceGeneration(previous.generation);
@@ -1120,7 +1335,11 @@ export class GenerationLifecycle {
         terminationProven &&= cleanupProven;
       } catch (cleanupError) {
         errors.push(asError(cleanupError));
-        traces.push({ phase: "stop", generation: previous.generation, outcome: "termination_unproven" });
+        traces.push({
+          phase: "stop",
+          generation: previous.generation,
+          outcome: "termination_unproven",
+        });
         this.#fenceGeneration(previous.generation);
         terminationProven = false;
       }
@@ -1148,47 +1367,61 @@ export class GenerationLifecycle {
   ): Promise<boolean> {
     let terminationProven = true;
     for (const batch of plan.stopBatches) {
-      const outcomes = await Promise.all(batch.filter(id => candidates?.has(id) ?? true).map(async moduleId => {
-        try {
-          if (unsettledHookModules.has(moduleId)) {
-            throw new Error(`IN_FLIGHT_HOOK_UNSETTLED:${moduleId}`);
-          }
-          const moduleHooks = hooks.get(moduleId);
-          if (!moduleHooks) throw new Error(`MISSING_HOOKS:${moduleId}`);
-          const moduleContext = moduleActivationContext(context, moduleId);
-          if (moduleHooks.stop === undefined
-            && (moduleHooks.prepare !== undefined
-              || moduleHooks.start !== undefined
-              || moduleHooks.ready !== undefined)) {
-            throw new Error(`MISSING_STOP_EVIDENCE:${moduleId}`);
-          }
-          await runBeforeDeadline(
-            () => moduleHooks.stop?.(moduleContext),
-            cleanupDeadline,
-            this.#clock,
-            () => controller.abort(`CLEANUP_TIMEOUT:${moduleId}`),
-            `CLEANUP_TIMEOUT:${moduleId}`,
-          );
-          return { moduleId, outcome: "confirmed" as const };
-        } catch (cleanupError) {
-          const error = attributedError(cleanupError, moduleId, phase);
-          return {
-            moduleId,
-            outcome: error.message.startsWith("CLEANUP_TIMEOUT:")
-              || error.message.startsWith("MISSING_STOP_EVIDENCE:")
-              || error.message.startsWith("IN_FLIGHT_HOOK_UNSETTLED:")
-              ? "termination_unproven" as const
-              : "failed" as const,
-            error,
-          };
-        }
-      }));
+      const outcomes = await Promise.all(
+        batch
+          .filter((id) => candidates?.has(id) ?? true)
+          .map(async (moduleId) => {
+            try {
+              if (unsettledHookModules.has(moduleId)) {
+                throw new Error(`IN_FLIGHT_HOOK_UNSETTLED:${moduleId}`);
+              }
+              const moduleHooks = hooks.get(moduleId);
+              if (!moduleHooks) {
+                throw new Error(`MISSING_HOOKS:${moduleId}`);
+              }
+              const moduleContext = moduleActivationContext(context, moduleId);
+              if (
+                moduleHooks.stop === undefined &&
+                (moduleHooks.prepare !== undefined ||
+                  moduleHooks.start !== undefined ||
+                  moduleHooks.ready !== undefined)
+              ) {
+                throw new Error(`MISSING_STOP_EVIDENCE:${moduleId}`);
+              }
+              await runBeforeDeadline(
+                () => moduleHooks.stop?.(moduleContext),
+                cleanupDeadline,
+                this.#clock,
+                () => controller.abort(`CLEANUP_TIMEOUT:${moduleId}`),
+                `CLEANUP_TIMEOUT:${moduleId}`,
+              );
+              return { moduleId, outcome: "confirmed" as const };
+            } catch (cleanupError) {
+              const error = attributedError(cleanupError, moduleId, phase);
+              return {
+                moduleId,
+                outcome:
+                  error.message.startsWith("CLEANUP_TIMEOUT:") ||
+                  error.message.startsWith("MISSING_STOP_EVIDENCE:") ||
+                  error.message.startsWith("IN_FLIGHT_HOOK_UNSETTLED:")
+                    ? ("termination_unproven" as const)
+                    : ("failed" as const),
+                error,
+              };
+            }
+          }),
+      );
       for (const outcome of outcomes) {
         if (outcome.error) {
           errors.push(outcome.error);
           terminationProven = false;
         }
-        traces.push({ phase, moduleId: outcome.moduleId, generation: context.generation, outcome: outcome.outcome });
+        traces.push({
+          phase,
+          moduleId: outcome.moduleId,
+          generation: context.generation,
+          outcome: outcome.outcome,
+        });
       }
     }
     return terminationProven;
@@ -1198,7 +1431,9 @@ export class GenerationLifecycle {
     this.#drainDeadlines.delete(generation);
     this.#sealedGenerations.add(generation);
     for (const lease of this.#leases) {
-      if (lease.generation === generation) this.#leases.delete(lease);
+      if (lease.generation === generation) {
+        this.#leases.delete(lease);
+      }
     }
   }
 }
