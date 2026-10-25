@@ -1,0 +1,38 @@
+{
+  "schema": "plugin-validation-handoff-receipt/v1",
+  "recorded_at": "2026-10-25T21:00:18.387618+00:00",
+  "tested_commit": "96bf8eef4b9ec26972125c7735044f3740bf05e0",
+  "tested_tree": "0d289e599ba81a99166e038d759486c9bc0dc595",
+  "publication_scope": "This handoff adds machine evidence only. Tested executable source and governed Markdown remain the exact bytes of commit96bf8eef.",
+  "archive": {
+    "path": "docs/research/evidence/static-restart-validation-20261025-handoff.tar.gz",
+    "files": 37,
+    "bytes": 121453,
+    "sha256": "f266ce48416b063b26865efe14efe635f32f1f565600c102fd7e7a795046ef3e"
+  },
+  "local_result": {
+    "docs_protocol": "passed:8/8; catalog78; prose84",
+    "changed_and_actual_nested_fast": "passed; actual pnpm run check:fast dispatched with fast-full coverage; six intentional fast-profile skips retained",
+    "monolithic_full_check": "exit1; Chromium singleton socket path too long in the task-created TMPDIR. Not relabeled as passing.",
+    "full_prefix": "passed: docs8/8, Node compatibility10/10, feature profile65/65, full architecture110/110, Foundation and typecheck",
+    "environment_correction": "Only task-owned TMPDIR shortened to /tmp/efg-*; unchanged CI=true, source, dependency inputs, commands and child deadlines",
+    "full_qualification_after_correction": "passed:229/229,zero skipped; actual Chrome/HTTP/CDP/Worker test passed",
+    "remaining_packages": "passed artifact gate; recursive package filter matched no projects and is not package-test coverage",
+    "exact_platform_exception": "Mandatory custody contract: two completed identities and its existing Linux exception for the Windows-only verifier test",
+    "evidence": "validation/ef-required-gates-final-20261025.json"
+  },
+  "hosted_evidence_commit": "96bf8eef4b9ec26972125c7735044f3740bf05e0",
+  "identity_check": "failed; exact raw-name mismatch under unchanged pinned policy",
+  "start_with": [
+    "README.txt",
+    "handoff.json",
+    "validation/ef-required-gates-final-20261025.json"
+  ],
+  "campaign_archive": {
+    "path": "docs/research/evidence/static-restart-validation-20261025.tar.gz",
+    "files": 416,
+    "bytes": 805541,
+    "sha256": "e16e9cdb74bed1e83ec863b19beea8dd7bfe55567d42b36b35ea58ffd1c6de68",
+    "scope": "Frozen earlier native/static/browser/growth campaign; not rerun against the later EF main integration."
+  }
+}
