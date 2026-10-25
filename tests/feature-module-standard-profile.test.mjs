@@ -282,8 +282,8 @@ test("dogfooding model budget preserves structural scope and rejects growth", as
   try {
     // Resolve the unchanged guard against this repository's already-installed dependencies.
     await symlink(join(root, "node_modules"), join(fixture, "node_modules"), "dir");
-    const run = async (mutate, expected) => {
-      const sources = [...texts];
+    const run = async (mutate, expected, checkoutSources = texts) => {
+      const sources = checkoutSources.map((text) => text.replace(/\r\n?/gu, "\n"));
       let candidate = guard;
       if (mutate) {
         candidate = mutate(sources, guard) ?? guard;
@@ -340,6 +340,47 @@ test("dogfooding model budget preserves structural scope and rejects growth", as
         charactersPerLine: 116,
       });
     });
+    const crlfCheckout = texts.map((text) => text.replace(/\r?\n/gu, "\r\n"));
+    await t.test("CRLF checkout does not double the newline fixture", async () => {
+      const actual = await run(
+        (sources) => {
+          for (let index = 0; index < sources.length; index += 1) {
+            sources[index] = sources[index].replaceAll("\n", "\r\n");
+          }
+        },
+        undefined,
+        crlfCheckout,
+      );
+      assert.equal(actual.measurements.physicalLines, 10520);
+      assert.equal(actual.measurements.utf8Bytes, 370975);
+    });
+    for (const [name, mutate, expected] of [
+      ["UTF-8 byte", (text) => text.replace("\n", " \n"), /utf8Bytes is 370976, limit 370975/u],
+      [
+        "line width",
+        (text) => `//${"x".repeat(199)}\n${compact(text)}`,
+        /charactersPerLine is 201, limit 200/u,
+      ],
+      [
+        "structural growth",
+        (text) => `${compact(text)}Math.abs(0);`,
+        /structuralNodes is 50552, limit 50546/u,
+      ],
+    ]) {
+      await t.test(`CRLF checkout isolates the ${name} budget`, async () => {
+        const failure = await run(
+          (sources) => {
+            sources[0] = mutate(sources[0]);
+          },
+          expected,
+          crlfCheckout,
+        );
+        const measurement = JSON.parse(
+          failure.match(/MODEL_BUDGET_MEASUREMENTS=(.*)/u)[1],
+        ).measurements;
+        assert.ok(measurement.physicalLines <= 10520);
+      });
+    }
     const growth = [
       ["executable statement", 6, (text) => `${compact(text)}Math.abs(0);`],
       [
