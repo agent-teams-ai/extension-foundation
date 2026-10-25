@@ -1,9 +1,4 @@
-import {
-  CATALOG_PATH,
-  PACKAGE_ID,
-  allowedPackageRoles,
-  catalogPolicy,
-} from "./catalog-policy.mjs";
+import { CATALOG_PATH, PACKAGE_ID, allowedPackageRoles, catalogPolicy } from "./catalog-policy.mjs";
 import {
   PACKAGE_ADMISSION_DIRECTORY,
   packageAdmissionPath,
@@ -11,21 +6,18 @@ import {
 } from "./admission-policy.mjs";
 
 export function createAdmissionDirectoryEntriesSource({ readDirectory }) {
-  return async directoryPath => (await readDirectory(directoryPath, { withFileTypes: true }))
-    .map(entry => ({ name: entry.name, isFile: entry.isFile() }))
-    .sort((left, right) => left.name < right.name ? -1 : left.name > right.name ? 1 : 0);
+  return async (directoryPath) =>
+    (await readDirectory(directoryPath, { withFileTypes: true }))
+      .map((entry) => ({ name: entry.name, isFile: entry.isFile() }))
+      .sort((left, right) => (left.name < right.name ? -1 : left.name > right.name ? 1 : 0));
 }
 
 export function createLoadAllowedPackageRoles({ loadPolicyDocument }) {
-  return async root => allowedPackageRoles(await loadPolicyDocument(root));
+  return async (root) => allowedPackageRoles(await loadPolicyDocument(root));
 }
 
-export function createLoadPackagePolicy({
-  loadCatalog,
-  loadAllowedRoles,
-  loadAdmissionDirectory,
-}) {
-  return async root => {
+export function createLoadPackagePolicy({ loadCatalog, loadAllowedRoles, loadAdmissionDirectory }) {
+  return async (root) => {
     const [catalog, allowedRoles, admissionDirectory] = await Promise.all([
       loadCatalog(root),
       loadAllowedRoles(root),
@@ -46,13 +38,17 @@ export function createLoadPackagePolicy({
           packageAdmissionPath(entry).slice(PACKAGE_ADMISSION_DIRECTORY.length + 1),
         );
         try {
-          if (!admissionDirectory.available) throw new Error("admission evidence directory is unavailable");
+          if (!admissionDirectory.available) {
+            throw new Error("admission evidence directory is unavailable");
+          }
           const { admission, digest } = await admissionDirectory.load(entry);
           validateAdmission(entry, admission, errors);
           admissionsById.set(entry.id, admission);
           admissionRecordDigestsById.set(entry.id, digest);
         } catch (error) {
-          errors.push(`${entry.id}: admission evidence is missing or invalid: ${error instanceof Error ? error.message : String(error)}`);
+          errors.push(
+            `${entry.id}: admission evidence is missing or invalid: ${error instanceof Error ? error.message : String(error)}`,
+          );
         }
       }
       errors.push(...relationErrors);
@@ -60,7 +56,9 @@ export function createLoadPackagePolicy({
     if (admissionDirectory.available) {
       for (const entry of admissionDirectory.entries) {
         if (!entry.isFile || !expectedAdmissionFiles.has(entry.name)) {
-          errors.push(`${PACKAGE_ADMISSION_DIRECTORY}/${entry.name}: orphan admission evidence is not declared by ${CATALOG_PATH}`);
+          errors.push(
+            `${PACKAGE_ADMISSION_DIRECTORY}/${entry.name}: orphan admission evidence is not declared by ${CATALOG_PATH}`,
+          );
         }
       }
     }

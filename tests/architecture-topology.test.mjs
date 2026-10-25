@@ -24,18 +24,20 @@ import {
 import { analyzeSource } from "../architecture/checks/source-safety.mjs";
 
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
-const acceptedOwner = async id => ({
+const acceptedOwner = async (id) => ({
   id,
   type: "adr",
   status: "accepted",
   supersededBy: [],
-  packageOwnership: [{
-    packageId: "module.example",
-    packageName: "@agent-teams/example",
-    packagePath: "packages/example",
-    semanticClassification: "ordinary-library",
-    features: ["example"],
-  }],
+  packageOwnership: [
+    {
+      packageId: "module.example",
+      packageName: "@agent-teams/example",
+      packagePath: "packages/example",
+      semanticClassification: "ordinary-library",
+      features: ["example"],
+    },
+  ],
 });
 const acceptedOwners = async () => [await acceptedOwner("ADR-0099")];
 const noTrackedPackagePaths = async () => [];
@@ -43,15 +45,21 @@ const noTrackedPackagePaths = async () => [];
 test("package owner status is cross-checked against the accepted-decision ledger", async () => {
   const root = await mkdtemp(join(tmpdir(), "extension-topology-decision-ledger-"));
   try {
-    await writeFixture(root, "architecture/decisions/accepted-decisions.json", JSON.stringify({
-      schemaVersion: 1,
-      algorithm: "sha256",
-      decisions: [{
-        id: "ADR-0099",
-        path: "docs/decisions/0099-owner.md",
-        immutableDigest: `sha256:${"a".repeat(64)}`,
-      }],
-    }));
+    await writeFixture(
+      root,
+      "architecture/decisions/accepted-decisions.json",
+      JSON.stringify({
+        schemaVersion: 1,
+        algorithm: "sha256",
+        decisions: [
+          {
+            id: "ADR-0099",
+            path: "docs/decisions/0099-owner.md",
+            immutableDigest: `sha256:${"a".repeat(64)}`,
+          },
+        ],
+      }),
+    );
     const acceptedIds = await loadAcceptedDecisionIds(root);
     const acceptedEntries = await loadAcceptedDecisionEntries(root);
     const document = (status, repositoryPath = "docs/decisions/0099-owner.md") => ({
@@ -62,14 +70,20 @@ test("package owner status is cross-checked against the accepted-decision ledger
     assert.equal(statusCrossChecksWithAcceptedLedger(document("accepted"), acceptedIds), true);
     assert.equal(statusCrossChecksWithAcceptedLedger(document("proposed"), acceptedIds), false);
     assert.equal(statusCrossChecksWithAcceptedLedger(document("accepted"), acceptedEntries), true);
-    assert.equal(statusCrossChecksWithAcceptedLedger(
-      document("accepted", "docs/decisions/0099-moved.md"),
-      acceptedEntries,
-    ), false);
-    assert.equal(statusCrossChecksWithAcceptedLedger(
-      { id: "ADR-0100", metadata: { id: "ADR-0100", type: "adr", status: "accepted" } },
-      acceptedIds,
-    ), false);
+    assert.equal(
+      statusCrossChecksWithAcceptedLedger(
+        document("accepted", "docs/decisions/0099-moved.md"),
+        acceptedEntries,
+      ),
+      false,
+    );
+    assert.equal(
+      statusCrossChecksWithAcceptedLedger(
+        { id: "ADR-0100", metadata: { id: "ADR-0100", type: "adr", status: "accepted" } },
+        acceptedIds,
+      ),
+      false,
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -103,10 +117,12 @@ function validatePackageTopology(options) {
     loadMaterializationPlan: options.loadMaterializationPlan ?? fixtureMaterializationPlan,
     listEffectiveOwners: options.listEffectiveOwners ?? (async () => []),
     readTrackedPackagePaths: options.readTrackedPackagePaths ?? noTrackedPackagePaths,
-    verifyAdmissionEvidence: options.verifyAdmissionEvidence ?? (async ({ request }) => ({
-      ...request,
-      outcome: "satisfied",
-    })),
+    verifyAdmissionEvidence:
+      options.verifyAdmissionEvidence ??
+      (async ({ request }) => ({
+        ...request,
+        outcome: "satisfied",
+      })),
   });
 }
 
@@ -138,7 +154,8 @@ function packageManifest() {
     scripts: {
       build: "tsc --project tsconfig.json --pretty false",
       check: "pnpm run clean && pnpm run typecheck && pnpm run build && pnpm run test",
-      clean: "node -e \"const fs=require('node:fs'); for (const path of ['dist','.cache']) fs.rmSync(path, { recursive: true, force: true })\"",
+      clean:
+        "node -e \"const fs=require('node:fs'); for (const path of ['dist','.cache']) fs.rmSync(path, { recursive: true, force: true })\"",
       prepack: "pnpm run clean && pnpm run build",
       test: "node --test --test-concurrency=1",
       typecheck: "tsc --project tsconfig.json --noEmit --pretty false",
@@ -157,13 +174,15 @@ function packageManifest() {
 function packageCatalog() {
   return JSON.stringify({
     version: 1,
-    packages: [{
-      id: "module.example",
-      role: "foundation-component",
-      path: "packages/example",
-      package_name: "@agent-teams/example",
-      owner_document: "ADR-0099",
-    }],
+    packages: [
+      {
+        id: "module.example",
+        role: "foundation-component",
+        path: "packages/example",
+        package_name: "@agent-teams/example",
+        owner_document: "ADR-0099",
+      },
+    ],
   });
 }
 
@@ -270,23 +289,50 @@ function sourcePolicy({ packageBoundary = false } = {}) {
   });
 }
 
-async function writeArchitecture(root, { catalog = '{"version":1,"packages":[]}', packageBoundary = false } = {}) {
+async function writeArchitecture(
+  root,
+  { catalog = '{"version":1,"packages":[]}', packageBoundary = false } = {},
+) {
   await writeFixture(root, "architecture/package-catalog.json", `${catalog}\n`);
   for (const entry of JSON.parse(catalog).packages ?? []) {
-    const admission = { ...packageAdmission(), package_id: entry.id, extraction_decision: entry.owner_document };
-    const encodedId = [...entry.id].map(character => (
-      character === "." ? "-dot-" : character === "-" ? "-dash-" : character
-    )).join("");
-    await writeFixture(root, `architecture/package-admissions/${encodedId}.json`, `${JSON.stringify(admission)}\n`);
+    const admission = {
+      ...packageAdmission(),
+      package_id: entry.id,
+      extraction_decision: entry.owner_document,
+    };
+    const encodedId = [...entry.id]
+      .map((character) => (character === "." ? "-dot-" : character === "-" ? "-dash-" : character))
+      .join("");
+    await writeFixture(
+      root,
+      `architecture/package-admissions/${encodedId}.json`,
+      `${JSON.stringify(admission)}\n`,
+    );
   }
-  await writeFixture(root, "architecture/foundation/scaffolding.yaml", `schemaVersion: 1
+  await writeFixture(
+    root,
+    "architecture/foundation/scaffolding.yaml",
+    `schemaVersion: 1
 compositions:
   - id: fixture
     targetRoles: [foundation-component, integration-adapter, testing-support]
-`);
-  await writeFixture(root, "architecture/foundation/source-dependencies.yaml", `${sourcePolicy({ packageBoundary })}\n`);
-  await writeFixture(root, "node_modules/@agent-teams/engineering-foundation/presets/typescript/node.json", '{"compilerOptions":{"module":"nodenext","moduleResolution":"nodenext","target":"es2024","strict":true}}\n');
-  await writeFixture(root, "tsconfig.json", '{"extends":"@agent-teams/engineering-foundation/presets/typescript/node.json","compilerOptions":{"composite":true,"noEmit":true},"files":[]}\n');
+`,
+  );
+  await writeFixture(
+    root,
+    "architecture/foundation/source-dependencies.yaml",
+    `${sourcePolicy({ packageBoundary })}\n`,
+  );
+  await writeFixture(
+    root,
+    "node_modules/@agent-teams/engineering-foundation/presets/typescript/node.json",
+    '{"compilerOptions":{"module":"nodenext","moduleResolution":"nodenext","target":"es2024","strict":true}}\n',
+  );
+  await writeFixture(
+    root,
+    "tsconfig.json",
+    '{"extends":"@agent-teams/engineering-foundation/presets/typescript/node.json","compilerOptions":{"composite":true,"noEmit":true},"files":[]}\n',
+  );
 }
 
 test("repository package topology is closed until an owned package is admitted", async () => {
@@ -309,16 +355,26 @@ test("topology rejects unregistered and reserved-only packages", async () => {
   const reserved = await mkdtemp(join(tmpdir(), "extension-topology-reserved-"));
   try {
     await writeArchitecture(unregistered);
-    await writeFixture(unregistered, "packages/unknown/package.json", '{"name":"@agent-teams/unknown","type":"module"}\n');
-    assert.deepEqual(await validatePackageTopology({ root: unregistered, resolveOwner: acceptedOwner }), [
-      "packages/unknown/package.json: file is outside every cataloged package",
-      "packages/unknown: materialized package is absent from the package catalog",
-    ]);
+    await writeFixture(
+      unregistered,
+      "packages/unknown/package.json",
+      '{"name":"@agent-teams/unknown","type":"module"}\n',
+    );
+    assert.deepEqual(
+      await validatePackageTopology({ root: unregistered, resolveOwner: acceptedOwner }),
+      [
+        "packages/unknown/package.json: file is outside every cataloged package",
+        "packages/unknown: materialized package is absent from the package catalog",
+      ],
+    );
 
     await writeArchitecture(reserved, { catalog: packageCatalog(), packageBoundary: true });
-    assert.deepEqual(await validatePackageTopology({ root: reserved, resolveOwner: acceptedOwner }), [
-      "packages/example: catalog entry must be materialized with its real feature slice in the same change",
-    ]);
+    assert.deepEqual(
+      await validatePackageTopology({ root: reserved, resolveOwner: acceptedOwner }),
+      [
+        "packages/example: catalog entry must be materialized with its real feature slice in the same change",
+      ],
+    );
   } finally {
     await rm(unregistered, { recursive: true, force: true });
     await rm(reserved, { recursive: true, force: true });
@@ -331,18 +387,30 @@ test("topology requires feature ownership and rejects root-level layer leakage",
     await writeArchitecture(root, { catalog: packageCatalog(), packageBoundary: true });
     await writeFixture(root, "packages/example/package.json", `${packageManifest()}\n`);
     await writeFixture(root, "packages/example/tsconfig.json", `${packageTsconfig()}\n`);
-    await writeFixture(root, "packages/example/src/index.ts", 'export * from "./features/example/index.js";\n');
+    await writeFixture(
+      root,
+      "packages/example/src/index.ts",
+      'export * from "./features/example/index.js";\n',
+    );
     await writeFeatureEntrypoint(root);
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
       "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
       "packages/example: feature example requires an executable assertion over a value imported from its feature entrypoint",
     ]);
 
-    await writeFixture(root, "packages/example/src/features/example/capability.ts", "export const example = true;\n");
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      "export const example = true;\n",
+    );
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
       "packages/example: feature example requires an executable assertion over a value imported from its feature entrypoint",
     ]);
-    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", featureAssertionTest());
+    await writeFixture(
+      root,
+      "packages/example/test/features/example/capability.test.ts",
+      featureAssertionTest(),
+    );
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), []);
 
     await writeFixture(root, "packages/example/src/adapters/cordis.ts", "export {};\n");
@@ -361,44 +429,78 @@ test("topology requires public reachability and tests through the feature entryp
     await writeFixture(root, "packages/example/package.json", `${packageManifest()}\n`);
     await writeFixture(root, "packages/example/tsconfig.json", `${packageTsconfig()}\n`);
     await writeFeatureEntrypoint(root);
-    await writeFixture(root, "packages/example/src/features/example/capability.ts", "export const example = true;\n");
-    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", featureAssertionTest());
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      "export const example = true;\n",
+    );
+    await writeFixture(
+      root,
+      "packages/example/test/features/example/capability.test.ts",
+      featureAssertionTest(),
+    );
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), []);
     await writeFixture(
       root,
       "packages/example/test/features/example/capability.test.ts",
       'import test from "node:test";\nimport * as feature from "../../../src/features/example/index.ts";\ntest("no observation", () => { void feature; });\n',
     );
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example: feature example requires an executable assertion over a value imported from its feature entrypoint",
-    ));
-    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", featureAssertionTest());
-    assert.ok((await validatePackageTopology({
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "packages/example: feature example requires an executable assertion over a value imported from its feature entrypoint",
+      ),
+    );
+    await writeFixture(
       root,
-      resolveOwner: acceptedOwner,
-      loadMaterializationPlan: async () => { throw new Error("materialization plan missing"); },
-    })).includes("packages/example: materialization plan missing"));
+      "packages/example/test/features/example/capability.test.ts",
+      featureAssertionTest(),
+    );
+    assert.ok(
+      (
+        await validatePackageTopology({
+          root,
+          resolveOwner: acceptedOwner,
+          loadMaterializationPlan: async () => {
+            throw new Error("materialization plan missing");
+          },
+        })
+      ).includes("packages/example: materialization plan missing"),
+    );
 
     await writeFixture(root, "packages/example/src/index.ts", "export {};\n");
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example: public package export must reach feature example through its index.ts entrypoint",
-    ));
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "packages/example: public package export must reach feature example through its index.ts entrypoint",
+      ),
+    );
 
-    await writeFixture(root, "packages/example/src/index.ts", 'export * from "./features/example/index.js";\n');
+    await writeFixture(
+      root,
+      "packages/example/src/index.ts",
+      'export * from "./features/example/index.js";\n',
+    );
     await writeFixture(root, "packages/example/src/features/example/index.ts", "export {};\n");
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
-    ));
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+      ),
+    );
 
     await writeFixture(
       root,
       "packages/example/src/index.ts",
       'export * from "./features/example/index.js";\nexport * from "./features/example/capability.js";\n',
     );
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
-    ));
-    await writeFixture(root, "packages/example/src/index.ts", 'export * from "./features/example/index.js";\n');
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+      ),
+    );
+    await writeFixture(
+      root,
+      "packages/example/src/index.ts",
+      'export * from "./features/example/index.js";\n',
+    );
 
     await writeFixture(
       root,
@@ -415,18 +517,22 @@ test("topology requires public reachability and tests through the feature entryp
       "packages/example/src/features/example/barrel.ts",
       'export { default } from "./capability.js";\n',
     );
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
-    ));
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+      ),
+    );
 
     await writeFixture(
       root,
       "packages/example/src/features/example/index.ts",
       'export * as default from "./capability.js";\n',
     );
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
-    ));
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+      ),
+    );
 
     await writeFixture(
       root,
@@ -438,9 +544,11 @@ test("topology requires public reachability and tests through the feature entryp
       "packages/example/src/features/example/capability.ts",
       "export const hidden = true;\nexport function placeholder() {}\n",
     );
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
-    ));
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+      ),
+    );
 
     await writeFixture(
       root,
@@ -452,9 +560,11 @@ test("topology requires public reachability and tests through the feature entryp
       "packages/example/src/features/example/capability.ts",
       "const implementation = true;\nexport default implementation;\n",
     );
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
-    ));
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+      ),
+    );
 
     await writeFixture(
       root,
@@ -478,9 +588,11 @@ test("topology requires public reachability and tests through the feature entryp
       "packages/example/src/features/example/placeholder.ts",
       "export function placeholder() {}\n",
     );
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
-    ));
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+      ),
+    );
 
     await writeFixture(
       root,
@@ -492,9 +604,11 @@ test("topology requires public reachability and tests through the feature entryp
       "packages/example/src/features/example/other.ts",
       "export const capability = true;\n",
     );
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
-    ));
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+      ),
+    );
 
     await writeFixture(
       root,
@@ -511,9 +625,11 @@ test("topology requires public reachability and tests through the feature entryp
       "packages/example/src/features/example/good.ts",
       'export { capability } from "./capability.js";\n',
     );
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
-    ));
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+      ),
+    );
 
     await writeFixture(
       root,
@@ -549,9 +665,11 @@ test("topology requires public reachability and tests through the feature entryp
       "packages/example/src/features/example/capability.ts",
       "export let capability = false;\nexport default capability;\ncapability = true;\n",
     );
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
-    ));
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+      ),
+    );
 
     await writeFixture(
       root,
@@ -568,9 +686,11 @@ test("topology requires public reachability and tests through the feature entryp
       "packages/example/src/features/example/capability.ts",
       "export const capability = true;\n",
     );
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
-    ));
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+      ),
+    );
 
     await writeFixture(
       root,
@@ -585,11 +705,21 @@ test("topology requires public reachability and tests through the feature entryp
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), []);
 
     await writeFeatureEntrypoint(root);
-    await writeFixture(root, "packages/example/src/features/example/capability.ts", "export const example = true;\n");
-    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", assertionWithoutFeatureImport());
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example: feature example requires an executable assertion over a value imported from its feature entrypoint",
-    ));
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      "export const example = true;\n",
+    );
+    await writeFixture(
+      root,
+      "packages/example/test/features/example/capability.test.ts",
+      assertionWithoutFeatureImport(),
+    );
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "packages/example: feature example requires an executable assertion over a value imported from its feature entrypoint",
+      ),
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -603,8 +733,16 @@ test("topology rejects packages without an explicit runtime source boundary", as
     await writeFixture(root, "packages/example/tsconfig.json", `${packageTsconfig()}\n`);
     await writeFixture(root, "packages/example/src/index.ts", "export {};\n");
     await writeFeatureEntrypoint(root);
-    await writeFixture(root, "packages/example/src/features/example/capability.ts", "export const example = true;\n");
-    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", featureAssertionTest());
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      "export const example = true;\n",
+    );
+    await writeFixture(
+      root,
+      "packages/example/test/features/example/capability.test.ts",
+      featureAssertionTest(),
+    );
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
       "module.example: requires a closed public boundary package.module.example over packages/example/src",
       "module.example: feature example requires runtime boundary package.module.example.feature.example",
@@ -623,9 +761,17 @@ test("topology rejects missing or unapproved package ownership", async () => {
     await writeFixture(root, "packages/example/package.json", `${packageManifest()}\n`);
     await writeFixture(root, "packages/example/tsconfig.json", `${packageTsconfig()}\n`);
     await writeFeatureEntrypoint(root);
-    await writeFixture(root, "packages/example/src/features/example/capability.ts", "export const example = true;\n");
-    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", featureAssertionTest());
-    const proposedOwner = async id => ({
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      "export const example = true;\n",
+    );
+    await writeFixture(
+      root,
+      "packages/example/test/features/example/capability.test.ts",
+      featureAssertionTest(),
+    );
+    const proposedOwner = async (id) => ({
       id,
       type: "adr",
       status: "proposed",
@@ -644,13 +790,14 @@ test("topology rejects effective ADR ownership without an exact catalog entry", 
   const root = await mkdtemp(join(tmpdir(), "extension-topology-reverse-owner-"));
   try {
     await writeArchitecture(root);
-    assert.deepEqual(await validatePackageTopology({
-      root,
-      resolveOwner: acceptedOwner,
-      listEffectiveOwners: acceptedOwners,
-    }), [
-      "ADR-0099: package ownership module.example requires one exact package catalog entry",
-    ]);
+    assert.deepEqual(
+      await validatePackageTopology({
+        root,
+        resolveOwner: acceptedOwner,
+        listEffectiveOwners: acceptedOwners,
+      }),
+      ["ADR-0099: package ownership module.example requires one exact package catalog entry"],
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -669,7 +816,11 @@ test("topology rejects rogue source and reverse package-boundary declarations", 
       entrypoints: ["packages/rogue/src/index.ts"],
       allow: { boundaries: [], packages: [], builtins: [], runtimeReferences: [] },
     });
-    await writeFixture(root, "architecture/foundation/source-dependencies.yaml", `${JSON.stringify(policy)}\n`);
+    await writeFixture(
+      root,
+      "architecture/foundation/source-dependencies.yaml",
+      `${JSON.stringify(policy)}\n`,
+    );
     await writeFixture(root, "packages/rogue/src/index.ts", "export const escaped = true;\n");
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
       "package.module.rogue: package boundary has no matching catalog feature role",
@@ -686,10 +837,16 @@ test("topology rejects rogue source and reverse package-boundary declarations", 
       entrypoints: ["packages/example/src/features/undeclared/index.ts"],
       allow: { boundaries: [], packages: [], builtins: [], runtimeReferences: [] },
     });
-    await writeFixture(root, "architecture/foundation/source-dependencies.yaml", `${JSON.stringify(ownedPolicy)}\n`);
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "package.module.example.feature.undeclared: package boundary has no matching catalog feature role",
-    ));
+    await writeFixture(
+      root,
+      "architecture/foundation/source-dependencies.yaml",
+      `${JSON.stringify(ownedPolicy)}\n`,
+    );
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "package.module.example.feature.undeclared: package boundary has no matching catalog feature role",
+      ),
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -700,17 +857,33 @@ test("topology fails closed on dependency forms the shared source graph does not
   try {
     await writeArchitecture(root, { catalog: packageCatalog(), packageBoundary: true });
     await writeFixture(root, "packages/example/package.json", `${packageManifest()}\n`);
-    await writeFixture(root, "packages/example/tsconfig.json", `${packageTsconfig({ paths: { "#/*": ["src/*"] } })}\n`);
+    await writeFixture(
+      root,
+      "packages/example/tsconfig.json",
+      `${packageTsconfig({ paths: { "#/*": ["src/*"] } })}\n`,
+    );
     await writeFeatureEntrypoint(root);
-    await writeFixture(root, "packages/example/src/features/example/capability.ts", "export const capability = true;\nconst load = eval;\nload('import(\"hidden\")');\n");
-    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", featureAssertionTest());
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      "export const capability = true;\nconst load = eval;\nload('import(\"hidden\")');\n",
+    );
+    await writeFixture(
+      root,
+      "packages/example/test/features/example/capability.test.ts",
+      featureAssertionTest(),
+    );
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
       "packages/example/src/features/example/capability.ts: eval-based module loading is prohibited until the shared source graph models it",
       "packages/example/tsconfig.json: config differs from the reviewed Foundation materialization plan",
       "packages/example/tsconfig.json: compilerOptions.paths is prohibited until the shared source graph models it",
     ]);
 
-    await writeFixture(root, "packages/example/src/features/example/capability.ts", 'export const capability = true;\neval("import(\\\"hidden\\\")");\n');
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      'export const capability = true;\neval("import(\\\"hidden\\\")");\n',
+    );
     assert.deepEqual(await validatePackageTopology({ root, resolveOwner: acceptedOwner }), [
       "packages/example/src/features/example/capability.ts: eval-based module loading is prohibited until the shared source graph models it",
       "packages/example/tsconfig.json: config differs from the reviewed Foundation materialization plan",
@@ -752,30 +925,37 @@ test("catalog root rejects unknown and duplicate fields", async () => {
   }
 });
 
-test("package catalog authority cannot be a symbolic link", {
-  skip: process.platform === "win32" ? "file symlink creation requires elevated Windows privileges" : false,
-}, async () => {
-  const root = await mkdtemp(join(tmpdir(), "extension-topology-catalog-link-"));
-  const outside = await mkdtemp(join(tmpdir(), "extension-topology-catalog-outside-"));
-  try {
-    await writeArchitecture(root);
-    await writeFixture(outside, "catalog.json", `${packageCatalog()}\n`);
-    await rm(join(root, "architecture/package-catalog.json"));
-    await symlink(
-      join(outside, "catalog.json"),
-      join(root, "architecture/package-catalog.json"),
-      "file",
-    );
+test(
+  "package catalog authority cannot be a symbolic link",
+  {
+    skip:
+      process.platform === "win32"
+        ? "file symlink creation requires elevated Windows privileges"
+        : false,
+  },
+  async () => {
+    const root = await mkdtemp(join(tmpdir(), "extension-topology-catalog-link-"));
+    const outside = await mkdtemp(join(tmpdir(), "extension-topology-catalog-outside-"));
+    try {
+      await writeArchitecture(root);
+      await writeFixture(outside, "catalog.json", `${packageCatalog()}\n`);
+      await rm(join(root, "architecture/package-catalog.json"));
+      await symlink(
+        join(outside, "catalog.json"),
+        join(root, "architecture/package-catalog.json"),
+        "file",
+      );
 
-    await assert.rejects(
-      loadPackagePolicy(root),
-      /package catalog must be a real regular file, not a symbolic link/u,
-    );
-  } finally {
-    await rm(root, { recursive: true, force: true });
-    await rm(outside, { recursive: true, force: true });
-  }
-});
+      await assert.rejects(
+        loadPackagePolicy(root),
+        /package catalog must be a real regular file, not a symbolic link/u,
+      );
+    } finally {
+      await rm(root, { recursive: true, force: true });
+      await rm(outside, { recursive: true, force: true });
+    }
+  },
+);
 
 test("package catalog authority cannot traverse a symbolic-link directory", async () => {
   const root = await mkdtemp(join(tmpdir(), "extension-topology-catalog-parent-link-"));
@@ -818,7 +998,11 @@ test("invalid package identities fail before admission evidence is read", async 
   const catalog = JSON.stringify({ version: 1, packages: [invalidEntry] });
   try {
     await writeArchitecture(root, { catalog });
-    await writeFixture(root, packageAdmissionPath(invalidEntry), '{"broken":true,"broken":false}\n');
+    await writeFixture(
+      root,
+      packageAdmissionPath(invalidEntry),
+      '{"broken":true,"broken":false}\n',
+    );
 
     const policy = await loadPackagePolicy(root);
     assert.deepEqual(policy.errors, [
@@ -841,7 +1025,11 @@ test("package admission fails closed without versioned independent evidence", as
       loadMaterializationPlan: fixtureMaterializationPlan,
       readTrackedPackagePaths: noTrackedPackagePaths,
     });
-    assert.ok(noVerifierErrors.includes("module.example: package admission requires an executable evidence verifier"));
+    assert.ok(
+      noVerifierErrors.includes(
+        "module.example: package admission requires an executable evidence verifier",
+      ),
+    );
     const unboundVerifierErrors = await validateRepositoryPackageTopology({
       root,
       resolveOwner: acceptedOwner,
@@ -850,9 +1038,11 @@ test("package admission fails closed without versioned independent evidence", as
       readTrackedPackagePaths: noTrackedPackagePaths,
       verifyAdmissionEvidence: async () => true,
     });
-    assert.ok(unboundVerifierErrors.includes(
-      "module.example: executable evidence verifier returned an unbound or unsatisfied receipt",
-    ));
+    assert.ok(
+      unboundVerifierErrors.includes(
+        "module.example: executable evidence verifier returned an unbound or unsatisfied receipt",
+      ),
+    );
     await rm(join(root, "architecture/package-admissions/module-dot-example.json"));
     const missingErrors = await validatePackageTopology({ root, resolveOwner: acceptedOwner });
     assert.equal(missingErrors.length, 1);
@@ -913,12 +1103,20 @@ test("package admission fails closed without versioned independent evidence", as
     );
     const semanticPolicy = await loadPackagePolicy(root);
     assert.deepEqual(semanticPolicy.errors, []);
-    assert.equal(packageAdmissionGateId(semanticPolicy.admissionsById.get("module.example")), "phase-3-module-semantic-package-admission");
-    assert.equal(packagePublicationGateId(semanticPolicy.admissionsById.get("module.example")), "phase-3-module-semantic-package-publication");
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "module.example: admission semantic classification must equal the accepted owner ADR declaration",
-    ));
-    const semanticOwner = async id => {
+    assert.equal(
+      packageAdmissionGateId(semanticPolicy.admissionsById.get("module.example")),
+      "phase-3-module-semantic-package-admission",
+    );
+    assert.equal(
+      packagePublicationGateId(semanticPolicy.admissionsById.get("module.example")),
+      "phase-3-module-semantic-package-publication",
+    );
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "module.example: admission semantic classification must equal the accepted owner ADR declaration",
+      ),
+    );
+    const semanticOwner = async (id) => {
       if (id === "ADR-0100") {
         return {
           id,
@@ -941,9 +1139,12 @@ test("package admission fails closed without versioned independent evidence", as
         return { ...request, outcome: "satisfied" };
       },
     });
-    assert.equal(semanticTopologyErrors.includes(
-      "module.example: admission semantic classification must equal the accepted owner ADR declaration",
-    ), false);
+    assert.equal(
+      semanticTopologyErrors.includes(
+        "module.example: admission semantic classification must equal the accepted owner ADR declaration",
+      ),
+      false,
+    );
     assert.equal(
       semanticVerificationRequest?.requiredGateId,
       "phase-3-module-semantic-package-admission",
@@ -958,9 +1159,11 @@ test("package admission fails closed without versioned independent evidence", as
         outcome: "satisfied",
       }),
     });
-    assert.ok(wrongGateReceiptErrors.includes(
-      "module.example: executable evidence verifier returned an unbound or unsatisfied receipt",
-    ));
+    assert.ok(
+      wrongGateReceiptErrors.includes(
+        "module.example: executable evidence verifier returned an unbound or unsatisfied receipt",
+      ),
+    );
     const sameDecision = structuredClone(semanticPackage);
     sameDecision.semantic_extraction_decision = "ADR-0099";
     await writeFixture(
@@ -968,18 +1171,23 @@ test("package admission fails closed without versioned independent evidence", as
       "architecture/package-admissions/module-dot-example.json",
       `${JSON.stringify(sameDecision)}\n`,
     );
-    assert.ok((await loadPackagePolicy(root)).errors.includes(
-      "module.example: semantic extraction decision must be separate from the package owner decision",
-    ));
+    assert.ok(
+      (await loadPackagePolicy(root)).errors.includes(
+        "module.example: semantic extraction decision must be separate from the package owner decision",
+      ),
+    );
     await writeFixture(
       root,
       "architecture/package-admissions/module-dot-example.json",
       `${JSON.stringify(semanticPackage)}\n`,
     );
-    const missingSemanticDecision = async id => (id === "ADR-0100" ? undefined : semanticOwner(id));
-    assert.ok((await validatePackageTopology({ root, resolveOwner: missingSemanticDecision })).includes(
-      "module.example: semantic extraction decision must resolve to one separate effective accepted ADR",
-    ));
+    const missingSemanticDecision = async (id) =>
+      id === "ADR-0100" ? undefined : semanticOwner(id);
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: missingSemanticDecision })).includes(
+        "module.example: semantic extraction decision must resolve to one separate effective accepted ADR",
+      ),
+    );
 
     const semanticOneConsumer = structuredClone(semanticPackage);
     semanticOneConsumer.admission_basis = "independent-replacement-or-release-lifecycle";
@@ -1006,7 +1214,10 @@ test("package admission fails closed without versioned independent evidence", as
       "module.example: ordinary-library admission must mark semantic extraction not-applicable",
     ]);
     assert.equal(packageAdmissionGateId(ordinaryWithSemanticDecision), "phase-3-package-admission");
-    assert.equal(packagePublicationGateId(ordinaryWithSemanticDecision), "phase-3-package-publication");
+    assert.equal(
+      packagePublicationGateId(ordinaryWithSemanticDecision),
+      "phase-3-package-publication",
+    );
 
     const independentIsolation = structuredClone(independentLifecycle);
     independentIsolation.admission_basis = "independent-deployment-or-isolation";
@@ -1020,7 +1231,8 @@ test("package admission fails closed without versioned independent evidence", as
     const secondConsumer = packageAdmission();
     secondConsumer.admission_basis = "second-real-consumer";
     secondConsumer.consumer_evidence[1].evidence_kind = "product-slice";
-    secondConsumer.consumer_evidence[1].implementation_id = secondConsumer.consumer_evidence[0].implementation_id;
+    secondConsumer.consumer_evidence[1].implementation_id =
+      secondConsumer.consumer_evidence[0].implementation_id;
     await writeFixture(
       root,
       "architecture/package-admissions/module-dot-example.json",
@@ -1052,8 +1264,10 @@ test("package admission fails closed without versioned independent evidence", as
     ]);
 
     const sameConsumerImplementations = packageAdmission();
-    sameConsumerImplementations.consumer_evidence[1].consumer_repository = sameConsumerImplementations.consumer_evidence[0].consumer_repository;
-    sameConsumerImplementations.consumer_evidence[1].consumer_id = sameConsumerImplementations.consumer_evidence[0].consumer_id;
+    sameConsumerImplementations.consumer_evidence[1].consumer_repository =
+      sameConsumerImplementations.consumer_evidence[0].consumer_repository;
+    sameConsumerImplementations.consumer_evidence[1].consumer_id =
+      sameConsumerImplementations.consumer_evidence[0].consumer_id;
     await writeFixture(
       root,
       "architecture/package-admissions/module-dot-example.json",
@@ -1073,7 +1287,8 @@ test("package admission fails closed without versioned independent evidence", as
     ]);
 
     const duplicateImplementation = structuredClone(sameConsumerImplementations);
-    duplicateImplementation.consumer_evidence[1].implementation_id = duplicateImplementation.consumer_evidence[0].implementation_id;
+    duplicateImplementation.consumer_evidence[1].implementation_id =
+      duplicateImplementation.consumer_evidence[0].implementation_id;
     await writeFixture(
       root,
       "architecture/package-admissions/module-dot-example.json",
@@ -1095,7 +1310,8 @@ test("package admission fails closed without versioned independent evidence", as
     ]);
 
     const aliasedFoundation = packageAdmission();
-    aliasedFoundation.consumer_evidence[0].consumer_repository = "Agent-Teams-AI/Extension-Foundation";
+    aliasedFoundation.consumer_evidence[0].consumer_repository =
+      "Agent-Teams-AI/Extension-Foundation";
     await writeFixture(
       root,
       "architecture/package-admissions/module-dot-example.json",
@@ -1122,7 +1338,8 @@ test("package admission fails closed without versioned independent evidence", as
     }
 
     const duplicateTransportAlias = packageAdmission();
-    duplicateTransportAlias.consumer_evidence[1].consumer_repository = "agent-teams-ai/consumer-alpha.git";
+    duplicateTransportAlias.consumer_evidence[1].consumer_repository =
+      "agent-teams-ai/consumer-alpha.git";
     await writeFixture(
       root,
       "architecture/package-admissions/module-dot-example.json",
@@ -1144,7 +1361,10 @@ test("package admission fails closed without versioned independent evidence", as
       "module.example: evidence must use distinct immutable references",
     ]);
 
-    for (const location of ["docs/evidence/shared.json", "https://example.com/evidence/shared.json"]) {
+    for (const location of [
+      "docs/evidence/shared.json",
+      "https://example.com/evidence/shared.json",
+    ]) {
       const oneLocationDifferentDigests = packageAdmission();
       oneLocationDifferentDigests.consumer_evidence[0].evidence_reference = `${location}#sha256=${"a".repeat(64)}`;
       oneLocationDifferentDigests.consumer_evidence[1].evidence_reference = `${location}#sha256=${"b".repeat(64)}`;
@@ -1225,11 +1445,17 @@ test("package admission rejects orphan manifests outside the catalog", async () 
   const root = await mkdtemp(join(tmpdir(), "extension-topology-orphan-admission-"));
   try {
     await writeArchitecture(root, { catalog: packageCatalog(), packageBoundary: true });
-    await writeFixture(root, "architecture/package-admissions/orphan.json", `${JSON.stringify(packageAdmission())}\n`);
+    await writeFixture(
+      root,
+      "architecture/package-admissions/orphan.json",
+      `${JSON.stringify(packageAdmission())}\n`,
+    );
     const policy = await loadPackagePolicy(root);
-    assert.ok(policy.errors.includes(
-      "architecture/package-admissions/orphan.json: orphan admission evidence is not declared by architecture/package-catalog.json",
-    ));
+    assert.ok(
+      policy.errors.includes(
+        "architecture/package-admissions/orphan.json: orphan admission evidence is not declared by architecture/package-catalog.json",
+      ),
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -1259,34 +1485,50 @@ test("topology rejects tracked generated-directory escapes", async () => {
   const root = await mkdtemp(join(tmpdir(), "extension-topology-tracked-ignore-"));
   try {
     await writeArchitecture(root);
-    assert.deepEqual(await validatePackageTopology({
-      root,
-      resolveOwner: acceptedOwner,
-      readTrackedPackagePaths: async () => ["packages/rogue/dist/package.json"],
-    }), [
-      "packages/rogue/dist/package.json: tracked files cannot hide inside ignored package directories",
-    ]);
-    assert.deepEqual(await validatePackageTopology({
-      root,
-      resolveOwner: acceptedOwner,
-      readTrackedPackagePaths: async () => [{ mode: "120000", path: "packages/link" }],
-    }), ["packages/link: tracked symbolic links are not allowed in governed packages"]);
-    assert.deepEqual(await validatePackageTopology({
-      root,
-      resolveOwner: acceptedOwner,
-      readTrackedPackagePaths: async () => [{ mode: "160000", path: "packages/vendor" }],
-    }), ["packages/vendor: gitlinks and submodules are not allowed in governed packages"]);
-    assert.deepEqual(await validatePackageTopology({
-      root,
-      resolveOwner: acceptedOwner,
-      readTrackedPackagePaths: async () => { throw new Error("git unavailable"); },
-    }), ["packages: git unavailable"]);
+    assert.deepEqual(
+      await validatePackageTopology({
+        root,
+        resolveOwner: acceptedOwner,
+        readTrackedPackagePaths: async () => ["packages/rogue/dist/package.json"],
+      }),
+      [
+        "packages/rogue/dist/package.json: tracked files cannot hide inside ignored package directories",
+      ],
+    );
+    assert.deepEqual(
+      await validatePackageTopology({
+        root,
+        resolveOwner: acceptedOwner,
+        readTrackedPackagePaths: async () => [{ mode: "120000", path: "packages/link" }],
+      }),
+      ["packages/link: tracked symbolic links are not allowed in governed packages"],
+    );
+    assert.deepEqual(
+      await validatePackageTopology({
+        root,
+        resolveOwner: acceptedOwner,
+        readTrackedPackagePaths: async () => [{ mode: "160000", path: "packages/vendor" }],
+      }),
+      ["packages/vendor: gitlinks and submodules are not allowed in governed packages"],
+    );
+    assert.deepEqual(
+      await validatePackageTopology({
+        root,
+        resolveOwner: acceptedOwner,
+        readTrackedPackagePaths: async () => {
+          throw new Error("git unavailable");
+        },
+      }),
+      ["packages: git unavailable"],
+    );
     await mkdir(join(root, "outside"));
     await mkdir(join(root, "packages"), { recursive: true });
     await symlink(join(root, "outside"), join(root, "packages/dist"));
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner }))[0].includes(
-      "symbolic links are not allowed in governed package topology: dist",
-    ));
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner }))[0].includes(
+        "symbolic links are not allowed in governed package topology: dist",
+      ),
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -1299,35 +1541,57 @@ test("topology rejects code outside src and unsafe export fallback arrays", asyn
     await writeFixture(root, "packages/example/package.json", `${packageManifest()}\n`);
     await writeFixture(root, "packages/example/tsconfig.json", `${packageTsconfig()}\n`);
     await writeFeatureEntrypoint(root);
-    await writeFixture(root, "packages/example/src/features/example/capability.ts", "export const capability = true;\n");
-    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", featureAssertionTest());
-    await writeFixture(root, "packages/example/scripts/escape.mjs", 'import "node:child_process";\n');
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example/scripts/escape.mjs: file is outside the package source and approved envelope",
-    ));
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      "export const capability = true;\n",
+    );
+    await writeFixture(
+      root,
+      "packages/example/test/features/example/capability.test.ts",
+      featureAssertionTest(),
+    );
+    await writeFixture(
+      root,
+      "packages/example/scripts/escape.mjs",
+      'import "node:child_process";\n',
+    );
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "packages/example/scripts/escape.mjs: file is outside the package source and approved envelope",
+      ),
+    );
 
     await rm(join(root, "packages/example/scripts"), { recursive: true, force: true });
     const manifest = JSON.parse(packageManifest());
     manifest.exports = { ".": ["./dist/index.js", "./src/escape.ts"] };
     await writeFixture(root, "packages/example/package.json", `${JSON.stringify(manifest)}\n`);
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example: package exports must be explicit and target only dist/",
-    ));
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "packages/example: package exports must be explicit and target only dist/",
+      ),
+    );
     manifest.exports = { "./*": "./dist/*.js" };
     await writeFixture(root, "packages/example/package.json", `${JSON.stringify(manifest)}\n`);
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example: package exports must be explicit and target only dist/",
-    ));
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "packages/example: package exports must be explicit and target only dist/",
+      ),
+    );
 
     manifest.exports = { ".": { types: "./dist/index.d.ts" } };
     await writeFixture(root, "packages/example/package.json", `${JSON.stringify(manifest)}\n`);
     const typesOnlyErrors = await validatePackageTopology({ root, resolveOwner: acceptedOwner });
-    assert.ok(typesOnlyErrors.includes(
-      "packages/example: package exports must be explicit and target only dist/",
-    ));
-    assert.ok(typesOnlyErrors.includes(
-      "packages/example: package exports differ from the reviewed Foundation materialization plan",
-    ));
+    assert.ok(
+      typesOnlyErrors.includes(
+        "packages/example: package exports must be explicit and target only dist/",
+      ),
+    );
+    assert.ok(
+      typesOnlyErrors.includes(
+        "packages/example: package exports differ from the reviewed Foundation materialization plan",
+      ),
+    );
 
     manifest.exports = {
       ".": {
@@ -1336,26 +1600,37 @@ test("topology rejects code outside src and unsafe export fallback arrays", asyn
       },
     };
     await writeFixture(root, "packages/example/package.json", `${JSON.stringify(manifest)}\n`);
-    const internalExportErrors = await validatePackageTopology({ root, resolveOwner: acceptedOwner });
-    assert.ok(internalExportErrors.includes(
-      "packages/example: package exports must be explicit and target only dist/",
-    ));
-    assert.ok(internalExportErrors.includes(
-      "packages/example: package exports differ from the reviewed Foundation materialization plan",
-    ));
+    const internalExportErrors = await validatePackageTopology({
+      root,
+      resolveOwner: acceptedOwner,
+    });
+    assert.ok(
+      internalExportErrors.includes(
+        "packages/example: package exports must be explicit and target only dist/",
+      ),
+    );
+    assert.ok(
+      internalExportErrors.includes(
+        "packages/example: package exports differ from the reviewed Foundation materialization plan",
+      ),
+    );
 
     manifest.exports = { ".": { types: "./dist/index.d.ts", import: "./dist/index.js" } };
-    manifest.scripts.build = "node -e \"process.exit(0)\"";
+    manifest.scripts.build = 'node -e "process.exit(0)"';
     await writeFixture(root, "packages/example/package.json", `${JSON.stringify(manifest)}\n`);
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example: package scripts differ from the reviewed Foundation materialization plan",
-    ));
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "packages/example: package scripts differ from the reviewed Foundation materialization plan",
+      ),
+    );
     manifest.scripts.build = "tsc --project tsconfig.json --pretty false";
     manifest.scripts.prebuild = "node ./hidden-hook.mjs";
     await writeFixture(root, "packages/example/package.json", `${JSON.stringify(manifest)}\n`);
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example: package scripts differ from the reviewed Foundation materialization plan",
-    ));
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "packages/example: package scripts differ from the reviewed Foundation materialization plan",
+      ),
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -1368,41 +1643,67 @@ test("topology rejects placeholder implementations and undeclared feature identi
     await writeFixture(root, "packages/example/package.json", `${packageManifest()}\n`);
     await writeFixture(root, "packages/example/tsconfig.json", `${packageTsconfig()}\n`);
     await writeFeatureEntrypoint(root);
-    await writeFixture(root, "packages/example/src/features/example/capability.ts", "const hidden = true;\nexport {};\n");
-    await writeFixture(root, "packages/example/test/features/example/capability.test.ts", featureAssertionTest());
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
-    ));
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      "const hidden = true;\nexport {};\n",
+    );
+    await writeFixture(
+      root,
+      "packages/example/test/features/example/capability.test.ts",
+      featureAssertionTest(),
+    );
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "packages/example: feature example entrypoint must publicly reach a value-level runtime implementation",
+      ),
+    );
 
-    const wrongFeatureOwner = async id => ({
-      ...await acceptedOwner(id),
-      packageOwnership: [{
-        packageId: "module.example",
-        packageName: "@agent-teams/example",
-        packagePath: "packages/example",
-        semanticClassification: "ordinary-library",
-        features: ["other"],
-      }],
+    const wrongFeatureOwner = async (id) => ({
+      ...(await acceptedOwner(id)),
+      packageOwnership: [
+        {
+          packageId: "module.example",
+          packageName: "@agent-teams/example",
+          packagePath: "packages/example",
+          semanticClassification: "ordinary-library",
+          features: ["other"],
+        },
+      ],
     });
     const errors = await validatePackageTopology({ root, resolveOwner: wrongFeatureOwner });
-    assert.ok(errors.includes(
-      "packages/example/src/features/example/capability.ts: feature example is not declared by the package owner ADR",
-    ));
-    assert.ok(errors.includes("packages/example: feature other entrypoint must publicly reach a value-level runtime implementation"));
+    assert.ok(
+      errors.includes(
+        "packages/example/src/features/example/capability.ts: feature example is not declared by the package owner ADR",
+      ),
+    );
+    assert.ok(
+      errors.includes(
+        "packages/example: feature other entrypoint must publicly reach a value-level runtime implementation",
+      ),
+    );
 
-    await writeFixture(root, "packages/example/src/features/example/capability.ts", "export const example = true;\n");
+    await writeFixture(
+      root,
+      "packages/example/src/features/example/capability.ts",
+      "export const example = true;\n",
+    );
     await writeFixture(
       root,
       "packages/example/tsconfig.json",
       `${packageTsconfig({ declarationDir: "../escaped" })}\n`,
     );
     const outputEscapeErrors = await validatePackageTopology({ root, resolveOwner: acceptedOwner });
-    assert.ok(outputEscapeErrors.includes(
-      "packages/example/tsconfig.json: config differs from the reviewed Foundation materialization plan",
-    ));
-    assert.ok(outputEscapeErrors.includes(
-      "packages/example/tsconfig.json: effective compiler outputs must stay in governed package directories",
-    ));
+    assert.ok(
+      outputEscapeErrors.includes(
+        "packages/example/tsconfig.json: config differs from the reviewed Foundation materialization plan",
+      ),
+    );
+    assert.ok(
+      outputEscapeErrors.includes(
+        "packages/example/tsconfig.json: effective compiler outputs must stay in governed package directories",
+      ),
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -1412,31 +1713,38 @@ test("topology resolves tsconfig inheritance and rejects compiler input escapes"
   const root = await mkdtemp(join(tmpdir(), "extension-topology-tsconfig-"));
   try {
     await writeArchitecture(root);
-    await writeFixture(root, "escape.json", '{"compilerOptions":{"paths":{"#/*":["outside/*"]}}}\n');
-    await writeFixture(root, "tsconfig.json", '{"extends":"./escape.json","files":[],"include":["outside/**/*.ts"]}\n');
+    await writeFixture(
+      root,
+      "escape.json",
+      '{"compilerOptions":{"paths":{"#/*":["outside/*"]}}}\n',
+    );
+    await writeFixture(
+      root,
+      "tsconfig.json",
+      '{"extends":"./escape.json","files":[],"include":["outside/**/*.ts"]}\n',
+    );
     const errors = await validatePackageTopology({ root, resolveOwner: acceptedOwner });
-    assert.ok(errors.includes(
-      "tsconfig.json: root config must exactly extend the pinned Foundation preset without compiler inputs",
-    ));
-    assert.ok(errors.includes(
-      "tsconfig.json: compilerOptions.paths is prohibited until the shared source graph models it",
-    ));
+    assert.ok(
+      errors.includes(
+        "tsconfig.json: root config must exactly extend the pinned Foundation preset without compiler inputs",
+      ),
+    );
+    assert.ok(
+      errors.includes(
+        "tsconfig.json: compilerOptions.paths is prohibited until the shared source graph models it",
+      ),
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }
 });
 
 test("compiler input containment fails closed across Windows volumes", () => {
-  assert.equal(isFilesystemPathInside(
-    "C:\\package\\src\\feature.ts",
-    "C:\\package\\src",
-    win32,
-  ), true);
-  assert.equal(isFilesystemPathInside(
-    "D:\\outside\\feature.ts",
-    "C:\\package\\src",
-    win32,
-  ), false);
+  assert.equal(
+    isFilesystemPathInside("C:\\package\\src\\feature.ts", "C:\\package\\src", win32),
+    true,
+  );
+  assert.equal(isFilesystemPathInside("D:\\outside\\feature.ts", "C:\\package\\src", win32), false);
 });
 
 test("topology rejects nested package roots", async () => {
@@ -1451,42 +1759,53 @@ test("topology rejects nested package roots", async () => {
       owner_document: "ADR-0100",
     });
     await writeArchitecture(root, { catalog: JSON.stringify(catalog), packageBoundary: true });
-    assert.ok((await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
-      "module.example-child: package path overlaps module.example",
-    ));
+    assert.ok(
+      (await validatePackageTopology({ root, resolveOwner: acceptedOwner })).includes(
+        "module.example-child: package path overlaps module.example",
+      ),
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }
 });
 
 test("Oxc source safety catches aliases and optional calls without scanning comments", () => {
-  assert.deepEqual(analyzeSource("example.ts", '// require("documentation-only")\nexport const value = true;\n').errors, []);
+  assert.deepEqual(
+    analyzeSource("example.ts", '// require("documentation-only")\nexport const value = true;\n')
+      .errors,
+    [],
+  );
   assert.deepEqual(analyzeSource("example.ts", "const load = eval;\nload('x');\n").errors, [
     "eval-based module loading",
   ]);
   assert.deepEqual(analyzeSource("example.ts", "eval?.('x');\n").errors, [
     "eval-based module loading",
   ]);
-  assert.deepEqual(analyzeSource("example.ts", "const load = Function;\nload('return 1');\n").errors, [
-    "Function-constructor module loading",
-  ]);
+  assert.deepEqual(
+    analyzeSource("example.ts", "const load = Function;\nload('return 1');\n").errors,
+    ["Function-constructor module loading"],
+  );
   assert.deepEqual(analyzeSource("example.ts", 'globalThis["eval"]("1");\n').errors, [
     "eval-based module loading",
     "computed runtime property access",
     "ambient globalThis runtime access",
   ]);
-  assert.deepEqual(analyzeSource("example.ts", 'process["getBuiltinModule"]("node:fs");\n').errors, [
-    "process.getBuiltinModule",
-    "computed runtime property access",
-    "ambient process runtime access",
-  ]);
-  assert.deepEqual(analyzeSource("example.ts", 'import { createRequire as load } from "node:module";\n').errors, [
-    "createRequire-based module loading",
-  ]);
-  assert.deepEqual(analyzeSource("example.ts", '(() => {})["constructor"]("return 1")();\n').errors, [
-    "reflective Function-constructor access",
-    "computed runtime property access",
-  ]);
+  assert.deepEqual(
+    analyzeSource("example.ts", 'process["getBuiltinModule"]("node:fs");\n').errors,
+    [
+      "process.getBuiltinModule",
+      "computed runtime property access",
+      "ambient process runtime access",
+    ],
+  );
+  assert.deepEqual(
+    analyzeSource("example.ts", 'import { createRequire as load } from "node:module";\n').errors,
+    ["createRequire-based module loading"],
+  );
+  assert.deepEqual(
+    analyzeSource("example.ts", '(() => {})["constructor"]("return 1")();\n').errors,
+    ["reflective Function-constructor access", "computed runtime property access"],
+  );
   assert.deepEqual(
     analyzeSource(
       "example.ts",
@@ -1499,7 +1818,10 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
     ["reflective runtime access"],
   );
   assert.deepEqual(
-    analyzeSource("example.ts", 'Object.getOwnPropertyDescriptor(() => {}, "constructor").value("return 1")();\n').errors,
+    analyzeSource(
+      "example.ts",
+      'Object.getOwnPropertyDescriptor(() => {}, "constructor").value("return 1")();\n',
+    ).errors,
     ["reflective property-descriptor access"],
   );
   assert.deepEqual(
@@ -1513,14 +1835,10 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
     ).errors,
     ["reflective prototype access", "reflective property-descriptor access"],
   );
-  assert.deepEqual(
-    analyzeSource("example.ts", "value.prototype;\nvalue.__proto__;\n").errors,
-    ["reflective prototype access"],
-  );
-  assert.deepEqual(
-    analyzeSource("example.ts", "const { capability } = value;\n").errors,
-    [],
-  );
+  assert.deepEqual(analyzeSource("example.ts", "value.prototype;\nvalue.__proto__;\n").errors, [
+    "reflective prototype access",
+  ]);
+  assert.deepEqual(analyzeSource("example.ts", "const { capability } = value;\n").errors, []);
   assert.deepEqual(
     analyzeSource(
       "example.ts",
@@ -1529,8 +1847,10 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
     ["reflective property-descriptor access", "reflective prototype access"],
   );
   assert.deepEqual(
-    analyzeSource("example.ts", 'import type { X } from "./x.js";\nexport { type X } from "./x.js";\n')
-      .staticModuleDependencies,
+    analyzeSource(
+      "example.ts",
+      'import type { X } from "./x.js";\nexport { type X } from "./x.js";\n',
+    ).staticModuleDependencies,
     [],
   );
   assert.deepEqual(
@@ -1538,11 +1858,15 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
     [],
   );
   assert.equal(
-    analyzeSource("example.test.ts", 'import { before } from "node:test";\nbefore(() => {});\n').hasTestRegistration,
+    analyzeSource("example.test.ts", 'import { before } from "node:test";\nbefore(() => {});\n')
+      .hasTestRegistration,
     false,
   );
   assert.equal(
-    analyzeSource("example.test.ts", 'import test from "node:test";\nfunction register() { test("hidden", () => {}); }\n').hasTestRegistration,
+    analyzeSource(
+      "example.test.ts",
+      'import test from "node:test";\nfunction register() { test("hidden", () => {}); }\n',
+    ).hasTestRegistration,
     false,
   );
   assert.deepEqual(
@@ -1576,7 +1900,10 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
   for (const [assertionImport, assertionCall] of [
     ['import type verify from "node:assert/strict";', "verify.equal(capability, true)"],
     ['import type * as verify from "node:assert/strict";', "verify.equal(capability, true)"],
-    ['import type { default as verify } from "node:assert/strict";', "verify.equal(capability, true)"],
+    [
+      'import type { default as verify } from "node:assert/strict";',
+      "verify.equal(capability, true)",
+    ],
     ['import type { strict as verify } from "node:assert";', "verify.equal(capability, true)"],
     ['import type { equal as verify } from "node:assert";', "verify(capability, true)"],
   ]) {
@@ -1730,18 +2057,23 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
   );
   assert.deepEqual(namedDefaultMutation.observedRuntimeImportSources, []);
   assert.ok(namedDefaultMutation.errors.includes("assertion namespace escape or mutation"));
-  assert.ok(analyzeSource(
-    "assert-helper.ts",
-    'export { default as poison } from "node:assert/strict";\n',
-  ).errors.includes("assertion namespace re-export"));
-  assert.ok(analyzeSource(
-    "assert-helper.ts",
-    'export { strict as poison } from "node:assert";\n',
-  ).errors.includes("assertion namespace re-export"));
-  assert.ok(analyzeSource(
-    "assert-helper.ts",
-    'export * from "node:assert/strict";\n',
-  ).errors.includes("assertion namespace re-export"));
+  assert.ok(
+    analyzeSource(
+      "assert-helper.ts",
+      'export { default as poison } from "node:assert/strict";\n',
+    ).errors.includes("assertion namespace re-export"),
+  );
+  assert.ok(
+    analyzeSource(
+      "assert-helper.ts",
+      'export { strict as poison } from "node:assert";\n',
+    ).errors.includes("assertion namespace re-export"),
+  );
+  assert.ok(
+    analyzeSource("assert-helper.ts", 'export * from "node:assert/strict";\n').errors.includes(
+      "assertion namespace re-export",
+    ),
+  );
   assert.deepEqual(
     analyzeSource(
       "example.test.ts",
@@ -1781,24 +2113,64 @@ test("Oxc source safety catches aliases and optional calls without scanning comm
   );
   assert.equal(generatorEvidence.hasTestRegistration, false);
   assert.deepEqual(generatorEvidence.observedRuntimeImportSources, []);
-  assert.equal(analyzeSource("example.ts", "export function placeholder() {}\n").hasRuntimeImplementation, false);
-  assert.equal(analyzeSource("example.ts", "export function placeholder() { ; }\n").hasRuntimeImplementation, false);
-  assert.equal(analyzeSource("example.ts", 'export function placeholder() { "use strict"; }\n').hasRuntimeImplementation, false);
-  assert.equal(analyzeSource("example.ts", "export const placeholder = () => {};\n").hasRuntimeImplementation, false);
-  assert.equal(analyzeSource("example.ts", "const placeholder = function () {};\nexport default placeholder;\n").hasRuntimeImplementation, false);
-  assert.equal(analyzeSource("example.ts", "export const placeholder = (() => {}) satisfies () => void;\n").hasRuntimeImplementation, false);
-  assert.equal(analyzeSource("example.ts", "export const capability = () => true;\n").hasRuntimeImplementation, true);
+  assert.equal(
+    analyzeSource("example.ts", "export function placeholder() {}\n").hasRuntimeImplementation,
+    false,
+  );
+  assert.equal(
+    analyzeSource("example.ts", "export function placeholder() { ; }\n").hasRuntimeImplementation,
+    false,
+  );
+  assert.equal(
+    analyzeSource("example.ts", 'export function placeholder() { "use strict"; }\n')
+      .hasRuntimeImplementation,
+    false,
+  );
+  assert.equal(
+    analyzeSource("example.ts", "export const placeholder = () => {};\n").hasRuntimeImplementation,
+    false,
+  );
+  assert.equal(
+    analyzeSource(
+      "example.ts",
+      "const placeholder = function () {};\nexport default placeholder;\n",
+    ).hasRuntimeImplementation,
+    false,
+  );
+  assert.equal(
+    analyzeSource("example.ts", "export const placeholder = (() => {}) satisfies () => void;\n")
+      .hasRuntimeImplementation,
+    false,
+  );
+  assert.equal(
+    analyzeSource("example.ts", "export const capability = () => true;\n").hasRuntimeImplementation,
+    true,
+  );
   assert.deepEqual(
     analyzeSource("example.ts", "export default () => true;\n").exportedRuntimeImplementationNames,
     ["default"],
   );
   assert.equal(
-    analyzeSource("example.ts", "export const [placeholder] = [() => {}];\n").hasRuntimeImplementation,
+    analyzeSource("example.ts", "export const [placeholder] = [() => {}];\n")
+      .hasRuntimeImplementation,
     false,
   );
-  assert.equal(analyzeSource("example.ts", "const capability = function () { return true; };\nexport default capability;\n").hasRuntimeImplementation, true);
-  assert.equal(analyzeSource("example.ts", "const hidden = true;\nexport {};\n").hasRuntimeImplementation, false);
-  assert.equal(analyzeSource("example.ts", "const capability = true;\nexport default capability;\n").hasRuntimeImplementation, true);
+  assert.equal(
+    analyzeSource(
+      "example.ts",
+      "const capability = function () { return true; };\nexport default capability;\n",
+    ).hasRuntimeImplementation,
+    true,
+  );
+  assert.equal(
+    analyzeSource("example.ts", "const hidden = true;\nexport {};\n").hasRuntimeImplementation,
+    false,
+  );
+  assert.equal(
+    analyzeSource("example.ts", "const capability = true;\nexport default capability;\n")
+      .hasRuntimeImplementation,
+    true,
+  );
   assert.deepEqual(
     analyzeSource(
       "example.ts",
@@ -1833,23 +2205,41 @@ test("built export evidence requires regular artifacts after the governed build"
     ]);
     await writeFixture(root, "packages/example/dist/index.d.ts", "export {};\n");
     await writeFixture(root, "packages/example/dist/index.js", "export {};\n");
-    assert.ok((await validateBuiltPackageArtifacts({ root }))[0].includes("root runtime export is empty"));
-    await writeFixture(root, "packages/example/dist/index.d.ts", "export declare const capability: boolean;\n");
+    assert.ok(
+      (await validateBuiltPackageArtifacts({ root }))[0].includes("root runtime export is empty"),
+    );
+    await writeFixture(
+      root,
+      "packages/example/dist/index.d.ts",
+      "export declare const capability: boolean;\n",
+    );
     await writeFixture(root, "packages/example/dist/index.js", "export const capability = true;\n");
     assert.deepEqual(await validateBuiltPackageArtifacts({ root }), []);
     const traversingManifest = JSON.parse(packageManifest());
     traversingManifest.exports["."].import = "./dist/../src/index.ts";
-    await writeFixture(root, "packages/example/package.json", `${JSON.stringify(traversingManifest)}\n`);
+    await writeFixture(
+      root,
+      "packages/example/package.json",
+      `${JSON.stringify(traversingManifest)}\n`,
+    );
     await writeFixture(root, "packages/example/src/index.ts", "export const capability = true;\n");
-    assert.ok((await validateBuiltPackageArtifacts({ root })).includes(
-      "packages/example: package exports must be the canonical root import and types targets",
-    ));
+    assert.ok(
+      (await validateBuiltPackageArtifacts({ root })).includes(
+        "packages/example: package exports must be the canonical root import and types targets",
+      ),
+    );
     const stringExportManifest = JSON.parse(packageManifest());
     stringExportManifest.exports = { ".": "./dist/index.js" };
-    await writeFixture(root, "packages/example/package.json", `${JSON.stringify(stringExportManifest)}\n`);
-    assert.ok((await validateBuiltPackageArtifacts({ root })).includes(
-      "packages/example: package exports must be the canonical root import and types targets",
-    ));
+    await writeFixture(
+      root,
+      "packages/example/package.json",
+      `${JSON.stringify(stringExportManifest)}\n`,
+    );
+    assert.ok(
+      (await validateBuiltPackageArtifacts({ root })).includes(
+        "packages/example: package exports must be the canonical root import and types targets",
+      ),
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }

@@ -4,18 +4,25 @@ function resourceLimit(message) {
   return error;
 }
 
-function assertLexicalJsonLimitsAndNoDuplicateObjectKeys(text, {
-  maxDepth = Number.POSITIVE_INFINITY,
-  maxNodes = Number.POSITIVE_INFINITY,
-  maxStringLength = Number.POSITIVE_INFINITY,
-} = {}) {
+function assertLexicalJsonLimitsAndNoDuplicateObjectKeys(
+  text,
+  {
+    maxDepth = Number.POSITIVE_INFINITY,
+    maxNodes = Number.POSITIVE_INFINITY,
+    maxStringLength = Number.POSITIVE_INFINITY,
+  } = {},
+) {
   const stack = [];
   let nodes = 0;
 
   function countNode(depth) {
     nodes += 1;
-    if (nodes > maxNodes) throw resourceLimit("JSON node limit exceeded");
-    if (depth > maxDepth) throw resourceLimit("JSON depth limit exceeded");
+    if (nodes > maxNodes) {
+      throw resourceLimit("JSON node limit exceeded");
+    }
+    if (depth > maxDepth) {
+      throw resourceLimit("JSON depth limit exceeded");
+    }
   }
 
   for (let index = 0; index < text.length;) {
@@ -31,7 +38,9 @@ function assertLexicalJsonLimitsAndNoDuplicateObjectKeys(text, {
       while (index < text.length) {
         if (text[index] === "\\") {
           rawLength += 2;
-          if (rawLength > maxStringLength) throw resourceLimit("JSON string limit exceeded");
+          if (rawLength > maxStringLength) {
+            throw resourceLimit("JSON string limit exceeded");
+          }
           index += 2;
           continue;
         }
@@ -40,13 +49,17 @@ function assertLexicalJsonLimitsAndNoDuplicateObjectKeys(text, {
           break;
         }
         rawLength += 1;
-        if (rawLength > maxStringLength) throw resourceLimit("JSON string limit exceeded");
+        if (rawLength > maxStringLength) {
+          throw resourceLimit("JSON string limit exceeded");
+        }
         index += 1;
       }
       const context = stack.at(-1);
       if (context?.type === "object" && context.expectKey) {
         const key = JSON.parse(text.slice(start, index));
-        if (context.keys.has(key)) throw new Error(`DUPLICATE_JSON_KEY:${key}`);
+        if (context.keys.has(key)) {
+          throw new Error(`DUPLICATE_JSON_KEY:${key}`);
+        }
         context.keys.add(key);
         context.expectKey = false;
       } else {
@@ -56,9 +69,11 @@ function assertLexicalJsonLimitsAndNoDuplicateObjectKeys(text, {
     }
     if (character === "{" || character === "[") {
       countNode(stack.length);
-      stack.push(character === "{"
-        ? { type: "object", expectKey: true, keys: new Set() }
-        : { type: "array" });
+      stack.push(
+        character === "{"
+          ? { type: "object", expectKey: true, keys: new Set() }
+          : { type: "array" },
+      );
       index += 1;
       continue;
     }
@@ -69,7 +84,9 @@ function assertLexicalJsonLimitsAndNoDuplicateObjectKeys(text, {
     }
     if (character === ",") {
       const context = stack.at(-1);
-      if (context?.type === "object") context.expectKey = true;
+      if (context?.type === "object") {
+        context.expectKey = true;
+      }
       index += 1;
       continue;
     }
@@ -78,7 +95,9 @@ function assertLexicalJsonLimitsAndNoDuplicateObjectKeys(text, {
       continue;
     }
     countNode(stack.length);
-    while (index < text.length && !/[\s,\]}]/u.test(text[index])) index += 1;
+    while (index < text.length && !/[\s,\]}]/u.test(text[index])) {
+      index += 1;
+    }
   }
 }
 

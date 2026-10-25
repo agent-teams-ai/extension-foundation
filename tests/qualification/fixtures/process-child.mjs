@@ -19,14 +19,22 @@ const authority = Object.freeze({
 
 let buffer = Buffer.alloc(0);
 let stopped = false;
-process.stdin.on("data", chunk => {
-  if (stopped) return;
+process.stdin.on("data", (chunk) => {
+  if (stopped) {
+    return;
+  }
   buffer = Buffer.concat([buffer, chunk]);
   for (;;) {
-    if (buffer.byteLength < 4) return;
+    if (buffer.byteLength < 4) {
+      return;
+    }
     const length = buffer.readUInt32BE(0);
-    if (length > maxFrameBytes) throw new Error("FRAME_TOO_LARGE");
-    if (buffer.byteLength < length + 4) return;
+    if (length > maxFrameBytes) {
+      throw new Error("FRAME_TOO_LARGE");
+    }
+    if (buffer.byteLength < length + 4) {
+      return;
+    }
     const packet = buffer.subarray(0, length + 4);
     buffer = buffer.subarray(length + 4);
     if (!handleFrame(decodeLengthPrefixedFrame(packet))) {
@@ -37,7 +45,9 @@ process.stdin.on("data", chunk => {
 });
 process.stdin.on("end", () => {
   if (!stopped) {
-    process.stderr.write(buffer.byteLength > 0 ? "TRUNCATED_FRAME_AT_EOF\n" : "STOP_NOT_ACKNOWLEDGED_AT_EOF\n");
+    process.stderr.write(
+      buffer.byteLength > 0 ? "TRUNCATED_FRAME_AT_EOF\n" : "STOP_NOT_ACKNOWLEDGED_AT_EOF\n",
+    );
     process.exitCode = 1;
   }
 });

@@ -24,12 +24,18 @@ function compareBinary(left, right) {
 }
 
 export function hasExactKeys(value, expected) {
-  return isRecord(value)
-    && Object.keys(value).sort(compareBinary).join("|") === [...expected].sort(compareBinary).join("|");
+  return (
+    isRecord(value) &&
+    Object.keys(value).sort(compareBinary).join("|") === [...expected].sort(compareBinary).join("|")
+  );
 }
 
 export function allowedPackageRoles(policy) {
-  if (!isRecord(policy) || !Array.isArray(policy.compositions) || policy.compositions.length === 0) {
+  if (
+    !isRecord(policy) ||
+    !Array.isArray(policy.compositions) ||
+    policy.compositions.length === 0
+  ) {
     throw new Error(`${SCAFFOLDING_POLICY_PATH} must declare at least one composition`);
   }
   const roles = new Set();
@@ -49,10 +55,12 @@ export function allowedPackageRoles(policy) {
 
 export function hasCanonicalPackageRootExports(manifest) {
   const rootExport = manifest?.exports?.["."];
-  return hasExactKeys(manifest?.exports, ["."])
-    && hasExactKeys(rootExport, ["import", "types"])
-    && rootExport.import === "./dist/index.js"
-    && rootExport.types === "./dist/index.d.ts";
+  return (
+    hasExactKeys(manifest?.exports, ["."]) &&
+    hasExactKeys(rootExport, ["import", "types"]) &&
+    rootExport.import === "./dist/index.js" &&
+    rootExport.types === "./dist/index.d.ts"
+  );
 }
 
 export function pathsOverlap(left, right) {
@@ -60,11 +68,17 @@ export function pathsOverlap(left, right) {
 }
 
 export function encodedPackageId(entry) {
-  return [...entry.id].map(character => {
-    if (character === ".") return "-dot-";
-    if (character === "-") return "-dash-";
-    return character;
-  }).join("");
+  return [...entry.id]
+    .map((character) => {
+      if (character === ".") {
+        return "-dot-";
+      }
+      if (character === "-") {
+        return "-dash-";
+      }
+      return character;
+    })
+    .join("");
 }
 
 export function materializationPlanPath(entry) {
@@ -88,9 +102,11 @@ export function catalogPolicy(catalog, allowedRoles) {
     rootValid: false,
   };
 
-  if (!hasExactKeys(catalog, CATALOG_ROOT_KEYS)
-    || catalog.version !== 1
-    || !Array.isArray(catalog.packages)) {
+  if (
+    !hasExactKeys(catalog, CATALOG_ROOT_KEYS) ||
+    catalog.version !== 1 ||
+    !Array.isArray(catalog.packages)
+  ) {
     errors.push(`${CATALOG_PATH} must contain exactly version 1 and a packages array`);
     return result;
   }
@@ -98,26 +114,44 @@ export function catalogPolicy(catalog, allowedRoles) {
 
   const seen = { id: new Set(), path: new Set(), package_name: new Set() };
   for (const entry of catalog.packages) {
-    if (!hasExactKeys(entry, CATALOG_ENTRY_KEYS)
-      || CATALOG_ENTRY_KEYS.some(key => typeof entry[key] !== "string" || entry[key].length === 0)) {
-      const entryErrors = [`${CATALOG_PATH}: every entry must contain exactly ${CATALOG_ENTRY_KEYS.join(", ")}`];
+    if (
+      !hasExactKeys(entry, CATALOG_ENTRY_KEYS) ||
+      CATALOG_ENTRY_KEYS.some((key) => typeof entry[key] !== "string" || entry[key].length === 0)
+    ) {
+      const entryErrors = [
+        `${CATALOG_PATH}: every entry must contain exactly ${CATALOG_ENTRY_KEYS.join(", ")}`,
+      ];
       errors.push(...entryErrors);
       diagnosticGroups.push({ entry: undefined, entryErrors, relationErrors: [] });
       continue;
     }
     const entryErrors = [];
     const relationErrors = [];
-    if (!PACKAGE_ID.test(entry.id)) entryErrors.push(`${entry.id}: package id is invalid`);
-    if (!allowedRoles.has(entry.role)) entryErrors.push(`${entry.id}: unknown role ${entry.role}`);
-    if (!PACKAGE_PATH.test(entry.path)) entryErrors.push(`${entry.id}: path must be a normalized directory under packages/`);
-    if (!PACKAGE_NAME.test(entry.package_name)) entryErrors.push(`${entry.id}: package_name must use the @agent-teams scope`);
-    if (!OWNER_DOCUMENT.test(entry.owner_document)) entryErrors.push(`${entry.id}: owner_document must be an ADR identity`);
+    if (!PACKAGE_ID.test(entry.id)) {
+      entryErrors.push(`${entry.id}: package id is invalid`);
+    }
+    if (!allowedRoles.has(entry.role)) {
+      entryErrors.push(`${entry.id}: unknown role ${entry.role}`);
+    }
+    if (!PACKAGE_PATH.test(entry.path)) {
+      entryErrors.push(`${entry.id}: path must be a normalized directory under packages/`);
+    }
+    if (!PACKAGE_NAME.test(entry.package_name)) {
+      entryErrors.push(`${entry.id}: package_name must use the @agent-teams scope`);
+    }
+    if (!OWNER_DOCUMENT.test(entry.owner_document)) {
+      entryErrors.push(`${entry.id}: owner_document must be an ADR identity`);
+    }
     for (const field of Object.keys(seen)) {
-      if (seen[field].has(entry[field])) relationErrors.push(`${entry.id}: duplicate ${field} ${entry[field]}`);
+      if (seen[field].has(entry[field])) {
+        relationErrors.push(`${entry.id}: duplicate ${field} ${entry[field]}`);
+      }
       seen[field].add(entry[field]);
     }
     for (const existing of entries) {
-      if (pathsOverlap(entry.path, existing.path)) relationErrors.push(`${entry.id}: package path overlaps ${existing.id}`);
+      if (pathsOverlap(entry.path, existing.path)) {
+        relationErrors.push(`${entry.id}: package path overlaps ${existing.id}`);
+      }
     }
     errors.push(...entryErrors, ...relationErrors);
     diagnosticGroups.push({ entry, entryErrors, relationErrors });
@@ -129,12 +163,16 @@ export function catalogPolicy(catalog, allowedRoles) {
 }
 
 export function packageExportTargets(value) {
-  if (typeof value === "string") return [value];
+  if (typeof value === "string") {
+    return [value];
+  }
   if (Array.isArray(value)) {
     const nested = value.map(packageExportTargets);
-    return nested.some(entry => entry === undefined) ? undefined : nested.flat();
+    return nested.some((entry) => entry === undefined) ? undefined : nested.flat();
   }
-  if (!isRecord(value)) return undefined;
+  if (!isRecord(value)) {
+    return undefined;
+  }
   const nested = Object.values(value).map(packageExportTargets);
-  return nested.some(entry => entry === undefined) ? undefined : nested.flat();
+  return nested.some((entry) => entry === undefined) ? undefined : nested.flat();
 }

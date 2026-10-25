@@ -1,6 +1,6 @@
 import { handlePortableWorkerFrame } from "../portable-protocol.mjs";
 
-self.onmessage = event => {
+self.onmessage = (event) => {
   try {
     self.postMessage({
       ok: true,

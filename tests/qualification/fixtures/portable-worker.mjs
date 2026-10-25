@@ -2,7 +2,7 @@ import { parentPort, workerData } from "node:worker_threads";
 
 import { handlePortableWorkerFrame } from "../portable-protocol.mjs";
 
-parentPort.on("message", frame => {
+parentPort.on("message", (frame) => {
   try {
     parentPort.postMessage({
       ok: true,
@@ -19,6 +19,9 @@ parentPort.on("message", frame => {
       }),
     });
   } catch (error) {
-    parentPort.postMessage({ ok: false, error: error instanceof Error ? error.message : String(error) });
+    parentPort.postMessage({
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });

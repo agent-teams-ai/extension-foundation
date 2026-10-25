@@ -9,15 +9,21 @@ import { fileURLToPath } from "node:url";
 const repositoryRoot = resolve(import.meta.dirname, "..");
 const cli = join(repositoryRoot, "node_modules", ".bin", "agent-teams-docs");
 const profile = "architecture/foundation/docs-protocol.yaml";
-const docsPackageRoot = dirname(fileURLToPath(import.meta.resolve("@agent-teams/docs-protocol/package.json")));
-const foundationPackageRoot = dirname(fileURLToPath(import.meta.resolve("@agent-teams/engineering-foundation/package.json")));
+const docsPackageRoot = dirname(
+  fileURLToPath(import.meta.resolve("@agent-teams/docs-protocol/package.json")),
+);
+const foundationPackageRoot = dirname(
+  fileURLToPath(import.meta.resolve("@agent-teams/engineering-foundation/package.json")),
+);
 
 async function exists(path) {
   try {
     await stat(path);
     return true;
   } catch (error) {
-    if (error.code === "ENOENT") return false;
+    if (error.code === "ENOENT") {
+      return false;
+    }
     throw error;
   }
 }
@@ -41,15 +47,25 @@ function run(consumerRoot, ...args) {
 
 async function disposableRepository() {
   const fixture = await mkdtemp(join(tmpdir(), "atd-e-"));
-  await cp(join(repositoryRoot, "architecture"), join(fixture, "architecture"), { recursive: true });
+  await cp(join(repositoryRoot, "architecture"), join(fixture, "architecture"), {
+    recursive: true,
+  });
   await cp(join(repositoryRoot, "docs"), join(fixture, "docs"), { recursive: true });
   await cp(join(repositoryRoot, ".agents"), join(fixture, ".agents"), { recursive: true });
   await cp(join(repositoryRoot, "AGENTS.md"), join(fixture, "AGENTS.md"));
   await cp(join(repositoryRoot, "package.json"), join(fixture, "package.json"));
   const packageScope = join(fixture, "node_modules", "@agent-teams");
   await mkdir(packageScope, { recursive: true });
-  await symlink(docsPackageRoot, join(packageScope, "docs-protocol"), process.platform === "win32" ? "junction" : "dir");
-  await symlink(foundationPackageRoot, join(packageScope, "engineering-foundation"), process.platform === "win32" ? "junction" : "dir");
+  await symlink(
+    docsPackageRoot,
+    join(packageScope, "docs-protocol"),
+    process.platform === "win32" ? "junction" : "dir",
+  );
+  await symlink(
+    foundationPackageRoot,
+    join(packageScope, "engineering-foundation"),
+    process.platform === "win32" ? "junction" : "dir",
+  );
   return fixture;
 }
 
@@ -57,8 +73,16 @@ test("unified info and check expose the declared Extension authority", () => {
   const info = run(repositoryRoot, "info");
   assert.equal(info.command, "docs.info");
   assert.equal(info.result.projectId, "extension-foundation");
-  assert.deepEqual(info.result.types.map(({ type }) => type).sort(), ["adr", "architecture", "open-decision"]);
-  assert.deepEqual(info.result.ownerIds, ["architecture", "architecture/security", "architecture/tooling"]);
+  assert.deepEqual(info.result.types.map(({ type }) => type).sort(), [
+    "adr",
+    "architecture",
+    "open-decision",
+  ]);
+  assert.deepEqual(info.result.ownerIds, [
+    "architecture",
+    "architecture/security",
+    "architecture/tooling",
+  ]);
   assert.equal(info.result.agentWorkflow.skillPath, ".agents/skills/docs-authoring/SKILL.md");
 
   const check = run(repositoryRoot, "check");
@@ -68,8 +92,22 @@ test("unified info and check expose the declared Extension authority", () => {
 });
 
 test("find combines catalog and relation filters and treats zero matches as success", () => {
-  const related = run(repositoryRoot, "find", "--type", "open-decision", "--status", "open", "--owner", "architecture", "--related", "ADR-0003");
-  assert.deepEqual(related.result.documents.map(({ id }) => id), ["OD-002"]);
+  const related = run(
+    repositoryRoot,
+    "find",
+    "--type",
+    "open-decision",
+    "--status",
+    "open",
+    "--owner",
+    "architecture",
+    "--related",
+    "ADR-0003",
+  );
+  assert.deepEqual(
+    related.result.documents.map(({ id }) => id),
+    ["OD-002"],
+  );
 
   const missing = run(repositoryRoot, "find", "--id", "ADR-9999", "--related", "ADR-0001");
   assert.equal(missing.result.matches, 0);
@@ -80,14 +118,21 @@ test("find combines catalog and relation filters and treats zero matches as succ
     encoding: "utf8",
     timeout: 120_000,
   });
-  assert.equal(forwarded.status, 0, forwarded.error?.message || forwarded.stderr || forwarded.stdout);
+  assert.equal(
+    forwarded.status,
+    0,
+    forwarded.error?.message || forwarded.stderr || forwarded.stdout,
+  );
   const forwardedEnvelope = JSON.parse(forwarded.stdout.slice(forwarded.stdout.indexOf("{")));
-  assert.deepEqual(forwardedEnvelope.result.documents.map(({ id }) => id), ["OD-001"]);
+  assert.deepEqual(
+    forwardedEnvelope.result.documents.map(({ id }) => id),
+    ["OD-001"],
+  );
 });
 
 test("catalog preserves reciprocal supersession and resolved-decision evidence", () => {
   const documents = new Map(
-    run(repositoryRoot, "find").result.documents.map(document => [document.id, document]),
+    run(repositoryRoot, "find").result.documents.map((document) => [document.id, document]),
   );
   for (const [predecessorId, successorId] of [
     ["ADR-0006", "ADR-0007"],
@@ -114,11 +159,23 @@ test("new previews and applies every supported type only inside a disposable rep
     const indexPath = join(fixture, "docs/decisions/README.md");
     const indexBefore = await readFile(indexPath, "utf8");
     const adrArgs = [
-      "new", "--type", "adr", "--id", "ADR-0099",
-      "--title", "Disposable Contract Proof", "--owner", "architecture/tooling",
-      "--summary", "Proves unified authoring in an isolated fixture.",
-      "--related", "ADR-0001", "--blocked-by", "OD-002",
-      "--code-anchor", '{"enforcement":"advisory","pattern":"package.json"}',
+      "new",
+      "--type",
+      "adr",
+      "--id",
+      "ADR-0099",
+      "--title",
+      "Disposable Contract Proof",
+      "--owner",
+      "architecture/tooling",
+      "--summary",
+      "Proves unified authoring in an isolated fixture.",
+      "--related",
+      "ADR-0001",
+      "--blocked-by",
+      "OD-002",
+      "--code-anchor",
+      '{"enforcement":"advisory","pattern":"package.json"}',
     ];
 
     const preview = run(fixture, ...adrArgs, "--dry-run");
@@ -132,7 +189,9 @@ test("new previews and applies every supported type only inside a disposable rep
     assert.equal(stale.status, 1, stale.stderr || stale.stdout);
     const staleEnvelope = JSON.parse(stale.stdout);
     assert.equal(staleEnvelope.outcome, "authority-stale");
-    assert.ok(staleEnvelope.diagnostics.some(({ ruleId }) => ruleId === "docs.new.plan-digest-stale"));
+    assert.ok(
+      staleEnvelope.diagnostics.some(({ ruleId }) => ruleId === "docs.new.plan-digest-stale"),
+    );
     assert.equal(await exists(adrTarget), false);
     assert.equal(await readFile(indexPath, "utf8"), indexBefore);
 
@@ -145,29 +204,57 @@ test("new previews and applies every supported type only inside a disposable rep
     assert.equal(repeated.result.writeState, "already-applied");
 
     const openDecisionArgs = [
-      "new", "--type", "open-decision", "--id", "OD-099",
-      "--title", "Disposable Open Choice", "--owner", "architecture",
-      "--summary", "Proves open decision placement in an isolated fixture.",
+      "new",
+      "--type",
+      "open-decision",
+      "--id",
+      "OD-099",
+      "--title",
+      "Disposable Open Choice",
+      "--owner",
+      "architecture",
+      "--summary",
+      "Proves open decision placement in an isolated fixture.",
     ];
-    const openDecision = run(
-      fixture,
-      ...openDecisionArgs, "--dry-run",
+    const openDecision = run(fixture, ...openDecisionArgs, "--dry-run");
+    assert.equal(
+      openDecision.result.documentPath,
+      "docs/open-decisions/OD-099-disposable-open-choice.md",
     );
-    assert.equal(openDecision.result.documentPath, "docs/open-decisions/OD-099-disposable-open-choice.md");
     assert.equal(openDecision.result.reachability.indexPath, "docs/open-decisions/README.md");
-    const appliedOpenDecision = run(fixture, ...openDecisionArgs, "--apply", "--expect", openDecision.result.planDigest);
+    const appliedOpenDecision = run(
+      fixture,
+      ...openDecisionArgs,
+      "--apply",
+      "--expect",
+      openDecision.result.planDigest,
+    );
     assert.equal(appliedOpenDecision.result.writeState, "applied");
     assert.equal(await exists(join(fixture, appliedOpenDecision.result.documentPath)), true);
 
     const architectureArgs = [
-      "new", "--type", "architecture", "--id", "architecture.disposable",
-      "--title", "Disposable Architecture", "--owner", "architecture/tooling",
-      "--summary", "Proves architecture placement in an isolated fixture.",
+      "new",
+      "--type",
+      "architecture",
+      "--id",
+      "architecture.disposable",
+      "--title",
+      "Disposable Architecture",
+      "--owner",
+      "architecture/tooling",
+      "--summary",
+      "Proves architecture placement in an isolated fixture.",
     ];
     const architecture = run(fixture, ...architectureArgs, "--dry-run");
     assert.equal(architecture.result.documentPath, "docs/architecture/disposable-architecture.md");
     assert.equal(architecture.result.reachability.indexPath, "docs/README.md");
-    const appliedArchitecture = run(fixture, ...architectureArgs, "--apply", "--expect", architecture.result.planDigest);
+    const appliedArchitecture = run(
+      fixture,
+      ...architectureArgs,
+      "--apply",
+      "--expect",
+      architecture.result.planDigest,
+    );
     assert.equal(appliedArchitecture.result.writeState, "applied");
     assert.equal(await exists(join(fixture, appliedArchitecture.result.documentPath)), true);
 
@@ -175,7 +262,10 @@ test("new previews and applies every supported type only inside a disposable rep
       assert.equal(result.reachability.state, "manual-required");
       assert.equal(typeof result.reachability.markdownLink, "string");
       const index = join(fixture, result.reachability.indexPath);
-      await writeFile(index, `${await readFile(index, "utf8")}\n- ${result.reachability.markdownLink}\n`);
+      await writeFile(
+        index,
+        `${await readFile(index, "utf8")}\n- ${result.reachability.markdownLink}\n`,
+      );
     }
     const context = run(fixture, "context", "--text", "disposable");
     assert.equal(context.command, "docs.context");
@@ -200,7 +290,10 @@ test("required code anchors pass when reachable and fail closed when stale", asy
     const index = await readFile(indexPath, "utf8");
     await writeFile(
       indexPath,
-      index.replace("architecture/foundation/docs-protocol.yaml", "packages/missing-required-anchor.ts"),
+      index.replace(
+        "architecture/foundation/docs-protocol.yaml",
+        "packages/missing-required-anchor.ts",
+      ),
       "utf8",
     );
     const stale = execute(fixture, "check");
@@ -218,22 +311,47 @@ test("invalid owner, metadata, and duplicate identity fail without mutation", as
   try {
     const target = join(fixture, "docs/decisions/0098-invalid-proof.md");
     const common = [
-      "new", "--type", "adr", "--id", "ADR-0098", "--title", "Invalid Proof",
-      "--summary", "Must fail without publishing a document.", "--dry-run",
+      "new",
+      "--type",
+      "adr",
+      "--id",
+      "ADR-0098",
+      "--title",
+      "Invalid Proof",
+      "--summary",
+      "Must fail without publishing a document.",
+      "--dry-run",
     ];
 
     const owner = execute(fixture, ...common, "--owner", "unknown-owner");
     assert.notEqual(owner.status, 0);
     assert.equal(await exists(target), false);
 
-    const metadata = execute(fixture, ...common, "--owner", "architecture", "--metadata", "unknown=true");
+    const metadata = execute(
+      fixture,
+      ...common,
+      "--owner",
+      "architecture",
+      "--metadata",
+      "unknown=true",
+    );
     assert.notEqual(metadata.status, 0);
     assert.equal(await exists(target), false);
 
     const duplicate = execute(
       fixture,
-      "new", "--type", "adr", "--id", "ADR-0001", "--title", "Duplicate",
-      "--owner", "architecture", "--summary", "Must reject duplicate identity.", "--dry-run",
+      "new",
+      "--type",
+      "adr",
+      "--id",
+      "ADR-0001",
+      "--title",
+      "Duplicate",
+      "--owner",
+      "architecture",
+      "--summary",
+      "Must reject duplicate identity.",
+      "--dry-run",
     );
     assert.notEqual(duplicate.status, 0);
     assert.equal(await exists(target), false);
@@ -242,13 +360,18 @@ test("invalid owner, metadata, and duplicate identity fail without mutation", as
   }
 });
 
-
 test("portable adoption rejects a Skill without executable context guidance", async () => {
   const fixture = await disposableRepository();
   try {
     const skillPath = join(fixture, ".agents/skills/docs-authoring/SKILL.md");
     const skill = await readFile(skillPath, "utf8");
-    await writeFile(skillPath, skill.split("\n").filter(line => !line.includes("docs-protocol context")).join("\n"));
+    await writeFile(
+      skillPath,
+      skill
+        .split("\n")
+        .filter((line) => !line.includes("docs-protocol context"))
+        .join("\n"),
+    );
     const result = execute(fixture, "check");
     assert.equal(result.status, 1, result.stderr || result.stdout);
     const envelope = JSON.parse(result.stdout);

@@ -28,36 +28,52 @@ export function createDocsOwnerCatalog({ loadDocuments, loadAcceptedDecisionAuth
         loadDocuments(),
         loadAcceptedDecisionAuthority?.(),
       ]);
-      if (authority.status === "rejected") throw authority.reason;
-      if (documents.status === "rejected") throw documents.reason;
+      if (authority.status === "rejected") {
+        throw authority.reason;
+      }
+      if (documents.status === "rejected") {
+        throw documents.reason;
+      }
       return { documents: documents.value, authority: authority.value };
     })();
     return authoritySnapshotExecution;
   };
   return {
-    resolve: async ownerDocumentId => {
+    resolve: async (ownerDocumentId) => {
       const { documents: allDocuments, authority } = await authoritySnapshot();
-      const matches = allDocuments.filter(document => document.id === ownerDocumentId);
-      if (matches.length !== 1
-        || (authority !== undefined && !statusCrossChecksWithAcceptedLedger(
-          matches[0],
-          authority.acceptedEntries,
-          authority.authoritativeStatuses,
-        ))) return undefined;
+      const matches = allDocuments.filter((document) => document.id === ownerDocumentId);
+      if (
+        matches.length !== 1 ||
+        (authority !== undefined &&
+          !statusCrossChecksWithAcceptedLedger(
+            matches[0],
+            authority.acceptedEntries,
+            authority.authoritativeStatuses,
+          ))
+      ) {
+        return undefined;
+      }
       return normalizeOwnerEvidence(allDocuments, matches[0]);
     },
     listEffective: async () => {
       const { documents: allDocuments, authority } = await authoritySnapshot();
       return allDocuments
-        .filter(document => authority === undefined || statusCrossChecksWithAcceptedLedger(
-          document,
-          authority.acceptedEntries,
-          authority.authoritativeStatuses,
-        ))
-        .map(document => normalizeOwnerEvidence(allDocuments, document))
-        .filter(document => document.type === "adr"
-          && document.status === "accepted"
-          && document.supersededBy.length === 0);
+        .filter(
+          (document) =>
+            authority === undefined ||
+            statusCrossChecksWithAcceptedLedger(
+              document,
+              authority.acceptedEntries,
+              authority.authoritativeStatuses,
+            ),
+        )
+        .map((document) => normalizeOwnerEvidence(allDocuments, document))
+        .filter(
+          (document) =>
+            document.type === "adr" &&
+            document.status === "accepted" &&
+            document.supersededBy.length === 0,
+        );
     },
   };
 }

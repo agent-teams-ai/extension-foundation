@@ -21,12 +21,16 @@ const STANDARD = {
   sha256: "851653f96643cf0466b67ab22963661976b00de44840fa3144a48a8c054f95fa",
 };
 const SCOPE = {
-  productionRoots: ["packages"], moduleRoots: ["packages/*"],
-  applicationRoots: [], excludedRoots: ["architecture", "docs", "tests", "fixtures"],
+  productionRoots: ["packages"],
+  moduleRoots: ["packages/*"],
+  applicationRoots: [],
+  excludedRoots: ["architecture", "docs", "tests", "fixtures"],
 };
 const MAPPING = {
-  sourceRoot: "src", featureRoot: "src/features/<feature>",
-  moduleComposition: "src/index.ts", publicEntrypoint: "src/index.ts",
+  sourceRoot: "src",
+  featureRoot: "src/features/<feature>",
+  moduleComposition: "src/index.ts",
+  publicEntrypoint: "src/index.ts",
   testRoot: "test/features/<feature>",
 };
 const AUTHORITIES = [
@@ -48,22 +52,31 @@ const ENFORCEMENT = {
   dependencies: "architecture:source-dependencies:check",
 };
 const PENDING = [
-  "valid-feature-per-adopted-role", "role-specific-layer-direction",
-  "cross-feature-deep-import-rejection", "undeclared-edge-and-cycle-rejection",
-  "empty-layer-rejection", "owned-module-exception-rejection",
+  "valid-feature-per-adopted-role",
+  "role-specific-layer-direction",
+  "cross-feature-deep-import-rejection",
+  "undeclared-edge-and-cycle-rejection",
+  "empty-layer-rejection",
+  "owned-module-exception-rejection",
 ];
 const LEAVES = {
-  "architecture:feature-module-profile": "node architecture/checks/feature-module-standard-profile.mjs",
-  "architecture:feature-module-profile:test": "node --test tests/feature-module-standard-profile.test.mjs",
+  "architecture:feature-module-profile":
+    "node architecture/checks/feature-module-standard-profile.mjs",
+  "architecture:feature-module-profile:test":
+    "node --test tests/feature-module-standard-profile.test.mjs",
   "architecture:topology:check": "node architecture/checks/package-topology.mjs",
-  "architecture:source-dependencies:check": "agent-teams-foundation check architecture.source-dependencies",
+  "architecture:source-dependencies:check":
+    "agent-teams-foundation check architecture.source-dependencies",
   // Bind the complete selected entry list: the installed runner protects identities
   // only in selected files, so dropping a file must fail this consumer gate.
-  "evidence:custody:test": "agent-teams-node-test --contract architecture/foundation/required-node-tests.json -- tests/evidence-custody.test.mjs",
+  "evidence:custody:test":
+    "agent-teams-node-test --contract architecture/foundation/required-node-tests.json -- tests/evidence-custody.test.mjs",
 };
 
 function requireCondition(condition, message) {
-  if (!condition) throw new Error(`FMS profile: ${message}`);
+  if (!condition) {
+    throw new Error(`FMS profile: ${message}`);
+  }
 }
 
 function requireEqual(actual, expected, name) {
@@ -74,18 +87,50 @@ function requireChain(script, required, name) {
   // This repository uses fail-fast && chains. Do not mistake echo, comments,
   // OR fallbacks or a substring for execution of a blocking command.
   requireCondition(typeof script === "string", `${name} is missing`);
-  const commands = script.split("&&").map(command => command.trim());
-  requireCondition(commands.every(command => /^(?:pnpm [a-z][\w:-]*|node --import="data:text\/javascript,process\.env\.PACKAGE_POLICY_TEST_MODE='(?:fast|full)'" --test --test-concurrency=1 (?:tests\/[\w.-]+\.test\.mjs ?)+)$/u.test(command)),
-    `${name} must be an explicit fail-fast command chain`);
-  requireCondition(required.every(command => commands.includes(`pnpm ${command}`)),
-    `${name} omits a required command`);
+  const commands = script.split("&&").map((command) => command.trim());
+  requireCondition(
+    commands.every((command) =>
+      /^(?:pnpm [a-z][\w:-]*|node --import="data:text\/javascript,process\.env\.PACKAGE_POLICY_TEST_MODE='(?:fast|full)'" --test --test-concurrency=1 (?:tests\/[\w.-]+\.test\.mjs ?)+)$/u.test(
+        command,
+      ),
+    ),
+    `${name} must be an explicit fail-fast command chain`,
+  );
+  requireCondition(
+    required.every((command) => commands.includes(`pnpm ${command}`)),
+    `${name} omits a required command`,
+  );
 }
 
-export function validateFeatureModuleProfile({ profile, manifest, catalog, document, index, navigation, sourcePolicy, workflow }) {
-  requireEqual(Object.keys(profile).sort(), [
-    "schemaVersion", "standard", "owner", "status", "profileDocument", "scope", "mapping",
-    "localExtensions", "authorities", "deviations", "conformance", "enforcement", "pendingProductionEvidence",
-  ].sort(), "profile fields");
+export function validateFeatureModuleProfile({
+  profile,
+  manifest,
+  catalog,
+  document,
+  index,
+  navigation,
+  sourcePolicy,
+  workflow,
+}) {
+  requireEqual(
+    Object.keys(profile).sort(),
+    [
+      "schemaVersion",
+      "standard",
+      "owner",
+      "status",
+      "profileDocument",
+      "scope",
+      "mapping",
+      "localExtensions",
+      "authorities",
+      "deviations",
+      "conformance",
+      "enforcement",
+      "pendingProductionEvidence",
+    ].sort(),
+    "profile fields",
+  );
   requireEqual(profile.schemaVersion, 1, "schema version");
   requireEqual(profile.standard, STANDARD, "standard identity");
   requireEqual(profile.owner, "architecture", "owner");
@@ -96,7 +141,11 @@ export function validateFeatureModuleProfile({ profile, manifest, catalog, docum
   requireEqual(profile.localExtensions, LOCAL_EXTENSIONS, "local extensions");
   requireEqual(profile.authorities, AUTHORITIES, "authorities");
   requireEqual(profile.deviations, [], "deviations");
-  requireEqual(profile.conformance, { structural: "not-claimed", runtime: "not-claimed" }, "conformance");
+  requireEqual(
+    profile.conformance,
+    { structural: "not-claimed", runtime: "not-claimed" },
+    "conformance",
+  );
   requireEqual(profile.enforcement, ENFORCEMENT, "enforcement");
   requireEqual(profile.pendingProductionEvidence, PENDING, "pending production evidence");
   requireEqual(catalog, { version: 1, packages: [] }, "pre-production catalog");
@@ -106,40 +155,78 @@ export function validateFeatureModuleProfile({ profile, manifest, catalog, docum
   requireChain(manifest.scripts?.check, ["architecture:check"], "check");
   requireChain(manifest.scripts?.["check:fast"], ["architecture:check:fast"], "check:fast");
   for (const gate of ["architecture:check", "architecture:check:fast"]) {
-    requireChain(manifest.scripts?.[gate], [...Object.values(ENFORCEMENT), "evidence:custody:test"], gate);
+    requireChain(
+      manifest.scripts?.[gate],
+      [...Object.values(ENFORCEMENT), "evidence:custody:test"],
+      gate,
+    );
   }
   const ci = workflow?.jobs?.check;
-  requireCondition(ci?.if === undefined && ci?.["continue-on-error"] === undefined
-    && ci?.steps?.some(step => step.run === "pnpm check" && step.if === undefined
-      && step["continue-on-error"] === undefined), "CI check job must run the blocking full gate");
+  requireCondition(
+    ci?.if === undefined &&
+      ci?.["continue-on-error"] === undefined &&
+      ci?.steps?.some(
+        (step) =>
+          step.run === "pnpm check" &&
+          step.if === undefined &&
+          step["continue-on-error"] === undefined,
+      ),
+    "CI check job must run the blocking full gate",
+  );
   const metadata = /^---\r?\n([\s\S]*?)\r?\n---/u.exec(document)?.[1];
   const header = metadata === undefined ? undefined : parseYaml(metadata);
-  requireCondition(header?.id === "architecture.feature-module-standard"
-    && header?.type === "architecture" && header?.status === "accepted"
-    && header?.owner === "architecture", "document metadata is not the adopted profile");
+  requireCondition(
+    header?.id === "architecture.feature-module-standard" &&
+      header?.type === "architecture" &&
+      header?.status === "accepted" &&
+      header?.owner === "architecture",
+    "document metadata is not the adopted profile",
+  );
   for (const value of [STANDARD.sha256, PROFILE_PATH, "pre-production", "not-claimed"]) {
     requireCondition(document.includes(value), `document omits ${value}`);
   }
-  requireCondition(index.includes("(architecture/feature-module-standard-profile.md)"), "docs index must link the profile");
-  requireCondition(navigation.includes(`(${PROFILE_DOCUMENT})`), "agent navigation must link the profile");
-  for (const path of ["architecture/checks/feature-module-standard-profile.mjs", "tests/feature-module-standard-profile.test.mjs"]) {
-    const matches = sourcePolicy.boundaries.filter(boundary => boundary.roots.includes(path));
-    requireCondition(matches.length === 1 && matches[0].dependencyMode === "development"
-      && matches[0].entrypoints.includes(path), `${path} must remain a governed development entrypoint`);
+  requireCondition(
+    index.includes("(architecture/feature-module-standard-profile.md)"),
+    "docs index must link the profile",
+  );
+  requireCondition(
+    navigation.includes(`(${PROFILE_DOCUMENT})`),
+    "agent navigation must link the profile",
+  );
+  for (const path of [
+    "architecture/checks/feature-module-standard-profile.mjs",
+    "tests/feature-module-standard-profile.test.mjs",
+  ]) {
+    const matches = sourcePolicy.boundaries.filter((boundary) => boundary.roots.includes(path));
+    requireCondition(
+      matches.length === 1 &&
+        matches[0].dependencyMode === "development" &&
+        matches[0].entrypoints.includes(path),
+      `${path} must remain a governed development entrypoint`,
+    );
   }
 }
 
 export async function checkFeatureModuleProfile(root) {
-  const read = path => readFile(join(root, path), "utf8");
-  const [profile, manifest, catalog, document, index, navigation, sourcePolicy, workflow] = await Promise.all([
-    read(PROFILE_PATH), read("package.json"), read("architecture/package-catalog.json"),
-    read(PROFILE_DOCUMENT), read("docs/README.md"), read("AGENTS.md"),
-    read("architecture/foundation/source-dependencies.yaml"),
-    read(".github/workflows/ci.yml"),
-  ]);
+  const read = (path) => readFile(join(root, path), "utf8");
+  const [profile, manifest, catalog, document, index, navigation, sourcePolicy, workflow] =
+    await Promise.all([
+      read(PROFILE_PATH),
+      read("package.json"),
+      read("architecture/package-catalog.json"),
+      read(PROFILE_DOCUMENT),
+      read("docs/README.md"),
+      read("AGENTS.md"),
+      read("architecture/foundation/source-dependencies.yaml"),
+      read(".github/workflows/ci.yml"),
+    ]);
   validateFeatureModuleProfile({
-    profile: parseStrictJson(profile), manifest: parseStrictJson(manifest),
-    catalog: parseStrictJson(catalog), document, index, navigation,
+    profile: parseStrictJson(profile),
+    manifest: parseStrictJson(manifest),
+    catalog: parseStrictJson(catalog),
+    document,
+    index,
+    navigation,
     sourcePolicy: parseYaml(sourcePolicy),
     workflow: parseYaml(workflow),
   });
@@ -149,7 +236,9 @@ export async function checkFeatureModuleProfile(root) {
 if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     await checkFeatureModuleProfile(fileURLToPath(new URL("../..", import.meta.url)));
-    console.log("Feature Module Standard profile passed (pre-production; conformance not claimed).");
+    console.log(
+      "Feature Module Standard profile passed (pre-production; conformance not claimed).",
+    );
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;
