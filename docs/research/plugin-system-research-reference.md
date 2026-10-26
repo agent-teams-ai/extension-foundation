@@ -27,8 +27,11 @@ criticized, minimal realistic experiments before substantial implementation.
 The first checkpoint preserves selected questions and plans. The local results
 now retain a reproduced admission hole, a corrected queued seal, actual cleanup
 and process observations, loading counterexamples and an independently corrected
-async example. Native restore is separately staged; the exact Drizzle baseline
-has a newly observed strict declaration blocker.
+async example. An isolated native PostgreSQL restore now passes for the retained
+real feature, with raw backup bytes, restored authority and physical cleanup
+evidence. The exact Drizzle baseline has a strict declaration blocker; its
+migration scenarios remain unexecuted. Final independent criticism keeps the
+next step at the actual product receiver/artifact/custody integration.
 
 Design a demonstrated shared replacement concern as an independently useful
 library from its first real delivery. First subtract the accepted local kernel

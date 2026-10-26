@@ -8,7 +8,7 @@ summary: Question-led follow-up experiments for plugin loading, restart admissio
 
 # Plugin Boundary and Failure Experiments
 
-<!-- cspell:words PGDG libpq -->
+<!-- cspell:words PGDG libpq dumpall -->
 
 ## Scope and authority
 
@@ -28,7 +28,8 @@ still owns the unresolved implementation choices.
 The first checkpoint, `a19cb28`, records reviewed questions and plans. The next
 checkpoint adds the local executions below. Original failures, independent
 criticism and the later correction of an insufficient asynchronous example remain
-separate evidence. Native database restore is still awaiting isolated execution.
+separate evidence. The isolated native restore subsequently passed at `b3c51fc`;
+its exact artifact and independent result reviews are retained below.
 
 ## Evidence and lessons
 
@@ -50,6 +51,8 @@ ESM refresh and complete hashing as a substitute for custody of mutable paths.
 | PB-02 dependency bytes and loading | **4 groups completed** | Helper mutation, root-only cache refresh and verified-receipt/path-replacement each expose a different coherence limit; unchanged separate artifacts work in fresh processes. |
 | PB-03 execution placement | **5 trials completed; 1 import-failure control reused** | Worker/process placement preserves the observed host response under a pure JavaScript loop; physical retirement and earlier file effects remain distinct. The original async row has a narrower interpretation below. |
 | Actual awaited-initializer refinement | **1 passed** | The retained startup really awaits initialization, answers independent pings while pending, and reaches readiness only after the same initializer is released and returns. |
+| SR1 native logical restore | **1 end-to-end flow; 4 named checkpoints passed** | An actual feature restores into a different PostgreSQL cluster after source shutdown; missing roles fail, restored runtime authority remains enforced, retry is idempotent and new work adds one outbox event. |
+| SR2 real-library migration | **Strict declaration gate failed; runtime unexecuted** | The exact accepted Drizzle RC baseline has 47 vendor declaration diagnostics under this profile; neither contention nor rollback behavior was measured. |
 
 These are different cases and controls, not a combined reliability percentage.
 The three red assertions remain failed tests in raw output. No expected-failure
@@ -164,6 +167,58 @@ The restore fixture has an independent strict profile and passes that source
 gate. Its dependency set includes `@types/node` 26.6.5, unlike the earlier
 lightweight fixture's 24.19.1. A successful compiler result is not a restore pass.
 
+### Native restore closed the previously unqualified single-database boundary
+
+The [actual isolated run](https://github.com/agent-teams-ai/extension-foundation/actions/runs/40407349905)
+executed strict SR1 source on Ubuntu 24.04, Node 26.11.1, TypeScript 7.0.2 and
+pnpm 11.18.0 as UID 1001. The exact server payload was
+`@embedded-postgres/linux-x64@18.4.0-beta.17`; separately acquired, signed-index
+bound PGDG 18.4 helpers supplied `pg_dump`, `pg_restore`, `pg_dumpall` and `psql`.
+The launcher payload is not claimed to include these helpers.
+
+The unchanged real Agent Context feature created three manifests and three
+outbox identities across two tenants. The retained logical archive is 8,521
+bytes; global roles are a separate 682-byte file. Source shutdown completed
+before the target postmaster started. The two clusters have different system
+identifiers and data directories. The target received no repair migration,
+grant or policy patch after restore.
+
+Restoring without the source owner role failed with exit 1. The driver separately
+asserted absence of the partially created feature schema and tables. Restoring
+the captured roles and the same archive then preserved facts, fingerprints,
+outbox identities, ownership, grants and forced RLS. Exact `createdAt: '-1'`
+survived as `1969-12-31 23:59:59.999999`; the large decimal text marker also
+survived unchanged.
+
+Target catalog equality is an executed SQL assertion in the retained source.
+The JSON field named `originalCatalog` repeats the source catalog; it is not a
+separately retained raw target-catalog snapshot. The independent critic caught
+that evidence-strength distinction, and the root receipt records the correction.
+
+Direct SQL used the restored non-superuser, non-bypass, non-inheriting runtime
+role with no memberships. Four effective INSERT/UPDATE privileges were true,
+while four foreign writes produced actual RLS-specific errors. Own rows remained
+visible, foreign rows were absent and DDL denial was recorded separately.
+Public reads worked, two retries of the original identity added no event, and
+one new manifest added exactly one new outbox identity. These are the preserved
+feature's semantics, not a generic exactly-once side-effect guarantee.
+
+Both postmasters exited normally; independent status checks reported stopped,
+native absence was asserted and both registered owned roots were removed. No
+native command reached its deadline, and the outer command exited 0. The optional
+older-major helper comparison was **unavailable**, not passed. SR2 was neither
+emitted nor run.
+
+This qualifies the measured logical backup/restore path for one synthetic
+application database on the stated Linux toolchain. It does not qualify a whole
+product or Temporal backup, cross-database consistency, production credentials,
+native distribution, cross-OS delivery, power loss or general migration rollback.
+The source-owner review, separate independent native critic and raw archive
+provide the exact observation and retention limits.
+
+Native binary archives are identified by their verified hashes and supplier
+metadata; the result archive does not redistribute those downloaded binaries.
+
 ### Current source and execution identities
 
 Fresh source inspection found EF draft `84f43b9`, GM main `b1866ac` and
@@ -259,6 +314,10 @@ of an existing binary does not qualify its provenance or a new distribution.
 The research does not delete another task's files or substitute older PostgreSQL
 helpers to produce a passing row.
 
+The isolated runner subsequently supplied approximately 91.1 GB of available
+space, so its unchanged 1 GiB guard passed. This resolves execution placement
+for SR1 without reinterpreting the locally blocked guard as a local pass.
+
 The presumed local native payload path proved to contain PostgreSQL 17.10,
 not the planned 18.4. It was not used. The isolated native plan fetches the exact
 historical 18.4 package and separately identified PGDG 18.4 helpers. The retained
@@ -349,6 +408,38 @@ snapshot remain unchanged; later execution evidence must bind the actual
 corrected workflow separately. No native assertion, guard, path or permission
 changed.
 
+### Native results and final criticism
+
+The [native result archive](evidence/native-state-recovery-20261026-results.tar.gz)
+and [machine receipt](evidence/native-state-recovery-20261026-results.json)
+retain the original GitHub artifact ZIP, all 52 extracted evidence files, actual
+job log and run/job/artifact metadata, the exact corrected executed workflow,
+its failed predecessor receipt and independent reviews. They also retain the
+final adoption critic and its scoped alternatives. Start the archive's
+`README.md`; `SHA256SUMS` binds every regular payload file.
+
+GitHub artifact `12689974898` is **146,615 bytes**, SHA-256
+`c005c978e670f44d6ac030ad611278c390be89bd0587796d0c4fabad757b3f2d`.
+Root verified the downloaded ZIP against the GitHub digest, rejected unsafe
+archive member paths and linked the retained dump and globals to the hashes in
+the actual result. Input and earlier local archives remain unchanged. The
+temporary branch-only native workflow is removed after this completed research;
+its exact executed bytes remain in the archive and commit history. Existing
+required repository workflows are unchanged.
+
+At exact native execution commit `b3c51fc`, repository `check`, Node 26,
+Windows/macOS architecture, product sources, CodeQL and the actual trusted
+DocsProtocol route all passed. The retained check receipt still shows the
+existing author-alias identity failure. These observations belong to that
+commit; final documentation publication has its own CI result.
+
+Independent adoption review supports the existing responsibility boundaries and
+the next real product seam. It does not count reviewer agreement as another
+execution. Its highest-value remaining falsifier is the existing verified-path
+replacement witness against the product's **actual** artifact custody: prevent
+substitution or refuse execution before substituted bytes evaluate. Repeating
+the disposable loading matrix cannot prove that missing integration.
+
 ## Open questions and validation
 
 ### Decisions supported by this round
@@ -385,6 +476,15 @@ measurements. Future LOC ranges are incremental, exclude existing libraries and
 domain migration SQL, and have approximately twice the stated range's uncertainty.
 They do not price production distribution, cross-OS delivery or a thousand
 simultaneously active plugins.
+
+The final independent critic estimates the **first real product slice** at
+confidence 8/10, scoped reliability 9/10 after its actual joins qualify and
+complexity 4/10: zero assumed new shared runtime lines, 150–500 product
+integration lines and 600–1,400 qualification lines. This is a provisional
+integration budget, not an authorization or estimate for the whole platform.
+Its optional Temporal increment is separately estimated at 80–220 adapter lines,
+70–230 integration lines and 500–1,100 test lines, with scores 8/9/5. These
+overlapping scopes must not be summed with the individual seams above.
 
 For each selected group, require a concrete falsifier, an independently observed
 boundary, a meaningful control, bounded runtime/resources and exact cleanup.

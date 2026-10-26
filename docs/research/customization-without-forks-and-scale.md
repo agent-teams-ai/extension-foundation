@@ -153,6 +153,15 @@ scalability. New parallel dependency resolution, specialized caches or native
 code need a measured bottleneck before selection. Prefer an ordinary readable
 contract over complex type-level inference that the ecosystem cannot compile.
 
+**Dated supersession, 2026-10-26:** the preceding compiler-blocker observation
+belongs to the older recipe and its 2026-10-22 source snapshot. Current GM uses
+the newer ADR-0041 descriptor-union recipe, with upstream 2026-10-23 qualification
+and a retained bounded repetition at N100/500/1000, eight stages each. See the
+[current validation](static-composition-and-controlled-restart-validation.md)
+and [follow-up](plugin-boundary-and-failure-experiments.md). This supersedes a
+current-blocker reading of that historical sentence; it does not claim a new
+compiler fix, arbitrary type-level API qualification or a thousand active plugins.
+
 ## Concrete author experience to qualify
 
 One external ordinary project and one actual product slice should demonstrate:

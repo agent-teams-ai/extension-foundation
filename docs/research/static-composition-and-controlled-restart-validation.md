@@ -16,6 +16,16 @@ not publish a package, accept a production Host, merge a product decision branch
 or change an immutable accepted ADR. Qualification results remain scoped to
 exact inputs and scenarios.
 
+**Follow-up, 2026-10-26:** the
+[boundary and failure experiments](plugin-boundary-and-failure-experiments.md)
+retain the original stop-admission counterexample and a separately corrected
+receiver copy, loading/coherence counterexamples, an actual awaited initializer
+and a completed native logical restore of the preserved real feature using
+separate PostgreSQL helpers. That limited restore supersedes the earlier
+unavailable-tooling status below within its stated scope. The original archive
+and its red/unavailable observations remain unchanged. Real-library migration
+scenarios remain blocked at the exact Drizzle strict declaration gate.
+
 ## Confirmed direction
 
 1. **Static composition with controlled restart is the baseline.** Choose
