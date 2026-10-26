@@ -8,7 +8,7 @@ summary: Maintained source-backed lessons for module composition, plugin systems
 
 # Plugin System Research Reference
 
-**Current follow-up: 2026-10-25; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
+**Current follow-up: 2026-10-26; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
 module composition, extension ecosystems and production hot replacement. It
 preserves industry experience so future agents can use the same evidence,
 counterexamples and qualification scenarios. Research is not an accepted ADR,
@@ -20,6 +20,12 @@ The owner confirmed static composition with controlled restart and an optional
 Temporal rollout adapter on 2026-10-25. Start with the
 [current validation and authority record](static-composition-and-controlled-restart-validation.md)
 for fresh source pins, executable results, counterexamples and remaining gates.
+
+The [plugin boundary and failure experiments](plugin-boundary-and-failure-experiments.md)
+extend that record with the owner's 2026-10-26 request for independently
+criticized, minimal realistic experiments before substantial implementation.
+The first checkpoint records selected questions and plans; executed findings
+will retain their own sources, negative controls and failure evidence.
 
 Design a demonstrated shared replacement concern as an independently useful
 library from its first real delivery. First subtract the accepted local kernel
