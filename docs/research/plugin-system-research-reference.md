@@ -24,8 +24,11 @@ for fresh source pins, executable results, counterexamples and remaining gates.
 The [plugin boundary and failure experiments](plugin-boundary-and-failure-experiments.md)
 extend that record with the owner's 2026-10-26 request for independently
 criticized, minimal realistic experiments before substantial implementation.
-The first checkpoint records selected questions and plans; executed findings
-will retain their own sources, negative controls and failure evidence.
+The first checkpoint preserves selected questions and plans. The local results
+now retain a reproduced admission hole, a corrected queued seal, actual cleanup
+and process observations, loading counterexamples and an independently corrected
+async example. Native restore is separately staged; the exact Drizzle baseline
+has a newly observed strict declaration blocker.
 
 Design a demonstrated shared replacement concern as an independently useful
 library from its first real delivery. First subtract the accepted local kernel
