@@ -12,9 +12,6 @@ jobs:
     if: github.repository == 'agent-teams-ai/extension-foundation'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    env:
-      NATIVE_ROOT: ${{ runner.temp }}/native-state-recovery
-      EVIDENCE: ${{ runner.temp }}/native-state-recovery-evidence
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1; existing repo pin
         timeout-minutes: 1
@@ -33,6 +30,9 @@ jobs:
         if: always()
         timeout-minutes: 3
         shell: bash
+        env:
+          NATIVE_ROOT: ${{ runner.temp }}/native-state-recovery
+          EVIDENCE: ${{ runner.temp }}/native-state-recovery-evidence
         run: |
           set -euo pipefail
           mkdir -p "$NATIVE_ROOT" "$EVIDENCE"
@@ -47,6 +47,9 @@ jobs:
       - name: Strict SR1 gate and real restore (SR2 blocked)
         timeout-minutes: 5
         shell: bash
+        env:
+          NATIVE_ROOT: ${{ runner.temp }}/native-state-recovery
+          EVIDENCE: ${{ runner.temp }}/native-state-recovery-evidence
         run: |
           set +e
           cd "$NATIVE_ROOT/state-recovery" || exit 1

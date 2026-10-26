@@ -339,6 +339,16 @@ DocsProtocol routes. The existing identity check still fails its author-alias
 comparison. These are observations of that commit; the new evidence/native
 workflow checkpoint must retain its own run results.
 
+The first hosted native workflow failed before scheduling any job. Source review
+identified use of the runner context in job-level environment, which GitHub
+permits only at the relevant step scope. The
+[failure and correction receipt](evidence/native-state-recovery-20261026-workflow-correction.json)
+retains the actual run and empty job list. Both affected variables were moved to
+the consuming steps. The original input archive and its initial reviewed workflow
+snapshot remain unchanged; later execution evidence must bind the actual
+corrected workflow separately. No native assertion, guard, path or permission
+changed.
+
 ## Open questions and validation
 
 ### Decisions supported by this round
