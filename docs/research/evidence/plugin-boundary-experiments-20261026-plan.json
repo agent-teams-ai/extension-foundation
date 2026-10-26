@@ -1,0 +1,26 @@
+{
+  "schema": "plugin-uncertainty-plan/v1",
+  "recorded_at": "2026-10-26T21:10:11.345383+00:00",
+  "status": "reviewed planning snapshot, not execution or adoption evidence",
+  "archive": {
+    "path": "docs/research/evidence/plugin-boundary-experiments-20261026-plan.tar.gz",
+    "files": 10,
+    "bytes": 61437,
+    "sha256": "f277f258b2935cedd4668d1eee88f3701ffab0711bf28e09e0e7775234f83ea3"
+  },
+  "source_heads": {
+    "extension_foundation_draft": "84f43b9db68781474257f8dc0277b4d73de49ebf",
+    "get_modular_main": "b1866ac5328231b7fe1d63ed136e7a905a2facc1",
+    "orchestrator_main": "94a480d004e8e6eaf79507feeae30428d372a3d3",
+    "orchestrator_unmerged_pr90": "0af892165a023a274302f89b47ba514ab2915e59"
+  },
+  "execution_inputs": "Historical fixed public GM0.7.0/Core+Assembly, Resources0.2.1, Conformance0.5.0, Node26.11.1, TypeScript7.0.2; no product pin change",
+  "prior_evidence_sha256": "e16e9cdb74bed1e83ec863b19beea8dd7bfe55567d42b36b35ea58ffd1c6de68",
+  "production_code": 0,
+  "open_conditions": [
+    "Apply mandatory critic refinements before executing each scenario.",
+    "Native PostgreSQL needs qualified helper provenance and sufficient unprivileged disk.",
+    "Prefer actual accepted Drizzle migrator evidence to a self-written illustrative migration procedure.",
+    "No new public SPI, Host, universal runtime or language rewrite is adopted."
+  ]
+}

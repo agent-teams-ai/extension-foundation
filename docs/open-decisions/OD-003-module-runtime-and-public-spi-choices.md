@@ -54,6 +54,17 @@ Foundation package, production graph runtime, or public SPI by implication.
 - Every production host remains subject to the accepted production-host safety
   closure and its own authority and termination evidence.
 
+## Owner-confirmed baseline, 2026-10-25
+
+The owner selected **static composition with controlled restart** as the
+baseline, with an **optional Temporal adapter for the same product-authorized
+operation** where qualified infrastructure and durable coordination justify it.
+The [validation record](../research/static-composition-and-controlled-restart-validation.md)
+separates this confirmed direction, current PostgreSQL/Temporal authority,
+executed scenarios and remaining production qualifications. This resolves the
+baseline-versus-immediate-overlap question; it does not select a public SPI,
+create a second Host authority, publish a package or qualify state migration.
+
 ## Open Choices
 
 ### Public Extension SPI And Compatibility
@@ -101,7 +112,10 @@ request correlation, cancellation transport and conformance fixtures first.
 Consider shared mechanical grant or lifecycle checks only when the same
 invariant is demonstrated across materially different uses. Product permission
 decisions, canonical state and operational authority retain their accepted
-owners; shared code must not become a second coordinator or global registry.
+owners. One product-authorized operation may use neutral reusable driver code;
+shared implementation is not a second authority. It must not create an
+independently advancing second coordinator, duplicate authoritative kernel or
+canonical records, or a global registry.
 
 The discussion should choose the first real uses, the common contract and its
 owner, per-instance state and dependency direction, platform-specific adapters,
@@ -109,6 +123,34 @@ failure guarantees, conformance evidence and bounded implementation estimate.
 Distinguish a narrow reusable contract or test kit from a general Host runtime.
 Do not treat this TODO as approval of a package, public SPI, transport, storage
 engine or production runtime, or as a new blocker for existing static modules.
+
+The **2026-10-22 research follow-up** narrows this discussion:
+
+- Preserve the already accepted independent `@get-modular/lifecycle-kernel`
+  candidate and its release gates. Do not move, rename or reimplement it as an
+  incidental part of choosing a Host adapter.
+- Subtract fitting commodity task/pool/RPC mechanisms first. The
+  [reuse analysis](../research/reusable-generation-mechanisms-and-ownership.md)
+  and [executed adapter experiment](../research/worker-adapter-replacement-experiment.md)
+  distinguish actual closure observations from a generic success result.
+- Design a demonstrated shared concern as a purpose-neutral ordinary library
+  from its first real consumer plus external conformance delivery. Whether a
+  residual mechanism warrants another package or independent repository remains
+  open; a separate repository is not required for package independence.
+- [Package admission](../architecture/overview.md#package-admission), stable
+  public extension SPI publication and Orchestrator's production-adoption gate
+  are separate claims with their own evidence. Do not demand the strongest gate
+  for every ordinary-library experiment or treat weaker evidence as all gates.
+- Evaluate [Temporal](../research/temporal-and-rollout-orchestration.md) as an
+  optional scheduling adapter only for the admitted deployment, outside ordinary
+  invocation. Selective [native implementation](../research/critical-components-and-language-boundaries.md)
+  must improve a named boundary and retain its existing owner.
+
+The next actual owner choice is the first real capability and its availability,
+trust, deployment and replacement-lifetime promise. The bounded trusted request
+cohort remains a candidate; it does not qualify arbitrary streams, UI sessions,
+exclusive resources, hostile plugins or state migration. The research does not
+resolve this open decision.
 
 ### Production Hosts And Invocation Protocols
 
@@ -132,6 +174,16 @@ identity required by ADR-0011. Product migrations and canonical product state
 do not move into Foundation.
 
 ## Required Evidence
+
+The maintained [plugin research reference](../research/plugin-system-research-reference.md)
+collects industry evidence and counterexamples. The
+[hot-reload proposal](../research/hot-reload-and-generation-replacement.md)
+defines a bounded candidate qualification target, failure matrix, alternatives
+and estimated scope. The [independent review record](../research/plugin-research-review-and-decision-record.md)
+records corrections and preserves consumer adoption provenance. These are
+research inputs to this open decision, not a resolving decision or authority to
+implement a production Host. Exclusive resources, state migration and emergency
+revocation require their own explicit guarantees.
 
 A resolving decision must name the exact product trigger, owner, implementation
 or public surface, applicable host placements, compatibility and migration

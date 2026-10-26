@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "reviewed-native-sr1-inputs",
+  "date": "2026-10-26",
+  "archive": "native-state-recovery-20261026-inputs.tar.gz",
+  "sha256": "9ee27beb087e17d946724b98fb4dbd01370350910757dfa6faed4b3da7e90740",
+  "bytes": 1099983,
+  "files": 65,
+  "payloadBytes": 1545158,
+  "strictSr1BuildPassed": true,
+  "sourceManifestVerified": true,
+  "pgdgSignatureAndTupleBindingVerified": true,
+  "sr2": "blocked47-vendor-diagnostics-no-emit-no-runtime",
+  "workflowSha256": "6d7bb78f6d771917c9b302d2a6374b2e9e3caa3a943d5c945a193e7c627c21b8",
+  "nativeExecutionStatus": "not-run",
+  "productionLoc": 0,
+  "productIntegrationLoc": 0
+}

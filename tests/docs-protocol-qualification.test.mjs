@@ -32,6 +32,7 @@ test("managed integration owns a data-only v3 qualification contract and externa
     "adr",
     "architecture",
     "open-decision",
+    "research",
   ]);
   assert.deepEqual(
     [...activeProfile.matchAll(/^    - type: ([a-z-]+)$/gmu)].map(([, type]) => type).sort(),

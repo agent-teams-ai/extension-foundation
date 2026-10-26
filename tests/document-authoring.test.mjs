@@ -77,6 +77,7 @@ test("unified info and check expose the declared Extension authority", () => {
     "adr",
     "architecture",
     "open-decision",
+    "research",
   ]);
   assert.deepEqual(info.result.ownerIds, [
     "architecture",
@@ -258,7 +259,34 @@ test("new previews and applies every supported type only inside a disposable rep
     assert.equal(appliedArchitecture.result.writeState, "applied");
     assert.equal(await exists(join(fixture, appliedArchitecture.result.documentPath)), true);
 
-    for (const result of [applied.result, appliedOpenDecision.result, appliedArchitecture.result]) {
+    const researchArgs = [
+      "new",
+      "--type",
+      "research",
+      "--id",
+      "research.disposable",
+      "--title",
+      "Disposable Research",
+      "--owner",
+      "architecture/tooling",
+      "--summary",
+      "Proves that evidence has its own non-normative authoring route.",
+    ];
+    const research = run(fixture, ...researchArgs, "--dry-run");
+    assert.equal(research.result.documentPath, "docs/research/disposable-research.md");
+    assert.equal(research.result.reachability.indexPath, "docs/README.md");
+    const appliedResearch = run(fixture, ...researchArgs, "--apply", "--expect", research.result.planDigest);
+    assert.equal(appliedResearch.result.writeState, "applied");
+    const researchText = await readFile(join(fixture, appliedResearch.result.documentPath), "utf8");
+    assert.match(researchText, /^type: research$/mu);
+    assert.match(researchText, /^status: active$/mu);
+
+    for (const result of [
+      applied.result,
+      appliedOpenDecision.result,
+      appliedArchitecture.result,
+      appliedResearch.result,
+    ]) {
       assert.equal(result.reachability.state, "manual-required");
       assert.equal(typeof result.reachability.markdownLink, "string");
       const index = join(fixture, result.reachability.indexPath);
