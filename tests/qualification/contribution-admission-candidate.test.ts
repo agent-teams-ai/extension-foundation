@@ -88,7 +88,7 @@ test("schema migration requires its own exact state custody evidence", () => {
     evidence, "unexpected-state-schema");
 });
 test("duplicate, unknown, malformed and oversized descriptors fail atomically", () => {
-  rejected(withBundle({ contributions: [...candidate.contributions, candidate.contributions[0]] }),
+  rejected(withBundle({ contributions: [...candidate.contributions, candidate.contributions[0]!] }),
     evidence, "duplicate-contribution");
   rejected(withContribution(0, { kind: "root-shell" }), evidence, "invalid-contribution");
   rejected(withBundle({ contributions: [] }), evidence, "invalid-contribution-count");
