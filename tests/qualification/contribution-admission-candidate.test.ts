@@ -60,6 +60,7 @@ test("verified artifact and installation identity remain separate", () => {
   rejected(withBundle({ artifactDigest: hash("c") }), evidence, "unverified-artifact");
   rejected(candidate, withEvidence({ verifiedArtifactDigest: null }), "unverified-artifact");
   rejected(withBundle({ installationId: "../secret" }), evidence, "invalid-installation-id");
+  rejected(withBundle({ installationId: "b".repeat(129) }), evidence, "invalid-installation-id");
 });
 test("cross-organization install and stale active head fail closed", () => {
   rejected(withBundle({ scope: "org/two" }), evidence, "wrong-authority-scope");
@@ -91,11 +92,21 @@ test("duplicate, unknown, malformed and oversized descriptors fail atomically", 
   rejected(withBundle({ contributions: [...candidate.contributions, candidate.contributions[0]!] }),
     evidence, "duplicate-contribution");
   rejected(withContribution(0, { kind: "root-shell" }), evidence, "invalid-contribution");
+  rejected(withContribution(0, { id: 44 }), evidence, "invalid-contribution");
+  rejected(withContribution(0, { port: "x".repeat(129) }), evidence, "invalid-contribution");
+  rejected(withBundle({ contributions: null as unknown as CandidateBundle["contributions"] }),
+    evidence, "invalid-contribution-count");
   rejected(withBundle({ contributions: [] }), evidence, "invalid-contribution-count");
   rejected(withBundle({ contributions: Array.from({ length: 65 }, (_, i) => ({
     id: "greeting/tool-" + i, kind: "tool", port: "chat-actions", permission: "greeting.run",
   })) }), evidence, "invalid-contribution-count");
 });
+test("prototype names must not inherit host-grants or throw", () => {
+  const altered = withContribution(0, { id: "constructor" });
+  const ports = { ...evidence.boundPorts, constructor: "tool:chat-actions" };
+  rejected(altered, withEvidence({ boundPorts: ports }), "permission-not-granted");
+});
+
 test("preflight neither calls code nor mutates host-supplied evidence", () => {
   const before = JSON.stringify({ candidate, evidence });
   const first = preflightBundle(candidate, evidence);

@@ -41,6 +41,10 @@ export type Preflight =
 
 const kinds: ReadonlySet<string> = new Set<ContributionKind>(["tool", "skill", "ui", "worker", "state"]);
 const idPattern = /^[a-z][a-z0-9]*(?:[._/-][a-z0-9]+)*$/u;
+const validId = (value: unknown): value is string =>
+  typeof value === "string" && value.length <= 128 && idPattern.test(value);
+const owns = (record: object, key: string): boolean =>
+  Object.prototype.hasOwnProperty.call(record, key);
 
 /** Reject a whole candidate, without partial activation, on the first failed invariant. */
 export function preflightBundle(bundle: CandidateBundle, host: HostAdmissionEvidence): Preflight {
@@ -49,36 +53,39 @@ export function preflightBundle(bundle: CandidateBundle, host: HostAdmissionEvid
       host.currentHeadRevision !== host.expectedHeadRevision) {
     return { ok: false, reason: "stale-active-head" };
   }
-  if (!idPattern.test(bundle.installationId)) return { ok: false, reason: "invalid-installation-id" };
+  if (!validId(bundle.installationId)) return { ok: false, reason: "invalid-installation-id" };
   if (bundle.installationId !== host.installationId) return { ok: false, reason: "wrong-installation" };
   if (!/^sha256:[a-f0-9]{64}$/u.test(bundle.artifactDigest) ||
       bundle.artifactDigest !== host.verifiedArtifactDigest) {
     return { ok: false, reason: "unverified-artifact" };
   }
-  if (bundle.contributions.length === 0 || bundle.contributions.length > 64) {
+  if (!Array.isArray(bundle.contributions) || bundle.contributions.length === 0 || bundle.contributions.length > 64) {
     return { ok: false, reason: "invalid-contribution-count" };
   }
   const seen = new Set<string>();
   for (const c of bundle.contributions) {
-    if (!c || !idPattern.test(c.id) || !idPattern.test(c.port) || !idPattern.test(c.permission) ||
+    if (!c || !validId(c.id) || !validId(c.port) || !validId(c.permission) ||
         !kinds.has(c.kind)) return { ok: false, reason: "invalid-contribution" };
     if (seen.has(c.id)) return { ok: false, reason: "duplicate-contribution" };
     seen.add(c.id);
-    if (host.boundPorts[c.id] !== c.kind + ":" + c.port) {
+    if (!owns(host.boundPorts, c.id) || host.boundPorts[c.id] !== c.kind + ":" + c.port) {
       return { ok: false, reason: "unbound-product-port" };
     }
-    if (!host.effectiveGrants[c.id]?.includes(c.permission)) {
+    if (!owns(host.effectiveGrants, c.id) || !Array.isArray(host.effectiveGrants[c.id]) ||
+        !host.effectiveGrants[c.id].includes(c.permission)) {
       return { ok: false, reason: "permission-not-granted" };
     }
-    if (c.kind === "worker" && host.qualifiedPlacements[c.id] !== "isolated") {
+    if (c.kind === "worker" && (!owns(host.qualifiedPlacements, c.id) ||
+        host.qualifiedPlacements[c.id] !== "isolated")) {
       return { ok: false, reason: "worker-not-isolated" };
     }
-    if (c.kind === "ui" && !["isolated", "trusted-ui"].includes(host.qualifiedPlacements[c.id] ?? "")) {
+    if (c.kind === "ui" && (!owns(host.qualifiedPlacements, c.id) ||
+        !["isolated", "trusted-ui"].includes(host.qualifiedPlacements[c.id] ?? ""))) {
       return { ok: false, reason: "ui-placement-unqualified" };
     }
     if (c.kind === "state") {
-      const approval = host.custodyReceipts[c.id];
-      if (!c.schema || !idPattern.test(c.schema.lineage) ||
+      const approval = owns(host.custodyReceipts, c.id) ? host.custodyReceipts[c.id] : undefined;
+      if (!c.schema || !validId(c.schema.lineage) ||
           !/^sha256:[a-f0-9]{64}$/u.test(c.schema.migrationDigest) ||
           !approval || approval.lineage !== c.schema.lineage ||
           approval.migrationDigest !== c.schema.migrationDigest) {
