@@ -71,8 +71,8 @@ export function preflightBundle(bundle: CandidateBundle, host: HostAdmissionEvid
     if (!owns(host.boundPorts, c.id) || host.boundPorts[c.id] !== c.kind + ":" + c.port) {
       return { ok: false, reason: "unbound-product-port" };
     }
-    if (!owns(host.effectiveGrants, c.id) || !Array.isArray(host.effectiveGrants[c.id]) ||
-        !host.effectiveGrants[c.id].includes(c.permission)) {
+    const grants = owns(host.effectiveGrants, c.id) ? host.effectiveGrants[c.id] : undefined;
+    if (!Array.isArray(grants) || !grants.includes(c.permission)) {
       return { ok: false, reason: "permission-not-granted" };
     }
     if (c.kind === "worker" && (!owns(host.qualifiedPlacements, c.id) ||
