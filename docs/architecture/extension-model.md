@@ -87,6 +87,8 @@ internal even when its design is extension-ready.
 
 ## Comparative Plugin Ideas: Nakama (Non-Normative)
 
+<!-- cspell:words Nakama -->
+
 This is a source-backed **idea list, not an architecture decision or implementation
 commitment**. Nakama's plugin features are useful established patterns, not
 unique technical breakthroughs. Evaluate them critically against a concrete
