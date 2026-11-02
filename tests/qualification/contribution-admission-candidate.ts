@@ -21,6 +21,7 @@ export interface CandidateBundle {
 export interface HostAdmissionEvidence {
   /** Trusted product authority, never a field copied from the plugin manifest. */
   readonly scope: string;
+  readonly installationId: string;
   readonly currentHeadRevision: number;
   readonly expectedHeadRevision: number;
   /** Verified artifact digest from a trusted resolver, not a manifest assertion. */
@@ -49,6 +50,7 @@ export function preflightBundle(bundle: CandidateBundle, host: HostAdmissionEvid
     return { ok: false, reason: "stale-active-head" };
   }
   if (!idPattern.test(bundle.installationId)) return { ok: false, reason: "invalid-installation-id" };
+  if (bundle.installationId !== host.installationId) return { ok: false, reason: "wrong-installation" };
   if (!/^sha256:[a-f0-9]{64}$/u.test(bundle.artifactDigest) ||
       bundle.artifactDigest !== host.verifiedArtifactDigest) {
     return { ok: false, reason: "unverified-artifact" };
@@ -87,5 +89,8 @@ export function preflightBundle(bundle: CandidateBundle, host: HostAdmissionEvid
     }
   }
   // Selection is not invocation permission and does not make the candidate active.
-  return { ok: true, selected: [...bundle.contributions] };
+  const selected = bundle.contributions.map((c) => Object.freeze(
+    c.schema ? { ...c, schema: Object.freeze({ ...c.schema }) } : { ...c },
+  ));
+  return { ok: true, selected: Object.freeze(selected) };
 }

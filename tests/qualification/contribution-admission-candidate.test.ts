@@ -22,6 +22,7 @@ const candidate: CandidateBundle = {
 };
 const evidence: HostAdmissionEvidence = {
   scope: "org/one",
+  installationId: "bundle/one",
   currentHeadRevision: 12,
   expectedHeadRevision: 12,
   verifiedArtifactDigest: hash("a"),
@@ -62,6 +63,7 @@ test("verified artifact and installation identity remain separate", () => {
 });
 test("cross-organization install and stale active head fail closed", () => {
   rejected(withBundle({ scope: "org/two" }), evidence, "wrong-authority-scope");
+  rejected(withBundle({ installationId: "bundle/two" }), evidence, "wrong-installation");
   rejected(candidate, withEvidence({ expectedHeadRevision: 11 }), "stale-active-head");
 });
 test("manifest permission requests cannot become effective grants", () => {
@@ -101,6 +103,11 @@ test("preflight neither calls code nor mutates host-supplied evidence", () => {
   assert.deepEqual(first, second);
   assert.equal(JSON.stringify({ candidate, evidence }), before);
   assert.equal(first.ok, true);
+  if (first.ok) {
+    assert.notStrictEqual(first.selected[0], candidate.contributions[0]);
+    assert.ok(Object.isFrozen(first.selected));
+    assert.ok(Object.isFrozen(first.selected[0]));
+  }
   // This intentionally tests only preflight. It is NOT an execution, sandbox,
   // lifecycle, installation, migration or production Host conformance claim.
 });
