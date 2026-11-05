@@ -19,7 +19,8 @@ a released runtime, a security audit or a performance qualification.
 The [packed public-consumer E2E continuation](packed-extension-consumer-e2e-2026-11-05.md)
 records ten executed public-package scenarios through the unchanged discovery
 use case, independent result criticism and its exact product-level limits.
-The corrected local run passes; four hosted portability lanes remain pending.
+The corrected local run and all four hosted portability lanes pass. Original
+failures, package-manager corrections, strict sources and receipts are retained.
 The earlier `2b10732` checkpoint has completed hosted CI successfully; the
 managed embedded-compiler adoption conflict remains separately recorded.
 

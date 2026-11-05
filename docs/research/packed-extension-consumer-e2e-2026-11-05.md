@@ -10,7 +10,7 @@ summary: Reviewed packed public-contract experiment, actual invocation evidence,
 
 ## Scope and authority
 
-**Observed 2026-11-05. Corrected local execution passed; hosted lanes pending.**
+**Observed 2026-11-05. Corrected local execution and all four hosted lanes passed.**
 This continues the owner's E2E request after the
 [industry and scale review](plugin-industry-and-scale-review-2026-11-05.md).
 The selected scope is **public-package integration E2E** through an unchanged
@@ -163,15 +163,63 @@ No failed result was relabeled as a pass. The consumer inherits the trusted
 parent environment, with nested-test context cleared; this is not a hermetic or
 hostile execution boundary.
 
-### Hosted validation checkpoint
+The [local evidence archive](evidence/packed-consumer-e2e-20261105-local.tar.gz)
+and [member ledger](evidence/packed-consumer-e2e-20261105-local.json) retain
+316 files, 335,181 archive bytes, SHA-256
+`2d3e72a2d4fed1eca193e2365078ea564416ea341ad74bd59d3b7716f0d5522f`.
+Start `LOCAL-EVIDENCE.md`. It includes the original failures, corrected run,
+source/configuration and lock inputs, generated outputs, seven planning/review
+reports, exact staged workflow and completed local documentation checks.
+Its hosted-pending status is preserved as the earlier checkpoint.
 
-A temporary branch-only workflow stages the exact checked input archive outside
-the EF workspace and runs the same finite experiment on Linux Node 24.21.0,
-Linux Node 26.11.1, macOS 15 Node 26.11.1 and Windows 2022 Node 26.11.1.
-These lanes are **pending**, not passed, at this checkpoint. It uses its own
-frozen strict compiler install and does not execute the legacy Foundation CLI.
-Actual completed results and original hosted artifacts will be retained before
-the temporary workflow is removed.
+### Completed hosted validation
+
+[Run 42099097668](https://github.com/agent-teams-ai/extension-foundation/actions/runs/42099097668)
+completed successfully at exact commit
+`11fa2e2450a8aba62823544fc3129318918e9696`. Every lane staged the same verified
+29-file archive outside the EF workspace, performed a frozen strict compiler
+install and invoked the actual E2E command. All retained input files match the
+ledger on all four systems. No legacy Foundation CLI was initialized by this
+experiment; separate existing repository CI retains its own scope.
+
+| Executed platform | Actual Node | Architecture | Named scenarios | Tests including parent | Fail / skip |
+| --- | --- | --- | --- | --- | --- |
+| Ubuntu 24.04 | 24.21.0 | x64 | 10 passed | 11 passed | 0 / 0 |
+| Ubuntu 24.04 | 26.11.1 | x64 | 10 passed | 11 passed | 0 / 0 |
+| macOS 15 | 26.11.1 | arm64 | 10 passed | 11 passed | 0 / 0 |
+| Windows Server 2022 | 26.11.1 | x64 | 10 passed | 11 passed | 0 / 0 |
+
+Each lane records 27 successful child commands and ten fresh scenario children.
+The same ten scenario definitions ran on four platform/runtime combinations;
+this is not forty distinct behavior designs. Actual image versions, original
+artifact ZIPs, their GitHub SHA-256 digests, inner archive digests, job logs and
+per-run receipts are retained in the hosted evidence bundle. The logs use Node's
+spec reporter; the counts do not imply a separate raw TAP artifact. A green upload is
+not substituted for the original successful test-step and whole-job conclusions.
+
+The finite temporary workflow is removed after its completed experiment. Its
+exact executed bytes remain in the archives and commit history; no continuous
+coverage or new required gate is implied by this research. The setup review
+caught pnpm action manifest/version and relative-path traps before publication.
+No OS exception, test-name filtering or weakened assertion was introduced.
+
+The [hosted evidence archive](evidence/packed-consumer-e2e-20261105-hosted.tar.gz)
+and [member ledger](evidence/packed-consumer-e2e-20261105-hosted.json) retain
+33 files, 722,430 archive bytes, SHA-256
+`0e83c4739a323619212b892ff0190bffb4daee737602a9d589d3ddba4250bdc3`.
+Start `HOSTED-EVIDENCE.md`. Both independent hosted critics found no blocking
+discrepancy. Complete child payloads match the corrected local run and all
+hosted lanes after removing only process ID and consumer-root path. The archive
+keeps each original ZIP, selected immediately readable receipts/logs and exact
+workflow; each ZIP contains the full 130-file retained execution tree.
+
+Packed A's file hashes match its retained installed-file inventory on every
+lane. Those are the runner's remote assertions, not a fresh physical inspection
+of remote dependency stores by the critics. Such stores were intentionally
+excluded. A/H unpacked contents match across lanes, while compressed archives
+and B's preserved run-specific development path can differ; their separate
+identities remain recorded. Neither correspondence nor a green run proves
+future executable byte custody.
 
 ### Remaining product boundary
 

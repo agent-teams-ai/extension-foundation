@@ -1,0 +1,266 @@
+{
+  "schemaVersion": 1,
+  "scope": "Completed four-profile public-package integration E2E; not product Host, lifecycle or custody qualification",
+  "archive": "packed-consumer-e2e-20261105-hosted.tar.gz",
+  "sha256": "0e83c4739a323619212b892ff0190bffb4daee737602a9d589d3ddba4250bdc3",
+  "archiveBytes": 722430,
+  "memberCount": 33,
+  "runId": 42099097668,
+  "executionInputCommit": "11fa2e2450a8aba62823544fc3129318918e9696",
+  "status": "passed",
+  "uniqueNamedScenarios": 10,
+  "hostedProfileCount": 4,
+  "hostedScenarioExecutions": 40,
+  "nodePassedIncludingParents": 44,
+  "failed": 0,
+  "skipped": 0,
+  "rows": [
+    {
+      "lane": "linux-node24",
+      "node": "v24.21.0",
+      "platform": "linux",
+      "arch": "X64",
+      "namedScenarios": 10,
+      "commands": 27,
+      "fail": 0,
+      "skip": 0,
+      "receiptPath": "linux-node24/extracted/.runs/run-rmK1NN/receipt.json",
+      "receiptSha256": "0f707d780b339228ac0138b81bd827277b21fdc1cf57aeb1ea975778b22ce826",
+      "archiveSha256": "0b35d1b5dbf9fa700549c115e480fff4903eb7beac8219855bfb2035b8057ab5",
+      "imageLogExcerpt": [
+        "2026-11-05T19:59:27.2999876Z Version: 20261028.624",
+        "2026-11-05T19:59:27.3010801Z Image: ubuntu-24.04",
+        "2026-11-05T19:59:27.3011487Z Version: 20261101.360.1",
+        "2026-11-05T19:59:27.3014817Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261101.360"
+      ],
+      "nodePassIncludingParent": 11
+    },
+    {
+      "lane": "linux-node26",
+      "node": "v26.11.1",
+      "platform": "linux",
+      "arch": "X64",
+      "namedScenarios": 10,
+      "commands": 27,
+      "fail": 0,
+      "skip": 0,
+      "receiptPath": "linux-node26/extracted/.runs/run-ijk7I1/receipt.json",
+      "receiptSha256": "2debf236a9b52e5c955580456f32a6b9ef0e1f0891946506be683fee7a15db53",
+      "archiveSha256": "110e2dd626984ba2ee8817055921177e2e9c973c5235b5c725d60c35af6acb41",
+      "imageLogExcerpt": [
+        "2026-11-05T19:59:27.2008214Z Version: 20261028.624",
+        "2026-11-05T19:59:27.2016250Z Image: ubuntu-24.04",
+        "2026-11-05T19:59:27.2016784Z Version: 20261101.360.1",
+        "2026-11-05T19:59:27.2019170Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261101.360"
+      ],
+      "nodePassIncludingParent": 11
+    },
+    {
+      "lane": "macos-node26",
+      "node": "v26.11.1",
+      "platform": "darwin",
+      "arch": "ARM64",
+      "namedScenarios": 10,
+      "commands": 27,
+      "fail": 0,
+      "skip": 0,
+      "receiptPath": "macos-node26/extracted/.runs/run-m6Wj2v/receipt.json",
+      "receiptSha256": "2c49fd819520a35f2d6433658cac8d837f6800870b6ce112520c8f76fc4ea563",
+      "archiveSha256": "4000d03c4a56240c89c650030627553111abe1d1f20a37b8635771739f7f91a6",
+      "imageLogExcerpt": [
+        "2026-11-05T19:59:31.1515120Z Version: 20261021.618",
+        "2026-11-05T19:59:31.1520520Z Image: macos-15-arm64",
+        "2026-11-05T19:59:31.1520880Z Version: 20261028.0489.1",
+        "2026-11-05T19:59:31.1522730Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-15-arm64%2F20261028.0489"
+      ],
+      "nodePassIncludingParent": 11
+    },
+    {
+      "lane": "windows-node26",
+      "node": "v26.11.1",
+      "platform": "win32",
+      "arch": "X64",
+      "namedScenarios": 10,
+      "commands": 27,
+      "fail": 0,
+      "skip": 0,
+      "receiptPath": "windows-node26/extracted/.runs/run-qmFT27/receipt.json",
+      "receiptSha256": "b616629133f9355448890f3a78fb9d2396c4974e49ddc3222416b7e8171a22e2",
+      "archiveSha256": "7414262d2b582c3ec6e22b18eb3e6ed20b788e8b7d732e3796de1e8312217ceb",
+      "imageLogExcerpt": [
+        "2026-11-05T19:59:28.5650461Z Version: 20261028.624",
+        "2026-11-05T19:59:28.5659047Z Image: windows-2022",
+        "2026-11-05T19:59:28.5659557Z Version: 20261101.353.1",
+        "2026-11-05T19:59:28.5662449Z Image Release: https://github.com/actions/runner-images/releases/tag/win22%2F20261101.353"
+      ],
+      "nodePassIncludingParent": 11
+    }
+  ],
+  "members": [
+    {
+      "path": "HOSTED-EVIDENCE.md",
+      "bytes": 4820,
+      "sha256": "dfce992086ebe384403e9bf73844a0b4440ae049c5ae27fb18121e7331ce62b6"
+    },
+    {
+      "path": "hosted/artifacts.json",
+      "bytes": 3517,
+      "sha256": "093942f271dd20df82d562ca8076ff61c84bd253577c2f4d4435289df7752eb4"
+    },
+    {
+      "path": "hosted/jobs.json",
+      "bytes": 18589,
+      "sha256": "b9cf0100af91b5130179e430d582aedf3819cda20df1866f3b720f305bf22d68"
+    },
+    {
+      "path": "hosted/linux-node24/collection.json",
+      "bytes": 309,
+      "sha256": "2322de3b80b6603ed13604cabe570e5bb80545c4f5f73a139dad8eacd3fa24bf"
+    },
+    {
+      "path": "hosted/linux-node24/extracted/.runs/run-rmK1NN/receipt.json",
+      "bytes": 55368,
+      "sha256": "0f707d780b339228ac0138b81bd827277b21fdc1cf57aeb1ea975778b22ce826"
+    },
+    {
+      "path": "hosted/linux-node24/extracted/e2e.log",
+      "bytes": 1303,
+      "sha256": "a8b89dd4470f1e272b80d035c97b28af1d5d190771f2116ff8af3b4f6ef3e6f3"
+    },
+    {
+      "path": "hosted/linux-node24/extracted/install.log",
+      "bytes": 630,
+      "sha256": "115811be5d2c106a0d5ea950c71b0255c5117b0c993a0de0392d763c0936e50b"
+    },
+    {
+      "path": "hosted/linux-node24/job.log",
+      "bytes": 31779,
+      "sha256": "34fb35e8414f9a6b2de653e3ba0c364156e9aab523a07479cc357eb42df247c8"
+    },
+    {
+      "path": "hosted/linux-node24/original.zip",
+      "bytes": 160411,
+      "sha256": "084db7764983e5f34e0ff161cb1ad01f9138cbf9b5980173a51ce03b1cd8a2ea"
+    },
+    {
+      "path": "hosted/linux-node26/collection.json",
+      "bytes": 309,
+      "sha256": "688c9b94616123120229b8dad803f3639aaf6cdbc28f4cf2d6e4e3052ace84c1"
+    },
+    {
+      "path": "hosted/linux-node26/extracted/.runs/run-ijk7I1/receipt.json",
+      "bytes": 55368,
+      "sha256": "2debf236a9b52e5c955580456f32a6b9ef0e1f0891946506be683fee7a15db53"
+    },
+    {
+      "path": "hosted/linux-node26/extracted/e2e.log",
+      "bytes": 1302,
+      "sha256": "210d18994b69b32f920c6ee8cfe2bc92ae968c88d38ab71d38281f49df2abf66"
+    },
+    {
+      "path": "hosted/linux-node26/extracted/install.log",
+      "bytes": 630,
+      "sha256": "fc4cb43b1e35ea9a113dbbfd3704e6417b132c154b302a2fa7b44fac672b8416"
+    },
+    {
+      "path": "hosted/linux-node26/job.log",
+      "bytes": 31782,
+      "sha256": "0e05d6028b515d1c54354ca738ec9123a09451ec4181d6402fcbf0f32d654945"
+    },
+    {
+      "path": "hosted/linux-node26/original.zip",
+      "bytes": 160272,
+      "sha256": "3e3e614a22abefd7072cd1efc63a6ecd82f936db14ed78b05ae53c63a316e81f"
+    },
+    {
+      "path": "hosted/macos-node26/collection.json",
+      "bytes": 311,
+      "sha256": "f768abe99aa41b0bf6bcbb21097ae03a00b173754ad2732c0b5bbe695f88332a"
+    },
+    {
+      "path": "hosted/macos-node26/extracted/.runs/run-m6Wj2v/receipt.json",
+      "bytes": 55693,
+      "sha256": "2c49fd819520a35f2d6433658cac8d837f6800870b6ce112520c8f76fc4ea563"
+    },
+    {
+      "path": "hosted/macos-node26/extracted/e2e.log",
+      "bytes": 1303,
+      "sha256": "c4fff70881cf86dc49f5443c20aa58a3abed9f499fbd1355a8815aff1cf3bd97"
+    },
+    {
+      "path": "hosted/macos-node26/extracted/install.log",
+      "bytes": 625,
+      "sha256": "38aeeac1af4c236cefc5290cc033075ee8ce9c4c4165a9fdaea97f028fa64643"
+    },
+    {
+      "path": "hosted/macos-node26/job.log",
+      "bytes": 32469,
+      "sha256": "0adc7e6d5b76ff645007eb13d5d90be8dd39aa91fd0f5beac3134d34e9881a8b"
+    },
+    {
+      "path": "hosted/macos-node26/original.zip",
+      "bytes": 160495,
+      "sha256": "f7c53e244beb36fc5265ed584ed0750cb9324936e4269e371438ff91cccc0f06"
+    },
+    {
+      "path": "hosted/run.json",
+      "bytes": 16626,
+      "sha256": "de5dc82c0031e8a170d1c473c4c9d5b165b01569050999633184218306e6675b"
+    },
+    {
+      "path": "hosted/verified-summary.json",
+      "bytes": 3642,
+      "sha256": "3468504a9e78a32850f9a6ce539e5ffd37520d4138d00d82e4d920bbe4894a1e"
+    },
+    {
+      "path": "hosted/windows-node26/collection.json",
+      "bytes": 321,
+      "sha256": "7aeae52f5d7b38e289ef9ac04be1a86236cbdc8beb2a219dc873374fe6cfc9de"
+    },
+    {
+      "path": "hosted/windows-node26/extracted/.runs/run-qmFT27/receipt.json",
+      "bytes": 55897,
+      "sha256": "b616629133f9355448890f3a78fb9d2396c4974e49ddc3222416b7e8171a22e2"
+    },
+    {
+      "path": "hosted/windows-node26/extracted/e2e.log",
+      "bytes": 1266,
+      "sha256": "06da1bf19a0d077b616068e17e0baeacb80d2b9bba3165f708e0a5c3fe2a1cfc"
+    },
+    {
+      "path": "hosted/windows-node26/extracted/install.log",
+      "bytes": 594,
+      "sha256": "1f1098ac8d864a22d3fbbbedb185567d6ed416ff5bc966bf97ad18d23f367037"
+    },
+    {
+      "path": "hosted/windows-node26/job.log",
+      "bytes": 31742,
+      "sha256": "11c797f95b61bdc672c71db486aa573e40581c54d3574e32f7216bf527889c8d"
+    },
+    {
+      "path": "hosted/windows-node26/original.zip",
+      "bytes": 160273,
+      "sha256": "4ab059a176bf1091ffe054b4b092e6c659bd0e0fc202fdd91df46876e13ba30f"
+    },
+    {
+      "path": "hosted/workflow.yml",
+      "bytes": 6381,
+      "sha256": "40feb0f6f51085221627f992931c8865c99c28c406babc56a6a9c3a842d1b5d3"
+    },
+    {
+      "path": "reports/e2e-execution-behavior-review.md",
+      "bytes": 12686,
+      "sha256": "ebdca4a976bc1787667a400edb451a1563640936830eb5564b5f49570e032832"
+    },
+    {
+      "path": "reports/e2e-hosted-artifact-review.md",
+      "bytes": 9513,
+      "sha256": "c3aad2074c243da9c879a281b35868264b39d8f82fde7dd89dcec423ebad2c19"
+    },
+    {
+      "path": "reports/e2e-hosted-behavior-review.md",
+      "bytes": 8988,
+      "sha256": "f9af057c93fe328be0030346f994797e3dd7570e35fcd86c30a7db64076a45ce"
+    }
+  ]
+}
