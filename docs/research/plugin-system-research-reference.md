@@ -16,6 +16,11 @@ a released runtime, a security audit or a performance qualification.
 
 ## Current synthesis
 
+The [packed public-consumer E2E continuation](packed-extension-consumer-e2e-2026-11-05.md)
+records the reviewed next executable slice and its exact product-level limits.
+The earlier `2b10732` checkpoint has completed hosted CI successfully; the
+managed embedded-compiler adoption conflict remains separately recorded.
+
 Start with the [2026-11-05 industry and scale review](plugin-industry-and-scale-review-2026-11-05.md)
 for current agent platforms, three investigator lanes and independent criticism.
 It preserves both real scaling achievements: the supported N1000 finite
