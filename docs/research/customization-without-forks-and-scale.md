@@ -8,6 +8,12 @@ summary: Owned extension points, replacement profiles and author experience for 
 
 # Customization Without Forks and Scale
 
+**Current follow-up, 2026-11-05:** the [industry and scale review](plugin-industry-and-scale-review-2026-11-05.md)
+adds current agent customization mechanisms, bounded dense graph checks and
+1,024 genuinely live scoped receiver instances. It separates these achievements
+from independent-plugin, product-authority, workload and retention qualification.
+The earlier evidence and estimates below retain their original scope.
+
 Research retrieved 2026-10-22. Non-normative. No implementation, benchmark,
 public SPI or thousand-plugin qualification is claimed. Start with the
 [research hub](plugin-system-research-reference.md) and its existing

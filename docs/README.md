@@ -45,6 +45,7 @@ not accept a runtime, publish a package, or replace an approved ADR.
 
 ### Industry evidence and counterexamples
 
+- [Plugin Industry and Scale Review 2026-11-05](research/plugin-industry-and-scale-review-2026-11-05.md)
 - [OpenClaw Plugin and Reload Audit](research/openclaw-plugin-and-reload-audit.md)
 - [Production Reload System Evidence](research/production-reload-system-evidence.md)
 - [Plugin Platform Reload Evidence](research/plugin-platform-reload-evidence.md)

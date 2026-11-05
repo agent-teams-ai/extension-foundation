@@ -10,6 +10,13 @@ summary: Pinned OpenClaw source strengths, limitations, historical repairs and t
 
 **Research date:** 2026-10-21. Primary material retrieved approximately 18:24–18:32 UTC.
 
+**Current comparison, 2026-11-05:** the [industry refresh](plugin-industry-and-scale-review-2026-11-05.md)
+separates current documentation, the newer release and targeted current-main
+source. Ordinary already-captured files, late-demand dependencies and managed
+install snapshots have different guarantees. Preserve this audit's exact pin
+and counterexamples; do not turn them into blanket current-product claims or
+infer a complete immutable dependency closure from source capture alone.
+
 **Canonical repository:** [openclaw/openclaw](https://github.com/openclaw/openclaw), repository ID 1103012935, default branch main; GitHub reports it as a non-fork and points to openclaw.ai.
 **Pinned source:** [33ccaae2f522c3ae299aaf8b195fa166ab536bd8](https://github.com/openclaw/openclaw/commit/33ccaae2f522c3ae299aaf8b195fa166ab536bd8), committed 2026-10-21 18:24:53 UTC. All “current source” statements below mean this SHA, not an unqualified future main. [Repository metadata](https://api.github.com/repos/openclaw/openclaw) and [commit metadata](https://api.github.com/repos/openclaw/openclaw/commits/33ccaae2f522c3ae299aaf8b195fa166ab536bd8) were read directly.
 

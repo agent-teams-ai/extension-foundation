@@ -8,13 +8,23 @@ summary: Maintained source-backed lessons for module composition, plugin systems
 
 # Plugin System Research Reference
 
-**Current follow-up: 2026-10-26; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
+**Current follow-up: 2026-11-05; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
 module composition, extension ecosystems and production hot replacement. It
 preserves industry experience so future agents can use the same evidence,
 counterexamples and qualification scenarios. Research is not an accepted ADR,
 a released runtime, a security audit or a performance qualification.
 
 ## Current synthesis
+
+Start with the [2026-11-05 industry and scale review](plugin-industry-and-scale-review-2026-11-05.md)
+for current agent platforms, three investigator lanes and independent criticism.
+It preserves both real scaling achievements: the supported N1000 finite
+composition/construction recipe and the newer 1,024 simultaneously live scoped
+receiver instances. Dense semantic/depth checks are also retained. These do not
+establish a product fleet's throughput, hostile isolation or long-running
+resource envelope. Current GM main, published npm bytes and Orchestrator's
+ADR-0117 adopted baseline are separate identities. OpenClaw's ordinary captures
+and managed snapshots also require separate source/profile claims.
 
 The owner confirmed static composition with controlled restart and an optional
 Temporal rollout adapter on 2026-10-25. Start with the
@@ -65,6 +75,7 @@ are preserved in the [experiment](worker-adapter-replacement-experiment.md).
 
 | Question | Read next | Decision owner |
 | --- | --- | --- |
+| What do current agent products and current scale evidence change? | [Plugin Industry and Scale Review 2026-11-05](plugin-industry-and-scale-review-2026-11-05.md) | Existing composition, contract, product and execution owners; research is not adoption |
 | How should ordinary modules be declared, composed and tested? | [Current GM authoring guide](https://github.com/agent-teams-ai/get-modular/blob/main/docs/guides/module-authoring.md), [Consumer Module Standard](https://github.com/agent-teams-ai/get-modular/blob/main/docs/architecture/common-assembly.md#consumer-module-standard) | Get Modular semantics; each product's adoption profile |
 | What bounded production hot-reload profile is worth qualifying first? | [Hot Reload and Generation Replacement](hot-reload-and-generation-replacement.md) | Product Host; EF [OD-003](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md) and product lifecycle decision |
 | Can replacement be an ordinary reusable library, and which mechanics already exist? | [Reusable Generation Mechanisms and Ownership](reusable-generation-mechanisms-and-ownership.md) | Existing kernel/execution owners; residual mechanism owner only after its real boundary is shown |
@@ -135,6 +146,7 @@ proposed rejecting scenario.
 | PR-16 | Use durable scheduling at the operation boundary with receiver-enforced epochs | Every call becomes a workflow, or a stale Activity continues advancing a replaced driver | [Temporal analysis](temporal-and-rollout-orchestration.md); scheduling and command receivers |
 | PR-17 | Select native implementation for a demonstrated boundary benefit and full release cost | Rewrite a pure TS state machine because it is critical; treat memory safety as distributed correctness | [Language boundaries](critical-components-and-language-boundaries.md); existing component owner |
 | PR-18 | Define supported customization seams and aggregate capacity scope | Ordinary authors implement Host durability; per-cohort caps hide tenant/replica multiplication or live failed candidates | [Customization and scale](customization-without-forks-and-scale.md), [bounded protocol](hot-reload-and-generation-replacement.md); contract and capacity owners |
+| PR-19 | Separate installed metadata, executable activation and the model-visible tool shortlist | All definitions fill context; token savings hide poor discovery; a cached tool description is treated as a current grant | [Current agent catalog scale](plugin-industry-and-scale-review-2026-11-05.md#agent-facing-catalog-scale-is-a-separate-product-responsibility); product tool/protocol adapter and authorization owner |
 
 ## Qualification target and claims discipline
 
@@ -159,9 +171,9 @@ Caps must name their denominator. A per-cohort generation cap is not a Host or
 tenant aggregate limit; failed preparation retains capacity while its actual
 execution/custody remains unresolved. Sharing execution realms changes failure
 and authority scope, not only cost.
-The current GM qualification and open growth work remain their actual evidence;
-this research does not claim that a thousand-module authoring or runtime profile
-passed. Compare OpenClaw using equivalent scenarios and measured envelopes,
+The current review recognizes the bounded N1000 authoring/construction evidence,
+dense semantic checks and 1,024 live scoped receivers. None is an actual product
+thousand-plugin capacity envelope. Compare OpenClaw using equivalent scenarios and measured envelopes,
 including its existing protections, before making a stronger comparative claim.
 
 **Upstream update observed at 19:14 UTC on 2026-10-21:** GM
@@ -187,6 +199,14 @@ through N1000. The historical source-check-only/compiler-blocker statement
 above belongs to the older recipe and snapshot. It is not a current universal
 N1000 blocker. Fresh bounded repetition is tracked in the validation record;
 neither series establishes active-plugin capacity, RSS or reload retention.
+
+**Current source and consumer correction, 2026-11-05:** GM main now includes
+the live-instance test and later preparation/lifetime fixes, some newer than
+published npm artifacts. Orchestrator accepted ADR-0117 reconciles its actual
+Core/Assembly 0.5.0 baseline and supersedes the old ADR-0110 authoring pin. Read
+the [current authority and evidence tables](plugin-industry-and-scale-review-2026-11-05.md#research-coverage-and-current-authority)
+before treating an older snapshot as current. Historical compiler failures,
+accepted pins and archived runs remain unchanged.
 
 ## Maintenance instructions for future agents
 
