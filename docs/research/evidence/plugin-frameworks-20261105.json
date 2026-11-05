@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "scope": "Dated source research, criticism, corrections and authoring receipts; no architecture adoption or new framework/runtime qualification",
   "researchCut": "2026-11-05 UTC",
-  "createdAt": "2026-11-05T22:31:39.142226+00:00",
+  "createdAt": "2026-11-05T22:45:49.963105+00:00",
   "sourceRevision": "9f5ba60232c19e78022b40dddea71ab3aea1cdea",
   "sourceTree": "bc335bb22d705d2b3387d0b73e96340a39ded168",
   "archive": "plugin-frameworks-20261105.tar.gz",
-  "sha256": "c0cbbe34213b421cc5a05ff526e2e6abb994093959de48b82a91426f5d389374",
-  "archiveBytes": 184762,
-  "memberCount": 45,
+  "sha256": "9fa12b60c726c12910e09775bb1b6da3f44da5fdcae0cc78a807112e89b402bb",
+  "archiveBytes": 189586,
+  "memberCount": 51,
   "researchCoverage": {
     "cases": 14,
     "idBearingSourceRecords": 152,
@@ -45,8 +45,8 @@
   "files": [
     {
       "path": "README.md",
-      "bytes": 3218,
-      "sha256": "404cd5085ff380c26682532379205e4ac42008e313644e4db67aac0c351d32fb"
+      "bytes": 3559,
+      "sha256": "29a0cb5774aadd997139eec1ada8b5900cefcf73e6a6b81653681f7e6e5b18b8"
     },
     {
       "path": "brief.md",
@@ -230,8 +230,8 @@
     },
     {
       "path": "reports/publication-gate-failure-critique.md",
-      "bytes": 6305,
-      "sha256": "624f0b5e809dff991ab52f7b150c808e4cfd8012b7f210712c72fbbf6620a40a"
+      "bytes": 10162,
+      "sha256": "96d290f05793740171db76c0e0d5e3651a4aef8c05dee0f4f134d4bc50baea4d"
     },
     {
       "path": "reports/publication-navigation-check.md",
@@ -250,8 +250,8 @@
     },
     {
       "path": "reports/review-dispositions.md",
-      "bytes": 11065,
-      "sha256": "5e421f3d3fb398e31cf3cb9243bb2fd0ebd35bdd7dcbfd7b09cacdbacdc9b2cb"
+      "bytes": 12052,
+      "sha256": "896346c92298b54883f940e64582c89fac8742a7fb4992867691c90eade9a200"
     },
     {
       "path": "reports/specialist-frameworks-pre-final-critique.md",
@@ -267,6 +267,36 @@
       "path": "reports/specialist-frameworks.md",
       "bytes": 47275,
       "sha256": "492b905a582271e4ddca5f4270338ae6b69a3ba17641d1582d7885da63fbf0a1"
+    },
+    {
+      "path": "verification-create.log",
+      "bytes": 107,
+      "sha256": "e927a09a37efbcd2e01292c3d2ef65caf02289258f99a17cba94daca4f4b6235"
+    },
+    {
+      "path": "verification-full-docs-gate.log",
+      "bytes": 1032,
+      "sha256": "10e27a2ee0643c38574590ce91190a88e6e9ab1c231cc90c6ae9bd0a239a7fa2"
+    },
+    {
+      "path": "verification-inputs.json",
+      "bytes": 941,
+      "sha256": "4d07b773f3c96d52dae98e88aeb1cd2e80a32c8b00069f98e1b64f55260921b6"
+    },
+    {
+      "path": "verification-install.log",
+      "bytes": 980,
+      "sha256": "c081d2c84a4609b1075c6520e66dd623405dc19fb3f1504ba8570416f8771851"
+    },
+    {
+      "path": "verification-session-observation.json",
+      "bytes": 967,
+      "sha256": "ec70d71a8b60a33155f075793399f5a4d3df240b871152c31b112b481c36620d"
+    },
+    {
+      "path": "verification-tree.json",
+      "bytes": 3424,
+      "sha256": "61baab3728aa399ce302d6eb96b2731f8766ba832ac587bcd9f5fe97ba4e3167"
     }
   ],
   "initialFullGate": {
@@ -279,5 +309,18 @@
     "completeLocalInputs": "See first-full-gate-local-inputs.json; the staged tree alone omits a copied untracked tool artifact.",
     "log": "publication-full-docs-gate.log",
     "nextVerification": "One full unchanged gate on final published Git tree in separate clean checkout; result belongs to final publication receipt."
-  }
+  },
+  "cleanVerification": {
+    "outcome": "indeterminate; full local gate unverified",
+    "reportedContractPasses": 4,
+    "terminalSummary": null,
+    "exitCode": null,
+    "cause": "unresolved",
+    "gitTree": "8c6ee173bc10ade8f842177332cb33c6d9723621",
+    "inputs": "verification-inputs.json",
+    "treeReceipt": "verification-tree.json",
+    "log": "verification-full-docs-gate.log",
+    "sessionObservation": "verification-session-observation.json"
+  },
+  "publicationQualification": "Authorized research-only draft push with local full gate unverified; observe existing hosted full gates at actual final commit/tree, retaining both local outcomes. No third local rerun or weaker gate."
 }

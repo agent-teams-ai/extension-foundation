@@ -561,7 +561,7 @@ three additional moving-document observations and separate release metadata.
 Record count is not a number of independent confirmations or a quality score.
 
 The [research and critique archive](evidence/plugin-frameworks-20261105.tar.gz)
-and [member manifest](evidence/plugin-frameworks-20261105.json) retain 45 regular
+and [member manifest](evidence/plugin-frameworks-20261105.json) retain 51 regular
 files: full reports, source ledgers, six research critique reports from four critics,
 review dispositions, publication navigation/failure reviews, initial interpretations and
 actual authoring/preflight logs. The manifest records the archive SHA-256,
@@ -569,7 +569,7 @@ every member's SHA-256 and byte size, task base and policy snapshot identity.
 The exact member set, sizes, digests and three direct ledger copies were verified.
 
 Archive SHA-256:
-`c0cbbe34213b421cc5a05ff526e2e6abb994093959de48b82a91426f5d389374`.
+`9fa12b60c726c12910e09775bb1b6da3f44da5fdcae0cc78a807112e89b402bb`.
 
 The original authoring transaction failed final stable verification after an
 ordinary edit overlapped its create operation. Normal recovery then refused a
@@ -583,9 +583,13 @@ The first full documentation gate subsequently passed seven of eight contract
 tests; a fixture apply exceeded its unchanged 120-second child-process timeout.
 The log, initial Git tree receipt and separate identity of an untracked tool
 artifact copied into that fixture are retained. The cause remains unresolved.
-Final verification uses a separate clean checkout of the intended publication
-tree and the same frozen tools, scripts and timeout. Its result concerns that
-published input, not an identical-input reproduction of the original failure.
+A separate clean checkout with the same frozen tools, scripts and timeout then
+reported four contract passes, but its execution session became unavailable
+without a terminal summary or exit code. That full local result is indeterminate;
+it is not a reproduced assertion failure or a demonstrated environmental cause.
+Both attempts and their distinct inputs are retained. The authorized research
+draft uses the existing hosted full gate at its actual final commit/tree for
+qualification; no third local rerun or weaker gate is introduced.
 
 Preflight verified the bounded documentation context, a complete 84-document
 catalog and zero Markdown/spelling issues across 90 files. Final publication
