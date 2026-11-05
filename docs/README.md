@@ -34,6 +34,7 @@ These source-backed references are evidence and design recommendations. They do
 not accept a runtime, publish a package, or replace an approved ADR.
 
 - [Plugin System Research Reference](research/plugin-system-research-reference.md)
+- [Plugin Research Synthesis and Authority 2026-11-05](research/plugin-research-synthesis-and-authority-2026-11-05.md)
 
 ### Design questions
 
@@ -46,7 +47,8 @@ not accept a runtime, publish a package, or replace an approved ADR.
 ### Industry evidence and counterexamples
 
 - [Plugin Industry and Scale Review 2026-11-05](research/plugin-industry-and-scale-review-2026-11-05.md)
-- [Packed Extension Consumer E2E 2026-11-05](research/packed-extension-consumer-e2e-2026-11-05.md)
+- [Agent Framework Extension Evidence 2026-11-05](research/agent-framework-extension-evidence-2026-11-05.md)
+- [Specialist Plugin Framework Evidence 2026-11-05](research/specialist-plugin-framework-evidence-2026-11-05.md)
 - [OpenClaw Plugin and Reload Audit](research/openclaw-plugin-and-reload-audit.md)
 - [Production Reload System Evidence](research/production-reload-system-evidence.md)
 - [Plugin Platform Reload Evidence](research/plugin-platform-reload-evidence.md)
@@ -55,6 +57,7 @@ not accept a runtime, publish a package, or replace an approved ADR.
 
 ### Executed evidence and independent review
 
+- [Packed Extension Consumer E2E 2026-11-05](research/packed-extension-consumer-e2e-2026-11-05.md)
 - [Static Composition and Controlled Restart Validation](research/static-composition-and-controlled-restart-validation.md)
 - [Plugin Boundary and Failure Experiments](research/plugin-boundary-and-failure-experiments.md)
 

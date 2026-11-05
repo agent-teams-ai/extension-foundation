@@ -29,8 +29,20 @@ snapshots without weakening self-hosted or future air-gapped operation.
 - No guessed global TTL, including a hard-coded 24-hour value, becomes policy.
 - A stale, unknown, or revoked authority state fails according to an explicit
   operating profile and never silently falls back to another catalog.
-- Fully Local Desktop is outside V1. Its future SQLite and offline snapshot
-  adapters must pass the same semantic conformance suite.
+- Catalog snapshot and offline operating profiles remain subject to their own
+  semantic conformance and qualification. This catalog question does not decide
+  a consuming product's release scope or canonical database.
+
+**Scope clarification, 2026-11-05:** Orchestrator's accepted
+[ADR-0114](https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/main/docs/decisions/0114-canonical-backend-stack-and-distributed-role-adoption.md)
+selects native PostgreSQL for local and hosted authority, and
+[ADR-0115](https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/main/docs/decisions/0115-canonical-fully-local-v1-adoption.md)
+requires Fully Local V1. EF's accepted
+[ADR-0003](../decisions/0003-postgresql-canonical-catalog-state-and-signed-snapshots.md)
+retains its original catalog rollout context and possible later SQLite FTS5
+search projection; that is not a SQLite product-authority fallback or evidence
+that offline catalog capabilities are already implemented. Its accepted body is
+unchanged. The security and offline parameters in this record remain open.
 
 ## Options
 

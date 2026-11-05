@@ -1,0 +1,283 @@
+{
+  "schemaVersion": 1,
+  "scope": "Dated source research, criticism, corrections and authoring receipts; no architecture adoption or new framework/runtime qualification",
+  "researchCut": "2026-11-05 UTC",
+  "createdAt": "2026-11-05T22:31:39.142226+00:00",
+  "sourceRevision": "9f5ba60232c19e78022b40dddea71ab3aea1cdea",
+  "sourceTree": "bc335bb22d705d2b3387d0b73e96340a39ded168",
+  "archive": "plugin-frameworks-20261105.tar.gz",
+  "sha256": "c0cbbe34213b421cc5a05ff526e2e6abb994093959de48b82a91426f5d389374",
+  "archiveBytes": 184762,
+  "memberCount": 45,
+  "researchCoverage": {
+    "cases": 14,
+    "idBearingSourceRecords": 152,
+    "additionalMovingDocumentRecords": 3,
+    "specialistResearchers": 2,
+    "independentCritics": 4,
+    "critiqueReports": 6,
+    "agentModel": "gpt-6.1-sol",
+    "agentReasoningEffort": "xhigh",
+    "rootCases": 2,
+    "executedFrameworks": 0,
+    "executedUpstreamTests": 0,
+    "productionLines": 0,
+    "integrationLines": 0,
+    "testLines": 0,
+    "publicationReviews": 2
+  },
+  "policySnapshot": {
+    "path": "quality-standard.md",
+    "canonicalUrl": "https://github.com/agent-teams-ai/.github/blob/main/docs/engineering-quality-standard.md",
+    "blob": "9d4fc54d99249077bf6887be35a59ace1d5547bd",
+    "retrievedAt": "2026-11-05",
+    "status": "historical task context, not current policy authority"
+  },
+  "preflight": {
+    "node": "v24.22.1",
+    "lockfileSha256": "a947cfe3f4d5db4877124f04a822e7bf4d88a98852003d243bb92cd31e136c48",
+    "docsContext": "bounded 8 documents / 32768 bytes; exit 0",
+    "docsCheck": "complete 84-document catalog; valid adoption; exit 0",
+    "docsQuality": "90 files; zero Markdown/spelling issues; exit 0",
+    "doctor": "idle; tool-owned temporary preserved and excluded",
+    "scope": "Successful isolated publication checkout only. Original authoring/recovery failure is preserved separately. Full final gate and remote head validation are recorded with publication."
+  },
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 3218,
+      "sha256": "404cd5085ff380c26682532379205e4ac42008e313644e4db67aac0c351d32fb"
+    },
+    {
+      "path": "brief.md",
+      "bytes": 11344,
+      "sha256": "afc2e53246f8af453d12bbf64388ed48c56702091383518f0dce3e91a45c2e13"
+    },
+    {
+      "path": "docs-doctor-after-authoring.log",
+      "bytes": 705,
+      "sha256": "7cc6556629226f0846c539ecbc8c5a404be96a98743a20109ecf24914121685c"
+    },
+    {
+      "path": "docs-find.log",
+      "bytes": 5457,
+      "sha256": "fd2d3da0ea08973da47b95e733de3316e3b4c32e34e892f7bb629ea0bedc8964"
+    },
+    {
+      "path": "docs-info-initial.log",
+      "bytes": 2784,
+      "sha256": "2d1039785b453eb35959354705198d8300f84566dfb8bd6c4ce8adf9f56d08c3"
+    },
+    {
+      "path": "docs-new-agents.log",
+      "bytes": 2190,
+      "sha256": "31b81b6b14ddd7b11736aeb3912902cf302db33b0b4e7b68d4939445c4d6a638"
+    },
+    {
+      "path": "docs-new-specialists.log",
+      "bytes": 2366,
+      "sha256": "461c98f74aeeedcd226190eba20b8699a627e3535691e7756f3a29aa789371a5"
+    },
+    {
+      "path": "docs-recovery.log",
+      "bytes": 322,
+      "sha256": "876b9b10cd2d6bd089674fa5e8464fea201dbbf47f743d9189616b685bbbcb8f"
+    },
+    {
+      "path": "first-full-gate-local-inputs.json",
+      "bytes": 1038,
+      "sha256": "e00a2b138a5551304366f70014fa5a5bbc4c55dec99fc0767967c9b29bf7ce8a"
+    },
+    {
+      "path": "publication-context.log",
+      "bytes": 2754,
+      "sha256": "a4bfe4cb91bbc8b505269017556abce8e5a10e93889532e4f15ed541b201857e"
+    },
+    {
+      "path": "publication-docs-check.log",
+      "bytes": 190,
+      "sha256": "e4e0b9499891f0e4e4935f084025199b93dba08f4de7c749ae695f2a12d4e565"
+    },
+    {
+      "path": "publication-docs-quality-final.log",
+      "bytes": 311,
+      "sha256": "5ae04e9e2c72282066528d260fd05780b8568910e53790d806c7b481829be038"
+    },
+    {
+      "path": "publication-docs-quality.log",
+      "bytes": 11202,
+      "sha256": "d5190a95de3ec5f3984dced6bf47c6a6af068a7c47b8f1a7d9dd7ac045564cbe"
+    },
+    {
+      "path": "publication-doctor.log",
+      "bytes": 426,
+      "sha256": "1fbec5ff7f158635e670b36d1250d6ae1cea2b2d842ec2e841555ca4e7aea13e"
+    },
+    {
+      "path": "publication-find.log",
+      "bytes": 5457,
+      "sha256": "fd2d3da0ea08973da47b95e733de3316e3b4c32e34e892f7bb629ea0bedc8964"
+    },
+    {
+      "path": "publication-full-docs-gate.log",
+      "bytes": 2569,
+      "sha256": "5222124187c927109fbb408a5ac2c9d8d72ca3cbc97c44b3f4a12922d9ce207e"
+    },
+    {
+      "path": "publication-info.log",
+      "bytes": 2784,
+      "sha256": "2d1039785b453eb35959354705198d8300f84566dfb8bd6c4ce8adf9f56d08c3"
+    },
+    {
+      "path": "publication-install.log",
+      "bytes": 984,
+      "sha256": "c24c7f606e4b762ff4401ad0675dddd2f1fa80be43e5b6e2e98d8739826d5827"
+    },
+    {
+      "path": "publication-new-agents-apply.log",
+      "bytes": 2271,
+      "sha256": "d5b54545152b579abb123d5e630df174b8b11a4bc44ea864dea58c5f06fecdc1"
+    },
+    {
+      "path": "publication-new-agents-preview.log",
+      "bytes": 2192,
+      "sha256": "9bfb5882ddbc53e50b0ab56b77d6d5a11e35b995a4a98982542f459e5c651585"
+    },
+    {
+      "path": "publication-new-specialists-apply.log",
+      "bytes": 2341,
+      "sha256": "31dfb4e9f5de0b434b91bdd01c12aa1d4c96f4a8fc4fea3f0900e3b8c87953f5"
+    },
+    {
+      "path": "publication-new-specialists-preview.log",
+      "bytes": 2262,
+      "sha256": "6e9f0570062e9cf24dc56aa04e857b4f99db866aed1842b10c63c12b9a712d12"
+    },
+    {
+      "path": "publication-new-synthesis-apply.log",
+      "bytes": 2324,
+      "sha256": "1f505b571685d3ff32299c8cd9a10031e3f9533e985be4238a9db8cb2b63df90"
+    },
+    {
+      "path": "publication-new-synthesis-preview.log",
+      "bytes": 2245,
+      "sha256": "81edd84ae5e58c0344b37b4696dcd4e36ef7891942261abb9b2e25c190cd3ea8"
+    },
+    {
+      "path": "publication-tree.json",
+      "bytes": 3424,
+      "sha256": "e93790482e380056099b7a74e5edf987180a5e9865e367a3fdf6fb924d923d5e"
+    },
+    {
+      "path": "quality-standard.md",
+      "bytes": 29215,
+      "sha256": "9b57f52ec2b9185049aea09d93f6e2344b77701526a49eca2a167be78afd96ca"
+    },
+    {
+      "path": "reports/agent-frameworks-critique.md",
+      "bytes": 18903,
+      "sha256": "69046682ee11f9c34cdde241ed0bf6fd154fbeeaa70d6a17bc0f09719e77da93"
+    },
+    {
+      "path": "reports/agent-frameworks-pre-final-critique.md",
+      "bytes": 50776,
+      "sha256": "204c9ad7118fa702ccca33184448cb4bcb914994719bd021935ce290500af233"
+    },
+    {
+      "path": "reports/agent-frameworks-sources.json",
+      "bytes": 64080,
+      "sha256": "04e4208567b8d7fea680476218f0eca8558767baef465ba9aa5a119eb5b1b1c1"
+    },
+    {
+      "path": "reports/agent-frameworks.md",
+      "bytes": 51208,
+      "sha256": "e9dabce5ca09dea101a3ce8191f80753c0301474a714628eb0f75d4550bf38b2"
+    },
+    {
+      "path": "reports/cross-framework-synthesis.md",
+      "bytes": 19583,
+      "sha256": "0c670fdbb1afca63d310b050ff067e7cf5e0fe4a4ec5e4439e9efe00d19b6ed8"
+    },
+    {
+      "path": "reports/data-plane-critique.md",
+      "bytes": 17632,
+      "sha256": "81fd5037553a93ec7f445e9396cdbacd73268158a84424d4678071ff0d52fcf4"
+    },
+    {
+      "path": "reports/data-plane-frameworks-initial.md",
+      "bytes": 15922,
+      "sha256": "4dc7e6fa95c2d06b9b927385cd001c6196e167351cadcbb6779884dbd999e700"
+    },
+    {
+      "path": "reports/data-plane-frameworks-sources.json",
+      "bytes": 14866,
+      "sha256": "bc24a558d1bd4973266698c811b049f0457f799d38b64bca596841b179116f3d"
+    },
+    {
+      "path": "reports/data-plane-frameworks.md",
+      "bytes": 17164,
+      "sha256": "157e344da71ba43a88365e08039217b440e0c054d858f5d3b52600bc6d86e472"
+    },
+    {
+      "path": "reports/framework-evidence-critique.md",
+      "bytes": 24514,
+      "sha256": "3a16a213cfa863e59b77ef2631f728688dba3b2543396dbc9c9542f17c56d631"
+    },
+    {
+      "path": "reports/modularity-fit-critique.md",
+      "bytes": 24424,
+      "sha256": "04d7ad748a3a0b728bf7b8f954e92e741f8096fa03bfeb54ffe8283f371ce026"
+    },
+    {
+      "path": "reports/publication-gate-failure-critique.md",
+      "bytes": 6305,
+      "sha256": "624f0b5e809dff991ab52f7b150c808e4cfd8012b7f210712c72fbbf6620a40a"
+    },
+    {
+      "path": "reports/publication-navigation-check.md",
+      "bytes": 3593,
+      "sha256": "87b869288d5424bfbce66f51c2b60cf12474e662fef93b5b818e62568b1cf855"
+    },
+    {
+      "path": "reports/research-authority-audit.md",
+      "bytes": 21934,
+      "sha256": "ae82d73b2652f79b303a3f10e1091aa99a5442bbeec1ecf03b276810890881fc"
+    },
+    {
+      "path": "reports/research-reuse-critique.md",
+      "bytes": 13901,
+      "sha256": "cfa8c26d3c2a64d05f1d825252d49d585637dceb2e9c3461bdd4720433ebbb58"
+    },
+    {
+      "path": "reports/review-dispositions.md",
+      "bytes": 11065,
+      "sha256": "5e421f3d3fb398e31cf3cb9243bb2fd0ebd35bdd7dcbfd7b09cacdbacdc9b2cb"
+    },
+    {
+      "path": "reports/specialist-frameworks-pre-final-critique.md",
+      "bytes": 55079,
+      "sha256": "57c90cc4f54da4be46b0bdd871bb732d77f704110cb50809a14f817ac1a8b7a7"
+    },
+    {
+      "path": "reports/specialist-frameworks-sources.json",
+      "bytes": 66329,
+      "sha256": "c495acfbfb9f36bdd210d87eb410f0513452b1dbb15cfe68a4909bc0b831d363"
+    },
+    {
+      "path": "reports/specialist-frameworks.md",
+      "bytes": 47275,
+      "sha256": "492b905a582271e4ddca5f4270338ae6b69a3ba17641d1582d7885da63fbf0a1"
+    }
+  ],
+  "initialFullGate": {
+    "outcome": "failed",
+    "passedContractTests": 7,
+    "failedContractTests": 1,
+    "timeoutMs": 120000,
+    "cause": "unresolved",
+    "gitTree": "c6dd27e9057bd3ef055f1820fdbc1d76edfb7da0",
+    "completeLocalInputs": "See first-full-gate-local-inputs.json; the staged tree alone omits a copied untracked tool artifact.",
+    "log": "publication-full-docs-gate.log",
+    "nextVerification": "One full unchanged gate on final published Git tree in separate clean checkout; result belongs to final publication receipt."
+  }
+}

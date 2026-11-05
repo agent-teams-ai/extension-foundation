@@ -1,0 +1,1398 @@
+{
+  "schema": "plugin-modularity-research-source-ledger/v1",
+  "report": "agent-frameworks.md",
+  "research_date": "2026-11-05",
+  "status": "research-only; all transfer hypotheses unadopted",
+  "method": {
+    "primary_sources_only": true,
+    "source_access": "Public GitHub read connector plus public web search/open",
+    "runtime_experiments_executed": false,
+    "upstream_tests_executed": false,
+    "packages_installed": false,
+    "product_code_changed": false,
+    "remote_mutation": false,
+    "full_external_documents_copied": false,
+    "source_claims": "Exact pinned code and inspected unrun tests; moving hosted documentation explicitly dated; no default-head release equivalence."
+  },
+  "authority": {
+    "gm": "Neutral declarations, identities, bindings, graph compilation, canonical plans/digests and bounded composition diagnostics.",
+    "ef": "Neutral extension/artifact/trust/protocol/conformance obligations and retained research; no duplicate composition or new runtime owner.",
+    "product": "Concrete extension points, policy/grants, payloads/loaders, readiness, lifecycle and canonical operational state.",
+    "execution": "Existing physical custody owner.",
+    "confirmed_direction": "Static composition plus controlled restart; no seamless hot-swap adoption.",
+    "prior_e2e_limit": "Bounded fixture/public-package integration, not product Host/restart/drain/artifact-custody/fleet qualification."
+  },
+  "cases": [
+    {
+      "case_id": "AF-001",
+      "name": "Google ADK Python",
+      "repository": "google/adk-python",
+      "implementation_commit": "b33b43e5b5388b9454c71f440eb885901075f43a",
+      "runtime": "Python >=3.11",
+      "extension_unit": "runner-wide BasePlugin callback object",
+      "release_source_id": "ADK-R1",
+      "source_ids": [
+        "ADK-D1",
+        "ADK-S1",
+        "ADK-S2",
+        "ADK-S3",
+        "ADK-T1",
+        "ADK-M1",
+        "ADK-H1",
+        "ADK-R1"
+      ]
+    },
+    {
+      "case_id": "AF-002",
+      "name": "Pydantic AI",
+      "repository": "pydantic/pydantic-ai",
+      "implementation_commit": "e2332baaba4feb2c92f5ed47b7343374c2ba3546",
+      "runtime": "Python >=3.11",
+      "extension_unit": "AbstractCapability/Capability bundle, with narrower AbstractToolset",
+      "release_source_id": "PYD-R1",
+      "source_ids": [
+        "PYD-D1",
+        "PYD-D2",
+        "PYD-D3",
+        "PYD-S1",
+        "PYD-S2",
+        "PYD-S3",
+        "PYD-S4",
+        "PYD-S5",
+        "PYD-T1",
+        "PYD-M1",
+        "PYD-D4",
+        "PYD-D5",
+        "PYD-R1"
+      ]
+    },
+    {
+      "case_id": "AF-003",
+      "name": "Microsoft Agent Framework Python",
+      "repository": "microsoft/agent-framework",
+      "implementation_commit": "1c3264b065ef4b2b9b3614b19394bdd49d98334f",
+      "runtime": "Python >=3.11 at inspected head",
+      "extension_unit": "agent/chat/function middleware, optionally indivisible MiddlewareBundle",
+      "release_source_id": "MS-R1",
+      "source_ids": [
+        "MS-D1",
+        "MS-L1",
+        "MS-S1",
+        "MS-T1",
+        "MS-M1",
+        "MS-R1"
+      ]
+    },
+    {
+      "case_id": "AF-004",
+      "name": "Mastra",
+      "repository": "mastra-ai/mastra",
+      "implementation_commit": "0ab5441946936c0c5c02a8f684e74ac4b5df0cfa",
+      "runtime": "TypeScript/Node >=22.13.0",
+      "extension_unit": "phase-specific Processor object and workflow/tool contracts",
+      "release_source_id": "MAS-R1",
+      "source_ids": [
+        "MAS-D1",
+        "MAS-D2",
+        "MAS-S1",
+        "MAS-S2",
+        "MAS-S3",
+        "MAS-S4",
+        "MAS-T1",
+        "MAS-M1",
+        "MAS-H1",
+        "MAS-H2",
+        "MAS-R1"
+      ]
+    },
+    {
+      "case_id": "AF-005",
+      "name": "ElizaOS",
+      "repository": "elizaOS/eliza",
+      "implementation_commit": "74b8e6a22ef915680f55dd4018ee118d1018d33d",
+      "branch": "develop",
+      "runtime": "TypeScript Node kernel; Bun repository tooling",
+      "extension_unit": "Plugin contribution bundle",
+      "release_relationship": "Inspected manifest 2.0.12-beta.0; corresponding published product tag/bytes not established. pr-evidence releases excluded as software baselines.",
+      "source_ids": [
+        "ELI-D1",
+        "ELI-D2",
+        "ELI-D3",
+        "ELI-S1",
+        "ELI-S2",
+        "ELI-S3",
+        "ELI-S4",
+        "ELI-S5",
+        "ELI-T1",
+        "ELI-M1",
+        "ELI-M2",
+        "ELI-H1"
+      ]
+    },
+    {
+      "case_id": "AF-006",
+      "name": "Letta Code",
+      "repository": "letta-ai/letta-code",
+      "implementation_commit": "8ec417abb05a0d7f4c2b7be3968345fbc48da294",
+      "runtime": "TypeScript/JavaScript local harness",
+      "extension_unit": "fully trusted local mod activation function with owned contributions and synchronous disposer",
+      "release_source_id": "LET-R1",
+      "lineage": "letta-ai/letta pinned README redirects to this active successor; retired Python V1 fix is historical only.",
+      "source_ids": [
+        "LET-L1",
+        "LET-D1",
+        "LET-D2",
+        "LET-S1",
+        "LET-S2",
+        "LET-S3",
+        "LET-S4",
+        "LET-S5",
+        "LET-S6",
+        "LET-S7",
+        "LET-T1",
+        "LET-T2",
+        "LET-M1",
+        "LET-H1",
+        "LET-H2",
+        "LET-R1"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "ADK-D1",
+      "case_id": "AF-001",
+      "evidence_class": "documented contract",
+      "title": "ADK Plugins",
+      "url": "https://adk.dev/plugins/",
+      "commit": null,
+      "summary": "Runner-wide plugins, callback families, registration and relation to agent callbacks.",
+      "retrieved_date": "2026-11-05",
+      "retrieval_ref_ids": [
+        "turn280view0"
+      ],
+      "limits": "Moving hosted primary documentation, retrieved on research date; not equated to any release or every SDK language."
+    },
+    {
+      "id": "ADK-S1",
+      "case_id": "AF-001",
+      "evidence_class": "inspected source",
+      "title": "src/google/adk/plugins/base_plugin.py",
+      "url": "https://github.com/google/adk-python/blob/b33b43e5b5388b9454c71f440eb885901075f43a/src/google/adk/plugins/base_plugin.py",
+      "repository": "google/adk-python",
+      "commit": "b33b43e5b5388b9454c71f440eb885901075f43a",
+      "path": "src/google/adk/plugins/base_plugin.py",
+      "blob_sha": "f288f3d755e71bfc08d99669ad49b7d99c4473b7",
+      "symbols": [
+        "BasePlugin"
+      ],
+      "summary": "Runner-wide callback contract; registration order, plugin-before-agent priority and first-non-None interception.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "ADK-S2",
+      "case_id": "AF-001",
+      "evidence_class": "inspected source",
+      "title": "src/google/adk/plugins/plugin_manager.py",
+      "url": "https://github.com/google/adk-python/blob/b33b43e5b5388b9454c71f440eb885901075f43a/src/google/adk/plugins/plugin_manager.py",
+      "repository": "google/adk-python",
+      "commit": "b33b43e5b5388b9454c71f440eb885901075f43a",
+      "path": "src/google/adk/plugins/plugin_manager.py",
+      "blob_sha": "bbb7bdd40b95b27b0d79f0ac252ae2221b94748c",
+      "symbols": [
+        "PluginManager.register_plugin",
+        "_run_callbacks",
+        "_run_notification_callbacks",
+        "close",
+        "set_skip_closing_plugins"
+      ],
+      "summary": "Unique names, first-result interception versus best-effort notifications, sequential cleanup, cancellation/error handling and borrowed cleanup ownership.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "ADK-S3",
+      "case_id": "AF-001",
+      "evidence_class": "inspected source",
+      "title": "src/google/adk/tools/agent_tool.py",
+      "url": "https://github.com/google/adk-python/blob/b33b43e5b5388b9454c71f440eb885901075f43a/src/google/adk/tools/agent_tool.py",
+      "repository": "google/adk-python",
+      "commit": "b33b43e5b5388b9454c71f440eb885901075f43a",
+      "path": "src/google/adk/tools/agent_tool.py",
+      "blob_sha": "c25754c2ca27e2288c170c4be7195813b9d6b825",
+      "symbols": [
+        "AgentTool.run_async",
+        "_NestedRunner"
+      ],
+      "summary": "Inherited parent plugins cause nested runner plugin manager to skip closing shared plugins.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "ADK-T1",
+      "case_id": "AF-001",
+      "evidence_class": "inspected unrun test",
+      "title": "tests/unittests/plugins/test_plugin_manager.py",
+      "url": "https://github.com/google/adk-python/blob/b33b43e5b5388b9454c71f440eb885901075f43a/tests/unittests/plugins/test_plugin_manager.py",
+      "repository": "google/adk-python",
+      "commit": "b33b43e5b5388b9454c71f440eb885901075f43a",
+      "path": "tests/unittests/plugins/test_plugin_manager.py",
+      "blob_sha": "94345a9aa78cf9565fbd804d18f96ebcb91045ba",
+      "symbols": [
+        "test_close_closes_remaining_plugins_and_reraises_cancellation",
+        "test_close_closes_remaining_plugins_when_task_is_cancelled",
+        "test_close_closes_remaining_plugins_after_plugin_error",
+        "test_close_with_timeout",
+        "test_close_is_noop_after_set_skip_closing_plugins"
+      ],
+      "summary": "Existing tests assert continuing cleanup after cancellation/failure and borrowed no-close behavior.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "ADK-M1",
+      "case_id": "AF-001",
+      "evidence_class": "inspected source",
+      "title": "pyproject.toml",
+      "url": "https://github.com/google/adk-python/blob/b33b43e5b5388b9454c71f440eb885901075f43a/pyproject.toml",
+      "repository": "google/adk-python",
+      "commit": "b33b43e5b5388b9454c71f440eb885901075f43a",
+      "path": "pyproject.toml",
+      "blob_sha": "3586b99eac0ab0fddead4488964af6f9a6f1d0be",
+      "symbols": [
+        "project.requires-python"
+      ],
+      "summary": "Inspected project metadata requires Python >=3.11.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "ADK-H1",
+      "case_id": "AF-001",
+      "evidence_class": "historical report/fix",
+      "title": "fix: close remaining plugins when plugin close is cancelled",
+      "url": "https://github.com/google/adk-python/commit/f9558b36e8d70cb69978cd96b7abcd310691d125",
+      "repository": "google/adk-python",
+      "commit": "f9558b36e8d70cb69978cd96b7abcd310691d125",
+      "event_date": "2026-10-07T22:10:57Z",
+      "retrieved_date": "2026-11-05",
+      "summary": "Commit message identifies former CancelledError handling hole and current continuation-and-reraise repair.",
+      "limits": "Historical report/metadata inspected; not reproduced or executed in this task; current source coverage is identified separately."
+    },
+    {
+      "id": "PYD-D1",
+      "case_id": "AF-002",
+      "evidence_class": "documented contract",
+      "title": "Pydantic AI Capabilities",
+      "url": "https://pydantic.dev/docs/ai/capabilities/overview/",
+      "commit": null,
+      "summary": "Capabilities bundle instructions, tools, settings and hooks and are documented as primary extension point.",
+      "retrieved_date": "2026-11-05",
+      "retrieval_ref_ids": [
+        "turn280view1"
+      ],
+      "limits": "Moving hosted primary documentation, retrieved on research date; not equated to any release or every SDK language."
+    },
+    {
+      "id": "PYD-D2",
+      "case_id": "AF-002",
+      "evidence_class": "documented contract",
+      "title": "Building Custom Capabilities",
+      "url": "https://pydantic.dev/docs/ai/capabilities/custom/",
+      "commit": null,
+      "summary": "Capability lifecycle, wrapping, run isolation and composition/order documentation.",
+      "retrieved_date": "2026-11-05",
+      "retrieval_ref_ids": [
+        "turn288view2"
+      ],
+      "limits": "Moving hosted primary documentation, retrieved on research date; not equated to any release or every SDK language."
+    },
+    {
+      "id": "PYD-D3",
+      "case_id": "AF-002",
+      "evidence_class": "documented contract",
+      "title": "On-Demand Capabilities",
+      "url": "https://pydantic.dev/docs/ai/capabilities/on-demand/",
+      "commit": null,
+      "summary": "Stable-ID collapsed instruction/tool catalog versus per-tool external execution or approval deferral; no model-count benchmark adopted.",
+      "retrieved_date": "2026-11-05",
+      "retrieval_ref_ids": [
+        "turn289view3"
+      ],
+      "limits": "Moving hosted primary documentation, retrieved on research date; not equated to any release or every SDK language."
+    },
+    {
+      "id": "PYD-S1",
+      "case_id": "AF-002",
+      "evidence_class": "inspected source",
+      "title": "pydantic_ai_slim/pydantic_ai/capabilities/abstract.py",
+      "url": "https://github.com/pydantic/pydantic-ai/blob/e2332baaba4feb2c92f5ed47b7343374c2ba3546/pydantic_ai_slim/pydantic_ai/capabilities/abstract.py",
+      "repository": "pydantic/pydantic-ai",
+      "commit": "e2332baaba4feb2c92f5ed47b7343374c2ba3546",
+      "path": "pydantic_ai_slim/pydantic_ai/capabilities/abstract.py",
+      "blob_sha": "8920d8e9e7853f13b3236ab1152269562a3d00e8",
+      "symbols": [
+        "AbstractCapability",
+        "CapabilityOrdering",
+        "for_agent",
+        "for_run",
+        "get_ordering"
+      ],
+      "summary": "Configuration/run lifecycle, explicit run isolation, resource acquisition warning, type-versus-instance ordering and requires semantics.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "PYD-S2",
+      "case_id": "AF-002",
+      "evidence_class": "inspected source",
+      "title": "pydantic_ai_slim/pydantic_ai/capabilities/_ordering.py",
+      "url": "https://github.com/pydantic/pydantic-ai/blob/e2332baaba4feb2c92f5ed47b7343374c2ba3546/pydantic_ai_slim/pydantic_ai/capabilities/_ordering.py",
+      "repository": "pydantic/pydantic-ai",
+      "commit": "e2332baaba4feb2c92f5ed47b7343374c2ba3546",
+      "path": "pydantic_ai_slim/pydantic_ai/capabilities/_ordering.py",
+      "blob_sha": "ca88485ba2118f57851da9b2280d2eb81e261ef6",
+      "symbols": [
+        "sort_capabilities",
+        "_validate_requires",
+        "_topo_sort",
+        "_add_position_edges",
+        "_add_relative_edges",
+        "_ref_matches"
+      ],
+      "summary": "Topological ordering with insertion-order tiebreak, missing requirement/cycle diagnostics, class versus object identity; singleton fast path is a proposed boundary question, not a tested defect.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "PYD-S3",
+      "case_id": "AF-002",
+      "evidence_class": "inspected source",
+      "title": "pydantic_ai_slim/pydantic_ai/capabilities/combined.py",
+      "url": "https://github.com/pydantic/pydantic-ai/blob/e2332baaba4feb2c92f5ed47b7343374c2ba3546/pydantic_ai_slim/pydantic_ai/capabilities/combined.py",
+      "repository": "pydantic/pydantic-ai",
+      "commit": "e2332baaba4feb2c92f5ed47b7343374c2ba3546",
+      "path": "pydantic_ai_slim/pydantic_ai/capabilities/combined.py",
+      "blob_sha": "0929cc06dead816691a08430e64516b2e5ca3ede",
+      "symbols": [
+        "CombinedCapability.__normalize_capabilities",
+        "_rebound",
+        "for_run",
+        "_ordered_instruction_sources"
+      ],
+      "summary": "Flattened composition, preservation of overridden instruction views and occurrence-sensitive rebinding.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "PYD-S4",
+      "case_id": "AF-002",
+      "evidence_class": "inspected source",
+      "title": "pydantic_ai_slim/pydantic_ai/toolsets/combined.py",
+      "url": "https://github.com/pydantic/pydantic-ai/blob/e2332baaba4feb2c92f5ed47b7343374c2ba3546/pydantic_ai_slim/pydantic_ai/toolsets/combined.py",
+      "repository": "pydantic/pydantic-ai",
+      "commit": "e2332baaba4feb2c92f5ed47b7343374c2ba3546",
+      "path": "pydantic_ai_slim/pydantic_ai/toolsets/combined.py",
+      "blob_sha": "2fd73e405ece4746addf0c745d6dc5772b549459",
+      "symbols": [
+        "CombinedToolset.__aenter__",
+        "__aexit__",
+        "get_tools",
+        "call_tool"
+      ],
+      "summary": "AsyncExitStack lifetime, duplicate tool-name rejection, explicit IDs and current prepared-definition/source-toolset provenance.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "PYD-S5",
+      "case_id": "AF-002",
+      "evidence_class": "inspected source",
+      "title": "pydantic_ai_slim/pydantic_ai/toolsets/abstract.py",
+      "url": "https://github.com/pydantic/pydantic-ai/blob/e2332baaba4feb2c92f5ed47b7343374c2ba3546/pydantic_ai_slim/pydantic_ai/toolsets/abstract.py",
+      "repository": "pydantic/pydantic-ai",
+      "commit": "e2332baaba4feb2c92f5ed47b7343374c2ba3546",
+      "path": "pydantic_ai_slim/pydantic_ai/toolsets/abstract.py",
+      "blob_sha": "0219481c98ae164c2cdae90d4a6529a41fc6eb63",
+      "symbols": [
+        "AbstractToolset",
+        "ToolsetTool"
+      ],
+      "summary": "Narrow toolset description/execution contract and wrappers.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "PYD-T1",
+      "case_id": "AF-002",
+      "evidence_class": "inspected unrun test",
+      "title": "tests/test_capabilities.py",
+      "url": "https://github.com/pydantic/pydantic-ai/blob/e2332baaba4feb2c92f5ed47b7343374c2ba3546/tests/test_capabilities.py",
+      "repository": "pydantic/pydantic-ai",
+      "commit": "e2332baaba4feb2c92f5ed47b7343374c2ba3546",
+      "path": "tests/test_capabilities.py",
+      "blob_sha": "bb3740a24278dd6eef8757c88298a8a97768b43f",
+      "symbols": [
+        "test_ordering_requires_missing",
+        "test_ordering_requires_present",
+        "test_ordering_cycle_detection",
+        "test_ordering_nested_combined",
+        "test_combined_capability_for_run_cancels_siblings_on_failure",
+        "test_for_run_with_different_toolset"
+      ],
+      "summary": "Inspected tests encode order/requirements/nesting and run replacement expectations; not run.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "PYD-M1",
+      "case_id": "AF-002",
+      "evidence_class": "inspected source",
+      "title": "pyproject.toml",
+      "url": "https://github.com/pydantic/pydantic-ai/blob/e2332baaba4feb2c92f5ed47b7343374c2ba3546/pyproject.toml",
+      "repository": "pydantic/pydantic-ai",
+      "commit": "e2332baaba4feb2c92f5ed47b7343374c2ba3546",
+      "path": "pyproject.toml",
+      "blob_sha": "782a7c823dead05ddb5fce50306e17bb549e9547",
+      "symbols": [
+        "project.requires-python",
+        "tool.uv-dynamic-versioning"
+      ],
+      "summary": "Python >=3.11 and dynamic version metadata.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "PYD-D4",
+      "case_id": "AF-002",
+      "evidence_class": "documented contract",
+      "title": "docs/capabilities/custom.md",
+      "url": "https://github.com/pydantic/pydantic-ai/blob/e2332baaba4feb2c92f5ed47b7343374c2ba3546/docs/capabilities/custom.md",
+      "repository": "pydantic/pydantic-ai",
+      "commit": "e2332baaba4feb2c92f5ed47b7343374c2ba3546",
+      "path": "docs/capabilities/custom.md",
+      "blob_sha": "c9640d8b4877924dea545224f2c2503adf99482c",
+      "symbols": [
+        "Capability lifecycle",
+        "Composition and middleware semantics",
+        "Ordering",
+        "Per-run state isolation"
+      ],
+      "summary": "Pinned author documentation; supports exact current-source capability contract.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "PYD-D5",
+      "case_id": "AF-002",
+      "evidence_class": "documented contract",
+      "title": "docs/capabilities/on-demand.md",
+      "url": "https://github.com/pydantic/pydantic-ai/blob/e2332baaba4feb2c92f5ed47b7343374c2ba3546/docs/capabilities/on-demand.md",
+      "repository": "pydantic/pydantic-ai",
+      "commit": "e2332baaba4feb2c92f5ed47b7343374c2ba3546",
+      "path": "docs/capabilities/on-demand.md",
+      "blob_sha": "838f4413053d92cdf5733f44951b447e1002fc35",
+      "symbols": [
+        "On-Demand Capabilities"
+      ],
+      "summary": "Pinned author documentation for deferred bundles and model-visible catalog distinction.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "MS-D1",
+      "case_id": "AF-003",
+      "evidence_class": "documented contract",
+      "title": "Microsoft Learn Agent Middleware",
+      "url": "https://learn.microsoft.com/en-us/agent-framework/concepts/agents/middleware/",
+      "commit": null,
+      "summary": "General/.NET middleware contract and streaming distinctions. Python pivot was not reliably accessible; exact Python source is used for Python claims.",
+      "retrieved_date": "2026-11-05",
+      "retrieval_ref_ids": [
+        "turn280view3",
+        "turn284search1"
+      ],
+      "limits": "Hosted page rendered primarily .NET content; do not equate its implementation details with Python or Go."
+    },
+    {
+      "id": "MS-L1",
+      "case_id": "AF-003",
+      "evidence_class": "documented contract",
+      "title": "README.md",
+      "url": "https://github.com/microsoft/agent-framework/blob/1c3264b065ef4b2b9b3614b19394bdd49d98334f/README.md",
+      "repository": "microsoft/agent-framework",
+      "commit": "1c3264b065ef4b2b9b3614b19394bdd49d98334f",
+      "path": "README.md",
+      "blob_sha": "bc9a8b080aeca9b3c5a25f216f8f96f61ffc012c",
+      "symbols": [
+        "Learning Resources",
+        "Migration from Semantic Kernel",
+        "Migration from AutoGen"
+      ],
+      "summary": "Current framework documentation routes; lineage is not treated as identical old plugin contracts.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "MS-S1",
+      "case_id": "AF-003",
+      "evidence_class": "inspected source",
+      "title": "python/packages/core/agent_framework/_middleware.py",
+      "url": "https://github.com/microsoft/agent-framework/blob/1c3264b065ef4b2b9b3614b19394bdd49d98334f/python/packages/core/agent_framework/_middleware.py",
+      "repository": "microsoft/agent-framework",
+      "commit": "1c3264b065ef4b2b9b3614b19394bdd49d98334f",
+      "path": "python/packages/core/agent_framework/_middleware.py",
+      "blob_sha": "f546cdda43ae82251574b0b22fe806e67ed1f9e2",
+      "symbols": [
+        "MiddlewareBundle",
+        "categorize_middleware",
+        "BaseMiddlewarePipeline._register_middleware_with_wrapper",
+        "AgentMiddlewarePipeline.execute",
+        "FunctionMiddlewarePipeline.execute",
+        "_warn_unbuffered_result_gates"
+      ],
+      "summary": "Ordered middleware, indivisible bundles, unsupported-category rejection, bare-object leniency warnings and stream-final-gate buffering semantics.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "MS-T1",
+      "case_id": "AF-003",
+      "evidence_class": "inspected unrun test",
+      "title": "python/packages/core/tests/core/test_middleware.py",
+      "url": "https://github.com/microsoft/agent-framework/blob/1c3264b065ef4b2b9b3614b19394bdd49d98334f/python/packages/core/tests/core/test_middleware.py",
+      "repository": "microsoft/agent-framework",
+      "commit": "1c3264b065ef4b2b9b3614b19394bdd49d98334f",
+      "path": "python/packages/core/tests/core/test_middleware.py",
+      "blob_sha": "ab473306b5f34d3abe4a68372a5ab1d5e5061d36",
+      "symbols": [
+        "test_agent_middleware_no_next_no_execution",
+        "test_function_middleware_no_next_no_execution",
+        "test_execute_stream_with_middleware",
+        "test_stream_result_transforms_follow_middleware_unwind_order",
+        "test_categorize_middleware_supported_categories_skips_bare_with_warning",
+        "test_categorize_middleware_supported_categories_raises_for_bundle_members"
+      ],
+      "summary": "Existing tests distinguish middleware invocation from lazy stream execution and bundle admission from bare middleware leniency.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "MS-M1",
+      "case_id": "AF-003",
+      "evidence_class": "inspected source",
+      "title": "python/packages/core/pyproject.toml",
+      "url": "https://github.com/microsoft/agent-framework/blob/1c3264b065ef4b2b9b3614b19394bdd49d98334f/python/packages/core/pyproject.toml",
+      "repository": "microsoft/agent-framework",
+      "commit": "1c3264b065ef4b2b9b3614b19394bdd49d98334f",
+      "path": "python/packages/core/pyproject.toml",
+      "blob_sha": "63abed4cafd4e5189b1e9d58e9e08149e37c0626",
+      "symbols": [
+        "project.version",
+        "project.requires-python"
+      ],
+      "summary": "Inspected core metadata 1.24.0 and Python >=3.11.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "MAS-D1",
+      "case_id": "AF-004",
+      "evidence_class": "documented contract",
+      "title": "Mastra Processors",
+      "url": "https://mastra.ai/docs/agents/processors",
+      "commit": null,
+      "summary": "Array order, input/output phase placement, workflow composition and memory pipeline order.",
+      "retrieved_date": "2026-11-05",
+      "retrieval_ref_ids": [
+        "turn280view2"
+      ],
+      "limits": "Moving hosted primary documentation, retrieved on research date; not equated to any release or every SDK language."
+    },
+    {
+      "id": "MAS-D2",
+      "case_id": "AF-004",
+      "evidence_class": "documented contract",
+      "title": "ClassifierProcessor",
+      "url": "https://mastra.ai/reference/processors/classifier-processor",
+      "commit": null,
+      "summary": "Unique IDs prevent unintended per-run shared state; onResult owns application policy; explicit failure strategies and per-chunk cost.",
+      "retrieved_date": "2026-11-05",
+      "retrieval_ref_ids": [
+        "turn286view2"
+      ],
+      "limits": "Moving hosted primary documentation, retrieved on research date; not equated to any release or every SDK language."
+    },
+    {
+      "id": "MAS-S1",
+      "case_id": "AF-004",
+      "evidence_class": "inspected source",
+      "title": "packages/core/src/processors/index.ts",
+      "url": "https://github.com/mastra-ai/mastra/blob/0ab5441946936c0c5c02a8f684e74ac4b5df0cfa/packages/core/src/processors/index.ts",
+      "repository": "mastra-ai/mastra",
+      "commit": "0ab5441946936c0c5c02a8f684e74ac4b5df0cfa",
+      "path": "packages/core/src/processors/index.ts",
+      "blob_sha": "efaf29885bb428c34e066ed78075611c5b3020a7",
+      "symbols": [
+        "Processor",
+        "ProcessorContext",
+        "ProcessInputStepArgs",
+        "processLLMRequest",
+        "processLLMResponse"
+      ],
+      "summary": "Typed phase contracts, abort/cancellation and current interface broader than older six-method summaries.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "MAS-S2",
+      "case_id": "AF-004",
+      "evidence_class": "inspected source",
+      "title": "packages/core/src/processors/runner.ts",
+      "url": "https://github.com/mastra-ai/mastra/blob/0ab5441946936c0c5c02a8f684e74ac4b5df0cfa/packages/core/src/processors/runner.ts",
+      "repository": "mastra-ai/mastra",
+      "commit": "0ab5441946936c0c5c02a8f684e74ac4b5df0cfa",
+      "path": "packages/core/src/processors/runner.ts",
+      "blob_sha": "83212e6f6200755029ce662e48951d946d40a99f",
+      "symbols": [
+        "ProcessorRunner",
+        "getProcessorState",
+        "runProcessInputStep",
+        "runProcessLLMRequest",
+        "runProcessLLMResponse"
+      ],
+      "summary": "State map keyed by processor ID, serial phase loops, changes chained through current message list and TripWire handling.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "MAS-S3",
+      "case_id": "AF-004",
+      "evidence_class": "inspected source",
+      "title": "packages/core/src/processors/retry-budget.ts",
+      "url": "https://github.com/mastra-ai/mastra/blob/0ab5441946936c0c5c02a8f684e74ac4b5df0cfa/packages/core/src/processors/retry-budget.ts",
+      "repository": "mastra-ai/mastra",
+      "commit": "0ab5441946936c0c5c02a8f684e74ac4b5df0cfa",
+      "path": "packages/core/src/processors/retry-budget.ts",
+      "blob_sha": "f83451d48ed986ccd9c946084f55a280e0b8e5c5",
+      "symbols": [
+        "DEFAULT_MAX_PROCESSOR_RETRIES",
+        "resolveMaxProcessorRetries"
+      ],
+      "summary": "Explicit retry override or implicit three-retry backstop; caller-configured-list warning deduplicated by agent.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "MAS-S4",
+      "case_id": "AF-004",
+      "evidence_class": "inspected source",
+      "title": "packages/core/src/agent/agent.ts",
+      "url": "https://github.com/mastra-ai/mastra/blob/0ab5441946936c0c5c02a8f684e74ac4b5df0cfa/packages/core/src/agent/agent.ts",
+      "repository": "mastra-ai/mastra",
+      "commit": "0ab5441946936c0c5c02a8f684e74ac4b5df0cfa",
+      "path": "packages/core/src/agent/agent.ts",
+      "blob_sha": "3eb16751783e57cbfc6dac5efda1a7b5831b9611",
+      "symbols": [
+        "#resolveErrorProcessors",
+        "#withErrorProcessorDefaults",
+        "getProcessorRunner"
+      ],
+      "summary": "User order/default insertion and auto-derived memory/skills processor preservation rules.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "MAS-T1",
+      "case_id": "AF-004",
+      "evidence_class": "inspected unrun test",
+      "title": "packages/core/src/processors/process-input-step.test.ts",
+      "url": "https://github.com/mastra-ai/mastra/blob/0ab5441946936c0c5c02a8f684e74ac4b5df0cfa/packages/core/src/processors/process-input-step.test.ts",
+      "repository": "mastra-ai/mastra",
+      "commit": "0ab5441946936c0c5c02a8f684e74ac4b5df0cfa",
+      "path": "packages/core/src/processors/process-input-step.test.ts",
+      "blob_sha": "3ff720f0162ec0a0940c4effffbd8ab86acfe0db",
+      "symbols": [
+        "multiple processors",
+        "tools",
+        "abort functionality",
+        "validation"
+      ],
+      "summary": "Existing tests state ordered chaining, overrides, abort stopping and MessageList identity rejection.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "MAS-M1",
+      "case_id": "AF-004",
+      "evidence_class": "inspected source",
+      "title": "packages/core/package.json",
+      "url": "https://github.com/mastra-ai/mastra/blob/0ab5441946936c0c5c02a8f684e74ac4b5df0cfa/packages/core/package.json",
+      "repository": "mastra-ai/mastra",
+      "commit": "0ab5441946936c0c5c02a8f684e74ac4b5df0cfa",
+      "path": "packages/core/package.json",
+      "blob_sha": "ebe1b157f9ac5e70cfa951cfbce909b0fc4a35bf",
+      "symbols": [
+        "version",
+        "engines.node"
+      ],
+      "summary": "Inspected head is 1.83.0-alpha.0 and Node >=22.13.0.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "MAS-H1",
+      "case_id": "AF-004",
+      "evidence_class": "historical report/fix",
+      "title": "fix(core): cap implicit error-processor retries at 3 and warn (#24503)",
+      "url": "https://github.com/mastra-ai/mastra/commit/6fd532a2462858637a5f0b38096e9ab105bc146f",
+      "repository": "mastra-ai/mastra",
+      "commit": "6fd532a2462858637a5f0b38096e9ab105bc146f",
+      "event_date": "2026-09-22T03:15:03Z",
+      "retrieved_date": "2026-11-05",
+      "summary": "Historical cap repair, present in current source.",
+      "limits": "Historical report/metadata inspected; not reproduced or executed in this task; current source coverage is identified separately."
+    },
+    {
+      "id": "MAS-H2",
+      "case_id": "AF-004",
+      "evidence_class": "historical report/fix",
+      "title": "Enable the stability processor stack by default (#24473)",
+      "url": "https://github.com/mastra-ai/mastra/commit/c260e429ff30cc19859555985cacd5b70cfd63d9",
+      "repository": "mastra-ai/mastra",
+      "commit": "c260e429ff30cc19859555985cacd5b70cfd63d9",
+      "event_date": "2026-09-30T03:21:44Z",
+      "retrieved_date": "2026-11-05",
+      "summary": "Default stability stack follow-up; retained separately from cap repair.",
+      "limits": "Historical report/metadata inspected; not reproduced or executed in this task; current source coverage is identified separately."
+    },
+    {
+      "id": "ELI-D1",
+      "case_id": "AF-005",
+      "evidence_class": "documented contract",
+      "title": "ElizaOS Plugin Architecture",
+      "url": "https://docs.elizaos.ai/plugins/architecture",
+      "commit": null,
+      "summary": "Documented contribution model, dependencies, initialization and general priority claims.",
+      "retrieved_date": "2026-11-05",
+      "retrieval_ref_ids": [
+        "turn290view0"
+      ],
+      "limits": "Moving current docs include examples that differ from pinned development source; core function and host guarantees must be separated."
+    },
+    {
+      "id": "ELI-D2",
+      "case_id": "AF-005",
+      "evidence_class": "documented contract",
+      "title": "ElizaOS Plugin Reference",
+      "url": "https://docs.elizaos.ai/plugins/reference",
+      "commit": null,
+      "summary": "Hosted plugin interfaces and runtime reference; adapter type/examples differ from pinned development source.",
+      "retrieved_date": "2026-11-05",
+      "retrieval_ref_ids": [
+        "turn290view2"
+      ],
+      "limits": "Moving hosted primary documentation, retrieved on research date; not equated to any release or every SDK language."
+    },
+    {
+      "id": "ELI-D3",
+      "case_id": "AF-005",
+      "evidence_class": "documented contract",
+      "title": "ElizaOS Runtime and Lifecycle",
+      "url": "https://docs.elizaos.ai/agents/runtime-and-lifecycle",
+      "commit": null,
+      "summary": "Hosted lifecycle concepts, not proof of pinned current source call order or strict-stop behavior.",
+      "retrieved_date": "2026-11-05",
+      "retrieval_ref_ids": [
+        "turn290view1"
+      ],
+      "limits": "Moving hosted primary documentation, retrieved on research date; not equated to any release or every SDK language."
+    },
+    {
+      "id": "ELI-S1",
+      "case_id": "AF-005",
+      "evidence_class": "inspected source",
+      "title": "packages/core/src/types/plugin.ts",
+      "url": "https://github.com/elizaOS/eliza/blob/74b8e6a22ef915680f55dd4018ee118d1018d33d/packages/core/src/types/plugin.ts",
+      "repository": "elizaOS/eliza",
+      "commit": "74b8e6a22ef915680f55dd4018ee118d1018d33d",
+      "path": "packages/core/src/types/plugin.ts",
+      "blob_sha": "71152a64445359eab20a93c35c7ae2948191544c",
+      "symbols": [
+        "Plugin",
+        "PluginOwnership",
+        "PluginMode",
+        "RemotePluginPermissions",
+        "RemotePluginConfig"
+      ],
+      "summary": "Actual contribution/lifecycle types, direct trusted mode and remote permission request/narrowing declarations; remote enforcement implementation not inspected.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "ELI-S2",
+      "case_id": "AF-005",
+      "evidence_class": "inspected source",
+      "title": "packages/core/src/plugin.ts",
+      "url": "https://github.com/elizaOS/eliza/blob/74b8e6a22ef915680f55dd4018ee118d1018d33d/packages/core/src/plugin.ts",
+      "repository": "elizaOS/eliza",
+      "commit": "74b8e6a22ef915680f55dd4018ee118d1018d33d",
+      "path": "packages/core/src/plugin.ts",
+      "blob_sha": "9c0c8ea61bf44297ff27b583f40b0fc7ead00962",
+      "symbols": [
+        "PluginResolver",
+        "normalizePluginName",
+        "resolvePluginDependencies",
+        "resolvePluginsImpl",
+        "loadPlugin"
+      ],
+      "summary": "Host-injected executable resolution, dependency-first tolerant traversal, missing/cycle logging, alias normalization and preloaded-object dependency queueing.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "ELI-S3",
+      "case_id": "AF-005",
+      "evidence_class": "inspected source",
+      "title": "packages/core/src/plugin-lifecycle.ts",
+      "url": "https://github.com/elizaOS/eliza/blob/74b8e6a22ef915680f55dd4018ee118d1018d33d/packages/core/src/plugin-lifecycle.ts",
+      "repository": "elizaOS/eliza",
+      "commit": "74b8e6a22ef915680f55dd4018ee118d1018d33d",
+      "path": "packages/core/src/plugin-lifecycle.ts",
+      "blob_sha": "d1815a248b7966c9fc38b6d1f61df32c254d7b49",
+      "symbols": [
+        "installRuntimePluginLifecycle",
+        "teardownPluginOwnership",
+        "removeArrayItemsByReference",
+        "unloadPlugin",
+        "reloadPlugin",
+        "applyPluginConfig"
+      ],
+      "summary": "AsyncLocalStorage contribution capture, partial rollback and owned cleanup aggregation. Registration catch rethrows original error only after successful teardown; cleanup AggregateError can propagate instead. Special adapter reload constraint and old-teardown-before-new-registration.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "ELI-S4",
+      "case_id": "AF-005",
+      "evidence_class": "inspected source",
+      "title": "packages/core/src/runtime.ts",
+      "url": "https://github.com/elizaOS/eliza/blob/74b8e6a22ef915680f55dd4018ee118d1018d33d/packages/core/src/runtime.ts",
+      "repository": "elizaOS/eliza",
+      "commit": "74b8e6a22ef915680f55dd4018ee118d1018d33d",
+      "path": "packages/core/src/runtime.ts",
+      "blob_sha": "34a9af2630cfac4a06da6987c10cbc8a37d8c25d",
+      "symbols": [
+        "registerPlugin",
+        "_registerPlugin",
+        "stop",
+        "_stopAndDrain",
+        "_stopBestEffort"
+      ],
+      "summary": "Direct plugin registration and strict versus best-effort runtime stop semantics.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "ELI-S5",
+      "case_id": "AF-005",
+      "evidence_class": "inspected source",
+      "title": "packages/core/src/runtime/retirement.ts",
+      "url": "https://github.com/elizaOS/eliza/blob/74b8e6a22ef915680f55dd4018ee118d1018d33d/packages/core/src/runtime/retirement.ts",
+      "repository": "elizaOS/eliza",
+      "commit": "74b8e6a22ef915680f55dd4018ee118d1018d33d",
+      "path": "packages/core/src/runtime/retirement.ts",
+      "blob_sha": "e04fa691cd8d21d43bda57300cca0fdd96a7e88d",
+      "symbols": [
+        "RuntimeRetirement"
+      ],
+      "summary": "Retains original lifecycle promises and failures separately from cleared lookup registries.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "ELI-T1",
+      "case_id": "AF-005",
+      "evidence_class": "inspected unrun test",
+      "title": "packages/core/test/plugin-handler-teardown.test.ts",
+      "url": "https://github.com/elizaOS/eliza/blob/74b8e6a22ef915680f55dd4018ee118d1018d33d/packages/core/test/plugin-handler-teardown.test.ts",
+      "repository": "elizaOS/eliza",
+      "commit": "74b8e6a22ef915680f55dd4018ee118d1018d33d",
+      "path": "packages/core/test/plugin-handler-teardown.test.ts",
+      "blob_sha": "ab60addaea6b311db96bf5d3e51094e2b1543fbf",
+      "symbols": [
+        "unloadPlugin removes chat pre-handlers and response-handler evaluators",
+        "re-registering after unload installs fresh handler instances"
+      ],
+      "summary": "Existing teardown and fresh-instance regressions; file also covers connector ownership.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "ELI-M1",
+      "case_id": "AF-005",
+      "evidence_class": "documented contract",
+      "title": "packages/core/README.md",
+      "url": "https://github.com/elizaOS/eliza/blob/74b8e6a22ef915680f55dd4018ee118d1018d33d/packages/core/README.md",
+      "repository": "elizaOS/eliza",
+      "commit": "74b8e6a22ef915680f55dd4018ee118d1018d33d",
+      "path": "packages/core/README.md",
+      "blob_sha": "3c22bdef62f52f3314a5b2d4e1a054482cd10685",
+      "symbols": [
+        "Node runtime kernel",
+        "host-owned lifecycle",
+        "Integration checks"
+      ],
+      "summary": "Pinned architecture and testing navigation; core/browser/host boundaries.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "ELI-M2",
+      "case_id": "AF-005",
+      "evidence_class": "inspected source",
+      "title": "packages/core/package.json",
+      "url": "https://github.com/elizaOS/eliza/blob/74b8e6a22ef915680f55dd4018ee118d1018d33d/packages/core/package.json",
+      "repository": "elizaOS/eliza",
+      "commit": "74b8e6a22ef915680f55dd4018ee118d1018d33d",
+      "path": "packages/core/package.json",
+      "blob_sha": "45e27aa04a688f04a8d54bbbd5bd900ca4edc41a",
+      "symbols": [
+        "name",
+        "version"
+      ],
+      "summary": "Inspected @elizaos/core development manifest says 2.0.12-beta.0; no corresponding published-byte pin established.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "ELI-H1",
+      "case_id": "AF-005",
+      "evidence_class": "historical report/fix",
+      "title": "fix(core): remove a plugin's message and post connectors on unload (#37157)",
+      "url": "https://github.com/elizaOS/eliza/commit/7cbb4327b4d09cd7b7a358997841e84995b5ff33",
+      "repository": "elizaOS/eliza",
+      "commit": "7cbb4327b4d09cd7b7a358997841e84995b5ff33",
+      "event_date": "2026-10-28T22:23:45Z",
+      "retrieved_date": "2026-11-05",
+      "summary": "Commit reports stale connector registrations after unload and repairs ownership/teardown; current source includes tracking.",
+      "limits": "Historical report/metadata inspected; not reproduced or executed in this task; current source coverage is identified separately."
+    },
+    {
+      "id": "LET-L1",
+      "case_id": "AF-006",
+      "evidence_class": "documented contract",
+      "title": "README.md",
+      "url": "https://github.com/letta-ai/letta/blob/8816d3a8516893bfdc0fa14bfb1235226012e295/README.md",
+      "repository": "letta-ai/letta",
+      "commit": "8816d3a8516893bfdc0fa14bfb1235226012e295",
+      "path": "README.md",
+      "blob_sha": "9a23cb4226d462b555ae75052e32370a7d82adee",
+      "symbols": [
+        "Historical source",
+        "current source"
+      ],
+      "summary": "Pinned README redirects active development to letta-ai/letta-code and marks archive as retired V1 server.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "LET-D1",
+      "case_id": "AF-006",
+      "evidence_class": "documented contract",
+      "title": "Letta Mods",
+      "url": "https://docs.letta.com/configuration/mods",
+      "commit": null,
+      "summary": "Fully trusted local harness mods, supported host capability guards, local event scope and activation/cleanup authoring.",
+      "retrieved_date": "2026-11-05",
+      "retrieval_ref_ids": [
+        "turn286view1"
+      ],
+      "limits": "Moving hosted primary documentation, retrieved on research date; not equated to any release or every SDK language."
+    },
+    {
+      "id": "LET-D2",
+      "case_id": "AF-006",
+      "evidence_class": "documented contract",
+      "title": "Introducing Mods: Enabling Agents to Self-Improve through Harness-Level Adaptation",
+      "url": "https://letta.one/blog/introducing-mods/",
+      "commit": null,
+      "summary": "June 24 2026 primary product introduction of agent-authored harness adaptation and reload.",
+      "retrieved_date": "2026-11-05",
+      "retrieval_ref_ids": [
+        "turn286view0"
+      ],
+      "limits": "Moving hosted primary documentation, retrieved on research date; not equated to any release or every SDK language."
+    },
+    {
+      "id": "LET-S1",
+      "case_id": "AF-006",
+      "evidence_class": "inspected source",
+      "title": "src/mods/mod-engine.ts",
+      "url": "https://github.com/letta-ai/letta-code/blob/8ec417abb05a0d7f4c2b7be3968345fbc48da294/src/mods/mod-engine.ts",
+      "repository": "letta-ai/letta-code",
+      "commit": "8ec417abb05a0d7f4c2b7be3968345fbc48da294",
+      "path": "src/mods/mod-engine.ts",
+      "blob_sha": "8980b593fce47a5a8500ab2b0e536e6a7e313afe",
+      "symbols": [
+        "loadLocalMods",
+        "createModEngine",
+        "disposeLocalMods",
+        "createLettaModApi",
+        "canShadowOwner",
+        "isShadowedByOwner",
+        "removeOwnerCapabilities"
+      ],
+      "summary": "Owner/abort attribution, progressive generation reload, stale completion guards, synchronous disposal and scope-aware collision checks.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "LET-S2",
+      "case_id": "AF-006",
+      "evidence_class": "inspected source",
+      "title": "src/mods/mod-sources.ts",
+      "url": "https://github.com/letta-ai/letta-code/blob/8ec417abb05a0d7f4c2b7be3968345fbc48da294/src/mods/mod-sources.ts",
+      "repository": "letta-ai/letta-code",
+      "commit": "8ec417abb05a0d7f4c2b7be3968345fbc48da294",
+      "path": "src/mods/mod-sources.ts",
+      "blob_sha": "7d78a560585b09a16886572848de9a42deb830f7",
+      "symbols": [
+        "resolveLocalModSources",
+        "listModFiles"
+      ],
+      "summary": "Local source directory order and sorted files; currently emitted source scopes distinguished from wider enum.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "LET-S3",
+      "case_id": "AF-006",
+      "evidence_class": "documented contract",
+      "title": "src/mods/README.md",
+      "url": "https://github.com/letta-ai/letta-code/blob/8ec417abb05a0d7f4c2b7be3968345fbc48da294/src/mods/README.md",
+      "repository": "letta-ai/letta-code",
+      "commit": "8ec417abb05a0d7f4c2b7be3968345fbc48da294",
+      "path": "src/mods/README.md",
+      "blob_sha": "6d510f8ee3f9148614ee23b48353195a96ef2eef",
+      "symbols": [
+        "Design intent",
+        "compatibility",
+        "diagnostics"
+      ],
+      "summary": "Trusted agent-editable mod design favors recoverability/diagnostics/safe mode over strongly stable semantic SDK.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "LET-S4",
+      "case_id": "AF-006",
+      "evidence_class": "documented contract",
+      "title": "src/skills/builtin/creating-mods/references/architecture.md",
+      "url": "https://github.com/letta-ai/letta-code/blob/8ec417abb05a0d7f4c2b7be3968345fbc48da294/src/skills/builtin/creating-mods/references/architecture.md",
+      "repository": "letta-ai/letta-code",
+      "commit": "8ec417abb05a0d7f4c2b7be3968345fbc48da294",
+      "path": "src/skills/builtin/creating-mods/references/architecture.md",
+      "blob_sha": "0401599aa51e3668e7d27a8da81ebbf0f1d86fbd",
+      "symbols": [
+        "Mental model",
+        "Timers and subscriptions",
+        "Scoped conversation handles"
+      ],
+      "summary": "Authoring guardrails for narrow host APIs, avoiding internals, explicit state and cooperative cleanup.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "LET-S5",
+      "case_id": "AF-006",
+      "evidence_class": "inspected source",
+      "title": "src/mods/tool-registry.ts",
+      "url": "https://github.com/letta-ai/letta-code/blob/8ec417abb05a0d7f4c2b7be3968345fbc48da294/src/mods/tool-registry.ts",
+      "repository": "letta-ai/letta-code",
+      "commit": "8ec417abb05a0d7f4c2b7be3968345fbc48da294",
+      "path": "src/mods/tool-registry.ts",
+      "blob_sha": "ddb0d478c88f9facf4962f7d62093b5c5b1f39de",
+      "symbols": [
+        "registerModTool",
+        "unregisterModTool",
+        "unregisterModToolsForOwner",
+        "filterAvailableModToolsRegistry",
+        "runModTool"
+      ],
+      "summary": "Owner-checked deletion and aborted activation filtering/new-call guard; not proof in-flight effects ended.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "LET-S6",
+      "case_id": "AF-006",
+      "evidence_class": "inspected source",
+      "title": "src/mods/permission-registry.ts",
+      "url": "https://github.com/letta-ai/letta-code/blob/8ec417abb05a0d7f4c2b7be3968345fbc48da294/src/mods/permission-registry.ts",
+      "repository": "letta-ai/letta-code",
+      "commit": "8ec417abb05a0d7f4c2b7be3968345fbc48da294",
+      "path": "src/mods/permission-registry.ts",
+      "blob_sha": "bb38cf5fb9a264cb495d49d4e2c72887068eb34a",
+      "symbols": [
+        "checkModPermissions",
+        "composePermissionDecision"
+      ],
+      "summary": "Trusted mod permission policy aggregation and deny result on permission-check exception; not untrusted-code enforcement qualification.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "LET-S7",
+      "case_id": "AF-006",
+      "evidence_class": "inspected source",
+      "title": "src/mods/package-manifest.ts",
+      "url": "https://github.com/letta-ai/letta-code/blob/8ec417abb05a0d7f4c2b7be3968345fbc48da294/src/mods/package-manifest.ts",
+      "repository": "letta-ai/letta-code",
+      "commit": "8ec417abb05a0d7f4c2b7be3968345fbc48da294",
+      "path": "src/mods/package-manifest.ts",
+      "blob_sha": "c5b1a51e8df0efa28d320e696c5edaee3ae3190f",
+      "symbols": [
+        "managed mod package manifest"
+      ],
+      "summary": "Managed package metadata implementation inspected for scope, not treated as capability dependency graph.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "LET-T1",
+      "case_id": "AF-006",
+      "evidence_class": "inspected unrun test",
+      "title": "src/mods/mod-engine.test.ts",
+      "url": "https://github.com/letta-ai/letta-code/blob/8ec417abb05a0d7f4c2b7be3968345fbc48da294/src/mods/mod-engine.test.ts",
+      "repository": "letta-ai/letta-code",
+      "commit": "8ec417abb05a0d7f4c2b7be3968345fbc48da294",
+      "path": "src/mods/mod-engine.test.ts",
+      "blob_sha": "8a6c5606616f3e8f75927c5b80ac74d10e011789",
+      "symbols": [
+        "reload aborts old activations and ignores stale handles",
+        "reload publishes an empty snapshot while mods are loading",
+        "ignores stale reload completions"
+      ],
+      "summary": "Existing tests encode narrow generation/reload and stale-handle semantics.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "LET-T2",
+      "case_id": "AF-006",
+      "evidence_class": "inspected unrun test",
+      "title": "src/cli/mods/local-mod-loader-reserved-tools.test.ts",
+      "url": "https://github.com/letta-ai/letta-code/blob/8ec417abb05a0d7f4c2b7be3968345fbc48da294/src/cli/mods/local-mod-loader-reserved-tools.test.ts",
+      "repository": "letta-ai/letta-code",
+      "commit": "8ec417abb05a0d7f4c2b7be3968345fbc48da294",
+      "path": "src/cli/mods/local-mod-loader-reserved-tools.test.ts",
+      "blob_sha": "e0004dc78c00e02ca099ef725de267b5f8efac9d",
+      "symbols": [
+        "local mod loader reserved tool names"
+      ],
+      "summary": "Existing loader test rejects names reserved to built-in tools.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "LET-M1",
+      "case_id": "AF-006",
+      "evidence_class": "inspected source",
+      "title": "package.json",
+      "url": "https://github.com/letta-ai/letta-code/blob/8ec417abb05a0d7f4c2b7be3968345fbc48da294/package.json",
+      "repository": "letta-ai/letta-code",
+      "commit": "8ec417abb05a0d7f4c2b7be3968345fbc48da294",
+      "path": "package.json",
+      "blob_sha": "95ed24bba9b257711a327f5f897397b077166084",
+      "symbols": [
+        "name",
+        "version"
+      ],
+      "summary": "Inspected @letta-ai/letta-code package version 0.34.41; not identity-equivalent to tag.",
+      "retrieved_date": "2026-11-05",
+      "limits": "Read-only source inspection; not executed; claims apply only to this exact source pin."
+    },
+    {
+      "id": "LET-H1",
+      "case_id": "AF-006",
+      "evidence_class": "historical report/fix",
+      "title": "Retired server release 0.16.8",
+      "url": "https://github.com/letta-ai/letta/releases/tag/0.16.8",
+      "repository": "letta-ai/letta",
+      "commit": "1131535716e8a31c9a437f8695e25ac98f203a24",
+      "event_date": "2026-05-14T17:14:24Z",
+      "retrieved_date": "2026-11-05",
+      "summary": "Release notes include resolved sandbox-to-server pickle-to-JSON transport change.",
+      "limits": "Historical report/metadata inspected; not reproduced or executed in this task; current source coverage is identified separately."
+    },
+    {
+      "id": "LET-H2",
+      "case_id": "AF-006",
+      "evidence_class": "historical report/fix",
+      "title": "Merged V1 server PR #3343",
+      "url": "https://github.com/letta-ai/letta/pull/3343",
+      "repository": "letta-ai/letta",
+      "commit": "1131535716e8a31c9a437f8695e25ac98f203a24",
+      "event_date": "2026-05-14T16:58:55Z",
+      "retrieved_date": "2026-11-05",
+      "summary": "Merged security fix switches sandbox-to-server tool result transport to JSON; exact merge commit equals release tag commit; no current successor behavior inferred.",
+      "limits": "Historical report/metadata inspected; not reproduced or executed in this task; current source coverage is identified separately."
+    },
+    {
+      "id": "ADK-R1",
+      "case_id": "AF-001",
+      "evidence_class": "documented contract",
+      "title": "Release v2.13.0",
+      "url": "https://github.com/google/adk-python/releases/tag/v2.13.0",
+      "repository": "google/adk-python",
+      "tag": "v2.13.0",
+      "published_at": "2026-10-23T18:08:23Z",
+      "tag_commit": "d68ca857d5e3bab8e968d4e5f98ef028eb37dc87",
+      "annotated_tag_object": null,
+      "retrieved_date": "2026-11-05",
+      "limits": "Release metadata/tag target inspected separately; no assertion all default-head mechanisms shipped in this release."
+    },
+    {
+      "id": "PYD-R1",
+      "case_id": "AF-002",
+      "evidence_class": "documented contract",
+      "title": "Release v2.66.0",
+      "url": "https://github.com/pydantic/pydantic-ai/releases/tag/v2.66.0",
+      "repository": "pydantic/pydantic-ai",
+      "tag": "v2.66.0",
+      "published_at": "2026-11-04T11:51:46Z",
+      "tag_commit": "7d1d3f0191fd5d500b02e58dee2bf6d7adc1b967",
+      "annotated_tag_object": null,
+      "retrieved_date": "2026-11-05",
+      "limits": "Release metadata/tag target inspected separately; no assertion all default-head mechanisms shipped in this release."
+    },
+    {
+      "id": "MS-R1",
+      "case_id": "AF-003",
+      "evidence_class": "documented contract",
+      "title": "Release python-1.24.0",
+      "url": "https://github.com/microsoft/agent-framework/releases/tag/python-1.24.0",
+      "repository": "microsoft/agent-framework",
+      "tag": "python-1.24.0",
+      "published_at": "2026-10-30T21:52:13Z",
+      "tag_commit": "43d767c55050480e470ebf0a89caa4141d325ebf",
+      "annotated_tag_object": null,
+      "retrieved_date": "2026-11-05",
+      "limits": "Release metadata/tag target inspected separately; no assertion all default-head mechanisms shipped in this release."
+    },
+    {
+      "id": "MAS-R1",
+      "case_id": "AF-004",
+      "evidence_class": "documented contract",
+      "title": "Release @mastra/core@1.82.0",
+      "url": "https://github.com/mastra-ai/mastra/releases/tag/%40mastra/core%401.82.0",
+      "repository": "mastra-ai/mastra",
+      "tag": "@mastra/core@1.82.0",
+      "published_at": "2026-11-04T10:59:56Z",
+      "tag_commit": "6e8dfcb83facb0861ebefa4fee384429a113acf4",
+      "annotated_tag_object": "949afa750dc50749b140a9159528208274958172",
+      "retrieved_date": "2026-11-05",
+      "limits": "Release metadata/tag target inspected separately; no assertion all default-head mechanisms shipped in this release."
+    },
+    {
+      "id": "LET-R1",
+      "case_id": "AF-006",
+      "evidence_class": "documented contract",
+      "title": "Release v0.34.41",
+      "url": "https://github.com/letta-ai/letta-code/releases/tag/v0.34.41",
+      "repository": "letta-ai/letta-code",
+      "tag": "v0.34.41",
+      "published_at": "2026-11-05T04:23:03Z",
+      "tag_commit": "233c0034492b9782c9bec01002226b891e514745",
+      "annotated_tag_object": null,
+      "retrieved_date": "2026-11-05",
+      "limits": "Release metadata/tag target inspected separately; no assertion all default-head mechanisms shipped in this release."
+    }
+  ],
+  "access_limits": [
+    {
+      "subject": "Microsoft hosted Python middleware pivot",
+      "observed": "Specific pivot URL open failed or hosted generic page rendered .NET; Python contract therefore anchored to exact Python source and tests.",
+      "effect": "No .NET-to-Python implementation equivalence assumed."
+    },
+    {
+      "subject": "Eliza release collections",
+      "observed": "Newest collection/latest entries were pr-evidence artifact stores; attempted exact v2.0.12-beta.0 and @elizaos/core@2.0.12-beta.0 refs returned 404.",
+      "effect": "No matching product release claimed; this is a limited discovery result, not proof no version exists elsewhere."
+    },
+    {
+      "subject": "Eliza docs .md links",
+      "observed": "llms.txt .md URLs failed in web reader, but extensionless canonical pages opened.",
+      "effect": "Current canonical docs read; stale eliza.how search snippets not sole basis."
+    },
+    {
+      "subject": "Letta old default branch",
+      "observed": "Current old repository contains README/policy/navigation, and pinned README explicitly routes to active letta-code.",
+      "effect": "Current successor inspected; retired source is not treated as current product absence."
+    },
+    {
+      "subject": "Scale and isolation",
+      "observed": "No runtime tests, benchmark, package installation or remote enforcement qualification executed.",
+      "effect": "No installed/active plugin count, throughput, fleet envelope or hostile-code guarantee asserted."
+    }
+  ],
+  "proposed_experiments": [
+    {
+      "case_id": "AF-001",
+      "evidence_class": "proposed experiment",
+      "status": "not run; not authorized implementation",
+      "description": "ADK first-non-None versus notification dispatch and borrowed child close ownership."
+    },
+    {
+      "case_id": "AF-002",
+      "evidence_class": "proposed experiment",
+      "status": "not run; not authorized implementation",
+      "description": "Pydantic duplicate exposed tool names/provenance, singleton requires boundary, and per-run instance-reference ordering caveat."
+    },
+    {
+      "case_id": "AF-003",
+      "evidence_class": "proposed experiment",
+      "status": "not run; not authorized implementation",
+      "description": "Microsoft indivisible bundle category rejection and deterministic buffered/unbuffered final gate."
+    },
+    {
+      "case_id": "AF-004",
+      "evidence_class": "proposed experiment",
+      "status": "not run; not authorized implementation",
+      "description": "Mastra same-ID versus distinct-ID state, and deterministic retry-count oracle."
+    },
+    {
+      "case_id": "AF-005",
+      "evidence_class": "proposed experiment",
+      "status": "not run; not authorized implementation",
+      "description": "Eliza missing/cycle diagnostics/returned closure and partial activation/replacement failure cleanup."
+    },
+    {
+      "case_id": "AF-006",
+      "evidence_class": "proposed experiment",
+      "status": "not run; not authorized implementation",
+      "description": "Letta overlapping reload completion, exact-owner successor cleanup and pending old invocation cancellation."
+    }
+  ],
+  "inference_limits": [
+    "Callback/middleware/toolset contracts are not relabeled full artifact plugin Hosts.",
+    "Source-visible loops/edges identify potential work, not observed scalability defects.",
+    "Hidden model-facing tools do not independently prove permission revocation.",
+    "Cleanup return, stream construction and registry removal are not universal physical completion receipts.",
+    "Historical repaired incidents remain dated and scoped to their actual implementation lineage."
+  ],
+  "corrections": [
+    {
+      "date": "2026-11-05",
+      "case_id": "AF-005",
+      "source_id": "ELI-S3",
+      "origin": "Independent critic relayed by root; researcher re-read exact pinned source",
+      "earlier_interpretation": "Registration failure always preserved after partial teardown.",
+      "corrected_interpretation": "Original registration error is rethrown when teardown succeeds; teardown AggregateError can propagate instead when cleanup fails.",
+      "evidence_class": "inspected source",
+      "execution_status": "No tests or runtime experiment executed."
+    }
+  ]
+}

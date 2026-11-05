@@ -10,9 +10,14 @@ summary: Primary evidence from OTP, NGINX, Envoy, JavaScript hosts, Wasm and dep
 
 Research date: **2026-10-21 UTC**. Assignment: seven concrete comparison cases, primary evidence, production cutover/failure semantics, and applicability to a TypeScript/Node/browser product using Get Modular (GM) and Extension Foundation (EF). **Research only; this memo does not approve architecture changes.** No implementation or remote changes were made. Repository ownership and adoption provenance are recorded in the [review record](plugin-research-review-and-decision-record.md); the cross-system researcher did not independently re-audit those repositories.
 
-## Decision in one paragraph
+## Research recommendation for an admitted replacement profile
 
-**Use independently constructed generations with explicit Host admission and retirement, choosing an execution boundary that can actually be retired.** NGINX/Envoy supply the most transferable operational pattern: prepare a replacement, establish its readiness, route new work to it, preserve old work’s old execution context, and retire the old context under a deadline. Erlang supplies unusually strong *VM-specific* code/state upgrade machinery, not a portable TypeScript recipe. Node ESM cache tricks and Vite HMR do not supply production unload or recovery. Wasmtime/Extism can make instance ownership and resource limits clearer, but do not supply application publication, durable effects, or distributed fencing. Kubernetes is a useful deployment boundary, not a module kernel. These are recommendations inferred from the cases below; none authorizes a second GM lifecycle/composition engine or an EF-owned operational Host.
+**If an owning product later admits executable replacement, evaluate independently constructed generations with explicit Host admission and retirement, using an execution boundary that can actually be retired.** NGINX/Envoy supply the most transferable operational pattern for that hypothesis: prepare a replacement, establish its readiness, route new work to it, preserve old work’s old execution context, and retire the old context under a deadline. Erlang supplies unusually strong *VM-specific* code/state upgrade machinery, not a portable TypeScript recipe. Node ESM cache tricks and Vite HMR do not supply production unload or recovery. Wasmtime/Extism can make instance ownership and resource limits clearer, but do not supply application publication, durable effects, or distributed fencing. Kubernetes is a useful deployment boundary, not a module kernel. These are recommendations inferred from the cases below; none authorizes a second GM lifecycle/composition engine or an EF-owned operational Host.
+
+**Authority clarification, 2026-11-05:** the owner-confirmed baseline is static
+composition with controlled restart. This October comparison remains optional
+replacement research, not a decision to implement overlap or seamless hot swap.
+See the [current synthesis](plugin-research-synthesis-and-authority-2026-11-05.md).
 
 ## Evidence conventions and limits
 

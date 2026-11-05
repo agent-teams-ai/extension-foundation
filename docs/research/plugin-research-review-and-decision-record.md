@@ -20,7 +20,24 @@ Fresh main ADR-0114/0115 resolves the previously reported PostgreSQL adoption
 gap; accepted ADR-0116 in unmerged PR90 selects native Temporal for Fully Local.
 Earlier review sections retain their dates and source pins as history.
 
-## Recommendation and authority
+## Current authority clarification, 2026-11-05
+
+Research, critic dispositions and experiments preserve information; they do not
+approve unresolved implementation. The owner reconfirmed this distinction for
+the [expanded framework research](plugin-research-synthesis-and-authority-2026-11-05.md).
+The word "Decision" in this historical document title does not grant it ADR
+authority. "Adopt" in its original critic table means incorporate a research
+correction, as that table already states.
+
+Orchestrator's accepted
+[ADR-0117](https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/main/docs/decisions/0117-reconcile-mandatory-module-composition.md)
+now owns its reconciled module-adoption baseline. Read the
+[current authority map](plugin-industry-and-scale-review-2026-11-05.md#research-coverage-and-current-authority)
+before interpreting the October pins or PR stacking instructions below. They
+remain dated provenance, not current migration commands. The confirmed restart
+baseline does not select the optional overlapping-worker proposal.
+
+## Historical recommendation and authority, 2026-10-21
 
 Complete the authorized installation, research and navigation repairs. Preserve the approved direction: immutable Get Modular (GM) graphs, mandatory GM/static Feature Module Standard v1.1 in Orchestrator under ADR-0110, neutral Extension Foundation (EF) primitives, and product-owned executable admission, routing, recovery and retirement. Make production hot replacement a first-class **qualification target** for a bounded capability; do not present it as an already delivered library guarantee.
 
@@ -28,7 +45,7 @@ For a first dynamic profile, investigate one trusted, overlap-safe, request-orie
 
 The evidence supports scoped guarantees and useful qualification scenarios. It does not support “world-leading,” universal safe unload, cross-platform hostile-code isolation, or automatic state/effect rollback.
 
-## Verified baseline and adoption provenance
+## Historical verified baseline and adoption provenance, 2026-10-21
 
 The supplied refreshed baselines are GM `7131d0d7a6bb5dd4c3e8906ccac065c0be0e0333`, EF `9ea7024672ae06a15c701fa1e23bf6db37975e20`, and Orchestrator main `98f653172215e2a2c73cc484db3fa4fe72ed21ba`. Orchestrator PR 86 at `8483949960cb783fe70090e2e7fbf526a043d362` descends directly from that main and contains owner-approved [ADR-0110][o110]. Its mandatory GM/static-FMS v1.1 selection is settled; runtime migration and qualification remain pending.
 

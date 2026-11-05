@@ -16,6 +16,14 @@ a released runtime, a security audit or a performance qualification.
 
 ## Current synthesis
 
+The [expanded research and authority synthesis](plugin-research-synthesis-and-authority-2026-11-05.md)
+adds six agent ecosystems, six specialized plugin frameworks and two adjacent
+data-plane systems. It separates documented contracts, inspected implementation,
+unrun upstream tests, historical corrections and unadopted transfer hypotheses.
+The owner's 2026-11-05 clarification is explicit: save research for reuse, discuss
+design decisions separately, and implement only the confirmed scope. Agreement
+between critics or a passing experiment cannot approve an unresolved design.
+
 The [packed public-consumer E2E continuation](packed-extension-consumer-e2e-2026-11-05.md)
 records ten executed public-package scenarios through the unchanged discovery
 use case, independent result criticism and its exact product-level limits.
@@ -66,8 +74,9 @@ schedule a warranted rollout outside ordinary invocation; Rust can improve a
 specific custody/engine/computation boundary with evidence. Neither technology
 supplies the missing product authority by itself.
 
-The first hot-replacement target remains a trusted, overlap-safe bounded request
-cohort. Deep customization also includes ordinary contributions, explicit
+The earlier hot-replacement proposal studies a trusted, overlap-safe bounded
+request cohort; it remains an optional unadopted hypothesis beyond the confirmed
+controlled-restart baseline. Deep customization also includes ordinary contributions, explicit
 provider substitution and build-time/restart profiles. These useful authoring
 paths must not inherit all Host durability machinery.
 
@@ -83,9 +92,10 @@ are preserved in the [experiment](worker-adapter-replacement-experiment.md).
 
 | Question | Read next | Decision owner |
 | --- | --- | --- |
+| What do further agent platforms and specialist frameworks actually implement? | [Agent framework evidence](agent-framework-extension-evidence-2026-11-05.md), [specialist framework evidence](specialist-plugin-framework-evidence-2026-11-05.md), [cross-case synthesis](plugin-research-synthesis-and-authority-2026-11-05.md) | Research supplies facts and conditional lessons; existing owners decide adoption |
 | What do current agent products and current scale evidence change? | [Plugin Industry and Scale Review 2026-11-05](plugin-industry-and-scale-review-2026-11-05.md) | Existing composition, contract, product and execution owners; research is not adoption |
 | How should ordinary modules be declared, composed and tested? | [Current GM authoring guide](https://github.com/agent-teams-ai/get-modular/blob/main/docs/guides/module-authoring.md), [Consumer Module Standard](https://github.com/agent-teams-ai/get-modular/blob/main/docs/architecture/common-assembly.md#consumer-module-standard) | Get Modular semantics; each product's adoption profile |
-| What bounded production hot-reload profile is worth qualifying first? | [Hot Reload and Generation Replacement](hot-reload-and-generation-replacement.md) | Product Host; EF [OD-003](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md) and product lifecycle decision |
+| What optional replacement profiles were researched? | [Hot Reload and Generation Replacement](hot-reload-and-generation-replacement.md) | Product Host; EF [OD-003](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md) and product lifecycle decision |
 | Can replacement be an ordinary reusable library, and which mechanics already exist? | [Reusable Generation Mechanisms and Ownership](reusable-generation-mechanisms-and-ownership.md) | Existing kernel/execution owners; residual mechanism owner only after its real boundary is shown |
 | Can Temporal replace custom rollout scheduling, including local deployments? | [Temporal and Rollout Orchestration](temporal-and-rollout-orchestration.md) | Owning product operation and scheduling adapter; existing hosted/local adoption |
 | Which critical components justify Rust or another language? | [Critical Components and Language Boundaries](critical-components-and-language-boundaries.md) | Existing responsibility owner and exact language/runtime adoption |
@@ -125,7 +135,9 @@ Clean Architecture means domain/application code sees its own narrow ports,
 not a plugin SDK or container. SOLID means contract owners define substitutable
 behavior and independently exercise implementations. DRY means one owner for a
 shared invariant and its tests; it does not justify a generic service bag or
-shared domain model. Pluggability means a declared, qualified replacement seam,
+shared domain model. DDD keeps actual bounded-context language and invariants with their owner; a
+plugin package or callback phase is not automatically a bounded context.
+Pluggability means a declared, qualified replacement seam,
 not turning every helper, class, endpoint or package into a module.
 
 ## Pattern and failure register
@@ -158,9 +170,14 @@ proposed rejecting scenario.
 
 ## Qualification target and claims discipline
 
-The synthesis recommends one trusted, request-oriented, overlap-safe cohort in
+**Authority clarification, 2026-11-05:** static composition with controlled
+restart is the owner-confirmed baseline. The earlier overlapping-worker scope
+below is optional comparative research. It is pursued only if an actual product
+capability justifies the stronger requirement and its owner selects that scope.
+
+The earlier synthesis proposes one trusted, request-oriented, overlap-safe cohort in
 a Node worker, with a fresh immutable GM instance per generation and product
-canonical publication/admission/recovery. This is a concrete next research and
+canonical publication/admission/recovery. This is a concrete optional research and
 qualification target. It is not an accepted worker runtime, a released lifecycle
 kernel, a public SPI or a substitute for the product's admission decision.
 
@@ -221,8 +238,11 @@ accepted pins and archived runs remain unchanged.
 1. Start from the owning accepted ADR and current implementation contract. Read
    the relevant research row and its counterexamples before proposing a design.
 2. For every new fact, record the primary URL, retrieval date, version/commit,
-   scope, observed behavior, known limitation and practical implication. Use
+   technology, actual extension unit, scope, observed behavior, known limitation,
+   counterevidence and practical implication. Use
    an immutable source pin when available. Label unversioned or development docs.
+   Separate an inspected branch from a released feature and identify repository
+   migrations rather than treating a retired source tree as a current product.
 3. Separate inspected implementation, inspected-but-unrun test assertions,
    maintainer/user reports, fixed historical mechanisms, inference and executed
    local qualification. An issue closed as duplicate or stale is not a fix.
@@ -241,9 +261,13 @@ accepted pins and archived runs remain unchanged.
    instead of cloning the same research. Keep local conformance results beside
    their owning code, and record unresolved adoption in the owning open decision.
 8. Before proposing production work, present concrete alternatives with
-   confidence/reliability/complexity scores and scoped production/test LOC,
-   assumptions and remaining evidence. Preserve decisions already approved by
-   the owner; discuss genuine conflicts through a successor decision.
+   confidence/reliability/complexity scores out of ten and separate production,
+   integration and test LOC ranges, assumptions, uncertainty and release cost.
+   Higher complexity means more burden; scores are judgments, not measurements.
+   Preserve decisions already approved by the owner; discuss genuine conflicts
+   through a successor decision. A transfer hypothesis remains unadopted until
+   the owning decision records approval. Do not implement it merely because
+   researchers agree, competitors use it or a prototype passes.
 
 Research documents use the existing repository Docs Protocol with type
 `research` and statuses `active` or `archived`. Neither status means accepted or
