@@ -17,7 +17,9 @@ a released runtime, a security audit or a performance qualification.
 ## Current synthesis
 
 The [packed public-consumer E2E continuation](packed-extension-consumer-e2e-2026-11-05.md)
-records the reviewed next executable slice and its exact product-level limits.
+records ten executed public-package scenarios through the unchanged discovery
+use case, independent result criticism and its exact product-level limits.
+The corrected local run passes; four hosted portability lanes remain pending.
 The earlier `2b10732` checkpoint has completed hosted CI successfully; the
 managed embedded-compiler adoption conflict remains separately recorded.
 

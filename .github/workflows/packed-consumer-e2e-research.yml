@@ -1,0 +1,137 @@
+name: Packed consumer E2E research
+
+on:
+  push:
+    branches: [docs/plugin-research-hot-reload-20261021]
+    paths:
+      - .github/workflows/packed-consumer-e2e-research.yml
+      - docs/research/evidence/packed-consumer-e2e-20261105-inputs.*
+
+permissions:
+  contents: read
+
+jobs:
+  consumer:
+    if: github.repository == 'agent-teams-ai/extension-foundation'
+    name: packed-consumer-${{ matrix.id }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: linux-node24
+            os: ubuntu-24.04
+            node: 24.21.0
+          - id: linux-node26
+            os: ubuntu-24.04
+            node: 26.11.1
+          - id: macos-node26
+            os: macos-15
+            node: 26.11.1
+          - id: windows-node26
+            os: windows-2022
+            node: 26.11.1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1; existing repo pin
+        with:
+          persist-credentials: false
+      - name: Verify exact reviewed input archive and stage outside checkout
+        id: inputs
+        shell: bash
+        env:
+          E2E_ROOT: ${{ runner.temp }}/packed-consumer-e2e
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, os, pathlib, tarfile
+          base = pathlib.Path(os.environ['GITHUB_WORKSPACE']) / 'docs/research/evidence'
+          archive = base / 'packed-consumer-e2e-20261105-inputs.tar.gz'
+          ledger = json.loads((base / 'packed-consumer-e2e-20261105-inputs.json').read_text())
+          digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+          assert digest == ledger['sha256'] == '61fc7aa6b921ce9e68ea8c52165aa08ca6f0f06efdae114e3a23bf779cbbd500'
+          expected = {item['path']: item for item in ledger['members']}
+          root = pathlib.Path(os.environ['E2E_ROOT'])
+          assert not root.exists()
+          with tarfile.open(archive, 'r:gz') as package:
+              members = package.getmembers()
+              assert len(members) == len(expected) == 29
+              assert len({item.name.casefold() for item in members}) == len(members)
+              for item in members:
+                  name = pathlib.PurePosixPath(item.name)
+                  assert item.isfile() and not name.is_absolute() and '..' not in name.parts
+                  assert '\\' not in item.name and ':' not in item.name and item.name in expected
+                  assert item.size == expected[item.name]['bytes']
+              root.mkdir(parents=True)
+              for item in members:
+                  stream = package.extractfile(item)
+                  assert stream is not None
+                  data = stream.read()
+                  assert hashlib.sha256(data).hexdigest() == expected[item.name]['sha256']
+                  destination = root / item.name
+                  destination.parent.mkdir(parents=True, exist_ok=True)
+                  destination.write_bytes(data)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('manifest=' + os.path.relpath(root / 'package.json', os.environ['GITHUB_WORKSPACE']) + '\n')
+          print('Verified and staged', len(members), 'regular files:', digest)
+          PY
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0; existing repo pin
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9 peeled commit
+        with:
+          version: 11.25.0
+          package_json_file: ${{ steps.inputs.outputs.manifest }}
+          run_install: false
+          standalone: false
+          cache: false
+      - name: Frozen compiler install and strict public-package E2E
+        shell: bash
+        env:
+          E2E_ROOT: ${{ runner.temp }}/packed-consumer-e2e
+        run: |
+          set -euo pipefail
+          cd "$E2E_ROOT"
+          pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies 2>&1 | tee install.log
+          pnpm e2e 2>&1 | tee e2e.log
+      - name: Collect actual inputs, receipts and logs without dependency stores
+        if: always()
+        shell: bash
+        env:
+          E2E_ROOT: ${{ runner.temp }}/packed-consumer-e2e
+          E2E_EVIDENCE: ${{ runner.temp }}/packed-consumer-e2e-evidence
+          E2E_JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, os, pathlib, tarfile
+          root = pathlib.Path(os.environ['E2E_ROOT'])
+          evidence = pathlib.Path(os.environ['E2E_EVIDENCE'])
+          evidence.mkdir(parents=True, exist_ok=True)
+          archive = evidence / 'execution.tar.gz'
+          with tarfile.open(archive, 'w:gz') as package:
+              if root.exists():
+                  for parent, directories, files in os.walk(root):
+                      directories[:] = sorted(name for name in directories if name != 'node_modules')
+                      for name in sorted(files):
+                          path = pathlib.Path(parent) / name
+                          if path.is_file() and not path.is_symlink():
+                              package.add(path, arcname=path.relative_to(root).as_posix(), recursive=False)
+          result = {'statusBeforeCollection': os.environ['E2E_JOB_STATUS'],
+                    'inputCommit': os.environ['GITHUB_SHA'], 'runId': os.environ['GITHUB_RUN_ID'],
+                    'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'], 'runnerOS': os.environ['RUNNER_OS'],
+                    'runnerArch': os.environ['RUNNER_ARCH'], 'archive': archive.name,
+                    'sha256': hashlib.sha256(archive.read_bytes()).hexdigest()}
+          (evidence / 'collection.json').write_text(json.dumps(result, indent=2) + '\n')
+          print(json.dumps(result))
+          PY
+      - name: Retain success or failure evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2; retained research pin
+        with:
+          name: packed-consumer-${{ matrix.id }}-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/packed-consumer-e2e-evidence/
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 14

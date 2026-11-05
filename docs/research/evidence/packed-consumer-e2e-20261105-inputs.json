@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "scope": "Frozen reviewed public-package integration E2E inputs; not product Host/custody qualification",
+  "sourceRevision": "5a8496ce711909e381c5bc817fff5500be9a1761",
+  "archive": "packed-consumer-e2e-20261105-inputs.tar.gz",
+  "sha256": "61fc7aa6b921ce9e68ea8c52165aa08ca6f0f06efdae114e3a23bf779cbbd500",
+  "archiveBytes": 105046,
+  "memberCount": 29,
+  "members": [
+    {
+      "path": "README.md",
+      "bytes": 4751,
+      "sha256": "a0d27906b8dcd9aca029aa3be654ef5a34f8f146da332110de3b341748cca14d"
+    },
+    {
+      "path": "consumer/composition.ts",
+      "bytes": 3453,
+      "sha256": "5f4e5621a22cbb03c4f31bafdd1a75af1f68adc7a8cd989dd5a66b3127eb9efb"
+    },
+    {
+      "path": "consumer/consumer.ts",
+      "bytes": 5578,
+      "sha256": "10ac565cd356febaba5fddde9730694df35e661764ab873d6c3a412c254c738a"
+    },
+    {
+      "path": "fixtures/IMPLEMENTATION.md",
+      "bytes": 4996,
+      "sha256": "3d749fba95fb4810493440fffdf5e0901a619e22e6d9af09a091217f10779566"
+    },
+    {
+      "path": "fixtures/extension/package.json",
+      "bytes": 340,
+      "sha256": "d8bafbfc5bab229f943d2e7e1d22b6329057632d28719224b43dea5f93794c81"
+    },
+    {
+      "path": "fixtures/extension/src/index.ts",
+      "bytes": 1478,
+      "sha256": "2cdb7758dc747218a728f1b6ddb24f88390305b6f9da02dce0b1c9e0679db5a7"
+    },
+    {
+      "path": "fixtures/helper/package.json",
+      "bytes": 208,
+      "sha256": "b9e5bb5426560b3383fd181925be3aa13a42455614e0005af53d23dd3be2805b"
+    },
+    {
+      "path": "fixtures/helper/src/index.ts",
+      "bytes": 277,
+      "sha256": "2e6552c36673cf9153b4e3b43b9b26981db1cb883bb60f551f2e227a38f4fd43"
+    },
+    {
+      "path": "inputs/a/README.md",
+      "bytes": 538,
+      "sha256": "b5f487db12a53ed501e3d186507f44f329d54372374fec6fe16ceb0319bacb62"
+    },
+    {
+      "path": "inputs/a/package.json",
+      "bytes": 1026,
+      "sha256": "1c5e5ab29d6d9838cd63ad668843bd6c8faa29377498dbb043b3808014120a6d"
+    },
+    {
+      "path": "inputs/a/src/features/host-discovery/README.md",
+      "bytes": 3053,
+      "sha256": "6d3487ac13cd1932e24306118d4589bbbeebb422cb2e9672888349b0e20a9c38"
+    },
+    {
+      "path": "inputs/a/src/features/host-discovery/application/discover-local-host.ts",
+      "bytes": 6805,
+      "sha256": "c5a88ce5c0fad308c7cb8df08157e32fd54a0cbad2bef42c74b92449d8d0f8c7"
+    },
+    {
+      "path": "inputs/a/src/features/host-discovery/application/host-discovery-validation.ts",
+      "bytes": 13290,
+      "sha256": "59b407cded9a0372930ceabdec616dc63526476adb9c20b7440f7a2586455732"
+    },
+    {
+      "path": "inputs/a/src/features/host-discovery/application/model/host-discovery.ts",
+      "bytes": 8531,
+      "sha256": "cf0d3b77a12dd8f132783e3aca2fb3c1e6e97a21f9478efb2d0c9ac108c203b4"
+    },
+    {
+      "path": "inputs/a/src/features/host-discovery/application/ports/host-discovery-source.ts",
+      "bytes": 1042,
+      "sha256": "ec806dcd8f34fd2d107844a63afa409c2e3084cbd0672087b8316cf9dcded4de"
+    },
+    {
+      "path": "inputs/a/src/features/host-discovery/index.ts",
+      "bytes": 171,
+      "sha256": "9fc33284c91dc42ece144e0e286b387369f58a1a770f2ae4f5d6b5364b0524fe"
+    },
+    {
+      "path": "inputs/a/src/index.ts",
+      "bytes": 52,
+      "sha256": "9daf968d0e33d2afa7d43d8f20eba73023105fd6f8425a9c38c0468890370b09"
+    },
+    {
+      "path": "inputs/a/tsconfig.json",
+      "bytes": 395,
+      "sha256": "42ae2eff49d4712368d27e372ac606515c4a6a1c1ca9dabb2bf4a9776b66c263"
+    },
+    {
+      "path": "inputs/base-preset.original.json",
+      "bytes": 492,
+      "sha256": "042fe6784f78dfc94514b41ec6400a95ea514215fd599de7ab42cc9b1d08da73"
+    },
+    {
+      "path": "inputs/get-modular-assembly-0.5.0.tgz",
+      "bytes": 28311,
+      "sha256": "6112f57755ff9cf3f7b3379b8f932421499cf5db3320b7e4c3aefd998ec36862"
+    },
+    {
+      "path": "inputs/get-modular-core-0.5.0.tgz",
+      "bytes": 50256,
+      "sha256": "7943f054427282b68cd57e3f790acca62e14cbae67ea62b227f363a8d2614328"
+    },
+    {
+      "path": "inputs/node-preset.original.json",
+      "bytes": 167,
+      "sha256": "a9e11ee29e5fa8d269d85a66f6e9dfd294c8b60e68f3157dc4f8b2d846a5fa6b"
+    },
+    {
+      "path": "inputs/provenance.json",
+      "bytes": 4208,
+      "sha256": "75177a179d8cc314f456339b885543b660e31587f5f338711c79f8494b53340d"
+    },
+    {
+      "path": "inputs/root-tsconfig.original.json",
+      "bytes": 581,
+      "sha256": "d490f29993e9c8b5fdf886bb0b1a0dd053717e01cf68e64ae112211118df4e01"
+    },
+    {
+      "path": "package.json",
+      "bytes": 476,
+      "sha256": "b6181d636c98b3ad00f78109e226eb0c1ae541182f7566612a2bdaa99b7eba3d"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 8019,
+      "sha256": "7be86a8a676d6a876cbe0dee8ee21db85e716c9743d1f59e784e1ccf876bc5ed"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "bytes": 63,
+      "sha256": "6b115c4762cd3cd53450b40e03d5e86bd8cdfa2734898089b364ffef4576a996"
+    },
+    {
+      "path": "src/e2e.test.ts",
+      "bytes": 16264,
+      "sha256": "91f4e5dd2fe94a88231105ee40ae125c8cc5220a0c8eb1d0807c095a8bab8e82"
+    },
+    {
+      "path": "tsconfig.json",
+      "bytes": 706,
+      "sha256": "25061c1d2cf0468d17211a9783f1da31a72722882873860fc1f35233905e71e8"
+    }
+  ]
+}

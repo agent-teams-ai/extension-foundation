@@ -10,7 +10,7 @@ summary: Reviewed packed public-contract experiment, actual invocation evidence,
 
 ## Scope and authority
 
-**Observed 2026-11-05. Initial checkpoint: reviewed plan; execution pending.**
+**Observed 2026-11-05. Corrected local execution passed; hosted lanes pending.**
 This continues the owner's E2E request after the
 [industry and scale review](plugin-industry-and-scale-review-2026-11-05.md).
 The selected scope is **public-package integration E2E** through an unchanged
@@ -110,8 +110,70 @@ legacy CLI; no managed state, dependency pin or required gate is weakened.
 
 ## Open questions and validation
 
-Execution is pending at this plan checkpoint. Preserve initial failures, fixes,
-independent result reviews and exact final inputs when appending results.
+### Executed local result
+
+The corrected third local run passed **ten named scenarios plus their enclosing
+test: 11 passed, zero failures, cancellations or skips**. The actual runtime was
+Linux, Node 24.22.1, pnpm 11.25.0 and TypeScript 7.0.2. All 27 child commands
+completed with exit zero and no terminating signal; ten fresh scenario processes
+ran. These counts describe one finite experiment, not a reliability percentage.
+
+The [frozen input archive](evidence/packed-consumer-e2e-20261105-inputs.tar.gz)
+and [member ledger](evidence/packed-consumer-e2e-20261105-inputs.json) preserve
+29 regular files, 105,046 archive bytes, SHA-256
+`61fc7aa6b921ce9e68ea8c52165aa08ca6f0f06efdae114e3a23bf779cbbd500`.
+Start its `README.md` for exact reproduction. New maintained code is **433
+TypeScript lines**: 39 fixture, 161 TEST consumer/composition and 233 driver
+lines. Production and product-integration code remain zero. Copied product
+inputs and generated JavaScript/declarations are counted separately.
+
+Two independent execution critics inspected source, logs and receipts. The
+artifact critic also compared every packed and installed A/B/H regular file:
+20/4/4 files respectively, with identical sets and bytes. B resolves its A peer
+and H helper to the same physical packages used by the consumer. These are
+read-only checks of retained evidence, not additional runtime executions.
+
+The actual A invocation changes from not-found to the expected B/H candidate,
+including protocol 3 and mandatory authenticated handshake, and preserves the
+delegated baseline result. Both ambiguous enumeration orders fail real GM
+preparation before any factory or executable B/H evaluation. Explicit binding
+works, and one full enumeration reversal preserves plan, digest and behavior.
+Source failure, wrong target and exact expiry preserve A's actual validation.
+The pending old source remains independent while a fresh B-bound instance
+completes; fresh construction without B restores the literal baseline.
+
+### Failures and corrections retained
+
+1. The first run failed installing the unpublished helper: pnpm 11 ignored the
+   old `package.json` overrides location and requested the registry package.
+   Generated self-only `pnpm-workspace.yaml` overrides fixed the install.
+2. The second run passed its behavioral assertions but actually ran A's
+   `prepack` clean/build. Environment and `.npmrc` configuration did not suppress
+   it. Its final bytes and logs remain historical evidence; it does not prove
+   the intended explicit-build-only route. The corrected run passes the actual
+   CLI option `--config.ignore-scripts=true` and asserts every `dist` inventory
+   unchanged during packing. The original A manifest and source stay unchanged.
+3. A critic found that receipt status could say passed after ten assertions even
+   if final evidence collection failed. The corrected driver records success
+   only after the complete body finishes. It also checks both compiled consumer
+   files for equality across all three installations.
+
+The corrected input passed a frozen compiler install and full strict E2E again.
+No failed result was relabeled as a pass. The consumer inherits the trusted
+parent environment, with nested-test context cleared; this is not a hermetic or
+hostile execution boundary.
+
+### Hosted validation checkpoint
+
+A temporary branch-only workflow stages the exact checked input archive outside
+the EF workspace and runs the same finite experiment on Linux Node 24.21.0,
+Linux Node 26.11.1, macOS 15 Node 26.11.1 and Windows 2022 Node 26.11.1.
+These lanes are **pending**, not passed, at this checkpoint. It uses its own
+frozen strict compiler install and does not execute the legacy Foundation CLI.
+Actual completed results and original hosted artifacts will be retained before
+the temporary workflow is removed.
+
+### Remaining product boundary
 
 The application consuming a real extension point, a public product plugin
 admission/configuration surface and the actual artifact-to-executor custody
@@ -123,7 +185,7 @@ owner inside a test or infer retirement/drain from concurrent instance binding.
 
 | Selected direction | Confidence /10 | Scoped reliability /10 | Complexity /10 | Incremental code |
 | --- | --- | --- | --- | --- |
-| Actual A port plus packed B/H and thin GM TEST composition | 9 | 9 after the named checks pass | 3 | Zero production; roughly 80–150 integration and 220–350 test/packing lines, with about twofold uncertainty. |
+| Actual A port plus packed B/H and thin GM TEST composition | 9 | 9 within the named finite checks | 3 | Zero production/product integration; 200 fixture and TEST composition/consumer plus 233 driver lines, measured. |
 | New general plugin Host/SPI to satisfy this experiment | 3 | Not qualified | 8 | Not bounded by this slice; requires its owning decision and real consumer. |
 
 Scores are planning judgments, not measured uptime or product qualification.
