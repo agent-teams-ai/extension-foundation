@@ -1,0 +1,1650 @@
+{
+  "schema": "plugin-modularity-research-source-ledger/v1",
+  "research_date": "2026-11-05",
+  "report": "specialist-frameworks.md",
+  "status": "research-only; all transfer ideas unadopted",
+  "scope": "Six specialist cases; source research only.",
+  "authority_boundaries": {
+    "GM": "Neutral declarations/identity/cardinality/bindings/graph and bounded diagnostics.",
+    "EF": "Neutral extension/artifact/trust/protocol/conformance.",
+    "product": "Concrete contract/grants/loading/readiness/lifecycle/canonical/domain state.",
+    "execution": "Existing physical custody/retirement."
+  },
+  "confirmed_direction": "Static composition plus controlled restart; no new Host/SPI/runtime/manager/container.",
+  "retrieval_methods": [
+    "Read-only public web search/open for primary docs/change records.",
+    "Read-only git ls-remote for tags and peeled commits.",
+    "Read-only HTTPS exact raw source, GitHub REST release metadata, tree path discovery."
+  ],
+  "not_performed": [
+    "Installs",
+    "Tests",
+    "Proposed falsifiers",
+    "Benchmarks",
+    "Product edits",
+    "Remote mutation",
+    "Adoption"
+  ],
+  "cases": [
+    {
+      "id": "SF-PLG",
+      "repository": "https://github.com/pytest-dev/pluggy",
+      "tag": "1.7.0",
+      "commit": "4c7f6365f2dde09c11e72db67d0f615231d64c19",
+      "release_relationship": "Annotated tag peeled; changelog 2026-10-14; PyPI upload observed 2026-10-15. GitHub release endpoint 404.",
+      "technology": "Python >=3.10",
+      "actual_extension_units": "Plugin object/module, hookspec, hookimpl, caller invocation",
+      "source_ids": [
+        "PLG-PKG",
+        "PLG-DOCSRC",
+        "PLG-MGR",
+        "PLG-CALLER",
+        "PLG-EXEC",
+        "PLG-REL",
+        "PLG-TEST",
+        "PLG-DOC",
+        "PLG-PYPI"
+      ],
+      "transfer_status": "unadopted",
+      "confidence": "High for named source paths; broader runtime, cleanup, security and scale unqualified.",
+      "proposed_falsifier": {
+        "evidence_class": "proposed experiment",
+        "executed": false,
+        "proposal": "Historic replay adds a spec before a later invalid hook; inspect resulting manager state. Reverse equal-priority registrations separately."
+      }
+    },
+    {
+      "id": "SF-PF4J",
+      "repository": "https://github.com/pf4j/pf4j",
+      "tag": "release-3.16.1",
+      "commit": "6ffa261f0e28f88a9115432482cad64979715a0d",
+      "release_relationship": "Annotated tag peeled; GitHub non-prerelease published 2026-11-03T21:43:59Z; POM version matches.",
+      "technology": "Java/JVM, compiler release 8",
+      "actual_extension_units": "Artifact/descriptor, optional Plugin lifecycle, typed extension class/instance",
+      "source_ids": [
+        "PF4J-PKG",
+        "PF4J-MGR",
+        "PF4J-RESOLVER",
+        "PF4J-FINDER",
+        "PF4J-WRAPPER",
+        "PF4J-FACTORY",
+        "PF4J-CL",
+        "PF4J-ASM",
+        "PF4J-TEST",
+        "PF4J-DOCEXT",
+        "PF4J-DOCLIFE",
+        "PF4J-DOCCL",
+        "PF4J-TROUBLE",
+        "PF4J-REL"
+      ],
+      "transfer_status": "unadopted",
+      "confidence": "High for named source paths; broader runtime, cleanup, security and scale unqualified.",
+      "proposed_falsifier": {
+        "evidence_class": "proposed experiment",
+        "executed": false,
+        "proposal": "A.start throws; B requires A; compare single startPlugin(B) and startPlugins with independent B.start counter and lifecycle states."
+      }
+    },
+    {
+      "id": "SF-FST",
+      "repository": "https://github.com/fastify/fastify",
+      "tag": "v5.12.8",
+      "commit": "0c7413a8332a7892e12dcc351c27a190fefc0053",
+      "release_relationship": "Tag/package 5.12.8; non-prerelease published 2026-11-02T10:51:32Z; Avvio ^9.0.0 is not a lockfile attestation.",
+      "technology": "Node.js/CommonJS with TypeScript declarations",
+      "actual_extension_units": "Plugin function/thenable, boot-tree node, encapsulated HTTP instance and phase hooks",
+      "source_ids": [
+        "FST-PKG",
+        "FST-OVERRIDE",
+        "FST-UTILS",
+        "FST-MAIN",
+        "FST-DOCSRC",
+        "FST-DOC",
+        "FST-HOOKDOC",
+        "FST-REL",
+        "AVV-PKG",
+        "AVV-DOC",
+        "AVV-BOOT",
+        "AVV-PLUGIN",
+        "AVV-TEST",
+        "AVV-REL"
+      ],
+      "transfer_status": "unadopted",
+      "confidence": "High for named source paths; broader runtime, cleanup, security and scale unqualified.",
+      "proposed_falsifier": {
+        "evidence_class": "proposed experiment",
+        "executed": false,
+        "proposal": "Hold acquisition past boot timeout, release afterward; inspect independent effect count and cleanup custody."
+      },
+      "adjacent_revision": {
+        "repository": "https://github.com/fastify/avvio",
+        "tag": "v9.3.1",
+        "commit": "dc35b4af2bd1d5d258d4f20e92d6087064390c50",
+        "release_relationship": "Tag/package 9.3.1; non-prerelease published 2026-10-10T10:02:04Z; separately inspected compatible Avvio source, no installed pair."
+      }
+    },
+    {
+      "id": "SF-HAPI",
+      "repository": "https://github.com/hapijs/hapi",
+      "tag": "v21.4.13",
+      "commit": "f2837a006535a6fbbcf33692067c1bd497ba8124",
+      "release_relationship": "Annotated tag peeled; package version matches; GitHub release endpoint 404, no publication date inferred.",
+      "technology": "Node.js; engine metadata >=14.15.0 is not qualification",
+      "actual_extension_units": "Plugin object, shared-core registration realm, extension callback",
+      "source_ids": [
+        "HAPI-PKG",
+        "HAPI-SERVER",
+        "HAPI-CORE",
+        "HAPI-EXT",
+        "HAPI-TEST",
+        "HAPI-DOC"
+      ],
+      "transfer_status": "unadopted",
+      "confidence": "High for named source paths; broader runtime, cleanup, security and scale unqualified.",
+      "proposed_falsifier": {
+        "evidence_class": "proposed experiment",
+        "executed": false,
+        "proposal": "Plugin exposes value/acquires handle then throws; inspect same-candidate retry versus fresh candidate."
+      }
+    },
+    {
+      "id": "SF-NEST",
+      "repository": "https://github.com/nestjs/nest",
+      "tag": "v12.3.3",
+      "commit": "59f33793c616eaf9669e8b81a35aa5f31accc5b4",
+      "release_relationship": "Annotated tag peeled; packages/core 12.3.3, root package remains 12.0.0; GitHub release endpoint 404.",
+      "technology": "TypeScript/Node.js; @nestjs/core ESM",
+      "actual_extension_units": "Module metadata, provider token/wrapper, scoped instance and application context",
+      "source_ids": [
+        "NEST-PKG",
+        "NEST-MODULE",
+        "NEST-INJECTOR",
+        "NEST-ID",
+        "NEST-CONTEXT",
+        "NEST-INIT",
+        "NEST-DESTROY",
+        "NEST-GROUP",
+        "NEST-TEST",
+        "NEST-DOC",
+        "NEST-CUSTOM",
+        "NEST-DYNAMIC",
+        "NEST-LIFEDOC",
+        "NEST-MODREF",
+        "NEST-MIG"
+      ],
+      "transfer_status": "unadopted",
+      "confidence": "High for named source paths; broader runtime, cleanup, security and scale unqualified.",
+      "proposed_falsifier": {
+        "evidence_class": "proposed experiment",
+        "executed": false,
+        "proposal": "Three-provider chain, destroy rejection and handle; concurrent close twice, inspect counts/order/logs/result/physical state."
+      }
+    },
+    {
+      "id": "SF-DRUPAL",
+      "repository": "https://github.com/drupal/drupal",
+      "tag": "11.4.11",
+      "commit": "76deda03b09b57d76941e2d30e6dade35e92a14a",
+      "release_relationship": "Peeled tag commit; Drupal::VERSION 11.4.11; GitHub release endpoint 404, no publication date inferred.",
+      "technology": "PHP >=8.3.0/Symfony DI",
+      "actual_extension_units": "Installed module, hook implementations, plugin-type definition and configured instance",
+      "source_ids": [
+        "DRUPAL-PKG",
+        "DRUPAL-VER",
+        "DRUPAL-MANAGER",
+        "DRUPAL-BLOCK",
+        "DRUPAL-FACTORY",
+        "DRUPAL-DISCOVERY",
+        "DRUPAL-COLLECTOR",
+        "DRUPAL-HANDLER",
+        "DRUPAL-INSTALLER",
+        "DRUPAL-TEST",
+        "DRUPAL-HOOKDOC",
+        "DRUPAL-HOOKATTR",
+        "DRUPAL-PLUGDOC",
+        "DRUPAL-HISTORY"
+      ],
+      "transfer_status": "unadopted",
+      "confidence": "High for named source paths; broader runtime, cleanup, security and scale unqualified.",
+      "proposed_falsifier": {
+        "evidence_class": "proposed experiment",
+        "executed": false,
+        "proposal": "Two contributions and missing optional reorder/remove target, cold/warm results and explainability; separately model required-target typo."
+      }
+    }
+  ],
+  "sources": [
+    {
+      "id": "PLG-PKG",
+      "case_id": "SF-PLG",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/pytest-dev/pluggy/blob/4c7f6365f2dde09c11e72db67d0f615231d64c19/pyproject.toml",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "project.requires-python"
+      ],
+      "supports": "Python >=3.10 package metadata.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/pytest-dev/pluggy",
+      "commit": "4c7f6365f2dde09c11e72db67d0f615231d64c19",
+      "path": "pyproject.toml",
+      "release_tag": "1.7.0"
+    },
+    {
+      "id": "PLG-DOCSRC",
+      "case_id": "SF-PLG",
+      "evidence_class": "documented contract",
+      "url": "https://github.com/pytest-dev/pluggy/blob/4c7f6365f2dde09c11e72db67d0f615231d64c19/docs/index.rst",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "firstresult",
+        "calling",
+        "hookspec_arg_default",
+        "registration"
+      ],
+      "supports": "Host hook seam, dispatch ordering/cardinality and argument-default compatibility.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/pytest-dev/pluggy",
+      "commit": "4c7f6365f2dde09c11e72db67d0f615231d64c19",
+      "path": "docs/index.rst",
+      "release_tag": "1.7.0"
+    },
+    {
+      "id": "PLG-MGR",
+      "case_id": "SF-PLG",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/pytest-dev/pluggy/blob/4c7f6365f2dde09c11e72db67d0f615231d64c19/src/pluggy/_manager.py",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "PluginManager.register",
+        "_verify_hook",
+        "unregister",
+        "check_pending",
+        "load_setuptools_entrypoints",
+        "_static_hook_attr"
+      ],
+      "supports": "Ordinary validation before mutation, duplicate checks, descriptor-safe discovery, selected executable entry-point import, unregister identity and historic-replay caveat. Lines 185-323 and 431-525.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/pytest-dev/pluggy",
+      "commit": "4c7f6365f2dde09c11e72db67d0f615231d64c19",
+      "path": "src/pluggy/_manager.py",
+      "release_tag": "1.7.0"
+    },
+    {
+      "id": "PLG-CALLER",
+      "case_id": "SF-PLG",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/pytest-dev/pluggy/blob/4c7f6365f2dde09c11e72db67d0f615231d64c19/src/pluggy/_caller.py",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "HookCaller._add_hookimpl",
+        "__call__",
+        "call_historic",
+        "_maybe_apply_history",
+        "_apply_defaults"
+      ],
+      "supports": "Priority regions, call-list snapshot, defaults and retained historic args/callback replay. Lines 127-227,264-273.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/pytest-dev/pluggy",
+      "commit": "4c7f6365f2dde09c11e72db67d0f615231d64c19",
+      "path": "src/pluggy/_caller.py",
+      "release_tag": "1.7.0"
+    },
+    {
+      "id": "PLG-EXEC",
+      "case_id": "SF-PLG",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/pytest-dev/pluggy/blob/4c7f6365f2dde09c11e72db67d0f615231d64c19/src/pluggy/_execution.py",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "_multicall"
+      ],
+      "supports": "Reverse chain traversal, accepted implementation argument selection and wrapper setup. Lines 89-146.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/pytest-dev/pluggy",
+      "commit": "4c7f6365f2dde09c11e72db67d0f615231d64c19",
+      "path": "src/pluggy/_execution.py",
+      "release_tag": "1.7.0"
+    },
+    {
+      "id": "PLG-REL",
+      "case_id": "SF-PLG",
+      "evidence_class": "historical report/fix",
+      "url": "https://github.com/pytest-dev/pluggy/blob/4c7f6365f2dde09c11e72db67d0f615231d64c19/CHANGELOG.rst",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "pluggy 1.7.0",
+        "#701",
+        "#431",
+        "#733",
+        "#759",
+        "#170",
+        "#442"
+      ],
+      "supports": "Dated fixes for discovery effects, unregister and validation registration plus hookspec argument defaults. Lines 24-135.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/pytest-dev/pluggy",
+      "commit": "4c7f6365f2dde09c11e72db67d0f615231d64c19",
+      "path": "CHANGELOG.rst",
+      "release_tag": "1.7.0"
+    },
+    {
+      "id": "PLG-TEST",
+      "case_id": "SF-PLG",
+      "evidence_class": "inspected unrun test",
+      "url": "https://github.com/pytest-dev/pluggy/blob/4c7f6365f2dde09c11e72db67d0f615231d64c19/testing/test_pluginmanager.py",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "test_register_validation_failure_leaves_no_state",
+        "test_register_verifies_spec_added_by_historic_replay"
+      ],
+      "supports": "Intent for ordinary validation rejection without manager mutation and reentrant historic-spec validation. Lines 373-424.",
+      "limits": [
+        "Existing upstream test inspected only; not executed or a passing test result for this task."
+      ],
+      "repository": "https://github.com/pytest-dev/pluggy",
+      "commit": "4c7f6365f2dde09c11e72db67d0f615231d64c19",
+      "path": "testing/test_pluginmanager.py",
+      "release_tag": "1.7.0"
+    },
+    {
+      "id": "PLG-DOC",
+      "case_id": "SF-PLG",
+      "evidence_class": "documented contract",
+      "url": "https://pluggy.readthedocs.io/en/stable/",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "host",
+        "hookspec",
+        "hookimpl",
+        "firstresult",
+        "wrappers"
+      ],
+      "supports": "Moving stable page currently shows 1.6.1.dev209+fallback.g4c7f6365f; exact tag/source/changelog identify inspected 1.7.0.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification.",
+        "Moving primary document observed at retrieval date; release-specific source is separate."
+      ]
+    },
+    {
+      "id": "PLG-PYPI",
+      "case_id": "SF-PLG",
+      "evidence_class": "documented contract",
+      "url": "https://pypi.org/project/pluggy/1.7.0/",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "release history"
+      ],
+      "supports": "Version upload observed 2026-10-15, distinct from changelog date.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification.",
+        "Moving primary document observed at retrieval date; release-specific source is separate."
+      ]
+    },
+    {
+      "id": "PF4J-PKG",
+      "case_id": "SF-PF4J",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/pf4j/pf4j/blob/6ffa261f0e28f88a9115432482cad64979715a0d/pom.xml",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "project.version",
+        "maven.compiler.release"
+      ],
+      "supports": "3.16.1 metadata, compiler release 8.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/pf4j/pf4j",
+      "commit": "6ffa261f0e28f88a9115432482cad64979715a0d",
+      "path": "pom.xml",
+      "release_tag": "release-3.16.1"
+    },
+    {
+      "id": "PF4J-MGR",
+      "case_id": "SF-PF4J",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/pf4j/pf4j/blob/6ffa261f0e28f88a9115432482cad64979715a0d/pf4j/src/main/java/org/pf4j/AbstractPluginManager.java",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "loadPluginFromPath",
+        "isPluginValid",
+        "resolvePlugins",
+        "startPlugin",
+        "startDependencies",
+        "startPlugins",
+        "doStartPlugin",
+        "stopPlugin",
+        "unloadPlugin"
+      ],
+      "supports": "Single loaded ID, system-version sentinel, entrypoint-specific dependency-success gates, state/failure recording, registry/classloader teardown. Lines 270-353,388-603,910-1017.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/pf4j/pf4j",
+      "commit": "6ffa261f0e28f88a9115432482cad64979715a0d",
+      "path": "pf4j/src/main/java/org/pf4j/AbstractPluginManager.java",
+      "release_tag": "release-3.16.1"
+    },
+    {
+      "id": "PF4J-RESOLVER",
+      "case_id": "SF-PF4J",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/pf4j/pf4j/blob/6ffa261f0e28f88a9115432482cad64979715a0d/pf4j/src/main/java/org/pf4j/DependencyResolver.java",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "resolve",
+        "addPlugin",
+        "getDependents",
+        "checkDependencyVersion"
+      ],
+      "supports": "Required-edge graph sorting/missing/version checks; optional edges omitted from required graph. Lines 60-169.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/pf4j/pf4j",
+      "commit": "6ffa261f0e28f88a9115432482cad64979715a0d",
+      "path": "pf4j/src/main/java/org/pf4j/DependencyResolver.java",
+      "release_tag": "release-3.16.1"
+    },
+    {
+      "id": "PF4J-FINDER",
+      "case_id": "SF-PF4J",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/pf4j/pf4j/blob/6ffa261f0e28f88a9115432482cad64979715a0d/pf4j/src/main/java/org/pf4j/AbstractExtensionFinder.java",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "find",
+        "pluginStateChanged",
+        "getExtensionInfo",
+        "createExtensionWrapper"
+      ],
+      "supports": "STARTED/type eligibility, ordinal sort, optional-extension metadata prefilter and state-change discovery cache reset. Lines 105-219,280-315,380-424.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/pf4j/pf4j",
+      "commit": "6ffa261f0e28f88a9115432482cad64979715a0d",
+      "path": "pf4j/src/main/java/org/pf4j/AbstractExtensionFinder.java",
+      "release_tag": "release-3.16.1"
+    },
+    {
+      "id": "PF4J-WRAPPER",
+      "case_id": "SF-PF4J",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/pf4j/pf4j/blob/6ffa261f0e28f88a9115432482cad64979715a0d/pf4j/src/main/java/org/pf4j/ExtensionWrapper.java",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "getExtension",
+        "compareTo"
+      ],
+      "supports": "Per-wrapper lazy instance memoization and ordinal-only comparator. Lines 35-55.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/pf4j/pf4j",
+      "commit": "6ffa261f0e28f88a9115432482cad64979715a0d",
+      "path": "pf4j/src/main/java/org/pf4j/ExtensionWrapper.java",
+      "release_tag": "release-3.16.1"
+    },
+    {
+      "id": "PF4J-FACTORY",
+      "case_id": "SF-PF4J",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/pf4j/pf4j/blob/6ffa261f0e28f88a9115432482cad64979715a0d/pf4j/src/main/java/org/pf4j/DefaultExtensionFactory.java",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "create"
+      ],
+      "supports": "Default factory constructs instance; no global singleton conclusion. Lines 35-42.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/pf4j/pf4j",
+      "commit": "6ffa261f0e28f88a9115432482cad64979715a0d",
+      "path": "pf4j/src/main/java/org/pf4j/DefaultExtensionFactory.java",
+      "release_tag": "release-3.16.1"
+    },
+    {
+      "id": "PF4J-CL",
+      "case_id": "SF-PF4J",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/pf4j/pf4j/blob/6ffa261f0e28f88a9115432482cad64979715a0d/pf4j/src/main/java/org/pf4j/PluginClassLoader.java",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "loadClass",
+        "getResource",
+        "close",
+        "getDependencyClassLoader"
+      ],
+      "supports": "Configurable application/plugin/dependency resolution with system/framework exceptions; closing is not reference revocation. Lines 123-169,183-207,245-317.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/pf4j/pf4j",
+      "commit": "6ffa261f0e28f88a9115432482cad64979715a0d",
+      "path": "pf4j/src/main/java/org/pf4j/PluginClassLoader.java",
+      "release_tag": "release-3.16.1"
+    },
+    {
+      "id": "PF4J-ASM",
+      "case_id": "SF-PF4J",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/pf4j/pf4j/blob/6ffa261f0e28f88a9115432482cad64979715a0d/pf4j/src/main/java/org/pf4j/asm/ExtensionInfo.java",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "load",
+        "visit"
+      ],
+      "supports": "Walks superclass annotations; unreadable extension skip versus superclass-default behavior. Lines 98-151.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/pf4j/pf4j",
+      "commit": "6ffa261f0e28f88a9115432482cad64979715a0d",
+      "path": "pf4j/src/main/java/org/pf4j/asm/ExtensionInfo.java",
+      "release_tag": "release-3.16.1"
+    },
+    {
+      "id": "PF4J-TEST",
+      "case_id": "SF-PF4J",
+      "evidence_class": "inspected unrun test",
+      "url": "https://github.com/pf4j/pf4j/blob/6ffa261f0e28f88a9115432482cad64979715a0d/pf4j/src/test/java/org/pf4j/DefaultPluginManagerTest.java",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "shouldFailToStartPluginWhenRequiredDependencyFailsToStart",
+        "loadingPluginWithMissingDependencyFails"
+      ],
+      "supports": "Single startPlugin path rejection; does not prove bulk startPlugins equivalence. Lines 523-552,305-314.",
+      "limits": [
+        "Existing upstream test inspected only; not executed or a passing test result for this task."
+      ],
+      "repository": "https://github.com/pf4j/pf4j",
+      "commit": "6ffa261f0e28f88a9115432482cad64979715a0d",
+      "path": "pf4j/src/test/java/org/pf4j/DefaultPluginManagerTest.java",
+      "release_tag": "release-3.16.1"
+    },
+    {
+      "id": "PF4J-DOCEXT",
+      "case_id": "SF-PF4J",
+      "evidence_class": "documented contract",
+      "url": "https://pf4j.org/doc/extensions.html",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "extension point",
+        "Extension",
+        "ordinal",
+        "plugins"
+      ],
+      "supports": "Typed extension points, generated indexes, ordinal and optional extension dependencies.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification.",
+        "Moving primary document observed at retrieval date; release-specific source is separate."
+      ]
+    },
+    {
+      "id": "PF4J-DOCLIFE",
+      "case_id": "SF-PF4J",
+      "evidence_class": "documented contract",
+      "url": "https://pf4j.org/doc/plugin-lifecycle.html",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "PluginState",
+        "requires"
+      ],
+      "supports": "State eligibility and configured system-version compatibility.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification.",
+        "Moving primary document observed at retrieval date; release-specific source is separate."
+      ]
+    },
+    {
+      "id": "PF4J-DOCCL",
+      "case_id": "SF-PF4J",
+      "evidence_class": "documented contract",
+      "url": "https://pf4j.org/doc/class-loading.html",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "PluginClassLoader",
+        "ClassLoadingStrategy"
+      ],
+      "supports": "Per-plugin classloader and configurable resolution semantics.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification.",
+        "Moving primary document observed at retrieval date; release-specific source is separate."
+      ]
+    },
+    {
+      "id": "PF4J-TROUBLE",
+      "case_id": "SF-PF4J",
+      "evidence_class": "documented contract",
+      "url": "https://pf4j.org/doc/troubleshooting.html",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "extensions.idx",
+        "class loader"
+      ],
+      "supports": "Duplicate API loader identity can cause assignability failure.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification.",
+        "Moving primary document observed at retrieval date; release-specific source is separate."
+      ]
+    },
+    {
+      "id": "PF4J-REL",
+      "case_id": "SF-PF4J",
+      "evidence_class": "historical report/fix",
+      "url": "https://github.com/pf4j/pf4j/releases/tag/release-3.16.1",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "release-3.16.1",
+        "#701"
+      ],
+      "supports": "2026-11-03 non-prerelease fixes inherited Extension.plugins. REST release API read; web open DisabledError.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ]
+    },
+    {
+      "id": "FST-PKG",
+      "case_id": "SF-FST",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/fastify/fastify/blob/0c7413a8332a7892e12dcc351c27a190fefc0053/package.json",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "version",
+        "dependencies.avvio"
+      ],
+      "supports": "Fastify 5.12.8, Avvio ^9.0.0 range; not installed-pair evidence. Lines 1-8,207-217.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/fastify/fastify",
+      "commit": "0c7413a8332a7892e12dcc351c27a190fefc0053",
+      "path": "package.json",
+      "release_tag": "v5.12.8"
+    },
+    {
+      "id": "FST-OVERRIDE",
+      "case_id": "SF-FST",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/fastify/fastify/blob/0c7413a8332a7892e12dcc351c27a190fefc0053/lib/plugin-override.js",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "override"
+      ],
+      "supports": "Prototype child context and selected independent framework state; deliberate skip-override path. Lines 26-73.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/fastify/fastify",
+      "commit": "0c7413a8332a7892e12dcc351c27a190fefc0053",
+      "path": "lib/plugin-override.js",
+      "release_tag": "v5.12.8"
+    },
+    {
+      "id": "FST-UTILS",
+      "case_id": "SF-FST",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/fastify/fastify/blob/0c7413a8332a7892e12dcc351c27a190fefc0053/lib/plugin-utils.js",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "registerPlugin",
+        "checkDependencies",
+        "checkDecorators",
+        "checkVersion",
+        "checkPluginHealthiness"
+      ],
+      "supports": "Visible-name dependency check and decorator/version/async shape validation; not arbitrary graph solver. Lines 65-153.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/fastify/fastify",
+      "commit": "0c7413a8332a7892e12dcc351c27a190fefc0053",
+      "path": "lib/plugin-utils.js",
+      "release_tag": "v5.12.8"
+    },
+    {
+      "id": "FST-MAIN",
+      "case_id": "SF-FST",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/fastify/fastify/blob/0c7413a8332a7892e12dcc351c27a190fefc0053/fastify.js",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "addHook",
+        "asyncDisposableHook",
+        "disposableHook",
+        "onClose listener shutdown"
+      ],
+      "supports": "preClose/listener close, forced connection branches and onClose disposable adaptation. Lines 87-101,409-454,601-655.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/fastify/fastify",
+      "commit": "0c7413a8332a7892e12dcc351c27a190fefc0053",
+      "path": "fastify.js",
+      "release_tag": "v5.12.8"
+    },
+    {
+      "id": "FST-DOCSRC",
+      "case_id": "SF-FST",
+      "evidence_class": "documented contract",
+      "url": "https://github.com/fastify/fastify/blob/0c7413a8332a7892e12dcc351c27a190fefc0053/docs/Reference/Plugins.md",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "register",
+        "await register",
+        "encapsulation"
+      ],
+      "supports": "Pinned-release plugin registration and subtree-finalization documentation. Lines 1-88,130-185.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/fastify/fastify",
+      "commit": "0c7413a8332a7892e12dcc351c27a190fefc0053",
+      "path": "docs/Reference/Plugins.md",
+      "release_tag": "v5.12.8"
+    },
+    {
+      "id": "FST-DOC",
+      "case_id": "SF-FST",
+      "evidence_class": "documented contract",
+      "url": "https://fastify.dev/docs/latest/Reference/Plugins/",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "register",
+        "encapsulation"
+      ],
+      "supports": "Moving primary plugin registration, inheritance and awaited subtree closure contract.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification.",
+        "Moving primary document observed at retrieval date; release-specific source is separate."
+      ]
+    },
+    {
+      "id": "FST-HOOKDOC",
+      "case_id": "SF-FST",
+      "evidence_class": "documented contract",
+      "url": "https://fastify.dev/docs/latest/Reference/Hooks/",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "preClose",
+        "onClose",
+        "Symbol.asyncDispose",
+        "Symbol.dispose"
+      ],
+      "supports": "Normal HTTP cleanup placement, child-before-parent and disposable hook support; forced/custom profiles require source-specific limits.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification.",
+        "Moving primary document observed at retrieval date; release-specific source is separate."
+      ]
+    },
+    {
+      "id": "FST-REL",
+      "case_id": "SF-FST",
+      "evidence_class": "historical report/fix",
+      "url": "https://github.com/fastify/fastify/releases/tag/v5.12.8",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "v5.12.8",
+        "#7136"
+      ],
+      "supports": "Release 2026-11-02, onClose disposable support. REST metadata/body read; security advisory itself not audited.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ]
+    },
+    {
+      "id": "AVV-PKG",
+      "case_id": "SF-FST",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/fastify/avvio/blob/dc35b4af2bd1d5d258d4f20e92d6087064390c50/package.json",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "version"
+      ],
+      "supports": "Source package 9.3.1.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/fastify/avvio",
+      "commit": "dc35b4af2bd1d5d258d4f20e92d6087064390c50",
+      "path": "package.json",
+      "release_tag": "v9.3.1"
+    },
+    {
+      "id": "AVV-DOC",
+      "case_id": "SF-FST",
+      "evidence_class": "documented contract",
+      "url": "https://github.com/fastify/avvio/blob/dc35b4af2bd1d5d258d4f20e92d6087064390c50/README.md",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "plugin tree",
+        "load order",
+        "ready",
+        "shutdown"
+      ],
+      "supports": "Nested boot-tree ordering, readiness/errors and shutdown conceptual contract. Lines 115-150,369-391.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/fastify/avvio",
+      "commit": "dc35b4af2bd1d5d258d4f20e92d6087064390c50",
+      "path": "README.md",
+      "release_tag": "v9.3.1"
+    },
+    {
+      "id": "AVV-BOOT",
+      "case_id": "SF-FST",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/fastify/avvio/blob/dc35b4af2bd1d5d258d4f20e92d6087064390c50/index.js",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "Boot._addPlugin",
+        "Boot._loadPlugin",
+        "Boot.onClose",
+        "Boot.close",
+        "Boot.ready"
+      ],
+      "supports": "Serial queue, late registration rejection, current context, unshift cleanup queue and ready sequencing. Lines 177-208,303-375,411-454.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/fastify/avvio",
+      "commit": "dc35b4af2bd1d5d258d4f20e92d6087064390c50",
+      "path": "index.js",
+      "release_tag": "v9.3.1"
+    },
+    {
+      "id": "AVV-PLUGIN",
+      "case_id": "SF-FST",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/fastify/avvio/blob/dc35b4af2bd1d5d258d4f20e92d6087064390c50/lib/plugin.js",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "Plugin.exec",
+        "Plugin.finish"
+      ],
+      "supports": "Timeout settles done; no cancellation action in inspected path; successful parent waits nested queue. Lines 84-149,229-285.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/fastify/avvio",
+      "commit": "dc35b4af2bd1d5d258d4f20e92d6087064390c50",
+      "path": "lib/plugin.js",
+      "release_tag": "v9.3.1"
+    },
+    {
+      "id": "AVV-TEST",
+      "case_id": "SF-FST",
+      "evidence_class": "inspected unrun test",
+      "url": "https://github.com/fastify/avvio/blob/dc35b4af2bd1d5d258d4f20e92d6087064390c50/test/close.test.js",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "close order",
+        "onClose arguments - fastify encapsulation test case"
+      ],
+      "supports": "Reverse registration cleanup and correct context binding intent. Lines 296-320,61-78.",
+      "limits": [
+        "Existing upstream test inspected only; not executed or a passing test result for this task."
+      ],
+      "repository": "https://github.com/fastify/avvio",
+      "commit": "dc35b4af2bd1d5d258d4f20e92d6087064390c50",
+      "path": "test/close.test.js",
+      "release_tag": "v9.3.1"
+    },
+    {
+      "id": "AVV-REL",
+      "case_id": "SF-FST",
+      "evidence_class": "historical report/fix",
+      "url": "https://github.com/fastify/avvio/releases/tag/v9.3.1",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "v9.3.1"
+      ],
+      "supports": "REST release metadata/body: non-prerelease 2026-10-10, distinct source pin.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ]
+    },
+    {
+      "id": "HAPI-PKG",
+      "case_id": "SF-HAPI",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/hapijs/hapi/blob/f2837a006535a6fbbcf33692067c1bd497ba8124/package.json",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "version",
+        "engines.node"
+      ],
+      "supports": "21.4.13 and engine >=14.15.0 metadata. Lines 1-44.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/hapijs/hapi",
+      "commit": "f2837a006535a6fbbcf33692067c1bd497ba8124",
+      "path": "package.json",
+      "release_tag": "v21.4.13"
+    },
+    {
+      "id": "HAPI-SERVER",
+      "case_id": "SF-HAPI",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/hapijs/hapi/blob/f2837a006535a6fbbcf33692067c1bd497ba8124/lib/server.js",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "Server._clone",
+        "register",
+        "dependency",
+        "expose",
+        "_ext"
+      ],
+      "supports": "Shared core/new realm; serial setup, requirements/repetition, metadata before user registration; export naming and phase scope. Lines 58-98,191-304,411-500.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/hapijs/hapi",
+      "commit": "f2837a006535a6fbbcf33692067c1bd497ba8124",
+      "path": "lib/server.js",
+      "release_tag": "v21.4.13"
+    },
+    {
+      "id": "HAPI-CORE",
+      "case_id": "SF-HAPI",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/hapijs/hapi/blob/f2837a006535a6fbbcf33692067c1bd497ba8124/lib/core.js",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "_initialize",
+        "_validateDeps",
+        "_stop",
+        "_unlisten"
+      ],
+      "supports": "Pending registration rejection, dependency validation, invalid failure phase, pre/post stop and socket timeout policy. Lines 345-476.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/hapijs/hapi",
+      "commit": "f2837a006535a6fbbcf33692067c1bd497ba8124",
+      "path": "lib/core.js",
+      "release_tag": "v21.4.13"
+    },
+    {
+      "id": "HAPI-EXT",
+      "case_id": "SF-HAPI",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/hapijs/hapi/blob/f2837a006535a6fbbcf33692067c1bd497ba8124/lib/ext.js",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "Ext.add",
+        "Ext.combine"
+      ],
+      "supports": "Before/after/group/sequence delegation to Topo and route/server/realm combination. Lines 1-96. Topo itself not audited.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/hapijs/hapi",
+      "commit": "f2837a006535a6fbbcf33692067c1bd497ba8124",
+      "path": "lib/ext.js",
+      "release_tag": "v21.4.13"
+    },
+    {
+      "id": "HAPI-TEST",
+      "case_id": "SF-HAPI",
+      "evidence_class": "inspected unrun test",
+      "url": "https://github.com/hapijs/hapi/blob/f2837a006535a6fbbcf33692067c1bd497ba8124/test/server.js",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "fails to register single plugin with dependencies (plugin)",
+        "allows plugin multiple registrations (plugin)",
+        "duplicate registration rejection"
+      ],
+      "supports": "Missing dependency initialize rejection; default duplicate rejection; multiple opt-in. Lines 792-815,2154-2173.",
+      "limits": [
+        "Existing upstream test inspected only; not executed or a passing test result for this task."
+      ],
+      "repository": "https://github.com/hapijs/hapi",
+      "commit": "f2837a006535a6fbbcf33692067c1bd497ba8124",
+      "path": "test/server.js",
+      "release_tag": "v21.4.13"
+    },
+    {
+      "id": "HAPI-DOC",
+      "case_id": "SF-HAPI",
+      "evidence_class": "documented contract",
+      "url": "https://hapi.dev/api/21.x.x",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "plugins",
+        "server.dependency",
+        "server.realm",
+        "server.expose",
+        "server.ext"
+      ],
+      "supports": "Repeat/requirements/dependency/phase scope contract; sandbox means route/settings scope here.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification.",
+        "Moving primary document observed at retrieval date; release-specific source is separate."
+      ]
+    },
+    {
+      "id": "NEST-PKG",
+      "case_id": "SF-NEST",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/nestjs/nest/blob/59f33793c616eaf9669e8b81a35aa5f31accc5b4/packages/core/package.json",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "version",
+        "type",
+        "engines"
+      ],
+      "supports": "Core 12.3.3 ESM metadata; root package remains 12.0.0. Lines 1-27.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/nestjs/nest",
+      "commit": "59f33793c616eaf9669e8b81a35aa5f31accc5b4",
+      "path": "packages/core/package.json",
+      "release_tag": "v12.3.3"
+    },
+    {
+      "id": "NEST-MODULE",
+      "case_id": "SF-NEST",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/nestjs/nest/blob/59f33793c616eaf9669e8b81a35aa5f31accc5b4/packages/core/injector/module.ts",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "addProvider",
+        "addExportedProviderOrModule",
+        "validateExportedProvider"
+      ],
+      "supports": "Provider token Map, export Set and export eligibility rejection. Lines 253-296,467-510.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/nestjs/nest",
+      "commit": "59f33793c616eaf9669e8b81a35aa5f31accc5b4",
+      "path": "packages/core/injector/module.ts",
+      "release_tag": "v12.3.3"
+    },
+    {
+      "id": "NEST-INJECTOR",
+      "case_id": "SF-NEST",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/nestjs/nest/blob/59f33793c616eaf9669e8b81a35aa5f31accc5b4/packages/core/injector/injector.ts",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "lookupComponentInImportsSync"
+      ],
+      "supports": "Visible import traversal and first direct exported match in ordinary injection path. Lines 864-917.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/nestjs/nest",
+      "commit": "59f33793c616eaf9669e8b81a35aa5f31accc5b4",
+      "path": "packages/core/injector/injector.ts",
+      "release_tag": "v12.3.3"
+    },
+    {
+      "id": "NEST-ID",
+      "case_id": "SF-NEST",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/nestjs/nest/blob/59f33793c616eaf9669e8b81a35aa5f31accc5b4/packages/core/injector/opaque-key-factory/by-reference-module-opaque-key-factory.ts",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "createForStatic",
+        "createForDynamic",
+        "getOrCreateModuleId"
+      ],
+      "supports": "Own-reference ID association, not canonical content identity. Lines 1-61.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/nestjs/nest",
+      "commit": "59f33793c616eaf9669e8b81a35aa5f31accc5b4",
+      "path": "packages/core/injector/opaque-key-factory/by-reference-module-opaque-key-factory.ts",
+      "release_tag": "v12.3.3"
+    },
+    {
+      "id": "NEST-CONTEXT",
+      "case_id": "SF-NEST",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/nestjs/nest/blob/59f33793c616eaf9669e8b81a35aa5f31accc5b4/packages/core/nest-application-context.ts",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "close",
+        "shutdown",
+        "runShutdownSequence",
+        "callInitHook",
+        "callDestroyHook",
+        "enableShutdownHooks"
+      ],
+      "supports": "Coalesced concurrent shutdown, initialization-settlement wait, cleanup stages and signal unsubscribe; module order reversal. Lines 279-313,362-377,452-495.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/nestjs/nest",
+      "commit": "59f33793c616eaf9669e8b81a35aa5f31accc5b4",
+      "path": "packages/core/nest-application-context.ts",
+      "release_tag": "v12.3.3"
+    },
+    {
+      "id": "NEST-INIT",
+      "case_id": "SF-NEST",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/nestjs/nest/blob/59f33793c616eaf9669e8b81a35aa5f31accc5b4/packages/core/hooks/on-module-init.hook.ts",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "callModuleInitHook"
+      ],
+      "supports": "Sequential hierarchy levels, concurrent members and static module hook last. Lines 34-60.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/nestjs/nest",
+      "commit": "59f33793c616eaf9669e8b81a35aa5f31accc5b4",
+      "path": "packages/core/hooks/on-module-init.hook.ts",
+      "release_tag": "v12.3.3"
+    },
+    {
+      "id": "NEST-DESTROY",
+      "case_id": "SF-NEST",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/nestjs/nest/blob/59f33793c616eaf9669e8b81a35aa5f31accc5b4/packages/core/hooks/on-module-destroy.hook.ts",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "callModuleDestroyHook"
+      ],
+      "supports": "Reverse hierarchy levels, allSettled and logged provider/module failures. Lines 39-78.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/nestjs/nest",
+      "commit": "59f33793c616eaf9669e8b81a35aa5f31accc5b4",
+      "path": "packages/core/hooks/on-module-destroy.hook.ts",
+      "release_tag": "v12.3.3"
+    },
+    {
+      "id": "NEST-GROUP",
+      "case_id": "SF-NEST",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/nestjs/nest/blob/59f33793c616eaf9669e8b81a35aa5f31accc5b4/packages/core/hooks/utils/get-instances-grouped-by-hierarchy-level.ts",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "getInstancesGroupedByHierarchyLevel"
+      ],
+      "supports": "Non-static dependency trees skipped; static transient instances included. Lines 1-39.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/nestjs/nest",
+      "commit": "59f33793c616eaf9669e8b81a35aa5f31accc5b4",
+      "path": "packages/core/hooks/utils/get-instances-grouped-by-hierarchy-level.ts",
+      "release_tag": "v12.3.3"
+    },
+    {
+      "id": "NEST-TEST",
+      "case_id": "SF-NEST",
+      "evidence_class": "inspected unrun test",
+      "url": "https://github.com/nestjs/nest/blob/59f33793c616eaf9669e8b81a35aa5f31accc5b4/packages/core/test/hooks/on-module-destroy.hook.spec.ts",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "should not throw when a provider onModuleDestroy rejects",
+        "should call remaining providers even when one throws",
+        "should not throw when the module class instance hook rejects"
+      ],
+      "supports": "Intentional cleanup continuation/logging; not resource-completion evidence. Lines 45-71,103-110.",
+      "limits": [
+        "Existing upstream test inspected only; not executed or a passing test result for this task."
+      ],
+      "repository": "https://github.com/nestjs/nest",
+      "commit": "59f33793c616eaf9669e8b81a35aa5f31accc5b4",
+      "path": "packages/core/test/hooks/on-module-destroy.hook.spec.ts",
+      "release_tag": "v12.3.3"
+    },
+    {
+      "id": "NEST-DOC",
+      "case_id": "SF-NEST",
+      "evidence_class": "documented contract",
+      "url": "https://docs.nestjs.com/modules",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "imports",
+        "exports",
+        "providers"
+      ],
+      "supports": "Default module injector visibility and exports as public module API.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification.",
+        "Moving primary document observed at retrieval date; release-specific source is separate."
+      ]
+    },
+    {
+      "id": "NEST-CUSTOM",
+      "case_id": "SF-NEST",
+      "evidence_class": "documented contract",
+      "url": "https://docs.nestjs.com/fundamentals/custom-providers",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "useValue",
+        "useClass",
+        "useFactory",
+        "useExisting"
+      ],
+      "supports": "Provider value/class/factory/alias replacement seams.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification.",
+        "Moving primary document observed at retrieval date; release-specific source is separate."
+      ]
+    },
+    {
+      "id": "NEST-DYNAMIC",
+      "case_id": "SF-NEST",
+      "evidence_class": "documented contract",
+      "url": "https://docs.nestjs.com/fundamentals/dynamic-modules",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "dynamic module"
+      ],
+      "supports": "Configurable declarations, not independently unloaded artifact lifecycle.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification.",
+        "Moving primary document observed at retrieval date; release-specific source is separate."
+      ]
+    },
+    {
+      "id": "NEST-LIFEDOC",
+      "case_id": "SF-NEST",
+      "evidence_class": "documented contract",
+      "url": "https://docs.nestjs.com/fundamentals/lifecycle-events",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "request scope",
+        "module distance",
+        "shutdown"
+      ],
+      "supports": "Application lifecycle phases and request-scoped exclusions; module-distance and reverse-shutdown contract.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification.",
+        "Moving primary document observed at retrieval date; release-specific source is separate."
+      ]
+    },
+    {
+      "id": "NEST-MODREF",
+      "case_id": "SF-NEST",
+      "evidence_class": "documented contract",
+      "url": "https://docs.nestjs.com/fundamentals/module-ref",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "ModuleRef.get",
+        "ModuleRef.resolve"
+      ],
+      "supports": "Optional lookup API; no service-locator transfer proposed.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification.",
+        "Moving primary document observed at retrieval date; release-specific source is separate."
+      ]
+    },
+    {
+      "id": "NEST-MIG",
+      "case_id": "SF-NEST",
+      "evidence_class": "documented contract",
+      "url": "https://docs.nestjs.com/migration-guide",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "v11 to v12",
+        "Lifecycle hook ordering",
+        "ESM",
+        "Optional inheritance"
+      ],
+      "supports": "Hierarchy-order/ESM/runtime migration; documented optional inheritance repair in 12.1, not asserted as current 12.3.3 defect.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification.",
+        "Moving primary document observed at retrieval date; release-specific source is separate."
+      ]
+    },
+    {
+      "id": "DRUPAL-PKG",
+      "case_id": "SF-DRUPAL",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/drupal/drupal/blob/76deda03b09b57d76941e2d30e6dade35e92a14a/core/composer.json",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "require.php"
+      ],
+      "supports": "PHP >=8.3.0 and Symfony 7.4 dependency metadata. Lines 19-28.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/drupal/drupal",
+      "commit": "76deda03b09b57d76941e2d30e6dade35e92a14a",
+      "path": "core/composer.json",
+      "release_tag": "11.4.11"
+    },
+    {
+      "id": "DRUPAL-VER",
+      "case_id": "SF-DRUPAL",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/drupal/drupal/blob/76deda03b09b57d76941e2d30e6dade35e92a14a/core/lib/Drupal.php",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "Drupal::VERSION"
+      ],
+      "supports": "Exact source version 11.4.11. Lines 77-85.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/drupal/drupal",
+      "commit": "76deda03b09b57d76941e2d30e6dade35e92a14a",
+      "path": "core/lib/Drupal.php",
+      "release_tag": "11.4.11"
+    },
+    {
+      "id": "DRUPAL-MANAGER",
+      "case_id": "SF-DRUPAL",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/drupal/drupal/blob/76deda03b09b57d76941e2d30e6dade35e92a14a/core/lib/Drupal/Core/Plugin/DefaultPluginManager.php",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "__construct",
+        "getDefinitions",
+        "findDefinitions",
+        "alterDefinitions",
+        "clearCachedDefinitions"
+      ],
+      "supports": "Cached discovery/process/alter/provider-filter pipeline, cache clearing and attribute/annotation compatibility. Lines 154-170,213-239,339-400.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/drupal/drupal",
+      "commit": "76deda03b09b57d76941e2d30e6dade35e92a14a",
+      "path": "core/lib/Drupal/Core/Plugin/DefaultPluginManager.php",
+      "release_tag": "11.4.11"
+    },
+    {
+      "id": "DRUPAL-BLOCK",
+      "case_id": "SF-DRUPAL",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/drupal/drupal/blob/76deda03b09b57d76941e2d30e6dade35e92a14a/core/lib/Drupal/Core/Block/BlockManager.php",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "__construct",
+        "getSortedDefinitions",
+        "getFallbackPluginId"
+      ],
+      "supports": "Type-specific interface/namespace/cache/alter configuration and separate UI label sorting. Lines 48-94.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/drupal/drupal",
+      "commit": "76deda03b09b57d76941e2d30e6dade35e92a14a",
+      "path": "core/lib/Drupal/Core/Block/BlockManager.php",
+      "release_tag": "11.4.11"
+    },
+    {
+      "id": "DRUPAL-FACTORY",
+      "case_id": "SF-DRUPAL",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/drupal/drupal/blob/76deda03b09b57d76941e2d30e6dade35e92a14a/core/lib/Drupal/Core/Plugin/Factory/ContainerFactory.php",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "createInstance"
+      ],
+      "supports": "Selected definition/class creates directly or via container-aware factory. Lines 15-25.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/drupal/drupal",
+      "commit": "76deda03b09b57d76941e2d30e6dade35e92a14a",
+      "path": "core/lib/Drupal/Core/Plugin/Factory/ContainerFactory.php",
+      "release_tag": "11.4.11"
+    },
+    {
+      "id": "DRUPAL-DISCOVERY",
+      "case_id": "SF-DRUPAL",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/drupal/drupal/blob/76deda03b09b57d76941e2d30e6dade35e92a14a/core/lib/Drupal/Component/Plugin/Discovery/AttributeClassDiscovery.php",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "getDefinitions",
+        "prepareAttributeDefinition"
+      ],
+      "supports": "PSR-4 scan/cache, missing optional dependency handling, ID map; no universal duplicate rejection conclusion. Lines 83-127,242-260.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/drupal/drupal",
+      "commit": "76deda03b09b57d76941e2d30e6dade35e92a14a",
+      "path": "core/lib/Drupal/Component/Plugin/Discovery/AttributeClassDiscovery.php",
+      "release_tag": "11.4.11"
+    },
+    {
+      "id": "DRUPAL-COLLECTOR",
+      "case_id": "SF-DRUPAL",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/drupal/drupal/blob/76deda03b09b57d76941e2d30e6dade35e92a14a/core/lib/Drupal/Core/Hook/HookCollectorPass.php",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "process",
+        "writeToContainer",
+        "calculateImplementations",
+        "collectModuleHookImplementations"
+      ],
+      "supports": "Container-time collection/services/order, lower local-order and higher targeted reorder weights, removal and cache-awareness. Lines 142-190,272-316,452-515.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/drupal/drupal",
+      "commit": "76deda03b09b57d76941e2d30e6dade35e92a14a",
+      "path": "core/lib/Drupal/Core/Hook/HookCollectorPass.php",
+      "release_tag": "11.4.11"
+    },
+    {
+      "id": "DRUPAL-HANDLER",
+      "case_id": "SF-DRUPAL",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/drupal/drupal/blob/76deda03b09b57d76941e2d30e6dade35e92a14a/core/lib/Drupal/Core/Extension/ModuleHandler.php",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "invoke",
+        "invokeAll",
+        "invokeAllWith",
+        "alter"
+      ],
+      "supports": "Single-module multi-match rejection, aggregate result merge and by-reference alter listeners. Lines 337-397,438-461.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/drupal/drupal",
+      "commit": "76deda03b09b57d76941e2d30e6dade35e92a14a",
+      "path": "core/lib/Drupal/Core/Extension/ModuleHandler.php",
+      "release_tag": "11.4.11"
+    },
+    {
+      "id": "DRUPAL-INSTALLER",
+      "case_id": "SF-DRUPAL",
+      "evidence_class": "inspected source",
+      "url": "https://github.com/drupal/drupal/blob/76deda03b09b57d76941e2d30e6dade35e92a14a/core/lib/Drupal/Core/Extension/ModuleInstaller.php",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "install",
+        "uninstall",
+        "validateUninstall",
+        "installSchema",
+        "uninstallSchema"
+      ],
+      "supports": "Core/dependency checks, dependent expansion, uninstall validators and persistent schema effects. Lines 122-171,495-544,739-785.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ],
+      "repository": "https://github.com/drupal/drupal",
+      "commit": "76deda03b09b57d76941e2d30e6dade35e92a14a",
+      "path": "core/lib/Drupal/Core/Extension/ModuleInstaller.php",
+      "release_tag": "11.4.11"
+    },
+    {
+      "id": "DRUPAL-TEST",
+      "case_id": "SF-DRUPAL",
+      "evidence_class": "inspected unrun test",
+      "url": "https://github.com/drupal/drupal/blob/76deda03b09b57d76941e2d30e6dade35e92a14a/core/tests/Drupal/KernelTests/Core/Hook/HookOrderTest.php",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "testHookOrder",
+        "testReorderMissingTarget"
+      ],
+      "supports": "Expected mixed hook ordering and deliberate no-op missing optional reorder/remove targets. Lines 98-120,124-157.",
+      "limits": [
+        "Existing upstream test inspected only; not executed or a passing test result for this task."
+      ],
+      "repository": "https://github.com/drupal/drupal",
+      "commit": "76deda03b09b57d76941e2d30e6dade35e92a14a",
+      "path": "core/tests/Drupal/KernelTests/Core/Hook/HookOrderTest.php",
+      "release_tag": "11.4.11"
+    },
+    {
+      "id": "DRUPAL-HOOKDOC",
+      "case_id": "SF-DRUPAL",
+      "evidence_class": "documented contract",
+      "url": "https://api.drupal.org/api/drupal/core%21core.api.php/group/hooks/11.x",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "hook contracts",
+        "module weights",
+        "ordering"
+      ],
+      "supports": "Hook signature/result and base module weight/name ordering plus explicit adjustments.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification.",
+        "Moving primary document observed at retrieval date; release-specific source is separate."
+      ]
+    },
+    {
+      "id": "DRUPAL-HOOKATTR",
+      "case_id": "SF-DRUPAL",
+      "evidence_class": "documented contract",
+      "url": "https://api.drupal.org/api/drupal/core%21lib%21Drupal%21Core%21Hook%21Attribute%21Hook.php/class/Hook/11.x",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "Hook",
+        "RemoveHook",
+        "ReorderHook"
+      ],
+      "supports": "Multiple hook implementations with exceptions and procedural-only install/update hooks.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification.",
+        "Moving primary document observed at retrieval date; release-specific source is separate."
+      ]
+    },
+    {
+      "id": "DRUPAL-PLUGDOC",
+      "case_id": "SF-DRUPAL",
+      "evidence_class": "documented contract",
+      "url": "https://www.drupal.org/docs/drupal-apis/plugin-api/attribute-based-plugins",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "attributes",
+        "plugin type interfaces",
+        "PSR-4"
+      ],
+      "supports": "Type-specific discovery/metadata/interface; attributes since 10.2 depend on manager support.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification.",
+        "Moving primary document observed at retrieval date; release-specific source is separate."
+      ]
+    },
+    {
+      "id": "DRUPAL-HISTORY",
+      "case_id": "SF-DRUPAL",
+      "evidence_class": "historical report/fix",
+      "url": "https://www.drupal.org/node/3515207",
+      "retrieved_at": "2026-11-05",
+      "symbols": [
+        "11.2.0 procedural-before-OOP order"
+      ],
+      "supports": "Published 2025-04-29; earlier system-dependent mixed ordering repaired in 11.2.0 unless explicit order overrides.",
+      "limits": [
+        "No runtime, artifact-byte-equivalence, platform, security or scale qualification."
+      ]
+    }
+  ],
+  "inferences": [
+    {
+      "id": "SF-PF4J-I1",
+      "evidence_class": "inference",
+      "source_ids": [
+        "PF4J-MGR",
+        "PF4J-TEST"
+      ],
+      "claim": "Bulk start appears not to recheck required dependency runtime success as single-start path does.",
+      "missing_proof": "No execution of bulk failing-dependency fixture; no demonstrated defect or whole-system guarantee claimed."
+    },
+    {
+      "id": "SF-PLG-I1",
+      "evidence_class": "inference",
+      "source_ids": [
+        "PLG-MGR",
+        "PLG-CALLER"
+      ],
+      "claim": "Historic replay and externally owned resources need separate lifetime/effect semantics."
+    },
+    {
+      "id": "SF-FST-I1",
+      "evidence_class": "inference",
+      "source_ids": [
+        "AVV-PLUGIN"
+      ],
+      "claim": "Boot timeout is observation settlement, not demonstrated cancellation of late user effects."
+    },
+    {
+      "id": "SF-HAPI-I1",
+      "evidence_class": "inference",
+      "source_ids": [
+        "HAPI-SERVER"
+      ],
+      "claim": "Rejected register cannot be assumed to restore registry/routes/exposures/resources; exact proposed falsifier unrun."
+    },
+    {
+      "id": "SF-NEST-I1",
+      "evidence_class": "inference",
+      "source_ids": [
+        "NEST-DESTROY",
+        "NEST-TEST"
+      ],
+      "claim": "Fulfilled cleanup orchestration can coexist with logged resource-hook failure."
+    },
+    {
+      "id": "SF-DRUPAL-I1",
+      "evidence_class": "inference",
+      "source_ids": [
+        "DRUPAL-TEST",
+        "DRUPAL-HANDLER"
+      ],
+      "claim": "Permissive optional alteration differs from required binding validation; by-reference changes need product-owned invariant limits."
+    }
+  ],
+  "global_limits": [
+    "No package-byte/platform/runtime/security/scale qualification.",
+    "Namespaces/classloaders/prototype scopes/realms/containers are not hostile-code isolation evidence.",
+    "No framework superiority or measured reliability claim.",
+    "All proposed experiments remain unexecuted and unadopted."
+  ],
+  "access_notes": [
+    "Initial Avvio boot.js 404 corrected to actual index.js via exact tree.",
+    "Initial Hapi realm.js 404 corrected to lib/server.js.",
+    "Pluggy _hooks/_callers are compatibility reexports; followed actual _caller/_execution.",
+    "GitHub release API 404 for Pluggy/Hapi/Nest/Drupal does not mean inspected tags are unreleased; package/tag/PyPI relationship kept explicit.",
+    "Fastify release advisory contents not audited."
+  ]
+}

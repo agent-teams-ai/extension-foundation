@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-06",
+  "kind": "reviewed-research-and-source-contract-diagnostic",
+  "scope": "Research only; 3 source compiler invocations, not runtime/packed E2E or architecture adoption",
+  "archive": "plugin-deepening-20261106.tar.gz",
+  "archiveBytes": 86137,
+  "archiveSha256": "4a12d8236bd66cd023a79950c197dff13c4d98597c8ec12866ba8ae5e6928756",
+  "memberCount": 44,
+  "uncompressedBytes": 371670,
+  "members": [
+    {
+      "path": "brief.md",
+      "bytes": 9997,
+      "sha256": "d5076168dc386c49bde4b7a857fc5f41916d3c0bc3d6e4f5585f99d48133e1af"
+    },
+    {
+      "path": "plans/seam-spike-plan.md",
+      "bytes": 12227,
+      "sha256": "340e4c3d8ad5e92cd56a9659b17a81f0ff6526ca5b82e6b99ec0e4ba2ba6758d"
+    },
+    {
+      "path": "plans/update-spike-plan.md",
+      "bytes": 10689,
+      "sha256": "8e59a384e9bdb54789fe1e2525de40af016036bee1f82b8477d2a868beaf0630"
+    },
+    {
+      "path": "reports/final-adversarial-review.md",
+      "bytes": 14018,
+      "sha256": "370c3a832f2d20795b9a0657ac565f46cf19e7f3656102428c2115f30e63dc8a"
+    },
+    {
+      "path": "reports/plan-critique.md",
+      "bytes": 38924,
+      "sha256": "5ea369d0650bc41b8db1d39d6c1d975dcf3f0ae130f52ce879de7cac93593b9d"
+    },
+    {
+      "path": "reports/process-plugin-crosscheck.md",
+      "bytes": 6256,
+      "sha256": "8515598231a88c73179dd7ade47fd22d011fc842fe741bc487ce1dfea4c112e0"
+    },
+    {
+      "path": "reports/root-dispositions.md",
+      "bytes": 6310,
+      "sha256": "13f3c7164e8213bd0328ab7b865041c9935071c47e4c6bebfa1362a87626ce18"
+    },
+    {
+      "path": "reports/seam-research.md",
+      "bytes": 34447,
+      "sha256": "de1eee949ce2591f87ff8fb20c6289e2d8a34309b7919a66e0361e9218fcc770"
+    },
+    {
+      "path": "reports/update-research.md",
+      "bytes": 37066,
+      "sha256": "6a13863de3fd93154f4275fdfcb290bed175d450842394163afece5424ac5854"
+    },
+    {
+      "path": "reports/update-seam-cross-review.md",
+      "bytes": 9533,
+      "sha256": "4383c59d71c0676b0a7b2f376bf4af15f61f9dd7afae64db6dc1c3d1b5ea0b59"
+    },
+    {
+      "path": "reports/update-sizing-supplement.md",
+      "bytes": 8867,
+      "sha256": "1e3c18d5b330e6f3dc1fa5d4aadae98b2221facebba322f2c4d9ad56e8b83ade"
+    },
+    {
+      "path": "seam-probe/README.md",
+      "bytes": 4670,
+      "sha256": "b1c7eb57de099f532549a92d696876059be7d187c261aabc4d30fd6cbd9dfadb"
+    },
+    {
+      "path": "seam-probe/ar-to-external.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "seam-probe/ar-to-external.stdout.txt",
+      "bytes": 20833,
+      "sha256": "aac0f42db9c00e46244066768998dc634e314cb7064e42ac74cd01e8a8c6acdd"
+    },
+    {
+      "path": "seam-probe/ar-to-external.ts",
+      "bytes": 190,
+      "sha256": "6dd0dd2c126c0365892667457073cf97e6e39b5ca19f939e3ddd2ceb43e0f095"
+    },
+    {
+      "path": "seam-probe/control.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "seam-probe/control.stdout.txt",
+      "bytes": 16653,
+      "sha256": "15b6af4d581d660c9aec977e8f52d17d9597157e4ee0e99f9afa8fc7ff5bc4e4"
+    },
+    {
+      "path": "seam-probe/control.ts",
+      "bytes": 129,
+      "sha256": "3ace7b184b45103d43115651da8484412dde2f827c75aec0d7ae5696fbf41454"
+    },
+    {
+      "path": "seam-probe/external-pr1-observed.json",
+      "bytes": 2735,
+      "sha256": "a6d1089be256e62705027bffe8a90fd2eb3eb42832e356478f2929f1c8682042"
+    },
+    {
+      "path": "seam-probe/external-to-ar.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "seam-probe/external-to-ar.stdout.txt",
+      "bytes": 22962,
+      "sha256": "0649fcd10beb9d255e90f7baeb8a15aa74997eca40d3db5c2fb522e5463dfb89"
+    },
+    {
+      "path": "seam-probe/external-to-ar.ts",
+      "bytes": 194,
+      "sha256": "1ba361d5e6523e5f02a677d69e5ad2773fa4fd4ff4a4e51140b1efb3b40e5f7b"
+    },
+    {
+      "path": "seam-probe/package.json",
+      "bytes": 77,
+      "sha256": "7575e72231739c5e8ebe9528fe0b486bf24e42040b139f87081bcd82ad8db655"
+    },
+    {
+      "path": "seam-probe/results.json",
+      "bytes": 56194,
+      "sha256": "59f514f8e7074ef54fa3d4c388fa6f10b3d732a74c9a7d0b28389bdb4983d191"
+    },
+    {
+      "path": "seam-probe/snapshot-manifest.json",
+      "bytes": 3848,
+      "sha256": "062fa96e7af765bc047d533502795cd180e0d1512e9aa9e0e7c1cc20dbdc66ef"
+    },
+    {
+      "path": "seam-probe/source-manifest.json",
+      "bytes": 7039,
+      "sha256": "52ebc77cbfd876fcc2da11a0318d314d1e260d2cf473cf3c2f7df3940dd8e886"
+    },
+    {
+      "path": "seam-probe/source-snapshots/agent-runtime/packages/contexts/agent-execution/src/features/interactive-agent-session/application/ports/outbound/interactive-provider-driver.ts",
+      "bytes": 3551,
+      "sha256": "7093382a534a609e782ea7de7bb8d16f5323e0b563a801e61c96f5c42979192f"
+    },
+    {
+      "path": "seam-probe/source-snapshots/agent-runtime/packages/contexts/agent-execution/src/features/interactive-agent-session/contracts/interactive-provider-driver.ts",
+      "bytes": 239,
+      "sha256": "6b9a6c6dc5e68da4879aa9968d28aafab0ec5b163a508f5afbd3450264f81a36"
+    },
+    {
+      "path": "seam-probe/source-snapshots/agent-runtime/packages/contexts/agent-execution/src/features/interactive-agent-session/contracts/interactive-session.ts",
+      "bytes": 2593,
+      "sha256": "452315ba8d1a44e75d3cab6c1436b3e4325eda0a463d129d32fb6a8fdbb37932"
+    },
+    {
+      "path": "seam-probe/source-snapshots/agent-runtime/packages/contexts/agent-execution/src/features/interactive-agent-session/domain/session.ts",
+      "bytes": 7542,
+      "sha256": "d48e7381531fc66cea5cd25c679366abb1f661ce8fcdd9f9c68bbf1e106f7f56"
+    },
+    {
+      "path": "seam-probe/source-snapshots/agent-runtime/packages/contexts/agent-execution/src/features/interactive-agent-session/index.ts",
+      "bytes": 428,
+      "sha256": "1dfa419a02f8d36f81f9206f760d9e3389564aa58f109d1f732de52f3631d516"
+    },
+    {
+      "path": "seam-probe/source-snapshots/agent-runtime/packages/contexts/agent-execution/src/interactive-contracts.ts",
+      "bytes": 226,
+      "sha256": "305a9060aa0c77b4ea1f6db47a6bb671a6a68ef623ef7d0ecd50d974a9214512"
+    },
+    {
+      "path": "seam-probe/source-snapshots/old-provider-implementations/packages/provider-implementations/src/claude.ts",
+      "bytes": 1393,
+      "sha256": "e7b1913a4a5b01721be30daa86d875e5fcc28f6e00ab92e6ead2039be5d70564"
+    },
+    {
+      "path": "seam-probe/source-snapshots/old-provider-implementations/packages/provider-implementations/src/features/provider-session-implementation/adapters/claude-sdk/factory.ts",
+      "bytes": 2049,
+      "sha256": "69a14b86a8aba94df9c101910a8737f7485fb47f5b3419e3da55e1965c7ad45b"
+    },
+    {
+      "path": "seam-probe/source-snapshots/old-provider-implementations/packages/provider-session-contracts/src/features/provider-session-contracts/contracts/session.ts",
+      "bytes": 4234,
+      "sha256": "cf6d2b7316564f29f6737c7f93354582f453523504ab7339494330539048321a"
+    },
+    {
+      "path": "seam-probe/source-snapshots/old-provider-implementations/packages/provider-session-contracts/src/features/provider-session-contracts/index.ts",
+      "bytes": 201,
+      "sha256": "56a5ed97f0030407b23e6da555b4568be14d73ce9b481457a41d55bb3a84f81e"
+    },
+    {
+      "path": "seam-probe/source-snapshots/old-provider-implementations/packages/provider-session-contracts/src/index.ts",
+      "bytes": 225,
+      "sha256": "ce0bb1d7a45c835561f0056b42b3e801e02af971dd749bc1519e9f38bf4cd157"
+    },
+    {
+      "path": "seam-probe/tsconfig.ar-to-external.json",
+      "bytes": 68,
+      "sha256": "aa82feaeb344e23918d504454276701841fd8918d4ae924484618b4d60ec25ff"
+    },
+    {
+      "path": "seam-probe/tsconfig.control.json",
+      "bytes": 603,
+      "sha256": "4092f1edded84923eedaa425f518640622b260f95579abb9eeaf3112a20ffc50"
+    },
+    {
+      "path": "seam-probe/tsconfig.external-to-ar.json",
+      "bytes": 68,
+      "sha256": "6e7b533c2710f9449ae32ac8714cdaf674ed36fd7f23c438f9bd818c71e6cf0d"
+    },
+    {
+      "path": "sources/ar-operation.md",
+      "bytes": 10311,
+      "sha256": "465307b6f2a32678f27b06333039abfcbfd56026ee4205adbc5392df3a65fa76"
+    },
+    {
+      "path": "sources/ar-shutdown.md",
+      "bytes": 6270,
+      "sha256": "a21bae24a68d87cba9774d10c6112915577dc16f87a557ef0a300717d7b822ad"
+    },
+    {
+      "path": "sources/process-plugin-pins.json",
+      "bytes": 2239,
+      "sha256": "a1a107223d199acd51062db4b5ce5c936582a21847d737e603ac160be178784b"
+    },
+    {
+      "path": "sources/update-industry-pins.json",
+      "bytes": 5572,
+      "sha256": "5317c40472aa39945f423f09a042b3cf5d9ddee8cae2132b4da87a8b5bc4eca2"
+    }
+  ]
+}

@@ -10,6 +10,21 @@ products. Start with:
 - [Extension model](docs/architecture/extension-model.md)
 - [Architecture decisions](docs/decisions/README.md)
 - [Open decisions](docs/open-decisions/README.md)
+- [Plugin system research reference](docs/research/plugin-system-research-reference.md)
+
+Before designing plugin lifecycle, hot replacement, compatibility or scale,
+follow the research reference to relevant primary evidence and critic
+dispositions. Retain good patterns, counterexamples and fixed historical
+incidents there so future agents can reuse the reasoning. Research remains
+non-normative; implementation still follows the owning accepted decisions.
+Record retrieval dates, exact source/release identities, technologies, evidence
+classes, limitations and counterevidence. Keep observations, proposed transfers
+and owner-approved decisions distinguishable. Critic agreement, competitor use
+or a passing experiment does not approve an unresolved architecture choice.
+Implement the confirmed scope only; retain unsettled choices in the owning open
+decision and discuss material alternatives with the owner before implementation.
+Update current navigation and installation recipes without rewriting immutable
+source snapshots, approved adoption pins or historical qualification evidence.
 
 ## Hard Boundaries
 

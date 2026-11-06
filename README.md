@@ -40,6 +40,10 @@ authorization, lifecycle, readiness, routing, and recovery authority.
 
 See the [documentation index](docs/README.md) and
 [architecture decisions](docs/decisions/README.md).
+For industry patterns, production hot replacement and the pinned OpenClaw
+audit, start with the [plugin research reference](docs/research/plugin-system-research-reference.md).
+Research supplies evidence and qualification scenarios; it does not admit a
+runtime or replace an approved decision.
 
 ## Development
 

@@ -1,0 +1,306 @@
+{
+  "retrievedAt": "2026-11-05",
+  "scope": "Read-only source inspection; no tests executed; all transfer hypotheses unadopted",
+  "cases": [
+    {
+      "id": "DP-01",
+      "repository": "open-telemetry/opentelemetry-collector",
+      "release": "v0.164.0",
+      "commit": "f532e15ef29b6ed7fefad2b23a0fefd27120ef9b",
+      "movingHeadObserved": "79bf8a49d2e4556e3aa72ac36e3b1e460a176ac1",
+      "releaseEvidence": {
+        "metadataUrl": "https://api.github.com/repos/open-telemetry/opentelemetry-collector/releases/tags/v0.164.0",
+        "pageUrl": "https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.164.0",
+        "publishedAt": "2026-10-26T14:54:44Z",
+        "retrievedAt": "2026-11-05",
+        "relationship": "v0.164.0 tag resolves to inspected f532e15; release title also names stable module set v1.70.0; moving main is separate."
+      }
+    },
+    {
+      "id": "DP-02",
+      "repository": "apache/apisix",
+      "release": "3.19.0",
+      "commit": "473043623c161966f3f6ef4e8f12d2d8667a12d2",
+      "movingHeadObserved": "7f7b7a0ba8adadd2e9a937ae8839ad8fa28639e7",
+      "releaseEvidence": {
+        "metadataUrl": "https://api.github.com/repos/apache/apisix/releases/tags/3.19.0",
+        "pageUrl": "https://github.com/apache/apisix/releases/tag/3.19.0",
+        "publishedAt": "2026-09-28T05:13:59Z",
+        "retrievedAt": "2026-11-05",
+        "relationship": "3.19.0 tag resolves to inspected 4730436; moving master is separate."
+      }
+    }
+  ],
+  "sources": [
+    {
+      "id": "otel-component",
+      "caseId": "DP-01",
+      "evidenceClass": "inspected-source",
+      "repository": "open-telemetry/opentelemetry-collector",
+      "commit": "f532e15ef29b6ed7fefad2b23a0fefd27120ef9b",
+      "path": "component/component.go",
+      "blobSha": "c816f9909066aebf67cf09868e02ce2b8969d2ec",
+      "url": "https://github.com/open-telemetry/opentelemetry-collector/blob/f532e15ef29b6ed7fefad2b23a0fefd27120ef9b/component/component.go",
+      "symbols": [
+        "Component.Start",
+        "Component.Shutdown",
+        "Factory.CreateDefaultConfig"
+      ],
+      "supports": "Lifecycle callback obligations and MUST/SHOULD strength; startup may continue in background.",
+      "retrievedAt": "2026-11-05",
+      "limits": "Read-only source/document inspection; no runtime or upstream test execution, artifact-byte qualification, scale or hostile-isolation proof."
+    },
+    {
+      "id": "otel-graph",
+      "caseId": "DP-01",
+      "evidenceClass": "inspected-source",
+      "repository": "open-telemetry/opentelemetry-collector",
+      "commit": "f532e15ef29b6ed7fefad2b23a0fefd27120ef9b",
+      "path": "service/internal/graph/graph.go",
+      "blobSha": "ec30e84def1fd0497e49d9828ec84ce80e228d40",
+      "url": "https://github.com/open-telemetry/opentelemetry-collector/blob/f532e15ef29b6ed7fefad2b23a0fefd27120ef9b/service/internal/graph/graph.go",
+      "symbols": [
+        "Graph.createReceiver",
+        "Graph.createProcessor",
+        "Graph.createExporter",
+        "Graph.StartAll",
+        "Graph.ShutdownAll",
+        "Graph.UpdateReceivers"
+      ],
+      "supports": "Configured instance sharing, topological lifecycle ordering, receiver-only teardown-before-rebuild path.",
+      "retrievedAt": "2026-11-05",
+      "limits": "Read-only source/document inspection; no runtime or upstream test execution, artifact-byte qualification, scale or hostile-isolation proof."
+    },
+    {
+      "id": "otel-extensions",
+      "caseId": "DP-01",
+      "evidenceClass": "inspected-source",
+      "repository": "open-telemetry/opentelemetry-collector",
+      "commit": "f532e15ef29b6ed7fefad2b23a0fefd27120ef9b",
+      "path": "service/extensions/extensions.go",
+      "blobSha": "03ceb4b6efcd0751f94ec7b22ab305d5af811c5a",
+      "url": "https://github.com/open-telemetry/opentelemetry-collector/blob/f532e15ef29b6ed7fefad2b23a0fefd27120ef9b/service/extensions/extensions.go",
+      "symbols": [
+        "Extensions.Start",
+        "Extensions.Shutdown",
+        "NotifyPipelineReady",
+        "NotifyPipelineNotReady"
+      ],
+      "supports": "Extension startup/shutdown sequence and distinct readiness notifications.",
+      "retrievedAt": "2026-11-05",
+      "limits": "Read-only source/document inspection; no runtime or upstream test execution, artifact-byte qualification, scale or hostile-isolation proof."
+    },
+    {
+      "id": "otel-ext-order",
+      "caseId": "DP-01",
+      "evidenceClass": "inspected-source",
+      "repository": "open-telemetry/opentelemetry-collector",
+      "commit": "f532e15ef29b6ed7fefad2b23a0fefd27120ef9b",
+      "path": "service/extensions/graph.go",
+      "blobSha": "b5570b5311382445d6b584ed6c95dcc5a2199964",
+      "url": "https://github.com/open-telemetry/opentelemetry-collector/blob/f532e15ef29b6ed7fefad2b23a0fefd27120ef9b/service/extensions/graph.go",
+      "symbols": [
+        "computeOrder",
+        "cycleErr"
+      ],
+      "supports": "Optional dependency capability, missing-dependency/cycle rejection and topological ordering.",
+      "retrievedAt": "2026-11-05",
+      "limits": "Read-only source/document inspection; no runtime or upstream test execution, artifact-byte qualification, scale or hostile-isolation proof."
+    },
+    {
+      "id": "otel-service",
+      "caseId": "DP-01",
+      "evidenceClass": "inspected-source",
+      "repository": "open-telemetry/opentelemetry-collector",
+      "commit": "f532e15ef29b6ed7fefad2b23a0fefd27120ef9b",
+      "path": "service/service.go",
+      "blobSha": "af34ac7eb688a207645ebccb79e2dd742bf1adc7",
+      "url": "https://github.com/open-telemetry/opentelemetry-collector/blob/f532e15ef29b6ed7fefad2b23a0fefd27120ef9b/service/service.go",
+      "symbols": [
+        "Service.Start",
+        "Service.Shutdown",
+        "ReceiverPartialReloadEnabled",
+        "Service.UpdateReceivers"
+      ],
+      "supports": "Service lifecycle and separate Alpha/Beta partial-reload feature gates.",
+      "retrievedAt": "2026-11-05",
+      "limits": "Read-only source/document inspection; no runtime or upstream test execution, artifact-byte qualification, scale or hostile-isolation proof."
+    },
+    {
+      "id": "otel-collector",
+      "caseId": "DP-01",
+      "evidenceClass": "inspected-source",
+      "repository": "open-telemetry/opentelemetry-collector",
+      "commit": "f532e15ef29b6ed7fefad2b23a0fefd27120ef9b",
+      "path": "otelcol/collector.go",
+      "blobSha": "9f34b6c9c2c568dcecfd7c417a09b1d0cc690a4d",
+      "url": "https://github.com/open-telemetry/opentelemetry-collector/blob/f532e15ef29b6ed7fefad2b23a0fefd27120ef9b/otelcol/collector.go",
+      "symbols": [
+        "Collector.reloadConfiguration",
+        "Collector.tryPartialReceiverReload"
+      ],
+      "supports": "Failure of attempted partial reload falls through to full service reload; fallback can fail.",
+      "retrievedAt": "2026-11-05",
+      "limits": "Read-only source/document inspection; no runtime or upstream test execution, artifact-byte qualification, scale or hostile-isolation proof."
+    },
+    {
+      "id": "otel-fanout",
+      "caseId": "DP-01",
+      "evidenceClass": "inspected-source",
+      "repository": "open-telemetry/opentelemetry-collector",
+      "commit": "f532e15ef29b6ed7fefad2b23a0fefd27120ef9b",
+      "path": "internal/fanoutconsumer/traces.go",
+      "blobSha": "ebe5d7da14adbcda0733d2f6cb5d8f16e1b39b46",
+      "url": "https://github.com/open-telemetry/opentelemetry-collector/blob/f532e15ef29b6ed7fefad2b23a0fefd27120ef9b/internal/fanoutconsumer/traces.go",
+      "symbols": [
+        "NewTraces",
+        "tracesConsumer.ConsumeTraces"
+      ],
+      "supports": "Synchronous fan-out and selective cloning according to mutation capability.",
+      "retrievedAt": "2026-11-05",
+      "limits": "Read-only source/document inspection; no runtime or upstream test execution, artifact-byte qualification, scale or hostile-isolation proof."
+    },
+    {
+      "id": "otel-tests",
+      "caseId": "DP-01",
+      "evidenceClass": "inspected-unrun-test",
+      "repository": "open-telemetry/opentelemetry-collector",
+      "commit": "f532e15ef29b6ed7fefad2b23a0fefd27120ef9b",
+      "path": "service/internal/graph/graph_test.go",
+      "blobSha": "bd149ab88ccbd4cb85f22f12bf1785f45b63f588",
+      "url": "https://github.com/open-telemetry/opentelemetry-collector/blob/f532e15ef29b6ed7fefad2b23a0fefd27120ef9b/service/internal/graph/graph_test.go",
+      "symbols": [
+        "TestSharedReceiverStartOrder",
+        "TestUpdateReceiversShutdownErrorOnRemove",
+        "TestUpdateReceiversShutdownErrorOnRebuild",
+        "TestUpdateReceiversBuildError",
+        "TestUpdateReceiversStartError"
+      ],
+      "supports": "Inspected unrun expectations for eager shared receiver startup and partial-reload failure paths.",
+      "retrievedAt": "2026-11-05",
+      "limits": "Read-only source/document inspection; no runtime or upstream test execution, artifact-byte qualification, scale or hostile-isolation proof."
+    },
+    {
+      "id": "otel-builder",
+      "caseId": "DP-01",
+      "evidenceClass": "documented-contract",
+      "repository": "open-telemetry/opentelemetry-collector",
+      "commit": "f532e15ef29b6ed7fefad2b23a0fefd27120ef9b",
+      "path": "cmd/builder/README.md",
+      "blobSha": "b1230bf0f96044d208a1973f6d030377931e5e66",
+      "url": "https://github.com/open-telemetry/opentelemetry-collector/blob/f532e15ef29b6ed7fefad2b23a0fefd27120ef9b/cmd/builder/README.md",
+      "symbols": [
+        "OpenTelemetry Collector Builder",
+        "Configuration"
+      ],
+      "supports": "Custom distribution assembly from explicitly configured Go modules.",
+      "retrievedAt": "2026-11-05",
+      "limits": "Read-only source/document inspection; no runtime or upstream test execution, artifact-byte qualification, scale or hostile-isolation proof."
+    },
+    {
+      "id": "apisix-plugin",
+      "caseId": "DP-02",
+      "evidenceClass": "inspected-source",
+      "repository": "apache/apisix",
+      "commit": "473043623c161966f3f6ef4e8f12d2d8667a12d2",
+      "path": "apisix/plugin.lua",
+      "blobSha": "632e25c74c66cecb8909ed52e5920ed9dea49de5",
+      "url": "https://github.com/apache/apisix/blob/473043623c161966f3f6ef4e8f12d2d8667a12d2/apisix/plugin.lua",
+      "symbols": [
+        "unload_plugin",
+        "load_plugin",
+        "load",
+        "sort_plugin",
+        "custom_sort_plugin"
+      ],
+      "supports": "Lua teardown/cache-clear-before-load sequence; executable require before field checks; phase priority sorting.",
+      "retrievedAt": "2026-11-05",
+      "limits": "Read-only source/document inspection; no runtime or upstream test execution, artifact-byte qualification, scale or hostile-isolation proof."
+    },
+    {
+      "id": "apisix-docs",
+      "caseId": "DP-02",
+      "evidenceClass": "documented-contract",
+      "repository": "apache/apisix",
+      "commit": "473043623c161966f3f6ef4e8f12d2d8667a12d2",
+      "path": "docs/en/latest/terminology/plugin.md",
+      "blobSha": "3fe7cd603827ec995532c9c012e3936039949631",
+      "url": "https://github.com/apache/apisix/blob/473043623c161966f3f6ef4e8f12d2d8667a12d2/docs/en/latest/terminology/plugin.md",
+      "symbols": [
+        "Plugins execution lifecycle",
+        "Plugins execution order",
+        "Plugins merging precedence",
+        "Hot reload"
+      ],
+      "supports": "Documented phase, local precedence and hot-loading scope; request-time disable is not no-load promise.",
+      "retrievedAt": "2026-11-05",
+      "limits": "Read-only source/document inspection; no runtime or upstream test execution, artifact-byte qualification, scale or hostile-isolation proof."
+    },
+    {
+      "id": "apisix-dev",
+      "caseId": "DP-02",
+      "evidenceClass": "documented-contract",
+      "repository": "apache/apisix",
+      "commit": "473043623c161966f3f6ef4e8f12d2d8667a12d2",
+      "path": "docs/en/latest/plugin-develop.md",
+      "blobSha": "e384ec18bd19143a15a47ea3d7846303dd6ae42a",
+      "url": "https://github.com/apache/apisix/blob/473043623c161966f3f6ef4e8f12d2d8667a12d2/docs/en/latest/plugin-develop.md",
+      "symbols": [
+        "Naming and priority",
+        "Load plugin and replace plugin",
+        "Others"
+      ],
+      "supports": "Plugin identities/priorities, schema contracts, method replacement hook and initialization/cleanup customization.",
+      "retrievedAt": "2026-11-05",
+      "limits": "Read-only source/document inspection; no runtime or upstream test execution, artifact-byte qualification, scale or hostile-isolation proof."
+    },
+    {
+      "id": "apisix-threat",
+      "caseId": "DP-02",
+      "evidenceClass": "documented-contract",
+      "repository": "apache/apisix",
+      "commit": "473043623c161966f3f6ef4e8f12d2d8667a12d2",
+      "path": "docs/en/latest/security-threat-model.md",
+      "blobSha": "d22cf3f549f2d29a7220f3ed734f1bd2764debd7",
+      "url": "https://github.com/apache/apisix/blob/473043623c161966f3f6ef4e8f12d2d8667a12d2/docs/en/latest/security-threat-model.md",
+      "symbols": [
+        "Caller / trust table",
+        "Operator-supplied Lua code"
+      ],
+      "supports": "Operator-trusted custom Lua/external-runner assumptions; not hostile-code containment.",
+      "retrievedAt": "2026-11-05",
+      "limits": "Read-only source/document inspection; no runtime or upstream test execution, artifact-byte qualification, scale or hostile-isolation proof."
+    },
+    {
+      "id": "otel-gates",
+      "caseId": "DP-01",
+      "evidenceClass": "inspected-source",
+      "repository": "open-telemetry/opentelemetry-collector",
+      "commit": "f532e15ef29b6ed7fefad2b23a0fefd27120ef9b",
+      "path": "service/internal/metadata/generated_feature_gates.go",
+      "blobSha": "55d289632adf3bac28f591381cdfa8f3d8c2854c",
+      "url": "https://github.com/open-telemetry/opentelemetry-collector/blob/f532e15ef29b6ed7fefad2b23a0fefd27120ef9b/service/internal/metadata/generated_feature_gates.go",
+      "symbols": [
+        "ServicePartialReloadFeatureGate",
+        "ServicePartialReloadReceiversFeatureGate"
+      ],
+      "supports": "Generated declarations name Alpha master gate and Beta receiver gate, introduced from v0.157.0.",
+      "retrievedAt": "2026-11-05",
+      "limits": "Read-only source/document inspection; no runtime or upstream test execution, artifact-byte qualification, scale or hostile-isolation proof."
+    }
+  ],
+  "mutableDocs": [
+    {
+      "url": "https://opentelemetry.io/docs/collector/architecture/",
+      "claim": "sharing/fan-out and configured instance contracts"
+    },
+    {
+      "url": "https://opentelemetry.io/docs/collector/extend/ocb/",
+      "claim": "custom distribution builder"
+    },
+    {
+      "url": "https://opentelemetry.io/docs/collector/extend/custom-component/connector/",
+      "claim": "historical processor-role workaround and connector replacement"
+    }
+  ]
+}

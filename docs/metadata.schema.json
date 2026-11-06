@@ -5,7 +5,7 @@
   "required": ["id", "type", "status", "owner", "summary"],
   "properties": {
     "id": {"type": "string", "minLength": 1},
-    "type": {"enum": ["adr", "architecture", "index", "open-decision", "qualification"]},
+    "type": {"enum": ["adr", "architecture", "index", "open-decision", "qualification", "research"]},
     "status": {"type": "string", "minLength": 1},
     "owner": {"type": "string", "minLength": 1},
     "summary": {"type": "string", "minLength": 1},
@@ -52,6 +52,10 @@
     }
   },
   "allOf": [
+    {
+      "if": {"properties": {"type": {"const": "research"}}, "required": ["type"]},
+      "then": {"properties": {"status": {"enum": ["active", "archived"]}}}
+    },
     {
       "if": {"properties": {"type": {"const": "adr"}}, "required": ["type"]},
       "then": {
