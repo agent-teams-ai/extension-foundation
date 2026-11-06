@@ -10,7 +10,18 @@ summary: Independent critique dispositions, adoption conflicts and scoped implem
 
 **Initial review:** 2026-10-21. **Follow-up:** 2026-10-22, recorded in its own section below. **Status:** non-normative research synthesis; no new architecture approval, production-runtime qualification, or merge authorization. The initial review combines the platform, production-system, ecosystem-scale, stateful-update and OpenClaw research with independent lifecycle, scale/security, and adoption/documentation critiques. Researchers supplied comparison evidence; critics challenged lifecycle promises, security and scale claims, and adoption provenance. Each dated record distinguishes source facts, historical reports, unexecuted assertions, executed experiments and recommendations.
 
-## Current disposition, 2026-10-25
+## Current decision preparation, 2026-11-06
+
+The [owner decision brief](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-decision-brief-2026-11-06)
+records proposed first-slice and pre-disposal update choices, bounded estimates,
+three independent critiques and the current qualification limits. No alternative
+is accepted by that record. Orchestrator main
+`a34587b313e656eeb43d755b4a4f08c40dff2116` now contains accepted
+[ADR-0116](https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/main/docs/decisions/0116-native-temporal-for-fully-local-durable-workflows.md);
+PR90 is merged and its engine choice is resolved. Earlier unmerged-branch
+statements below retain their historical date, not current status.
+
+## Historical disposition, 2026-10-25
 
 The owner has now chosen static composition with controlled restart as the
 baseline and permits a Temporal rollout adapter where useful. The

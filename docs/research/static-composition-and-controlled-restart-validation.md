@@ -59,13 +59,21 @@ and any stronger availability guarantee remain separate choices.
 
 ## Current storage and workflow authority
 
+**Authority refresh, 2026-11-06:** Orchestrator main is now
+`a34587b313e656eeb43d755b4a4f08c40dff2116`. PR90 has merged; accepted
+[ADR-0116][O116-current] selects native Temporal with PostgreSQL on main.
+The original accepted [PR90 snapshot][O116] remains historical evidence.
+The [owner decision brief](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-decision-brief-2026-11-06)
+preserves the two current proposed choices and their estimate limitations.
+This refresh changes no executed input, accepted ADR or release qualification.
+
 | Question | Verified current authority | Consequence |
 | --- | --- | --- |
 | Local and hosted canonical backend | Orchestrator main `aaabc1e7cd2e2482668530e4412e61c2bca1f515`, accepted [ADR-0114][O114] | Native PostgreSQL applies to both; earlier SQLite conclusions are superseded. ADR-0114 adopts the central backend reference at exact `4dcf4ffe29279e479e089bc06f745dd1a62f12d1`. |
 | Fully Local Desktop | Accepted [ADR-0115][O115] on the same main | Required V1 profile; shared domain/application, PostgreSQL schemas and migrations; native bundled engine through the Local Supervisor adapter. |
 | Launcher and database clients | [Adopted backend reference][BACKEND] and ADR-0114/0115 | `embedded-postgres` is the selected launcher approach; node-postgres/Drizzle remain context-owned adapters. Research package `18.4.0-beta.17` is not an approved production distribution pin. Exact artifact, engine, helper, signing, upgrade and OS qualifications remain open. |
 | Earlier ADR-0048/0049 | ADR-0114 explicitly replaces the local SQLite engine premise within its stated scope | Preserve single authority, logical transfer and exact-value rules. Do not rewrite the historical accepted documents. |
-| Fully Local workflow engine | Owner-accepted [ADR-0116][O116] at PR90 head `0af892165a023a274302f89b47ba514ab2915e59` | Full native Temporal Service plus PostgreSQL is the selected branch direction; OD-035 is closed there. **PR90 remains unmerged**, so this is not a claim about merged main. |
+| Fully Local workflow engine | Accepted [ADR-0116][O116-current] on main `a34587b313e656eeb43d755b4a4f08c40dff2116`, checked 2026-11-06 | Full native Temporal Service plus PostgreSQL is selected; OD-035 engine selection is resolved. Native deployment and release qualification remain separate obligations. |
 | Plugin rollout scheduling | Owner instruction, 2026-10-25 | Optional Temporal adapter to the same operation; this does not reopen the product's application workflow choice. |
 
 The previous 2026-10-22 research compared an older Orchestrator branch with a
@@ -258,4 +266,5 @@ does not change accepted version pins or erase reproducibility.
 [O114]: https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/aaabc1e7cd2e2482668530e4412e61c2bca1f515/docs/decisions/0114-canonical-backend-stack-and-distributed-role-adoption.md
 [O115]: https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/aaabc1e7cd2e2482668530e4412e61c2bca1f515/docs/decisions/0115-canonical-fully-local-v1-adoption.md
 [O116]: https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/0af892165a023a274302f89b47ba514ab2915e59/docs/decisions/0116-native-temporal-for-fully-local-durable-workflows.md
+[O116-current]: https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/main/docs/decisions/0116-native-temporal-for-fully-local-durable-workflows.md
 [BACKEND]: https://github.com/agent-teams-ai/.github/blob/4dcf4ffe29279e479e089bc06f745dd1a62f12d1/docs/backend-stack.md

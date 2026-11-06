@@ -8,13 +8,21 @@ summary: Maintained source-backed lessons for module composition, plugin systems
 
 # Plugin System Research Reference
 
-**Current follow-up: 2026-11-05; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
+**Current follow-up: 2026-11-06; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
 module composition, extension ecosystems and production hot replacement. It
 preserves industry experience so future agents can use the same evidence,
 counterexamples and qualification scenarios. Research is not an accepted ADR,
 a released runtime, a security audit or a performance qualification.
 
 ## Current synthesis
+
+The [2026-11-06 owner decision brief](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-decision-brief-2026-11-06)
+separates the accepted baseline from two proposed choices: the first useful
+customization journey and ordinary update timing before Host disposal. It
+retains independent authority/product/mechanism criticism, scoped LOC and
+rating estimates, actual Agent Runtime readiness limits and the fresh merged
+Temporal decision. The options await the owner's choice and authorize no new
+runtime, public contract or implementation.
 
 The [expanded research and authority synthesis](plugin-research-synthesis-and-authority-2026-11-05.md)
 adds six agent ecosystems, six specialized plugin frameworks and two adjacent
@@ -92,6 +100,7 @@ are preserved in the [experiment](worker-adapter-replacement-experiment.md).
 
 | Question | Read next | Decision owner |
 | --- | --- | --- |
+| What is already accepted, and what must the owner choose next? | [Owner decision brief, 2026-11-06](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-decision-brief-2026-11-06) | Owning product chooses the actual capability and update policy; EF OD-003 remains open |
 | What do further agent platforms and specialist frameworks actually implement? | [Agent framework evidence](agent-framework-extension-evidence-2026-11-05.md), [specialist framework evidence](specialist-plugin-framework-evidence-2026-11-05.md), [cross-case synthesis](plugin-research-synthesis-and-authority-2026-11-05.md) | Research supplies facts and conditional lessons; existing owners decide adoption |
 | What do current agent products and current scale evidence change? | [Plugin Industry and Scale Review 2026-11-05](plugin-industry-and-scale-review-2026-11-05.md) | Existing composition, contract, product and execution owners; research is not adoption |
 | How should ordinary modules be declared, composed and tested? | [Current GM authoring guide](https://github.com/agent-teams-ai/get-modular/blob/main/docs/guides/module-authoring.md), [Consumer Module Standard](https://github.com/agent-teams-ai/get-modular/blob/main/docs/architecture/common-assembly.md#consumer-module-standard) | Get Modular semantics; each product's adoption profile |

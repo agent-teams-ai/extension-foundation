@@ -219,11 +219,13 @@ provide the exact observation and retention limits.
 Native binary archives are identified by their verified hashes and supplier
 metadata; the result archive does not redistribute those downloaded binaries.
 
-### Current source and execution identities
+### Source and execution identities at the 2026-10-26 cut
 
-Fresh source inspection found EF draft `84f43b9`, GM main `b1866ac` and
-Orchestrator main `94a480d`. PR90 remains unmerged at `0af8921`.
-Source freshness does not silently change an adopted package pin.
+Source inspection at that cut found EF draft `84f43b9`, GM main `b1866ac` and
+Orchestrator main `94a480d`. PR90 was then unmerged at `0af8921`.
+The [current authority map](static-composition-and-controlled-restart-validation.md#current-storage-and-workflow-authority)
+records its later merge and accepted engine choice. Source freshness does not
+silently change an adopted package pin or these retained execution inputs.
 
 The lightweight experiments reuse the prior frozen public Core/Assembly 0.7.0,
 Resources 0.2.1 and Conformance 0.5.0 inputs, now restored with Node 26.11.1,
