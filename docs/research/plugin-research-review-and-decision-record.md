@@ -12,14 +12,29 @@ summary: Independent critique dispositions, adoption conflicts and scoped implem
 
 ## Current decision preparation, 2026-11-06
 
-The [owner decision brief](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-decision-brief-2026-11-06)
-records proposed first-slice and pre-disposal update choices, bounded estimates,
-three independent critiques and the current qualification limits. No alternative
-is accepted by that record. Orchestrator main
+The [deeper follow-up](plugin-choice-deepening-2026-11-06.md) corrects the
+[owner decision brief](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-decision-brief-2026-11-06).
+Its earlier contained-first recommendation overlooked accepted AR ADR-0091 at
+the same source pin; the interactive provider direction does not need a new
+vote. Ordinary update deferral must also remain distinct from irreversible
+shutdown. Reviewed strict source diagnostics reject both directions of an
+exploratory legacy contract pair; they are not Host E2E or supported-release
+failure evidence. Detailed criticism, source provenance, plans and conditional
+costs are retained without adopting a new option. Orchestrator main
 `a34587b313e656eeb43d755b4a4f08c40dff2116` now contains accepted
 [ADR-0116](https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/main/docs/decisions/0116-native-temporal-for-fully-local-durable-workflows.md);
 PR90 is merged and its engine choice is resolved. Earlier unmerged-branch
 statements below retain their historical date, not current status.
+
+Three additional GPT-6 Astra xhigh recovery reviewers checked exact source,
+update semantics and evidence integrity, followed by a bounded second round.
+The resulting corrections identify the actual B donor, keep its external
+delivery unqualified, preserve optional checkpoint semantics, distinguish
+operation truth from physical retirement, and record systemd v258's timeout
+counterexample and subsequent fix. Current recommendations and costs remain
+conditional; no new runtime experiment or production migration was added.
+The [supplemental audit packet](evidence/plugin-deepening-recovery-20261106.tar.gz)
+retains those reviews separately from the frozen initial evidence.
 
 ## Historical disposition, 2026-10-25
 

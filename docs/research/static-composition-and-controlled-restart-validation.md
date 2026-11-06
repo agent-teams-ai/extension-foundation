@@ -63,8 +63,11 @@ and any stronger availability guarantee remain separate choices.
 `a34587b313e656eeb43d755b4a4f08c40dff2116`. PR90 has merged; accepted
 [ADR-0116][O116-current] selects native Temporal with PostgreSQL on main.
 The original accepted [PR90 snapshot][O116] remains historical evidence.
-The [owner decision brief](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-decision-brief-2026-11-06)
-preserves the two current proposed choices and their estimate limitations.
+The [corrected owner decision brief](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-decision-brief-2026-11-06)
+and [deeper review](plugin-choice-deepening-2026-11-06.md) preserve AR's already
+accepted interactive provider direction and distinguish ordinary update
+deferral from irreversible shutdown. Earlier contained-first and small
+seal/wait estimates are historical unselected hypotheses, not current quotes.
 This refresh changes no executed input, accepted ADR or release qualification.
 
 | Question | Verified current authority | Consequence |

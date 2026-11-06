@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-06",
+  "kind": "additional-source-review-and-recovery-evidence",
+  "scope": "Three additional xhigh audits and bounded second round, exact original source snapshots, original documentation logs. No new product implementation or runtime/compile experiment. Final publication checks reported separately.",
+  "archive": "plugin-deepening-recovery-20261106.tar.gz",
+  "archiveBytes": 61676,
+  "archiveSha256": "696e587f980c12f194df41a698756e12b50553cb911de9a1f90c22138d4af6d0",
+  "memberCount": 23,
+  "uncompressedBytes": 207006,
+  "members": [
+    {
+      "path": "reviews/recovery-audit.md",
+      "bytes": 17977,
+      "sha256": "32318610f47939a420cef1bc11fed3a662effd36c6e8482c1f625065b16d9cc1"
+    },
+    {
+      "path": "reviews/spi-audit.md",
+      "bytes": 24003,
+      "sha256": "3f98afce7803a884b91d5cf9c574522df70adb2ddba614868541adde64fedfee"
+    },
+    {
+      "path": "reviews/update-policy-audit.md",
+      "bytes": 24331,
+      "sha256": "3e54433f054f05ef5e2516b2c8be9c638af72492a81838f16b885c9db824e3c2"
+    },
+    {
+      "path": "root-dispositions.md",
+      "bytes": 5386,
+      "sha256": "e7bb3d11be326aa4bf68f785c645a3a12a1ca7e8c1b5b37bfeb088a30a1ec4bf"
+    },
+    {
+      "path": "sources/agent-runtime/docs/decisions/0091-interactive-agent-session-synthetic-vertical-slice.md",
+      "bytes": 17845,
+      "sha256": "557e26299460da2eac994c7dd92fe9e715431ac083369f3de7e7d8a98b6eca03"
+    },
+    {
+      "path": "sources/agent-runtime/experiments/interactive-provider-contract/README.md",
+      "bytes": 6540,
+      "sha256": "4c8d55dd8b51b178be9730b0f30bd6d67b5c09a30801327e7a8ff1ba9521dd77"
+    },
+    {
+      "path": "sources/agent-runtime/experiments/interactive-provider-contract/src/claude/config.ts",
+      "bytes": 3708,
+      "sha256": "479c764f0830e0d3622a9a710b6e8e760f7748628c09ccfe8b279d2f0a535aa6"
+    },
+    {
+      "path": "sources/agent-runtime/experiments/interactive-provider-contract/src/claude/index.ts",
+      "bytes": 1998,
+      "sha256": "bcb31bc8e3c7966d31cc8d5bc811cd6494042914d9ca8ce1052deda198da6dfb"
+    },
+    {
+      "path": "sources/agent-runtime/experiments/interactive-provider-contract/src/claude/interactions.ts",
+      "bytes": 4032,
+      "sha256": "7d20f0e7f9181bf19ac835cfa790f0a15cd2b6b39f0c06887e37e56392775051"
+    },
+    {
+      "path": "sources/agent-runtime/experiments/interactive-provider-contract/src/claude/normalize.ts",
+      "bytes": 4571,
+      "sha256": "e0e9a51fde5bcaf7011b8c5ca72c1162623cef09d7ed8f8fc7a8f36a2d0f8dcc"
+    },
+    {
+      "path": "sources/agent-runtime/experiments/interactive-provider-contract/src/claude/primitives.ts",
+      "bytes": 2238,
+      "sha256": "a56a4c146272ac838b3b0fbaabe3edb98b1956d49b5d84b86031f22e34408d20"
+    },
+    {
+      "path": "sources/agent-runtime/experiments/interactive-provider-contract/src/claude/session.ts",
+      "bytes": 15851,
+      "sha256": "4b4892f6748297892004b954e2aff7e2b6e4878f2e1793e8b1a69928388960da"
+    },
+    {
+      "path": "sources/agent-runtime/experiments/interactive-provider-contract/src/draft-contracts/index.ts",
+      "bytes": 2276,
+      "sha256": "8552226941f7d5cb2f3700e1703f286be87850501e3df2bc2878486dbcd26d6e"
+    },
+    {
+      "path": "sources/agent-runtime/packages/apps/embedded-runtime/src/composition/agent-runtime-host-disposal.ts",
+      "bytes": 15101,
+      "sha256": "c59b3c92c534fe86622c87f2477314e6bafee752b6346f2ff0ccbf191b3def6d"
+    },
+    {
+      "path": "sources/agent-runtime/packages/apps/embedded-runtime/tests/package/ordinary-host-ownership.fixture.ts",
+      "bytes": 10732,
+      "sha256": "e51c95e01624587a6979d8488786c864241a9e2932191b8ed1d5a7e03ad7459f"
+    },
+    {
+      "path": "sources/agent-runtime/packages/contexts/agent-execution/src/features/interactive-agent-session/application/ports/outbound/interactive-provider-driver.ts",
+      "bytes": 3551,
+      "sha256": "7093382a534a609e782ea7de7bb8d16f5323e0b563a801e61c96f5c42979192f"
+    },
+    {
+      "path": "sources/agent-runtime/packages/contexts/agent-execution/src/features/interactive-agent-session/application/ports/outbound/interactive-session-ports.ts",
+      "bytes": 2600,
+      "sha256": "e8fb0276c20fe528dd946f264ccacfa7e120ed461bfc6b91ca0f93f224ead366"
+    },
+    {
+      "path": "sources/agent-runtime/packages/contexts/agent-execution/src/features/interactive-agent-session/application/use-cases/interactive-session-owner.ts",
+      "bytes": 29892,
+      "sha256": "de65ca20763b16ed28e9ba7f39ed8aae2f86e28873c8cbc4236f3aace3ac60e4"
+    },
+    {
+      "path": "sources/current-observations.json",
+      "bytes": 3494,
+      "sha256": "e8f952296ab839ec56e6874e8bd42c5654d659847d8660362018ddbbd657d3f5"
+    },
+    {
+      "path": "sources/source-snapshot-manifest.json",
+      "bytes": 5566,
+      "sha256": "58de088858bbd5b41da933cf0db6f81490d9571b26a60b7711f462ac6b3135f0"
+    },
+    {
+      "path": "validation/original-docs-first.log",
+      "bytes": 1673,
+      "sha256": "7bc834a6b41764540502a039eaaf4b54b1d7cb86264066533db3d02b5d10750a"
+    },
+    {
+      "path": "validation/original-docs-pass.log",
+      "bytes": 1520,
+      "sha256": "bef6dee195926c3e349e9d31ba0e2d6fe0811ae3c8bd73e9e38c896d9c52345b"
+    },
+    {
+      "path": "validation/original-prepared-inputs.json",
+      "bytes": 2121,
+      "sha256": "b731eb6b6340cb4872b7416c12f91a5243d699730fd629569df08585f558a0f7"
+    }
+  ]
+}
