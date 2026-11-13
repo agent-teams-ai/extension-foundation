@@ -8,13 +8,28 @@ summary: Maintained source-backed lessons for module composition, plugin systems
 
 # Plugin System Research Reference
 
-**Current follow-up: 2026-11-06; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
+**Current follow-up: 2026-11-14; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
 module composition, extension ecosystems and production hot replacement. It
 preserves industry experience so future agents can use the same evidence,
 counterexamples and qualification scenarios. Research is not an accepted ADR,
 a released runtime, a security audit or a performance qualification.
 
 ## Current synthesis
+
+The [2026-11-14 live plugin evolution research](live-plugin-evolution-vision-and-evidence-2026-11-14.md)
+records the owner's high-priority vision: add, initialize and replace plugins
+during application operation, including changes authored by agents. The
+[owner vision and explicit interruption TODO](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-prioritized-live-plugin-vision-2026-11-14)
+are current direction; implementation options remain proposals. The research
+compares current agent tooling, production replacement boundaries, new sandboxed
+execution, browser modules and the actual Get Modular Effect integration.
+Immutable graphs within a generation can support live selection between
+generations. The earlier controlled-restart baseline is not the vision's ceiling.
+The [full evidence packet](evidence/live-plugin-evolution-20261114.tar.gz) and
+[member manifest](evidence/live-plugin-evolution-20261114.manifest.json) retain
+the independent research lanes, both review rounds and four executed native
+Effect resource-lifetime scenarios. Source observation, local execution and
+product qualification remain distinct.
 
 The [2026-11-06 deeper review](plugin-choice-deepening-2026-11-06.md) corrects
 the [owner decision brief](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-decision-brief-2026-11-06).

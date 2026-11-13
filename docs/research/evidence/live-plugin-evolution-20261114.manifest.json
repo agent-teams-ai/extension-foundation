@@ -1,0 +1,357 @@
+{
+  "schemaVersion": 1,
+  "kind": "retained-research-evidence",
+  "clientObservationDate": "2026-11-14",
+  "assembledAtUtc": "2026-11-13T23:18:46.268655+00:00",
+  "repository": "agent-teams-ai/extension-foundation",
+  "sourceParent": "7fd1e3392c732b64053edb11cfd32a7711dfdec8",
+  "archive": "live-plugin-evolution-20261114.tar.gz",
+  "archiveSha256": "0469a42a636150beaedde54969359cd1d342b728fe2bdd717db5d75c58cf1d29",
+  "archiveBytes": 263889,
+  "memberCount": 67,
+  "members": [
+    {
+      "path": "live-plugin-research-20261114/README.md",
+      "bytes": 2963,
+      "sha256": "05fc813d98f0a39ea72cc4d21c2e95610b6f8154e894643b113c84c778bcf9b5"
+    },
+    {
+      "path": "live-plugin-research-20261114/agent-trends/agent-ecosystem-report.en.md",
+      "bytes": 48144,
+      "sha256": "823649c6d3d01b601352d842cec7cbd005959e8a4251a73236f2d466f2c05f34"
+    },
+    {
+      "path": "live-plugin-research-20261114/agent-trends/source-ledger.json",
+      "bytes": 43593,
+      "sha256": "a07dcb29ba2df18508df2ea6673f05d13987fca73f5118618d704f3ea421f3d1"
+    },
+    {
+      "path": "live-plugin-research-20261114/agent-trends/top-findings.ru.md",
+      "bytes": 7980,
+      "sha256": "4c9dd2c509e46ecb87565a0258e1675ea185cde47fd91e3cef1b41c44db36a8e"
+    },
+    {
+      "path": "live-plugin-research-20261114/brief.md",
+      "bytes": 4576,
+      "sha256": "b843cfd36b0b02b27aea9e74775a47babd0f0dd1c46acbc66b52022ea5d48982"
+    },
+    {
+      "path": "live-plugin-research-20261114/critiques/root-dispositions.md",
+      "bytes": 4901,
+      "sha256": "d0c5034c99a5b30397f2897ab1b83a49db66c6011e1d03f12408722f3c9c0c31"
+    },
+    {
+      "path": "live-plugin-research-20261114/critiques/round1-agent-trends.md",
+      "bytes": 11996,
+      "sha256": "6c827ee2b04499d48150d6b2af8022837b9eb4abfcc41151244fe658c6b2d967"
+    },
+    {
+      "path": "live-plugin-research-20261114/critiques/round1-effect-fit.md",
+      "bytes": 8014,
+      "sha256": "251a49245451c7760a6f371f9fa220677896933478f79127954807bee97248f3"
+    },
+    {
+      "path": "live-plugin-research-20261114/critiques/round1-runtime-patterns.md",
+      "bytes": 9432,
+      "sha256": "cc00475842430ceafb5940f1d3cddbb36b9440eaf11e8b7189797941e69a9195"
+    },
+    {
+      "path": "live-plugin-research-20261114/critiques/round2-agent-trends.md",
+      "bytes": 9315,
+      "sha256": "b1d8d8300c80d7411411c064c65cbd1bb4bf0d0f25b86d6abeab9628086c0ece"
+    },
+    {
+      "path": "live-plugin-research-20261114/critiques/round2-effect-fit.md",
+      "bytes": 6591,
+      "sha256": "5685e23b7b1624cff2c9aa9f6f64d65c3a809163f88ef2397c0a37a2780c8836"
+    },
+    {
+      "path": "live-plugin-research-20261114/critiques/round2-runtime-patterns.md",
+      "bytes": 5186,
+      "sha256": "60b2dd254b2fe02009e30ea4be6bf39d6dafc69c7a2cbb283d617a94900636a5"
+    },
+    {
+      "path": "live-plugin-research-20261114/critiques/runtime-probe-hash-review.json",
+      "bytes": 1714,
+      "sha256": "a6fdc66ee3fe31f95c498c28fce50cb61169d346bffa52ad41ff50e278adc7bf"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/conclusions.ru.md",
+      "bytes": 4466,
+      "sha256": "80cd121882621beca4f6b57d9d55505e79d81f76acd3748c0e508e7d6d6b893b"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/deliverable-hashes.json",
+      "bytes": 499,
+      "sha256": "776766d8e3cdbd7cc48f71f8025c0747c6b37db2791818090ee2c6d576bf7e14"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/report.md",
+      "bytes": 30142,
+      "sha256": "e5eca2cde25af2add01c710090ca3e91cf633fbc8a7122302467677315e3099c"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/source-ledger.json",
+      "bytes": 22136,
+      "sha256": "8f611872efca1b4cd96925853b9ec07bfbad4f52a28e97f618b094077bea40f0"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/effect-4.1.4/LICENSE",
+      "bytes": 1083,
+      "sha256": "774c3bc5924ad8ae6c5a75f1c53db13feb238ade15989625c513d07b60dedf30"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/effect-4.1.4/packages/effect/src/Layer.ts",
+      "bytes": 91646,
+      "sha256": "557d656c68a30468c484576c04505efb149abb4d73bb93a9e61938f29409457c"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/effect-4.1.4/packages/effect/src/LayerMap.ts",
+      "bytes": 17494,
+      "sha256": "8be66f81ff925b86332323d6d1c5581c87e222ad5535e3755e71b67677fa04a0"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/effect-4.1.4/packages/effect/src/ManagedRuntime.ts",
+      "bytes": 16122,
+      "sha256": "8166c807b409913c66706b4c11f56cad37972cc7029aec9a473a9f13ae769775"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/effect-4.1.4/packages/effect/src/RcMap.ts",
+      "bytes": 24628,
+      "sha256": "e2553d08c1e8349a22c6e81d2cbe0f731603f94cf4c24e23d11b72f3b667acab"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/effect-4.1.4/packages/effect/src/RcRef.ts",
+      "bytes": 7581,
+      "sha256": "1a70750b2f48e75363a75fcc66ba44f8af567e8e74c6112d433dcb4d69a35d35"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/effect-4.1.4/packages/effect/src/Scope.ts",
+      "bytes": 17151,
+      "sha256": "b9f28d0cea4ef9b0561b22c36e0b6f323b809b93b1b45a7304b2d5b697ee260b"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/effect-4.1.4/packages/effect/src/ScopedRef.ts",
+      "bytes": 6822,
+      "sha256": "504a8889d1f671a65152fb9a11b4394e6329c86e2b2115868af030228fb1a141"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/effect-4.1.4/packages/effect/src/index.ts",
+      "bytes": 13434,
+      "sha256": "b08d8c497db5668c683902a7b4fc0a176c97619913e8a353378869fc959f83b9"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/effect-4.1.4/packages/effect/src/internal/rcRef.ts",
+      "bytes": 8298,
+      "sha256": "7ef5c98fb36ee335f1dff8c5c24286af17f422390b62e5f826d5c4e5a28fb84d"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/LICENSE",
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/docs/architecture/common-assembly.md",
+      "bytes": 87772,
+      "sha256": "8d07cca2d78dbcf5422a0394425d84ee4833839ae180a5e2133791557e0b735b"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/docs/decisions/0029-admit-an-optional-lifecycle-kernel-candidate.md",
+      "bytes": 8394,
+      "sha256": "9247eb2c2eb70cbbc215426446101314b1085d1d03fee02b6dc0467a737eac00"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/docs/decisions/0043-plan-optional-native-effect-composition.md",
+      "bytes": 8888,
+      "sha256": "0fc55d28a5b1cdedbba703fa6a438f6787b37188e2906133cdabb70d6bc07ece"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/packages/effect/README.md",
+      "bytes": 6798,
+      "sha256": "1f96f689fd469da0c4077d172bfbfc190af457e94930fcadbab3092e47a6def2"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/packages/effect/docs/practices.md",
+      "bytes": 48766,
+      "sha256": "f5c5bb9ed5a9190af16d093b2b46647783c25a486ffc24bca88215ff7b909371"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/packages/effect/package.json",
+      "bytes": 1313,
+      "sha256": "806a5b34ce964e114ca6fded835504dbf5487937592d491b1fa23e273255efc5"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/packages/effect/src/features/construction/factory.ts",
+      "bytes": 1692,
+      "sha256": "f168443d5ab41100954e376789bdb29b6fb36979af1ead3e28de8151a226074a"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/packages/effect/src/features/construction/inputs.ts",
+      "bytes": 1553,
+      "sha256": "755d74b157cd430ab3761c5a0bbdba1645cc8588ff693f537e11bb5e8a06b830"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/packages/effect/src/features/construction/lower.ts",
+      "bytes": 4963,
+      "sha256": "f0812d071016b18ce81a9bb3051341d1c9532cc361c490adec904ab0dfed703c"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/packages/effect/src/features/construction/types.ts",
+      "bytes": 4759,
+      "sha256": "ed667485ddf5313a7f1acd6228b04798c8ea8662aeccafb82ef0c2873f1b9ac4"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/packages/effect/tests/construction.test.ts",
+      "bytes": 26209,
+      "sha256": "16740775d38faeca7b70bdf267b3fb5405cb55bab2c853959958510773a50c21"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/packages/effect/tests/consumer.test.ts",
+      "bytes": 18180,
+      "sha256": "83dedafab8833344d1b67e3b924a9fb38a4c4ce9749d189689546e56afbfc693"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/packages/effect/tests/lifecycle.test.ts",
+      "bytes": 14075,
+      "sha256": "4c26345e3256741492d3dfe807dc4cb9d29c0028c33c287b3439b413501ff517"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/packages/effect/tests/packed-root.test.ts",
+      "bytes": 8341,
+      "sha256": "4f4616b4c90433e10b22846f1adff1284e5c3a9fe198d7d20c25135c00df2385"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/packages/lifecycle-kernel/README.md",
+      "bytes": 2644,
+      "sha256": "f2d7ea848d6cf1ac6b84fccc3cbc51f488c51f37c36c3a3d9b3e958193de57f6"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/packages/lifecycle-kernel/package.json",
+      "bytes": 1027,
+      "sha256": "c126ccf34ab8fc431daa076a199402c5a0a7d776952a5fc2c1d1b30aa405fd73"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/packages/lifecycle-kernel/src/features/lifecycle/kernel.ts",
+      "bytes": 5090,
+      "sha256": "44767450ce4a1c421facfd5d20b4de4625de57ea7bc557eee6414c97f90893a3"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/packages/lifecycle-kernel/src/features/lifecycle/types.ts",
+      "bytes": 1912,
+      "sha256": "0243c7cfbdec316f3d83913091947fcf9fcbfe35f035c22a845f94b9e6b83726"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/packages/lifecycle-kernel/src/index.ts",
+      "bytes": 226,
+      "sha256": "11a3612c57b4db2058d2b0fd138e221c8d610b3d67bc3a3e108f27b769850505"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/packages/lifecycle-kernel/tests/semantic-suite.mjs",
+      "bytes": 5843,
+      "sha256": "8c056a9ea85469dd257385e5ad3c63609d258f5509ff6217307081e46749752f"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/pnpm-lock.yaml",
+      "bytes": 120195,
+      "sha256": "98ef8e1042a2bc1b31d100272954539c7298704986bf346d631b7360dbcfd7dc"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/pnpm-workspace.yaml",
+      "bytes": 697,
+      "sha256": "b018f952c60aaac7cafb97672d3aaeef3d52099e0ca6d46b79938c9f64ff501b"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/sources/get-modular/research/effect-integration-2026-11/production-review-2026-11-13.md",
+      "bytes": 12409,
+      "sha256": "ed32dccfeb79fe3d0d5c8aa67f14229c1ec23d1735cae831db989d5367e78663"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/spike/evidence-manifest.json",
+      "bytes": 6178,
+      "sha256": "f5a5959765b24c0a08dbceeb17290d1287911cbddf05c59a2eebd66cf4151329"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/spike/installed-scoped-ref-source.diff",
+      "bytes": 1808,
+      "sha256": "3e769b357f46fe5a0992f568a15253dfc1636b17a378e4b93b3173c1e0d13ab2"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/spike/lifetime.test.ts",
+      "bytes": 8514,
+      "sha256": "4f3dcb55537a0b981691cadddabe307a996ca653e1585ae46a90680ea5d16113"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/spike/package.json",
+      "bytes": 174,
+      "sha256": "9c32d598417f48eb59e6969b32bd33941ccdd6a49474f14d39ff96cc1d2b9b1c"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/spike/runtime.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/spike/runtime.tap.log",
+      "bytes": 2027,
+      "sha256": "d9517ea310467fbc5ac72476b5b53633ee8139134cda9cee38104f6dab142181"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/spike/tsconfig.json",
+      "bytes": 388,
+      "sha256": "c7bddf2481e638098d08a2072f4657981789e165afdaac6ec573817f9be4d670"
+    },
+    {
+      "path": "live-plugin-research-20261114/effect-fit/spike/typecheck.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "live-plugin-research-20261114/root-analysis.md",
+      "bytes": 11167,
+      "sha256": "94782c34c10c39fc2990586884e1a5b29664f5d7aaf9067cfa7796d79b27d643"
+    },
+    {
+      "path": "live-plugin-research-20261114/root-sources.json",
+      "bytes": 9137,
+      "sha256": "85742e0af1edffcd821c637eced2fde6a8840f5e3199ccc8584390ecdf4b6fa2"
+    },
+    {
+      "path": "live-plugin-research-20261114/runtime-patterns/primary-source-ledger.json",
+      "bytes": 27240,
+      "sha256": "927b8ef58a8489378769a33ad01ce7c333217e1a05b9a30976ca6d5d99c1a6a7"
+    },
+    {
+      "path": "live-plugin-research-20261114/runtime-patterns/report.md",
+      "bytes": 38132,
+      "sha256": "39f2fd901026e3e8c601c8c8a4286ca00efbf53ae415d2ad693b74a0c23fc9d7"
+    },
+    {
+      "path": "live-plugin-research-20261114/validation/docs-context.log",
+      "bytes": 2755,
+      "sha256": "6498905ff257b62068e7d57f75ae352a07a981d79019537098069729485b4f78"
+    },
+    {
+      "path": "live-plugin-research-20261114/validation/docs-quality-final.log",
+      "bytes": 311,
+      "sha256": "74bc494e856d891244d0ac1634cd7eb910a1e91fd5aaf0288db7cd026c429e8d"
+    },
+    {
+      "path": "live-plugin-research-20261114/validation/docs-quality-initial.log",
+      "bytes": 966,
+      "sha256": "a34662c08f2d846a67d82972f1392d08c85bbb7a38468f733202f28e886c55c8"
+    },
+    {
+      "path": "live-plugin-research-20261114/validation/tooling-compiler-paths.log",
+      "bytes": 687,
+      "sha256": "2be6dbbd92b513a3d33f1054c1b922dc256ffe6ea00bd4cdb77060503f8a5db5"
+    }
+  ],
+  "scope": "Research only; exact native Effect experiment, not product live-update qualification. Original CI results are recorded in PR55.",
+  "excluded": [
+    "node_modules",
+    "machine-local symlinks",
+    "temporary fetch scripts",
+    "full upstream repositories"
+  ],
+  "immutability": "Earlier evidence packets remain unchanged."
+}

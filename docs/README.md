@@ -34,6 +34,7 @@ These source-backed references are evidence and design recommendations. They do
 not accept a runtime, publish a package, or replace an approved ADR.
 
 - [Plugin System Research Reference](research/plugin-system-research-reference.md)
+- [Live Plugin Evolution Vision And Evidence 2026-11-14](research/live-plugin-evolution-vision-and-evidence-2026-11-14.md)
 - [Plugin Choice Deepening 2026-11-06](research/plugin-choice-deepening-2026-11-06.md)
 - [Plugin Research Synthesis and Authority 2026-11-05](research/plugin-research-synthesis-and-authority-2026-11-05.md)
 

@@ -26,6 +26,12 @@ decision and discuss material alternatives with the owner before implementation.
 Update current navigation and installation recipes without rewriting immutable
 source snapshots, approved adoption pins or historical qualification evidence.
 
+The owner's [live plugin vision](docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-prioritized-live-plugin-vision-2026-11-14)
+is a high-priority design target across plugin categories, including changes
+authored by agents. Preserve it when designing new boundaries. The same record
+keeps interruption of current work explicitly open; vision does not silently
+select a runtime, migration or cancellation policy.
+
 ## Hard Boundaries
 
 - Orchestrator, Agent Runtime, Frontend, and Platform domain models never enter

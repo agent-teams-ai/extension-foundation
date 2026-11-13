@@ -3,7 +3,7 @@ id: OD-003
 type: open-decision
 status: open
 owner: architecture
-summary: Tracks unresolved extension host, public SPI, invocation protocol, and extension-state migration choices without reopening Get Modular composition ownership.
+summary: Records the prioritized live plugin vision and unresolved host, SPI, invocation, interruption, and state migration choices within existing ownership.
 related:
   - ADR-0001
   - ADR-0011
@@ -64,6 +64,49 @@ separates this confirmed direction, current PostgreSQL/Temporal authority,
 executed scenarios and remaining production qualifications. This resolves the
 baseline-versus-immediate-overlap question; it does not select a public SPI,
 create a second Host authority, publish a package or qualify state migration.
+
+## Owner-prioritized live plugin vision, 2026-11-14
+
+**Confirmed product vision: live plugin evolution is a high priority.** The
+owner wants plugins to be added, initialized, updated and replaced while the
+application and agents continue operating, including changes authored or
+requested by agents. The target spans plugin categories; it must shape new
+boundaries now, with useful live behavior implemented early where practical.
+Avoid coupling that would require an avoidable broad rewrite to introduce it.
+This direction is stronger than treating live replacement as an incidental
+future optimization.
+
+The prior controlled-restart choice remains the confirmed delivery baseline,
+not the ceiling of the product vision. An immutable composition per generation
+can coexist with changing which generation accepts future work. This observation
+does not select a production runtime or rewrite an accepted ADR. Any conflicting
+accepted mechanism follows its explicit successor process.
+
+The [current research](../research/live-plugin-evolution-vision-and-evidence-2026-11-14.md)
+separates dynamic discovery, next-turn activation, live generation replacement,
+isolated execution and migration of already running state. The goal is broad
+live support; a promise of arbitrary instruction-level replacement, universal
+state migration, zero interruption or immediate physical unload is not implied.
+Each plugin category needs an honest supported update boundary and visible
+limits. Do not impose irrelevant lifecycle hooks on pure contributions or call
+a whole-application-restart-only implementation qualified live replacement.
+A targeted plugin restart can keep the surrounding system live; its effect on
+current plugin work still depends on the open interruption policy below.
+
+Agent authorship grants no additional authority. Candidate code and requested
+permissions pass the same consuming product's admission and runtime checks;
+policy, canonical state and physical custody keep their existing owners.
+The current Get Modular Effect integration is a relevant implementation option
+to evaluate, not a newly selected dependency or automatic live-update runtime.
+
+### Explicit owner TODO: interruption during ordinary updates
+
+**Open, deliberately deferred by the owner: may an ordinary update initiate
+interruption of current work?** The owner asked to retain this question for
+later consideration. No earlier recommendation to wait, pause, cancel, cut off
+or migrate a session is adopted by that request. Research and compatible
+preparation work can continue while this policy remains open. Emergency
+revocation and already accepted operation deadlines retain their authority.
 
 ## Owner decision brief, 2026-11-06
 

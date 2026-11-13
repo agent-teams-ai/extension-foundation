@@ -10,7 +10,39 @@ summary: Independent critique dispositions, adoption conflicts and scoped implem
 
 **Initial review:** 2026-10-21. **Follow-up:** 2026-10-22, recorded in its own section below. **Status:** non-normative research synthesis; no new architecture approval, production-runtime qualification, or merge authorization. The initial review combines the platform, production-system, ecosystem-scale, stateful-update and OpenClaw research with independent lifecycle, scale/security, and adoption/documentation critiques. Researchers supplied comparison evidence; critics challenged lifecycle promises, security and scale claims, and adoption provenance. Each dated record distinguishes source facts, historical reports, unexecuted assertions, executed experiments and recommendations.
 
-## Current decision preparation, 2026-11-06
+## Current live plugin vision review, 2026-11-14
+
+The [live plugin research](live-plugin-evolution-vision-and-evidence-2026-11-14.md)
+records the owner's high-priority all-category vision, including agent-authored
+changes, while [OD-003](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#explicit-owner-todo-interruption-during-ordinary-updates)
+keeps ordinary-update interruption deliberately open. Three GPT-6 Astra xhigh
+research lanes and root research compared current agent systems, runtime
+precedents, package/UI boundaries and the current GM Effect implementation.
+Two bounded cross-review rounds found no remaining blocker after the following
+corrections. This is research review, not runtime adoption or merge approval.
+
+| Finding | Final research disposition |
+| --- | --- |
+| Source main/dev versions and a docs branch named production do not establish release maturity | Label source snapshots explicitly; separate the published MCP/Agent Plugins specifications, Cloudflare's open-beta introduction and its experimental self-modifying example. Current platform GA status is unverified. |
+| Retaining old work through completion could silently select interruption policy | Make implementation/schema coherence the proposed invariant. Completion, cancellation, pause and migration remain alternatives; all plugin categories remain in the vision. |
+| OpenCode provides a positive model-request consistency contract | Include its captured definitions/descriptions/executors, while separating those objects from the resources that old activation scopes may close. |
+| GM could accidentally acquire artifact ownership | Keep admitted executable identity with EF/product owners. GM prepares/builds a closed composition; no new resolver, supervisor or artifact loader is introduced. |
+| Existing native scopes and lifecycle kernel were missing from broad cost reasoning | Count reused primitives as zero new code. Withdraw the broad overlap budget for the current native path; split the narrower estimate into mechanism, one consumer integration and tests. Changed existing LOC and total product delivery are not yet estimated. |
+| Resource custody could be mistaken for invocation authority | State that retained custody does not permit new calls after owner retirement. Current authorization and operation admission remain separate from resource lifetime. |
+| Source bytes and installed package bytes differ | Retain separate identities and executed distribution hashes. The full relevant reference diff changes documentation only; no identical-package-tree claim is made. |
+| A mutable native reference was assumed to support graceful replacement | The real-resource experiment shows old-resource closure and a closed current value after finalizer failure; scoped borrowing supplies a narrower useful lifetime guarantee. |
+| Summaries cited nearby but insufficient sources | Attach exact client, reload, skill-write, issue-status and beta-announcement sources to their claims. Reported incidents remain unexecuted evidence. |
+
+The Effect experiment passed strict TypeScript 7.0.2 and **4/4 runtime tests**
+with real file handles and deterministic synchronization. A separate reviewer
+inspected the fixture, raw results and retained hashes without rerunning it.
+The [archive](evidence/live-plugin-evolution-20261114.tar.gz) and
+[manifest](evidence/live-plugin-evolution-20261114.manifest.json) preserve full
+reports, two review rounds, corrected predictions, source ledgers and raw probe
+evidence. Accepted ADRs, earlier archives, production source, dependencies and
+workflows are unchanged.
+
+## Historical decision preparation, 2026-11-06
 
 The [deeper follow-up](plugin-choice-deepening-2026-11-06.md) corrects the
 [owner decision brief](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-decision-brief-2026-11-06).

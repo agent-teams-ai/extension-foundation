@@ -16,6 +16,13 @@ not publish a package, accept a production Host, merge a product decision branch
 or change an immutable accepted ADR. Qualification results remain scoped to
 exact inputs and scenarios.
 
+**Vision update, 2026-11-14:** the owner now prioritizes live plugin addition
+and replacement during application operation, including agent-authored changes.
+The [recorded vision](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-prioritized-live-plugin-vision-2026-11-14)
+makes the baseline below a starting delivery boundary, not a ceiling on future
+behavior. The [new evidence](live-plugin-evolution-vision-and-evidence-2026-11-14.md)
+examines that direction; interruption policy and concrete mechanisms remain open.
+
 **Follow-up, 2026-10-26:** the
 [boundary and failure experiments](plugin-boundary-and-failure-experiments.md)
 retain the original stop-admission counterexample and a separately corrected

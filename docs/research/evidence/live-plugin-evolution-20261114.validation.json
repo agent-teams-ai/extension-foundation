@@ -1,0 +1,444 @@
+{
+  "schemaVersion": 1,
+  "command": "pnpm docs:protocol:check",
+  "initialAttempt": {
+    "exitCode": 1,
+    "failedStage": "cspell: one unrecognized word in new review paragraph",
+    "rawLog": "$ pnpm docs:check && pnpm docs:quality && pnpm docs:contract-test\n$ agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml\ndocs.check: success\nProject: extension-foundation\nCatalog: complete (86 documents)\nAdoption: valid\n$ markdownlint-cli2 --config architecture/tooling/markdownlint-cli2.mjs && cspell --config .cspell.json --no-progress\nmarkdownlint-cli2 v0.23.2 (markdownlint v0.41.1)\nFinding: README.md AGENTS.md docs/**/*.md\nLinting: 92 files\nSummary: 0 issues in 0 files\ndocs/research/plugin-research-review-and-decision-record.md:30:328 - Unknown word (unestimated)\nCSpell: Files checked: 92, Issues found: 1 in 1 file.\n[ELIFECYCLE] Command failed with exit code 1.\n[ELIFECYCLE] Command failed with exit code 1.\n"
+  },
+  "finalAttempt": {
+    "status": "completed",
+    "exitCode": 0,
+    "tests": 8,
+    "passed": 8,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "rawLog": "$ pnpm docs:check && pnpm docs:quality && pnpm docs:contract-test\n$ agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml\ndocs.check: success\nProject: extension-foundation\nCatalog: complete (86 documents)\nAdoption: valid\n$ markdownlint-cli2 --config architecture/tooling/markdownlint-cli2.mjs && cspell --config .cspell.json --no-progress\nmarkdownlint-cli2 v0.23.2 (markdownlint v0.41.1)\nFinding: README.md AGENTS.md docs/**/*.md\nLinting: 92 files\nSummary: 0 issues in 0 files\nCSpell: Files checked: 92, Issues found: 0 in 0 files.\n$ node --test tests/document-authoring.test.mjs tests/docs-protocol-qualification.test.mjs\n✔ managed integration owns a data-only v3 qualification contract and external gate (5.339854ms)\n✔ unified info and check expose the declared Extension authority (3906.428108ms)\n✔ find combines catalog and relation filters and treats zero matches as success (12158.877511ms)\n✔ catalog preserves reciprocal supersession and resolved-decision evidence (4264.103117ms)\n✔ new previews and applies every supported type only inside a disposable repository (281482.25508ms)\n✔ required code anchors pass when reachable and fail closed when stale (8560.712224ms)\n✔ invalid owner, metadata, and duplicate identity fail without mutation (15966.377584ms)\n✔ portable adoption rejects a Skill without executable context guidance (3735.870011ms)\nℹ tests 8\nℹ suites 0\nℹ pass 8\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 330167.305046\n",
+    "logSha256": "609f9cd5987dedf1d8c436382a4e5068c224846f00ce1eea3865a5365e856995",
+    "completedAtUtc": "2026-11-13T23:26:20.465286+00:00"
+  },
+  "unchangedGeneralGateConflict": {
+    "foundation": "1.7.2",
+    "apiExtractor": "7.58.12",
+    "embeddedTypeScript": "5.9.3",
+    "blockedLocalEntrypoints": [
+      "pnpm check:changed",
+      "pnpm check:fast",
+      "pnpm check"
+    ],
+    "reason": "Organization standard prohibits initializing TypeScript below 7.0.2. No workaround or dependency change applied."
+  },
+  "researchArchiveSha256": "0469a42a636150beaedde54969359cd1d342b728fe2bdd717db5d75c58cf1d29",
+  "hostedCi": "Recorded separately in PR55 on the delivered head.",
+  "environment": {
+    "node": "v24.22.1",
+    "pnpm": "11.25.0"
+  },
+  "recordedSourceInputs": [
+    {
+      "path": "README.md",
+      "sha256": "af08760657e4942ac32af26117e993dcdf5ffc44346d29c91517ea9200a331b7"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "dc4da1fafda8cd068758c18b0fcc2b1eb65c9813dab648ca7363fae7c471777a"
+    },
+    {
+      "path": "docs/README.md",
+      "sha256": "fbd7e661b1ff7cd25abb8c0e7c2804e720629d1e11f725b952dfb14fef4222ae"
+    },
+    {
+      "path": "docs/architecture/extension-model.md",
+      "sha256": "db15d71ec5a85a8d6eeaa42f4a50c98b9fb58566d5e4fd94ce1490043e97aeed"
+    },
+    {
+      "path": "docs/architecture/feature-module-standard-profile.md",
+      "sha256": "1be76bbaf7b9baf483b3ff4dedc0be25b1bc4381350f57ae2fd4247c154e098b"
+    },
+    {
+      "path": "docs/architecture/module-system-dogfooding.md",
+      "sha256": "f0cd500683bc8320ca089e1610e5a332a99a86cc9b96fbfaaa3157e45e11d8e7"
+    },
+    {
+      "path": "docs/architecture/overview.md",
+      "sha256": "8517e43a69eb33ce490562d140e2ea0d81b96582591b49f9f7110f44df05ddda"
+    },
+    {
+      "path": "docs/decisions/0001-product-neutral-extension-foundation-boundary.md",
+      "sha256": "b1c36e8b0ffd00cd6f7254caac565fefed9e29e31363546bf0bcafb8efb7e4ff"
+    },
+    {
+      "path": "docs/decisions/0002-oci-oras-and-cosign-distribution-baseline.md",
+      "sha256": "b099cadc0a6d4f9e00486d58881844565a80c37cca32bf912626a3c842a07927"
+    },
+    {
+      "path": "docs/decisions/0003-postgresql-canonical-catalog-state-and-signed-snapshots.md",
+      "sha256": "c4b44ef0fe8afc5d14ccd112c9c6e3a5bbaaab62cde2f5b9bd5ac95d3765840e"
+    },
+    {
+      "path": "docs/decisions/0004-deterministic-catalog-federation-and-namespace-authority.md",
+      "sha256": "2c1b3d4939d18cf2f06d6f6bf5510fead824e0476e9d2904fc68f0b4ae1cb3ed"
+    },
+    {
+      "path": "docs/decisions/0005-catalog-trust-and-moderation-boundaries.md",
+      "sha256": "1b34d820c1cce815e15e64e1a484ec1e633735ef6cb2272e18a411196880066d"
+    },
+    {
+      "path": "docs/decisions/0006-extension-module-safety-boundaries.md",
+      "sha256": "7f6cf34d873c2344bda45054c9bf01ea781e71066e50deb2e47c376768f04313"
+    },
+    {
+      "path": "docs/decisions/0007-extension-module-safety-boundary-clarifications.md",
+      "sha256": "593d266e736793b33ce5f10f3fae0104b7a4f55ec236e837ebdc13a430d8411e"
+    },
+    {
+      "path": "docs/decisions/0008-extension-authority-and-lifecycle-corrections.md",
+      "sha256": "dff8965e313608634ef95f6fd2989537240ac1bb631493342033847b83038e1a"
+    },
+    {
+      "path": "docs/decisions/0009-extension-activation-and-retirement-corrections.md",
+      "sha256": "083e05758ad425c2bd03318912f42d33de87cda61b9171e30d169c8da85b0b06"
+    },
+    {
+      "path": "docs/decisions/0010-extension-safety-floor-and-retirement-closure.md",
+      "sha256": "dc84bbc1ac4c1634fd6aa0f8bf5e804078bc34bfa2814652208d6d09649366e4"
+    },
+    {
+      "path": "docs/decisions/0011-extension-admission-custody-and-retirement-closure.md",
+      "sha256": "e48d6b13a37f8d55a5db5bb2b04c922fd92e8560422123d8f32d5ecb4830c30c"
+    },
+    {
+      "path": "docs/decisions/0012-reusable-library-module-and-plugin-boundaries.md",
+      "sha256": "3b294b03ddf625d145a4df74b3341a371ec77008df1465b9de8654531ddac516"
+    },
+    {
+      "path": "docs/decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md",
+      "sha256": "5b9d35049b8eb06f2a03adedf497e62ab8bce4091c244c36b5cdebb21321d27e"
+    },
+    {
+      "path": "docs/decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md",
+      "sha256": "d83ca0ff5171a1631eccd91490c6d9ad4248d772563ecb64eb60aee34fa022e7"
+    },
+    {
+      "path": "docs/decisions/0015-authorize-get-modular-semantic-extraction.md",
+      "sha256": "529c32f896dd0a8e7519796c193167d91f8e666457c3b352d7a7494bbfbad0c2"
+    },
+    {
+      "path": "docs/decisions/README.md",
+      "sha256": "7d213acf93592f4ebe798ee4f302df55819b275e182d5ec8769eace810245355"
+    },
+    {
+      "path": "docs/open-decisions/OD-001-federated-extension-catalog-topology.md",
+      "sha256": "709ace1947e94212e65ba7dc8e298f90af9ca1306ab50d076e5fa6a8e0059e34"
+    },
+    {
+      "path": "docs/open-decisions/OD-002-catalog-security-and-offline-operational-parameters.md",
+      "sha256": "d16d97d297667b88909ed4af8048d42289b63ba2f27bc57b6b68b091adc6daa6"
+    },
+    {
+      "path": "docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md",
+      "sha256": "8416cc43b631b630e6310a1e56afcfa0476719a11fda266d66c53540ea5f7725"
+    },
+    {
+      "path": "docs/open-decisions/README.md",
+      "sha256": "494a54a656dd4086942cb03d1957c05ca4a43558e81799603a9579a340cc0169"
+    },
+    {
+      "path": "docs/qualification/README.md",
+      "sha256": "7d40385197cbf9b7bebb5d61a77367865d6dc46b134c1bd669c41a9df99b7a79"
+    },
+    {
+      "path": "docs/qualification/engineering-foundation-pr-99.md",
+      "sha256": "536231fa6e00f63d5d9dba0229ab59ae815739e1b20284b1dc837dae22580c33"
+    },
+    {
+      "path": "docs/qualification/module-system-v1-productization/README.md",
+      "sha256": "c99c82d68ac04ebd990ce61972ef67ab988813e40c353fb3093f828afc86bdf6"
+    },
+    {
+      "path": "docs/qualification/module-system-v1-productization/authoring-api-and-gap-matrix.md",
+      "sha256": "639a620889245247d35f3b1ed80b4e2452cfa9d350be526e8571226c98ec9193"
+    },
+    {
+      "path": "docs/qualification/module-system-v1-productization/consumer-admission.md",
+      "sha256": "5c2541b85046049ecdace0211f4468da921ac1b0c42a46468686b6fc645ab19e"
+    },
+    {
+      "path": "docs/qualification/module-system-v1-productization/executive-verdict.md",
+      "sha256": "9103280e430bd5b0d01c7bc9e3489df702d1b6b2d9926a1f6b09fc4b8ce6602e"
+    },
+    {
+      "path": "docs/qualification/module-system-v1-productization/module-authoring-measurement-proof.md",
+      "sha256": "a26088119f9dc918b6140b206696be5ed8dda7238c931931c5c14fbf069699e1"
+    },
+    {
+      "path": "docs/qualification/module-system-v1-productization/red-team-findings.md",
+      "sha256": "b2efd715dd4cb13b29dd20f7d0d0a111f43b3b7324b6a1df699e47a0c4bcb79e"
+    },
+    {
+      "path": "docs/qualification/module-system-v1-productization/roadmap.md",
+      "sha256": "5a2e1a9089a9985fa5bc89078d7f076bc0d8cf23a273fee667a6dc1518125cb9"
+    },
+    {
+      "path": "docs/qualification/package-policy-coordination-primitives.md",
+      "sha256": "f588b82930c02d88be92f45858f19d71b7d5173c1730cf56ff2232f6c8c3bc64"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/README.md",
+      "sha256": "6845043319d7fab7d38deb22213593b7c109777dc983ef1ded45d1cb9ff0f466"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/anti-patterns.md",
+      "sha256": "ebbe5927a85cc2f706eb27d532b0cb080c8aab48ae0b8b915be21e2dff9f3cc1"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/catalog-and-profiles.md",
+      "sha256": "ea63f82091201348b986db84642653265040c05e50ca2fff56d052f42035823b"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/conformance-plan.md",
+      "sha256": "4481b4fd13a470dd05b7fe6a7fa9fe1c2d6907c5d95f405ed16df9bdb4b9c1b7"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/current-state.md",
+      "sha256": "c0b2391f6fd38e9f83a044e4eb82c6805a9b21fb0e49dfdf0c45aaeaa87b93db"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/final-recommendation.md",
+      "sha256": "39634d5702a17cc616a6aa7dba9bbb283d28165c82f5c0a418cbbf4cb2affe76"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/invariant-map.md",
+      "sha256": "4340c73fd0a4642a805479749fffc5192fbe730bf612124b7b4484bd6eca89a6"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/lifecycle-and-concurrency.md",
+      "sha256": "fc68cbb2d5bce5d87850c1e6ed393a18a0e3156db53520bd108dd6f091ad4e3d"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/module-graph.md",
+      "sha256": "f38a9787f24829e44d455258a21adc46236a8cf9bb94a33d00d65e64a4654579"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/01-executive-report.md",
+      "sha256": "8c2a5e3ca27c64fe5fd32a9f3c485be0955b3826d245ac9c10a8c88b8a2c7a56"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/02-principles-matrix.md",
+      "sha256": "fec5118e49fc7663bc90da3662fdd7a1e21fcb472efdd05d1e16738aadebf85f"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/03-oss-lessons-and-anti-patterns.md",
+      "sha256": "33ab707f5e612691c72c5fdfd9b87055ba31b36fad5b22be0807a3ff9d65a716"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/04-cordis-verdict.md",
+      "sha256": "8e5159a1544cd663cc0a748c9dc7b74cb492c23734da9b74898f77a95d3f6e1c"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/05-module-api-comparison.md",
+      "sha256": "8fde9bdd38a8d70ce039ba661242fc858bdeacc2fd4e9f0afbb7ab0d5a4bda63"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/06-dependency-graph-and-di-decision.md",
+      "sha256": "c6f9de54af838c86862bc9275898a50bb4a828454aa0c889939b7ccb0273f4a2"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/07-module-federation-2-verdict.md",
+      "sha256": "76f2432c79edb134ed6344a3ad9a3bf11be4cbb1fd4341f1497def484df7fa34"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/08-umeq-decision-matrix.md",
+      "sha256": "f3dc9da56091312fd191ab6ec438c0895e933ec08ff1dd1604dfcfac4ec0f724"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/09-security-and-lifecycle-threat-model.md",
+      "sha256": "0936a86412a41035e3b230c1919b63bce76f398aa5e13cff8acd7773fe747f59"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/10-architecture-and-loc-roadmap.md",
+      "sha256": "b9f6299e111e4b27b0206be43990eb37e8b7f62da0ddd90c6b326ef619bd781d"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/11-approval-ready-adr-list.md",
+      "sha256": "2f3ac97ae7b387609ab0b46be59085c77d70ecf57f03689f7289ee385bead0a9"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/12-deferred-decisions.md",
+      "sha256": "d85a4abe75330aca436480b45b2eba56c858d3e09d92596adea0f82afa102d62"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/README.md",
+      "sha256": "1341ed0b2e5efa8cb70960c710735a731c1dd82ba7a60fbf0051be17e7ebca6a"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/oss-comparison.md",
+      "sha256": "6c1c66f2f23a76a0d961f779fb84c6b237b2a6f5ee25f7f401ff73e48f97d7f4"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/packaging-and-reuse.md",
+      "sha256": "6f202bd1964b1776a31992b9990576ce539d2cc6c6f49a7dc3bd223fdc017a64"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/performance-and-slo.md",
+      "sha256": "2fa42127c1225ee77ea341d390ccb7a3bf54405d8758a4151d60b4b66d2227f9"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/product-adoption.md",
+      "sha256": "1607bb46535443cc7e613f3fbe42c658108e52e962f68997810c975c4afff238"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/spike-results.md",
+      "sha256": "79106815667b548b8cad895b3cc3c85c4af4b8c647b356fb95a69b02279265f5"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/trust-and-security.md",
+      "sha256": "18b9173974642d76bdc1d5e29f0946b473849e11a28f0cc0ff65b789fb7e5d56"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/unresolved-decisions.md",
+      "sha256": "1e116acba96960f155ab9da9bcb5489ba113d6ffd6f23a172114bfa0935c5820"
+    },
+    {
+      "path": "docs/research/agent-framework-extension-evidence-2026-11-05.md",
+      "sha256": "3aabe97dd0a507e08cddc4bcd16e221b4a0ac1994b3385b09be40c98e8db2d47"
+    },
+    {
+      "path": "docs/research/critical-components-and-language-boundaries.md",
+      "sha256": "5d0f59b70d905c848fc5d11ad80985322967953f6f7ed534d1bc2765cb1e1cc8"
+    },
+    {
+      "path": "docs/research/customization-without-forks-and-scale.md",
+      "sha256": "8b88e54d52b8ec39c4fa5ae690fe8559a60d07325fa4efbf1bdabc34c771e67c"
+    },
+    {
+      "path": "docs/research/hot-reload-and-generation-replacement.md",
+      "sha256": "38b9eddadfdeb4032d7405d24261780ac9a9c68b30cd1fcb3d3c54296b383ca2"
+    },
+    {
+      "path": "docs/research/live-plugin-evolution-vision-and-evidence-2026-11-14.md",
+      "sha256": "7c1bc3f71249e0fd390f2589aa80635fa929b30efdb47afd76d3f26d67116c18"
+    },
+    {
+      "path": "docs/research/openclaw-plugin-and-reload-audit.md",
+      "sha256": "ad3f5ce061936929352ee1862ae046632a929c3f9eb5e9032dd8ee8b622662e3"
+    },
+    {
+      "path": "docs/research/packed-extension-consumer-e2e-2026-11-05.md",
+      "sha256": "3b7532031fbbfa8bbc9fbd38d64bb94d9f05349f30cfd7e3dc20e60741d2f620"
+    },
+    {
+      "path": "docs/research/plugin-boundary-and-failure-experiments.md",
+      "sha256": "404af6e3971bccb57ec0429dedad7074ed83075e3e95ee9cf6796161d31227fc"
+    },
+    {
+      "path": "docs/research/plugin-choice-deepening-2026-11-06.md",
+      "sha256": "3d83e0ff4a538ebf2e62a43fe6a640ef30763a58cbec4950bb188c31cc2ba620"
+    },
+    {
+      "path": "docs/research/plugin-ecosystem-scale-and-composition.md",
+      "sha256": "0f97c7de9ad513fe963e540c9c26d133254d140b10e04cc645840210a50e4d60"
+    },
+    {
+      "path": "docs/research/plugin-industry-and-scale-review-2026-11-05.md",
+      "sha256": "703861730f008dbfdc4f3cdf0cc03ca2393bdfe652277c7224e792853e5db41e"
+    },
+    {
+      "path": "docs/research/plugin-platform-reload-evidence.md",
+      "sha256": "031c07602428c48aab38991bec666bf4cc00db3b0a8bceb2da4bd8fbeb7f360c"
+    },
+    {
+      "path": "docs/research/plugin-research-review-and-decision-record.md",
+      "sha256": "a2a70c5ecf3fdfea0731942d1ba6008c28062142b42205dad8f3b93872ba0524"
+    },
+    {
+      "path": "docs/research/plugin-research-synthesis-and-authority-2026-11-05.md",
+      "sha256": "b6320adf71edd410d57f53bc48699036ab54272601970051fdb586de3b6b7c74"
+    },
+    {
+      "path": "docs/research/plugin-system-research-reference.md",
+      "sha256": "8bd51b7366602787516b6f1ddbdc7a61c36bdc77e87a167a72b5d6f4ec704427"
+    },
+    {
+      "path": "docs/research/production-reload-system-evidence.md",
+      "sha256": "d95405cc15271a22f974f0c107b55ce43f9adb2e4b060e13d9adbdbe33b6366c"
+    },
+    {
+      "path": "docs/research/reusable-generation-mechanisms-and-ownership.md",
+      "sha256": "3b105b64a75c99cecc0dc67c67beb9d9b82a2e0cf8978a2eda5eacf75d1308d9"
+    },
+    {
+      "path": "docs/research/specialist-plugin-framework-evidence-2026-11-05.md",
+      "sha256": "0ab6637c10379fbfaf18eb28593cb0ef83def33ce78fedad16513053aa3d8db7"
+    },
+    {
+      "path": "docs/research/stateful-upgrade-and-recovery-evidence.md",
+      "sha256": "12606b8af65e1b022b38de63d608695f5d38e457f10e430e33a9c4a3c32fabcf"
+    },
+    {
+      "path": "docs/research/static-composition-and-controlled-restart-validation.md",
+      "sha256": "76c2623610894522b0b0a4be37810d55361a00d563ac23cc5f3b00436619a0f1"
+    },
+    {
+      "path": "docs/research/temporal-and-rollout-orchestration.md",
+      "sha256": "8964f714f4b25e619034d2c1e3443f2c24d009f4bf9176a81c47bd845d380a66"
+    },
+    {
+      "path": "docs/research/worker-adapter-replacement-experiment.md",
+      "sha256": "fddf66df73833cc292241ac6a765ccf95bfa58f906a3a819352f2bc2aecfe558"
+    },
+    {
+      "path": "docs/templates/adr.md",
+      "sha256": "dc7913072b964c6ae1a4cc711392ddad641dd8df6841ffafb06893fe9d362c6e"
+    },
+    {
+      "path": "docs/templates/architecture.md",
+      "sha256": "46dd7bde7051f2a07e72487a334ea05c1c8f11295f06570cf2bb033094d310a0"
+    },
+    {
+      "path": "docs/templates/open-decision.md",
+      "sha256": "e0bad53aa5921b3113c87ebe05d9dd8f97a877ff08696fe4de725a16bdc1bc26"
+    },
+    {
+      "path": "docs/templates/research.md",
+      "sha256": "9f04005dc02b705eee4b899a39c3a1458d985daef6aff093726f664a5cb4ceab"
+    },
+    {
+      "path": "package.json",
+      "sha256": "92ea2bd93076612b19698016ec4d00c76dffaae608ec6e1c2498b9934619e220"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "a947cfe3f4d5db4877124f04a822e7bf4d88a98852003d243bb92cd31e136c48"
+    },
+    {
+      "path": ".cspell.json",
+      "sha256": "8f61d32d86ea12984177d8f32bb9d488b10472b5aab1783c9a01ebe689a42e00"
+    },
+    {
+      "path": "architecture/tooling/markdownlint-cli2.mjs",
+      "sha256": "e4c89f911e966252ef8285bddd8ede6f0319f2e162db8671e27b9295f1cecd21"
+    },
+    {
+      "path": "architecture/foundation/docs-protocol.yaml",
+      "sha256": "a9861d049ebd1836e819bee5792b28f55960119684162d0d8ffeedd92b96c97c"
+    },
+    {
+      "path": "tests/document-authoring.test.mjs",
+      "sha256": "32092c7db970c359861e1e11eb444c1485a84494b62b492b5131e8c4e81ab562"
+    },
+    {
+      "path": "tests/docs-protocol-qualification.test.mjs",
+      "sha256": "5ee68e68ce5b5279f36412b5619829441c5b06800329ece7e15ec3093b03c8e4"
+    }
+  ],
+  "sourceInputScope": "Governed Markdown plus selected command/config/test/lock inputs; dependency package trees are not copied. Generated validation data is outside the Markdown gate input set.",
+  "independentArchiveReview": {
+    "members": 67,
+    "allMemberHashesMatch": true,
+    "safeRegularMembersOnly": true,
+    "allSixSpecialistReviewsPresent": true,
+    "runtimeRerun": false
+  }
+}
