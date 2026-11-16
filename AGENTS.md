@@ -32,6 +32,12 @@ authored by agents. Preserve it when designing new boundaries. The same record
 keeps interruption of current work explicitly open; vision does not silently
 select a runtime, migration or cancellation policy.
 
+The owner's [portable library direction](docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-requested-portable-library-direction-2026-11-17)
+also requires evaluating ordinary external consumers. Reuse existing composition
+and lifecycle mechanisms, keep product extension contracts consumer-owned, and
+separate a reusable implementation from the authority that invokes it. Research
+does not publish a package or select a universal plugin interface.
+
 ## Hard Boundaries
 
 - Orchestrator, Agent Runtime, Frontend, and Platform domain models never enter

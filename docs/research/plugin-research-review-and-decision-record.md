@@ -10,7 +10,41 @@ summary: Independent critique dispositions, adoption conflicts and scoped implem
 
 **Initial review:** 2026-10-21. **Follow-up:** 2026-10-22, recorded in its own section below. **Status:** non-normative research synthesis; no new architecture approval, production-runtime qualification, or merge authorization. The initial review combines the platform, production-system, ecosystem-scale, stateful-update and OpenClaw research with independent lifecycle, scale/security, and adoption/documentation critiques. Researchers supplied comparison evidence; critics challenged lifecycle promises, security and scale claims, and adoption provenance. Each dated record distinguishes source facts, historical reports, unexecuted assertions, executed experiments and recommendations.
 
-## Current live plugin vision review, 2026-11-14
+## Portable library mechanism review, 2026-11-17
+
+The [portable mechanism study](portable-live-plugin-mechanisms-and-library-design-2026-11-17.md)
+deepens ten implementation cases across agent applications, reusable runtime
+mechanisms and browser boundaries, plus current Get Modular/Effect ownership.
+Three specialist lanes and root research produced source-ledger reports. Two
+bounded cross-review rounds found no remaining research blocker after the
+following corrections. These verdicts do not approve a public SPI, package,
+runtime, ordinary-update interruption policy or merge.
+
+| Finding | Research disposition |
+| --- | --- |
+| Capturing a generation before asynchronously retaining it leaves a retirement race | Require one protected selection/admission/retention acquisition, or owner-managed reservation and revalidation across suspension. |
+| Retaining a returned stream object is weaker than retaining its resources | State that the required lifetime spans consumption and finalization under the chosen policy. |
+| A generic coordinator can duplicate GM or product authority | Subtract the existing kernel, Host and native primitives; a current binding is the delegated implementation of the single owner binding. The residual may be zero. |
+| An internal seam could postpone library-first design indefinitely | Require purpose-neutral design plus an external conformance fixture in the first real shared delivery; package location remains open. |
+| Ordinary-library and stable public-SPI evidence gates were conflated | Use an independently authored external fixture for the ordinary boundary; preserve the stronger independent-implementation/publication gates for a stable SPI. |
+| Self-update receipt was described as universally durable | Durability depends on the recovery profile; an ordinary in-memory library can hand scheduling to its owner without inventing durable orchestration. |
+| Cordis replacement identity was summarized imprecisely | Preserve fiber identity/configuration while replacing component/runtime binding; distinguish published optional filesystem dependency from current main's required service. |
+| A go-plugin historical comment could be read as a present general defect claim | Ground the conclusion in the inspected controller's actual Stop path; keep the comment as historical context. |
+| Every category could appear to require activation hooks | State category-appropriate evolution/lifetime contracts; pure descriptor contributions need no artificial activation lifecycle. |
+| Release and source identities were conflated | Record npm Effect 0.1.1 separately from README 0.1.0 wording; keep the kernel private; distinguish all upstream source snapshots from publication. |
+| Planning bands could look like total public-platform cost | Count new P/I/T separately, leave modified existing LOC and docs/release unmeasured, state exact profile exclusions and label numeric scores as judgment. |
+
+The [new archive](evidence/portable-live-plugins-20261117.tar.gz),
+[manifest](evidence/portable-live-plugins-20261117.manifest.json) and
+[validation receipt](evidence/portable-live-plugins-20261117.validation.json)
+retain full reports, exact source locators, both review rounds, root dispositions
+and documentation results. No new plugin code or runtime experiment was executed;
+the earlier four native Effect scenarios retain their original archive/date.
+Accepted ADRs, adoption pins, production source, dependencies and workflows are
+unchanged. The owner's portability direction and open interruption question are
+recorded in OD-003, not silently converted into an implementation decision.
+
+## Live plugin vision review, 2026-11-14
 
 The [live plugin research](live-plugin-evolution-vision-and-evidence-2026-11-14.md)
 records the owner's high-priority all-category vision, including agent-authored

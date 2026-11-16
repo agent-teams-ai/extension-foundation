@@ -3,7 +3,7 @@ id: OD-003
 type: open-decision
 status: open
 owner: architecture
-summary: Records the prioritized live plugin vision and unresolved host, SPI, invocation, interruption, and state migration choices within existing ownership.
+summary: Records the prioritized live plugin and portable library direction, with unresolved host, SPI, interruption, and state migration choices.
 related:
   - ADR-0001
   - ADR-0011
@@ -107,6 +107,37 @@ later consideration. No earlier recommendation to wait, pause, cancel, cut off
 or migrate a session is adopted by that request. Research and compatible
 preparation work can continue while this policy remains open. Emergency
 revocation and already accepted operation deadlines retain their authority.
+
+## Owner-requested portable library direction, 2026-11-17
+
+The owner asked to deepen the live-update research toward an independently
+useful library or extension mechanism that other projects can use, without
+coupling it to Agent Teams. Evaluate concrete implementations and alternatives
+through Clean Architecture, SOLID, DRY and modular boundaries. This is a design
+direction for the research and future shared work, not authorization to publish
+a new package, create a repository or select an unresolved production runtime.
+
+The [portable mechanism research](../research/portable-live-plugin-mechanisms-and-library-design-2026-11-17.md)
+distinguishes the reusable update/lifetime mechanism from each consumer's tool,
+UI, provider and business contracts. Ordinary consumers should not need Agent
+Teams domain types, organization credentials, a catalog or its database schema
+merely to use a qualified neutral mechanism. An EF artifact-admission consumer
+still follows its accepted OCI, trust and authority profile; portability does
+not introduce an implicit bypass.
+
+Existing Get Modular composition and lifecycle ownership, native resource
+primitives and fitting loaders/execution libraries must be subtracted before
+designing residual shared coordination. One existing product owner may invoke
+reusable code; that code must not become a second active-head, permission,
+resource or operation authority. A separate package need not imply a separate
+repository. The candidate package owner, public API and first real consumers
+remain choices for the shared Host mechanics discussion below.
+
+The all-category live vision remains intact. Qualification can proceed by
+declared capability and runtime profiles without promising arbitrary stack
+migration or identical cleanup semantics on every backend. The ordinary-update
+interruption TODO above remains open. A library can make that policy explicit
+without choosing it for the application.
 
 ## Owner decision brief, 2026-11-06
 

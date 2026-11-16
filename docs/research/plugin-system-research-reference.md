@@ -8,13 +8,25 @@ summary: Maintained source-backed lessons for module composition, plugin systems
 
 # Plugin System Research Reference
 
-**Current follow-up: 2026-11-14; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
+**Current follow-up: 2026-11-17; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
 module composition, extension ecosystems and production hot replacement. It
 preserves industry experience so future agents can use the same evidence,
 counterexamples and qualification scenarios. Research is not an accepted ADR,
 a released runtime, a security audit or a performance qualification.
 
 ## Current synthesis
+
+The [2026-11-17 portable mechanism study](portable-live-plugin-mechanisms-and-library-design-2026-11-17.md)
+deepens the implementation traces and ordinary external-consumer design. The
+[owner's portability direction](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-requested-portable-library-direction-2026-11-17)
+requires reusable mechanics without Agent Teams coupling, while product
+extension contracts and operational authority keep their existing owners.
+The study compares current agent registries, module reconciliation, process/RPC
+and Wasm backends, browser lifecycles and native Effect composition. It separates
+source and published versions, cleanup facts and executable-closure guarantees,
+then proposes modular ownership, alternatives and external conformance gates.
+It does not select interruption policy, publish a package or qualify a runtime.
+Its new evidence packet is separate from the immutable 2026-11-14 experiment.
 
 The [2026-11-14 live plugin evolution research](live-plugin-evolution-vision-and-evidence-2026-11-14.md)
 records the owner's high-priority vision: add, initialize and replace plugins
