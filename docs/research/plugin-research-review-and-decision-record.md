@@ -10,6 +10,40 @@ summary: Independent critique dispositions, adoption conflicts and scoped implem
 
 **Initial review:** 2026-10-21. **Follow-up:** 2026-10-22, recorded in its own section below. **Status:** non-normative research synthesis; no new architecture approval, production-runtime qualification, or merge authorization. The initial review combines the platform, production-system, ecosystem-scale, stateful-update and OpenClaw research with independent lifecycle, scale/security, and adoption/documentation critiques. Researchers supplied comparison evidence; critics challenged lifecycle promises, security and scale claims, and adoption provenance. Each dated record distinguishes source facts, historical reports, unexecuted assertions, executed experiments and recommendations.
 
+## Final live evolution review, 2026-11-17
+
+The [final live evolution study](live-plugin-evolution-final-research-and-architecture-2026-11-17.md)
+answers the owner's further request for findings and deeper implementation
+research. Three specialist lanes and root research add mature-runtime,
+durable-state, remote-tool and Wasm agent mechanisms to the earlier ten-case
+study. This remains research; no new runtime, public SPI, interruption policy,
+package publication or merge is selected.
+
+Two bounded independent review rounds checked exact draft hashes, source claims,
+ownership and the clarification added to the preceding portable report. The
+following material corrections were made:
+
+| Finding | Final research disposition |
+| --- | --- |
+| Golem's source revision/start guard was generalized to all automatic updates | Scope those fields and the stale-source guard to snapshot-assisted selection; plain automatic replay records its target separately. |
+| Felix STARTING rejection omitted lazy activation | State the supported lazy-activation exception; do not present every STARTING state as equivalent. |
+| Wasm deferred unbind was described as waiting only for normal return | Include a reply dropped by store teardown and retain the owning cleanup boundary. |
+| RcRef finite TTL was treated as universally deferred cleanup | Include the invalidation path that awaits final cleanup; distinguish borrower and owner scopes. |
+| The phrase no finite TTL also included infinity | Say the option is omitted; an explicitly infinite TTL is not the omitted-option behavior. |
+| Client schema/executor capture could imply remote MCP affinity | Add a current qualification to the original report: remote affinity needs a server-supported contract, and discovery pages do not form a guaranteed snapshot. |
+| Some claim-to-source links were only adjacent support | Add the direct Go update guide, Restate license, MCP schema and SDK/test links; correct the source ledger's Go attribution. |
+| Inspection could be mistaken for an upstream regression reproduction | Keep the SDK validation/update overlap as a proposed falsifier; no new runtime tests or incident claims. |
+
+The [packet](evidence/live-plugin-final-study-20261117.tar.gz),
+[manifest](evidence/live-plugin-final-study-20261117.manifest.json) and
+[delivery receipt](evidence/live-plugin-final-study-20261117.validation.json)
+preserve four research lanes, six specialist review records, the exact first
+and second draft inputs, root dispositions and documentation validation.
+The final Effect wording correction is separately bound by the specialist's
+second-round verification. Original evidence archives remain unchanged.
+The public report and independently verified source identities establish the
+research result, not production behavior or general runtime conformance.
+
 ## Portable library mechanism review, 2026-11-17
 
 The [portable mechanism study](portable-live-plugin-mechanisms-and-library-design-2026-11-17.md)

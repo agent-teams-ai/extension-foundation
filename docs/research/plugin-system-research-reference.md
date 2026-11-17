@@ -16,6 +16,18 @@ a released runtime, a security audit or a performance qualification.
 
 ## Current synthesis
 
+The [final live evolution study](live-plugin-evolution-final-research-and-architecture-2026-11-17.md)
+answers the owner's further request for results and deeper implementation
+analysis. It adds release-pinned Golem and wasmCloud cases, deeper OTP/Felix,
+Temporal/Restate/Envoy traces, current Node/MCP boundaries and native Effect
+cleanup qualifications. Its central finding is that discovery freshness,
+execution affinity, resource lifetime, state compatibility and observed cleanup
+need distinct promises. A local MCP client snapshot does not pin a remote
+implementation; a retained old generation does not version shared state.
+The report gives a portable ownership model, concrete Clean Architecture/SOLID/DRY
+consequences, scoped alternatives and decisive external-consumer scenarios.
+Research remains non-normative; ordinary-update interruption stays open.
+
 The [2026-11-17 portable mechanism study](portable-live-plugin-mechanisms-and-library-design-2026-11-17.md)
 deepens the implementation traces and ordinary external-consumer design. The
 [owner's portability direction](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-requested-portable-library-direction-2026-11-17)

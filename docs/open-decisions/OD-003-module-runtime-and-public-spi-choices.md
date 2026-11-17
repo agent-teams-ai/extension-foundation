@@ -139,6 +139,14 @@ migration or identical cleanup semantics on every backend. The ordinary-update
 interruption TODO above remains open. A library can make that policy explicit
 without choosing it for the application.
 
+The owner's further request is answered in the
+[final implementation and architecture study](../research/live-plugin-evolution-final-research-and-architecture-2026-11-17.md).
+It separates discovery freshness, actual executor version, retained resources,
+shared-state compatibility and observed cleanup. Remote MCP version affinity
+needs a server-supported contract; captured client metadata alone does not
+establish it. These are research qualifications for the proposed boundary,
+not new accepted defaults, a selected public API or package publication.
+
 ## Owner decision brief, 2026-11-06
 
 **Corrected research status: no new option adopted.** The deeper

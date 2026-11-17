@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "observationDate": "2026-11-17",
+  "timezone": "Europe/Kiev",
+  "archive": "live-plugin-final-study-20261117.tar.gz",
+  "archiveBytes": 86040,
+  "archiveSha256": "ac5e3c1666c809d05b1ad24fdccc935dd1e5ac0f84179b311e41e171f6acdcb1",
+  "memberCount": 20,
+  "members": [
+    {
+      "path": "README.md",
+      "bytes": 2373,
+      "sha256": "3ba858d51ec9283dcce0f95341d8970da2a6e7a7844a975fdd6483fa8bf55ff4"
+    },
+    {
+      "path": "durable-rollout/report.md",
+      "bytes": 21298,
+      "sha256": "8f693ae402d2ed4c7d1ba3e42bba864faade8a101ad63e62400a0e20d3e3142b"
+    },
+    {
+      "path": "durable-rollout/review-round1.md",
+      "bytes": 5507,
+      "sha256": "461d99808fbd51475b3637c343297b463acfe9f870d9c9d0329e7e0709b3beb7"
+    },
+    {
+      "path": "durable-rollout/review-round2.md",
+      "bytes": 4177,
+      "sha256": "f250faeaab07bfad91615870d9bfeeeab0aa8d1d6e532ef75ea593bde871a6d4"
+    },
+    {
+      "path": "durable-rollout/source-ledger.json",
+      "bytes": 14362,
+      "sha256": "4799b57bcca5438cf8e87030142876db40c18e90140bb1dc914a88a892992ebc"
+    },
+    {
+      "path": "emerging-runtimes/report.md",
+      "bytes": 7456,
+      "sha256": "ae19093f75d66097b982d2fe8fea88276a934bb450fb824db96aad47852f96b7"
+    },
+    {
+      "path": "emerging-runtimes/source-ledger.json",
+      "bytes": 11579,
+      "sha256": "0d03d02c15158ac92d50114dfae1d078f3a8322e46e6eb4eacf66d0637fdd9e2"
+    },
+    {
+      "path": "mature-runtimes/report.md",
+      "bytes": 19236,
+      "sha256": "448dde9d50f202f0482801d9d9841d8e1e048f227bd7053be4a9f2ca4de5064a"
+    },
+    {
+      "path": "mature-runtimes/review-round1.md",
+      "bytes": 6199,
+      "sha256": "0127f8c3d74871d255e359581d1835dab3957b282fcd2be3374c215783ade0c7"
+    },
+    {
+      "path": "mature-runtimes/review-round2.md",
+      "bytes": 4058,
+      "sha256": "677a5688a6696165f76d1188704ac441d566c2241660f8b1e8e956dc9bffe697"
+    },
+    {
+      "path": "mature-runtimes/source-ledger.json",
+      "bytes": 15190,
+      "sha256": "35d9c09c5142ff8e8fc0e210f796e3ae76f3b53b627ce28fd0b95126dc4e1831"
+    },
+    {
+      "path": "portable-boundary/report.md",
+      "bytes": 26492,
+      "sha256": "b1179376dc23216fdff0a9ec640c9927e19afc0ec148ecace433d53cce93a013"
+    },
+    {
+      "path": "portable-boundary/review-round1.md",
+      "bytes": 6518,
+      "sha256": "2baa7684f073351935d5d9e766b055a10b9b6c8853481f36c6c4ea4d62c11e62"
+    },
+    {
+      "path": "portable-boundary/review-round2.md",
+      "bytes": 5180,
+      "sha256": "9525ea3edc0bb8f717f9d20cd6c40edf19ae6b41e088f0f3c1ec26d6581daca0"
+    },
+    {
+      "path": "portable-boundary/source-ledger.json",
+      "bytes": 23543,
+      "sha256": "9b1451f70ef6dc1209781b51904f016f02a4709cfb038e154aaf986bc43bfd47"
+    },
+    {
+      "path": "review-inputs/root-round1.md",
+      "bytes": 45585,
+      "sha256": "089c7b60990a6c3fe1d91f2de751bc8bd149a72218d4474600886c323d25d9b4"
+    },
+    {
+      "path": "review-inputs/root-round2.md",
+      "bytes": 46780,
+      "sha256": "a3f6beeb0b2d9b2944c7c241e1429b75143ae484ea3cbdefc3bf574156bbd2f3"
+    },
+    {
+      "path": "root-dispositions.md",
+      "bytes": 2779,
+      "sha256": "d4d56dd8ff8bcca2f6400ebd23f6c20584ffcf846bfb8250bd5fa2818cbd9437"
+    },
+    {
+      "path": "validation/authoring-and-scope.md",
+      "bytes": 2018,
+      "sha256": "82571eb17d918719d62693b6cb2b150869c311b24b37762ba886e4d3f9739052"
+    },
+    {
+      "path": "validation/initial-quality-failure.log",
+      "bytes": 588,
+      "sha256": "039db52ba66881a4104098399f2f253ceaf7c0f80a48965f069575b0a5c33025"
+    }
+  ],
+  "scope": "Source-backed research and two review rounds; zero new runtime execution. Third-party inspection copies excluded."
+}

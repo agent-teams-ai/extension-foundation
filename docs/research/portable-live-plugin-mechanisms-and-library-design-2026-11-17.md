@@ -12,6 +12,11 @@ summary: Deep source comparison and portable library design for live plugin evol
 
 ## Scope and authority
 
+The subsequent [final live evolution study](live-plugin-evolution-final-research-and-architecture-2026-11-17.md)
+adds mature-runtime, durable-state, MCP and JavaScript implementation evidence.
+Its remote-execution clarification below narrows an assumption without changing
+the original evidence archive or the owner's open choices.
+
 The owner asked for a deeper implementation study and a library design usable
 by other projects, with Clean Architecture, SOLID, DRY and modular boundaries.
 The [owner direction](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-requested-portable-library-direction-2026-11-17)
@@ -372,6 +377,15 @@ request or turn. The next permitted boundary can select the new tool set.
 Already captured work follows the explicit liveness policy: it may continue,
 be deferred or receive a typed unavailability result. Capturing a function
 does not authorize new calls after its owner is retired.
+
+For a remote MCP tool, capturing a local client closure does not capture the
+remote implementation. Current standard discovery and invocation do not supply
+an expected tool-revision precondition, and paginated discovery has no common
+snapshot guarantee. A stronger coherence promise needs a server-owned version
+binding; otherwise the adapter must state its actual refresh/rejection behavior.
+The [final study](live-plugin-evolution-final-research-and-architecture-2026-11-17.md#mcp-freshness-and-a-frozen-client-list-are-insufficient-for-remote-pinning)
+records the exact specification and source evidence. This clarification does
+not weaken a locally enforced immutable binding or change historical tests.
 
 An agent requesting its own update gets a receipt or hands scheduling to the
 existing owner; it does not wait inside its old invocation for that invocation
