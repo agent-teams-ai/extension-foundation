@@ -1,0 +1,101 @@
+name: Live Application Browser Spike
+
+# Bounded research on the existing draft branch. Documentation-only follow-ups
+# reuse evidence bound to the unchanged input digest instead of rerunning it.
+on:
+  push:
+    branches:
+      - docs/plugin-research-hot-reload-20261021
+    paths:
+      - .github/workflows/live-application-browser-spike.yml
+      - docs/research/evidence/live-application-browser-input-20261118.tar.gz
+      - docs/research/evidence/live-application-browser-input-20261118.manifest.json
+
+permissions:
+  contents: read
+
+jobs:
+  browser-spike:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      SPIKE_DIRECTORY: ${{ github.workspace }}/../live-application-browser-spike
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify and extract frozen research inputs
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path, PurePosixPath
+          import hashlib, json, os, tarfile
+          evidence = Path('docs/research/evidence')
+          manifest = json.loads((evidence / 'live-application-browser-input-20261118.manifest.json').read_text())
+          archive_path = evidence / 'live-application-browser-input-20261118.tar.gz'
+          data = archive_path.read_bytes()
+          assert len(data) == manifest['archive']['bytes']
+          assert hashlib.sha256(data).hexdigest() == manifest['archive']['sha256']
+          expected = {entry['path']: entry for entry in manifest['files']}
+          assert len(expected) == len(manifest['files'])
+          destination = Path(os.environ['SPIKE_DIRECTORY'])
+          destination.mkdir()
+          with tarfile.open(archive_path, 'r:gz') as archive:
+              members = archive.getmembers()
+              assert len(members) == len(expected)
+              assert {member.name for member in members} == set(expected)
+              for member in members:
+                  path = PurePosixPath(member.name)
+                  assert member.isfile() and not path.is_absolute() and '..' not in path.parts
+                  stream = archive.extractfile(member)
+                  assert stream is not None
+                  content = stream.read()
+                  assert len(content) == expected[member.name]['bytes']
+                  assert hashlib.sha256(content).hexdigest() == expected[member.name]['sha256']
+                  target = destination / member.name
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(content)
+          receipt = {'inputArchiveSha256': manifest['archive']['sha256'], 'commit': os.environ['GITHUB_SHA'],
+                     'runId': os.environ['GITHUB_RUN_ID'], 'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'],
+                     'files': manifest['files']}
+          (destination / 'frontend-spike/evidence/hosted-input-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          PY
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        with:
+          version: 11.25.0
+          package_json_file: ../live-application-browser-spike/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.22.1
+      - name: Install exact disposable dependencies and official Chromium
+        working-directory: ${{ env.SPIKE_DIRECTORY }}
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies
+          pnpm exec playwright install --with-deps chromium
+          node --version > frontend-spike/evidence/hosted-environment.txt
+          pnpm --version >> frontend-spike/evidence/hosted-environment.txt
+          pnpm exec tsc --version >> frontend-spike/evidence/hosted-environment.txt
+          pnpm exec playwright --version >> frontend-spike/evidence/hosted-environment.txt
+      - name: Strict TypeScript checks and real browser experiment
+        working-directory: ${{ env.SPIKE_DIRECTORY }}/frontend-spike
+        env:
+          FRONTEND_ATTEMPT: hosted
+        shell: bash
+        run: |
+          set -o pipefail
+          node ../node_modules/typescript/bin/tsc -p tsconfig.browser.json 2>&1 | tee evidence/hosted-browser-typecheck.log
+          node ../node_modules/typescript/bin/tsc -p tsconfig.node.json 2>&1 | tee evidence/hosted-node-typecheck.log
+          node ../node_modules/typescript/bin/tsc -p tsconfig.v2.json --noEmit 2>&1 | tee evidence/hosted-v2-typecheck.log
+          node --test browser.test.ts 2>&1 | tee evidence/hosted-runtime.log
+      - name: Retain results, failures and screenshots
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: live-application-browser-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.SPIKE_DIRECTORY }}/frontend-spike/evidence/
+            ${{ env.SPIKE_DIRECTORY }}/frontend-spike/artifacts/
+            ${{ env.SPIKE_DIRECTORY }}/frontend-spike/generated/
+          if-no-files-found: error
+          retention-days: 30

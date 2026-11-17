@@ -7,6 +7,20 @@ This repository will provide common technical infrastructure for Orchestrator,
 Agent Runtime, Frontend, and future products. Every product retains its own
 domain language, feature-owned extension points, authority, state, and host.
 
+## Product vision: live application evolution
+
+**High priority: users and agents should be able to change substantive frontend
+and backend logic while the application remains running.** Changes should become
+reusable plugins that survive restart, can be shared, and can be enabled,
+disabled or removed. Eligible built-in features should be manageable through
+explicit module boundaries, with trusted product invariants preserved.
+
+Read the [owner's expanded vision](docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-prioritized-live-application-platform-vision-2026-11-18)
+before designing feature or module boundaries. It is a foundation for future
+design, with supported live-update profiles and reliability established through
+[source research and bounded spikes](docs/research/live-application-evolution-vision-and-executed-spikes-2026-11-18.md).
+The current implementation/adoption status remains explicit below.
+
 ## Status
 
 Architecture foundation only. No public runtime SPI or production package has

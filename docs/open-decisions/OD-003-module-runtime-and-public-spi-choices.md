@@ -3,7 +3,7 @@ id: OD-003
 type: open-decision
 status: open
 owner: architecture
-summary: Records the prioritized live plugin and portable library direction, with unresolved host, SPI, interruption, and state migration choices.
+summary: Records the prioritized live application and portable plugin vision, including durable user changes, with unresolved host, SPI, interruption and state migration choices.
 related:
   - ADR-0001
   - ADR-0011
@@ -53,6 +53,91 @@ Foundation package, production graph runtime, or public SPI by implication.
   distinct.
 - Every production host remains subject to the accepted production-host safety
   closure and its own authority and termination evidence.
+
+## Owner-prioritized live application platform vision, 2026-11-18
+
+**Confirmed high-priority product vision: a running application should be an
+adaptable platform where users and agents can change substantive behavior.**
+The owner explicitly wants this to shape the foundation of modules, plugins and
+ordinary feature code now, so later development follows a coherent direction.
+Live customization includes complex logic and workflows in both frontend and
+backend; styling alone does not meet the goal.
+
+The owner described the following intended user outcomes:
+
+- Ask an agent to add or change behavior in a running frontend or backend,
+  observe the result live and understand whether the change actually became
+  active. The supported boundary may differ by feature and execution profile.
+- Capture suitable authored changes as reusable plugins, with their required
+  code, dependencies and configuration identified. Preserve installed choices
+  and authored functionality across backend restart and frontend reload.
+- Reuse and share those plugins in compatible projects. Installation and
+  execution remain subject to the receiving product's own contracts and grants.
+- List and manage installed and active functionality, choose supported versions,
+  enable, disable or remove unwanted plugins, and manage eligible built-in
+  features through explicit module boundaries.
+- Build feature code with this evolution path from the start. New feature
+  boundaries should state their supported replacement, restart or continuation
+  mode and the owner of retained state/resources. Record a concrete constraint
+  when a feature cannot yet support the desired live behavior.
+- Give agents discoverable contracts and useful validation/diagnostics so they
+  can make bounded, reviewable changes confidently. Agent authorship does not
+  confer additional permission or ownership of trusted enforcement.
+- Keep the system reliable while it evolves: preserve owned data, distinguish
+  preparation from readiness and activation, account for outstanding work and
+  resources, and expose a failed or incomplete transition honestly.
+
+This vision includes more than one change mechanism: replacement for new calls,
+retained old work, a supported component/container restart, and explicit state
+continuation where qualified. It does not select one mechanism for every module
+or promise arbitrary stack transplantation. Full-application-restart-only
+behavior remains a baseline where declared, not sufficient evidence of the
+intended live behavior for all categories.
+
+### Built-in functionality and the trusted boundary
+
+The goal is broad feature modularity, including eligible built-in functionality.
+Keep a small, explicit trusted boundary for the product's invariants, authority,
+canonical state and enforcement. Ordinary plugin management cannot replace those
+invariants or grant itself new privileges. A feature's inability to be disabled
+or replaced needs an owned reason; a built-in label alone should not become an
+unexamined reason to couple ordinary features permanently.
+
+The accepted identity distinction remains: a built-in module is not a plugin
+artifact. Managing its enabled contribution does not make its code a published
+artifact. Exporting or distributing suitable built-in behavior requires an
+explicitly packaged artifact and the applicable admission path. Disabling a
+feature, removing executable installation, retiring a generation and deleting
+user-owned data remain different operations. Deletion of user data is never an
+implicit side effect of plugin removal.
+
+### Durable and portable evolution
+
+Persist the facts the consuming owner needs to reconstruct the intended
+functionality, with exact executable identity and state compatibility. A source
+edit on disk, an installed package, a persisted target, a running instance and
+an observed ready capability are different facts. A browser reload or backend
+restart must reconcile them through the existing owner, not create another
+competing catalog or active-head authority.
+
+The [portable library direction below](#owner-requested-portable-library-direction-2026-11-17)
+continues to apply: a demonstrated shared mechanism should be usable outside
+Agent Teams from its first real delivery, while feature APIs and product policy
+remain consumer-owned. Reuse Get Modular composition, existing qualified
+lifecycle mechanisms and native resources before adding residual coordination.
+
+The owner authorized deeper research and disposable spikes to make these
+architecture choices concrete. The
+[current investigation](../research/live-application-evolution-vision-and-executed-spikes-2026-11-18.md)
+records source evidence and the exact scope of executed backend/browser probes.
+Experiments do not select a production Host, publish a universal SPI, qualify
+all consumers or supersede an accepted ADR. The prior controlled-restart
+baseline remains as recorded below until its applicable successor is accepted.
+
+**The ordinary-update interruption question remains deliberately OPEN.** An
+experimental retention, restart or cancellation profile does not answer that
+product question on the owner's behalf. Emergency revocation and previously
+accepted deadlines retain their existing authority.
 
 ## Owner-confirmed baseline, 2026-10-25
 

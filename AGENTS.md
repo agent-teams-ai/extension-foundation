@@ -1,7 +1,16 @@
 # Agent Navigation
 
 This repository owns product-neutral extension infrastructure for Agent Teams
-products. Start with:
+products.
+
+**High-priority owner vision:** [live application evolution](docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-prioritized-live-application-platform-vision-2026-11-18).
+Read it before designing any feature/module boundary: substantive live logic
+changes, durable reusable/shareable plugins, and management of eligible built-in
+features must influence the architecture from the start. Keep supported update
+boundaries, state ownership and protected invariants explicit. The record owns
+the vision and its open choices; a spike does not adopt a production runtime.
+
+Start with:
 
 - [Repository overview](README.md)
 - [Documentation index](docs/README.md)

@@ -8,13 +8,24 @@ summary: Maintained source-backed lessons for module composition, plugin systems
 
 # Plugin System Research Reference
 
-**Current follow-up: 2026-11-17; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
+<!-- cspell:words Directus NocoBase Pharo -->
+
+**Current follow-up: 2026-11-18; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
 module composition, extension ecosystems and production hot replacement. It
 preserves industry experience so future agents can use the same evidence,
 counterexamples and qualification scenarios. Research is not an accepted ADR,
 a released runtime, a security audit or a performance qualification.
 
 ## Current synthesis
+
+The [live application investigation](live-application-evolution-vision-and-executed-spikes-2026-11-18.md)
+extends the [owner's visible platform vision](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-prioritized-live-application-platform-vision-2026-11-18)
+to substantive frontend/backend logic, durable authored plugins, compatible
+sharing, removal and eligible built-in feature management. It adds Directus,
+NocoBase, Lively.next and Pharo implementation evidence and bounded executable
+qualification. The report distinguishes observed local behavior from production
+adoption, state migration, artifact admission and a public SPI. Ordinary-update
+interruption remains open; historical evidence is preserved.
 
 The [final live evolution study](live-plugin-evolution-final-research-and-architecture-2026-11-17.md)
 answers the owner's further request for results and deeper implementation
