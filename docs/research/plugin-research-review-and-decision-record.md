@@ -8,7 +8,50 @@ summary: Independent critique dispositions, adoption conflicts and scoped implem
 
 # Plugin Research Review and Decision Record
 
+<!-- cspell:words Directus -->
+
 **Initial review:** 2026-10-21. **Follow-up:** 2026-10-22, recorded in its own section below. **Status:** non-normative research synthesis; no new architecture approval, production-runtime qualification, or merge authorization. The initial review combines the platform, production-system, ecosystem-scale, stateful-update and OpenClaw research with independent lifecycle, scale/security, and adoption/documentation critiques. Researchers supplied comparison evidence; critics challenged lifecycle promises, security and scale claims, and adoption provenance. Each dated record distinguishes source facts, historical reports, unexecuted assertions, executed experiments and recommendations.
+
+## Live application evolution and executed spikes, 2026-11-18
+
+The [current investigation](live-application-evolution-vision-and-executed-spikes-2026-11-18.md)
+records the expanded owner vision prominently in OD-003, README, AGENTS and the
+documentation index. New source studies cover persistent plugin products and
+live programming; two disposable fixtures qualify concrete application behavior.
+The final backend run passed five cases. The real browser run passed one
+end-to-end case with 41 recorded comparisons, including live logic, retained
+operation inputs, page reload, compatible transfer and management behavior.
+These counts are different evidence units and must not be combined as 46 tests.
+
+Independent plan, source, result and documentation reviews caused concrete
+corrections rather than architecture approval:
+
+| Finding | Final disposition |
+| --- | --- |
+| A retained object reference can still observe changed methods | Preserve the plain JavaScript mixed-revision control and capture the chosen operation contract explicitly; do not label it an upstream defect. |
+| The initial backend old-call oracle could miss a newest-binding reread | Complete one old call while v2 remains active; use a second old call for same-artifact reactivation and real file lifetime. |
+| Content identity could accidentally identify a retained old runtime instance | Keep implementation digest, request revision and fresh activation incarnation separate. |
+| The initial backend UUID segment violated GM grammar | Correct the fixture identity; preserve the early rejection and original logs as fixture failure, not a library defect. |
+| Browser retained-call evidence needed distinct current input and built-in selection | Change both before releasing old work; verify the old total remains coherent. |
+| Local Chromium failed before page creation | Preserve that failure and use the normal hosted browser route with the same frozen source and strict checks. |
+| The first hosted test passed but upload failed on a path containing `..` | Canonicalize the same owned directory, retain the failed job, and rerun the unchanged fixture to obtain actual result files. Do not call the failed whole job successful. |
+| Directus reload wording conflated server and browser boundaries | State that open editor schemas survive server extension reload; saving and browser page reload apply the changed version. |
+| Root prose overstated scope construction and the post-close operation | Distinguish candidate child Scopes from per-request scoped borrowing; name the actual file-stat failure oracle. |
+
+The [evidence packet](evidence/live-application-evolution-20261118.tar.gz),
+[member manifest](evidence/live-application-evolution-20261118.manifest.json) and
+[delivery validation](evidence/live-application-evolution-20261118.validation.json)
+retain exact inputs, raw failures and results, source ledgers, screenshots and
+review dispositions. The original browser ZIP is retained, not only its decoded
+summary. The hosted receipt binds its result to the unchanged frozen input
+archive and the exact successful run. The earlier November 14 and November 17
+archives remain unchanged.
+
+The research supports native composition/resource reuse and a consumer-owned
+selection boundary. It does not approve a new Host, public SPI, ordinary-update
+interruption policy, production migration, release or merge. Browser persistence
+is a document reload under the same storage profile; backend recovery uses real
+process termination. Neither is relabelled arbitrary execution-stack migration.
 
 ## Final live evolution review, 2026-11-17
 

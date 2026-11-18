@@ -23,7 +23,7 @@ extends the [owner's visible platform vision](../open-decisions/OD-003-module-ru
 to substantive frontend/backend logic, durable authored plugins, compatible
 sharing, removal and eligible built-in feature management. It adds Directus,
 NocoBase, Lively.next and Pharo implementation evidence and bounded executable
-qualification. The report distinguishes observed local behavior from production
+qualification. The report distinguishes observed fixture behavior from production
 adoption, state migration, artifact admission and a public SPI. Ordinary-update
 interruption remains open; historical evidence is preserved.
 
