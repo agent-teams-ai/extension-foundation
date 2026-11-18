@@ -26,6 +26,7 @@ jobs:
           ref: ${{ github.sha }}
           persist-credentials: false
       - name: Verify and extract frozen research inputs
+        id: inputs
         shell: bash
         run: |
           python - <<'PY'
@@ -39,7 +40,7 @@ jobs:
           assert hashlib.sha256(data).hexdigest() == manifest['archive']['sha256']
           expected = {entry['path']: entry for entry in manifest['files']}
           assert len(expected) == len(manifest['files'])
-          destination = Path(os.environ['SPIKE_DIRECTORY'])
+          destination = Path(os.environ['SPIKE_DIRECTORY']).resolve()
           destination.mkdir()
           with tarfile.open(archive_path, 'r:gz') as archive:
               members = archive.getmembers()
@@ -60,6 +61,8 @@ jobs:
                      'runId': os.environ['GITHUB_RUN_ID'], 'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'],
                      'files': manifest['files']}
           (destination / 'frontend-spike/evidence/hosted-input-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'directory={destination}\n')
           PY
       - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
         with:
@@ -69,7 +72,7 @@ jobs:
         with:
           node-version: 24.22.1
       - name: Install exact disposable dependencies and official Chromium
-        working-directory: ${{ env.SPIKE_DIRECTORY }}
+        working-directory: ${{ steps.inputs.outputs.directory }}
         run: |
           pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies
           pnpm exec playwright install --with-deps chromium
@@ -78,7 +81,7 @@ jobs:
           pnpm exec tsc --version >> frontend-spike/evidence/hosted-environment.txt
           pnpm exec playwright --version >> frontend-spike/evidence/hosted-environment.txt
       - name: Strict TypeScript checks and real browser experiment
-        working-directory: ${{ env.SPIKE_DIRECTORY }}/frontend-spike
+        working-directory: ${{ steps.inputs.outputs.directory }}/frontend-spike
         env:
           FRONTEND_ATTEMPT: hosted
         shell: bash
@@ -94,8 +97,8 @@ jobs:
         with:
           name: live-application-browser-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            ${{ env.SPIKE_DIRECTORY }}/frontend-spike/evidence/
-            ${{ env.SPIKE_DIRECTORY }}/frontend-spike/artifacts/
-            ${{ env.SPIKE_DIRECTORY }}/frontend-spike/generated/
+            ${{ steps.inputs.outputs.directory }}/frontend-spike/evidence/
+            ${{ steps.inputs.outputs.directory }}/frontend-spike/artifacts/
+            ${{ steps.inputs.outputs.directory }}/frontend-spike/generated/
           if-no-files-found: error
           retention-days: 30
