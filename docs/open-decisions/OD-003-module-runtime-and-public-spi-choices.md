@@ -3,7 +3,7 @@ id: OD-003
 type: open-decision
 status: open
 owner: architecture
-summary: Tracks unresolved extension host, public SPI, invocation protocol, and extension-state migration choices without reopening Get Modular composition ownership.
+summary: Records the prioritized live application and portable plugin vision, including durable user changes, with unresolved host, SPI, interruption and state migration choices.
 related:
   - ADR-0001
   - ADR-0011
@@ -54,6 +54,290 @@ Foundation package, production graph runtime, or public SPI by implication.
 - Every production host remains subject to the accepted production-host safety
   closure and its own authority and termination evidence.
 
+## Owner-prioritized live application platform vision, 2026-11-18
+
+**Confirmed high-priority product vision: a running application should be an
+adaptable platform where users and agents can change substantive behavior.**
+The owner explicitly wants this to shape the foundation of modules, plugins and
+ordinary feature code now, so later development follows a coherent direction.
+Live customization includes complex logic and workflows in both frontend and
+backend; styling alone does not meet the goal.
+
+The owner described the following intended user outcomes:
+
+- Ask an agent to add or change behavior in a running frontend or backend,
+  observe the result live and understand whether the change actually became
+  active. The supported boundary may differ by feature and execution profile.
+- Capture suitable authored changes as reusable plugins, with their required
+  code, dependencies and configuration identified. Preserve installed choices
+  and authored functionality across backend restart and frontend reload.
+- Reuse and share those plugins in compatible projects. Installation and
+  execution remain subject to the receiving product's own contracts and grants.
+- List and manage installed and active functionality, choose supported versions,
+  enable, disable or remove unwanted plugins, and manage eligible built-in
+  features through explicit module boundaries.
+- Build feature code with this evolution path from the start. New feature
+  boundaries should state their supported replacement, restart or continuation
+  mode and the owner of retained state/resources. Record a concrete constraint
+  when a feature cannot yet support the desired live behavior.
+- Give agents discoverable contracts and useful validation/diagnostics so they
+  can make bounded, reviewable changes confidently. Agent authorship does not
+  confer additional permission or ownership of trusted enforcement.
+- Keep the system reliable while it evolves: preserve owned data, distinguish
+  preparation from readiness and activation, account for outstanding work and
+  resources, and expose a failed or incomplete transition honestly.
+
+This vision includes more than one change mechanism: replacement for new calls,
+retained old work, a supported component/container restart, and explicit state
+continuation where qualified. It does not select one mechanism for every module
+or promise arbitrary stack transplantation. Full-application-restart-only
+behavior remains a baseline where declared, not sufficient evidence of the
+intended live behavior for all categories.
+
+### Built-in functionality and the trusted boundary
+
+The goal is broad feature modularity, including eligible built-in functionality.
+Keep a small, explicit trusted boundary for the product's invariants, authority,
+canonical state and enforcement. Ordinary plugin management cannot replace those
+invariants or grant itself new privileges. A feature's inability to be disabled
+or replaced needs an owned reason; a built-in label alone should not become an
+unexamined reason to couple ordinary features permanently.
+
+The accepted identity distinction remains: a built-in module is not a plugin
+artifact. Managing its enabled contribution does not make its code a published
+artifact. Exporting or distributing suitable built-in behavior requires an
+explicitly packaged artifact and the applicable admission path. Disabling a
+feature, removing executable installation, retiring a generation and deleting
+user-owned data remain different operations. Deletion of user data is never an
+implicit side effect of plugin removal.
+
+### Durable and portable evolution
+
+Persist the facts the consuming owner needs to reconstruct the intended
+functionality, with exact executable identity and state compatibility. A source
+edit on disk, an installed package, a persisted target, a running instance and
+an observed ready capability are different facts. A browser reload or backend
+restart must reconcile them through the existing owner, not create another
+competing catalog or active-head authority.
+
+The [portable library direction below](#owner-requested-portable-library-direction-2026-11-17)
+continues to apply: a demonstrated shared mechanism should be usable outside
+Agent Teams from its first real delivery, while feature APIs and product policy
+remain consumer-owned. Reuse Get Modular composition, existing qualified
+lifecycle mechanisms and native resources before adding residual coordination.
+
+The owner authorized deeper research and disposable spikes to make these
+architecture choices concrete. The
+[current investigation](../research/live-application-evolution-vision-and-executed-spikes-2026-11-18.md)
+records source evidence and the exact scope of executed backend/browser probes.
+Experiments do not select a production Host, publish a universal SPI, qualify
+all consumers or supersede an accepted ADR. The prior controlled-restart
+baseline remains as recorded below until its applicable successor is accepted.
+
+**The ordinary-update interruption question remains deliberately OPEN.** An
+experimental retention, restart or cancellation profile does not answer that
+product question on the owner's behalf. Emergency revocation and previously
+accepted deadlines retain their existing authority.
+
+## Owner-confirmed baseline, 2026-10-25
+
+The owner selected **static composition with controlled restart** as the
+baseline, with an **optional Temporal adapter for the same product-authorized
+operation** where qualified infrastructure and durable coordination justify it.
+The [validation record](../research/static-composition-and-controlled-restart-validation.md)
+separates this confirmed direction, current PostgreSQL/Temporal authority,
+executed scenarios and remaining production qualifications. This resolves the
+baseline-versus-immediate-overlap question; it does not select a public SPI,
+create a second Host authority, publish a package or qualify state migration.
+
+## Owner-prioritized live plugin vision, 2026-11-14
+
+**Confirmed product vision: live plugin evolution is a high priority.** The
+owner wants plugins to be added, initialized, updated and replaced while the
+application and agents continue operating, including changes authored or
+requested by agents. The target spans plugin categories; it must shape new
+boundaries now, with useful live behavior implemented early where practical.
+Avoid coupling that would require an avoidable broad rewrite to introduce it.
+This direction is stronger than treating live replacement as an incidental
+future optimization.
+
+The prior controlled-restart choice remains the confirmed delivery baseline,
+not the ceiling of the product vision. An immutable composition per generation
+can coexist with changing which generation accepts future work. This observation
+does not select a production runtime or rewrite an accepted ADR. Any conflicting
+accepted mechanism follows its explicit successor process.
+
+The [current research](../research/live-plugin-evolution-vision-and-evidence-2026-11-14.md)
+separates dynamic discovery, next-turn activation, live generation replacement,
+isolated execution and migration of already running state. The goal is broad
+live support; a promise of arbitrary instruction-level replacement, universal
+state migration, zero interruption or immediate physical unload is not implied.
+Each plugin category needs an honest supported update boundary and visible
+limits. Do not impose irrelevant lifecycle hooks on pure contributions or call
+a whole-application-restart-only implementation qualified live replacement.
+A targeted plugin restart can keep the surrounding system live; its effect on
+current plugin work still depends on the open interruption policy below.
+
+Agent authorship grants no additional authority. Candidate code and requested
+permissions pass the same consuming product's admission and runtime checks;
+policy, canonical state and physical custody keep their existing owners.
+The current Get Modular Effect integration is a relevant implementation option
+to evaluate, not a newly selected dependency or automatic live-update runtime.
+
+### Explicit owner TODO: interruption during ordinary updates
+
+**Open, deliberately deferred by the owner: may an ordinary update initiate
+interruption of current work?** The owner asked to retain this question for
+later consideration. No earlier recommendation to wait, pause, cancel, cut off
+or migrate a session is adopted by that request. Research and compatible
+preparation work can continue while this policy remains open. Emergency
+revocation and already accepted operation deadlines retain their authority.
+
+## Owner-requested portable library direction, 2026-11-17
+
+The owner asked to deepen the live-update research toward an independently
+useful library or extension mechanism that other projects can use, without
+coupling it to Agent Teams. Evaluate concrete implementations and alternatives
+through Clean Architecture, SOLID, DRY and modular boundaries. This is a design
+direction for the research and future shared work, not authorization to publish
+a new package, create a repository or select an unresolved production runtime.
+
+The [portable mechanism research](../research/portable-live-plugin-mechanisms-and-library-design-2026-11-17.md)
+distinguishes the reusable update/lifetime mechanism from each consumer's tool,
+UI, provider and business contracts. Ordinary consumers should not need Agent
+Teams domain types, organization credentials, a catalog or its database schema
+merely to use a qualified neutral mechanism. An EF artifact-admission consumer
+still follows its accepted OCI, trust and authority profile; portability does
+not introduce an implicit bypass.
+
+Existing Get Modular composition and lifecycle ownership, native resource
+primitives and fitting loaders/execution libraries must be subtracted before
+designing residual shared coordination. One existing product owner may invoke
+reusable code; that code must not become a second active-head, permission,
+resource or operation authority. A separate package need not imply a separate
+repository. The candidate package owner, public API and first real consumers
+remain choices for the shared Host mechanics discussion below.
+
+The all-category live vision remains intact. Qualification can proceed by
+declared capability and runtime profiles without promising arbitrary stack
+migration or identical cleanup semantics on every backend. The ordinary-update
+interruption TODO above remains open. A library can make that policy explicit
+without choosing it for the application.
+
+The owner's further request is answered in the
+[final implementation and architecture study](../research/live-plugin-evolution-final-research-and-architecture-2026-11-17.md).
+It separates discovery freshness, actual executor version, retained resources,
+shared-state compatibility and observed cleanup. Remote MCP version affinity
+needs a server-supported contract; captured client metadata alone does not
+establish it. These are research qualifications for the proposed boundary,
+not new accepted defaults, a selected public API or package publication.
+
+## Owner decision brief, 2026-11-06
+
+**Corrected research status: no new option adopted.** The deeper
+[authority review, industry comparison and strict source diagnostic](../research/plugin-choice-deepening-2026-11-06.md)
+withdraw the earlier contained-provider-first recommendation and the incomplete
+seal/wait/defer wording. Accepted ADR bodies remain unchanged. The owner-confirmed
+static composition/controlled restart baseline above remains in force.
+
+### Already accepted provider direction
+
+[Agent Runtime ADR-0091][current-ar91] already selects the interactive
+Claude/session slice, a runtime-owned type-only driver SPI, external provider
+implementation and product-owned composition. It freezes contained-turn and
+forbids widening the ordinary Codex profile for that slice. It was present at
+`f990acc26e1b8071ae22d0b87a2ddd3672be8e2e`, the same source cited by the earlier
+brief. The omission was in that research, not a new upstream change.
+
+Therefore the owner does not need to choose the old `1A / 1B / 1C` shortlist to
+continue this already admitted provider work. This correction resolves the
+provider-direction question; it does not decide all future no-fork capabilities,
+publish an EF SPI or qualify a hostile-plugin ecosystem. Product-specific
+contracts remain with their consuming product, not EF or GM.
+
+The ADR-named experimental B donor is present at the same source pin. Its
+factory shape, handoff literal, capability/checkpoint boundary and failed-open
+cleanup still need alignment with the canonical runtime contract. This is known
+source to adapt, not a ready production artifact. The remaining concrete
+investigation establishes the external delivery revision, independent packing
+and real owning-consumer evidence.
+An accessible legacy Desktop provider PR is a different authority; its observed
+type mismatch with current AR is exploratory reuse evidence, not a supported
+integration failure. The accepted ADR's contracts-package contingency still
+requires actual packing evidence and retains runtime contract ownership.
+
+### Ordinary update timing remains a dependent product policy
+
+Existing shutdown seals are irreversible and can fence delegated preparation of
+already accepted work. They are not a demonstrated reversible fresh-admission
+pause. Permanent sealing plus indefinite deferral can keep a service unavailable
+indefinitely. The earlier `2A` wording and `P0 / I150–350` allowance must not be
+used as a complete current implementation plan.
+
+The smallest candidate is safe candidate preparation while current service
+remains active, deferring before shutdown until the actual owner can atomically
+establish genuine quiescence and stop admission. Updates can starve under
+continuous load or open sessions. A bounded reversible pause is a separate,
+more complex contract. Maintenance grace followed by existing authorized
+cutoff/close is another policy, with explicit interruption consequences and
+no unconditional completion deadline under unknown physical/effect closure.
+
+Interactive sessions make the distinction material: idle turn does not mean
+closed session; existing close rejects undispatched queued inputs, remains
+irreversible and retains cleanup debt. Explicit restore does not undo effects
+or restore old callback authority. Do not adopt automatic session continuity
+from a checkpoint API. Emergency revocation, containment and accepted deadlines
+retain their existing policy.
+
+Retirement eligibility follows the selected owner's physical, authority,
+compatibility and recovery obligations. Durable `reconcile_required` truth
+must remain owned and cannot authorize replay; it is not automatically proof
+of live old custody. Current ordinary Codex disposal illustrates that
+distinction, while interactive sessions retain ADR-0091's own close, queue,
+handoff and restore rules. No blanket cross-profile restart permission follows.
+Durable pending-update recovery and atomic admission are still unqualified
+prerequisites, not promises established by a finite receiver experiment.
+
+The [deeper comparison](../research/plugin-choice-deepening-2026-11-06.md#ordinary-update-policies-after-the-correction)
+keeps these alternatives and their missing owner capabilities explicit.
+Maintenance choice need not block the admitted source-contract and packaging
+investigation. Research does not automatically select a pause or cancellation
+policy on the owner's behalf.
+
+### Cost, evidence and current authority
+
+The [retained reports](../research/evidence/plugin-deepening-20261106.tar.gz)
+include independent plan/result criticism, exact source ledgers, the eleven-line
+strict TypeScript 7.0.2 diagnostic, original outputs and scoped cost/rating
+analysis. Its setup control passed; both cross-contract directions were rejected
+semantically. No packed integration, Host/provider runtime or new update
+experiment was executed in this follow-up.
+
+Earlier source, estimates and recommendations remain available in the
+[historical brief at its exact commit][historical-brief] and
+[earlier investigator bundle](../research/evidence/plugin-decisions-20261106.tar.gz).
+They are unselected historical hypotheses, not current delivery quotes. New
+supplemental ranges apply only to expressly bounded local mechanics with
+unestablished prerequisites; complete product/session-delivery cost is unknown.
+Scores describe judgments about named guarantees, not measured availability.
+
+The [recovery audits](../research/evidence/plugin-deepening-recovery-20261106.tar.gz)
+also preserve the identified B donor, the operation/custody distinction and the
+known systemd v258 reload-timeout counterexample with its subsequent fix.
+They correct supporting evidence without selecting a new update policy.
+
+Orchestrator main `a34587b313e656eeb43d755b4a4f08c40dff2116` contains accepted
+[ADR-0116][current-o116] and [ADR-0117][current-o117]. PostgreSQL and full native
+Temporal for Fully Local remain selected; deployment qualification and optional
+Temporal use for a plugin rollout remain separate. No workflow-engine vote is
+reopened. Public EF SPI, actual host trust/placement, state migration and any
+residual shared mechanism remain under the open choices below.
+
+[current-ar91]: https://github.com/agent-teams-ai/agent-runtime/blob/main/docs/decisions/0091-interactive-agent-session-synthetic-vertical-slice.md
+[historical-brief]: https://github.com/agent-teams-ai/extension-foundation/blob/99a5b9157ee5dfdfeb2a14ed99d559fb0135fb7d/docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md
+[current-o116]: https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/main/docs/decisions/0116-native-temporal-for-fully-local-durable-workflows.md
+[current-o117]: https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/main/docs/decisions/0117-reconcile-mandatory-module-composition.md
+
 ## Open Choices
 
 ### Public Extension SPI And Compatibility
@@ -101,7 +385,10 @@ request correlation, cancellation transport and conformance fixtures first.
 Consider shared mechanical grant or lifecycle checks only when the same
 invariant is demonstrated across materially different uses. Product permission
 decisions, canonical state and operational authority retain their accepted
-owners; shared code must not become a second coordinator or global registry.
+owners. One product-authorized operation may use neutral reusable driver code;
+shared implementation is not a second authority. It must not create an
+independently advancing second coordinator, duplicate authoritative kernel or
+canonical records, or a global registry.
 
 The discussion should choose the first real uses, the common contract and its
 owner, per-instance state and dependency direction, platform-specific adapters,
@@ -109,6 +396,36 @@ failure guarantees, conformance evidence and bounded implementation estimate.
 Distinguish a narrow reusable contract or test kit from a general Host runtime.
 Do not treat this TODO as approval of a package, public SPI, transport, storage
 engine or production runtime, or as a new blocker for existing static modules.
+
+The **2026-10-22 research follow-up** narrows this discussion:
+
+- Preserve the already accepted independent `@get-modular/lifecycle-kernel`
+  candidate and its release gates. Do not move, rename or reimplement it as an
+  incidental part of choosing a Host adapter.
+- Subtract fitting commodity task/pool/RPC mechanisms first. The
+  [reuse analysis](../research/reusable-generation-mechanisms-and-ownership.md)
+  and [executed adapter experiment](../research/worker-adapter-replacement-experiment.md)
+  distinguish actual closure observations from a generic success result.
+- Design a demonstrated shared concern as a purpose-neutral ordinary library
+  from its first real consumer plus external conformance delivery. Whether a
+  residual mechanism warrants another package or independent repository remains
+  open; a separate repository is not required for package independence.
+- [Package admission](../architecture/overview.md#package-admission), stable
+  public extension SPI publication and Orchestrator's production-adoption gate
+  are separate claims with their own evidence. Do not demand the strongest gate
+  for every ordinary-library experiment or treat weaker evidence as all gates.
+- Evaluate [Temporal](../research/temporal-and-rollout-orchestration.md) as an
+  optional scheduling adapter only for the admitted deployment, outside ordinary
+  invocation. Selective [native implementation](../research/critical-components-and-language-boundaries.md)
+  must improve a named boundary and retain its existing owner.
+
+For an additional capability or a shared Host mechanism beyond the already
+admitted AR ADR-0091 provider slice, the owner must identify its real uses and
+availability, trust, deployment and replacement-lifetime promise. This does not
+reopen that accepted interactive direction. The bounded trusted request cohort
+remains a separate candidate; it does not qualify arbitrary streams, UI sessions,
+exclusive resources, hostile plugins or state migration. Research does not
+resolve this broader open decision.
 
 ### Production Hosts And Invocation Protocols
 
@@ -132,6 +449,16 @@ identity required by ADR-0011. Product migrations and canonical product state
 do not move into Foundation.
 
 ## Required Evidence
+
+The maintained [plugin research reference](../research/plugin-system-research-reference.md)
+collects industry evidence and counterexamples. The
+[hot-reload proposal](../research/hot-reload-and-generation-replacement.md)
+defines a bounded candidate qualification target, failure matrix, alternatives
+and estimated scope. The [independent review record](../research/plugin-research-review-and-decision-record.md)
+records corrections and preserves consumer adoption provenance. These are
+research inputs to this open decision, not a resolving decision or authority to
+implement a production Host. Exclusive resources, state migration and emergency
+revocation require their own explicit guarantees.
 
 A resolving decision must name the exact product trigger, owner, implementation
 or public surface, applicable host placements, compatibility and migration

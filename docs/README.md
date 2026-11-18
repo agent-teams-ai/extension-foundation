@@ -11,6 +11,10 @@ code_anchors:
 
 # Documentation
 
+**Product priority:** [live application evolution](open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-prioritized-live-application-platform-vision-2026-11-18)
+through live logic changes, persistent/shareable plugins and manageable built-in
+features. Read this owner vision before choosing new module boundaries.
+
 Read by responsibility:
 
 | Concern | Document |
@@ -27,6 +31,47 @@ Read by responsibility:
 | Accepted decisions | [ADR index](decisions/README.md) |
 | Unresolved decisions | [Open decision index](open-decisions/README.md) |
 | Dependency qualification evidence | [Qualification index](qualification/README.md) |
+
+## Plugin system research
+
+These source-backed references are evidence and design recommendations. They do
+not accept a runtime, publish a package, or replace an approved ADR.
+
+- [Plugin System Research Reference](research/plugin-system-research-reference.md)
+- [Live Application Evolution Vision And Executed Spikes 2026-11-18](research/live-application-evolution-vision-and-executed-spikes-2026-11-18.md)
+- [Live Plugin Evolution Final Research And Architecture 2026-11-17](research/live-plugin-evolution-final-research-and-architecture-2026-11-17.md)
+- [Portable Live Plugin Mechanisms And Library Design 2026-11-17](research/portable-live-plugin-mechanisms-and-library-design-2026-11-17.md)
+- [Live Plugin Evolution Vision And Evidence 2026-11-14](research/live-plugin-evolution-vision-and-evidence-2026-11-14.md)
+- [Plugin Choice Deepening 2026-11-06](research/plugin-choice-deepening-2026-11-06.md)
+- [Plugin Research Synthesis and Authority 2026-11-05](research/plugin-research-synthesis-and-authority-2026-11-05.md)
+
+### Design questions
+
+- [Hot Reload and Generation Replacement](research/hot-reload-and-generation-replacement.md)
+- [Reusable Generation Mechanisms and Ownership](research/reusable-generation-mechanisms-and-ownership.md)
+- [Temporal and Rollout Orchestration](research/temporal-and-rollout-orchestration.md)
+- [Critical Components and Language Boundaries](research/critical-components-and-language-boundaries.md)
+- [Customization Without Forks and Scale](research/customization-without-forks-and-scale.md)
+
+### Industry evidence and counterexamples
+
+- [Plugin Industry and Scale Review 2026-11-05](research/plugin-industry-and-scale-review-2026-11-05.md)
+- [Agent Framework Extension Evidence 2026-11-05](research/agent-framework-extension-evidence-2026-11-05.md)
+- [Specialist Plugin Framework Evidence 2026-11-05](research/specialist-plugin-framework-evidence-2026-11-05.md)
+- [OpenClaw Plugin and Reload Audit](research/openclaw-plugin-and-reload-audit.md)
+- [Production Reload System Evidence](research/production-reload-system-evidence.md)
+- [Plugin Platform Reload Evidence](research/plugin-platform-reload-evidence.md)
+- [Plugin Ecosystem Scale and Composition](research/plugin-ecosystem-scale-and-composition.md)
+- [Stateful Upgrade and Recovery Evidence](research/stateful-upgrade-and-recovery-evidence.md)
+
+### Executed evidence and independent review
+
+- [Packed Extension Consumer E2E 2026-11-05](research/packed-extension-consumer-e2e-2026-11-05.md)
+- [Static Composition and Controlled Restart Validation](research/static-composition-and-controlled-restart-validation.md)
+- [Plugin Boundary and Failure Experiments](research/plugin-boundary-and-failure-experiments.md)
+
+- [Worker Adapter Replacement Experiment](research/worker-adapter-replacement-experiment.md)
+- [Plugin Research Review and Decision Record](research/plugin-research-review-and-decision-record.md)
 
 ## Ownership At A Glance
 

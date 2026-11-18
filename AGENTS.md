@@ -1,7 +1,16 @@
 # Agent Navigation
 
 This repository owns product-neutral extension infrastructure for Agent Teams
-products. Start with:
+products.
+
+**High-priority owner vision:** [live application evolution](docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-prioritized-live-application-platform-vision-2026-11-18).
+Read it before designing any feature/module boundary: substantive live logic
+changes, durable reusable/shareable plugins, and management of eligible built-in
+features must influence the architecture from the start. Keep supported update
+boundaries, state ownership and protected invariants explicit. The record owns
+the vision and its open choices; a spike does not adopt a production runtime.
+
+Start with:
 
 - [Repository overview](README.md)
 - [Documentation index](docs/README.md)
@@ -10,6 +19,33 @@ products. Start with:
 - [Extension model](docs/architecture/extension-model.md)
 - [Architecture decisions](docs/decisions/README.md)
 - [Open decisions](docs/open-decisions/README.md)
+- [Plugin system research reference](docs/research/plugin-system-research-reference.md)
+
+Before designing plugin lifecycle, hot replacement, compatibility or scale,
+follow the research reference to relevant primary evidence and critic
+dispositions. Retain good patterns, counterexamples and fixed historical
+incidents there so future agents can reuse the reasoning. Research remains
+non-normative; implementation still follows the owning accepted decisions.
+Record retrieval dates, exact source/release identities, technologies, evidence
+classes, limitations and counterevidence. Keep observations, proposed transfers
+and owner-approved decisions distinguishable. Critic agreement, competitor use
+or a passing experiment does not approve an unresolved architecture choice.
+Implement the confirmed scope only; retain unsettled choices in the owning open
+decision and discuss material alternatives with the owner before implementation.
+Update current navigation and installation recipes without rewriting immutable
+source snapshots, approved adoption pins or historical qualification evidence.
+
+The owner's [live plugin vision](docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-prioritized-live-plugin-vision-2026-11-14)
+is a high-priority design target across plugin categories, including changes
+authored by agents. Preserve it when designing new boundaries. The same record
+keeps interruption of current work explicitly open; vision does not silently
+select a runtime, migration or cancellation policy.
+
+The owner's [portable library direction](docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-requested-portable-library-direction-2026-11-17)
+also requires evaluating ordinary external consumers. Reuse existing composition
+and lifecycle mechanisms, keep product extension contracts consumer-owned, and
+separate a reusable implementation from the authority that invokes it. Research
+does not publish a package or select a universal plugin interface.
 
 ## Hard Boundaries
 

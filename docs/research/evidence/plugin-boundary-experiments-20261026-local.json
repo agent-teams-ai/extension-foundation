@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-26",
+  "kind": "local-plugin-boundary-research",
+  "archive": "plugin-boundary-experiments-20261026-local.tar.gz",
+  "sha256": "ab8e79dbc2b21a94ea1e6fe550ade5198c4000cec62ed1da1910f3fe35e09ac3",
+  "bytes": 350851,
+  "files": 301,
+  "payloadBytes": 1619821,
+  "manifestSha256": "6b39ac584ee129fd1ef2bd9d197f3ecbbab3049de653ad73aba192b46d3d2476",
+  "baselineCommit": "a19cb286b70bf21eeb3ce11789e5fd70caa88b09",
+  "results": {
+    "restartPositive": 7,
+    "restartDeliberatelyFailedAssertions": 3,
+    "loadingObservations": 6,
+    "artifactGroups": 4,
+    "placementTrials": 5,
+    "reusedImportControl": 1,
+    "separateAwaitedInitializer": 1
+  },
+  "productionLoc": 0,
+  "productIntegrationLoc": 0,
+  "scopeNotes": [
+    "Counts have different scopes and are not a combined reliability percentage.",
+    "Original PB03-2 is not actual awaited-initializer evidence; separate refinement supplies that narrower join.",
+    "No native PostgreSQL restore or Drizzle migration runtime result is included.",
+    "Local opaque document-authoring contract failure retained; hosted checks on exact a19cb28 passed except identity alias gate.",
+    "No production admission, security sandbox, arbitrary dependency/descendant closure or active-plugin scale qualification."
+  ]
+}

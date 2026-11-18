@@ -1,0 +1,126 @@
+{
+  "schema": "research-evidence-manifest/v1",
+  "researchDate": "2026-11-17",
+  "archive": "portable-live-plugins-20261117.tar.gz",
+  "bytes": 70928,
+  "sha256": "d814e91516b382d9351b13ae8600284089de3aa767b57aee46285e2de5434acf",
+  "regularFileCount": 23,
+  "members": [
+    {
+      "path": "portable-live-plugins-20261117/README.md",
+      "bytes": 2497,
+      "sha256": "6840d29e7fb9212e8b45fc2cc12baa9c1fccda476c28ce6d6833ac8ebd9d9b3b"
+    },
+    {
+      "path": "portable-live-plugins-20261117/application-mechanisms/report.md",
+      "bytes": 23350,
+      "sha256": "45a6cc2010471bc567f541a9cb774f6d468d4453dbe20c723d2dd9fcc0f444f9"
+    },
+    {
+      "path": "portable-live-plugins-20261117/application-mechanisms/review-round-1.md",
+      "bytes": 5240,
+      "sha256": "46e9a0fdeee463a3bdb670f86004440ac0624a370f1b740b2ab143ea730ae5fd"
+    },
+    {
+      "path": "portable-live-plugins-20261117/application-mechanisms/review-round-2.md",
+      "bytes": 3863,
+      "sha256": "7ee6fcbf33bf78661a8e278acd70deec7b87d5af8d3d9d41521a20787a68cc1b"
+    },
+    {
+      "path": "portable-live-plugins-20261117/application-mechanisms/source-ledger.json",
+      "bytes": 27034,
+      "sha256": "e3ba5d89d270fb89774b12356de80872fd07ffa0b03857045afe562a0748f2f0"
+    },
+    {
+      "path": "portable-live-plugins-20261117/browser-mechanisms/report.md",
+      "bytes": 15988,
+      "sha256": "c5ff67b104d967d65dfc36958cdde377176a342315fdb2f9596e1afbe023036c"
+    },
+    {
+      "path": "portable-live-plugins-20261117/browser-mechanisms/source-identities.json",
+      "bytes": 3766,
+      "sha256": "307f826905222335d23a96c54894f74bef40b0209f6a3f78da510c591458c23a"
+    },
+    {
+      "path": "portable-live-plugins-20261117/ownership-and-library/deliverable-sha256.json",
+      "bytes": 1217,
+      "sha256": "913cae843397ee54915bfe96e1aa2457aed62ad89d58fcd7d54eaa6bb2a4730e"
+    },
+    {
+      "path": "portable-live-plugins-20261117/ownership-and-library/npm-registry-observation.json",
+      "bytes": 4591,
+      "sha256": "d46d9a0c72007f610255f41c7c1e6a4d334c77315f0c125db706cb9bd6774f44"
+    },
+    {
+      "path": "portable-live-plugins-20261117/ownership-and-library/report.md",
+      "bytes": 24270,
+      "sha256": "6fd1dee5a735a0feb21d98e8b4bc4c9e528bba9995205ade50cd40589182f273"
+    },
+    {
+      "path": "portable-live-plugins-20261117/ownership-and-library/review-notes.md",
+      "bytes": 1934,
+      "sha256": "299c9df3fc66cb4e959d9d908f000f528c3924630266830a2c6b03e175c37278"
+    },
+    {
+      "path": "portable-live-plugins-20261117/ownership-and-library/review-round-1.md",
+      "bytes": 7687,
+      "sha256": "cf5d6d411054b8fb45a6dc267f3a51c26ef67ddb97cd452687c4b7124d77ff18"
+    },
+    {
+      "path": "portable-live-plugins-20261117/ownership-and-library/review-round-2.md",
+      "bytes": 4893,
+      "sha256": "30af87f04f6a2a145d120ae1be42e0dcaa0778e4dd615d336f0b538e72a71d37"
+    },
+    {
+      "path": "portable-live-plugins-20261117/ownership-and-library/source-ledger.json",
+      "bytes": 18000,
+      "sha256": "046db102b850cc5ed97c306f264e2783501fb0f9c46077eb3694f868318f8532"
+    },
+    {
+      "path": "portable-live-plugins-20261117/ownership-and-library/source-ledger.md",
+      "bytes": 11892,
+      "sha256": "d20713ff4748a5dd52388c884a56f8f91c67ebfda471a91e66da203c8669413c"
+    },
+    {
+      "path": "portable-live-plugins-20261117/root-dispositions.md",
+      "bytes": 3548,
+      "sha256": "b8e42e04152d95fbf2905a8e7f5877ff8f6745c43a9c426d1a6b7520602c77db"
+    },
+    {
+      "path": "portable-live-plugins-20261117/runtime-mechanisms/primary-source-ledger.json",
+      "bytes": 35413,
+      "sha256": "6faed35730b8823ad1bb2246af79ea7ba744423dcc4dc7727f39215a8b2f9081"
+    },
+    {
+      "path": "portable-live-plugins-20261117/runtime-mechanisms/review-round-1.md",
+      "bytes": 5495,
+      "sha256": "3a0d5daa366bb83e59639bfe72a161bfa1fc3be63c5adb58aec753b05351ee30"
+    },
+    {
+      "path": "portable-live-plugins-20261117/runtime-mechanisms/review-round-2.md",
+      "bytes": 4990,
+      "sha256": "10e30f6bc0b5820914f182dacbe93369dbb3d13b2084817cfd6a065cc6577bec"
+    },
+    {
+      "path": "portable-live-plugins-20261117/runtime-mechanisms/runtime-mechanisms-report.en.md",
+      "bytes": 22583,
+      "sha256": "7ced56a233e5315c94a358686a366e2522d7474a3404ac1a7c30dfef1fe73bb3"
+    },
+    {
+      "path": "portable-live-plugins-20261117/runtime-mechanisms/source-identity-metadata.json",
+      "bytes": 16094,
+      "sha256": "ecb5e53829d1f6c9e7e803af01c78cd5a6ee62d3cabeafc5f5ffd1764e2d98de"
+    },
+    {
+      "path": "portable-live-plugins-20261117/validation/docs-quality-initial.log",
+      "bytes": 812,
+      "sha256": "a6ce872d62f9cf8a0e8ef532eda541f42ffd3c3b635eceea2c1d885d64491a28"
+    },
+    {
+      "path": "portable-live-plugins-20261117/validation/scope.json",
+      "bytes": 1505,
+      "sha256": "1d2e3d431651357a98536a11ab8407378c38e93c67775bcc20302cd99974e29e"
+    }
+  ],
+  "method": "Deterministic tar/gzip. Selected reports, source ledgers, two review rounds and documentation preflight. No inspection-temp, third-party source snapshots, dependencies or secrets. Runtime experiments: none new."
+}

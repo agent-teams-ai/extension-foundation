@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "observationDate": "2026-11-18",
+  "timezone": "Europe/Kiev",
+  "inputCheckpoint": "10a9d29cf845e78b9d8a8c0149ffaba72d9c107d",
+  "successfulBrowserInputCommit": "4f77b5f61b1053e9493091043c14a3caa447b7cf",
+  "archiveSha256": "b179090be0ebdc3d875a58ab14d886c7599d92eb23659fc0a91e59d3a4e1c16e",
+  "manifestSha256": "a934d5b4c07ed4f947bf1149b63ee67a6481723f9057eda2116e0fc6d50c0ae0",
+  "reportSha256": "bbc9885f5c84c16ccadaf00ebacbdc25f18d1b72fe6aacee7c55a0cc64cfd380",
+  "originalArchivesVerifiedUnchanged": {
+    "live-plugin-evolution-20261114.tar.gz": "0469a42a636150beaedde54969359cd1d342b728fe2bdd717db5d75c58cf1d29",
+    "portable-live-plugins-20261117.tar.gz": "d814e91516b382d9351b13ae8600284089de3aa767b57aee46285e2de5434acf",
+    "live-plugin-final-study-20261117.tar.gz": "ac5e3c1666c809d05b1ad24fdccc935dd1e5ac0f84179b311e41e171f6acdcb1"
+  },
+  "backendResult": {
+    "cases": 5,
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0
+  },
+  "browserResult": {
+    "nativeCases": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "recordedComparisons": 41,
+    "pageErrors": 0,
+    "workflowRun": 44205511602,
+    "artifactId": 14383646439
+  },
+  "finalDocumentationGate": {
+    "status": "passed",
+    "command": "pnpm docs:protocol:check",
+    "exitCode": 0,
+    "catalogDocuments": 89,
+    "lintedFiles": 95,
+    "tests": 8,
+    "passed": 8,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "durationMs": 378757.630459,
+    "logSha256": "1b3381743bb52630218b487bdc73387e8a6d7f7dc2d8fb82d5432e4ea0afeb3e",
+    "fullLog": "$ pnpm docs:check && pnpm docs:quality && pnpm docs:contract-test\n$ agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml\ndocs.check: success\nProject: extension-foundation\nCatalog: complete (89 documents)\nAdoption: valid\n$ markdownlint-cli2 --config architecture/tooling/markdownlint-cli2.mjs && cspell --config .cspell.json --no-progress\nmarkdownlint-cli2 v0.23.2 (markdownlint v0.41.1)\nFinding: README.md AGENTS.md docs/**/*.md\nLinting: 95 files\nSummary: 0 issues in 0 files\nCSpell: Files checked: 95, Issues found: 0 in 0 files.\n$ node --test tests/document-authoring.test.mjs tests/docs-protocol-qualification.test.mjs\n\u2714 managed integration owns a data-only v3 qualification contract and external gate (6.562251ms)\n\u2714 unified info and check expose the declared Extension authority (5277.018642ms)\n\u2714 find combines catalog and relation filters and treats zero matches as success (13748.243004ms)\n\u2714 catalog preserves reciprocal supersession and resolved-decision evidence (3767.568835ms)\n\u2714 new previews and applies every supported type only inside a disposable repository (323949.459159ms)\n\u2714 required code anchors pass when reachable and fail closed when stale (9852.675913ms)\n\u2714 invalid owner, metadata, and duplicate identity fail without mutation (17261.445672ms)\n\u2714 portable adoption rejects a Skill without executable context guidance (4783.730567ms)\n\u2139 tests 8\n\u2139 suites 0\n\u2139 pass 8\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 378757.630459\n",
+    "initialAttempt": {
+      "status": "failed spelling only",
+      "reason": "New proper name Directus needed the existing per-document cspell words convention; exact term added, no gate or scope weakened.",
+      "logSha256": "7f9a550c63e8ede9c7184caf16a8dfd8d92b12c7e4da58133a16e0c2165f7ee6",
+      "fullLog": "$ pnpm docs:check && pnpm docs:quality && pnpm docs:contract-test\n$ agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml\ndocs.check: success\nProject: extension-foundation\nCatalog: complete (89 documents)\nAdoption: valid\n$ markdownlint-cli2 --config architecture/tooling/markdownlint-cli2.mjs && cspell --config .cspell.json --no-progress\nmarkdownlint-cli2 v0.23.2 (markdownlint v0.41.1)\nFinding: README.md AGENTS.md docs/**/*.md\nLinting: 95 files\nSummary: 0 issues in 0 files\ndocs/research/plugin-research-review-and-decision-record.md:36:3 - Unknown word (Directus)\nCSpell: Files checked: 95, Issues found: 1 in 1 file.\n[ELIFECYCLE] Command failed with exit code 1.\n[ELIFECYCLE] Command failed with exit code 1.\n"
+    }
+  },
+  "archiveReview": {
+    "status": "passed",
+    "reviewSha256": "81569b8aa78ca90d95f1cb92cedfb2499f03b135fc971ebdc52b7292f2ff88b5",
+    "fullReview": "# Independent frozen research-packet custody review\n\nDate: 2026-11-18. Reviewer: `backend_live_spike`.\n\n## Verdict and exact inputs\n\n**PASS. No material custody issue found.** This is a read-only check of the\nfrozen packet, its manifest, previously reviewed evidence and adjacent browser\ninput archive. No experiment, compiler, dependency installer or browser was\nexecuted. No frozen member or repository file was modified.\n\n| Item | Observed identity |\n| --- | --- |\n| Research archive | `docs/research/evidence/live-application-evolution-20261118.tar.gz` |\n| Archive SHA-256 | `b179090be0ebdc3d875a58ab14d886c7599d92eb23659fc0a91e59d3a4e1c16e` |\n| Compressed archive size | 667118 bytes |\n| Manifest SHA-256 | `a934d5b4c07ed4f947bf1149b63ee67a6481723f9057eda2116e0fc6d50c0ae0` |\n| Archive members | 118 unique regular files |\n\nThe standard-library read-only verification completed with exit0. Its checks\nread archive members in memory rather than extracting executable inputs onto\nthe filesystem.\n\n## Archive structure and member integrity\n\nAll118 names are safe normalized relative paths. None is absolute or contains\nbackslashes, traversal/dot segments, control characters or a drive-style prefix.\nThere are no duplicate names, directories, links, devices or other special\nmembers. The manifest has the same unique path set as the archive.\n\nEvery recorded member length and SHA-256 matches the actual archive bytes. All\n118 members also match their corresponding retained source-root files byte for\nbyte. The outer archive length/hash and manifest hash match the exact values\nprovided for this review.\n\nThe inventory contains no `node_modules`, Git metadata, vendor/upstream source\ntree, environment credential file, SSH key or package-registry credential file.\nAll29 code/HTML member paths belong to the authored backend/browser fixtures,\ntheir retained harness revisions or their generated fixture output. Inspected\nindustry material consists of reports, reviews and source ledgers rather than\ncopied upstream implementation trees.\n\nAll115 UTF-8 text members were scanned for private-key headers, recognizable\nGitHub/API/AWS key formats, literal bearer credentials and URL user/password\ncredentials; no matches were found. The remaining three binary members are the\ntwo previously reviewed PNGs and exact downloaded evidence ZIP. This records\nthe bounded inventory/content check, not a universal secret-detection claim.\n\n## Final report and review binding\n\nThe archived `review-inputs/root-final.md` is byte-identical to the current\nrepository report and has its reviewed SHA-256:\n`bbc9885f5c84c16ccadaf00ebacbdc25f18d1b72fe6aacee7c55a0cc64cfd380`.\n\nThe archive contains the final bounded report review at\n`backend-spike/root-report-final-review.md`, SHA-256\n`60bfe1b8a632a29a8dad675450518d5b5a312977bcd812c0e86b3837f1ea4986`,\nand the preserved round-one review at SHA-256\n`6af91c96160ef3658c8d5cfa074330b0351aebad377ad7a805a9fa72ea2ae204`.\n\nSeventeen pinned key files were separately checked against their previously\nreviewed digests, in addition to the complete manifest verification. These\ninclude backend source/harness, final runtime log and execution receipt;\nindependent backend/browser reviews; frozen browser harness, result, receipt,\nnative log, original ZIP and screenshots; and the corrected hosted workflow.\nThe archived corrected workflow is byte-identical to the current repository\nworkflow. Original backend failures, weaker intermediate pass and unsuccessful\nbrowser/upload attempts remain present separately.\n\n## Browser input-to-result custody\n\nThe adjacent frozen browser input archive remains14532 bytes with SHA-256\n`ee51b6c1cddd63f33b4a56a505140b46876fb8e2414b62920345705b38138ac4`.\nIts14 safe unique regular members match its manifest and the corresponding\nmembers of the complete research packet byte for byte.\n\nThe hosted receipt's entire14-file inventory equals that frozen input manifest.\nIt binds successful run44205511602 to commit\n`4f77b5f61b1053e9493091043c14a3caa447b7cf` and the same input archive digest.\n\nThe preserved original downloaded ZIP has SHA-256\n`5411de8b302497d496fc9dcb841675cacd1037588c90ee951d154df7a8a8320f`.\nAll20 ZIP entries are unique safe regular files; each matches the extracted\nmember retained in the research archive and the download receipt's size/hash.\nThe recovered result still contains41 matching comparisons, status `passed`\nand an empty error list. This verification does not reinterpret those comparisons\nas separate native test cases or expand the previously reviewed runtime claim.\n\n## Historical evidence preservation\n\nEach historical archive both recomputes to its recorded digest and is\nbyte-identical to the tracked file at Git commit\n`4f77b5f61b1053e9493091043c14a3caa447b7cf`:\n\n| Historical archive | SHA-256 |\n| --- | --- |\n| `live-plugin-evolution-20261114.tar.gz` | `0469a42a636150beaedde54969359cd1d342b728fe2bdd717db5d75c58cf1d29` |\n| `portable-live-plugins-20261117.tar.gz` | `d814e91516b382d9351b13ae8600284089de3aa767b57aee46285e2de5434acf` |\n| `live-plugin-final-study-20261117.tar.gz` | `ac5e3c1666c809d05b1ad24fdccc935dd1e5ac0f84179b311e41e171f6acdcb1` |\n\n## Delivery boundary\n\nThe subsequent validation JSON and this custody review are intentionally outside\nthe frozen archive, avoiding a recursive rebuild. Their absence from the packet\nis explicit in its manifest and provenance. The parent owns recording the actual\nfinal Docs Protocol result and publication checks in the adjacent validation\nrecord. This custody PASS does not assert an outcome for a pending check or grant\nmerge, package-publication, public-SPI or production-runtime authority.\n"
+  },
+  "unchangedLocalLimitation": "General Foundation check/check:fast/check:changed not executed locally because their embedded TypeScript5.9.3 initialization is not authorized; standalone Docs and exact7.0.2 fixture checks are separate. Existing hosted checks are unchanged.",
+  "documentationIdentities": {
+    "docs/research/live-application-evolution-vision-and-executed-spikes-2026-11-18.md": "bbc9885f5c84c16ccadaf00ebacbdc25f18d1b72fe6aacee7c55a0cc64cfd380",
+    "docs/research/plugin-system-research-reference.md": "31bef75a05b41d09a4c260e98c147341bdbb682de8e26a04765c959c120209ef",
+    "docs/research/plugin-research-review-and-decision-record.md": "7871a056eb03d471eb29242a4b9fe46d0f1bd72e1454ee4dead07aa9458cdc20"
+  },
+  "publicationScope": "Existing Draft PR55; no merge or release. Exact final delivery head and completed hosted check URLs recorded in PR metadata after publication."
+}
