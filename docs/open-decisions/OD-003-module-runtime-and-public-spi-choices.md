@@ -54,6 +54,45 @@ Foundation package, production graph runtime, or public SPI by implication.
 - Every production host remains subject to the accepted production-host safety
   closure and its own authority and termination evidence.
 
+## Owner-requested selectable updates and cross-language research, 2026-11-21
+
+The owner asks to evaluate **multiple explicit update modes**, including an
+agent optionally requesting interruption, a hard stop where supported, and
+waiting until active plugin work reaches a safe completion boundary. This
+direction applies to running backend and frontend applications. It narrows the earlier
+binary interruption question into concrete capability, authority and policy
+choices; it does not select one ordinary-update default.
+
+The [current research and spike plan](../research/live-update-policies-and-portable-runtimes-2026-11-21.md)
+must compare retaining old operations, closing admission and draining,
+cooperative cancellation and forced isolated-executor termination. A supported
+checkpoint or migration boundary is another candidate where a real feature
+needs it. State the actual evidence available for each mode and execution
+placement. An update request, cancellation request, observed stop, active new
+version and completed cleanup are separate facts.
+
+An agent may request a supported mode only within the consuming owner's grants.
+Agent authorship and a plugin manifest cannot grant interruption authority.
+The deadline and its next action must be explicit. An owner-selected policy may
+authorize escalation in advance; an expired deadline must not silently select force,
+claim successful drain or authorize retries of uncertain external effects.
+The affected work, dependent operations and shared execution-unit scope also
+need a declared contract. Existing emergency revocation and accepted deadlines
+keep their authority.
+
+The owner additionally asks whether TypeScript needs compilation or other
+processing, how Wasm-based plugins compare with native JS/TS, and whether
+cross-language execution should be foundational or an optional adapter.
+Evaluate a TypeScript-first implementation with a portable SDK/contract path
+alongside stronger language-neutral boundaries where useful. Host language,
+guest language, artifact format and state compatibility are separate choices.
+This research request does not select Wasm, a particular SDK or a host rewrite.
+
+**Still open:** ordinary defaults, allowed agent policy, timeout escalation
+grants, feature-specific safe boundaries, state migration and production
+adapter selection. Disposable mode demonstrations do not make every mode
+available in an existing production owner or supersede its accepted lifecycle.
+
 ## Owner-prioritized live application platform vision, 2026-11-18
 
 **Confirmed high-priority product vision: a running application should be an
@@ -134,10 +173,11 @@ Experiments do not select a production Host, publish a universal SPI, qualify
 all consumers or supersede an accepted ADR. The prior controlled-restart
 baseline remains as recorded below until its applicable successor is accepted.
 
-**The ordinary-update interruption question remains deliberately OPEN.** An
-experimental retention, restart or cancellation profile does not answer that
-product question on the owner's behalf. Emergency revocation and previously
-accepted deadlines retain their existing authority.
+**Ordinary-update defaults and escalation remain deliberately OPEN.** The
+[November 21 clarification](#owner-requested-selectable-updates-and-cross-language-research-2026-11-21)
+requests optional modes for evaluation. An experimental retention, restart or
+cancellation profile does not select a universal product default. Emergency
+revocation and previously accepted deadlines retain their existing authority.
 
 ## Owner-confirmed baseline, 2026-10-25
 
@@ -186,12 +226,15 @@ to evaluate, not a newly selected dependency or automatic live-update runtime.
 
 ### Explicit owner TODO: interruption during ordinary updates
 
-**Open, deliberately deferred by the owner: may an ordinary update initiate
-interruption of current work?** The owner asked to retain this question for
-later consideration. No earlier recommendation to wait, pause, cancel, cut off
-or migrate a session is adopted by that request. Research and compatible
-preparation work can continue while this policy remains open. Emergency
-revocation and already accepted operation deadlines retain their authority.
+**Open policy details, now informed by the optional-mode direction above.**
+The owner initially deferred whether an ordinary update may initiate
+interruption. On November 21 the owner requested deeper evaluation of optional
+agent-selected modes, including force and waiting for safe completion.
+Choose supported capability boundaries, grants, defaults and escalation through
+that owning decision; no earlier recommendation to pause, cancel, cut off or
+migrate a session becomes a universal default. Research and compatible
+preparation continue. Emergency revocation and already accepted deadlines keep
+their authority.
 
 ## Owner-requested portable library direction, 2026-11-17
 

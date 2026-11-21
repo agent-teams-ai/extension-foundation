@@ -10,13 +10,21 @@ summary: Maintained source-backed lessons for module composition, plugin systems
 
 <!-- cspell:words Directus NocoBase Pharo -->
 
-**Current follow-up: 2026-11-18; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
+**Current follow-up: 2026-11-21; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
 module composition, extension ecosystems and production hot replacement. It
 preserves industry experience so future agents can use the same evidence,
 counterexamples and qualification scenarios. Research is not an accepted ADR,
 a released runtime, a security audit or a performance qualification.
 
 ## Current synthesis
+
+The [selectable-update and portable-runtime investigation](live-update-policies-and-portable-runtimes-2026-11-21.md)
+records the [owner's latest clarification](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-requested-selectable-updates-and-cross-language-research-2026-11-21):
+evaluate optional interruption, safe completion and isolated force for backend
+and frontend, alongside TypeScript compilation and cross-language execution.
+The initial checkpoint is a reviewed research plan; new runtime results are
+pending. Ordinary defaults, agent grants, escalation and production adapters
+remain open. Earlier evidence and accepted authority stay unchanged.
 
 The [live application investigation](live-application-evolution-vision-and-executed-spikes-2026-11-18.md)
 extends the [owner's visible platform vision](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-prioritized-live-application-platform-vision-2026-11-18)
