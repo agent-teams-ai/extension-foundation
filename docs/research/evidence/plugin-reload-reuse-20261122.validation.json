@@ -1,0 +1,160 @@
+{
+  "schema": "agent-teams.research-delivery-validation/v1",
+  "researchDate": "2026-11-22",
+  "timezone": "Europe/Kiev",
+  "publicationParent": "c1653881b574b4258fb16a2d44b93a1004c06a94",
+  "reviewedFiles": [
+    {
+      "path": "docs/research/reuse-first-live-plugin-updates-2026-11-22.md",
+      "sha256": "6f0fc15dd354a725db347b63688d7d29f96b2c560a088aee57b9e21ccb616c5c"
+    },
+    {
+      "path": "docs/research/plugin-research-review-and-decision-record.md",
+      "sha256": "2b86cb7d35fdee12ae541e27143e99431f4a02305a11cd99f438f7b69ddfd5ca"
+    },
+    {
+      "path": "docs/research/reusable-generation-mechanisms-and-ownership.md",
+      "sha256": "4c59da3f1ec7d4b7084ae7d8d70edeebd5b7651dd0379d11ec67c6e5d7a2d3b9"
+    },
+    {
+      "path": "docs/research/live-update-policies-and-portable-runtimes-2026-11-21.md",
+      "sha256": "c076428381c273ba109bee6e056a44ba9f6c473d56518b4e0bcd29cb49cd214a"
+    },
+    {
+      "path": "docs/research/evidence/plugin-reload-reuse-20261122.sources.json",
+      "sha256": "364b41291b53fcd7d8e8b22fb3f7aec69b0f99d23818bcda065e330eeca7bc57"
+    },
+    {
+      "path": "docs/research/evidence/plugin-reload-reuse-20261122.warnings.json",
+      "sha256": "fc3748a3d9349365a3060eba36770fb3249e8fa93d50f16f09f70c93d255625c"
+    }
+  ],
+  "localDocumentationGate": {
+    "command": "pnpm docs:protocol:check",
+    "exitCode": 0,
+    "tests": 8,
+    "passed": 8,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "catalogDocuments": 91,
+    "markdownAndSpellingInputs": 97,
+    "logSha256": "6dece7985c9b930c0833cd01e5b450d9c15b02b823c9c4c27ada8a209c14c525",
+    "log": "$ pnpm docs:check && pnpm docs:quality && pnpm docs:contract-test\n$ agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml\ndocs.check: success\nProject: extension-foundation\nCatalog: complete (91 documents)\nAdoption: valid\n$ markdownlint-cli2 --config architecture/tooling/markdownlint-cli2.mjs && cspell --config .cspell.json --no-progress\nmarkdownlint-cli2 v0.23.2 (markdownlint v0.41.1)\nFinding: README.md AGENTS.md docs/**/*.md\nLinting: 97 files\nSummary: 0 issues in 0 files\nCSpell: Files checked: 97, Issues found: 0 in 0 files.\n$ node --test tests/document-authoring.test.mjs tests/docs-protocol-qualification.test.mjs\n✔ managed integration owns a data-only v3 qualification contract and external gate (4.394585ms)\n✔ unified info and check expose the declared Extension authority (4219.904257ms)\n✔ find combines catalog and relation filters and treats zero matches as success (11037.739737ms)\n✔ catalog preserves reciprocal supersession and resolved-decision evidence (3565.409189ms)\n✔ new previews and applies every supported type only inside a disposable repository (256025.235053ms)\n✔ required code anchors pass when reachable and fail closed when stale (7673.715352ms)\n✔ invalid owner, metadata, and duplicate identity fail without mutation (13938.715518ms)\n✔ portable adoption rejects a Skill without executable context guidance (3635.732223ms)\nℹ tests 8\nℹ suites 0\nℹ pass 8\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 300192.530726\n"
+  },
+  "independentPacketVerification": {
+    "status": "pass",
+    "reviewer": "industry_hot_reload",
+    "archive": {
+      "file": "plugin-reload-reuse-20261122.tar.gz",
+      "bytes": 301290,
+      "sha256": "9d2c647f4e0ef78a4cb64d45774f87aa222f7334f9ebabf2789c816ea7b1e26e"
+    },
+    "manifestSha256": "26c60972eb2cf5a3476909c41dc65b915b827378b6d9e43bf6458e6cdabe9928",
+    "exactMemberCount": 143,
+    "allMemberHashesAndSizesVerified": true,
+    "uncompressedFileBytes": 931769,
+    "allMembersSafeUniqueRegularPaths": true,
+    "threeFinalReviewsVerifiedAgainstWorkingFiles": [
+      "root/review-audit-synthesis.md",
+      "root/review-extism-synthesis.md",
+      "root/review-industry-synthesis.md"
+    ],
+    "bothNativeAttemptRecordsVerified": true,
+    "failedAttemptArtifactListEmpty": true,
+    "successfulNativeArtifact": {
+      "id": 14730306077,
+      "bytes": 39290,
+      "sha256": "c15ba9412478a3a1fe2f68ba8e41253f5529e1fc8278d0c5f9c86eff176b0a28",
+      "members": 28,
+      "comparisonCount": 32,
+      "allComparisonsMatch": true
+    },
+    "nativeInputCommit": "c1653881b574b4258fb16a2d44b93a1004c06a94",
+    "latestIndustryLedger": {
+      "sources": 37,
+      "lastReviewedAtUtc": "2026-11-21T23:43:18Z",
+      "packedEqualsWorkingAndCombined": true
+    },
+    "limitations": [
+      "No runtime tests were rerun.",
+      "Final-head repository CI has not yet been supplied or observed by this reviewer.",
+      "This JSON is outside the frozen packet and does not alter packed evidence."
+    ]
+  },
+  "rootCustodyVerification": {
+    "status": "pass",
+    "independentOf": "industry investigator verification",
+    "lanes": {
+      "extism": {
+        "files": 34,
+        "bytes": 177918,
+        "manifestSha256": "f600d0ebe2383dc38891917089c58ed6b674a79fd313fc84e8fa22388fc92646"
+      },
+      "audit": {
+        "files": 25,
+        "bytes": 153765,
+        "manifestSha256": "710b97ee622ae5b41bb832312b092dd505c77758c6b89b8effe45b52289e8b5d"
+      }
+    },
+    "browser": {
+      "sourceFiles": 18,
+      "zipMembers": 28,
+      "zipBytes": 39290,
+      "zipSha256": "c15ba9412478a3a1fe2f68ba8e41253f5529e1fc8278d0c5f9c86eff176b0a28",
+      "comparisons": 32,
+      "allMatch": true,
+      "artifactMatchesStdout": true,
+      "doubleDisposeObserved": true,
+      "sourceBoundReceiptVerified": true,
+      "screenshotVisuallyInspected": true
+    },
+    "scope": "Exact file custody and inspection of existing native run; not a new test execution."
+  },
+  "compilerMetadataResolution": {
+    "node": "v24.22.3",
+    "foundation": {
+      "path": "/workspace/scratch/95e187720be1/extension-foundation/node_modules/.pnpm/@agent-teams+engineering-foundation@1.7.2_@types+node@24.13.3/node_modules/@agent-teams/engineering-foundation/package.json",
+      "version": "1.7.2"
+    },
+    "apiExtractor": {
+      "path": "/workspace/scratch/95e187720be1/extension-foundation/node_modules/.pnpm/@microsoft+api-extractor@7.58.12_@types+node@24.13.3/node_modules/@microsoft/api-extractor/package.json",
+      "version": "7.58.12"
+    },
+    "embeddedCompiler": {
+      "path": "/workspace/scratch/95e187720be1/extension-foundation/node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/package.json",
+      "version": "5.9.3"
+    },
+    "repositoryCompiler": {
+      "path": "/workspace/scratch/95e187720be1/extension-foundation/node_modules/.pnpm/typescript@7.0.2/node_modules/typescript/package.json",
+      "version": "7.0.2"
+    },
+    "scope": "Package metadata resolution only; no compiler or Foundation gate initialized."
+  },
+  "newExecutionSummary": {
+    "extism": {
+      "nativeBehaviorCasesPassed": 14,
+      "ownStrictCompiler": "7.0.2",
+      "directSdkDeclarations": "both profiles fail TS2508; unresolved production integration"
+    },
+    "resources": {
+      "nativeCasesPassed": 6,
+      "generations": 250,
+      "replacements": 249,
+      "strictCompiler": "7.0.2"
+    },
+    "browser": {
+      "run": 44962153869,
+      "inputCommit": "c1653881b574b4258fb16a2d44b93a1004c06a94",
+      "nativeCasesPassed": 1,
+      "uniqueComparisons": 32,
+      "allComparisonsMatch": true
+    }
+  },
+  "limitations": [
+    "Research and disposable experiments; no production runtime, public SPI or merge adopted.",
+    "Counts from different evidence units are not a combined test total.",
+    "Broad local Foundation gates were not executed because the resolved embedded compiler is below 7.0.2.",
+    "Final-head automatic hosted CI receipts are reported separately in the PR; this pre-publication record does not attest a future run."
+  ]
+}

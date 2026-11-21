@@ -10,6 +10,15 @@ summary: Evaluates selectable interruption policies, compilation and optional cr
 
 <!-- cspell:words bindgen -->
 
+**November 22 follow-up:** the owner confirmed that Extism was the remembered
+library. The [new reuse and granular-update investigation](reuse-first-live-plugin-updates-2026-11-22.md)
+adds actual Extism SDK, released resource-lifetime and native browser HMR
+experiments. It also qualifies the embedding recommendation below: the current
+wasmCloud release marks `wash-runtime` internal with `publish = false`, despite
+the public guide's dependency example. Source integration and a supported
+published library are different availability claims. This dated correction
+does not relabel the earlier experiments or source inspections as new execution.
+
 ## Scope and recommendation
 
 **Observed: 2026-11-21, Europe/Kiev. Recommendation: keep a TypeScript host and

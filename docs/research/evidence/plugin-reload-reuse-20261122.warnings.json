@@ -1,0 +1,294 @@
+{
+  "sourceBaseline": "534fa8469681df447732d9c7f8c916c6f14968e2",
+  "pathRoots": {
+    "docs/": "Extension Foundation baseline",
+    "tests/": "Extension Foundation baseline",
+    "AGENTS.md": "Extension Foundation baseline",
+    "audit/": "new sibling research evidence",
+    "extism/": "new sibling research evidence",
+    "industry/": "new sibling research evidence"
+  },
+  "warnings": [
+    {
+      "id": "W01",
+      "surfaceAndOwner": "Metadata discovery and inventory — consumer loader, GM declaration owner",
+      "reuseCandidateOrExistingOwner": "Existing inert declarations, generated read-only inventories and literal target-local import tables; EF ADR-0014",
+      "warningAndQualification": "**Warn if discovery imports all installed plugins or adds a hand-maintained global registry.** Verify zero top-level evaluation of unselected/invalid sentinels. Automatic import-table generation needs measured wiring complexity; inert catalog discovery never grants execution.",
+      "sourcePaths": [
+        "docs/decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md",
+        "docs/architecture/extension-model.md"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W02",
+      "surfaceAndOwner": "Executable loading and cache invalidation — target loader/build adapter",
+      "reuseCandidateOrExistingOwner": "Runtime module loader and selected bundler; Vite HMR in development; isolated execution instance where reset is required",
+      "warningAndQualification": "**Warn if `?version=` or deleting a cache is described as complete reload.** Node loads query-distinct ESM URLs, but a new entry URL does not version relative imports or release retained exports. Qualify the full import closure, lazy imports, cleanup and churn on each target. [N1]",
+      "sourcePaths": [
+        "docs/research/hot-reload-and-generation-replacement.md",
+        "docs/research/production-reload-system-evidence.md"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W03",
+      "surfaceAndOwner": "Composition, DI, dependency ordering — Get Modular",
+      "reuseCandidateOrExistingOwner": "Core/Assembly and the consumer's exact accepted profile",
+      "warningAndQualification": "**Warn on another resolver, topological compiler, priority-by-registration convention, universal service bag, or production import of EF graph/lifecycle fixtures.** Missing graph capability belongs to GM's owner; do not repair it with a shadow compiler. [G1, O1]",
+      "sourcePaths": [
+        "docs/decisions/0015-authorize-get-modular-semantic-extraction.md",
+        "tests/qualification/graph-spike.ts",
+        "tests/qualification/lifecycle-spike.ts"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W04",
+      "surfaceAndOwner": "Affected component closure — GM topology plus consumer lifetime/import evidence",
+      "reuseCandidateOrExistingOwner": "Existing immutable composition plan and generated reverse dependency information; platform-native HMR graph only for its own role",
+      "warningAndQualification": "**Warn when replacing a single provider while live consumers retain it, or creating a second authoritative dependency graph.** Check construction, code-import and operational retention edges. A changed source file, plugin artifact, contribution, generation and worker are different units. Unknown retained edges require expanding the supported restart boundary or declining the update. [E4]",
+      "sourcePaths": [
+        "docs/research/hot-reload-and-generation-replacement.md",
+        "docs/research/plugin-platform-reload-evidence.md"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W05",
+      "surfaceAndOwner": "Commands, hooks and registrations — capability and registration owners",
+      "reuseCandidateOrExistingOwner": "Narrow declared ordered capabilities; Node/framework event APIs for local notifications; exact disposable registrations",
+      "warningAndQualification": "**Warn on a new global event bus or cleanup by logical name alone.** Test late old cleanup after v2 registers the same logical hook. Remove the exact owned callback/token; `removeAllListeners` can delete the successor. State notifications are not durable commands. [O2, new case2]",
+      "sourcePaths": [
+        "docs/architecture/extension-model.md",
+        "docs/research/plugin-ecosystem-scale-and-composition.md",
+        "audit/runtime/resource-replacement.test.ts"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W06",
+      "surfaceAndOwner": "Resource acquisition and cleanup — resource owner",
+      "reuseCandidateOrExistingOwner": "`@get-modular/resources` in its qualified ordinary profile, or native Effect Scope/Layer in an Effect profile; appropriate standard disposal APIs",
+      "warningAndQualification": "**Warn on a second cleanup stack, refcount, retry journal or ownership of the same resource by both GM Resources and Effect.** Qualify close during acquisition, late settlement, cleanup failure, reentrancy and borrowed ownership. `complete` reports callback completion, not universal physical release. [G2, G3, G4]",
+      "sourcePaths": [
+        "docs/research/portable-live-plugin-mechanisms-and-library-design-2026-11-17.md",
+        "audit/runtime/resource-replacement.test.ts"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W07",
+      "surfaceAndOwner": "Work retention, cancellation and streams — owning operation",
+      "reuseCandidateOrExistingOwner": "Native structured concurrency/fibers where adopted; AbortSignal at foreign IO; resource scope around actual stream consumption",
+      "warningAndQualification": "**Warn when returning a stream/promise is counted as work finished, a new root runner loses the caller's context, or abort is reported as stopped.** Test a delayed stream after selection changes and a foreign call that ignores abort. Never restore a closed construction Scope through captured context. [G3, G4, new cases1/5]",
+      "sourcePaths": [
+        "docs/research/portable-live-plugin-mechanisms-and-library-design-2026-11-17.md",
+        "docs/research/live-update-policies-and-portable-runtimes-2026-11-21.md",
+        "audit/runtime/resource-replacement.test.ts"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W08",
+      "surfaceAndOwner": "Execution pools and supervision — actual execution/custody owner",
+      "reuseCandidateOrExistingOwner": "Existing Node Workers/process platform; qualified Piscina/workerpool profile only if fitting; existing local supervisor/hosted platform",
+      "warningAndQualification": "**Warn if every plugin adds a process manager, a second keeper, or a pool is treated as one stable worker incarnation.** Qualify kill scope, worker respawn, pending task disposition, descendants and exact exit observation. Prior multiworker pool counterexamples remain relevant; don't erase them by calling `close()` a drain. [E4, O2, N2]",
+      "sourcePaths": [
+        "docs/research/reusable-generation-mechanisms-and-ownership.md",
+        "docs/research/worker-adapter-replacement-experiment.md"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W09",
+      "surfaceAndOwner": "Sandboxing, CPU/memory and hard interruption — security/runtime profile",
+      "reuseCandidateOrExistingOwner": "Extism/Wasmtime/WASI or an existing process containment owner, with SDK-specific qualification",
+      "warningAndQualification": "**Warn if Worker, signature, WIT or a generic `cancel()` boolean is advertised as a sandbox or universal hard stop.** Qualify CPU loop, stalled host import, external memory, shared executor collateral interruption, malicious imports and actual termination receipt on the selected OS/runtime. Native/JS SDK parity is open until tested.",
+      "sourcePaths": [
+        "docs/research/critical-components-and-language-boundaries.md",
+        "docs/research/live-update-policies-and-portable-runtimes-2026-11-21.md"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W10",
+      "surfaceAndOwner": "Wasm engine, ABI and code generation — execution adapter/toolchain",
+      "reuseCandidateOrExistingOwner": "Extism SDK/PDK for its ABI; jco/ComponentizeJS for JS component tooling; wit-bindgen for guest bindings; Wasmtime host bindings; evaluate wasmCloud's supported host or exact source embedding before building a backend workload host",
+      "warningAndQualification": "**Warn on handwritten general Canonical ABI code or treating Extism ABI and WIT components as interchangeable.** Current wasmCloud v2.12.3 marks wash-runtime internal and publish=false: source embeddability is not a released library contract. The scalar Rust fixture is not SDK code to grow. Choose a real structured interface, generate bindings and qualify results/errors/imports/ownership. Runtime selection remains open; see the companion Extism report's pinned E13 source.",
+      "sourcePaths": [
+        "tests/qualification/extism-feasibility.mjs",
+        "docs/research/live-update-policies-and-portable-runtimes-2026-11-21.md",
+        "extism/report.md"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W11",
+      "surfaceAndOwner": "RPC and worker messaging — transport adapter",
+      "reuseCandidateOrExistingOwner": "Existing Comlink/workerpool where appropriate; adopted Connect/gRPC/Protobuf at real service boundaries",
+      "warningAndQualification": "**Warn on a universal RPC proxy, handwritten promise-correlation framework or hand-framing protocol promoted from qualification code.** Determine the residual need after existing transport. Request IDs are not operation identity or authorization; releasing a proxy does not prove drain or process exit. No serialization layer is needed for ordinary same-process TS calls. [P1, N3, E3]",
+      "sourcePaths": [
+        "tests/qualification/portable-protocol.mjs",
+        "tests/qualification/protocol-spike.ts",
+        "docs/research/reusable-generation-mechanisms-and-ownership.md"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W12",
+      "surfaceAndOwner": "Data codecs and compatibility — owning semantic/wire contract",
+      "reuseCandidateOrExistingOwner": "Existing schema tooling, generated Protobuf or WIT codecs for the boundary actually selected",
+      "warningAndQualification": "**Warn if SDK DTOs enter domain code, several handwritten decoders drift, or matching types/ABI are treated as behavioral compatibility.** Independently exercise inputs, outputs, errors, version rejection, ownership, limits and capability requirements. A future portable subset can coexist with richer native-only ports. [E2, E4, P1]",
+      "sourcePaths": [
+        "docs/architecture/extension-model.md",
+        "docs/research/critical-components-and-language-boundaries.md"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W13",
+      "surfaceAndOwner": "State storage, migration and resume — feature/domain owner",
+      "reuseCandidateOrExistingOwner": "Existing canonical state store and its migration machinery; Temporal or another explicitly selected checkpoint/history runtime where suitable",
+      "warningAndQualification": "**Warn on universal heap/closure serialization, copying mutable plugin state at an arbitrary instant, or claiming rollback undoes new writes.** Specify what survives: host draft, durable record, plugin-private cache, checkpoint or nothing. Test mixed-version read/write and recovery after partial migration. Arbitrary suspended-stack transfer remains unsupported. [E4, P1]",
+      "sourcePaths": [
+        "docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md",
+        "docs/research/stateful-upgrade-and-recovery-evidence.md"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W14",
+      "surfaceAndOwner": "Reactive state and cache ownership — state owner",
+      "reuseCandidateOrExistingOwner": "Existing GM Observation for coalescible latest state, native Effect state/stream primitives in their profile, existing application caches",
+      "warningAndQualification": "**Warn if Observation becomes an event broker, duplicate state authority, or replacement fencing mechanism.** Can intermediate changes be dropped? If not, use the durable event owner. Test listeners and stale loaders across retirement; coalescing/data revision checks don't revoke executable authority. [G5, O2]",
+      "sourcePaths": [
+        "docs/research/portable-live-plugin-mechanisms-and-library-design-2026-11-17.md"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W15",
+      "surfaceAndOwner": "Durable update orchestration and crash recovery — existing lifecycle operation",
+      "reuseCandidateOrExistingOwner": "Existing product operation/reconciliation records and adopted Temporal scheduling",
+      "warningAndQualification": "**Warn on another generic update database, saga engine, outbox, periodic reconciliation loop or independently advancing coordinator.** Prove a residual shared mechanism before extraction. Stable operation identity and receiver-enforced authority survive lost acknowledgments; a workflow Activity calling a mutable endpoint does not pin the plugin by itself. [E4, P1]",
+      "sourcePaths": [
+        "docs/research/temporal-and-rollout-orchestration.md",
+        "docs/research/hot-reload-and-generation-replacement.md"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W16",
+      "surfaceAndOwner": "Admission queues, retries and backpressure — admission/executor owner",
+      "reuseCandidateOrExistingOwner": "Runtime/pool limits, existing queue primitives and adopted durable broker",
+      "warningAndQualification": "**Warn on an unbounded pending-call Map, automatic retry after force, or a new queue implementation inside each plugin adapter.** Qualify overload, fairness, cancellation removal and unknown-effect reconciliation. Limits must cover tenant/host totals, overlapping failed candidates and retained generations, not just one pool. [E4, P1]",
+      "sourcePaths": [
+        "docs/research/plugin-ecosystem-scale-and-composition.md",
+        "docs/research/reusable-generation-mechanisms-and-ownership.md"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W17",
+      "surfaceAndOwner": "Selection, publication and rollback — canonical active-head owner",
+      "reuseCandidateOrExistingOwner": "Existing compare-and-set/revision transaction, immutable plan/artifact, existing recovery operation",
+      "warningAndQualification": "**Warn on mutable global `enabled`, last-completing-candidate-wins, or resetting the head counter during rollback.** Revalidate expected revision and grants before selecting. Restoring old bytes is a fresh forward generation; post-publication cleanup debt does not automatically mean v2 failed. Small fixture CAS is policy demonstration, not a new durable library. [E2, new case4]",
+      "sourcePaths": [
+        "docs/decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md",
+        "audit/runtime/resource-replacement.test.ts"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W18",
+      "surfaceAndOwner": "Capability grants and revocation — product authorization and effect recipient",
+      "reuseCandidateOrExistingOwner": "Existing authorization adapter and receiver-side epoch/revision checks; narrow host functions for guest effects",
+      "warningAndQualification": "**Warn if manifest requests, signed packages, successful import, language choice or agent authorship grants authority.** Test revoked host calls and stale callbacks at the actual recipient. A preflight permission check followed by awaited IO leaves a race unless the chosen promise accounts for it. Direct credentials can bypass a host fence. [E1, E2]",
+      "sourcePaths": [
+        "AGENTS.md",
+        "docs/decisions/0011-extension-admission-custody-and-retirement-closure.md"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W19",
+      "surfaceAndOwner": "Artifact registry, hashing and signing — EF distribution/trust adapter",
+      "reuseCandidateOrExistingOwner": "Already selected OCI Distribution, ORAS, Cosign; immutable digest identity",
+      "warningAndQualification": "**Warn on a custom artifact protocol or signature verifier, a registry per runtime language, or mutable tags as active identity.** Qualify one same artifact through approved registries/auth profiles. Signature validation proves the selected trust claim, not permission or safe behavior. [E5, O3, N4]",
+      "sourcePaths": [
+        "docs/decisions/0002-oci-oras-and-cosign-distribution-baseline.md"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W20",
+      "surfaceAndOwner": "Catalog and federation — catalog authority",
+      "reuseCandidateOrExistingOwner": "Existing PostgreSQL-backed canonical source, deterministic authority route, signed immutable snapshots",
+      "warningAndQualification": "**Warn on using Git/search/OCI as a second writer, merged mutable names, or runtime fallback to a different authority after failure.** Keep installed bytes, current active selection and catalog availability distinct. This research must not grow another marketplace service. [E1, E5]",
+      "sourcePaths": [
+        "docs/decisions/0003-postgresql-canonical-catalog-state-and-signed-snapshots.md",
+        "docs/decisions/0004-deterministic-catalog-federation-and-namespace-authority.md"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W21",
+      "surfaceAndOwner": "UI lifecycle and state retention — renderer/contribution owner",
+      "reuseCandidateOrExistingOwner": "Selected renderer mount/unmount, framework resource hooks; single-spa only if its application unit fits; Vite/React refresh for developer workflow",
+      "warningAndQualification": "**Warn on custom virtual DOM reconciliation or claiming dev state preservation for production plugins.** Qualify stable shell state, component local reset, stale event handlers, hooks changes, styles/listeners and re-mount failures. Preserve draft outside the replaceable owner when its continuity is required. [E4]",
+      "sourcePaths": [
+        "docs/research/production-reload-system-evidence.md",
+        "docs/research/live-update-policies-and-portable-runtimes-2026-11-21.md"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W22",
+      "surfaceAndOwner": "Observability and operator controls — application operations plus existing telemetry adapter",
+      "reuseCandidateOrExistingOwner": "Existing traces/logging/metrics SDKs, e.g. OpenTelemetry where adopted; existing diagnostics surfaces",
+      "warningAndQualification": "**Warn on another tracing/metrics database or one green `reloaded` flag that hides retirement debt.** Report requested policy, observed selection, old work and cleanup independently. Keep per-operation/candidate IDs in suitable traces/logs; bound metric cardinality. Exact dashboards/SDK adoption still need consumer choice. [N5]",
+      "sourcePaths": [
+        "docs/research/hot-reload-and-generation-replacement.md"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W23",
+      "surfaceAndOwner": "Conformance, test generators and evidence — contract owners and existing development tooling",
+      "reuseCandidateOrExistingOwner": "Existing GM conformance, node:test, fast-check, Playwright and repository evidence/Docs Protocol routes",
+      "warningAndQualification": "**Warn on a new test framework, oracle generated from the implementation, or treating fixture passes as product adoption.** Extend a concrete uncovered boundary rather than building another reducer. Retain negative controls, exact artifacts and failures; separate source inspection, local execution, hosted results and production evidence. [E3, E4, G1]",
+      "sourcePaths": [
+        "tests/qualification/spikes.test.ts",
+        "tests/qualification/dogfooding-protocol.test.ts",
+        "docs/research/plugin-system-research-reference.md"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    },
+    {
+      "id": "W24",
+      "surfaceAndOwner": "Packaging and cross-platform release — selected adapter/toolchain maintainer",
+      "reuseCandidateOrExistingOwner": "Standard package/bundler and ABI tooling, approved lockfiles, existing CI/release system",
+      "warningAndQualification": "**Warn when a small adapter estimate excludes native binaries, target matrices, signing, licenses, symbols, cold start or compiler compatibility.** Compare total and incremental cost on the same guarantee. Current upstream versions do not automatically upgrade accepted consumer pins. Browser success, Node success and native Wasmtime success are different profiles. [G1, O1, P1]",
+      "sourcePaths": [
+        "docs/research/critical-components-and-language-boundaries.md",
+        "docs/qualification/module-system-v1-productization/README.md"
+      ],
+      "findingClass": "prospective duplication risk in inspected scope; not assertion of a shipped defect"
+    }
+  ],
+  "followupObservations": [
+    {
+      "warningIds": [
+        "W05",
+        "W06",
+        "W22"
+      ],
+      "classification": "executed native browser observation plus exact source inspection",
+      "observation": "Old raw Vite disposer runs before failed import and again before recovery; framework hot-updated log also occurs after failed import. Cleanup must be repeat-safe and owner-exact, and framework log text is not application activation evidence. No arbitrary partially completed external cleanup retry is qualified.",
+      "run": "https://github.com/agent-teams-ai/extension-foundation/actions/runs/44962153869",
+      "source": "https://github.com/vitejs/vite/blob/b39e6e63dcbfc3cf4be871acf3554efbd6d0e268/packages/vite/src/shared/hmr.ts",
+      "evidenceMember": "industry/hosted/run-44962153869/verification.json"
+    }
+  ]
+}

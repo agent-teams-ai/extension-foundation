@@ -12,6 +12,48 @@ summary: Independent critique dispositions, adoption conflicts and scoped implem
 
 **Initial review:** 2026-10-21. **Follow-up:** 2026-10-22, recorded in its own section below. **Status:** non-normative research synthesis; no new architecture approval, production-runtime qualification, or merge authorization. The initial review combines the platform, production-system, ecosystem-scale, stateful-update and OpenClaw research with independent lifecycle, scale/security, and adoption/documentation critiques. Researchers supplied comparison evidence; critics challenged lifecycle promises, security and scale claims, and adoption provenance. Each dated record distinguishes source facts, historical reports, unexecuted assertions, executed experiments and recommendations.
 
+## Reuse-first architecture and granular updates, 2026-11-22
+
+The owner explicitly confirmed Extism, requested warnings wherever existing
+mechanisms could be duplicated, and prioritized ordinary TypeScript authoring
+with an optional future Wasm adapter. The [new investigation](reuse-first-live-plugin-updates-2026-11-22.md)
+records this direction, 24 warnings with exact owners/source paths, a proposed
+controlled-update operation and 12 unresolved questions with concrete follow-up
+checks. OD-003 retains production authority; no accepted ADR or public SPI was
+changed and no production runtime was introduced.
+
+Three new lanes executed: **14 Extism behavior cases**, **6 real Resources
+cases** and **1 native Chromium HMR case with 32 comparisons**. These are
+different evidence units. The browser run is tied to input commit `c1653881`
+and [run 44962153869](https://github.com/agent-teams-ai/extension-foundation/actions/runs/44962153869).
+Local experimental sources passed strict TypeScript 7.0.2. The separate direct
+Extism SDK declaration checks fail in both profiles and remain an integration
+blocker rather than being hidden behind the runtime successes.
+
+| Review or experimental finding | Disposition |
+| --- | --- |
+| The forgotten library could still appear to be a guess | Record the owner's explicit Extism confirmation and preserve separate Component Model/Extism contracts. |
+| A runtime catalogue could accidentally become a new platform | Tie all 24 warnings to existing owners and paths; propose a first consumer slice with optional adapter qualification. |
+| Resources might be described as a graph runtime or automatic task joining | Use only the released public resource API; keep manual stream join, local selection policy and finite 250-generation limits explicit. |
+| A text-analysis swap might imply newly compiled Rust replacements | State that the second Rust instance uses the same official guest bytes with different configuration. |
+| SDK close or timeout could imply completed work or full recovery | Retain the bounded pending-call observation and identify the subsequent success as a control query, not a guest invocation. |
+| SDK memory settings could be generalized across Host SDKs | Record actual 17/18 guest pages under a one-page SDK allocation setting; make no native Wasmtime claim. |
+| Current wasmCloud source could be treated as a published embedding dependency | Record the exact release manifest's internal, unpublished status alongside the guide discrepancy. |
+| React initializer edits might be described as state-preserving | Inspect the selected Oxc signature implementation and test compatible edit, added hook and changed initializer separately. |
+| HMR failure could be described as automatically preserving old behavior | Show that the old listener is already removed after failed import; preserve the unrelated host draft claim separately. |
+| A disposer could be assumed to run only once | Retain the actual twice-called old disposer during recovery; require exact resource identity and safe repeated cleanup. |
+| The first browser attempt did not observe the next update and lost its artifact upload | Preserve the failed run/logs and immutable first input; qualify a separate in-place, independently paced v2 input without weakening assertions. |
+| Independent review could be presented as infallible | Preserve the initially missed workflow-context issue and its pre-publication correction, as well as later result/source reviews. |
+
+The [complete packet](evidence/plugin-reload-reuse-20261122.tar.gz),
+[member manifest](evidence/plugin-reload-reuse-20261122.manifest.json),
+[source ledger](evidence/plugin-reload-reuse-20261122.sources.json) and
+[warning map](evidence/plugin-reload-reuse-20261122.warnings.json) retain original
+failures, actual results, source identities, licenses and independent reviews.
+Checkpoint commits `dfe424c`, `30b9823` and `c165388` were each immediately pushed.
+Final validation receipts accompany the PR delivery summary; new native input
+is not rerun solely because the synthesis prose changes.
+
 ## Selectable updates and portable runtimes, 2026-11-21
 
 ### Follow-up verification and reuse review

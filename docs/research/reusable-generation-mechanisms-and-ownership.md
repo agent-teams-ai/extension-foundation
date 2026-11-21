@@ -8,6 +8,16 @@ summary: Reuse evidence and ownership choices for an independent generation repl
 
 # Reusable Generation Mechanisms and Ownership
 
+**November 22 follow-up:** the owner confirmed Extism and asked for a deeper
+reuse audit and granular update research. The [new investigation](reuse-first-live-plugin-updates-2026-11-22.md)
+records 24 specific reuse warnings, native experiments with Resources 0.2.2 and
+two Extism JS SDK profiles, and actual React/Vite browser HMR. It distinguishes
+released reusable mechanisms from private candidates and SDK-specific limits.
+In particular, the current wasmCloud `wash-runtime` source is internal and
+unpublished; source availability alone does not establish a released embedding
+contract. Historical source observations and experiments below retain their
+original scope and dates.
+
 Researcher: replacement/reuse workstream. Evidence retrieved **2026-10-22**. This is non-normative research, not a runtime selection, public-SPI approval, or change to an accepted ADR. The initial review inspected source without executing it. The subsequent [Worker Adapter Replacement Experiment](worker-adapter-replacement-experiment.md) installed verified packages and exercised eight bounded cases plus a separate source-directed two-worker rejecting case; its findings below are labeled separately. Neither source inspection nor those experiments qualify production replacement.
 
 ## Recommendation

@@ -1,0 +1,939 @@
+{
+  "schema": "agent-teams.research-source-ledger/v1",
+  "researchDate": "2026-11-22",
+  "timezone": "Europe/Kiev",
+  "sourceBaseline": "534fa8469681df447732d9c7f8c916c6f14968e2",
+  "namespaces": {
+    "audit": {
+      "observedDate": "2026-11-22",
+      "timezone": "Europe/Kiev",
+      "baseline": "534fa8469681df447732d9c7f8c916c6f14968e2",
+      "sources": [
+        {
+          "id": "E1",
+          "repository": "agent-teams-ai/extension-foundation",
+          "commit": "534fa8469681df447732d9c7f8c916c6f14968e2",
+          "paths": [
+            "AGENTS.md",
+            "architecture/package-catalog.json",
+            "packages/README.md",
+            "docs/architecture/overview.md",
+            "docs/architecture/extension-model.md"
+          ],
+          "urls": [
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/AGENTS.md",
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/architecture/package-catalog.json",
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/packages/README.md",
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/docs/architecture/overview.md",
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/docs/architecture/extension-model.md"
+          ],
+          "evidenceClass": "inspected accepted authority and/or retained research/source as named",
+          "claim": "Zero admitted production packages; ownership boundaries and narrow consumer ports.",
+          "limitation": "No execution of these historical qualification inputs in this workstream."
+        },
+        {
+          "id": "E2",
+          "repository": "agent-teams-ai/extension-foundation",
+          "commit": "534fa8469681df447732d9c7f8c916c6f14968e2",
+          "paths": [
+            "docs/decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md",
+            "docs/decisions/0015-authorize-get-modular-semantic-extraction.md",
+            "docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md"
+          ],
+          "urls": [
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/docs/decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md",
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/docs/decisions/0015-authorize-get-modular-semantic-extraction.md",
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md"
+          ],
+          "evidenceClass": "inspected accepted authority and/or retained research/source as named",
+          "claim": "Literal target loaders, inert declarations, distinct generation identities and retained ownership/open choices.",
+          "limitation": "No execution of these historical qualification inputs in this workstream."
+        },
+        {
+          "id": "E3",
+          "repository": "agent-teams-ai/extension-foundation",
+          "commit": "534fa8469681df447732d9c7f8c916c6f14968e2",
+          "paths": [
+            "tests/qualification/graph-spike.ts",
+            "tests/qualification/lifecycle-spike.ts",
+            "tests/qualification/recovery-spike.ts",
+            "tests/qualification/dogfooding-protocol-reducer.ts",
+            "tests/qualification/dogfooding-protocol.test.ts",
+            "tests/qualification/portable-protocol.mjs",
+            "tests/qualification/spikes.test.ts"
+          ],
+          "urls": [
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/tests/qualification/graph-spike.ts",
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/tests/qualification/lifecycle-spike.ts",
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/tests/qualification/recovery-spike.ts",
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/tests/qualification/dogfooding-protocol-reducer.ts",
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/tests/qualification/dogfooding-protocol.test.ts",
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/tests/qualification/portable-protocol.mjs",
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/tests/qualification/spikes.test.ts"
+          ],
+          "evidenceClass": "inspected accepted authority and/or retained research/source as named",
+          "claim": "Substantial qualification models and prior negative tests; not production runtime packages.",
+          "limitation": "No execution of these historical qualification inputs in this workstream."
+        },
+        {
+          "id": "E4",
+          "repository": "agent-teams-ai/extension-foundation",
+          "commit": "534fa8469681df447732d9c7f8c916c6f14968e2",
+          "paths": [
+            "docs/research/live-update-policies-and-portable-runtimes-2026-11-21.md",
+            "docs/research/reusable-generation-mechanisms-and-ownership.md",
+            "docs/research/hot-reload-and-generation-replacement.md",
+            "docs/research/portable-live-plugin-mechanisms-and-library-design-2026-11-17.md",
+            "docs/research/live-plugin-evolution-final-research-and-architecture-2026-11-17.md",
+            "docs/research/production-reload-system-evidence.md"
+          ],
+          "urls": [
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/docs/research/live-update-policies-and-portable-runtimes-2026-11-21.md",
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/docs/research/reusable-generation-mechanisms-and-ownership.md",
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/docs/research/hot-reload-and-generation-replacement.md",
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/docs/research/portable-live-plugin-mechanisms-and-library-design-2026-11-17.md",
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/docs/research/live-plugin-evolution-final-research-and-architecture-2026-11-17.md",
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/docs/research/production-reload-system-evidence.md"
+          ],
+          "evidenceClass": "inspected accepted authority and/or retained research/source as named",
+          "claim": "Existing detailed research; retain earlier counterexamples and qualify only uncovered gaps.",
+          "limitation": "No execution of these historical qualification inputs in this workstream."
+        },
+        {
+          "id": "E5",
+          "repository": "agent-teams-ai/extension-foundation",
+          "commit": "534fa8469681df447732d9c7f8c916c6f14968e2",
+          "paths": [
+            "docs/decisions/0002-oci-oras-and-cosign-distribution-baseline.md",
+            "docs/decisions/0003-postgresql-canonical-catalog-state-and-signed-snapshots.md",
+            "docs/decisions/0004-deterministic-catalog-federation-and-namespace-authority.md",
+            "docs/decisions/0005-catalog-trust-and-moderation-boundaries.md"
+          ],
+          "urls": [
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/docs/decisions/0002-oci-oras-and-cosign-distribution-baseline.md",
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/docs/decisions/0003-postgresql-canonical-catalog-state-and-signed-snapshots.md",
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/docs/decisions/0004-deterministic-catalog-federation-and-namespace-authority.md",
+            "https://github.com/agent-teams-ai/extension-foundation/blob/534fa8469681df447732d9c7f8c916c6f14968e2/docs/decisions/0005-catalog-trust-and-moderation-boundaries.md"
+          ],
+          "evidenceClass": "inspected accepted authority and/or retained research/source as named",
+          "claim": "Existing accepted distribution/trust/catalog choices, not proof of product materialization.",
+          "limitation": "No execution of these historical qualification inputs in this workstream."
+        },
+        {
+          "id": "G1",
+          "repository": "agent-teams-ai/get-modular",
+          "commit": "33c032f829028967825428bc6b049ed6db1c56b2",
+          "path": "README.md",
+          "blob": "53274df4f402bea59a1968d9ccedb17fab92a126",
+          "url": "https://github.com/agent-teams-ai/get-modular/blob/33c032f829028967825428bc6b049ed6db1c56b2/README.md",
+          "evidenceClass": "source inspected; tests unrun where applicable",
+          "claim": "Current package responsibilities and availability distinctions.",
+          "limitation": "Current upstream source does not upgrade a consuming product's accepted profile."
+        },
+        {
+          "id": "G2",
+          "repository": "agent-teams-ai/get-modular",
+          "commit": "33c032f829028967825428bc6b049ed6db1c56b2",
+          "path": "packages/resources/README.md",
+          "blob": "a134e34abcc6d102b69e64924bbe3e0f20c613e7",
+          "url": "https://github.com/agent-teams-ai/get-modular/blob/33c032f829028967825428bc6b049ed6db1c56b2/packages/resources/README.md",
+          "evidenceClass": "source inspected; tests unrun where applicable",
+          "claim": "Ordered cooperative cleanup, acquired versus borrowed ownership; complete means callbacks returned.",
+          "limitation": "Current upstream source does not upgrade a consuming product's accepted profile."
+        },
+        {
+          "id": "G3",
+          "repository": "agent-teams-ai/get-modular",
+          "commit": "33c032f829028967825428bc6b049ed6db1c56b2",
+          "path": "packages/effect/README.md",
+          "blob": "60bc494aba890cb72fc1ad442d75ffe7ae63fb33",
+          "url": "https://github.com/agent-teams-ai/get-modular/blob/33c032f829028967825428bc6b049ed6db1c56b2/packages/effect/README.md",
+          "evidenceClass": "source inspected; tests unrun where applicable",
+          "claim": "Native Effect construction and exact qualification profile, not an extra disposer.",
+          "limitation": "Current upstream source does not upgrade a consuming product's accepted profile."
+        },
+        {
+          "id": "G4",
+          "repository": "agent-teams-ai/get-modular",
+          "commit": "33c032f829028967825428bc6b049ed6db1c56b2",
+          "path": "packages/effect/docs/practices.md",
+          "blob": "2c06b8b17ac478fb3d3925d83c5d5a798897d26e",
+          "url": "https://github.com/agent-teams-ai/get-modular/blob/33c032f829028967825428bc6b049ed6db1c56b2/packages/effect/docs/practices.md",
+          "evidenceClass": "source inspected; tests unrun where applicable",
+          "claim": "Scope/work separation, streams, foreign cancellation, finalizer and memoization caveats.",
+          "limitation": "Current upstream source does not upgrade a consuming product's accepted profile."
+        },
+        {
+          "id": "G5",
+          "repository": "agent-teams-ai/get-modular",
+          "commit": "33c032f829028967825428bc6b049ed6db1c56b2",
+          "path": "packages/observation/README.md",
+          "blob": "5f1d5c08e43d734bd64e9a0a92448c814b31f84f",
+          "url": "https://github.com/agent-teams-ai/get-modular/blob/33c032f829028967825428bc6b049ed6db1c56b2/packages/observation/README.md",
+          "evidenceClass": "source inspected; tests unrun where applicable",
+          "claim": "Coalescible latest-state observations; subscriber ownership; not durable event delivery or generation fencing.",
+          "limitation": "Current upstream source does not upgrade a consuming product's accepted profile."
+        },
+        {
+          "id": "G6",
+          "repository": "agent-teams-ai/get-modular",
+          "commit": "33c032f829028967825428bc6b049ed6db1c56b2",
+          "path": "packages/lifecycle-kernel/README.md",
+          "blob": "740d7e395231f0e5f1c5524e6ef136d9cdc2b7c8",
+          "url": "https://github.com/agent-teams-ai/get-modular/blob/33c032f829028967825428bc6b049ed6db1c56b2/packages/lifecycle-kernel/README.md",
+          "evidenceClass": "source inspected; tests unrun where applicable",
+          "claim": "Unreleased synchronous candidate; no loading, callbacks, permissions, async supervision or physical cleanup.",
+          "limitation": "Current upstream source does not upgrade a consuming product's accepted profile."
+        },
+        {
+          "id": "G7",
+          "repository": "agent-teams-ai/get-modular",
+          "commit": "33c032f829028967825428bc6b049ed6db1c56b2",
+          "path": "packages/resources/src/features/scope/scope.ts",
+          "blob": "763100921c643124ec6e23f1a6c7e9cf0a2d80b3",
+          "url": "https://github.com/agent-teams-ai/get-modular/blob/33c032f829028967825428bc6b049ed6db1c56b2/packages/resources/src/features/scope/scope.ts",
+          "evidenceClass": "source inspected; tests unrun where applicable",
+          "claim": "Pending setup installed before acquisition callback; close retains acquisition and exact cleanup entries.",
+          "limitation": "Current upstream source does not upgrade a consuming product's accepted profile."
+        },
+        {
+          "id": "G8",
+          "repository": "agent-teams-ai/get-modular",
+          "commit": "33c032f829028967825428bc6b049ed6db1c56b2",
+          "path": "packages/effect/tests/lifecycle.test.ts",
+          "blob": "d4ecbd1ae955a1c0b5af3f6f7d3c5efab12071c3",
+          "url": "https://github.com/agent-teams-ai/get-modular/blob/33c032f829028967825428bc6b049ed6db1c56b2/packages/effect/tests/lifecycle.test.ts",
+          "evidenceClass": "source inspected; tests unrun where applicable",
+          "claim": "Upstream assertions for partial construction and late acquisition were inspected, not rerun.",
+          "limitation": "Current upstream source does not upgrade a consuming product's accepted profile."
+        },
+        {
+          "id": "O1",
+          "repository": "agent-teams-ai/agent-teams-orchestrator",
+          "commit": "a34587b313e656eeb43d755b4a4f08c40dff2116",
+          "path": "docs/decisions/0117-reconcile-mandatory-module-composition.md",
+          "blob": "94b7791f400ab11f7a347fedf7657f17e92624a1",
+          "url": "https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/a34587b313e656eeb43d755b4a4f08c40dff2116/docs/decisions/0117-reconcile-mandatory-module-composition.md",
+          "evidenceClass": "current accepted architecture read, no product runtime executed",
+          "claim": "Retained Core/Assembly0.5.0 and exact CMS adoption; no competing framework, exact compatible resources at first use."
+        },
+        {
+          "id": "O2",
+          "repository": "agent-teams-ai/agent-teams-orchestrator",
+          "commit": "a34587b313e656eeb43d755b4a4f08c40dff2116",
+          "path": "docs/architecture/composition-and-dependency-injection.md",
+          "blob": "bf433d6ce790895e0502b08cf82142093e7267ce",
+          "url": "https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/a34587b313e656eeb43d755b4a4f08c40dff2116/docs/architecture/composition-and-dependency-injection.md",
+          "evidenceClass": "current accepted architecture read, no product runtime executed",
+          "claim": "Actual architecture and materialization gates, one process composition owner, application lifecycle and local supervisor boundaries."
+        },
+        {
+          "id": "O3",
+          "repository": "agent-teams-ai/agent-teams-orchestrator",
+          "commit": "a34587b313e656eeb43d755b4a4f08c40dff2116",
+          "path": "docs/open-decisions/OD-041-shared-extension-foundation-and-artifact-distribution.md",
+          "blob": "a1c757077f51b41400aff7af5c976b4567e38304",
+          "url": "https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/a34587b313e656eeb43d755b4a4f08c40dff2116/docs/open-decisions/OD-041-shared-extension-foundation-and-artifact-distribution.md",
+          "evidenceClass": "current accepted architecture read, no product runtime executed",
+          "claim": "Resolved architectural direction with still-required production artifact and two-product integration evidence."
+        },
+        {
+          "id": "P1",
+          "url": "https://github.com/agent-teams-ai/.github/blob/main/docs/backend-stack.md",
+          "blob": "5efaae4b013124f9bd80326988f86f7d32c122a0",
+          "evidenceClass": "moving reference read, local adoption required",
+          "claim": "Existing responsibility choices for Fastify/Connect/Protobuf/Dapr/NATS/PostgreSQL/Temporal, not blanket adoption."
+        },
+        {
+          "id": "P2",
+          "url": "https://github.com/agent-teams-ai/.github/blob/main/docs/engineering-quality-standard.md",
+          "blob": "9d4fc54d99249077bf6887be35a59ace1d5547bd",
+          "evidenceClass": "current shared workflow instructions",
+          "claim": "Reuse first, one owner, TypeScript>=7.0.2, independent evidence, research/production separation."
+        },
+        {
+          "id": "N1",
+          "url": "https://nodejs.org/api/esm.html",
+          "observedVersion": "Node26.13.1",
+          "citationRefs": [
+            "turn977404851view0",
+            "turn792541584view0"
+          ],
+          "evidenceClass": "current official documentation",
+          "claim": "Query/fragment-distinct module URLs can load multiple times; relative import identity is separate.",
+          "limitation": "No ESM unload guarantee; docs version differs from executed fixture Node24.22.3."
+        },
+        {
+          "id": "N2",
+          "url": "https://nodejs.org/api/worker_threads.html",
+          "observedVersion": "Node26.13.1",
+          "citationRefs": [
+            "turn977404851view1",
+            "turn792541584view1"
+          ],
+          "evidenceClass": "current official documentation",
+          "claim": "Terminate is asynchronous and promises exit code on exit observation; stop can occur at arbitrary points.",
+          "limitation": "No external effect rollback, descendant cleanup or browser parity inferred."
+        },
+        {
+          "id": "N3",
+          "url": "https://github.com/GoogleChromeLabs/comlink",
+          "citationRefs": [
+            "turn977404851view2",
+            "turn792541584view2"
+          ],
+          "evidenceClass": "moving official README; earlier pinned analysis retained in E4",
+          "claim": "Proxy release detaches endpoints; not product admission or task drain.",
+          "limitation": "Comlink not installed/executed in this workstream."
+        },
+        {
+          "id": "N4",
+          "url": "https://docs.sigstore.dev/cosign/verifying/verify/",
+          "citationRefs": [
+            "turn327120728view1",
+            "turn792541584view4"
+          ],
+          "evidenceClass": "current official documentation",
+          "claim": "Identity/issuer and image digest verification are existing standard mechanisms.",
+          "limitation": "No new signature verification experiment or selected package version here."
+        },
+        {
+          "id": "N5",
+          "url": "https://opentelemetry.io/docs/specs/otel/metrics/sdk/",
+          "observedVersion": "OTel1.62.0 specification navigation",
+          "citationRefs": [
+            "turn327120728view2",
+            "turn792541584view3"
+          ],
+          "evidenceClass": "current official specification",
+          "claim": "Metrics SDK supplies cardinality limits and attribute filtering; retain detailed IDs in suitable traces/logs.",
+          "limitation": "OpenTelemetry is a reuse candidate where adopted, not newly selected for any product."
+        },
+        {
+          "id": "N6",
+          "url": "https://connectrpc.com/docs/node/server-plugins/",
+          "citationRefs": [
+            "turn327120728view3"
+          ],
+          "evidenceClass": "current official documentation",
+          "claim": "Existing Connect server plugin family, including Fastify.",
+          "limitation": "Current contract recheck only, no SDK installed or executed here."
+        },
+        {
+          "id": "X1",
+          "path": "runtime/",
+          "evidenceClass": "new executed local disposable integration",
+          "package": "@get-modular/resources@0.2.2",
+          "runtime": "Node24.22.3",
+          "compiler": "TypeScript7.0.2",
+          "claim": "Six native tests pass with real handles/listeners and meaningful negative controls; strict check skipLibCheck:false.",
+          "limitation": "See REPORT.md limits: no durable authority, automatic borrowing, hostile-code isolation, arbitrary unload, RSS or product qualification."
+        }
+      ],
+      "failedReads": [
+        {
+          "url": "https://github.com/opencontainers/distribution-spec/blob/v1.1.1/spec.md",
+          "reason": "Web fetch DisabledError; not used as evidence. Accepted OCI choice instead grounded in EF ADR0002."
+        },
+        {
+          "repository": "agent-teams-ai/agent-teams-orchestrator",
+          "path": "docs/architecture/module-authoring.md",
+          "reason": "404; correct composition authority discovered by recursive tree and read."
+        }
+      ],
+      "scope": "No GitHub writes or tracked repository changes by this workstream."
+    },
+    "extism": {
+      "retrievedDate": "2026-11-22",
+      "timezone": "Europe/Kiev",
+      "sources": [
+        {
+          "id": "E01",
+          "url": "https://github.com/extism/js-sdk/blob/e0c1672e7469e7fd9d253d43f55c0c488e08aae1/src/background-plugin.ts",
+          "revision": "e0c1672e7469e7fd9d253d43f55c0c488e08aae1",
+          "blob": "fe97db55960bcf363e07f4220691ca682bc1aab7",
+          "kind": "inspected implementation",
+          "finding": "Stable 1.0.3 rejects reentrant worker calls and active reset; close invokes termination without awaiting and does not explicitly settle the outstanding call."
+        },
+        {
+          "id": "E02",
+          "url": "https://github.com/extism/js-sdk/blob/bec25c60d0ad32ce06d3934563fd8560f486f323/src/background-plugin.ts",
+          "revision": "bec25c60d0ad32ce06d3934563fd8560f486f323",
+          "blob": "5755707618be38fd869a20bebd3af2f7241f6ea6",
+          "kind": "inspected implementation plus selected executed cases",
+          "finding": "rc13 adds worker timeout/restart. close awaits termination but does not explicitly settle a pending call. Timeout recovery contains a documented poisoned/hanging branch."
+        },
+        {
+          "id": "E03",
+          "url": "https://github.com/extism/js-sdk/blob/bec25c60d0ad32ce06d3934563fd8560f486f323/src/foreground-plugin.ts",
+          "revision": "bec25c60d0ad32ce06d3934563fd8560f486f323",
+          "blob": "bc07e51dc16fb6cb9448b0449e9d60c50ff601b2",
+          "kind": "inspected implementation plus selected executed cases",
+          "finding": "Foreground close releases WASI resources but does not invalidate callable instances. JSPI support differs from ordinary synchronous execution."
+        },
+        {
+          "id": "E04",
+          "url": "https://github.com/extism/js-sdk/blob/bec25c60d0ad32ce06d3934563fd8560f486f323/src/mod.ts",
+          "revision": "bec25c60d0ad32ce06d3934563fd8560f486f323",
+          "blob": "b47ee08e10ba33bcfe29eb0d78dc1b593a7df019",
+          "kind": "inspected implementation",
+          "finding": "Worker default is false; timeout requires worker execution; browser worker capability requires SharedArrayBuffer and cross-origin isolation. Read-only path prefix is rejected."
+        },
+        {
+          "id": "E05",
+          "url": "https://github.com/extism/js-sdk/blob/bec25c60d0ad32ce06d3934563fd8560f486f323/src/call-context.ts",
+          "revision": "bec25c60d0ad32ce06d3934563fd8560f486f323",
+          "blob": "06686389625be1277b0f7233aa82818b8bf0c09c",
+          "kind": "inspected implementation plus memory-scope executed counterexample",
+          "finding": "maxPages checks SDK allocation blocks. The executed guest-owned WebAssembly.Memory counterexample rejects a blanket guest-memory ceiling claim."
+        },
+        {
+          "id": "E06",
+          "url": "https://github.com/extism/plugins/blob/v1.1.1/count_vowels_kvstore/src/lib.rs",
+          "revision": "v1.1.1",
+          "blob": "bcd5d8b38ec3c211d3ddfb806ba6a6cafc60b1c9",
+          "kind": "inspected Rust PDK guest; official release binary executed",
+          "finding": "Official Rust guest uses Extism PDK plugin_fn and host_fn bindings plus JSON. The release binary was executed; source was inspected but not built locally."
+        },
+        {
+          "id": "E07",
+          "url": "https://github.com/extism/plugins/releases/download/v1.1.1/count_vowels_kvstore.wasm",
+          "revision": "v1.1.1",
+          "sha256": "6360898f83288ae74fe51776863376060fa725c7a4c2581ed93204bc6e661954",
+          "bytes": 74029,
+          "kind": "executed official release binary"
+        },
+        {
+          "id": "E08",
+          "url": "https://github.com/extism/js-sdk/blob/bec25c60d0ad32ce06d3934563fd8560f486f323/wasm/loop-forever.wasm",
+          "revision": "bec25c60d0ad32ce06d3934563fd8560f486f323",
+          "sha256": "ca126d183636b076b27c01b47fba4a471c4211ed570d30a7b773c2fa66637d24",
+          "bytes": 57,
+          "kind": "executed upstream CPU loop fixture"
+        },
+        {
+          "id": "E09",
+          "url": "https://github.com/extism/js-sdk/blob/bec25c60d0ad32ce06d3934563fd8560f486f323/wasm/loop-forever-init.wasm",
+          "revision": "bec25c60d0ad32ce06d3934563fd8560f486f323",
+          "sha256": "be411197fb88674fe7d0ce955adb4cb1d8ed9f1bfe26e277a2428698f7d8e144",
+          "bytes": 69,
+          "kind": "executed upstream startup loop fixture"
+        },
+        {
+          "id": "E10",
+          "url": "https://extism.github.io/js-sdk/interfaces/ExtismPluginOptions.html",
+          "revision": "moving documentation observed 2026-11-22",
+          "webRef": "turn302572947view1",
+          "kind": "primary documentation",
+          "finding": "Current docs describe prerelease APIs. Worker flag is marked experimental; linked issue46 is closed, so do not assert an unresolved race solely from the annotation."
+        },
+        {
+          "id": "E11",
+          "url": "https://github.com/extism/js-sdk/issues/46",
+          "revision": "closed completed; updated2024-01-23T19:58:29Z",
+          "kind": "historical upstream issue inspected",
+          "finding": "Historical ringbuffer race, not a claim of a current uncorrected defect."
+        },
+        {
+          "id": "E12",
+          "url": "https://github.com/wasmCloud/wasmCloud/releases/tag/v2.12.3",
+          "revision": "8358f1f56a66c43aedc49f30e2c5d4fa2b4f7ca1",
+          "publishedUtc": "2026-11-21T22:01:38Z",
+          "kind": "primary release metadata"
+        },
+        {
+          "id": "E13",
+          "url": "https://github.com/wasmCloud/wasmCloud/blob/8358f1f56a66c43aedc49f30e2c5d4fa2b4f7ca1/crates/wash-runtime/Cargo.toml",
+          "revision": "8358f1f56a66c43aedc49f30e2c5d4fa2b4f7ca1",
+          "blob": "ae36b527fab0fb6f6dac1029ce1e2d9be2853836",
+          "kind": "inspected release source",
+          "finding": "publish=false and an explicit internal runtime crate comment. Rich source features do not establish an ordinary published library adoption contract."
+        },
+        {
+          "id": "E14",
+          "url": "https://github.com/wasmCloud/wasmCloud/blob/8358f1f56a66c43aedc49f30e2c5d4fa2b4f7ca1/crates/wash-runtime/src/plugin/component_host/lifecycle.rs",
+          "revision": "8358f1f56a66c43aedc49f30e2c5d4fa2b4f7ca1",
+          "blob": "b08dda8f52b5ff42c1473c0463abd3603eb4d10b",
+          "kind": "inspected implementation not executed",
+          "finding": "Bind timeout does not stop the hook; source revokes generation and defers unbind. Fresh stores replay idempotent binds; repeated attributed faults evict a poisoned workload."
+        },
+        {
+          "id": "E15",
+          "url": "https://wasmcloud.com/docs/runtime/building-custom-hosts/",
+          "revision": "moving v2 documentation observed 2026-11-22",
+          "webRef": "turn967948358view2",
+          "kind": "primary documentation",
+          "finding": "Guide documents embedding and feature selection, but its wildcard Cargo recipe conflicts with the current release crate publish=false flag."
+        },
+        {
+          "id": "E16",
+          "url": "https://wasmcloud.com/docs/runtime/creating-host-component-plugins/",
+          "revision": "moving v2 documentation observed 2026-11-22",
+          "webRef": "turn967948358view3",
+          "kind": "primary documentation",
+          "finding": "Native host plugins are linked at build time; host component plugins are a distinct opt-in runtime feature backed by a long-lived store."
+        },
+        {
+          "id": "E17",
+          "url": "https://bytecodealliance.github.io/jco/",
+          "revision": "moving documentation observed 2026-11-22",
+          "webRef": "turn349169306view1",
+          "kind": "primary documentation",
+          "finding": "Generates component-to-ESM hosting artifacts and WASI shims; not a general production hot-update protocol."
+        },
+        {
+          "id": "E18",
+          "url": "https://github.com/bytecodealliance/ComponentizeJS",
+          "revision": "moving README observed 2026-11-22",
+          "webRef": "turn349169306view2",
+          "kind": "primary documentation",
+          "finding": "Includes a JavaScript engine and evaluates top-level source during build. Authoring machinery does not choose hot-update policy."
+        },
+        {
+          "id": "E19",
+          "url": "https://github.com/bytecodealliance/wit-bindgen",
+          "revision": "v0.63.0 release observed 2026-11-22; README current",
+          "webRef": "turn967948358view1",
+          "kind": "primary documentation",
+          "finding": "Guest bindings generator, not host execution or application lifecycle."
+        },
+        {
+          "id": "E20",
+          "url": "https://docs.wasmtime.dev/examples-interrupting-wasm.html",
+          "revision": "moving documentation observed 2026-11-22",
+          "webRef": "turn349169306view0",
+          "kind": "primary documentation",
+          "finding": "Fuel and epoch mechanisms interrupt guest execution, with different cost/semantics; no automatic rollback of external effects."
+        },
+        {
+          "id": "E21",
+          "url": "https://spinframework.dev/v4/running-apps",
+          "revision": "v4 documentation observed 2026-11-22; v4.3.0 latest release",
+          "webRef": "turn113139161search1",
+          "kind": "primary documentation",
+          "finding": "Watch rebuilds/restarts; failed builds preserve the existing app. Development loop is not generic live-state migration."
+        },
+        {
+          "id": "E22",
+          "url": "https://extism.org/docs/questions/",
+          "revision": "moving documentation observed 2026-11-22",
+          "webRef": "turn967948358view0",
+          "kind": "primary documentation",
+          "finding": "Extism SDK/PDK bytes ABI is distinct from Component Model WIT interoperability."
+        }
+      ]
+    },
+    "industry": {
+      "scope": "industry source research and independent review of hosted browser probe; upstream tests unexecuted",
+      "user_date": "2026-11-22",
+      "user_timezone": "Europe/Kiev",
+      "upstream_tests_executed": 0,
+      "production_changes": 0,
+      "source_count": 37,
+      "sources": [
+        {
+          "id": "FL-DOC",
+          "url": "https://docs.flutter.dev/tools/hot-reload",
+          "source_kind": "official moving documentation",
+          "version": "Flutter documentation current 2026-11-22",
+          "web_refs": [
+            "turn676498602view0"
+          ],
+          "observed": "Debug-only reload/restart; reload preserves state without rerunning main/initState; native code and some shape changes require restart.",
+          "limit": "Not a production plugin updater."
+        },
+        {
+          "id": "FL-SRC",
+          "commit": "ae9b586f34a8443573f82ef57c3bf914a908cbf7",
+          "version": "Flutter 3.50.1 stable",
+          "sections": "Element.reassemble lines3743–3776; State.reassemble lines1040–1053",
+          "observed": "Source explicitly warns new-code build can occur before reassemble; recursive reassemble marks children for build.",
+          "limit": "Reassemble is not a universal safe-point or transaction barrier.",
+          "url": "https://github.com/flutter/flutter/blob/ae9b586f34a8443573f82ef57c3bf914a908cbf7/packages/flutter/lib/src/widgets/framework.dart",
+          "blob_sha": "0242e1dd9704f5b236d6d177498af65003725675",
+          "source_kind": "inspected pinned source"
+        },
+        {
+          "id": "FL-API",
+          "url": "https://api.flutter.dev/flutter/widgets/State/reassemble.html",
+          "source_kind": "official moving API documentation",
+          "web_refs": [
+            "turn676498602view1"
+          ],
+          "observed": "The development callback has no ordering guarantee against code update and build.",
+          "limit": "Not release-build machinery."
+        },
+        {
+          "id": "DART-SRC",
+          "commit": "c8a0db5978a68d4037f7e5294ffc79867935c8c2",
+          "version": "Dart 3.14.1 stable",
+          "sections": "Pervasive late-binding, Immutable methods, State is retained, Limitations, Defects",
+          "observed": "Method dictionaries change while closures/frames retain functions; fields retain state; VM rejects unsupported changes atomically; field rename has no automatic value migration.",
+          "limit": "VM-specific semantic description, not locally executed. The document's defects section is not fresh reproduction.",
+          "url": "https://github.com/dart-lang/sdk/blob/c8a0db5978a68d4037f7e5294ffc79867935c8c2/runtime/docs/hot-reload.md",
+          "blob_sha": "2e46e1fe6176cbd1793a6d7e1db46b9330aae33e",
+          "source_kind": "inspected pinned source"
+        },
+        {
+          "id": "RN-DOC",
+          "url": "https://reactnative.dev/docs/fast-refresh",
+          "source_kind": "official moving documentation",
+          "version": "React Native 0.88; page updated2026-10-27",
+          "web_refs": [
+            "turn676498602view2"
+          ],
+          "observed": "Refresh scope follows module exports/importers; state preservation is conditional; effects rerun during refresh.",
+          "limit": "Development feature, not durable side-effect policy."
+        },
+        {
+          "id": "REACT-SRC",
+          "commit": "33e52451f2ab39e0a4d186256b2b4d55277e6041",
+          "version": "React main inspection, not release qualification",
+          "sections": "computeFullKey; haveEqualSignatures; canPreserveStateBetween; performReactRefresh",
+          "observed": "Current source compares family/type kind and Hook signatures; selects preserved or remounted families; uncertain custom-hook signature can force reset.",
+          "limit": "Main branch is not proof of any installed package.",
+          "url": "https://github.com/react/react/blob/33e52451f2ab39e0a4d186256b2b4d55277e6041/packages/react-refresh/src/ReactFreshRuntime.js",
+          "blob_sha": "5448d23f22e8986da47f51ecda7b305bfb36a564",
+          "source_kind": "inspected pinned source"
+        },
+        {
+          "id": "REACT-TEST",
+          "commit": "33e52451f2ab39e0a4d186256b2b4d55277e6041",
+          "version": "React main tests inspected only",
+          "sections": "compatible state; function/memo/forwardRef shape changes; signature change",
+          "observed": "Inspected tests exercise preserved state and explicit remount branches.",
+          "limit": "Not executed in this study.",
+          "url": "https://github.com/react/react/blob/33e52451f2ab39e0a4d186256b2b4d55277e6041/packages/react-refresh/src/__tests__/ReactFresh-test.js",
+          "blob_sha": "663643a0095108ac431b3fc6787f99a7fdd386ce",
+          "source_kind": "inspected upstream tests, unexecuted"
+        },
+        {
+          "id": "REACT-INTEGRATION",
+          "commit": "33e52451f2ab39e0a4d186256b2b4d55277e6041",
+          "version": "React main integration tests inspected only",
+          "sections": "lines985–1056 reset effects while preserving state;1488–1525 initializer edit reset",
+          "observed": "Tests assert effect cleanup/setup despite state preservation; literal initializer change can force remount.",
+          "limit": "Transform-dependent and best effort; not generic state-schema migration.",
+          "url": "https://github.com/react/react/blob/33e52451f2ab39e0a4d186256b2b4d55277e6041/packages/react-refresh/src/__tests__/ReactFreshIntegration-test.js",
+          "blob_sha": "cbadf5ec79e4d9e665806f29792e1d1bcbfa7922",
+          "source_kind": "inspected upstream tests, unexecuted"
+        },
+        {
+          "id": "VITE-API",
+          "url": "https://vite.dev/guide/api-hmr",
+          "source_kind": "official moving documentation",
+          "web_refs": [
+            "turn827056643search3"
+          ],
+          "observed": "Accepted boundary does not automatically rewrite every original import; dispose/prune/hot.data support module lifecycle.",
+          "limit": "Development contract; pruning persistent data is separate from qualified production handoff."
+        },
+        {
+          "id": "VITE-SRC",
+          "commit": "3567471998e3da315675086f44368e266c9c0e33",
+          "version": "Vite main3567471; relevant ordering matches prior stable research",
+          "sections": "HMRClient.fetchUpdate, queueUpdate, prunePaths",
+          "observed": "Disposer runs before import; failed import reaches callback as undefined. Prune clears data in finally.",
+          "limit": "No general restore-old-resources guarantee.",
+          "url": "https://github.com/vitejs/vite/blob/3567471998e3da315675086f44368e266c9c0e33/packages/vite/src/shared/hmr.ts",
+          "blob_sha": "6e2ef7de0de852aec6417e9d91b60556cc2f834b",
+          "source_kind": "inspected pinned source"
+        },
+        {
+          "id": "IJ-DOC",
+          "url": "https://plugins.jetbrains.com/docs/intellij/dynamic-plugins.html",
+          "source_kind": "official moving documentation",
+          "web_refs": [
+            "turn827056643search4"
+          ],
+          "observed": "Eligible production dynamic plugins have restrictions; failed unloading requires restart; retained classloaders can be inspected.",
+          "limit": "Eligibility is conditional, not arbitrary JVM/native-code unloading."
+        },
+        {
+          "id": "IJ-SCOPE",
+          "url": "https://plugins.jetbrains.com/docs/intellij/coroutine-scopes.html",
+          "source_kind": "official moving documentation",
+          "version": "page dated2026-11-10",
+          "web_refs": [
+            "turn676498602view3"
+          ],
+          "observed": "Service work is bounded by application/project and plugin intersection lifetimes; platform cancels then awaits scopes.",
+          "limit": "Incorrectly using longer-lived parent or another plugin's scope still leaks."
+        },
+        {
+          "id": "IJ-SRC",
+          "commit": "aac269f41b10472bda9c45d90d87ea9e3bdb87a7",
+          "version": "IntelliJ master inspection, not exact shipped release",
+          "sections": "validateReconfigurationIsPossible; expectPluginsState; withReconfigurationLockBlocking; reconfigureImpl",
+          "observed": "Computes prospective plugin state, validates expected inclusions/exclusions and support, serializes mutation under a reconfiguration lock.",
+          "limit": "Preflight validity does not prove eventual teardown success.",
+          "url": "https://github.com/JetBrains/intellij-community/blob/aac269f41b10472bda9c45d90d87ea9e3bdb87a7/platform/platform-impl/src/com/intellij/ide/plugins/DynamicPlugins.kt",
+          "blob_sha": "5c9d95c2c41d2733e75c8daf42c793847f04468c",
+          "source_kind": "inspected pinned source"
+        },
+        {
+          "id": "OSGI-DS",
+          "url": "https://docs.osgi.org/specification/osgi.cmpn/8.1.0/service.component.html",
+          "source_kind": "versioned normative specification",
+          "version": "OSGi Compendium8.1 Declarative Services1.5",
+          "web_refs": [
+            "turn387213534view0",
+            "turn600659822view0",
+            "turn600659822view3"
+          ],
+          "observed": "Static/dynamic and reluctant/greedy policies differ; unary replacement binds new before old unbind; old cleanup must preserve newer binding.",
+          "limit": "Does not atomically upgrade arbitrary application references."
+        },
+        {
+          "id": "OSGI-WIRING",
+          "url": "https://docs.osgi.org/specification/osgi.core/8.0.0/framework.wiring.html",
+          "source_kind": "versioned normative specification",
+          "version": "OSGi Core8 Bundle Wiring1.2",
+          "web_refs": [
+            "turn387213534view1"
+          ],
+          "observed": "Old wiring can remain in use after update; refresh computes dependent closure and restarts active bundles in it.",
+          "limit": "Registry selection and executable wiring are distinct graphs."
+        },
+        {
+          "id": "OTP-CODE",
+          "commit": "d199a49a01a2079afb6f2c5c9ae047cd4555e68d",
+          "version": "OTP29.1.2",
+          "sections": "code:purge/soft_purge;atomic_load;prepare_loading;finish_loading",
+          "observed": "Atomic group code loading may reject; soft purge refuses lingering code; force purge can kill processes.",
+          "limit": "Atomic loading is not atomic state/effect conversion.",
+          "url": "https://github.com/erlang/otp/blob/OTP-29.1.2/lib/kernel/src/code.erl",
+          "blob_sha": "30f4d06a07982ac0967fe0f105ef849158f48d5f",
+          "source_kind": "inspected pinned source"
+        },
+        {
+          "id": "OTP-RELEASE",
+          "commit": "d199a49a01a2079afb6f2c5c9ae047cd4555e68d",
+          "version": "OTP29.1.2",
+          "sections": "check_install_release;install_release;make_permanent",
+          "observed": "Preflight can evaluate pre-point-of-no-return instructions; recoverable errors restore specs, nonrecoverable errors restart; persistent boot selection is separate.",
+          "limit": "A feature called check need not be side-effect-free; not a blueprint to emulate BEAM.",
+          "url": "https://github.com/erlang/otp/blob/OTP-29.1.2/lib/sasl/src/release_handler.erl",
+          "blob_sha": "cdb2409630a29e6e42aeaaf30a9750a4e49b1f71",
+          "source_kind": "inspected pinned source"
+        },
+        {
+          "id": "NGINX-DOC",
+          "url": "https://nginx.org/en/docs/control.html",
+          "source_kind": "official moving documentation",
+          "web_refs": [
+            "turn695648781view1"
+          ],
+          "observed": "HUP validates new configuration/resources, preserves old on preparation failure; old workers finish existing work after new start.",
+          "limit": "Configuration cycle behavior is not arbitrary application readiness."
+        },
+        {
+          "id": "NGINX-DEV",
+          "url": "https://nginx.org/en/docs/dev/development_guide.html",
+          "source_kind": "official moving documentation",
+          "web_refs": [
+            "turn695648781view2",
+            "turn600659822view2"
+          ],
+          "observed": "Avoid unnecessary new modules; tie global data to configuration pools; implicit library globals can break coexistence.",
+          "limit": "Use lifecycle discipline, not C implementation reuse for TS."
+        },
+        {
+          "id": "NGINX-SRC",
+          "commit": "2e8440bcdc438f0f1cd03da778a3843ddb3c86d9",
+          "version": "NGINX master inspection",
+          "sections": "ngx_master_process_cycle lines233–265",
+          "observed": "Successful cycle construction precedes worker start,100ms delay, predecessor shutdown signal.",
+          "limit": "Delay is not a business-plugin readiness acknowledgment.",
+          "url": "https://github.com/nginx/nginx/blob/2e8440bcdc438f0f1cd03da778a3843ddb3c86d9/src/os/unix/ngx_process_cycle.c",
+          "blob_sha": "c6338305cfac114711d9634e91367e30e3669a12",
+          "source_kind": "inspected pinned source"
+        },
+        {
+          "id": "ENVOY-HOT",
+          "url": "https://www.envoyproxy.io/docs/envoy/v1.40.2/intro/arch_overview/operations/hot_restart",
+          "source_kind": "versioned official documentation",
+          "version": "Envoy1.40.2",
+          "commit": "b2d89e0ae53916f28770771fbdd49c5c99c5c5a2",
+          "web_refs": [
+            "turn387213534view2"
+          ],
+          "observed": "New process initialization/listener inheritance precedes predecessor drain; existing connections are not moved; shutdown deadline distinct.",
+          "limit": "Windows unsupported; socket changes and reduced concurrency have caveats."
+        },
+        {
+          "id": "ENVOY-INIT",
+          "url": "https://www.envoyproxy.io/docs/envoy/v1.40.2/intro/arch_overview/operations/init",
+          "source_kind": "versioned official documentation",
+          "version": "Envoy1.40.2",
+          "commit": "b2d89e0ae53916f28770771fbdd49c5c99c5c5a2",
+          "web_refs": [
+            "turn387213534view3"
+          ],
+          "observed": "Startup waits boundedly for discovery responses or failures, making best effort within initial_fetch_timeout.",
+          "limit": "Initialized is not proof all desired business capabilities are ready."
+        },
+        {
+          "id": "ENVOY-XDS",
+          "url": "https://www.envoyproxy.io/docs/envoy/v1.40.2/api-docs/xds_protocol",
+          "source_kind": "versioned official documentation",
+          "version": "Envoy1.40.2",
+          "commit": "b2d89e0ae53916f28770771fbdd49c5c99c5c5a2",
+          "web_refs": [
+            "turn387213534view4",
+            "turn600659822view1"
+          ],
+          "observed": "ACK means resources valid individually with intent to apply, not application success; updates need dependency sequencing.",
+          "limit": "ADS sequencing is not global transactional publication."
+        },
+        {
+          "id": "VITE-REACT-PKG",
+          "version": "@vitejs/plugin-react6.3.0",
+          "commit": "0e95069a8f90489da74371c9ad35dfc619c1b72e",
+          "observed": "Release pin uses Vite8 and optional React Compiler peers; compiler support is not enabled by the default plugin call.",
+          "limit": "Package metadata is source evidence, not installation evidence.",
+          "url": "https://github.com/vitejs/vite-plugin-react/blob/0e95069a8f90489da74371c9ad35dfc619c1b72e/packages/plugin-react/package.json",
+          "blob_sha": "d89611f2f084b2c61105c42b204265bc01dab788",
+          "source_kind": "inspected pinned source"
+        },
+        {
+          "id": "VITE-REACT-SRC",
+          "version": "@vitejs/plugin-react6.3.0",
+          "commit": "0e95069a8f90489da74371c9ad35dfc619c1b72e",
+          "observed": "Default plugin enables Oxc JSX refresh during serve and delegates wrapping to Vite; production/build/HMR-disabled paths turn refresh off.",
+          "limit": "Do not describe this fixture as executing React's Babel refresh plugin.",
+          "url": "https://github.com/vitejs/vite-plugin-react/blob/0e95069a8f90489da74371c9ad35dfc619c1b72e/packages/plugin-react/src/index.ts",
+          "blob_sha": "102ae2db51b7d296afc85ee914c1fc11cdcb6aad",
+          "source_kind": "inspected pinned source"
+        },
+        {
+          "id": "VITE-OXC",
+          "version": "Vite8.3.8",
+          "commit": "b39e6e63dcbfc3cf4be871acf3554efbd6d0e268",
+          "observed": "Oxc path imports native transform and transformSync from Rolldown.",
+          "limit": "Native binary execution still requires the frozen fixture run.",
+          "url": "https://github.com/vitejs/vite/blob/b39e6e63dcbfc3cf4be871acf3554efbd6d0e268/packages/vite/src/node/plugins/oxc.ts",
+          "blob_sha": "c28af099d9278f101ca260182573c1c84848d969",
+          "source_kind": "inspected pinned source"
+        },
+        {
+          "id": "ROLLDOWN-CARGO",
+          "version": "Rolldown1.2.19",
+          "commit": "b9c75ddc8bd50f2c1a4c7be0b548bdab5cba85ab",
+          "observed": "Cargo.lock pins oxc_transformer0.156.0 with checksum e30a2ba7cc85c085aff8464456f9da27d9d0418018a5c9a09bfd4647801c624f.",
+          "limit": "Upstream build dependency provenance, not proof a local binary executed.",
+          "url": "https://github.com/rolldown/rolldown/blob/b9c75ddc8bd50f2c1a4c7be0b548bdab5cba85ab/Cargo.lock",
+          "blob_sha": "60aac3edc8ba2597a4a52b37a652b2ce8f811d60",
+          "source_kind": "inspected pinned source"
+        },
+        {
+          "id": "OXC-REFRESH",
+          "version": "oxc_transformer0.156.0",
+          "commit": "75efdca4747c4ad9b252542743098d4894f8005b",
+          "observed": "Lines356–386 include useState's first argument source in the Hook signature, including an arrow initializer; changing()=>11 to()=>99 changes that signature.",
+          "limit": "Source-derived prediction is remount/reset; native fixture should independently verify.",
+          "url": "https://github.com/oxc-project/oxc/blob/75efdca4747c4ad9b252542743098d4894f8005b/crates/oxc_transformer/src/jsx/refresh.rs",
+          "blob_sha": "bd12beb1cdbc22c9173018f598dcde2e1e8894ff",
+          "source_kind": "inspected pinned source"
+        },
+        {
+          "id": "GH-CONTEXT",
+          "url": "https://docs.github.com/en/actions/reference/workflows-and-actions/contexts",
+          "source_kind": "official moving documentation",
+          "web_refs": [
+            "turn651208444view1"
+          ],
+          "observed": "Job env excludes runner context; step.with permits env context.",
+          "limit": "Context validity alone does not establish downstream action path validity."
+        },
+        {
+          "id": "NODE-CP",
+          "url": "https://github.com/nodejs/node/blob/v24.22.3/lib/internal/fs/cp/cp.js",
+          "version": "Node 24.22.3",
+          "source_kind": "inspected release-tag source",
+          "sections": "mayCopyFile lines245-248",
+          "observed": "Forced cp replacement unlinks destination before copyFile.",
+          "limit": "This supports a watcher hypothesis, not a reproduced cause of the failed browser run."
+        },
+        {
+          "id": "VITE-WATCH-LOCK",
+          "url": "https://github.com/vitejs/vite/blob/b39e6e63dcbfc3cf4be871acf3554efbd6d0e268/pnpm-lock.yaml",
+          "commit": "b39e6e63dcbfc3cf4be871acf3554efbd6d0e268",
+          "version": "Vite 8.3.8",
+          "source_kind": "inspected pinned upstream lock",
+          "observed": "Vite package build dependency selects Chokidar 3.6.0 with patch hash e17269188c54412478078f7ac7877c1d5a475a2f2438328e3a7e725513ccbf1f.",
+          "limit": "Upstream lock identity, not native watcher-event tracing."
+        },
+        {
+          "id": "VITE-WATCH-PATCH",
+          "url": "https://github.com/vitejs/vite/blob/b39e6e63dcbfc3cf4be871acf3554efbd6d0e268/patches/chokidar@3.6.0.patch",
+          "commit": "b39e6e63dcbfc3cf4be871acf3554efbd6d0e268",
+          "blob_sha": "b75589fa4f553e965637aadb6d4ecf97d2c3a0b1",
+          "source_kind": "inspected pinned source patch",
+          "observed": "Patch changes close-path key normalization and fsevents ignored-file check, leaving change-event throttle unchanged.",
+          "limit": "Source inspection only."
+        },
+        {
+          "id": "CHOKIDAR-THROTTLE",
+          "url": "https://github.com/paulmillr/chokidar/blob/3.6.0/index.js",
+          "version": "Chokidar 3.6.0",
+          "source_kind": "inspected release-tag source",
+          "sections": "_emit lines615-618",
+          "observed": "Change emission for a path is throttled for 50 milliseconds.",
+          "limit": "No direct evidence that this branch caused hosted attempt 1 timeout; browser artifacts were lost due upload path rejection."
+        },
+        {
+          "id": "BROWSER-ATTEMPT1",
+          "url": "https://github.com/agent-teams-ai/extension-foundation/actions/runs/44961594670",
+          "commit": "30b9823aacecc0728ebf72c2e450e7c8c06b93e2",
+          "source_kind": "observed hosted workflow job log",
+          "job_id": 137021368787,
+          "observed": "Dependency and strict TS steps passed; Chromium159.0.8154.6 installed; browser test timed out at v3 wait line107 after earlier v2 assertions; upload rejected dot-component path; zero artifacts.",
+          "limit": "Not an E2E success; no v3/v4/raw failure conclusions; no browser observations artifact survived.",
+          "decoded_log_sha256": "ce5274b6f8174590576287f92ac052d50ea9f36ef996a0981e92b5219570bf9b"
+        },
+        {
+          "id": "GH-ENV",
+          "url": "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands",
+          "source_kind": "official moving documentation",
+          "web_refs": [
+            "turn689777299view1"
+          ],
+          "observed": "GITHUB_ENV makes an updated variable available to subsequent steps in the same job.",
+          "limit": "Native run must still establish artifact action success for the concrete normalized path."
+        },
+        {
+          "id": "VITE-HMR-EXACT",
+          "url": "https://github.com/vitejs/vite/blob/b39e6e63dcbfc3cf4be871acf3554efbd6d0e268/packages/vite/src/shared/hmr.ts",
+          "commit": "b39e6e63dcbfc3cf4be871acf3554efbd6d0e268",
+          "version": "Vite 8.3.8",
+          "source_kind": "inspected pinned release source",
+          "observed": "HMRContext clears callbacks and custom listeners, not disposeMap; fetchUpdate invokes retained disposer before import, catches import failure, calls acceptance with undefined and still logs hot updated.",
+          "limit": "Repeated disposer conclusion is tied to broken candidate registering acceptance without replacing disposer; not all module failure paths."
+        },
+        {
+          "id": "BROWSER-INPUT2",
+          "url": "https://github.com/agent-teams-ai/extension-foundation/actions/runs/44962153869",
+          "commit": "c1653881b574b4258fb16a2d44b93a1004c06a94",
+          "job_id": 137023114339,
+          "source_kind": "observed native job and downloaded artifact",
+          "artifact_id": 14730306077,
+          "artifact_sha256": "c15ba9412478a3a1fe2f68ba8e41253f5529e1fc8278d0c5f9c86eff176b0a28",
+          "input_sha256": "430b3c063c920e0a5e1153d2ed1beca7ebbb65d0e658e7ad54f941169d31b1a5",
+          "workflow_sha256": "396f5277f6c91b9ba22421d0ecbe073f04a8d6b7ad8f6372472304e76e2eb8cd",
+          "observed": "One native browser test passes; all32comparisons match; every source file and receipt bound; five native watcher changes; old raw disposer runs twice across failed import/recovery.",
+          "limit": "Independent-edit profile with100ms spacing; first failure cause not isolated; no production or rapid-edit guarantee."
+        }
+      ],
+      "notes": [
+        "React repository redirect was followed from facebook/react to react/react.",
+        "Dart hot-reload document now at runtime/docs/hot-reload.md; old docs/Hot-reload.md is absent at inspected stable pin.",
+        "GitHub source retrieval succeeded through connector; web open of four pinned GitHub pages returned DisabledError, so those failed web references must not be cited as substantive evidence.",
+        "This ledger is scratch source material for root's governed research record.",
+        "Follow-up browser review traced exact Vite8.3.8→Rolldown1.2.19→oxc_transformer0.156.0 path rather than assuming Babel behavior."
+      ],
+      "retrieval_started_at_utc": "2026-11-21T23:12:41Z",
+      "last_reviewed_at_utc": "2026-11-21T23:43:18Z"
+    }
+  }
+}
