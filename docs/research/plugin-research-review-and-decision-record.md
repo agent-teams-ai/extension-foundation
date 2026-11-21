@@ -14,6 +14,44 @@ summary: Independent critique dispositions, adoption conflicts and scoped implem
 
 ## Selectable updates and portable runtimes, 2026-11-21
 
+### Follow-up verification and reuse review
+
+The continuation independently rechecked the original run logs, all 368 packet
+members and the unchanged experimental inputs between `118e2d2` and `5e388bb`.
+Existing E2E remains applicable; these read-only checks are not new executions.
+The [runtime reuse comparison](live-update-policies-and-portable-runtimes-2026-11-21.md#reuse-of-existing-runtimes-and-bindings)
+distinguishes Extism, component bindings and the embeddable wasmCloud v2 runtime.
+No production dependency or unresolved architectural decision is selected.
+
+The [incomplete automated review](https://github.com/agent-teams-ai/extension-foundation/pull/55#issuecomment-6966099412)
+reported seven preliminary minor findings. Independent source review produced
+the dispositions below; it does not turn that provider's incomplete coverage
+into an approval.
+
+| Finding | Disposition |
+| --- | --- |
+| Both research workflows might race over their sibling output directories | Each GitHub-hosted matrix job has a fresh VM; artifacts include profile where applicable, run ID and attempt. No shared-path race was found. Concurrency cancellation is an optional cost policy, not a correctness repair. |
+| The suggested workflow-level concurrency key uses `matrix.profile` | Reject that proposed patch: the matrix context is available for job-level concurrency, not workflow-level concurrency. |
+| Input verification failure would lose subsequent install/Rust logs | Those steps never run after failed extraction, so those logs do not exist. The extraction failure remains in the Actions job log; uploading absent directories adds no evidence. |
+| Current authority navigation links use `main` | All linked records were readable. Keep current navigation distinct from the exact historical identities already recorded nearby. |
+| The language-boundary note mentions OD-041 without a direct link | Add the already-used, independently verified immutable link at that mention. Other research records already linked the authority. |
+| Pinned external backend policy and OD-005 cannot be verified locally | Both exact sources were read and support the claims. Retain their links and owning repositories instead of copying policy into a competing local authority. |
+
+The workflow dispositions use GitHub's
+[runner isolation contract](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job)
+and [context availability table](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts),
+read on 2026-11-21. The seven findings are grouped by shared rationale above.
+
+A separate reporting correction was made in PR 55: full `pnpm check` ran on
+Node 26.11.1 in both full-check jobs of
+[CI 44935661590](https://github.com/agent-teams-ai/extension-foundation/actions/runs/44935661590).
+The semantic documentation gate ran on Node 24.21.0 in
+[Docs 44935661566](https://github.com/agent-teams-ai/extension-foundation/actions/runs/44935661566).
+Those logs do not establish full Node 24 qualification. The skipped push Docs
+route and one Windows symlink test remain excluded from passed qualification.
+
+### Original executed investigation
+
 The [completed investigation](live-update-policies-and-portable-runtimes-2026-11-21.md)
 deepens optional update modes for both backend and frontend, compilation, and
 cross-language execution. OD-003 records the owner's clarified direction

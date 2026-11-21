@@ -8,6 +8,8 @@ summary: Evaluates selectable interruption policies, compilation and optional cr
 
 # Live Update Policies and Portable Runtimes 2026-11-21
 
+<!-- cspell:words bindgen -->
+
 ## Scope and recommendation
 
 **Observed: 2026-11-21, Europe/Kiev. Recommendation: keep a TypeScript host and
@@ -187,6 +189,52 @@ remains experimental in this snapshot. Qualify an exact profile of language,
 runtime, imports and async/resource features. A project advertising “WASI” does
 not prove identical browser and backend support. This experiment deliberately
 uses a small synchronous scalar contract and makes no async-WASI claim.
+
+### Reuse of existing runtimes and bindings
+
+Follow-up primary documentation was read on **2026-11-21** to answer the
+owner's question about an existing plugin library. These are source-backed
+options, not additional runtime executions or adopted dependencies. The frozen
+experiment and its original delivery receipt remain unchanged.
+
+**Extism is a plausible remembered name, not a confirmed identification.** Its
+[documented ABI and SDKs](https://extism.org/docs/questions/) provide a ready
+bytes-in/bytes-out plugin boundary with application-selected serialization.
+That is a useful alternative to the WIT component path; do not assume the two
+artifact/ABI contracts are interchangeable. This repository already has an
+Extism feasibility fixture; its existence does not select a production host.
+
+| Existing mechanism | Reuse opportunity and boundary |
+| --- | --- |
+| [jco](https://bytecodealliance.github.io/jco/) and [ComponentizeJS](https://github.com/bytecodealliance/ComponentizeJS) | Already used by this experiment for component creation and generated JS/core-Wasm execution. Keep their parser, component transformation and generated calls; no custom Wasm engine is required. Current jco documentation labels the project experimental, so qualify the chosen version and feature profile. |
+| [wit-bindgen](https://github.com/bytecodealliance/wit-bindgen) | Generate guest language bindings from WIT for a future Rust plugin SDK. The 17-line scalar Rust fixture uses deliberate manual exports and component embedding; it does not demonstrate general strings, lists, resources or asynchronous bindings. |
+| [Wasmtime component bindings](https://docs.wasmtime.dev/api/wasmtime/component/index.html) | A native Rust host can generate its host types and traits with `wasmtime::component::bindgen!`. This is distinct from guest bindings and does not require moving the application's policy into Rust. |
+| [wasmCloud v2 runtime](https://wasmcloud.com/docs/runtime/) | Its embeddable Rust `wash-runtime` provides Engine, Host and Workload abstractions over Wasmtime, including host capabilities and lifecycle mechanisms. Evaluate it before implementing an equivalent backend workload manager; it is usable outside the full Kubernetes deployment. |
+| [Spin](https://spinframework.dev/v4/index) | An existing framework for event-driven component applications. Consider it where the feature fits its trigger and deployment model; it does not by itself qualify replacement of arbitrary frontend features or retained application state. |
+
+The [wasmCloud host extension guide](https://wasmcloud.com/docs/runtime/creating-host-plugins/)
+and [custom-host guide](https://wasmcloud.com/docs/runtime/building-custom-hosts/)
+make it a concrete reuse candidate. Native Rust host plugins and dynamically
+loaded host component plugins have different installation boundaries. Check
+the exact supported release and packaging instructions before a new experiment;
+documentation for current APIs is not proof that an arbitrary registry version
+provides them. No wasmCloud host was executed in this follow-up.
+
+The recommendation remains **TypeScript for application policy and ordinary
+features, with a small optional cross-language execution boundary**. Reuse
+existing composition and scoped lifetimes; the consumer still owns compatible
+state, update grants, safe completion boundaries and external effects. When a
+ready runtime covers the required mechanics, adapt that runtime rather than
+adding another supervisor. A native executor is justified by a demonstrated
+capability or measured limit, not merely by the availability of Rust plugins.
+
+ComponentizeJS embeds a JavaScript engine in the component. Its use enables
+the tested interface boundary; it is not evidence that JavaScript gains native
+Rust performance. Replacing a plugin implementation also requires compatible
+behavior, errors, capabilities and state, not just a matching WIT signature.
+The next meaningful binding qualification would use generated Rust guest
+bindings and one required non-scalar contract. Rewriting this frozen scalar
+experiment would not supply that missing evidence.
 
 ### Options and costs
 
@@ -473,10 +521,12 @@ product is zero. The original TS estimate was 1,050–1,510 lines; generated
 output, dependencies, configuration, workflow bootstrap and prose are separate.
 This is measured investigation cost, not a platform implementation quote.
 
-The [delivery validation](evidence/plugin-update-runtimes-20261121.validation.json)
-records exact documentation identities, archive custody and the completed
-standalone Docs Protocol result. Final source publication and completed hosted
-checks are recorded in existing [Draft PR 55](https://github.com/agent-teams-ai/extension-foundation/pull/55).
+The [original delivery validation](evidence/plugin-update-runtimes-20261121.validation.json)
+records documentation identities through delivery `5e388bb`, archive custody
+and the completed standalone Docs Protocol result. It is historical evidence,
+not a receipt for the later prose follow-up above. Current source publication
+and completed hosted checks are recorded in existing
+[Draft PR 55](https://github.com/agent-teams-ai/extension-foundation/pull/55).
 The unchanged general local Foundation route remains unexecuted because it
 would initialize its embedded TypeScript 5.9.3; required hosted checks keep their
 separate unchanged role. No dependency pin or required check is weakened.
