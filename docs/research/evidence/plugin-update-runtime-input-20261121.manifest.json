@@ -5,8 +5,8 @@
   "purpose": "Frozen disposable frontend and Node-hosted cross-language Component Model research inputs; no production or public SPI adoption.",
   "archive": {
     "path": "plugin-update-runtime-input-20261121.tar.gz",
-    "bytes": 35126,
-    "sha256": "e3b288d964bc013a550e03dde625db8b07467c2e5d5fb07c849293c33cd1bffb"
+    "bytes": 35589,
+    "sha256": "240331483a7da66da60257bbc1aaaf555341d99dd6d8913926fef84b12be4752"
   },
   "compiler": "typescript@7.0.2",
   "browserDriver": "playwright@1.62.1",
@@ -89,13 +89,13 @@
     },
     {
       "path": "wasm/package.json",
-      "bytes": 583,
-      "sha256": "f4b8b9136f7d564abdbc7cfb2cde73436c0250da31e66d4276b7a85cb5c579b7"
+      "bytes": 632,
+      "sha256": "a7d340b268e2e6c53a01982f400820a150cf807deca68326cdbd973ccfb981f5"
     },
     {
       "path": "wasm/pnpm-lock.yaml",
-      "bytes": 62164,
-      "sha256": "7c102499c3d6f66e58057baa9f7996652dcddd53e1331a60f87db6a7e06c6b92"
+      "bytes": 62255,
+      "sha256": "872668daa763b3afa8f52380b08393f9fe7fc35d26bbd399ae198be88017c811"
     },
     {
       "path": "wasm/rust/quote.rs",
@@ -104,8 +104,8 @@
     },
     {
       "path": "wasm/src/build.ts",
-      "bytes": 4600,
-      "sha256": "c0801658e10a39d40340f2c801c9078a02f6dc1b944e137af2dccb1d9486d0fc"
+      "bytes": 5865,
+      "sha256": "c7c1a6b3f44f3179deaa9a8919dbff570cef2851a0ff90f100f7ab8865d5ac5e"
     },
     {
       "path": "wasm/src/compiler-guard.ts",
@@ -137,5 +137,11 @@
       "bytes": 135,
       "sha256": "8c63cc2a9ba8ba713e1cd78bf4d2410d97ed1655c7ab79d0029f8ba618fe23e9"
     }
-  ]
+  ],
+  "revision": 2,
+  "supersedes": {
+    "inputArchiveSha256": "e3b288d964bc013a550e03dde625db8b07467c2e5d5fb07c849293c33cd1bffb",
+    "commit": "5d47513f6ef6f19068e7ee1ee711df184ec2d70c",
+    "reason": "Configure the public build-splicer filesystem for the reviewed WIT directory; all scenario assertions and frontend sources remain unchanged."
+  }
 }

@@ -10,8 +10,8 @@ summary: Evaluates selectable interruption policies, compilation and optional cr
 
 ## Scope and authority
 
-**Observed: 2026-11-21, Europe/Kiev. This checkpoint records the research plan;
-its new execution results are pending.** The owner asks for selectable update
+**Observed: 2026-11-21, Europe/Kiev. This checkpoint records the plan and a
+passing browser scenario; component execution remains pending.** The owner asks for selectable update
 modes, optional agent-triggered interruption, safe completion of active work,
 backend and frontend coverage, and a clear compilation and cross-language path.
 The [owning clarification](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-requested-selectable-updates-and-cross-language-research-2026-11-21)
@@ -111,6 +111,9 @@ The [frozen input archive](evidence/plugin-update-runtime-input-20261121.tar.gz)
 and [member manifest](evidence/plugin-update-runtime-input-20261121.manifest.json)
 now bind 25 reviewed source/configuration files: fourteen browser inputs and
 eleven component inputs. Archive SHA-256 is
+`240331483a7da66da60257bbc1aaaf555341d99dd6d8913926fef84b12be4752`
+for input revision 2. The original revision remains bound to commit
+`5d47513f6ef6f19068e7ee1ee711df184ec2d70c` and SHA-256
 `e3b288d964bc013a550e03dde625db8b07467c2e5d5fb07c849293c33cd1bffb`.
 The [isolated research workflow](../../.github/workflows/plugin-update-runtime-spikes.yml)
 uses two disposable profiles on the existing draft branch, read-only repository
@@ -138,7 +141,32 @@ artifact upload now requires the verified directory output, and the pnpm setup
 action receives its documented relative package-manifest path while working
 directories and uploads use canonical absolute paths. Executing the actual
 extractor locally recovered all 25 matching file hashes for both profiles.
-That validates extraction and configuration, not the pending hosted scenarios.
+That validates extraction and configuration independently of runtime outcomes.
+
+### First hosted result and bounded build correction
+
+In [run 44922588804](https://github.com/agent-teams-ai/extension-foundation/actions/runs/44922588804),
+the browser job passed one native Chromium E2E with 31 matching recorded
+comparisons and no skipped tests, worker faults or page errors. The original
+artifact digest and all fourteen source identities were independently verified;
+the retained screenshot shows the preserved draft and current result 50.
+This successful job does not make the parallel component job successful.
+
+The component job installed its exact dependencies, passed strict TypeScript
+7.0.2 checking and emission, and installed Rust 1.100.0. Component creation then
+failed because the build splicer could not read the WIT path through its empty
+filesystem mapping. The exact WIT file was present in the input receipt. No
+replacement assertion ran. The original failure log, compiler-load receipt
+and artifact remain retained.
+
+Input revision 2 changes only the build source and its package/lock importer:
+the already locked filesystem shim becomes a direct dependency, its identity
+and shared module resolution are checked, and its public configuration maps
+the reviewed WIT directory for this isolated serial build. The map is cleared
+in finally. No upstream dependency is patched, compiler restriction relaxed,
+guest behavior changed or assertion removed. The map is not described as
+read-only access, a hostile-code sandbox or descriptor revocation. Root and
+independent peer reviews passed; actual corrected execution is still pending.
 
 ### Remaining decisions
 
@@ -147,4 +175,4 @@ boundaries, state migration and production runtime selection remain owned by
 [OD-003](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md).
 The final report will record primary-source identities, actual toolchain paths,
 executed observations, counterexamples and recommendations after the planned
-experiments. This checkpoint claims no new runtime pass.
+experiments. This checkpoint claims only the observed browser runtime pass.
