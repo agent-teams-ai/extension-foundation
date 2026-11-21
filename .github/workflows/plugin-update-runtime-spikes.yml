@@ -1,0 +1,163 @@
+name: Plugin Update Runtime Spikes
+
+# Disposable research inputs on the existing draft branch only. Documentation
+# follow-ups reuse results bound to the same input and workflow identities.
+on:
+  push:
+    branches:
+      - docs/plugin-research-hot-reload-20261021
+    paths:
+      - .github/workflows/plugin-update-runtime-spikes.yml
+      - docs/research/evidence/plugin-update-runtime-input-20261121.tar.gz
+      - docs/research/evidence/plugin-update-runtime-input-20261121.manifest.json
+
+permissions:
+  contents: read
+
+jobs:
+  spike:
+    name: spike-${{ matrix.profile }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [frontend, wasm]
+    env:
+      SPIKE_DIRECTORY: ${{ github.workspace }}/../plugin-update-runtime-research
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify and extract frozen research inputs
+        id: inputs
+        env:
+          SPIKE_PROFILE: ${{ matrix.profile }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path, PurePosixPath
+          import hashlib, json, os, tarfile
+          evidence = Path('docs/research/evidence')
+          manifest = json.loads((evidence / 'plugin-update-runtime-input-20261121.manifest.json').read_text())
+          archive_path = evidence / 'plugin-update-runtime-input-20261121.tar.gz'
+          data = archive_path.read_bytes()
+          assert len(data) == manifest['archive']['bytes']
+          assert hashlib.sha256(data).hexdigest() == manifest['archive']['sha256']
+          expected = {entry['path']: entry for entry in manifest['files']}
+          assert len(expected) == len(manifest['files'])
+          destination = Path(os.environ['SPIKE_DIRECTORY']).resolve()
+          destination.mkdir()
+          with tarfile.open(archive_path, 'r:gz') as archive:
+              members = archive.getmembers()
+              assert len(members) == len(expected)
+              assert {member.name for member in members} == set(expected)
+              for member in members:
+                  path = PurePosixPath(member.name)
+                  assert member.isfile() and not path.is_absolute() and '..' not in path.parts
+                  assert str(path) == member.name and path.parts[0] in ('frontend', 'wasm')
+                  stream = archive.extractfile(member)
+                  assert stream is not None
+                  content = stream.read()
+                  assert len(content) == expected[member.name]['bytes']
+                  assert hashlib.sha256(content).hexdigest() == expected[member.name]['sha256']
+                  target = destination / member.name
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(content)
+          profile = os.environ['SPIKE_PROFILE']
+          assert profile in ('frontend', 'wasm')
+          profile_directory = destination / profile
+          (profile_directory / 'evidence').mkdir()
+          receipt = {'inputArchiveSha256': manifest['archive']['sha256'], 'commit': os.environ['GITHUB_SHA'],
+                     'runId': os.environ['GITHUB_RUN_ID'], 'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'],
+                     'profile': profile, 'files': manifest['files']}
+          (profile_directory / 'evidence/hosted-input-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'profile-directory={profile_directory}\n')
+              output.write(f'profile-package-json={os.path.relpath(profile_directory / "package.json", Path.cwd())}\n')
+          PY
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        with:
+          version: 11.25.0
+          package_json_file: ${{ steps.inputs.outputs.profile-package-json }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.22.3
+      - name: Install exact disposable dependencies without lifecycle scripts
+        working-directory: ${{ steps.inputs.outputs.profile-directory }}
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies 2>&1 | tee evidence/hosted-install.log
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          root = Path('node_modules')
+          compiler = json.loads((root / 'typescript/package.json').read_text())
+          assert compiler['version'] == '7.0.2'
+          package = json.loads(Path('package.json').read_text())
+          observed = {}
+          for name, expected in {**package.get('dependencies', {}), **package.get('devDependencies', {})}.items():
+              actual = json.loads((root / name / 'package.json').read_text())
+              assert actual['version'] == expected, (name, expected, actual['version'])
+              observed[name] = {'version': actual['version'], 'exports': actual.get('exports')}
+          Path('evidence/installed-direct-identities.json').write_text(json.dumps(observed, indent=2) + '\n')
+          PY
+          node --version > evidence/hosted-environment.txt
+          pnpm --version >> evidence/hosted-environment.txt
+          pnpm exec tsc --version >> evidence/hosted-environment.txt
+      - name: Strict TypeScript checks
+        working-directory: ${{ steps.inputs.outputs.profile-directory }}
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm check 2>&1 | tee evidence/hosted-typecheck.log
+      - name: Install the pinned Playwright Chromium build
+        if: matrix.profile == 'frontend'
+        working-directory: ${{ steps.inputs.outputs.profile-directory }}
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm exec playwright install --with-deps chromium 2>&1 | tee evidence/hosted-browser-install.log
+          pnpm exec playwright --version >> evidence/hosted-environment.txt
+      - name: Install exact Rust compiler and source-build components
+        if: matrix.profile == 'wasm'
+        working-directory: ${{ steps.inputs.outputs.profile-directory }}
+        env:
+          RUSTUP_TOOLCHAIN: 1.100.0
+        shell: bash
+        run: |
+          set -o pipefail
+          rustup toolchain install 1.100.0 --profile minimal --target wasm32-unknown-unknown 2>&1 | tee evidence/hosted-rust-install.log
+          rustc --version --verbose >> evidence/hosted-environment.txt
+          pnpm build:typescript 2>&1 | tee evidence/hosted-emission.log
+          pnpm build:components 2>&1 | tee evidence/hosted-component-build.log
+      - name: Run the actual native scenario
+        working-directory: ${{ steps.inputs.outputs.profile-directory }}
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm test 2>&1 | tee evidence/hosted-runtime.log
+      - name: Retain source, results, failures and generated artifacts
+        if: always() && steps.inputs.outputs.profile-directory != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: plugin-update-${{ matrix.profile }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ steps.inputs.outputs.profile-directory }}/evidence/
+            ${{ steps.inputs.outputs.profile-directory }}/artifacts/
+            ${{ steps.inputs.outputs.profile-directory }}/generated/
+            ${{ steps.inputs.outputs.profile-directory }}/dist/
+            ${{ steps.inputs.outputs.profile-directory }}/package.json
+            ${{ steps.inputs.outputs.profile-directory }}/pnpm-lock.yaml
+            ${{ steps.inputs.outputs.profile-directory }}/tsconfig*.json
+            ${{ steps.inputs.outputs.profile-directory }}/*.ts
+            ${{ steps.inputs.outputs.profile-directory }}/*.html
+            ${{ steps.inputs.outputs.profile-directory }}/src/
+            ${{ steps.inputs.outputs.profile-directory }}/entries/
+            ${{ steps.inputs.outputs.profile-directory }}/wit/
+            ${{ steps.inputs.outputs.profile-directory }}/rust/
+            ${{ steps.inputs.outputs.profile-directory }}/fixtures/
+          if-no-files-found: error
+          retention-days: 30

@@ -105,6 +105,43 @@ the final delivery; pending or skipped work is not successful qualification.
 
 ## Open questions and validation
 
+### Frozen hosted-input checkpoint
+
+The [frozen input archive](evidence/plugin-update-runtime-input-20261121.tar.gz)
+and [member manifest](evidence/plugin-update-runtime-input-20261121.manifest.json)
+now bind 25 reviewed source/configuration files: fourteen browser inputs and
+eleven component inputs. Archive SHA-256 is
+`e3b288d964bc013a550e03dde625db8b07467c2e5d5fb07c849293c33cd1bffb`.
+The [isolated research workflow](../../.github/workflows/plugin-update-runtime-spikes.yml)
+uses two disposable profiles on the existing draft branch, read-only repository
+access, exact dependency locks and no secrets. Report-only changes do not
+trigger another run of unchanged research inputs.
+
+Browser strict TypeScript checking passed locally. Its local Chromium failed
+before page creation with a socket permission error; that is not a runtime pass.
+Component dependency installation received a network-approval cancellation;
+cache-only installation was unavailable. A subsequent metadata-only lock step
+resolved the exact graph without downloading or executing package code.
+The hosted route is a separate isolated qualification with reviewed inputs,
+not a retry that changes local security settings or an accepted dependency
+runtime result.
+
+The component's installed graph includes an older compiler API dependency used
+by an upstream scaffolding route. The selected public component/transpile API
+path is separately inspected; the experiment observes module loading and
+rejects a compiler below TypeScript 7.0.2 before evaluation. No dependency is
+patched, and broader upstream CLI paths are not qualified. The exact fixture
+checker and emitter remain TypeScript 7.0.2.
+
+Independent workflow review corrected two setup issues before publication:
+artifact upload now requires the verified directory output, and the pnpm setup
+action receives its documented relative package-manifest path while working
+directories and uploads use canonical absolute paths. Executing the actual
+extractor locally recovered all 25 matching file hashes for both profiles.
+That validates extraction and configuration, not the pending hosted scenarios.
+
+### Remaining decisions
+
 Default update behavior, per-agent authority, escalation, session/dependency
 boundaries, state migration and production runtime selection remain owned by
 [OD-003](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md).

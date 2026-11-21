@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "observationDate": "2026-11-21",
+  "timezone": "Europe/Kiev",
+  "purpose": "Frozen disposable frontend and Node-hosted cross-language Component Model research inputs; no production or public SPI adoption.",
+  "archive": {
+    "path": "plugin-update-runtime-input-20261121.tar.gz",
+    "bytes": 35126,
+    "sha256": "e3b288d964bc013a550e03dde625db8b07467c2e5d5fb07c849293c33cd1bffb"
+  },
+  "compiler": "typescript@7.0.2",
+  "browserDriver": "playwright@1.62.1",
+  "rustCompiler": "1.100.0",
+  "files": [
+    {
+      "path": "frontend/app.ts",
+      "bytes": 9051,
+      "sha256": "e36d1e978a43a36077b1f3163b15abcf36452e0e7e73e78a662e46ffe1045a4e"
+    },
+    {
+      "path": "frontend/browser.test.ts",
+      "bytes": 8545,
+      "sha256": "d7ab849960769b17255a1f5d1b3a3e9bc2edbce7bc803f9ce5399ce3859b7ce0"
+    },
+    {
+      "path": "frontend/entries/failed.ts",
+      "bytes": 43,
+      "sha256": "d2645abb46fac376a66f6609456de3a7b1413bcbb97639d8a992ef8db6a0a580"
+    },
+    {
+      "path": "frontend/entries/incompatible.ts",
+      "bytes": 52,
+      "sha256": "168799cc981423d063fda09cd284d6385ea622d695fc22c5d40ee010304a348b"
+    },
+    {
+      "path": "frontend/entries/v1.ts",
+      "bytes": 40,
+      "sha256": "850fcd9c9d8e70e7ac2f1b13dbd031af3a2b9fa451ea5cf80339ece579ad54ba"
+    },
+    {
+      "path": "frontend/entries/v2.ts",
+      "bytes": 43,
+      "sha256": "c28b3dafdd4fd26a1f992c79086eef7b5ea76c71ad57c300e421ad62330c9a3e"
+    },
+    {
+      "path": "frontend/fixture-server.ts",
+      "bytes": 2870,
+      "sha256": "c9a77c8e86605060516a0e7f8b1a2ea7a3387a0d4bade10e92cdc6122ad3a66a"
+    },
+    {
+      "path": "frontend/index.html",
+      "bytes": 959,
+      "sha256": "3920c001cb67e1d2d99fa1dcc206c08cd776245a3596675f0f8f7390a5391880"
+    },
+    {
+      "path": "frontend/package.json",
+      "bytes": 575,
+      "sha256": "9129bd04a2450e6ba36fde2d4800a167cce640a8d3b3c60998d38cb474c6e024"
+    },
+    {
+      "path": "frontend/pnpm-lock.yaml",
+      "bytes": 8875,
+      "sha256": "8082a1077f7c1ad2b0dc4556ec543867169c9481212a5a504922cd887fd7d6f6"
+    },
+    {
+      "path": "frontend/tsconfig.app.json",
+      "bytes": 385,
+      "sha256": "6df63c181e14acec6162a68f6ee0f8ef726c73c28498fadf03a75cdd5f4ebb1a"
+    },
+    {
+      "path": "frontend/tsconfig.node.json",
+      "bytes": 414,
+      "sha256": "86d23874cd427ca7c309d638b86bb1e317f3503581266fbffe57721781146e64"
+    },
+    {
+      "path": "frontend/tsconfig.worker.json",
+      "bytes": 366,
+      "sha256": "f651ce2d5492358dd94c6377ecf33f400f3782f64ef901f5891ff07608183515"
+    },
+    {
+      "path": "frontend/worker-runtime.ts",
+      "bytes": 1815,
+      "sha256": "10453d3bcbfbc4412c29b15c542280b43f014a11e54df1636f5eea79393db741"
+    },
+    {
+      "path": "wasm/fixtures/needs-host.wat",
+      "bytes": 820,
+      "sha256": "f9f7c1e080dcf6acacc84ce295b48a22da1661dc26f0cf2481a6f0b451b5aa39"
+    },
+    {
+      "path": "wasm/package.json",
+      "bytes": 583,
+      "sha256": "f4b8b9136f7d564abdbc7cfb2cde73436c0250da31e66d4276b7a85cb5c579b7"
+    },
+    {
+      "path": "wasm/pnpm-lock.yaml",
+      "bytes": 62164,
+      "sha256": "7c102499c3d6f66e58057baa9f7996652dcddd53e1331a60f87db6a7e06c6b92"
+    },
+    {
+      "path": "wasm/rust/quote.rs",
+      "bytes": 429,
+      "sha256": "954cc7855c5616e34431ceda083f130c2d8a88dcdca4e7f1b8a662db953fdd26"
+    },
+    {
+      "path": "wasm/src/build.ts",
+      "bytes": 4600,
+      "sha256": "c0801658e10a39d40340f2c801c9078a02f6dc1b944e137af2dccb1d9486d0fc"
+    },
+    {
+      "path": "wasm/src/compiler-guard.ts",
+      "bytes": 2201,
+      "sha256": "6f174d495188d031a1a1cc50f54441ddafca738be7c956f03c11533cc1c4bf24"
+    },
+    {
+      "path": "wasm/src/experiment.test.ts",
+      "bytes": 6553,
+      "sha256": "ee574362c2366292cf79df2610590798b9d60fb431fd8a4af1b57711af136dec"
+    },
+    {
+      "path": "wasm/src/guest.ts",
+      "bytes": 128,
+      "sha256": "bf91365dd15b68d47a93dbac85b994db9e93b55642c3270a1980b3f27f1431ee"
+    },
+    {
+      "path": "wasm/tsconfig.json",
+      "bytes": 544,
+      "sha256": "f6769241bb86c5edeb9b089bd5a97c1157c49df37bb3e6b49eeface6d89bacb4"
+    },
+    {
+      "path": "wasm/wit/mismatch.wit",
+      "bytes": 138,
+      "sha256": "34be0f7c1d1b8c440198584270ce67ad65c253e8db89a0af214ebd6620ccfa15"
+    },
+    {
+      "path": "wasm/wit/quote.wit",
+      "bytes": 135,
+      "sha256": "8c63cc2a9ba8ba713e1cd78bf4d2410d97ed1655c7ab79d0029f8ba618fe23e9"
+    }
+  ]
+}
