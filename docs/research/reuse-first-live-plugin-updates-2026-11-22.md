@@ -116,3 +116,23 @@ The [scoped research workflow](../../.github/workflows/plugin-reload-reuse-spike
 will run the same verified bytes on a standard native runner. Its result is
 pending at this checkpoint. No result from the earlier browser Worker spike
 is being relabeled as renderer/HMR qualification.
+
+### First native outcome and preserved repair inputs
+
+The [first native run](https://github.com/agent-teams-ai/extension-foundation/actions/runs/44961594670)
+on `30b9823` failed while awaiting the second component update. The earlier
+compatible-update assertions had completed, but the job log contains only one
+HMR event. Artifact upload also failed because its path contained a literal
+parent-directory segment. The original archive and manifest remain unchanged;
+the complete native job log is retained for the final evidence packet.
+
+The [second input manifest](evidence/plugin-reload-browser-input-20261122-v2.manifest.json)
+records a bounded repair: write watched files in place, separate independent
+edits by 100 ms to stay outside the selected watcher's 50 ms suppression window,
+record actual watcher events, and print the result JSON in the job log as well
+as its artifact. The workflow normalizes the artifact directory. The first
+timeout's watcher explanation is a source-supported hypothesis because its
+browser observation artifact was not uploaded; it is not a demonstrated React
+failure. State, DOM, listener and rejection assertions remain the same.
+Rapid source-write/coalescing reliability is outside this profile and remains
+an explicit follow-up. The second native run is pending at this checkpoint.

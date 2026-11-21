@@ -7,8 +7,8 @@ on:
       - docs/plugin-research-hot-reload-20261021
     paths:
       - .github/workflows/plugin-reload-reuse-spikes.yml
-      - docs/research/evidence/plugin-reload-browser-input-20261122.tar.gz
-      - docs/research/evidence/plugin-reload-browser-input-20261122.manifest.json
+      - docs/research/evidence/plugin-reload-browser-input-20261122*.tar.gz
+      - docs/research/evidence/plugin-reload-browser-input-20261122*.manifest.json
 
 permissions:
   contents: read
@@ -31,12 +31,12 @@ jobs:
           import hashlib, json, os, tarfile
           from pathlib import Path
           base = Path('docs/research/evidence')
-          manifest = json.loads((base / 'plugin-reload-browser-input-20261122.manifest.json').read_text())
-          archive = base / 'plugin-reload-browser-input-20261122.tar.gz'
+          manifest = json.loads((base / 'plugin-reload-browser-input-20261122-v2.manifest.json').read_text())
+          archive = base / 'plugin-reload-browser-input-20261122-v2.tar.gz'
           content = archive.read_bytes()
           assert len(content) == manifest['archive']['bytes']
           assert hashlib.sha256(content).hexdigest() == manifest['archive']['sha256']
-          destination = Path(os.environ['RELOAD_RESEARCH_DIRECTORY'])
+          destination = Path(os.environ['RELOAD_RESEARCH_DIRECTORY']).resolve()
           destination.mkdir()
           expected = {entry['path']: entry for entry in manifest['files']}
           assert len(expected) == len(manifest['files'])
@@ -56,6 +56,8 @@ jobs:
                      'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'], 'input': manifest['archive'],
                      'workflow': hashlib.sha256(Path('.github/workflows/plugin-reload-reuse-spikes.yml').read_bytes()).hexdigest()}
           (evidence / 'hosted-input-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          with open(os.environ['GITHUB_ENV'], 'a') as environment:
+              environment.write(f'RELOAD_RESEARCH_DIRECTORY={destination}\n')
           PY
       - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
         with:
