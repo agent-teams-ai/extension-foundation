@@ -14,7 +14,7 @@
     "docs/research/live-update-policies-and-portable-runtimes-2026-11-21.md": "5452650b76f2907ee2eeaf9023de4a300456d262125dd83d5ba9c38d3401a132",
     "docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md": "642add77406bd48570d8a09d550bb9c8da92bf746fefff3204d8c7ed56d0acfa",
     "docs/research/plugin-system-research-reference.md": "ac69224faaf4db4d6de1a34a50259230987cea7e881fdb7121c1944c25dace89",
-    "docs/research/plugin-research-review-and-decision-record.md": "f1fdf7bcef525f624a665b7adb676057e9a9a743bcc0f1a99a06a432581c052c"
+    "docs/research/plugin-research-review-and-decision-record.md": "d8258bcc21ea768f9127d676e67aabe7749b6a504d9b8bee634e4093cb76cf90"
   },
   "unchangedExperimentInputs": {
     "path": "docs/research/evidence/plugin-update-runtime-input-20261121.tar.gz",
@@ -495,7 +495,7 @@
     "memberManifestUnchanged": true
   },
   "finalDocumentationGate": {
-    "status": "passed",
+    "status": "passed-before-final-reference-correction",
     "command": "pnpm docs:protocol:check",
     "exitCode": 0,
     "catalogDocuments": 90,
@@ -529,7 +529,8 @@
       ],
       "sourceOrAssertionChanges": false
     },
-    "environmentLimit": "Instrumented unchanged-source execution using a disk-backed task TMPDIR. Startup/logging overhead differs from the original environment; no argument, child result, timeout or assertion was modified."
+    "environmentLimit": "Instrumented unchanged-source execution using a disk-backed task TMPDIR. Startup/logging overhead differs from the original environment; no argument, child result, timeout or assertion was modified.",
+    "scope": "Full local gate on the result delivery before the final single evidence-link correction. Original input identities remain recorded. The focused correction gate below and normal full hosted Docs Protocol on the new published head complete the final source validation; hosted results are recorded in PR55 metadata."
   },
   "deliveryValidatedAt": "2026-11-21T20:20:30.504759+02:00",
   "continuationFailedAttempts": [
@@ -1240,5 +1241,52 @@
       "verdict": "PASS",
       "remainingRootGate": "Fresh full Docs Protocol and accurate final validation receipt required because governed report changed. Final publication/ref and hosted checks remain outside this local transport audit."
     }
+  },
+  "postPublicationReferenceCorrection": {
+    "previousCommit": "fecf775679166804df15aec012efbc2e9039ec07",
+    "path": "docs/research/plugin-research-review-and-decision-record.md",
+    "beforeSha256": "f1fdf7bcef525f624a665b7adb676057e9a9a743bcc0f1a99a06a432581c052c",
+    "afterSha256": "d8258bcc21ea768f9127d676e67aabe7749b6a504d9b8bee634e4093cb76cf90",
+    "change": "Correct the current November21 full-packet link from the unavailable monolithic .tar.gz to the delivered .parts.json index. No historical archive or member manifest changed.",
+    "focusedGate": {
+      "command": "pnpm docs:changed",
+      "exitCode": 0,
+      "status": "passed",
+      "logSha256": "0d18cf8a94226c6328bf770c2248b325a5cc907350da55ef75f9a66d68af119d",
+      "fullLog": "$ pnpm docs:check && pnpm docs:quality\n$ agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml\ndocs.check: success\nProject: extension-foundation\nCatalog: complete (90 documents)\nAdoption: valid\n$ markdownlint-cli2 --config architecture/tooling/markdownlint-cli2.mjs && cspell --config .cspell.json --no-progress\nmarkdownlint-cli2 v0.23.2 (markdownlint v0.41.1)\nFinding: README.md AGENTS.md docs/**/*.md\nLinting: 96 files\nSummary: 0 issues in 0 files\nCSpell: Files checked: 96, Issues found: 0 in 0 files.\n"
+    },
+    "directMarkdownEvidenceLinks": [
+      {
+        "source": "docs/research/plugin-research-review-and-decision-record.md",
+        "target": "evidence/plugin-update-runtimes-20261121.parts.json",
+        "exists": true
+      },
+      {
+        "source": "docs/research/plugin-research-review-and-decision-record.md",
+        "target": "evidence/plugin-update-runtimes-20261121.manifest.json",
+        "exists": true
+      },
+      {
+        "source": "docs/research/plugin-research-review-and-decision-record.md",
+        "target": "evidence/plugin-update-runtimes-20261121.validation.json",
+        "exists": true
+      },
+      {
+        "source": "docs/research/live-update-policies-and-portable-runtimes-2026-11-21.md",
+        "target": "evidence/plugin-update-runtimes-20261121.parts.json",
+        "exists": true
+      },
+      {
+        "source": "docs/research/live-update-policies-and-portable-runtimes-2026-11-21.md",
+        "target": "evidence/plugin-update-runtimes-20261121.manifest.json",
+        "exists": true
+      },
+      {
+        "source": "docs/research/live-update-policies-and-portable-runtimes-2026-11-21.md",
+        "target": "evidence/plugin-update-runtimes-20261121.validation.json",
+        "exists": true
+      }
+    ],
+    "fullHostedGate": "Must pass on final published head; exact run links and outcomes recorded in existing Draft PR55 metadata after completion."
   }
 }

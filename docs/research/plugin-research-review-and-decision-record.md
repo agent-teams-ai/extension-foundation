@@ -46,7 +46,7 @@ browser jobs passed.
 | A Worker could be described as a security boundary or a source link as adjacent support | Use separately terminable execution-unit wording and direct Kubernetes termination-contract attribution. |
 
 The exact [input archive](evidence/plugin-update-runtime-input-20261121.tar.gz),
-[full packet](evidence/plugin-update-runtimes-20261121.tar.gz),
+[full packet](evidence/plugin-update-runtimes-20261121.parts.json),
 [member manifest](evidence/plugin-update-runtimes-20261121.manifest.json) and
 [delivery validation](evidence/plugin-update-runtimes-20261121.validation.json)
 retain plans, source ledgers, strict sources, original failures, actual native
