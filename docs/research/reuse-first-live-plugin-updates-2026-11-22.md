@@ -69,3 +69,50 @@ The study will record confidence, complexity and achievable reliability for
 the same bounded scenarios, plus separate implementation and test costs.
 Unverified claims will retain a specific next experiment or source question.
 Checkpoint publication does not turn an investigation into an adopted design.
+
+## Investigation checkpoint: exact profiles matter
+
+Source inspection and the first local probes identify three important limits.
+These findings will be accompanied by the final source ledger and retained
+experiment packet; they do not select a production adapter.
+
+- Extism's JavaScript Host SDK is a separate implementation from the native
+  Wasmtime-backed runtime. The repository pin is `@extism/extism@1.0.3`; npm's
+  currently selected candidate is the prerelease `2.0.0-rc13`. Do not upgrade a
+  consumer implicitly or transfer cancellation/memory guarantees between them.
+  See the [JavaScript SDK](https://github.com/extism/js-sdk) and its exact
+  [candidate source](https://github.com/extism/js-sdk/tree/bec25c60d0ad32ce06d3934563fd8560f486f323).
+- The new wasmCloud `v2.12.3` source marks `wash-runtime` as an internal crate
+  with `publish = false`, despite the embedding guide's dependency example.
+  Embeddable source and a supported published library are different availability
+  claims. Evaluate the supported host or a qualified pinned-source integration;
+  distribution/support remains open. This updates the earlier recommendation,
+  without rewriting its historical source observations.
+  [Inspected manifest](https://github.com/wasmCloud/wasmCloud/blob/8358f1f56a66c43aedc49f30e2c5d4fa2b4f7ca1/crates/wash-runtime/Cargo.toml).
+- State preservation depends on the actual renderer/VM and transform.
+  Flutter's [retained initialization behavior](https://docs.flutter.dev/tools/hot-reload)
+  cannot be projected onto React. The selected Oxc transform includes a
+  `useState` initializer in the refresh signature, so a changed initializer is
+  expected to remount in this specific profile.
+  [Inspected transform](https://github.com/oxc-project/oxc/blob/75efdca4747c4ad9b252542743098d4894f8005b/crates/oxc_transformer/src/jsx/refresh.rs).
+
+### Native browser experiment awaiting hosted execution
+
+The new [frozen input manifest](evidence/plugin-reload-browser-input-20261122.manifest.json)
+identifies a separate disposable React/Vite experiment. It exercises real
+filesystem-driven HMR, actual DOM identity, a parent-owned draft, native event
+listeners, a retained asynchronous callback, changed hook/initializer
+signatures and failed raw-module activation. It reuses Vite and React rather
+than implementing another loader or reconciler.
+
+The exact profile is Node `24.22.3`, TypeScript `7.0.2`, Vite `8.3.8`,
+`@vitejs/plugin-react@6.3.0`, React/React DOM `19.3.1` and Playwright `1.65.1`.
+All TypeScript sources and changed variants pass the strict checker locally,
+including dependency declarations. The local browser download was denied by the
+environment; the subsequent native launch failed because the pinned executable
+was absent. These are retained failures, not browser passes.
+
+The [scoped research workflow](../../.github/workflows/plugin-reload-reuse-spikes.yml)
+will run the same verified bytes on a standard native runner. Its result is
+pending at this checkpoint. No result from the earlier browser Worker spike
+is being relabeled as renderer/HMR qualification.
