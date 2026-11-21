@@ -111,8 +111,8 @@ The [frozen input archive](evidence/plugin-update-runtime-input-20261121.tar.gz)
 and [member manifest](evidence/plugin-update-runtime-input-20261121.manifest.json)
 now bind 25 reviewed source/configuration files: fourteen browser inputs and
 eleven component inputs. Archive SHA-256 is
-`240331483a7da66da60257bbc1aaaf555341d99dd6d8913926fef84b12be4752`
-for input revision 2. The original revision remains bound to commit
+`b7b6058e4d0d8b95634ee722d272353ab3591ec581f2459b672ea77a37f3b34f`
+for input revision 3. The original revision remains bound to commit
 `5d47513f6ef6f19068e7ee1ee711df184ec2d70c` and SHA-256
 `e3b288d964bc013a550e03dde625db8b07467c2e5d5fb07c849293c33cd1bffb`.
 The [isolated research workflow](../../.github/workflows/plugin-update-runtime-spikes.yml)
@@ -167,6 +167,23 @@ in finally. No upstream dependency is patched, compiler restriction relaxed,
 guest behavior changed or assertion removed. The map is not described as
 read-only access, a hostile-code sandbox or descriptor revocation. Root and
 independent peer reviews passed; actual corrected execution is still pending.
+
+### Component build result and generated import correction
+
+In [run 44923955219](https://github.com/agent-teams-ai/extension-foundation/actions/runs/44923955219),
+input revision 2 passed strict checking and built all four actual components.
+The browser scenario passed again with unchanged sources. The component suite
+failed at its positive host-import control: the fixture supplied a function
+directly, while the generated declaration and implementation require that
+module's default export. The suite remains zero passed and one failed; partial
+earlier assertions do not make it a complete passing experiment.
+
+Input revision 3 changes only that test mapping and specifies the actual native
+missing-default TypeError for the unchanged negative control. Expected behavior,
+state preservation and every other rejection remain intact. A small strict
+TypeScript diagnostic executed the actual generated binding successfully; it
+does not substitute for the pending complete hosted scenario. Both earlier
+original artifacts and failures remain preserved separately.
 
 ### Remaining decisions
 

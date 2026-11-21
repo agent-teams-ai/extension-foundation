@@ -5,8 +5,8 @@
   "purpose": "Frozen disposable frontend and Node-hosted cross-language Component Model research inputs; no production or public SPI adoption.",
   "archive": {
     "path": "plugin-update-runtime-input-20261121.tar.gz",
-    "bytes": 35589,
-    "sha256": "240331483a7da66da60257bbc1aaaf555341d99dd6d8913926fef84b12be4752"
+    "bytes": 35638,
+    "sha256": "b7b6058e4d0d8b95634ee722d272353ab3591ec581f2459b672ea77a37f3b34f"
   },
   "compiler": "typescript@7.0.2",
   "browserDriver": "playwright@1.62.1",
@@ -114,8 +114,8 @@
     },
     {
       "path": "wasm/src/experiment.test.ts",
-      "bytes": 6553,
-      "sha256": "ee574362c2366292cf79df2610590798b9d60fb431fd8a4af1b57711af136dec"
+      "bytes": 6644,
+      "sha256": "116652b8d7a257a426a2d39268305eec523500823833f6ccc258e2d18a076145"
     },
     {
       "path": "wasm/src/guest.ts",
@@ -138,10 +138,10 @@
       "sha256": "8c63cc2a9ba8ba713e1cd78bf4d2410d97ed1655c7ab79d0029f8ba618fe23e9"
     }
   ],
-  "revision": 2,
+  "revision": 3,
   "supersedes": {
-    "inputArchiveSha256": "e3b288d964bc013a550e03dde625db8b07467c2e5d5fb07c849293c33cd1bffb",
-    "commit": "5d47513f6ef6f19068e7ee1ee711df184ec2d70c",
-    "reason": "Configure the public build-splicer filesystem for the reviewed WIT directory; all scenario assertions and frontend sources remain unchanged."
+    "inputArchiveSha256": "240331483a7da66da60257bbc1aaaf555341d99dd6d8913926fef84b12be4752",
+    "commit": "9e06980d0c29b3063a5d13a95288fd76438f9e1a",
+    "reason": "Match the observed generated host-import default-export contract and assert its exact missing-import error; retain all behavioral and state-preservation oracles."
   }
 }
