@@ -35,6 +35,13 @@ decision and discuss material alternatives with the owner before implementation.
 Update current navigation and installation recipes without rewriting immutable
 source snapshots, approved adoption pins or historical qualification evidence.
 
+Before adding loading, execution, resource-lifetime or update mechanisms, read
+the [reuse-first warnings](docs/research/reuse-first-live-plugin-updates-2026-11-22.md#reuse-warnings-to-carry-into-the-review)
+and name the existing owner and the demonstrated missing capability. The owner
+confirmed Extism as a candidate and prefers investigating ordinary TypeScript
+plugins with an optional Wasm adapter; this does not select a runtime or license
+a second composition, lifecycle or supervision implementation.
+
 The owner's [live plugin vision](docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-prioritized-live-plugin-vision-2026-11-14)
 is a high-priority design target across plugin categories, including changes
 authored by agents. Preserve it when designing new boundaries. The same record

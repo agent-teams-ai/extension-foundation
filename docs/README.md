@@ -38,6 +38,7 @@ These source-backed references are evidence and design recommendations. They do
 not accept a runtime, publish a package, or replace an approved ADR.
 
 - [Plugin System Research Reference](research/plugin-system-research-reference.md)
+- [Reuse First Live Plugin Updates 2026-11-22](research/reuse-first-live-plugin-updates-2026-11-22.md)
 - [Live Update Policies and Portable Runtimes 2026-11-21](research/live-update-policies-and-portable-runtimes-2026-11-21.md)
 - [Live Application Evolution Vision And Executed Spikes 2026-11-18](research/live-application-evolution-vision-and-executed-spikes-2026-11-18.md)
 - [Live Plugin Evolution Final Research And Architecture 2026-11-17](research/live-plugin-evolution-final-research-and-architecture-2026-11-17.md)

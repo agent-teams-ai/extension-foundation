@@ -54,6 +54,36 @@ Foundation package, production graph runtime, or public SPI by implication.
 - Every production host remains subject to the accepted production-host safety
   closure and its own authority and termination evidence.
 
+## Owner-requested reuse-first design and granular updates, 2026-11-22
+
+The owner confirms that the remembered ready-made plugin library is **Extism**.
+Retain Extism and the other relevant runtimes/SDKs in the research inventory;
+mark uncertain capabilities for deeper source inspection and qualification.
+Audit plausible duplication above the Wasm engine as well: loading, composition,
+execution, resource lifetime, update coordination, state and recovery. Put
+actionable warnings beside their existing owners so later work does not recreate
+an existing mechanism accidentally.
+
+The owner's preferred direction to investigate is **ordinary TypeScript plugins
+first, with optional WebAssembly through an adapter**. Design narrow feature
+boundaries and explicit state/resource ownership now so a later language-neutral
+implementation does not require an avoidable broad refactor. The owner questions
+the need to implement the complete Wasm lane immediately; this request does not
+adopt Extism, WIT, a public SPI or a new production runtime by implication.
+
+Predictable granular live updates are a high-priority product goal: identify
+which plugin components change, what state remains, which resources they own,
+what active work experiences, and when a targeted restart is required. Investigate
+industry mechanisms critically, including Flutter but not limited to it.
+Preserving state is not evidence of compatible state, and a development reload
+is not evidence of production retirement or rollback.
+
+The [reuse-first study](../research/reuse-first-live-plugin-updates-2026-11-22.md)
+records the authorized source review, disposable spikes, uncertainty register
+and pushed checkpoints. Existing accepted owners and the controlled-restart
+baseline remain in force. Ordinary-update defaults, grants, escalation,
+supported state transitions and final runtime selection remain open.
+
 ## Owner-requested selectable updates and cross-language research, 2026-11-21
 
 The owner asks to evaluate **multiple explicit update modes**, including an

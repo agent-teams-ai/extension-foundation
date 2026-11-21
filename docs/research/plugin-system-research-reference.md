@@ -197,6 +197,11 @@ change what was observed at a recorded pin.
 
 ## Keep the three implementation boundaries
 
+**Owner clarification, 2026-11-22:** the remembered library is Extism. The
+[reuse-first live-update study](reuse-first-live-plugin-updates-2026-11-22.md)
+audits existing mechanisms, optional Wasm boundaries and granular resource-aware
+updates. Read its duplication warnings before introducing a new runtime manager.
+
 | Boundary | Owns | Does not acquire through this research |
 | --- | --- | --- |
 | Get Modular | Inert declarations, contract/implementation/slot identities, deterministic graph preparation, immutable plans, typed construction, cooperative resource primitives and the separately gated local lifecycle candidate | Executable discovery, product authorization, durable publication, routing, process supervision or distributed fencing |
