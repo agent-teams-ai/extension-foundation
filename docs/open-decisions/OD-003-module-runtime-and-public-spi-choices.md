@@ -63,8 +63,8 @@ direction applies to running backend and frontend applications. It narrows the e
 binary interruption question into concrete capability, authority and policy
 choices; it does not select one ordinary-update default.
 
-The [current research and spike plan](../research/live-update-policies-and-portable-runtimes-2026-11-21.md)
-must compare retaining old operations, closing admission and draining,
+The [completed research and bounded spikes](../research/live-update-policies-and-portable-runtimes-2026-11-21.md)
+compare retaining old operations, closing admission and draining,
 cooperative cancellation and forced isolated-executor termination. A supported
 checkpoint or migration boundary is another candidate where a real feature
 needs it. State the actual evidence available for each mode and execution

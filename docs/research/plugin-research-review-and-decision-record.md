@@ -12,6 +12,56 @@ summary: Independent critique dispositions, adoption conflicts and scoped implem
 
 **Initial review:** 2026-10-21. **Follow-up:** 2026-10-22, recorded in its own section below. **Status:** non-normative research synthesis; no new architecture approval, production-runtime qualification, or merge authorization. The initial review combines the platform, production-system, ecosystem-scale, stateful-update and OpenClaw research with independent lifecycle, scale/security, and adoption/documentation critiques. Researchers supplied comparison evidence; critics challenged lifecycle promises, security and scale claims, and adoption provenance. Each dated record distinguishes source facts, historical reports, unexecuted assertions, executed experiments and recommendations.
 
+## Selectable updates and portable runtimes, 2026-11-21
+
+The [completed investigation](live-update-policies-and-portable-runtimes-2026-11-21.md)
+deepens optional update modes for both backend and frontend, compilation, and
+cross-language execution. OD-003 records the owner's clarified direction
+prominently. Ordinary defaults, agent grants, deadline escalation and production
+adapters remain open; automatic escalation explicitly authorized in advance is a possible
+policy, not prohibited by the research.
+
+Actual results are three backend HTTP/Worker integration cases, one native
+Chromium E2E with 31 comparisons and one Component Model E2E with 19 comparisons
+and five rejection mechanisms. Counts represent different evidence units, not
+a combined total of independent tests. The final two-profile hosted workflow
+passed at input commit `118e2d226b0daed23e9fdbbbb5c1366da2880ad9`.
+Earlier unsuccessful whole workflows remain unsuccessful even though their
+browser jobs passed.
+
+| Review finding | Final research disposition |
+| --- | --- |
+| An initial plan could prohibit all automatic force after a deadline | Permit an explicit owner-selected policy to authorize escalation in advance; forbid implicit force or force without a grant. Ordinary defaults remain open. |
+| A stale-write test after v2 selection could pass only because the source changed | Check the real received proposal after revision revocation while old source is still selected, before awaited native exit. |
+| Post-ready worker errors could be missed or confused with deliberate force | Retain native worker/protocol faults and independently assert empty arrays. |
+| Browser termination could be equated to Node exit | Record native termination invocation and owner-promise outcomes; claim no portable browser exit/finalizer receipt. |
+| A combined browser fence could be described as isolated revision coverage | Preserve the combined pending/selection/revision claim; backend separately qualifies revocation before selection changes. |
+| A failed input-extraction step could leave artifact paths rooted outside the fixture | Upload only after the verified directory output exists; pass the documented relative package-manifest path to pnpm setup. |
+| First hosted component build could not see its present WIT file | Configure the public exact filesystem shim for the reviewed input directory in the isolated serial build. Keep no read-only, sandbox or descriptor-revocation claim. |
+| Second hosted component build passed but the host import control used the wrong generated shape | Use the observed module default export and verify the same bytes with a real host call and exact missing-import TypeError. Preserve every behavior/state assertion and the original failure. |
+| Matching WIT types could imply compatible application state | Execute a same-ABI/schema-two rejection through the host feature check; distinguish it from signature and malformed-byte rejection. |
+| A two-I32 canonical ABI was described as two source parameters | State the actual negative fixture: one WIT string parameter lowers to two I32 values and rejects the compiled one-I32 scalar export. |
+| Different rejection checks could appear to repeat the same state oracle | Name cart equality after missing-import/schema rejection, active behavior after WIT/malformed rejection, and the binary-format error separately. |
+| Snapshot outputs could be assumed reproducible from source identity | Retain both different TS component hashes/sizes from unchanged guest/build sources; bind actual delivered bytes and leave the cause unclaimed. |
+| A Worker could be described as a security boundary or a source link as adjacent support | Use separately terminable execution-unit wording and direct Kubernetes termination-contract attribution. |
+
+The exact [input archive](evidence/plugin-update-runtime-input-20261121.tar.gz),
+[full packet](evidence/plugin-update-runtimes-20261121.tar.gz),
+[member manifest](evidence/plugin-update-runtimes-20261121.manifest.json) and
+[delivery validation](evidence/plugin-update-runtimes-20261121.validation.json)
+retain plans, source ledgers, strict sources, original failures, actual native
+results, downloaded artifact ZIPs, selected decoded evidence, screenshots and
+independent reviews. Large generated outputs remain in their original ZIPs;
+retained engine attribution includes official license/notice source identities.
+Historical research archives remain unchanged.
+
+The recommendation is a TypeScript-first host and consumer-owned contracts with
+optional Worker/process or Component Model adapters. The component experiment
+is scalar, synchronous and Node-hosted; it does not qualify an executing-stack
+migration, browser Component Model runtime, general language SDK, arbitrary
+schema migration, hostile-code isolation or a complete agent authoring loop.
+Research approval does not select a production Host, public SPI, release or merge.
+
 ## Live application evolution and executed spikes, 2026-11-18
 
 The [current investigation](live-application-evolution-vision-and-executed-spikes-2026-11-18.md)

@@ -22,9 +22,13 @@ The [selectable-update and portable-runtime investigation](live-update-policies-
 records the [owner's latest clarification](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-requested-selectable-updates-and-cross-language-research-2026-11-21):
 evaluate optional interruption, safe completion and isolated force for backend
 and frontend, alongside TypeScript compilation and cross-language execution.
-The initial checkpoint is a reviewed research plan; new runtime results are
-pending. Ordinary defaults, agent grants, escalation and production adapters
-remain open. Earlier evidence and accepted authority stay unchanged.
+The completed study qualifies three backend HTTP/Worker cases, one real browser
+E2E with 31 comparisons and one TS/Rust component E2E with 19 comparisons and
+five explicit rejection mechanisms. Its recommendation is a TypeScript host
+with optional execution adapters; the actual engine/binding sizes and different
+stop receipts are retained. Ordinary defaults, agent grants, escalation and
+production adapters remain open. Earlier evidence and accepted authority stay
+unchanged.
 
 The [live application investigation](live-application-evolution-vision-and-executed-spikes-2026-11-18.md)
 extends the [owner's visible platform vision](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-prioritized-live-application-platform-vision-2026-11-18)
