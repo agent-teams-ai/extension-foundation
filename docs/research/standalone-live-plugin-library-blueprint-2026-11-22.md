@@ -464,9 +464,14 @@ and [manifest](evidence/standalone-live-library-seed-base-20261122.manifest.json
 already contain their own README/AGENTS, architecture proposal, a concrete
 bootstrap recipe, 15-source bill of materials and the entire immutable FMS 1.1
 source with verified provenance. They create no empty production packages. The
-completed research/probe directories are assembled separately into the final
-transfer payload. The name is provisional and the destination is private
-research until its own adoption is reviewed.
+completed research/probe directories are now assembled into the
+[standalone transfer project](evidence/standalone-live-library-transfer-20261122.tar.gz)
+with its [257-file manifest](evidence/standalone-live-library-transfer-20261122.manifest.json).
+Its current-status index distinguishes the failed original browser run from the
+successful explicit recovery. It includes the complete synthesis at `e9277b1`,
+all three research lanes, probes, reviews, exact notices and inert per-attempt
+workflow sources. The original seed and its manifest remain unchanged inside
+the project. The name is provisional; production adoption is still separate.
 
 The proposed first slice is a real controlled TS capability replacement: reject
 a bad candidate while A remains useful; activate B for new work while a held
@@ -527,6 +532,13 @@ Its independent archive review verified all 40 member hashes and sizes, both
 native probes and both cross-reviews without rerunning the tests. Later spelling
 checks identified EBADF and two uncommon wording choices; the local dictionary
 and simpler wording resolved them without weakening the gate.
+
+Subsequent checkpoints were immediately pushed: `bbff614` froze the first
+browser input and architecture packet; `6735ac8` retained its native failure;
+`70d98f9` preserved the standalone seed/tooling constraints; `0e0bfb1` froze and
+executed explicit recovery; `e9277b1` retained its passed result and independent
+review. No frozen input was edited or unchanged experiment rerun to obtain the
+successful outcome. The final delivery keeps this progression reviewable.
 
 The connected GitHub API can write this repository but exposes no repository
 creation operation. The CLI has no authenticated host and the browser's creation
