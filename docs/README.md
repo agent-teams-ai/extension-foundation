@@ -38,6 +38,7 @@ These source-backed references are evidence and design recommendations. They do
 not accept a runtime, publish a package, or replace an approved ADR.
 
 - [Plugin System Research Reference](research/plugin-system-research-reference.md)
+- [Module Federation Update Boundaries and Architecture Options 2026-11-22](research/module-federation-update-boundaries-and-architecture-options-2026-11-22.md)
 - [Live Update Reliability and Industry Evidence 2026-11-22](research/live-update-reliability-and-industry-evidence-2026-11-22.md)
 - [Standalone Live Plugin Library Blueprint 2026-11-22](research/standalone-live-plugin-library-blueprint-2026-11-22.md)
 - [Reuse First Live Plugin Updates 2026-11-22](research/reuse-first-live-plugin-updates-2026-11-22.md)

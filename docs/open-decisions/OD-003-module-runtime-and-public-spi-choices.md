@@ -54,6 +54,23 @@ Foundation package, production graph runtime, or public SPI by implication.
 - Every production host remains subject to the accepted production-host safety
   closure and its own authority and termination evidence.
 
+## Owner-requested Module Federation and unresolved alternatives, 2026-11-22
+
+The owner requests another deeper, parallel investigation of Module Federation,
+live module delivery and industry update mechanisms. Update research with
+verified facts, concrete failure boundaries and architecture implications.
+**Do not independently settle contested decisions.** Present a small prioritized
+set of questions with two or three alternatives, the best-supported preference
+and the remaining uncertainty at the end of the investigation.
+
+The [Module Federation and update-boundaries study](../research/module-federation-update-boundaries-and-architecture-options-2026-11-22.md)
+separates source facts, executed evidence, mandatory existing invariants,
+recommendations and owner decisions. Sharing/isolation, update-unit granularity,
+ordinary interruption, delivery/retention and state/reset policies remain open.
+Preserve findings as useful checkpoints, commit and immediately push each one.
+Prepare concrete architectural seams without claiming that all future
+refactoring can be eliminated or introducing a speculative public SPI.
+
 ## Owner-confirmed architecture and deeper qualification, 2026-11-22
 
 The owner accepts the recommended starting architecture: a **TypeScript control

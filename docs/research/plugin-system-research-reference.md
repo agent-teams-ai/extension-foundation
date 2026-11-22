@@ -18,6 +18,13 @@ a released runtime, a security audit or a performance qualification.
 
 ## Current synthesis
 
+The [Module Federation and update-boundaries investigation](module-federation-update-boundaries-and-architecture-options-2026-11-22.md)
+deepens current Federation, browser delivery, desktop and industry replacement
+mechanisms. The owner explicitly requests verified facts and alternatives for
+contested decisions, rather than implicit selection. New source checkpoints,
+independently reviewed probe plans and eventual native results retain distinct
+evidence classes; earlier completed E2E results keep their original scope.
+
 The [reliability deepening](live-update-reliability-and-industry-evidence-2026-11-22.md)
 records the owner's accepted TypeScript-first architecture and complete reusable
 update operation. It extends the last browser slice with coupled publication,
