@@ -12,8 +12,8 @@ summary: Deepens the standalone library with source-backed failure mechanisms, n
 
 ## Scope and authority
 
-**Observation date: 2026-11-22, Europe/Kiev. First checkpoint: source review and
-approved experiment plans; new native execution is pending.** The owner accepts
+**Observation date: 2026-11-22, Europe/Kiev. Source review and strict compilation
+complete for the editor; new native execution is pending.** The owner accepts
 the architectural direction in
 [OD-003](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-confirmed-architecture-and-deeper-qualification-2026-11-22):
 a TypeScript control library, ordinary TypeScript plugins first, optional
@@ -132,3 +132,17 @@ instead of implementing a substitute editor or Undo engine.
 This matrix prevents several passing demonstrations from being presented as
 coverage of the entire system. New reports must state which row changed and
 what remains unproven.
+
+### Frozen native editor input
+
+The independently reviewed
+[editor input](evidence/live-update-editor-input-20261122-v1.tar.gz) contains seven
+exact files (18,005 compressed bytes), SHA-256
+`4b94cb4d40019d77eff78b4cb01c5199197fd9eacbdb0c071c84797df0e63576`.
+Its [manifest and review](evidence/live-update-editor-input-20261122-v1.manifest.json)
+retain the approved plan, per-file hashes and strict TypeScript 7.0.2 check.
+The [hosted workflow](../../.github/workflows/live-update-editor-reliability.yml)
+verifies the frozen bytes, installs the exact lock, repeats strict checking and
+runs one native browser E2E with seven distinct scenarios. No native pass is
+claimed at input publication. Original failures will remain separate from any
+corrective input or attempt.

@@ -1,0 +1,78 @@
+{
+  "archive": {
+    "path": "live-update-editor-input-20261122-v1.tar.gz",
+    "bytes": 18005,
+    "sha256": "4b94cb4d40019d77eff78b4cb01c5199197fd9eacbdb0c071c84797df0e63576"
+  },
+  "files": [
+    {
+      "path": "package.json",
+      "bytes": 556,
+      "sha256": "789a14d47aaada00e674fd03c37170b392c9e113e2998d99ff5e8ec80cfcfbd6"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 28115,
+      "sha256": "96105e7cc9a063d2be813e6f01ad38f34365dee6591a3cd4ff8f6684db0f524a"
+    },
+    {
+      "path": "tsconfig.json",
+      "bytes": 550,
+      "sha256": "3113436c7a3639d6103b15fc56f6eb0148cc4c7fc0f3a2c97875f065cb98a312"
+    },
+    {
+      "path": "browser.test.ts",
+      "bytes": 17055,
+      "sha256": "8cd57ba5ac8164b6e860833136b640f6452bcf3078a69c920ab3c78b931c1034"
+    },
+    {
+      "path": "fixture/index.html",
+      "bytes": 1859,
+      "sha256": "6de10bf8ac3ca54b37fff3a0f391c31ecaf039e44d4592a0220bbb3e788b3363"
+    },
+    {
+      "path": "fixture/main.ts",
+      "bytes": 9794,
+      "sha256": "163f4a6f839a2e9ff7889c31bde7020611c3bc3aadcc543509c17ba3210ed9ba"
+    },
+    {
+      "path": "fixture/probe.ts",
+      "bytes": 1364,
+      "sha256": "4e842e3b477b98f48b4c4b909ba1ce2f88a4cf713dfdeda3005c15876bc85ca0"
+    }
+  ],
+  "scope": "one native browser E2E suite / seven scenarios",
+  "nativeRuntimeExecutedAtFreeze": false,
+  "compiler": "typescript@7.0.2",
+  "sourceReview": "# Source review before native browser execution\n\nDate: 2026-11-22. Source package: `probe/`. Plan: `PROBE-PLAN.md`.\n\n## Authorization and review\n\n1. `/root/deep_state_protocol` reviewed and approved the plan: UI freshness is separate from authority, equal text after Undo must not be confused with equal revision, direct and restored semantic Undo need separate checks, and native A/B source starts/completions require observed barriers.\n2. `/root` read the plan and approved installation, implementation and strict TypeScript 7.0.2 checking. No native runtime was run during that stage.\n3. The implemented package passed strict checking with one resolved TypeScript compiler, 7.0.2. All maintained fixture, typed browser interface and test-runner code are included in the same strict compiler project; library checks are not skipped.\n4. `/root/deep_state_protocol` read the implemented source and approved it for a frozen native run. Its review confirmed native A/B ordering, native changed-document counterevidence, equal-text/revision distinction and the independent field-value/inverse-effect codec checks.\n5. `/root` read the complete initial 507 LOC implementation. Root required one correction: tracing/teardown failure must not prevent result preservation or hide the original failure. The correction captures each teardown error independently, continues browser/server closure, writes the result and emits its JSON to stdout. A cleanup-only failure fails the test after evidence is emitted; an earlier test failure is preserved.\n6. CM-6 now additionally compares the actual editable DOM reference across history-only clearing, matching the stated preservation claim. The corrected source passed strict TypeScript checking again.\n\nRoot authorized the hosted native run after these corrections and the strict check. Root owns workflow/input publication and remote execution. This lane has not run the browser test manually. The exact frozen inventory and hashes are in `INPUT-MANIFEST.json`.\n\n## Deliberate constraints\n\n- Native CodeMirror compartments, editor state/history/Undo, linter scheduling and diagnostic rendering remain the mechanisms under test.\n- The only adapter behavior is a trusted contribution-generation/input-revision freshness check before public `setDiagnostics`; this is not authorization, revocation, a replacement history engine or another update coordinator.\n- Long native lint delay plus public `forceLinting` establishes deterministic source starts. Actual source invocations, B's useful diagnostics and A's later completion are individually observed. Extra invocations fail the corresponding control.\n- Snapshot restore includes both historyField and a validated numeric custom-field codec. The test compares the field value before Undo and the missing inverse-effect behavior after Undo.\n- Real browser keyboard/input behavior is exercised. OS IME, cross-browser composition, production update publication and remote observation resync remain unqualified.\n- The previous React/Vite browser49 input and receipts are untouched. Any correction after native failure requires a new frozen input and preserves the old failure separately.\n",
+  "localTypecheck": {
+    "command": "pnpm check",
+    "stdout": "$ tsc --project tsconfig.json --noEmit --pretty false\n",
+    "exitCode": 0,
+    "typescript": "7.0.2",
+    "resolvedCompilerPath": "/workspace/scratch/95e187720be1/live-library-deepening-20261122/experience/probe/node_modules/.pnpm/typescript@7.0.2/node_modules/typescript",
+    "compilerCopies": 1,
+    "strict": true,
+    "skipLibCheck": false,
+    "nativeRuntimeExecuted": false,
+    "sourceFiles": [
+      {
+        "path": "browser.test.ts",
+        "bytes": 17055,
+        "sha256": "8cd57ba5ac8164b6e860833136b640f6452bcf3078a69c920ab3c78b931c1034"
+      },
+      {
+        "path": "fixture/main.ts",
+        "bytes": 9794,
+        "sha256": "163f4a6f839a2e9ff7889c31bde7020611c3bc3aadcc543509c17ba3210ed9ba"
+      },
+      {
+        "path": "fixture/probe.ts",
+        "bytes": 1364,
+        "sha256": "4e842e3b477b98f48b4c4b909ba1ce2f88a4cf713dfdeda3005c15876bc85ca0"
+      }
+    ],
+    "sourceReview": "SOURCE-REVIEW.md"
+  },
+  "plan": "# Native editor update and late-result probe plan\n\nStatus: plan approved for installation, implementation and strict typecheck; native runtime awaits source review. Date: 2026-11-22.\n\nPeer review: `/root/deep_state_protocol` approved this plan on 2026-11-22 with the incorporated precision requirements below. `/root` then approved installation, implementation and strict TypeScript 7.0.2 checking. A separate peer/root source review remains required before native runtime execution; root owns the hosted browser workflow.\n\n## Decision this probe can change\n\nUse native editor reconfiguration and history instead of creating a document/Undo subsystem in the plugin library. Determine the small contract still needed when an asynchronous contribution is replaced while its input text is unchanged. Qualify which editor state can survive an in-place contribution change or an explicit snapshot restore; do not equate either with a general plugin-state migration.\n\nThis is additional evidence beside the immutable React/Vite browser49 input and receipts. It does not rerun that fixture, implement another HMR protocol, qualify a production update orchestrator, or make CodeMirror mandatory for consumers.\n\n## Read-only evidence already pinned\n\nPublished npm archives were read and SHA512-verified without installing or running them; exact archive/member hashes are in `source-provenance.json`.\n\n| Package | Exact version | Published gitHead |\n| --- | --- | --- |\n| `@codemirror/state` | 6.7.6 | `651084c8a322b3a19b2bb3e00eee7d4a61d641af` |\n| `@codemirror/view` | 6.43.15 | `da63d53a7b1f9011a09481f5fa2397294104d73a` |\n| `@codemirror/commands` | 6.11.1 | `5d2ddbbf485a7e8b17c69cf58ebaebf8e375036c` |\n| `@codemirror/lint` | 6.9.8 | `f71583124fa13052d0ac1c5ead5813448a429353` |\n\nThe registry now names `code.haverbeke.berlin` repositories. A GitHub default-branch read is therefore supplementary; released package bytes, not a presumed mirror branch, ground this experiment.\n\nTwo source-supported hypotheses deserve native negative controls:\n\n1. Lint completion checks document object identity, but not the currently configured source identity. Reconfigure source A to B on the same document, complete B first and A later: A may overwrite B. `source/lint/index.js` has the exact `lintPlugin.run/update/destroy` implementation. This is not yet a reproduced released defect.\n2. `historyField` JSON serializes changes, mappings and selections, but `HistEvent.fromJSON` restores an empty `effects` array. Document Undo may survive serialization while custom plugin effects in the same history event do not. This is a codec capability boundary, not presumed corruption or an upstream bug.\n\n## Native test surface\n\nUse direct CodeMirror `EditorView`, `Compartment.reconfigure`, `StateField`, `StateEffect`, native history/Undo/Redo, native `linter`, and public `setDiagnostics`/`forEachDiagnostic`. Use Playwright against a Vite-served page with real editable DOM, keyboard input, selection and rendered diagnostics. No React/CRDT wrapper, custom editor/history, monkey-patched internals, or invented reload transport.\n\nBuild tooling pins: TypeScript 7.0.2, Node 24.22.3, Vite 8.3.8, Playwright 1.65.1. All maintained fixture/test/config/runner source is `.ts`, `strict: true`; inspect the resolved compiler paths before execution. Exact transitive lock and browser/runtime inventory are recorded. Installation/typecheck/experiment execution require root and peer plan approval first.\n\n## Scenarios and decisive observations\n\n| ID | Native action | Evidence that would support the recommendation | Falsifier / failure handling |\n| --- | --- | --- | --- |\n| CM-1 | Type a draft, establish native Undo and selection; replace a compartment containing a view contribution and the same state-field identity | Same editor DOM, draft, selection and history; new contribution handles the next interaction; old view plugin `destroy` observed | Record precise failed invariant; do not swap in a handwritten state restore to make it pass |\n| CM-2 | Same-document native linter A starts, native linter B replaces it, resolve B then A | Native diagnostics may end at A, exposing a source-generation gap despite a current document | If native source identity already fences A, record protective behavior and remove unnecessary bridge |\n| CM-3 | Native linter starts, edit document, resolve the old promise | Old-document diagnostics suppressed by CodeMirror's existing identity protection | Preserve this positive counterevidence; do not describe the native linter as generically unsafe |\n| CM-4 | For explicitly managed contribution tasks, call public `setDiagnostics` only after checking the current contribution generation and host document revision at application time | Current result displayed; predecessor completion cannot replace it; completion for a changed document rejected | Gate lives in one small adapter; no new supervisor, authorization owner, editor scheduler or production guarantee |\n| CM-5 | Start a task, edit and Undo back to identical text, then complete the original task | Monotonic document revision differs; original result rejected despite equal text | A text-content comparison alone must fail this negative control; no assertion that text equality implies same logical input |\n| CM-6 | Remove native history extension in one transaction and re-add it in a second, without changing the document; compare explicit new-state reset | History clear preserves draft, selection and editor; document reset is reported separately and deliberately resets requested state | Do not use one transaction that removes then restores the same field and accidentally preserves history |\n| CM-7 | Native edit carries text and a custom inverted state effect; compare direct Undo with `EditorState.toJSON/fromJSON` including `historyField` and a serializable custom field | Direct Undo reverses both; round-trip text/history may restore while custom inverse effect is absent | Report exact codec limitation and require application-owned migration/rebuild policy; do not serialize closures or claim full semantic Undo recovery |\n\nCM-4/5 use trusted host-owned generation/revision values. They qualify stale-result prevention at a UI adapter boundary, not permission revocation or malicious plugin isolation. Cancellation can be requested for efficiency but never supplies the correctness proof. A disposal flag may additionally reject completions after the view owner is disposed; it does not prove all plugin resources were reclaimed.\n\nThe UI generation/revision tuple is separate from a durable state authority epoch. CM-2 uses explicit observed source-start and completion barriers for A and B, never timer guesses; any scheduled additional native invocation is recorded. CM-5 records native document object identity after Undo as well as equal text and a changed revision: it challenges a text-only guard, not CodeMirror's native identity guard. CM-7 checks custom field value restoration separately from inverse-effect restoration, both before and after Undo.\n\n## Observability and user control\n\nThe fixture labels requested candidate, selected contribution, currently useful rendered result and rejection reason independently. A useful result identifies generation and document revision. Diagnostics from a predecessor are not relabelled as current. The report maps these observations into a consumer UI contract (preview dependency closure, pause/coalesce, version holds, reset/revert actions and resync) without making this fixture a second update authority.\n\nNative OS IME is excluded from a synthetic composition-event claim. Source analysis covers composition-sensitive editor replacement; unless a real input path can be qualified separately, IME remains an explicit unqualified acceptance row.\n\n## Expected artifacts and review boundary\n\n- Exact lockfile, strict compiler output/version, native browser/runtime inventory and deterministic release schedule.\n- One native fixture package; tests are grouped by the seven distinct scenarios, with every comparison reported under its scenario rather than called an independent end-to-end test.\n- Raw JSON observations, browser trace/screenshots and original failure evidence if any. A corrective attempt receives a separate input identity and evidence directory.\n- Narrow adapter code estimated at 25\u201360 LOC; fixture/UI 200\u2013350 LOC; browser scenarios and strict tooling 200\u2013350 LOC. Estimates exclude third-party source bytes and release work. No production package is delivered by this experiment.\n- Engineering judgments: native reconfiguration reuse confidence 9/10, achievable reliability for the stated local UI boundary 8/10, integration complexity 3/10. Same-document lint-race hypothesis confidence 8/10 pending execution. General state migration and OS IME confidence remain unqualified.\n\nRoot owns tracked documents, workflow, remote execution, commits and immediate pushes. This lane only owns its isolated scratch directory. Peer must critique source-generation provenance, the equal-text/revision case, history codec interpretation and whether any control accidentally replaces the library mechanism before runtime execution.\n"
+}
