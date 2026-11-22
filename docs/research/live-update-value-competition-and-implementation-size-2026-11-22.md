@@ -29,7 +29,7 @@ independent sizing. This follow-up changes **zero production lines** and perform
 **zero new native executions**. The prior MF 4/4 and SystemJS 2/2 probes qualify
 their recorded mechanisms, not a production library or competitive superiority.
 
-<!-- cspell:words Piral Pilet Zephyr SLOC relup appup rebinding wadm -->
+<!-- cspell:words Piral Pilet pilets Zephyr SLOC relup appup rebinding wadm -->
 
 ## Evidence and lessons
 
@@ -55,6 +55,47 @@ design nor more runtime adapters establishes superiority over shipped systems.
 Our possible advantage is a coherent, portable TS integration with a useful
 state/UX/lifecycle contract and a smaller burden on consumers. It remains to be
 demonstrated against a ready stack with reasonable integration code.
+
+### Competitive pressure and start decision: 2026-11-23
+
+The follow-up date uses the owner's Europe/Kiev timezone. The owner asks whether
+competitors are narrow while our broad proposal alone covers the complete need.
+**That conclusion is not established.** Existing alternatives include platforms,
+not only isolated mechanisms. Zephyr's Beta Native Shell + Host architecture
+separates a durable shell with recovery controls from an independently updated
+Host and feature remotes. Native compatibility still constrains updates. Piral
+Cloud supports discovery for pilets, Module Federation, Native Federation and
+Open Components. These are documented capabilities, not our native qualification
+or proof of identical state/cleanup semantics across formats. [C17–C18]
+
+| Assessment | Judgment | Meaning |
+| --- | ---: | --- |
+| Competitive pressure including ready stacks and substitutes | **8/10** | A consumer can meet its actual need without choosing a product that duplicates our whole specification |
+| Start the reusable library with a complete slice for a real internal consumer | **7/10** | Internal value can be tested while the portable contract is designed as a library from the start |
+| Build the entire broad platform before validating that consumer benefit | **4/10** | Demand for the full combination and acceptable integration cost are not established |
+
+These are qualitative engineering/product judgments, not market share, market
+saturation or a probability of commercial success. Confidence in the competitive
+assessment is **5/10**. The research verifies functional alternatives; it has no
+representative buyer sample, adoption census or willingness-to-pay measurement.
+It therefore does not establish either an empty market or a saturated one.
+
+The complete vision remains a possible direction. Its breadth increases the
+compatibility, recovery and support obligations we must prove. An unusually
+specific feature list can make exact matches hard to find without establishing
+customer demand. Ready combinations, framework lifecycle and an application's
+existing update process are relevant substitutes even when their APIs differ.
+
+The strongest reasons for caution are integration cost, dependence on application
+state/resource ownership, and the possibility that a ready stack already meets
+the consumer's required contract. A useful library must reduce the consumer's
+coordination work while retaining its complete operation. Competitors can also
+add missing integrations; the adapter list alone is not a durable advantage.
+
+The next investment is justified by a fair real-consumer comparison and a second
+independent integration without copied orchestration. If the ready stack meets
+the contract more simply, the appropriate product may be a smaller common
+integration. This recommendation changes no accepted owner or OPEN policy.
 
 ### Serious alternatives, with their actual comparison scope
 
@@ -96,6 +137,23 @@ An omitted guarantee in a page is not evidence that the product lacks it.
   the standard OSGi security layer was removed while permission APIs remain.
   This is a concrete warning for capability claims, scoped to that implementation.
   [C16]
+
+### Detailed findings retained after the custody audit
+
+On 2026-11-23 the remote research branch and preserved evidence packets were
+compared with the latest three review reports. Main conclusions and estimates
+were already saved. The following useful details existed only in those working
+reports; source URLs and report hashes alone did not preserve the findings.
+They are now explicit maintained research:
+
+| Finding | Exact boundary and lesson |
+| --- | --- |
+| Theia browser-only extensions | The documented browser-only profile can run extensions bundled at build time; it cannot install Open VSX extensions at runtime without a backend. Runtime installation in another profile must not be advertised as a browser-only guarantee. [C19] |
+| Extism exchange-memory lifetime | Extism-managed exchange buffers are reset between calls; output remains accessible until the next call. This is distinct from all guest Wasm memory or business-state lifetime. Adapters must respect the selected SDK's lifetime and ownership contract. [C20] |
+| wasmCloud WorkloadDaemonSet rollout | Its RollingUpdate starts new instances before stopping old ones on each host; maxConcurrentHosts limits the hosts progressed concurrently. Recreate is a separate policy. This is neither fleet-wide atomicity nor a guarantee for every workload resource. [C21] |
+
+These are source-backed findings, not new executed probes. Historical artifacts
+and their original qualification scope remain unchanged.
 
 ### Production code estimates
 
@@ -249,3 +307,8 @@ benchmark is claimed.
 - [C14: Extism plugin systems](https://extism.org/docs/concepts/plug-in-system/)
 - [C15: Theia extensions](https://theia-ide.org/docs/extensions/)
 - [C16: Felix Framework 8 guide](https://felix.apache.org/documentation/subprojects/apache-felix-framework/apache-felix-framework-8-upgrade-guide.html)
+- [C17: Piral Cloud capability matrix](https://www.piral.cloud/comparison)
+- [C18: Zephyr Native Shell and Host, Beta](https://docs.zephyr-cloud.io/features/react-native-native-shell)
+- [C19: Theia browser-only application profile](https://theia-ide.org/docs/composing_applications/)
+- [C20: Extism memory contract](https://extism.org/docs/concepts/memory/)
+- [C21: wasmCloud resource contracts](https://wasmcloud.com/docs/kubernetes-operator/crds/)

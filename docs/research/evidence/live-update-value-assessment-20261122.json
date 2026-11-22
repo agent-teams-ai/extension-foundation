@@ -933,5 +933,82 @@
       "sha256": "9a9eb72a7723e4c001cdc7835045339928c0924cd9136ec172602f3753438c11",
       "normalization": "Trailing whitespace removed; diagnostic content retained"
     }
+  },
+  "competition_followup": {
+    "date": "2026-11-23",
+    "date_timezone": "Europe/Kiev",
+    "baseline_remote_head": "a0b6ad8372b50030de3abefb70cc08af84630a23",
+    "kind": "QUALITATIVE_PRODUCT_JUDGMENT_NOT_MARKET_MEASUREMENT",
+    "all_seven_owner_choices": "OPEN",
+    "new_production_lines": 0,
+    "new_plugin_runtime_experiments": 0,
+    "ratings": {
+      "competitive_pressure_including_substitutes": 8,
+      "start_library_with_real_internal_consumer": 7,
+      "build_whole_broad_platform_upfront": 4,
+      "confidence_in_competitive_assessment": 5
+    },
+    "limits": [
+      "No representative buyer sample, adoption census or willingness-to-pay measurement",
+      "No established uniqueness or absence of an equivalent competitor",
+      "Broad platform functionality is source evidence, not proof of identical lifecycle guarantees",
+      "The whole vision remains possible; these ratings do not select disputed execution/state policies"
+    ],
+    "additional_primary_sources": [
+      {
+        "id": "C17",
+        "url": "https://www.piral.cloud/comparison",
+        "class": "official_capability_matrix",
+        "scope": "Multiple discovery formats; no cross-format state/cleanup equivalence claim"
+      },
+      {
+        "id": "C18",
+        "url": "https://docs.zephyr-cloud.io/features/react-native-native-shell",
+        "class": "official_living_documentation",
+        "scope": "Explicit Beta Native Shell + Host architecture; native compatibility still bounds updates"
+      }
+    ],
+    "custody_audit": {
+      "result_before_followup": "Main research and conclusions preserved; three detailed findings only in working reports",
+      "remote_pr": 55,
+      "remote_state": "OPEN_DRAFT_NOT_MERGED",
+      "research_branch": "docs/plugin-research-hot-reload-20261021",
+      "separate_library_remote": "NOT_CREATED_TRANSFER_PACKET_PRESERVED",
+      "scope": "Maintained studies and primary/supplement/transfer evidence compared with latest three review reports",
+      "hashes_are_not_report_text": true,
+      "retained_findings": [
+        {
+          "existing_source_ids": [
+            "J19",
+            "J20"
+          ],
+          "document_reference": "C19",
+          "finding": "Theia browser-only profile supports bundled extensions but runtime Open VSX installation needs a backend",
+          "limit": "Not a limitation of every Theia deployment"
+        },
+        {
+          "existing_source_ids": [
+            "S18"
+          ],
+          "document_reference": "C20",
+          "finding": "Extism exchange buffers reset between calls and output is accessible until the next call",
+          "limit": "Does not describe all guest Wasm memory or business-state persistence"
+        },
+        {
+          "existing_source_ids": [
+            "S12",
+            "S14"
+          ],
+          "document_reference": "C21",
+          "finding": "WorkloadDaemonSet RollingUpdate overlaps new/old instances per host; maxConcurrentHosts bounds rollout concurrency; Recreate differs",
+          "limit": "Not fleet-wide atomicity or a promise for every resource"
+        }
+      ]
+    },
+    "independent_review": {
+      "competition": "Broad roadmap does not establish uniqueness; consumers can select substitutes with different APIs",
+      "custody": "Three missing detailed findings recovered explicitly; duplicate working drafts and superseded tentative scores are not authoritative conclusions"
+    },
+    "historical_validation": "Existing validation_context describes the November22 checkpoint; it is not qualification for this follow-up"
   }
 }

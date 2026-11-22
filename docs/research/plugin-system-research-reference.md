@@ -10,7 +10,7 @@ summary: Maintained source-backed lessons for module composition, plugin systems
 
 <!-- cspell:words Directus NocoBase Pharo Zephyr -->
 
-**Current follow-up: 2026-11-22; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
+**Current follow-up: 2026-11-23; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
 module composition, extension ecosystems and production hot replacement. It
 preserves industry experience so future agents can use the same evidence,
 counterexamples and qualification scenarios. Research is not an accepted ADR,
@@ -24,6 +24,9 @@ Electron OTA and AI control. It rejects unproved uniqueness or superiority and
 estimates scoped library production code at 3–6k, 7–14k and 15–30k lines, with
 integration and tests separate. These are conditional engineering budgets, not
 accepted policies or measured readiness; the seven owner choices remain open.
+Its November 23 follow-up distinguishes competitive pressure from measured market
+saturation, records the conditional start recommendation, and preserves three
+previously omitted detailed findings from the Theia, Extism and wasmCloud reviews.
 
 The [Module Federation and update-boundaries investigation](module-federation-update-boundaries-and-architecture-options-2026-11-22.md)
 deepens current Federation, browser delivery, desktop and industry replacement
