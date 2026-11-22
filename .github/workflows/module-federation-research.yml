@@ -57,6 +57,9 @@ jobs:
                      'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'], 'input': manifest,
                      'workflowSha256': hashlib.sha256(Path('.github/workflows/module-federation-research.yml').read_bytes()).hexdigest()}
           (evidence / 'input-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          with open(os.environ['GITHUB_ENV'], 'a') as environment:
+              environment.write(f'MF_RESEARCH_ROOT={destination}\n')
+              environment.write(f'MF_RESEARCH_DIRECTORY={destination / "probe"}\n')
           PY
       - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
         with:
@@ -117,6 +120,8 @@ jobs:
           pnpm exec playwright install --with-deps chromium 2>&1 | tee results/hosted/browser-install.log
       - name: Exercise real replacement, sharing and container initialization
         working-directory: ${{ env.MF_RESEARCH_DIRECTORY }}
+        env:
+          DEBUG: pw:browser
         shell: bash
         run: |
           set -o pipefail

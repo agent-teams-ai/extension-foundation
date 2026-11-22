@@ -134,8 +134,16 @@ browser supplied by pinned Playwright. All assertions, dependency versions,
 fixtures and compiler options remain identical. The dedicated
 [hosted workflow](../../.github/workflows/module-federation-research.yml) verifies
 archive members, installed dependency identities and compiler hash before
-checking, building and running the browser tests. Its result is pending at this
-checkpoint; earlier qualified workflows remain unchanged.
+checking, building and running the browser tests. In the first hosted run,
+**all four native tests passed**, but artifact upload failed because the workflow
+passed an absolute path containing `..` to the pinned uploader. This is an
+evidence-delivery failure, not a Federation assertion failure. The
+[original hosted log and receipt](evidence/module-federation-v2-hosted-attempt1-20261122.tar.gz)
+and [manifest](evidence/module-federation-v2-hosted-attempt1-20261122.manifest.json)
+preserve that incomplete outcome. The corrected workflow writes resolved paths
+to its environment, following the existing editor workflow. Frozen inputs and
+assertions remain identical; one further hosted run is required to retrieve the
+missing browser observations and ZIP. Earlier qualified workflows remain unchanged.
 
 ### Reuse warnings under examination
 
