@@ -1,7 +1,7 @@
 {
   "researchDate": "2026-11-22",
   "timezone": "Europe/Kiev",
-  "checkpoint": "3",
+  "checkpoint": "4",
   "lanes": {
     "versions": {
       "researchDate": "2026-11-22",
@@ -491,6 +491,16 @@
           "P1"
         ],
         "consequence": "OldP0/I150–350 estimate is integration-only; all bands are planning judgments, not measuredLOC/reliability."
+      }
+    ],
+    "browser": [
+      {
+        "id": "BR01",
+        "status": "native-observed-failure",
+        "finding": "Vite hot-updated notification after a repaired module did not establish useful v4 rendering after an evaluation failure in this exact fixture.",
+        "evidence": "standalone-live-library-browser-attempt1-20261122.json",
+        "consequence": "Require useful generation acknowledgement; define supported recovery/restart after rejected evaluation.",
+        "limits": "One exact native development-HMR run; source cause and recovery qualification pending."
       }
     ]
   }

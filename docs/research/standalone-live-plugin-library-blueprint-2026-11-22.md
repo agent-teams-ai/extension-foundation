@@ -12,7 +12,7 @@ summary: Defines the standalone library direction, reusable mechanisms, version 
 
 ## Scope and authority
 
-**Observation date: 2026-11-22, Europe/Kiev. Browser input checkpoint.** The
+**Observation date: 2026-11-22, Europe/Kiev. Browser failure checkpoint.** The
 owner confirms a substantial, purpose-neutral library in a separate repository.
 This is a successor to the
 [reuse-first study](reuse-first-live-plugin-updates-2026-11-22.md), not a new
@@ -157,14 +157,13 @@ renderer cleanup, durable storage, provider networking, distributed fencing or
 production hot replacement. The next browser experiment is separately scoped
 and will keep its own input identity and receipts.
 
-### Frozen browser input, execution pending
+### Frozen browser input and first native result
 
 The [browser source input](evidence/standalone-live-library-browser-input-20261122.tar.gz)
 and [manifest](evidence/standalone-live-library-browser-input-20261122.manifest.json)
 freeze 16 files after strict TS7.0.2 checking and two independent reviews. A
-scoped workflow runs the exact input in native Chromium. At this checkpoint the
-browser result is pending: one test plans three sequential phases and 38
-independently named comparisons.
+scoped workflow runs the exact input in native Chromium: one test plans three
+sequential phases and 38 independently named comparisons.
 
 The phases cover actual React/Vite HMR with dirty host draft, Undo, focus and
 selection; hook-signature remount with stable host document; then a genuinely
@@ -172,6 +171,28 @@ throwing import, continued useful editing/Undo on the prior view and repair.
 The failed candidate's own diagnostic must be corroborated by a native error.
 The test checks new edits after rejection so stale pixels cannot count as a
 working fallback. Existing Vite/React/Playwright pins are reused; only Yjs is added.
+
+**First run: failed, retained unchanged.**
+[Run 45033310718](https://github.com/agent-teams-ai/extension-foundation/actions/runs/45033310718)
+on input/workflow commit `bbff6146693fdf6eca320efbb6b67a6ef7a6be1d`
+passed install and strict typecheck, then reached **31 matching comparisons**
+before timing out waiting for repaired v4 useful output. The test result is
+**0 passed / 1 failed**, not 31 passing tests. Native Chromium was 159.0.8154.6;
+Node was 24.22.3. The first two phases completed; the third remained incomplete.
+
+Compatible HMR and hook-signature remount preserved the actual host textarea,
+dirty draft, Undo, focus and selection. After the genuine bad import, v3 still
+processed a new edit and Undo. The repaired v4 source produced an actual watcher
+event and Vite's `hot updated` message, but the useful view and subscriptions
+remained v3 within the 15-second observation window. Cause and supported recovery
+are under source investigation. No retry or successful repair is claimed here.
+
+The [original artifact ZIP](evidence/standalone-live-library-browser-attempt1-20261122.zip)
+and [run/member receipt](evidence/standalone-live-library-browser-attempt1-20261122.json)
+retain raw logs, actual DOM screenshots, errors, final candidate bytes and all
+observations. Root independently verified the ZIP digest, every original input
+file and the workflow/input receipt. **A loader's completion message is therefore
+insufficient evidence for user-visible activation in this exact native case.**
 
 The [architecture packet](evidence/standalone-live-library-architecture-20261122.tar.gz)
 and [manifest](evidence/standalone-live-library-architecture-20261122.manifest.json)
@@ -364,7 +385,7 @@ authority.
 
 The first useful delivery is one supported update mode, one real TS runtime,
 one real application feature and independent ordinary consumers. Prove packed
-JS/declarations with strict TS7+, public entrypoints, no checkout deep imports,
+JS/declarations with strict TS7.0.2+, public entrypoints, no checkout deep imports,
 no organization credentials and no mandatory optional-runtime dependencies.
 Then add a native Effect or Wasm profile where a real consumer demonstrates the
 need. The current source evidence favors this incremental path; it does not
