@@ -1,0 +1,72 @@
+{
+  "reviewedAt": "2026-11-22T18:24:39.989242+00:00",
+  "reviewer": "/root/mf_runtime",
+  "kind": "independent interpretation of retained artifact, no new runtime execution",
+  "runId": 45054452281,
+  "jobId": 137306490663,
+  "head": "44bf9c21fe55a048d6f942411695a4fd74dede67",
+  "nativeTests": 4,
+  "passed": 4,
+  "failed": 0,
+  "skipped": 0,
+  "observationRecords": 5,
+  "positiveControlIsAdditionalTest": false,
+  "profile": "Chromium / webpack 5.113.0 built-in containers / MF runtime 2.9.3",
+  "node": "v24.22.3",
+  "observedBrowserVersion": "159.0.8154.6",
+  "apiReportedDefaultBrowserPath": "/home/runner/.cache/ms-playwright/chromium-1255/chrome-linux64/chrome",
+  "observedLaunchPath": "/home/runner/.cache/ms-playwright/chromium_headless_shell-1255/chrome-headless-shell-linux64/chrome-headless-shell",
+  "browserPathCaveat": "API default full-Chromium path differs from observed headless-shell process; do not conflate.",
+  "nativeJsonSha256": "6fa0e30d2a247e68a131e44bed048c1ccc6f21cc4699884a3221116524597ed8",
+  "nativeLogSha256": "d2612a978a3ce0b22e482fa11772b03e626e3d82cde70a3012291f363511dc33",
+  "verifiedFrozenInputs": [
+    {
+      "path": "probe/build.ts",
+      "sha256": "fed0b9969d4f52cd1bc65a6e4fc670ac99c3060e44652a1eaf5af96c6d0172d2"
+    },
+    {
+      "path": "probe/dependency-audit.json",
+      "sha256": "987ab365c1cf60cbbef7bc2aaec34a776042068ab17fe4003e886d39d92db609"
+    },
+    {
+      "path": "probe/fixture/consumer.ts",
+      "sha256": "2942adf7d60ce22be27d15f24c5c359bf420f6329e5942883ca4f89f3c412e50"
+    },
+    {
+      "path": "probe/fixture/host.ts",
+      "sha256": "668f715e947425477f77fc353077d0b19ea2bbe0ff8c9a18971b4cc6397f5c41"
+    },
+    {
+      "path": "probe/fixture/remote.ts",
+      "sha256": "753744d6229bece714f3216a34fd668dc0b13e1035e572fd012cae3d34391a02"
+    },
+    {
+      "path": "probe/fixture/token.ts",
+      "sha256": "455014b72ca736171310e767b09ffe3a135130a635de1bcd8621da50bfdb72cc"
+    },
+    {
+      "path": "probe/fixture/types.ts",
+      "sha256": "f4bac6a9729f49fafaee5a9236769af1929281a1ce22c7da28a49fd42f47fa4f"
+    },
+    {
+      "path": "probe/package.json",
+      "sha256": "a216cb0823ce3b08cb20459203db7b6d6fafb8c478789f1b5c435d8be1b94951"
+    },
+    {
+      "path": "probe/pnpm-lock.yaml",
+      "sha256": "1df71ecdaf9f1af044e444dc22419f9f0274adfdbc86cf59fd8709e74543c9f9"
+    },
+    {
+      "path": "probe/probe.test.ts",
+      "sha256": "e95b46270ef41bcac9c363f5d07028bd28828db3600a496b5524190b58d069c0"
+    },
+    {
+      "path": "probe/tsconfig.json",
+      "sha256": "5d8262b5b4dea95af524d4f56c1931238e9a8eba2cec70c22ac02dcb1beaa53f"
+    }
+  ],
+  "allRecordedHTTPStatus200": true,
+  "totalRecordedHTTPRequests": 27,
+  "unhandledPageErrors": 0,
+  "verdict": "PASS for four declared cases of this profile; no broader production/library/GC/security/SSR/Electron claim"
+}

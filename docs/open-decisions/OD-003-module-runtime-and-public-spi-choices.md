@@ -71,6 +71,22 @@ Preserve findings as useful checkpoints, commit and immediately push each one.
 Prepare concrete architectural seams without claiming that all future
 refactoring can be eliminated or introducing a speculative public SPI.
 
+The current [owner decision matrix](../research/module-federation-update-boundaries-and-architecture-options-2026-11-22.md#owner-decision-matrix)
+has seven unresolved questions. Q1–Q3 determine the first trust, update-group and
+state-continuity boundary; Q4–Q7 determine product promises about visible adoption,
+admitted work, rollback and old-client support. Each gives two or three options,
+a conditional preference and evidence that could change it. **No owner answer
+or default is recorded by this research.** The matrix does not reopen the accepted
+TypeScript-first direction, complete reusable library operation, Get Modular
+composition or canonical product-state ownership.
+
+The complete operation belongs in one reusable library implementation. Product
+authority/state primitives and existing lifecycle/resource custody keep their
+owners; this is not a return to consumer-assembled orchestration. Ordinary
+library qualification, production-host admission and a public extension SPI have
+distinct applicable gates. Unsupported/private lifecycle integration remains an
+explicit dependency rather than copied internal code.
+
 ## Owner-confirmed architecture and deeper qualification, 2026-11-22
 
 The owner accepts the recommended starting architecture: a **TypeScript control
