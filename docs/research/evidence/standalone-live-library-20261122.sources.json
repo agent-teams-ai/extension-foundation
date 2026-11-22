@@ -1,8 +1,8 @@
 {
   "researchDate": "2026-11-22",
   "timezone": "Europe/Kiev",
-  "checkpoint": "2",
-  "note": "Incremental ledgers; statuses distinguish source inspection, proposed design and actual execution. Immutable native packet retains these two executed lanes.",
+  "checkpoint": "3",
+  "note": "Source and execution evidence stay distinct; each lane preserves exact revisions and qualification limits.",
   "lanes": {
     "versions": {
       "researchDate": "2026-11-22",
@@ -711,7 +711,7 @@
         "repository": "agent-teams-ai/extension-foundation",
         "commit": "f727a488243e8de47bbffb7cf36e01850f79d899",
         "path": "docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md",
-        "blob": null,
+        "blob": "a9a4ef05c92ae825d10f9d220fb649c0f63b8137",
         "url": "https://github.com/agent-teams-ai/extension-foundation/blob/f727a488243e8de47bbffb7cf36e01850f79d899/docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md",
         "retrieved_at": "2026-11-22",
         "evidence": "source inspection; not an executed behavior test"
@@ -793,6 +793,100 @@
         "evidence": "pnpm view registry metadata captured in gm-effect-registry.json; package tarball was not installed or executed",
         "version": "0.1.1",
         "integrity": "sha512-4aXowsB0rhJXS3xnDzbdUdvC7gnKK0vuK1/ItVmaDkI3N/9ybZnSDbJpTDjixd0a7tnuACCKSBNHaw8zNtRxjQ=="
+      },
+      {
+        "id": "X1",
+        "repository": "statelyai/xstate",
+        "commit": "bd77717b8d33c49af1c8ee4a7e22cebb936cc8b1",
+        "path": "packages/core/src/actors/promise.ts",
+        "blob": "3500647528b116d46904deff3cdbbd6dce55956d",
+        "url": "https://github.com/statelyai/xstate/blob/bd77717b8d33c49af1c8ee4a7e22cebb936cc8b1/packages/core/src/actors/promise.ts",
+        "retrieved_at": "2026-11-22",
+        "evidence": "pinned stable xstate@5.33.4 source inspection; not executed"
+      },
+      {
+        "id": "X2",
+        "repository": "statelyai/xstate",
+        "commit": "bd77717b8d33c49af1c8ee4a7e22cebb936cc8b1",
+        "path": "packages/core/src/transition.ts",
+        "blob": "024aa87b90f0f601c9b7318cfef3ed30c6bdabf0",
+        "url": "https://github.com/statelyai/xstate/blob/bd77717b8d33c49af1c8ee4a7e22cebb936cc8b1/packages/core/src/transition.ts",
+        "retrieved_at": "2026-11-22",
+        "evidence": "pinned stable xstate@5.33.4 source inspection; not executed"
+      },
+      {
+        "id": "X3",
+        "repository": "statelyai/xstate",
+        "commit": "bd77717b8d33c49af1c8ee4a7e22cebb936cc8b1",
+        "path": "packages/core/package.json",
+        "blob": "8e19438bff843e7e68b0dc6c6dceba03d8400c10",
+        "url": "https://github.com/statelyai/xstate/blob/bd77717b8d33c49af1c8ee4a7e22cebb936cc8b1/packages/core/package.json",
+        "retrieved_at": "2026-11-22",
+        "evidence": "pinned stable xstate@5.33.4 source inspection; not executed"
+      },
+      {
+        "id": "X4",
+        "repository": "statelyai/xstate",
+        "commit": "bd77717b8d33c49af1c8ee4a7e22cebb936cc8b1",
+        "path": "packages/core/src/createActor.ts",
+        "blob": "b974de024b8ccfe4b297b842647857a8edbcb16d",
+        "url": "https://github.com/statelyai/xstate/blob/bd77717b8d33c49af1c8ee4a7e22cebb936cc8b1/packages/core/src/createActor.ts",
+        "retrieved_at": "2026-11-22",
+        "evidence": "pinned stable xstate@5.33.4 source inspection; not executed"
+      },
+      {
+        "id": "D1",
+        "url": "https://stately.ai/docs/xstate/v5/pure-transitions",
+        "title": "Pure transition functions, XState v5 stable",
+        "retrieved_at": "2026-11-22",
+        "ref": "turn925914727view0",
+        "evidence": "official documentation"
+      },
+      {
+        "id": "D2",
+        "url": "https://stately.ai/docs/xstate/v5/promise-actors",
+        "title": "Promise actors, XState v5 stable",
+        "retrieved_at": "2026-11-22",
+        "ref": "turn925914727view1",
+        "evidence": "official documentation"
+      },
+      {
+        "id": "D3",
+        "url": "https://prod.stately.ai/docs/xstate/v5/persistence",
+        "title": "Persistence, XState v5",
+        "retrieved_at": "2026-11-22",
+        "ref": "turn386976918search0",
+        "evidence": "official documentation"
+      },
+      {
+        "id": "D4",
+        "url": "https://prod.stately.ai/docs/xstate/v6/persist-and-restore-actors",
+        "title": "Persist and restore actors, XState v6 beta",
+        "retrieved_at": "2026-11-22",
+        "ref": "turn386976918search4",
+        "evidence": "official beta documentation; not stable v5 capability evidence"
+      },
+      {
+        "id": "R2",
+        "url": "https://github.com/Effect-TS/effect/releases/tag/effect%404.1.4",
+        "repository": "Effect-TS/effect",
+        "tag": "effect@4.1.4",
+        "commit": "289a53f7b1fc40049219c6e69022db2fb859c356",
+        "published_at": "2026-11-11T04:00:01Z",
+        "prerelease": false,
+        "retrieved_at": "2026-11-22",
+        "evidence": "GitHub release and tag commit metadata"
+      },
+      {
+        "id": "R3",
+        "url": "https://github.com/statelyai/xstate/releases/tag/xstate%405.33.4",
+        "repository": "statelyai/xstate",
+        "tag": "xstate@5.33.4",
+        "commit": "bd77717b8d33c49af1c8ee4a7e22cebb936cc8b1",
+        "published_at": "2026-11-07T19:08:14Z",
+        "prerelease": false,
+        "retrieved_at": "2026-11-22",
+        "evidence": "GitHub latest stable release and tag commit metadata"
       }
     ]
   }

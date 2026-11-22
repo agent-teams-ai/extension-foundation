@@ -12,7 +12,7 @@ summary: Defines the standalone library direction, reusable mechanisms, version 
 
 ## Scope and authority
 
-**Observation date: 2026-11-22, Europe/Kiev. Native evidence checkpoint.** The
+**Observation date: 2026-11-22, Europe/Kiev. Browser input checkpoint.** The
 owner confirms a substantial, purpose-neutral library in a separate repository.
 This is a successor to the
 [reuse-first study](reuse-first-live-plugin-updates-2026-11-22.md), not a new
@@ -157,6 +157,28 @@ renderer cleanup, durable storage, provider networking, distributed fencing or
 production hot replacement. The next browser experiment is separately scoped
 and will keep its own input identity and receipts.
 
+### Frozen browser input, execution pending
+
+The [browser source input](evidence/standalone-live-library-browser-input-20261122.tar.gz)
+and [manifest](evidence/standalone-live-library-browser-input-20261122.manifest.json)
+freeze 16 files after strict TS7.0.2 checking and two independent reviews. A
+scoped workflow runs the exact input in native Chromium. At this checkpoint the
+browser result is pending: one test plans three sequential phases and 38
+independently named comparisons.
+
+The phases cover actual React/Vite HMR with dirty host draft, Undo, focus and
+selection; hook-signature remount with stable host document; then a genuinely
+throwing import, continued useful editing/Undo on the prior view and repair.
+The failed candidate's own diagnostic must be corroborated by a native error.
+The test checks new edits after rejection so stale pixels cannot count as a
+working fallback. Existing Vite/React/Playwright pins are reused; only Yjs is added.
+
+The [architecture packet](evidence/standalone-live-library-architecture-20261122.tar.gz)
+and [manifest](evidence/standalone-live-library-architecture-20261122.manifest.json)
+retain the full boundaries report, 30 source records, 23 exact source snapshots,
+upstream notices, independent reviews and browser preparation logs. Source
+inspection of Effect/XState is still distinct from browser execution.
+
 ## Reuse decisions and targeted uncertainty
 
 | Concern | First mechanism to inspect or reuse | Qualification still required |
@@ -178,6 +200,191 @@ The Get Modular lifecycle kernel currently declares `private: true`; it is not
 a released external-consumer dependency. Resources is released. Reusing a
 private implementation requires its owning repository's qualification and
 publication path rather than importing its source into this library (G3-G4, G10).
+
+## Proposed module architecture
+
+Start with a portable live-update module containing **planning, replacement and
+observation**, one actual runtime adapter, and a conformance kit. These can become
+substantial features. Split packages when platform dependencies, release cadence
+or independently useful consumers justify the boundary. State-transfer
+coordination can initially belong to replacement; consumer schemas and migration
+functions remain outside the library.
+
+The consumer's composition root chooses providers. Planning consumes inert
+composition results, compatibility evidence and a capability profile. Replacement
+depends on narrow feature-owned ports for preparation, existing activation
+authority, state transfer and retirement. Runtime adapters implement those ports;
+Node, Effect, DOM and Wasm SDK types stay out of the ordinary entrypoint's
+declaration graph. Observation is a read-only projection. This is the practical
+Clean Architecture boundary, rather than a directory named for each principle.
+
+| Contract axis | Why it needs its own identity |
+| --- | --- |
+| Library release | Compatibility of the package consumed by applications |
+| Plugin contract | Accepted request/result and capability behavior |
+| Artifact/configuration digest | Exact code and relevant configuration prepared |
+| Generation identity | Particular live instance and its owned work/resources |
+| Authoritative head revision | Concurrent publication and stale-command detection |
+| State schema and baseline | Which data this implementation can read/write/migrate |
+| Update attempt | Correlate retries, late results and one observed outcome |
+
+Human version labels are useful UI; they do not replace these identities. A token
+from a private in-memory kernel is not automatically a durable identifier. A
+candidate descriptor should reference the actual existing graph plan rather than
+redeclare its grammar (G4, O2).
+
+### One policy, explicit execution profiles
+
+The first use case may be an ordinary asynchronous TS implementation. If the
+real native Effect consumer requires a native chain, share a narrow replacement
+decision/receipt protocol while keeping Scope, Fiber and E/R native in that
+driver. A mandatory Effect implementation with a Promise facade is also possible,
+but would be a deliberate dependency choice, not an optional dependency profile.
+
+Before writing transition machinery, compare **XState 5.33.4 pure transitions**
+with ordinary typed functions for this exact operation. Its pure API computes
+next state and actions without starting a live actor. That can reuse a mature
+state transition implementation while external code executes native effects. It does
+not supply atomic publication, resource custody or a recovery journal. Adopt it
+only if real hierarchical/parallel transitions and inspection needs justify its
+cost (X2, D1).
+
+Three source-verified integration traps require qualification:
+
+- Effect 4.1.4 MemoMap shares by Layer identity. A new Scope or fresh mapper does
+  not clone a borrowed mutable service or a captured Layer (E4, G8).
+- ManagedRuntime's first dispose failure is not replayed by its success-completed
+  completion Deferred to later dispose callers. Retain the first outcome if the
+  library promises one stable terminal receipt; do not invent retry semantics
+  for native finalizers (E2).
+- XState Promise actors ignore late output after becoming inactive. Acquire
+  custody before starting work that may allocate resources after cancellation;
+  the dropped result must not be the only reference to required cleanup (X1, D2).
+
+XState actor persistence also restarts invocations while considering previous
+actions already performed. Changed machine logic and context that cannot be
+serialized limit restoration. Its v6 beta documentation is not evidence for the inspected
+stable v5 dependency (X3, D3-D4). All Effect/XState statements here are source
+inspection, not new executed tests.
+
+## Replacement protocol and failure boundaries
+
+The proposed library should explain one authorized replacement operation and
+delegate authoritative mutations to their current owner. The following protocol
+is a design candidate to test; it is not an adopted runtime API.
+
+| Boundary | Expected result | Failure or uncertainty behavior |
+| --- | --- | --- |
+| Plan | Exact target, expected head, affected closure, supported mode, state/retention consequences | Unsupported mode or incompatible contract rejects before mutation |
+| Prepare | Candidate resources have custody; readiness has a meaningful feature-specific oracle | Keep the current version; clean candidate resources even after caller cancellation |
+| Choose baseline, when recovery is promised | Existing durable authority records attempt, source, target and selected state baseline | Retry that identity or begin an explicit new attempt; do not silently pick a newer snapshot |
+| Publish | Existing owner accepts or rejects the expected-head transition | A lost acknowledgement remains unknown; query/reconcile by attempt before retiring either side |
+| Start new work | Newly admitted operations select the accepted generation | Existing operations retain their declared affinity, including supported streams/continuations |
+| Acknowledge useful output | Adapter identifies rendered/result generation and relevant state revision | Show fallback or delayed rendering explicitly; loading alone is insufficient |
+| Drain and finalize | Old operations and cleanup report their own outcomes | Failed or delayed finalizers remain visible after the new version becomes useful |
+| Reclaim | No remaining declared hold reason; owner confirms actual release/deletion | History/replay and rollback reservations can retain artifacts after live execution stops |
+
+Use one update lane per actual activation domain, not one global plugin lock.
+Independent domains can progress concurrently. Two candidates for the same head
+must use the existing compare-and-swap/fencing authority; a local mutex does not
+settle cross-process races. Product authorization still grants the mode and its
+escalation. An elapsed deadline cannot silently change drain into force.
+
+Golem's released update queue is a useful baseline-identity pattern: it records a
+selected recovery strategy tied to admission/source/target identity and does not
+reselect the latest snapshot inside that same attempt. A new attempt may choose a
+different strategy. Reuse the host's durable authority when that guarantee is
+needed; a process-local profile should state its weaker restart behavior
+(V19-V21, V25-V26).
+
+Compatibility and preference are distinct. Orleans separately determines which
+versions are compatible and which accepted version to select; its numeric policy
+does not infer semantic state compatibility. Before old and new implementations
+share writable state, qualify both new-read-old-data and old-read-new-data. Code
+rollback after new writes is another transition against current state, not an
+automatic rewind of user work (V07-V09, V22-V23, V28).
+
+## Version retention and state cleanup
+
+Use the RCU ordering as a design reference: remove the old route before reclaiming
+what existing readers still use. Its module-unload guidance additionally
+distinguishes reader completion from queued cleanup callbacks; producers must
+stop before the appropriate final barrier. Crossbeam deferred destruction has no
+fixed completion deadline. Neither mechanism is a complete asynchronous plugin
+supervisor, but both expose a useful mistake to prevent: reader-zero is not a
+cleanup receipt (V10-V12, V27, V29).
+
+| Retained item | Normal owner/lifetime | Cleanup or retention decision |
+| --- | --- | --- |
+| Live executor and mutable heap | Runtime generation | Hold for declared active operations and cleanup; restart boundary depends on placement |
+| Artifact and state codec | Artifact/history store | Keep for replay/query, rollback reservation and required compatibility window |
+| Host document/draft | User session or durable state owner | Preserve across view replacement unless an explicit incompatible-state policy applies |
+| Undo/Redo and editor session | History/session owner | Bound independently of content; clear history does not discard the document |
+| Plugin cache/temporary resource | Exact feature resource scope | Drop or rebuild when invalid; shared pools require explicit borrowed ownership |
+| Durable business data | Consumer's canonical state store | Migrate through its schema and transaction policy; runtime retirement does not delete it |
+| Diagnostic history | Bounded read model or audit owner | Cap display history; resynchronize from owner snapshots after gaps |
+
+A retention policy needs budgets for generations, resource/memory usage, active
+streams, pending cleanup and history obligations. Explain which budget blocked
+the next update. Choices can include defer, coalesce still-unstarted candidates,
+reject, or an owner-authorized targeted restart. Never coalesce an already
+selected durable attempt into another baseline. Retention TTL is a policy input;
+it is not proof that a still-used resource has become safe to free.
+
+For long-running work, choose the boundary deliberately: request, message,
+explicit checkpoint, session or whole executor. A session pinned indefinitely
+needs a defined escape policy if bounded version retention is a requirement.
+Schema compatibility, effect idempotency and remote write fencing remain at the
+actual state/effect receiver. Local abort cannot retract a request already sent.
+
+## Practical live feedback
+
+Expose three user-facing questions per changed feature: **what is selected,
+what is visibly/usefully running, and what still holds the predecessor**. For
+example: “Analyzer v2 is selected; this result still comes from v1; draft and
+Undo are retained; one v1 stream and one failed cleanup remain.” Each fact has
+its own receipt and available owner-authorized actions.
+
+Useful UI behavior to qualify includes typing while preparation proceeds,
+preserving focus/caret where the supported renderer permits it, marking stale
+results with their document/generation revision, and offering the actual restart
+scope when preservation is unsupported. A hidden candidate should be passive or
+use isolated candidate resources; rendering it off-screen does not authorize
+live mutations. Preview should show the affected dependency closure and concrete
+state/history effects, not just a version label.
+
+Bound and coalesce observation updates without blocking activation. After a gap
+or reconnect, rebuild from an authoritative snapshot and owner-issued revision.
+Wall-clock ordering and absent logs cannot prove that nothing remains. Exporter
+errors must stay inside the observation adapter; decision hooks remain explicit
+parts of the operation. A UI state machine cannot become another activation
+authority.
+
+## First delivery, cost and admission
+
+The first useful delivery is one supported update mode, one real TS runtime,
+one real application feature and independent ordinary consumers. Prove packed
+JS/declarations with strict TS7+, public entrypoints, no checkout deep imports,
+no organization credentials and no mandatory optional-runtime dependencies.
+Then add a native Effect or Wasm profile where a real consumer demonstrates the
+need. The current source evidence favors this incremental path; it does not
+choose the final public contract.
+
+The boundaries investigation estimates the first slice at **900-1,800 lines of
+production logic**, **500-1,000 integration lines**, **1,800-3,500 test/conformance
+lines** and **600-1,200 documentation/build/release lines**. These are planning
+bands with confidence **4/10**, not measurements or commitments. They exclude a
+full editor, marketplace, distributed update service and every renderer/runtime.
+Native Effect, another runtime and durable recovery each have incremental
+qualification and maintenance costs. The earlier 150-350-line adapter allowance
+cannot estimate this project.
+
+Engineering judgment for the bounded design: neutral library with existing
+mechanism owners has confidence 8/10, reliability potential 8/10 and complexity
+5/10. Shared ordinary/native drivers have confidence 6/10 and complexity 7/10;
+their extra conformance burden needs a real benefit. These scores compare design
+choices, not measured availability. The detailed alternatives and cost scopes
+are retained with the boundaries report.
 
 ## Open questions and validation
 
@@ -203,6 +410,13 @@ The initial documentation spelling check identified one legitimate technical
 term, CRDT; a document-local dictionary entry fixed it. The corrected gate passed
 with 92 catalog documents and 98 Markdown inputs. The previous evidence archive
 is unchanged.
+
+The native checkpoint was committed and immediately pushed as
+[`e901903`](https://github.com/agent-teams-ai/extension-foundation/commit/e901903f6a8d7a38bec849626575eddab8e515ff).
+Its independent archive review verified all 40 member hashes and sizes, both
+native probes and both cross-reviews without rerunning the tests. Later spelling
+checks identified EBADF and two uncommon wording choices; the local dictionary
+and simpler wording resolved them without weakening the gate.
 
 The connected GitHub API can write this repository but exposes no repository
 creation operation. The CLI has no authenticated host and the browser's creation

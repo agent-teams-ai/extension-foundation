@@ -1,7 +1,7 @@
 {
   "researchDate": "2026-11-22",
   "timezone": "Europe/Kiev",
-  "checkpoint": "2",
+  "checkpoint": "3",
   "lanes": {
     "versions": {
       "researchDate": "2026-11-22",
@@ -398,14 +398,99 @@
       },
       {
         "id": "B07",
-        "status": "under_investigation",
-        "finding": "New Scope does not by itself imply new generation state when Layer/MemoMap or borrowed value identity is shared.",
+        "status": "verified",
+        "finding": "Layer memoization uses Layer identity in MemoMap. Fresh Scope and fresh GM mapper identities do not clone borrowed values or private captured Layers.",
         "evidence": [
+          "E4",
           "G7",
-          "E1",
+          "G8"
+        ],
+        "consequence": "Generation-specific configuration/state and deliberately shared application resources require explicit identity/ownership."
+      },
+      {
+        "id": "B08",
+        "status": "verified",
+        "finding": "RcMap owner close closes currently indexed entries irrespective of refCount; invalidate removes the old entry and defers closing while references remain.",
+        "evidence": [
+          "E1"
+        ],
+        "consequence": "A cache/refcount mechanism is not the whole generation-retention authority; avoid duplicate authoritative counts."
+      },
+      {
+        "id": "B09",
+        "status": "verified",
+        "finding": "ManagedRuntime disposal completion Deferred is completed with Exit.void in ensuring, so later dispose does not replay first close failure.",
+        "evidence": [
           "E2"
         ],
-        "consequence": "Review exact Effect 4.1.4 source; specify generation identity and scope/memoization ownership separately."
+        "consequence": "A stable portable terminal receipt must preserve the first observed outcome; do not imply retryable Effect Scope cleanup."
+      },
+      {
+        "id": "B10",
+        "status": "verified",
+        "finding": "XState5.33.4 pure transition API collects actions without running them; Promise actors abort and ignore later resolve/reject when stopped.",
+        "evidence": [
+          "X1",
+          "X2",
+          "X4",
+          "D1",
+          "D2"
+        ],
+        "consequence": "Pure statechart engine is a conditional reuse candidate; live actor stop cannot own late foreign acquisition cleanup by itself."
+      },
+      {
+        "id": "B11",
+        "status": "recommendation",
+        "finding": "Start one portable module with planning/replacement/observation features; split real runtime and optional native dependency lifecycles, not every feature into a package.",
+        "evidence": [
+          "O1",
+          "O2",
+          "G7"
+        ],
+        "consequence": "Preserve one update policy and existing authority/resource owners; grow from an external-consumer vertical slice."
+      },
+      {
+        "id": "B12",
+        "status": "recommendation",
+        "finding": "Ordinary and native Effect profiles may share finite domain-specific update facts/decisions; avoid both Promise-erasing native semantics and a universal task DSL.",
+        "evidence": [
+          "G1",
+          "G5",
+          "G7",
+          "X2"
+        ],
+        "consequence": "Select two execution drivers only if two real consumers demonstrate the requirement; qualify cross-driver conformance."
+      },
+      {
+        "id": "B13",
+        "status": "verified_metadata_only",
+        "finding": "Registry metadata confirms @get-modular/effect0.1.1 with exactEffect4.1.4 and Core/Assembly^0.8.0 peers.",
+        "evidence": [
+          "R1"
+        ],
+        "consequence": "Do not conflate existence metadata with installed artifact or production behavior qualification."
+      },
+      {
+        "id": "B14",
+        "status": "verified",
+        "finding": "Current stable XState tag inspected is5.33.4;v6 persistence documentation is beta and has different APIs.",
+        "evidence": [
+          "X3",
+          "R3",
+          "D3",
+          "D4"
+        ],
+        "consequence": "Do not mix release profiles or infer transactional external-effect recovery from persisted actor snapshots."
+      },
+      {
+        "id": "B15",
+        "status": "estimate",
+        "finding": "First portable one-mode/one-runtime library band:P900–1800/I500–1000/T1800–3500/docs-tooling600–1200, estimateconfidence4/10; incremental adapter/native/durable bands separate.",
+        "evidence": [
+          "O1",
+          "P1"
+        ],
+        "consequence": "OldP0/I150–350 estimate is integration-only; all bands are planning judgments, not measuredLOC/reliability."
       }
     ]
   }
