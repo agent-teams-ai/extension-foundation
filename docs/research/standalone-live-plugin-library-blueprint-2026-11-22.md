@@ -184,8 +184,12 @@ Compatible HMR and hook-signature remount preserved the actual host textarea,
 dirty draft, Undo, focus and selection. After the genuine bad import, v3 still
 processed a new edit and Undo. The repaired v4 source produced an actual watcher
 event and Vite's `hot updated` message, but the useful view and subscriptions
-remained v3 within the 15-second observation window. Cause and supported recovery
-are under source investigation. No retry or successful repair is claimed here.
+remained v3 within the 15-second observation window. Source inspection supplies
+a specific explanation: a new Vite hot context clears previous accept callbacks;
+the throwing module never reaches React's generated acceptance footer. The next
+repair captures an empty callback list before evaluating and registering the
+repaired module. Its transport message therefore need not mean React applied it.
+This explanation is tied to the exact inspected releases, not every HMR failure.
 
 The [original artifact ZIP](evidence/standalone-live-library-browser-attempt1-20261122.zip)
 and [run/member receipt](evidence/standalone-live-library-browser-attempt1-20261122.json)
@@ -193,6 +197,17 @@ retain raw logs, actual DOM screenshots, errors, final candidate bytes and all
 observations. Root independently verified the ZIP digest, every original input
 file and the workflow/input receipt. **A loader's completion message is therefore
 insufficient evidence for user-visible activation in this exact native case.**
+
+The separate [v2 input](evidence/standalone-live-library-browser-input-20261122-v2.tar.gz)
+and [manifest](evidence/standalone-live-library-browser-input-20261122-v2.manifest.json)
+preserve the first 31 comparisons and add an explicit recovery experiment. After
+correlating the repaired module's actual evaluation with its public native
+transport receipt, the harness requests
+[Vite's documented reloadModule](https://vite.dev/guide/api-javascript#vitedevserver)
+once. The test requires actual v4 computation, retained host draft, Undo/Redo,
+focus/selection and current observers. One test plans three phases and 49 named
+comparisons; strict TS7.0.2 passes. Browser recovery remains pending at this
+input checkpoint. No custom accept handler or internal callback mutation is used.
 
 The [architecture packet](evidence/standalone-live-library-architecture-20261122.tar.gz)
 and [manifest](evidence/standalone-live-library-architecture-20261122.manifest.json)

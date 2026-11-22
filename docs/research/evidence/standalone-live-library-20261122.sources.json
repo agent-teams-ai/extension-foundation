@@ -1,7 +1,7 @@
 {
   "researchDate": "2026-11-22",
   "timezone": "Europe/Kiev",
-  "checkpoint": "3",
+  "checkpoint": "6",
   "note": "Source and execution evidence stay distinct; each lane preserves exact revisions and qualification limits.",
   "lanes": {
     "versions": {
@@ -887,6 +887,40 @@
         "prerelease": false,
         "retrieved_at": "2026-11-22",
         "evidence": "GitHub latest stable release and tag commit metadata"
+      }
+    ],
+    "browser": [
+      {
+        "id": "HMR01",
+        "repository": "vitejs/vite",
+        "commit": "b39e6e63dcbfc3cf4be871acf3554efbd6d0e268",
+        "path": "packages/vite/src/shared/hmr.ts",
+        "blob": "6e2ef7de0de852aec6417e9d91b60556cc2f834b",
+        "url": "https://github.com/vitejs/vite/blob/b39e6e63dcbfc3cf4be871acf3554efbd6d0e268/packages/vite/src/shared/hmr.ts",
+        "retrieved_at": "2026-11-22",
+        "evidence": "exact source inspected independently by root and research agents; callback clearing/capture order, not runtime private-map inspection"
+      },
+      {
+        "id": "HMR02",
+        "repository": "rolldown/rolldown",
+        "commit": "b9c75ddc8bd50f2c1a4c7be0b548bdab5cba85ab",
+        "path": "crates/rolldown_plugin_vite_react_refresh_wrapper/src/lib.rs",
+        "blob": "620ef40166bb4705c97b1fc93fbf2722cc23768d",
+        "url": "https://github.com/rolldown/rolldown/blob/b9c75ddc8bd50f2c1a4c7be0b548bdab5cba85ab/crates/rolldown_plugin_vite_react_refresh_wrapper/src/lib.rs",
+        "retrieved_at": "2026-11-22",
+        "evidence": "exact source inspected independently; generated registration footer also observed in native local transform without executing the module"
+      },
+      {
+        "id": "HMR03",
+        "url": "https://vite.dev/guide/api-javascript#vitedevserver",
+        "retrieved_at": "2026-11-22",
+        "evidence": "official public reloadModule and moduleGraph API documentation; not an automatic recovery guarantee"
+      },
+      {
+        "id": "HMR04",
+        "url": "https://vite.dev/guide/api-hmr",
+        "retrieved_at": "2026-11-22",
+        "evidence": "official public hot event observation and HMR boundary documentation"
       }
     ]
   }
