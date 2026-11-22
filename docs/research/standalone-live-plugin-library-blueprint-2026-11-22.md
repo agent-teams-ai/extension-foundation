@@ -12,7 +12,7 @@ summary: Defines the standalone library direction, reusable mechanisms, version 
 
 ## Scope and authority
 
-**Observation date: 2026-11-22, Europe/Kiev. Browser failure checkpoint.** The
+**Observation date: 2026-11-22, Europe/Kiev. Browser recovery qualified.** The
 owner confirms a substantial, purpose-neutral library in a separate repository.
 This is a successor to the
 [reuse-first study](reuse-first-live-plugin-updates-2026-11-22.md), not a new
@@ -154,10 +154,10 @@ TypeScript readonly annotations are not enforcement.
 
 These are native mechanism tests. They do not establish browser focus/IME,
 renderer cleanup, durable storage, provider networking, distributed fencing or
-production hot replacement. The next browser experiment is separately scoped
-and will keep its own input identity and receipts.
+production hot replacement. The separately scoped browser experiment below has
+its own input identities and receipts.
 
-### Frozen browser input and first native result
+### Browser inputs, preserved failure and explicit recovery
 
 The [browser source input](evidence/standalone-live-library-browser-input-20261122.tar.gz)
 and [manifest](evidence/standalone-live-library-browser-input-20261122.manifest.json)
@@ -205,9 +205,32 @@ correlating the repaired module's actual evaluation with its public native
 transport receipt, the harness requests
 [Vite's documented reloadModule](https://vite.dev/guide/api-javascript#vitedevserver)
 once. The test requires actual v4 computation, retained host draft, Undo/Redo,
-focus/selection and current observers. One test plans three phases and 49 named
-comparisons; strict TS7.0.2 passes. Browser recovery remains pending at this
-input checkpoint. No custom accept handler or internal callback mutation is used.
+focus/selection and current observers. No custom accept handler or internal
+callback mutation is used.
+
+**V2 first run: passed.**
+[Run 45034893087](https://github.com/agent-teams-ai/extension-foundation/actions/runs/45034893087)
+executed commit `0e0bfb1b6468df90391134f4731e3e3df52479d2` on the same
+Node 24.22.3, Chromium 159.0.8154.6 and strict TS7.0.2 profile. Result:
+**1 test passed, 0 failed, 0 skipped; all three phases and 49 comparisons
+completed**, with exactly one explicit public recovery request. Original Undo
+and Redo remained usable; a new edit after recovery computed v4 output and
+reached only its declared current observer. Actual custom-event delivery likewise
+reached only the current listener.
+
+The [original v2 artifact](evidence/standalone-live-library-browser-v2-attempt1-20261122.zip)
+and [run/member receipt](evidence/standalone-live-library-browser-v2-attempt1-20261122.json)
+retain all 28 files, screenshots, native logs and observations. Root verified the
+ZIP digest, all 16 frozen source files, exact workflow/input receipt and every
+comparison, and visually inspected the recovered view. The original failed
+input/run remains unchanged; direct automatic repair is not relabelled a pass.
+
+This proves the specific module-body exception and explicit recovery scenario.
+It does not qualify every syntax, transform or dependency error, production
+switching, IME, durable/network persistence, schema migration, crash recovery or
+heap bounds. Recovery evaluates the repaired module again; safe automatic retry
+of arbitrary top-level side effects is a separate contract. A transport receipt,
+successful recovery request and useful new output remain distinct observations.
 
 The [architecture packet](evidence/standalone-live-library-architecture-20261122.tar.gz)
 and [manifest](evidence/standalone-live-library-architecture-20261122.manifest.json)
@@ -253,6 +276,18 @@ authority, state transfer and retirement. Runtime adapters implement those ports
 Node, Effect, DOM and Wasm SDK types stay out of the ordinary entrypoint's
 declaration graph. Observation is a read-only projection. This is the practical
 Clean Architecture boundary, rather than a directory named for each principle.
+
+The library must deliver a usable replacement operation: planning, candidate
+custody, execution, publication reconciliation, retirement coordination and
+stable receipts. Hosts supply narrow product primitives: authorization/policy,
+existing authoritative commit/read, state schemas and migrations. They select
+real shipped adapters; existing composition and resource mechanisms sit beneath
+the operation. Host ownership describes authority, not work every consumer must
+implement again. If an independent consumer must rebuild the update state
+machine, generation counting, cancellation custody or cleanup orchestration, the
+boundary has failed. Resolve the existing owner's public-release gap, including
+the private lifecycle kernel, rather than expanding a mandatory port interface.
+Optional capabilities remain optional for the selected execution profile.
 
 | Contract axis | Why it needs its own identity |
 | --- | --- |
@@ -465,9 +500,9 @@ does not invalidate the independently executed TS7.0.2 research probes.
 
 1. Qualify the smallest useful end-to-end feature slice in an ordinary external
    project and the intended application; share conformance, not product models.
-2. The native Node and Yjs probes and cross-reviews are complete. Extend the next
-   actual browser check to dirty draft/history and visible plugin logic changes;
-   keep it separate from production and durable-recovery claims.
+2. Native Node, Yjs and browser checks are complete within their recorded scopes.
+   Extend only for a concrete consumer requirement: IME, another failure class,
+   production switching or durable state each needs separate evidence.
 3. Define a retention budget: versions, bytes, active work, history demand and
    deadlines. An over-budget update must return an explicit defer/restart/reject
    choice, not silently delete the oldest generation.
@@ -496,6 +531,6 @@ and simpler wording resolved them without weakening the gate.
 The connected GitHub API can write this repository but exposes no repository
 creation operation. The CLI has no authenticated host and the browser's creation
 page requires sign-in; no new repository has been created. The standalone
-bootstrap/transfer recipe is being prepared as a reviewable deliverable while
+bootstrap/transfer recipe is prepared as a reviewable deliverable while
 all findings remain pushed here. This is an access limitation, not an additional
 owner-approval requirement for the already confirmed separate-project direction.

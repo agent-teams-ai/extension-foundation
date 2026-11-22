@@ -1,7 +1,7 @@
 {
   "researchDate": "2026-11-22",
   "timezone": "Europe/Kiev",
-  "checkpoint": "6",
+  "checkpoint": "7",
   "lanes": {
     "versions": {
       "researchDate": "2026-11-22",
@@ -504,17 +504,30 @@
       },
       {
         "id": "BR02",
-        "status": "source-supported-recovery-proposal",
+        "status": "native-observed-explicit-recovery",
         "finding": "A repaired module can register acceptance while its current update has already captured an empty callback list. Public Vite reloadModule can request a separate HMR application without implementing another accept protocol.",
         "evidence": [
           "HMR01",
           "HMR02",
           "HMR03",
           "HMR04",
-          "standalone-live-library-browser-input-20261122-v2.manifest.json"
+          "standalone-live-library-browser-input-20261122-v2.manifest.json",
+          "standalone-live-library-browser-v2-attempt1-20261122.json"
         ],
         "consequence": "Expose recovery as an explicit action with its own useful-generation acknowledgement and state/history contract; preserve direct-repair failure separately.",
-        "limits": "v2 strict typecheck passed; browser recovery still pending at the frozen-input checkpoint."
+        "limits": "V2 first native run succeeded: one test, three phases,49 comparisons, exactlyone explicit public reloadModule. Exact module-body failure fixture, not all HMR errors or production replacement."
+      },
+      {
+        "id": "BR03",
+        "status": "recommendation-from-native-observation",
+        "finding": "The explicit recovery reevaluates the repaired module. Its transport receipt, request completion and useful view acknowledgement have distinct identities.",
+        "evidence": [
+          "standalone-live-library-browser-v2-attempt1-20261122.json",
+          "HMR01",
+          "HMR03"
+        ],
+        "consequence": "Expose the recovery action and its state/history consequences; require an explicit effect-safety policy before automatically repeating side-effectful preparation.",
+        "limits": "No arbitrary external-effect rollback or idempotency guarantee follows from this UI fixture."
       }
     ]
   }
