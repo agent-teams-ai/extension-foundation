@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "status": "source-research-and-peer-reviewed-probe-plans",
+  "observedAt": "2026-11-22",
+  "nativeTestsExecuted": 0,
+  "ownerChoices": "open",
+  "archive": "module-federation-checkpoint2-20261122.tar.gz",
+  "bytes": 71920,
+  "sha256": "4d3b5e2a6320feb73a1ea202a3f24bef88c783f0d85b3355f6b52c81f6293a84",
+  "members": [
+    {
+      "path": "delivery/OPEN-QUESTIONS.md",
+      "bytes": 4175,
+      "sha256": "eb42c1dc20edb82fe2e6214aa35690323dc8d12cf7a94e305a633049d24dac1f"
+    },
+    {
+      "path": "delivery/PLAN.md",
+      "bytes": 8540,
+      "sha256": "f88876a60b1d3da859b19d2f7c7c64d6dc674c819681817a72f2eadef4c43f35"
+    },
+    {
+      "path": "delivery/QUALIFICATION.md",
+      "bytes": 3944,
+      "sha256": "679f2f06c972dbffd4f0fa2377bb9482262bc6bd17dc117aa849153059676dbe"
+    },
+    {
+      "path": "delivery/REPORT.md",
+      "bytes": 11467,
+      "sha256": "53cfd74489a3db955a4b8d5ce226950ebb41a50a99fff9e567c4f5cb06bd0e97"
+    },
+    {
+      "path": "delivery/findings.json",
+      "bytes": 5005,
+      "sha256": "6fd7350610ff8d4275c3415932d1ad9770c0d205ad511477c542f67d1e34742a"
+    },
+    {
+      "path": "delivery/sources.json",
+      "bytes": 12686,
+      "sha256": "9920d8970825a4c888cbeb8921b3230421e2494f456adc01d2d5cd7d00f76e9a"
+    },
+    {
+      "path": "desktop/CAPABILITY-UPDATE-SCOPE.md",
+      "bytes": 4317,
+      "sha256": "095136509f83c80bf8d746682eaa5e320fd45fbbd65d0e5ec4d3a83940f18630"
+    },
+    {
+      "path": "desktop/OPEN-QUESTIONS.md",
+      "bytes": 5355,
+      "sha256": "f4175b7c749680c5f9017d811bb14faa0ddd647f1594b854e74ef3b572c02497"
+    },
+    {
+      "path": "desktop/PLAN.md",
+      "bytes": 3162,
+      "sha256": "ec225f77ba346e1bfcf582aad1a61835ac017a879196b7fa16aa706a9391046f"
+    },
+    {
+      "path": "desktop/REPORT.md",
+      "bytes": 18773,
+      "sha256": "7a0b7f7e7b3df835b12b570f3bc52828b3100c445e3ce538394acf341579e79f"
+    },
+    {
+      "path": "desktop/REVIEW-cross-lane.md",
+      "bytes": 7720,
+      "sha256": "10a2e588a9432d3fa016d92716149cbb225de4aa63f4964a5e29c8179767390b"
+    },
+    {
+      "path": "desktop/REVIEW-federation-fixture.md",
+      "bytes": 4395,
+      "sha256": "f65996fb804cf8deecb4213ee20243b86879e9c2b2be287a6f68960c2f54b233"
+    },
+    {
+      "path": "desktop/REVIEW-federation-plan.md",
+      "bytes": 5050,
+      "sha256": "2a13204e619ea0b1cfcb1488c89692ebe54e16eb1c5a772aec431de3e7a88f24"
+    },
+    {
+      "path": "desktop/findings.json",
+      "bytes": 9762,
+      "sha256": "09f02e98724bdec3eca607a1c989fbb3e1af91990fdec9e4f50a2e2975319dc6"
+    },
+    {
+      "path": "desktop/sources.json",
+      "bytes": 20439,
+      "sha256": "b7ba18e4ffb0424fc8db3510c0b2b746c28e6c80ebaa67adf0168dffd9147d2d"
+    },
+    {
+      "path": "federation/OPEN-QUESTIONS.md",
+      "bytes": 4510,
+      "sha256": "3b29e52591dacb25dec4018efdbbcb5724013d803708dbbdaf71754e7453eaa3"
+    },
+    {
+      "path": "federation/PLAN.md",
+      "bytes": 10689,
+      "sha256": "5d03edd60d1418bb1b5d59edbc33600d732e1f2e3b590535d96df9e30295e5e4"
+    },
+    {
+      "path": "federation/REPORT.md",
+      "bytes": 12996,
+      "sha256": "86724f466ce77ae0d6652a09ceb279d78cb8accf16b01c279dc4198e1fe64a63"
+    },
+    {
+      "path": "federation/REVIEW-systemjs-plan.md",
+      "bytes": 3613,
+      "sha256": "430e1f8414e29bd42d999c1caf1dc7dacd4c059064befd6155013b3ab2c910b2"
+    },
+    {
+      "path": "federation/findings.json",
+      "bytes": 7445,
+      "sha256": "d8c5b3228d7107ebf53b5cf0e0ea61df4a75170f35c0f04bde93874a4ea63227"
+    },
+    {
+      "path": "federation/registry-latest.json",
+      "bytes": 11292,
+      "sha256": "c931554e1095b93cfccdaf579d047ef9b94c40baca5fe15a795e56724e98d984"
+    },
+    {
+      "path": "federation/registry-provenance.json",
+      "bytes": 27781,
+      "sha256": "5a6f42f0bc575e955c26b9b91ff954c462ae28102149f0f9be9e85320dc9204b"
+    },
+    {
+      "path": "federation/sources.json",
+      "bytes": 13005,
+      "sha256": "84ef033a7d05c563b731cb4961b3b1d56b46e08e96043179a8af9b88a75111b8"
+    },
+    {
+      "path": "root/PLAN.md",
+      "bytes": 4225,
+      "sha256": "45573bdbade342011ff6c074ec80baf3b3f1db09dce3ac5090422fe666824c4d"
+    },
+    {
+      "path": "root/REPORT.md",
+      "bytes": 9197,
+      "sha256": "2f8bc52a29bb2852fb7508a7cd3f410798b48eebcbfc9eb4c2364754bbef5a94"
+    },
+    {
+      "path": "root/REVIEW-federation-input.md",
+      "bytes": 2144,
+      "sha256": "5ca7cba65c596167cb02f4b7295cd6795e65532cfbab2a24db0c0c20ee6c44ea"
+    },
+    {
+      "path": "root/REVIEW-systemjs-input.md",
+      "bytes": 2126,
+      "sha256": "2cf732e0c6d92999fab9db9a09c098a864a3105849fdcb2489d4e82fd834b633"
+    },
+    {
+      "path": "root/findings.json",
+      "bytes": 3350,
+      "sha256": "4784fd28492d7e8e1cf7e30e6e2ef8d806f32f1e688ebedd1fcb5b1fc5737929"
+    },
+    {
+      "path": "root/sources.json",
+      "bytes": 3265,
+      "sha256": "8fae5524eef819f495d75074b20989cd2fa45bf7590932b720a65961200d8a69"
+    }
+  ]
+}

@@ -10,7 +10,7 @@ summary: Verified module delivery and runtime boundaries, industry update mechan
 
 ## Scope and authority
 
-**Observed: 2026-11-22. Status: research in progress; first source checkpoint.**
+**Observed: 2026-11-22. Status: source research and frozen probe preparation.**
 The owner requests deeper Module Federation and adjacent industry investigation,
 verified evidence and architecture preparation. Contested choices must remain
 open until the owner sees alternatives and the best-supported recommendation.
@@ -66,6 +66,46 @@ changed its displayed version between retrievals; treat it as observed living
 documentation, not a release-pinned binary qualification. The checkpoint pins
 the Federation and Electron source revisions and records unfinished checks.
 
+### Deeper source checkpoint and first frozen input
+
+The [second source packet](evidence/module-federation-checkpoint2-20261122.tar.gz)
+and [member manifest](evidence/module-federation-checkpoint2-20261122.manifest.json)
+preserve the four reports, exact source ledgers, owner alternatives and independent
+plan reviews. They add the following decision-relevant findings:
+
+| Finding | Why it changes the design comparison |
+| --- | --- |
+| SystemJS 6.15.1 intentionally supplies a callback that reconnects importer setters after deletion and reimport | Reuse includes a real rebinding primitive. Escaped references and application resource ownership remain separate. Official Boolean-only prose is incomplete; released source and published types establish the callback. |
+| MF forced registration removes the old registration before one alias-validation failure path | Runtime mutation is not automatically reversible preparation. The planned native case checks public lookup and retained old references separately. |
+| JupyterLab 4.6.6 requires identical service-token instances and uses shared packages for correctness | Prohibiting all sharing would break a useful real pattern. Stable contract identity and replaceable provider implementation need distinct ownership. |
+| Electron fixed parent-side message draining, then restored a parent acknowledgement in its tests | A transport fix does not prove the child's last message reached the parent. App-shutdown exit events have still different semantics; persisted state needs its own receipt. |
+| import-map-deployer 7.0.0 uses a process-local lock and ordinary S3 object writes | Reuse publication tooling, but do not assume multi-writer compare-and-swap or atomic publication of separate JSON/JS representations. Existing storage conditional writes are available. |
+| Vercel deployment affinity has different explicit-ID and shared-cookie boundaries | A new tab can affect cookie-dependent requests from older tabs. Qualify the actual request inventory before promising independent session pinning. |
+| Angular 22.3.0 keeps manifest asset versions and client assignments | A useful ready-made coherence mechanism still has limits for lazy assets, resources without manifest hashes, cache eviction and inactive clients. Support-window retention cannot rely only on browser cache. |
+| Envoy resource ACK and Unreal binary patch completion are weaker than full application readiness | Reuse their positive mechanisms while preserving dependency, live-instance and cleanup observations. Neither source is a native qualification of this library. |
+
+The SystemJS Node probe is frozen before execution in the
+[input archive](evidence/systemjs-rebinding-v1-input-20261122.tar.gz) and
+[input manifest](evidence/systemjs-rebinding-v1-input-20261122.manifest.json).
+It uses TypeScript 7.0.2, Rollup 4.68.8 and released SystemJS 6.15.1. Root and
+independent peer review accepted two narrow tests covering live-binding relink,
+escaped old values, callback guards and deletion during pending evaluation.
+Strict checking and generation passed; **runtime tests have not run at this
+checkpoint**. Maintained fixture/build/harness code is 216 TypeScript lines;
+production code remains zero.
+
+The real Federation browser profile is also frozen before execution in its
+[input archive](evidence/module-federation-v1-input-20261122.tar.gz) and
+[input manifest](evidence/module-federation-v1-input-20261122.manifest.json).
+It uses webpack 5.113.0 generated containers, MF runtime 2.9.3 and TypeScript
+7.0.2. Four planned cases cover retained exports/resources and factory deferral,
+the concrete forced-registration failure, shared-token identity with strict
+version rejection, and a fresh runtime versus an initialized container's scope.
+The shared provider uses the public runtime API; consumers are generated webpack
+modules with no local fallback. Source/dependency and peer reviews are complete;
+compiler/build/browser execution is pending. Maintained TypeScript is 515 lines,
+with no production changes.
+
 ### Reuse warnings under examination
 
 - **Loader replacement:** do not implement a second module resolver or shared
@@ -104,9 +144,9 @@ recommendation. These are **not adopted defaults**:
 6. Failure and state: rollback versus compensation, schema compatibility,
    checkpoint ownership and bounds on draining old work.
 
-The current probe candidates are real webpack-generated remote replacement and
-released SystemJS relinking behavior. Their concrete plans need root/peer review
-before execution; no native result is claimed at this checkpoint. Source facts
+The current probes are real webpack-generated remote replacement and released
+SystemJS relinking behavior. Their plans received root/peer review; frozen inputs
+must be pushed before execution. No native result is claimed at this checkpoint. Source facts
 that are already decisive do not require an additional demonstration. Electron,
 Envoy and Unreal remain source research unless a concrete unresolved claim
 justifies a separate bounded plan.

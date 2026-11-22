@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "status": "frozen-before-compiler-build-browser-execution",
+  "sourceHead": "2134139da3eddf9aa2d563386719772bb05ca0fe",
+  "inputAggregateSha256": "ab08d51b4182b3cfc15e648b4951afbd0209d42f5d21af86acdff9d122df6493",
+  "nativeTestsExecuted": 0,
+  "archive": "module-federation-v1-input-20261122.tar.gz",
+  "bytes": 29610,
+  "sha256": "cba142e3cabfac7eec07e79e7fdde91a663196b4e4bbb04731befe71045da5f9",
+  "members": [
+    {
+      "path": "PLAN.md",
+      "bytes": 10689,
+      "sha256": "5d03edd60d1418bb1b5d59edbc33600d732e1f2e3b590535d96df9e30295e5e4"
+    },
+    {
+      "path": "frozen-inputs-v1.json",
+      "bytes": 2237,
+      "sha256": "14922a6fbc76c8cf54674b4bcca5ae91c7db18375ef788b8f5ad627e967e4e68"
+    },
+    {
+      "path": "probe/build.ts",
+      "bytes": 3369,
+      "sha256": "fed0b9969d4f52cd1bc65a6e4fc670ac99c3060e44652a1eaf5af96c6d0172d2"
+    },
+    {
+      "path": "probe/dependency-audit.json",
+      "bytes": 19608,
+      "sha256": "987ab365c1cf60cbbef7bc2aaec34a776042068ab17fe4003e886d39d92db609"
+    },
+    {
+      "path": "probe/fixture/consumer.ts",
+      "bytes": 39,
+      "sha256": "2942adf7d60ce22be27d15f24c5c359bf420f6329e5942883ca4f89f3c412e50"
+    },
+    {
+      "path": "probe/fixture/host.ts",
+      "bytes": 7303,
+      "sha256": "668f715e947425477f77fc353077d0b19ea2bbe0ff8c9a18971b4cc6397f5c41"
+    },
+    {
+      "path": "probe/fixture/remote.ts",
+      "bytes": 580,
+      "sha256": "753744d6229bece714f3216a34fd668dc0b13e1035e572fd012cae3d34391a02"
+    },
+    {
+      "path": "probe/fixture/token.ts",
+      "bytes": 265,
+      "sha256": "455014b72ca736171310e767b09ffe3a135130a635de1bcd8621da50bfdb72cc"
+    },
+    {
+      "path": "probe/fixture/types.ts",
+      "bytes": 650,
+      "sha256": "f4bac6a9729f49fafaee5a9236769af1929281a1ce22c7da28a49fd42f47fa4f"
+    },
+    {
+      "path": "probe/package.json",
+      "bytes": 549,
+      "sha256": "a216cb0823ce3b08cb20459203db7b6d6fafb8c478789f1b5c435d8be1b94951"
+    },
+    {
+      "path": "probe/pnpm-lock.yaml",
+      "bytes": 27510,
+      "sha256": "1df71ecdaf9f1af044e444dc22419f9f0274adfdbc86cf59fd8709e74543c9f9"
+    },
+    {
+      "path": "probe/probe.test.ts",
+      "bytes": 6752,
+      "sha256": "7d5ba095a45f7faae837fd402fa2aae4985d640d0382023f13384efd10e3420b"
+    },
+    {
+      "path": "probe/tsconfig.json",
+      "bytes": 587,
+      "sha256": "5d8262b5b4dea95af524d4f56c1931238e9a8eba2cec70c22ac02dcb1beaa53f"
+    },
+    {
+      "path": "reviews/peer-fixture.md",
+      "bytes": 4395,
+      "sha256": "f65996fb804cf8deecb4213ee20243b86879e9c2b2be287a6f68960c2f54b233"
+    },
+    {
+      "path": "reviews/peer-plan.md",
+      "bytes": 5050,
+      "sha256": "2a13204e619ea0b1cfcb1488c89692ebe54e16eb1c5a772aec431de3e7a88f24"
+    },
+    {
+      "path": "reviews/root.md",
+      "bytes": 2144,
+      "sha256": "5ca7cba65c596167cb02f4b7295cd6795e65532cfbab2a24db0c0c20ee6c44ea"
+    }
+  ]
+}
