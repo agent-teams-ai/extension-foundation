@@ -47,8 +47,8 @@ jobs:
           import hashlib, json, os, tarfile
           from pathlib import Path
           base = Path('docs/research/evidence')
-          manifest = json.loads((base / 'live-update-backend-input-20261122-v1.manifest.json').read_text())
-          archive = base / 'live-update-backend-input-20261122-v1.tar.gz'
+          manifest = json.loads((base / 'live-update-backend-input-20261122-v2.manifest.json').read_text())
+          archive = base / 'live-update-backend-input-20261122-v2.tar.gz'
           content = archive.read_bytes()
           assert len(content) == manifest['archive']['bytes']
           assert hashlib.sha256(content).hexdigest() == manifest['archive']['sha256']
