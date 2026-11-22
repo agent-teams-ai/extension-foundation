@@ -1,8 +1,8 @@
 {
   "researchDate": "2026-11-22",
   "timezone": "Europe/Kiev",
-  "checkpoint": "1",
-  "note": "Incremental source ledger; source inspection and runtime evidence are distinguished in each lane. Later checkpoints retain corrections in Git history.",
+  "checkpoint": "2",
+  "note": "Incremental ledgers; statuses distinguish source inspection, proposed design and actual execution. Immutable native packet retains these two executed lanes.",
   "lanes": {
     "versions": {
       "researchDate": "2026-11-22",
@@ -425,7 +425,7 @@
     "feedback": {
       "researchDate": "2026-11-22",
       "timezone": "Europe/Kiev",
-      "status": "pinned source analysis; seven-case native Yjs probe passed",
+      "status": "completed lane; native probe 7/7 and strict TS 7.0.2 pass",
       "sources": [
         {
           "id": "F01",
@@ -542,6 +542,56 @@
           "url": "https://docs.yjs.dev/api/y.doc",
           "evidenceClass": "official documentation; destroy/transact source in F05; native negative control",
           "claim": "destroy clears handlers and releases content unless references remain; transaction origin is metadata"
+        },
+        {
+          "id": "F14",
+          "project": "Theia",
+          "version": "moving docs observed 2026-11-22",
+          "url": "https://theia-ide.org/docs/extensions/",
+          "evidenceClass": "official documentation; platform not executed",
+          "claim": "runtime-installed API-bound extensions differ from compile-time DI extensions; special frontend plugin support is under discussion"
+        },
+        {
+          "id": "F15",
+          "project": "Theia",
+          "version": "moving docs observed 2026-11-22",
+          "url": "https://theia-ide.org/docs/authoring_plugins/",
+          "evidenceClass": "official deprecated documentation explicitly redirecting readers",
+          "claim": "page warns against relying on legacy Theia-plugin authoring guidance and recommends current extension mechanisms"
+        },
+        {
+          "id": "F16",
+          "project": "VS Code",
+          "version": "moving docs observed 2026-11-22",
+          "url": "https://code.visualstudio.com/api/extension-guides/web-extensions",
+          "evidenceClass": "official documentation; browser host not executed",
+          "claim": "web extensions run in a browser environment with browser entry and restrictions on Node APIs"
+        },
+        {
+          "id": "F17",
+          "project": "Module Federation",
+          "version": "moving docs observed 2026-11-22",
+          "url": "https://module-federation.io/guide/runtime/runtime-api",
+          "evidenceClass": "official documentation; force behavior cross-checked in pinned F01",
+          "claim": "force re-registration overwrites existing remote registration/cache and is explicitly risky"
+        },
+        {
+          "id": "F18",
+          "project": "single-spa",
+          "version": "moving docs observed 2026-11-22",
+          "url": "https://single-spa.js.org/docs/api/",
+          "evidenceClass": "official documentation; unload behavior cross-checked in pinned F03",
+          "claim": "unloadApplication supports waitForUnmount; lifecycle functions and loaded status can be reset for reloading"
+        },
+        {
+          "id": "P01",
+          "project": "Yjs native qualification",
+          "version": "Yjs 13.6.33; TypeScript 7.0.2; Node 24.22.3",
+          "artifact": "probe/evidence/results.json",
+          "evidenceClass": "executed seven-case released-library probe; first strict typecheck and runtime attempt passed",
+          "claim": "draft/history retention, capture boundaries, old-origin acceptance, clear-vs-content, history restore limit, relative caret, and post-destroy negative control",
+          "scope": "in-memory real binary document transfer; no renderer, network provider, durable store, distributed protocol, production revocation, schema migration, or leak-free claim",
+          "provenance": "probe/evidence/package-provenance.json"
         }
       ]
     },

@@ -8,11 +8,11 @@ summary: Defines the standalone library direction, reusable mechanisms, version 
 
 # Standalone Live Plugin Library Blueprint 2026-11-22
 
-<!-- cspell:words CRDT -->
+<!-- cspell:words CRDT EBADF -->
 
 ## Scope and authority
 
-**Observation date: 2026-11-22, Europe/Kiev. First research checkpoint.** The
+**Observation date: 2026-11-22, Europe/Kiev. Native evidence checkpoint.** The
 owner confirms a substantial, purpose-neutral library in a separate repository.
 This is a successor to the
 [reuse-first study](reuse-first-live-plugin-updates-2026-11-22.md), not a new
@@ -71,7 +71,9 @@ qualified Docs tooling and explicit admission state. Configuration alone is
 The machine-readable [source ledger](evidence/standalone-live-library-20261122.sources.json)
 retains exact revisions, blob identities, observation dates and evidence classes.
 The following source findings have implementation consequences worth preserving.
-Native probes and independent reviews are being recorded in the next checkpoint.
+The [findings register](evidence/standalone-live-library-20261122.findings.json)
+adds consequences and decisive rejection scenarios. Executed native probes and
+independent cross-reviews are preserved below.
 
 | Finding | Consequence for the proposed library | Evidence |
 | --- | --- | --- |
@@ -113,6 +115,48 @@ discarding a local draft, retiring a plugin cache and deleting durable user data
 are separate operations with different owners. The default behavior and recovery
 window remain consumer choices; the library must expose the difference.
 
+## Executed native probes and their limits
+
+The immutable [native evidence packet](evidence/standalone-live-library-native-20261122.tar.gz)
+and [member manifest](evidence/standalone-live-library-native-20261122.manifest.json)
+contain prior plans, actual TypeScript sources, exact lockfiles, first-run logs,
+machine observations, source ledgers and two independent cross-reviews. Both
+probes use Node 24.22.3 and strict TypeScript 7.0.2 with dependency declaration
+checking enabled. The checks passed on their first execution; review found no
+reason to repeat them.
+
+| Probe | Executed result | Scope and significant counterexample |
+| --- | --- | --- |
+| Native Node asynchronous context | 5 passed, 0 failed, 0 skipped; strict typecheck passed | Real Promise, EventEmitter, snapshot, async generator and FileHandle. A captured context remains A after file close, while readFile fails with EBADF. |
+| Released Yjs 13.6.33 state/history | 7 passed, 0 failed, 0 skipped; strict typecheck passed | Real document updates, observers, UndoManager, binary transfer and relative positions. Removing a tracked origin does not prevent a late write or its transfer to a peer. |
+
+**Context:** `snapshot` retains a reference to the store, not an immutable copy.
+A generator created in A can execute in B when `next` is called there; binding
+its supported consumption methods restores A. The probe covers `next` and
+`return`, not `throw`. A permanently bound listener can also keep every future
+independent action on A. Reuse native context at the actual operation boundary;
+resource acquisition and release remain the lifecycle owner's responsibility.
+A Promise returning a stream may settle before that operation finishes.
+
+**State:** preserving the document and UndoManager while replacing exact view
+subscriptions retains content and history. Adjacent edits from different tracked
+origins can form one Undo entry; `stopCapturing` separates them. Clearing history
+retains the draft. Encoding/restoring a document retains content but does not
+serialize the previous in-memory UndoManager. A relative caret survives a peer
+prepend with its resolved index moving from 2 to 3.
+
+The deliberate post-destroy negative control shows that `Doc.destroy` does not
+revoke retained mutable references. It is misuse evidence, not a supported
+post-destroy operating mode. A central command gate cannot reject writes that
+bypass it through a previously issued mutable `Y.Doc` or `Y.Text`. The actual
+state boundary must avoid that escape or disclose the trust/lifetime limit;
+TypeScript readonly annotations are not enforcement.
+
+These are native mechanism tests. They do not establish browser focus/IME,
+renderer cleanup, durable storage, provider networking, distributed fencing or
+production hot replacement. The next browser experiment is separately scoped
+and will keep its own input identity and receipts.
+
 ## Reuse decisions and targeted uncertainty
 
 | Concern | First mechanism to inspect or reuse | Qualification still required |
@@ -139,8 +183,9 @@ publication path rather than importing its source into this library (G3-G4, G10)
 
 1. Qualify the smallest useful end-to-end feature slice in an ordinary external
    project and the intended application; share conformance, not product models.
-2. Review the real native Node and Yjs probes, preserve negative controls and
-   record which results are runtime observations versus source inferences.
+2. The native Node and Yjs probes and cross-reviews are complete. Extend the next
+   actual browser check to dirty draft/history and visible plugin logic changes;
+   keep it separate from production and durable-recovery claims.
 3. Define a retention budget: versions, bytes, active work, history demand and
    deadlines. An over-budget update must return an explicit defer/restart/reject
    choice, not silently delete the oldest generation.
@@ -150,5 +195,18 @@ publication path rather than importing its source into this library (G3-G4, G10)
 5. Separate public contract design, repository bootstrap qualification and
    application adoption. Record a scoped estimate for each before implementation.
 
-This checkpoint preserves the direction and source findings. It does not claim
-that a standalone runtime, its public API or the new repository has been shipped.
+## Checkpoint custody
+
+The first checkpoint was committed and immediately pushed as
+[`36499a2`](https://github.com/agent-teams-ai/extension-foundation/commit/36499a2ced8500a631d4a97f63983d1a21c9841a).
+The initial documentation spelling check identified one legitimate technical
+term, CRDT; a document-local dictionary entry fixed it. The corrected gate passed
+with 92 catalog documents and 98 Markdown inputs. The previous evidence archive
+is unchanged.
+
+The connected GitHub API can write this repository but exposes no repository
+creation operation. The CLI has no authenticated host and the browser's creation
+page requires sign-in; no new repository has been created. The standalone
+bootstrap/transfer recipe is being prepared as a reviewable deliverable while
+all findings remain pushed here. This is an access limitation, not an additional
+owner-approval requirement for the already confirmed separate-project direction.
