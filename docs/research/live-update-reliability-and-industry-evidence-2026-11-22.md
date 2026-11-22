@@ -12,9 +12,9 @@ summary: Deepens the standalone library with source-backed failure mechanisms, n
 
 ## Scope and authority
 
-**Observation date: 2026-11-22, Europe/Kiev. Native editor: seven scenarios and
-70 comparisons pass. First hosted backend: 16 of 17 tests pass; one exact
-PostgreSQL error-code expectation requires correction.** The owner accepts
+**Observation date: 2026-11-22, Europe/Kiev. Native editor: one E2E with seven
+scenarios and 70 comparisons passes. Corrected hosted backend: all 17 tests
+pass, with no skips. Both original failed attempts are retained.** The owner accepts
 the architectural direction in
 [OD-003](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-confirmed-architecture-and-deeper-qualification-2026-11-22):
 a TypeScript control library, ordinary TypeScript plugins first, optional
@@ -45,6 +45,10 @@ documentation, reported incident, proposed transfer and executed native result.
 The [second checkpoint](evidence/live-update-reliability-checkpoint2-20261122.json)
 adds the completed state, execution, editor and control-policy investigations,
 accepted review corrections and original browser failure analysis.
+The [completed checkpoint](evidence/live-update-reliability-checkpoint3-20261122.json)
+retains the final lane reports, exact source ledgers, accepted reviews and both
+successful native outcomes alongside their scope limits. Earlier checkpoint
+statuses remain historical snapshots.
 
 ### Mechanism-level warnings
 
@@ -229,11 +233,11 @@ Worker cases, not additional tests or defects attributed to Resources.
 | Execution and resources | Node 24.22.3 Workers; literal A/B TS entries and dependencies; public Resources 0.2.2 | Old operation retains A/A while new work uses B/B; host effect survives Worker exit; close waits for stop; failed cleanup leaves a responsive Worker; retry and bounded live-generation admission | No Node sandbox, arbitrary graph loader, heap restore, memory bound or production kernel |
 | User-visible contribution state | CodeMirror state 6.7.6, view 6.43.15, commands 6.11.1, lint 6.9.8; Playwright/Chromium | Native reconfiguration; unchanged/changed document async results; generation/revision gate; equal text after Undo; clear history separately from draft; semantic history codec boundary | No OS IME qualification, general state migration, production HMR or mandatory editor dependency |
 
-Strict TypeScript 7.0.2 checks every maintained source before execution. Exact
+Strict TypeScript 7.0.2 checked every maintained source before execution. Exact
 locks, source hashes, native versions, raw observations and original failures
-will be retained. Plans and source receive independent critique before hosted
-execution. A corrective attempt receives a new input identity; an earlier failed
-attempt is never rewritten into a pass.
+are retained. Plans and source received independent critique before hosted
+execution. Corrective attempts received new input identities; earlier failed
+attempts remain failures.
 
 The database and Worker lanes share one private host fixture. All transaction
 bodies contain bounded host SQL; plugin execution and worker waits occur
@@ -247,7 +251,7 @@ instead of implementing a substitute editor or Undo engine.
 | Development refresh and repair | Retained React/Vite browser49 | Production update path, supported framework/version matrix |
 | Cross-language execution | Retained TS/Rust Component Model and Extism experiments | Chosen backend/profile, cancellation and declaration compatibility |
 | Ordinary resource scope | Retained Resources6/ALS5 and new native Worker cases | Concurrent admission reservations, arbitrary finalizers and process-tree/resource bounds |
-| Durable publication | Native PG competition, replay, process crash, fencing and visibility cases passed; S13 correction pending | Completed retention race, real commit-wire ambiguity, failover and distributed recovery |
+| Durable publication | Native PG competition, replay, process crash, fencing, visibility and both metadata-retention race orders passed | Real commit-wire ambiguity, failover, physical artifact deletion and distributed recovery |
 | User state and history | Retained Yjs7/React and new native editor seven-scenario E2E | Real IME, compatible semantic-history persistence, multi-input ongoing freshness |
 | Library completeness | Owner-approved direction and feature boundaries | Independent external consumer, reusable operation and conformance |
 | Separate repository bootstrap | Transfer packet and organization source retained | Provisioned remote and qualified current tooling cohort |
@@ -255,6 +259,31 @@ instead of implementing a substitute editor or Undo engine.
 This matrix prevents several passing demonstrations from being presented as
 coverage of the entire system. New reports must state which row changed and
 what remains unproven.
+
+### Proposed implementation sequence
+
+Start with one reusable TypeScript operation through one real host: prepare an
+update, publish or reconcile its recorded attempt, show useful output and retire
+the predecessor with visible cleanup debt. Build on Get Modular plans and public
+Resources. Resolve the lifecycle-kernel's external contract with its owner before
+depending on it. Keep the existing
+[reuse matrix](standalone-live-plugin-library-blueprint-2026-11-22.md#reuse-decisions-and-targeted-uncertainty)
+as the owner map for loaders, RPC, scopes, state, rollout and durable workflows.
+
+The next qualification should run the same operation through an independently
+authored consumer, including an unavailable reconciliation service and a lost
+live executor. This is a proposed stronger acceptance criterion, not an existing
+organization mandate. It detects whether the supposed narrow ports actually
+force each consumer to reimplement the protocol.
+
+Add the durable publication profile only for hosts that need restart recovery;
+PostgreSQL is not a mandatory core dependency. Prioritize real network commit
+ambiguity, concurrent admission reservations and current-state compatibility
+before broadening its guarantees. Qualify external effect retries at their actual
+receivers. Persisted semantic Undo and remote observer resync need separate
+consumer-visible cases. Optional Extism/Component Model and native Effect adapters
+then reuse the operation's concepts where their meanings agree and retain their
+own native execution semantics.
 
 ### Original editor run and frozen input
 
@@ -345,6 +374,20 @@ correct only the first S13 expected error code, confirmed against PostgreSQL
 still expects `23503`; 14 other input files and the dependency lock are unchanged.
 Strict TypeScript 7.0.2 passed before the corrected hosted run. Archive SHA-256:
 `6aad6e191b132c8d6f95c7110d10e8db25ed3011ca8835d2f9586097fa1b732e`.
-Its native outcome remains pending at this input checkpoint. S10's successful
-rollback admission is a quiescent toy-codec check; it does not qualify concurrent
-migration or guarantee that an old writer preserves newly added fields.
+The [v2 hosted run](https://github.com/agent-teams-ai/extension-foundation/actions/runs/45043862207)
+on `9b33571e1586cc6801629a98b94fa1bc391c98cb` passed all 17 tests with
+zero failures, cancellations or skips. Its
+[original artifact](evidence/live-update-backend-v2-attempt1-20261122.zip) and
+[receipt](evidence/live-update-backend-v2-attempt1-20261122.json) preserve the
+27 returned files, native observations and exact input identity. Root and the
+execution reviewer independently verified all 15 input files after the run.
+Both S13 schedules reached native lock waits and the intended error assertions;
+the final SQL assertion found no dangling reference. The JSON summary's zero is
+a reporting constant supported by that passed assertion, not a saved raw query
+row. This qualifies metadata retention, not physical blob deletion.
+
+S10's successful rollback admission remains a quiescent toy-codec check; it does
+not qualify concurrent migration or guarantee that an old writer preserves newly
+added fields. Losing the application reply after a committed publication does not
+exercise a lost PostgreSQL wire acknowledgement. These scope limits remain even
+when the native suite is green.

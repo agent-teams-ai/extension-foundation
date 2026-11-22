@@ -1,0 +1,256 @@
+{
+  "runId": 45043862207,
+  "runAttempt": 1,
+  "runUrl": "https://github.com/agent-teams-ai/extension-foundation/actions/runs/45043862207",
+  "jobId": 137274019386,
+  "commit": "9b33571e1586cc6801629a98b94fa1bc391c98cb",
+  "conclusion": "success",
+  "input": {
+    "path": "live-update-backend-input-20261122-v2.tar.gz",
+    "bytes": 21518,
+    "sha256": "6aad6e191b132c8d6f95c7110d10e8db25ed3011ca8835d2f9586097fa1b732e"
+  },
+  "workflowSha256": "509eded980fe1f28153af10b04b30d70b0794cb6b0e380d093014724f3f176cf",
+  "archive": {
+    "path": "live-update-backend-v2-attempt1-20261122.zip",
+    "bytes": 47973,
+    "sha256": "0167363a6a3ddc72527c3ba7b32bf43072c01acf8d5fc9b804150bf6a2a7e052",
+    "artifactId": 14762164703
+  },
+  "sourceFilesVerifiedAfterRun": 15,
+  "files": [
+    {
+      "path": "evidence/execution-state-results.json",
+      "bytes": 6547,
+      "sha256": "842f202c01825c536d9d1427bf4b3df60b36240b781a9521bfb4de150689c366"
+    },
+    {
+      "path": "evidence/hosted-environment.txt",
+      "bytes": 17,
+      "sha256": "92d8a2199a84055aeb15998c3d5df8df5787b2a93f9cfa0bdcb57cb1de2825bb"
+    },
+    {
+      "path": "evidence/execution-results.json",
+      "bytes": 2665,
+      "sha256": "7be6818652a79f92f37536ec1885b1ba1c7f28ee8e24b84632d5d6c5e16eec2c"
+    },
+    {
+      "path": "evidence/hosted-input-receipt.json",
+      "bytes": 367,
+      "sha256": "c8467a4061a6c5421a9cc8e6b0f100e4313cfbdf0167f563088d4c69a24c1c5b"
+    },
+    {
+      "path": "evidence/hosted-install.log",
+      "bytes": 727,
+      "sha256": "2a5a4784950a6d81e500a459b9a20db0a785dbe551da379cd7c7e93a78247663"
+    },
+    {
+      "path": "evidence/hosted-runtime.log",
+      "bytes": 1618,
+      "sha256": "f68c7f58fdece25495ad1bd5246823742fc1c4793322245f348b3224842f9bac"
+    },
+    {
+      "path": "evidence/hosted-typecheck.log",
+      "bytes": 54,
+      "sha256": "ace66e11637f9a69a84d1178767cd9bb91010501ece0296cbc7ae8b32f5ed8a2"
+    },
+    {
+      "path": "evidence/input-manifest.json",
+      "bytes": 35371,
+      "sha256": "0721c231a3dcec081a2064295781cd6d70d845c5da81d71958f3fd86d52871fb"
+    },
+    {
+      "path": "evidence/installed-direct-identities.json",
+      "bytes": 136,
+      "sha256": "62bc12fc6c2266c9fc9030085b2a77032d26951c9ac02f6682fe9c0a2d147dbd"
+    },
+    {
+      "path": "evidence/postgres-container-image.txt",
+      "bytes": 72,
+      "sha256": "7575eaaa248005712b0ac818bd4fc75015d92e30706ff823851f6f43e7d5b88c"
+    },
+    {
+      "path": "evidence/postgres-image-digests.json",
+      "bytes": 85,
+      "sha256": "f712dc3b23b9a4ace8073335e2c274e7df91664f0b423c0bb5cff46e3a2872e0"
+    },
+    {
+      "path": "evidence/state-results.json",
+      "bytes": 12698,
+      "sha256": "139d1ba87e2d3ef54c69440ba082701fe6fffd15a6aad6bc9bbcc0588c64cd33"
+    },
+    {
+      "path": "execution/dependency-a.ts",
+      "bytes": 71,
+      "sha256": "cdfee5a73869f92e43682ff021dc91d3436b33a848bddf58dc5ffb0ef8419f0d"
+    },
+    {
+      "path": "execution/dependency-b.ts",
+      "bytes": 71,
+      "sha256": "5d126d477c3173d7bcaa405921ccf388da8840063c7afbeedd9a830a373e37de"
+    },
+    {
+      "path": "execution/execution-state.test.ts",
+      "bytes": 8784,
+      "sha256": "27be42f8528b87cb5b18526221d7fcde3fe2f58b05ab6dc5cf63697a933286b8"
+    },
+    {
+      "path": "execution/execution.test.ts",
+      "bytes": 6775,
+      "sha256": "e797835458aeddad476b596b8c3b56ef2cdf96db9f7f38ec18392db3308081ae"
+    },
+    {
+      "path": "execution/protocol.ts",
+      "bytes": 3544,
+      "sha256": "71441cd1ab23a96db8e8baa9e14ffadacf22e0173029a6a712eb07eaa1c5944d"
+    },
+    {
+      "path": "execution/worker-a.ts",
+      "bytes": 237,
+      "sha256": "9f26be0b50676b3e74a54899c103c77289778508a04320691cedb047c75ac9ed"
+    },
+    {
+      "path": "execution/worker-fixture.ts",
+      "bytes": 4748,
+      "sha256": "a3af2fb7946b8c7133f9cdf4eda889aec6939061bf4c0649416f467d024bb31d"
+    },
+    {
+      "path": "execution/worker-b.ts",
+      "bytes": 241,
+      "sha256": "86d0ea7ea8b7b412e2dcfb2d17000bd871cf11abf80d437996b3920606512012"
+    },
+    {
+      "path": "execution/worker-main.ts",
+      "bytes": 2524,
+      "sha256": "878899ffe179e613003f38641af1df9012951e92d230850fb095577daa01e9cd"
+    },
+    {
+      "path": "fault-child.ts",
+      "bytes": 1660,
+      "sha256": "82f2c7db544dc5d8c6cb4b2b0506f03e5f5908336b453e5a2c126271cea44536"
+    },
+    {
+      "path": "package.json",
+      "bytes": 977,
+      "sha256": "55618749e3f208e55777168c6ae730b8811c3c9a0a6288a9df0601244250a951"
+    },
+    {
+      "path": "state-fixture.ts",
+      "bytes": 13717,
+      "sha256": "80b357d6db3c3ac8bbde80bbd2b2d979f7e6c4783efdd92110551fd342bc4da1"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 12069,
+      "sha256": "75559c420d7d67a2761ec54ea10a2be3eb4f366d448612292f83e92d106678fa"
+    },
+    {
+      "path": "state.test.ts",
+      "bytes": 23060,
+      "sha256": "e89db6f922faab3dc6c68bc89917b6ec0d82cf1e35e2a9b7139ea382c8df5b65"
+    },
+    {
+      "path": "tsconfig.json",
+      "bytes": 482,
+      "sha256": "c4df550cc878f75cc6a0ada0216c20ebe9402b638ff42c5add4dd68453e60d50"
+    }
+  ],
+  "testCounts": {
+    "tests": 17,
+    "passed": 17,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "scenarios": [
+    {
+      "name": "S01 competing publishers CAS once",
+      "status": "passed"
+    },
+    {
+      "name": "S02 same attempt serializes and effects replay once",
+      "status": "passed"
+    },
+    {
+      "name": "S03 attempt identity rejects changed inputs",
+      "status": "passed"
+    },
+    {
+      "name": "S04 artifact ABA cannot reuse live identity revision or epoch",
+      "status": "passed"
+    },
+    {
+      "name": "S05 lost application reply reconciles same durable attempt",
+      "status": "passed"
+    },
+    {
+      "name": "S06 controller death before COMMIT rolls back native transaction",
+      "status": "passed"
+    },
+    {
+      "name": "S07 KEY SHARE negative control allows old effect after publication",
+      "status": "passed"
+    },
+    {
+      "name": "S08 SHARE fence orders old effect before new publication",
+      "status": "passed"
+    },
+    {
+      "name": "S10 rollback requires actual current state compatibility",
+      "status": "passed"
+    },
+    {
+      "name": "S11 durable baseline cannot silently change after controller restart",
+      "status": "passed"
+    },
+    {
+      "name": "S12 DO NOTHING CTE fallback can miss the committed winner",
+      "status": "passed"
+    },
+    {
+      "name": "S13 FK retention metadata excludes dangling canonical reference",
+      "status": "passed"
+    },
+    {
+      "name": "E03 close waiter abandonment does not prove native Worker exit",
+      "status": "passed"
+    },
+    {
+      "name": "E04 failed cleanup retains a responsive Worker and public close retries it",
+      "status": "passed"
+    },
+    {
+      "name": "E05 retention budget counts native exits before acquiring another Worker",
+      "status": "passed"
+    },
+    {
+      "name": "E01 real old and new implementation/dependency cohorts straddle DB publication",
+      "status": "passed"
+    },
+    {
+      "name": "E02 S09 stale parent-owned effect is fenced after actual Worker exit",
+      "status": "passed"
+    }
+  ],
+  "nativeRuntime": {
+    "node": "v24.22.3",
+    "typescript": "7.0.2",
+    "pnpm": "11.25.0",
+    "postgresVersionNumber": "180007",
+    "postgresImageRepoDigest": "postgres@sha256:194e55feb2597b1465dbee81cc9fd8d204566cd2eb42c8d22fd6c931a38781b1"
+  },
+  "retentionRace": {
+    "reported": {
+      "deleteBlockers": [
+        139
+      ],
+      "holdBlockers": [
+        137
+      ],
+      "danglingReferences": 0,
+      "limitation": "metadata only; no physical blob deletion or runtime lease proof"
+    },
+    "evidenceLimit": "Both blocker lists are recorded raw; 23001/23503 and final SQL no-dangling query are supported by unchanged-source passed assertions, not separately serialized raw SQL error/count objects."
+  },
+  "scope": "Protected SQL effect row on one primary Read Committed; lost application reply is not PostgreSQL wire ACK; S10 quiescent codecs; S13 metadata only; E05 serial known-Worker capacity; E01 literal native async generator cohorts, not HTTP stream; no production library claim."
+}
