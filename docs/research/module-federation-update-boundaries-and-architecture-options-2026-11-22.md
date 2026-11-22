@@ -298,7 +298,8 @@ configuration without turning it into a global default.
 | Q7. Supported old clients | A: independent tab/session versions within a declared support window. B: short coexistence followed by coordinated transition. | A for long working/editor sessions, B for short stateless panels. Duration, offline budget and limits need workload evidence; cached assets do not extend execution permission. |
 
 The complete Russian alternatives and independent review are preserved in the
-portable supplement. These questions do not reopen TS-first, optional execution
+[portable supplement](evidence/module-federation-research-supplement-20261122.tar.gz).
+These questions do not reopen TS-first, optional execution
 profiles, the complete library operation, canonical product state or Get Modular
 ownership. Exact wire format, all future adapters, package count and SSR/desktop
 breadth can wait for a concrete consumer. Ordinary-library qualification, a
@@ -334,6 +335,19 @@ explicit in their original study.
 
 ### Preserved checkpoints and transfer
 
+The [167-file supplement](evidence/module-federation-research-supplement-20261122.tar.gz)
+and its [per-file manifest](evidence/module-federation-research-supplement-20261122.manifest.json)
+retain the four final source lanes, owner alternatives, independent reviews,
+frozen fixtures, raw native evidence and original failures. Its reading copies
+originate at `52810c469783c77f852ee2a62be74ec259867747`; later archive publication
+does not change the source identities that produced the results.
+
+Use it alongside the unchanged
+[532-file standalone base](evidence/standalone-live-library-deepening-20261122.tar.gz).
+Extract the two packets into separate sibling directories: the supplement is not
+an overlay and does not replace the base's seed, manifest or accepted decisions.
+The supplement README records reproduction profiles and license/provenance scope.
+
 - [First source checkpoint](evidence/module-federation-checkpoint1-20261122.json).
 - [Four-lane source and review checkpoint](evidence/module-federation-checkpoint2-20261122.tar.gz) and [manifest](evidence/module-federation-checkpoint2-20261122.manifest.json).
 - [SystemJS frozen input](evidence/systemjs-rebinding-v1-input-20261122.tar.gz) and [manifest](evidence/systemjs-rebinding-v1-input-20261122.manifest.json).
@@ -341,6 +355,7 @@ explicit in their original study.
 - [Original local browser failure](evidence/module-federation-v1-local-attempt1-20261122.tar.gz) and [manifest](evidence/module-federation-v1-local-attempt1-20261122.manifest.json).
 - [Federation v2 input](evidence/module-federation-v2-input-20261122.tar.gz) and [manifest](evidence/module-federation-v2-input-20261122.manifest.json).
 - [First hosted attempt with failed artifact delivery](evidence/module-federation-v2-hosted-attempt1-20261122.tar.gz) and [manifest](evidence/module-federation-v2-hosted-attempt1-20261122.manifest.json).
+- [Successful hosted raw artifact](evidence/module-federation-v2-hosted-attempt2-20261122.zip), [delivery audit](evidence/module-federation-v2-hosted-attempt2-20261122.json) and [independent semantic review](evidence/module-federation-v2-semantic-review-20261122.json).
 
 The [dedicated hosted workflow](../../.github/workflows/module-federation-research.yml)
 uses pinned actions and exact dependency/compiler identities. Its upload step runs
