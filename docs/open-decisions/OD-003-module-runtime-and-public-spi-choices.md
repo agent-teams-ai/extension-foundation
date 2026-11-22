@@ -54,6 +54,27 @@ Foundation package, production graph runtime, or public SPI by implication.
 - Every production host remains subject to the accepted production-host safety
   closure and its own authority and termination evidence.
 
+## Owner-confirmed architecture and deeper qualification, 2026-11-22
+
+The owner accepts the recommended starting architecture: a **TypeScript control
+library with ordinary TypeScript plugins**, with Wasm/Extism and native Effect
+as separate optional execution profiles. The reusable library supplies the
+complete update operation: planning, switching, cleanup coordination and
+observable outcomes. External consumers connect narrow authorization and state
+primitives; they should not reconstruct that operation in each product.
+
+The owner also requests materially deeper parallel research and qualification
+than the last browser-recovery slice. Investigate interacting failure boundaries,
+actual industry mechanisms, old-version and state retention, user-visible
+changes, ready-made algorithms and libraries, and specific mistakes to avoid.
+Keep findings and intermediate checkpoints committed and immediately pushed.
+The [reliability study](../research/live-update-reliability-and-industry-evidence-2026-11-22.md)
+records this next stage and its evidence coverage.
+
+This confirms architecture direction, not a specific Wasm engine, production
+executor, ordinary interruption default, migration policy or published SPI.
+Accepted graph, product authority and canonical-state ownership remain in force.
+
 ## Owner-confirmed standalone library and continuous research, 2026-11-22
 
 The owner confirms that the live-plugin work is a **standalone, reusable library

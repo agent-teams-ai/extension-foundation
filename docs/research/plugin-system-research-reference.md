@@ -18,6 +18,13 @@ a released runtime, a security audit or a performance qualification.
 
 ## Current synthesis
 
+The [reliability deepening](live-update-reliability-and-industry-evidence-2026-11-22.md)
+records the owner's accepted TypeScript-first architecture and complete reusable
+update operation. It extends the last browser slice with coupled publication,
+executor, state and editor failure mechanisms, exact source findings, independent
+review and explicit native qualification gaps. Earlier passing probes retain
+their original scope; they do not qualify the whole library.
+
 The [standalone library blueprint](standalone-live-plugin-library-blueprint-2026-11-22.md)
 records the owner's explicit separate-project direction, current organization
 requirements, reusable mechanisms, version/state retention and user-visible

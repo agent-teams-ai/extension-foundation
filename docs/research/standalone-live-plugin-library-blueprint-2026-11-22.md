@@ -12,6 +12,11 @@ summary: Defines the standalone library direction, reusable mechanisms, version 
 
 ## Scope and authority
 
+The [reliability deepening](live-update-reliability-and-industry-evidence-2026-11-22.md)
+continues this blueprint after owner acceptance of the TypeScript-first control
+library and complete update operation. It adds coupled failure mechanisms and
+native qualification beyond the completed browser recovery below.
+
 **Observation date: 2026-11-22, Europe/Kiev. Browser recovery qualified.** The
 owner confirms a substantial, purpose-neutral library in a separate repository.
 This is a successor to the
