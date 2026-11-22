@@ -10,7 +10,7 @@ summary: Verified module delivery and runtime boundaries, industry update mechan
 
 ## Scope and authority
 
-**Observed: 2026-11-22. Status: source research and frozen probe preparation.**
+**Observed: 2026-11-22. Status: source research, SystemJS execution and hosted Federation qualification.**
 The owner requests deeper Module Federation and adjacent industry investigation,
 verified evidence and architecture preparation. Contested choices must remain
 open until the owner sees alternatives and the best-supported recommendation.
@@ -105,6 +105,37 @@ The shared provider uses the public runtime API; consumers are generated webpack
 modules with no local fallback. Source/dependency and peer reviews are complete;
 compiler/build/browser execution is pending. Maintained TypeScript is 515 lines,
 with no production changes.
+
+### First native results and preserved environment failure
+
+**SystemJS: one attempt, two tests passed, zero failed or skipped.** The
+[raw result packet](evidence/systemjs-rebinding-v1-attempt1-20261122.tar.gz) and
+[result manifest](evidence/systemjs-rebinding-v1-attempt1-20261122.manifest.json)
+retain the exact command, Node 24.22.3 identity, exit status and observed values.
+The importer reads A before the reconnect callback and B afterwards; an escaped
+namespace, original function and initially captured function still read A.
+Deletion during signalled pending evaluation returns false; the original import
+completes after release and can then be deleted. These are two Node loader tests,
+not browser, migration, cleanup or full-library E2E evidence.
+
+**Federation v1: strict check and actual webpack generation passed; browser
+bootstrap was blocked before any scenario executed.** Chromium could not create
+its process singleton socket in the local environment. The four failed
+`node:test` entries share that setup-hook failure; they are not four observed MF
+semantic failures. The [original local attempt](evidence/module-federation-v1-local-attempt1-20261122.tar.gz)
+and [manifest](evidence/module-federation-v1-local-attempt1-20261122.manifest.json)
+preserve all stage logs, exits, empty native observations, generated outputs and
+licenses. Local browser restrictions were not changed.
+
+The [v2 frozen input](evidence/module-federation-v2-input-20261122.tar.gz) and
+[manifest](evidence/module-federation-v2-input-20261122.manifest.json) change only
+browser executable selection: use an optional explicit path, otherwise the
+browser supplied by pinned Playwright. All assertions, dependency versions,
+fixtures and compiler options remain identical. The dedicated
+[hosted workflow](../../.github/workflows/module-federation-research.yml) verifies
+archive members, installed dependency identities and compiler hash before
+checking, building and running the browser tests. Its result is pending at this
+checkpoint; earlier qualified workflows remain unchanged.
 
 ### Reuse warnings under examination
 

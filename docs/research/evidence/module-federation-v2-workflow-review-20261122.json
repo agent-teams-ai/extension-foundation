@@ -1,0 +1,125 @@
+{
+  "review": "PASS",
+  "archiveBytes": 27743,
+  "archiveSha256": "a2e6bfb6bb715c563026f72dc64a7c7460971d4a46d3eb711e8d0b5395cbefc6",
+  "manifestSha256": "29427dff539b38e85afe55b4632acec923893b68cedb1dfbdd557a4c6b5efb91",
+  "members": 21,
+  "names": [
+    "PLAN.md",
+    "PORTABILITY-V2.md",
+    "frozen-inputs-v2.json",
+    "portability-v2.diff",
+    "probe/build.ts",
+    "probe/dependency-audit.json",
+    "probe/fixture/consumer.ts",
+    "probe/fixture/host.ts",
+    "probe/fixture/remote.ts",
+    "probe/fixture/token.ts",
+    "probe/fixture/types.ts",
+    "probe/package.json",
+    "probe/pnpm-lock.yaml",
+    "probe/probe.test.ts",
+    "probe/tsconfig.json",
+    "third-party-licenses/manifest.json",
+    "third-party-licenses/module-federation__error-codes-LICENSE",
+    "third-party-licenses/module-federation__runtime-LICENSE",
+    "third-party-licenses/module-federation__runtime-core-LICENSE",
+    "third-party-licenses/module-federation__sdk-LICENSE",
+    "third-party-licenses/webpack-LICENSE"
+  ],
+  "frozenAggregate": {
+    "status": "frozen v2 portability only; awaiting pushed hosted profile; no v2 execution",
+    "createdAt": "2026-11-22T18:08:22.143077+00:00",
+    "inputs": [
+      {
+        "path": "probe/build.ts",
+        "sha256": "fed0b9969d4f52cd1bc65a6e4fc670ac99c3060e44652a1eaf5af96c6d0172d2",
+        "bytes": 3369
+      },
+      {
+        "path": "probe/dependency-audit.json",
+        "sha256": "987ab365c1cf60cbbef7bc2aaec34a776042068ab17fe4003e886d39d92db609",
+        "bytes": 19608
+      },
+      {
+        "path": "probe/fixture/consumer.ts",
+        "sha256": "2942adf7d60ce22be27d15f24c5c359bf420f6329e5942883ca4f89f3c412e50",
+        "bytes": 39
+      },
+      {
+        "path": "probe/fixture/host.ts",
+        "sha256": "668f715e947425477f77fc353077d0b19ea2bbe0ff8c9a18971b4cc6397f5c41",
+        "bytes": 7303
+      },
+      {
+        "path": "probe/fixture/remote.ts",
+        "sha256": "753744d6229bece714f3216a34fd668dc0b13e1035e572fd012cae3d34391a02",
+        "bytes": 580
+      },
+      {
+        "path": "probe/fixture/token.ts",
+        "sha256": "455014b72ca736171310e767b09ffe3a135130a635de1bcd8621da50bfdb72cc",
+        "bytes": 265
+      },
+      {
+        "path": "probe/fixture/types.ts",
+        "sha256": "f4bac6a9729f49fafaee5a9236769af1929281a1ce22c7da28a49fd42f47fa4f",
+        "bytes": 650
+      },
+      {
+        "path": "probe/package.json",
+        "sha256": "a216cb0823ce3b08cb20459203db7b6d6fafb8c478789f1b5c435d8be1b94951",
+        "bytes": 549
+      },
+      {
+        "path": "probe/pnpm-lock.yaml",
+        "sha256": "1df71ecdaf9f1af044e444dc22419f9f0274adfdbc86cf59fd8709e74543c9f9",
+        "bytes": 27510
+      },
+      {
+        "path": "probe/probe.test.ts",
+        "sha256": "e95b46270ef41bcac9c363f5d07028bd28828db3600a496b5524190b58d069c0",
+        "bytes": 6889
+      },
+      {
+        "path": "probe/tsconfig.json",
+        "sha256": "5d8262b5b4dea95af524d4f56c1931238e9a8eba2cec70c22ac02dcb1beaa53f",
+        "bytes": 587
+      }
+    ],
+    "aggregateSha256": "8299e58dd668163cb75d0adf2b124c2fce6c0f6c6d452fcb7e08fbfd22db3fbb",
+    "previousAggregateSha256": "ab08d51b4182b3cfc15e648b4951afbd0209d42f5d21af86acdff9d122df6493",
+    "changedExecutableInputs": [
+      {
+        "path": "probe/probe.test.ts",
+        "beforeSha256": "7d5ba095a45f7faae837fd402fa2aae4985d640d0382023f13384efd10e3420b",
+        "afterSha256": "e95b46270ef41bcac9c363f5d07028bd28828db3600a496b5524190b58d069c0"
+      }
+    ],
+    "changeScope": "Optional configured browser path; default pinned Playwright-managed Chromium; actual path in receipt. Oracles, versions and fixture unchanged.",
+    "planSha256": "5d03edd60d1418bb1b5d59edbc33600d732e1f2e3b590535d96df9e30295e5e4",
+    "amendmentSha256": "9a56821741c61203171fef898c9f1a95429f9e2ba442fe5cf0455ab89f669eda",
+    "maintainedTypeScriptLOC": 520,
+    "productionLOC": 0,
+    "nativeExecutionStarted": false
+  },
+  "auditedPackages": 70,
+  "compilerExecutable": {
+    "path": "node_modules/.pnpm/@typescript+typescript-linux-x64@7.0.2/node_modules/@typescript/typescript-linux-x64/lib/tsc",
+    "packageVersion": "7.0.2",
+    "bytes": 24101026,
+    "sha256": "4f2de678286401759b3fb4475bafe35b8f32b4b3a07d92642bbf37eadc9b34a4",
+    "executed": false
+  },
+  "changedExistingMembers": [
+    "probe/probe.test.ts"
+  ],
+  "maintainedInputsChanged": [
+    "probe/probe.test.ts"
+  ],
+  "workflowSha256": "cd1a4af3b7712e63bad198fc318091cc1be7d9a0f917375268f7903cb0a49e90",
+  "workflowSteps": 10,
+  "artifactIncludesEmittedHarness": true,
+  "existingQualificationWorkflowDiff": false,
+  "scope": "Read-only archive/source/YAML review; no archive code or tests executed"
+}

@@ -1,0 +1,145 @@
+name: Native Module Federation Research
+
+# Generated-container and shared-identity research; no production runtime adoption.
+on:
+  push:
+    branches:
+      - docs/plugin-research-hot-reload-20261021
+    paths:
+      - .github/workflows/module-federation-research.yml
+      - docs/research/evidence/module-federation-v*-input-20261122.tar.gz
+      - docs/research/evidence/module-federation-v*-input-20261122.manifest.json
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      MF_RESEARCH_ROOT: ${{ github.workspace }}/../module-federation-research
+      MF_RESEARCH_DIRECTORY: ${{ github.workspace }}/../module-federation-research/probe
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify frozen input and extract with the standard data filter
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, json, os, tarfile
+          from pathlib import Path
+          base = Path('docs/research/evidence')
+          manifest = json.loads((base / 'module-federation-v2-input-20261122.manifest.json').read_text())
+          archive = base / 'module-federation-v2-input-20261122.tar.gz'
+          content = archive.read_bytes()
+          assert len(content) == manifest['bytes']
+          assert hashlib.sha256(content).hexdigest() == manifest['sha256']
+          destination = Path(os.environ['MF_RESEARCH_ROOT']).resolve()
+          destination.mkdir()
+          expected = {entry['path']: entry for entry in manifest['members']}
+          assert len(expected) == len(manifest['members'])
+          with tarfile.open(archive) as handle:
+              members = handle.getmembers()
+              assert len(members) == len(expected)
+              assert {member.name for member in members} == set(expected)
+              assert all(member.isfile() for member in members)
+              handle.extractall(destination, filter='data')
+          for name, entry in expected.items():
+              content = (destination / name).read_bytes()
+              assert len(content) == entry['bytes']
+              assert hashlib.sha256(content).hexdigest() == entry['sha256']
+          evidence = destination / 'probe' / 'results' / 'hosted'
+          evidence.mkdir(parents=True)
+          receipt = {'commit': os.environ['GITHUB_SHA'], 'runId': os.environ['GITHUB_RUN_ID'],
+                     'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'], 'input': manifest,
+                     'workflowSha256': hashlib.sha256(Path('.github/workflows/module-federation-research.yml').read_bytes()).hexdigest()}
+          (evidence / 'input-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          PY
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        with:
+          version: 11.25.0
+          package_json_file: ${{ env.MF_RESEARCH_DIRECTORY }}/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.22.3
+      - name: Install and verify the audited disposable dependency closure
+        working-directory: ${{ env.MF_RESEARCH_DIRECTORY }}
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies 2>&1 | tee results/hosted/install.log
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          expected_direct = json.loads(Path('package.json').read_text())['devDependencies']
+          actual_direct = {name: json.loads((Path('node_modules') / name / 'package.json').read_text())['version'] for name in expected_direct}
+          assert actual_direct == expected_direct
+          audit = json.loads(Path('dependency-audit.json').read_text())
+          assert hashlib.sha256(Path('pnpm-lock.yaml').read_bytes()).hexdigest() == audit['lockSha256']
+          expected = {(item['name'], item['version']) for item in audit['packages']}
+          actual = set()
+          for path in Path('node_modules/.pnpm').glob('*/node_modules/*/package.json'):
+              data = json.loads(path.read_text())
+              actual.add((data['name'], data['version']))
+          for path in Path('node_modules/.pnpm').glob('*/node_modules/@*/*/package.json'):
+              data = json.loads(path.read_text())
+              actual.add((data['name'], data['version']))
+          assert actual == expected, {'added': sorted(actual - expected), 'missing': sorted(expected - actual)}
+          compilers = [(name, version) for name, version in actual if name == 'typescript' or name.startswith('@typescript/typescript-')]
+          assert compilers and all(version == '7.0.2' for _, version in compilers)
+          executable = audit['compilerExecutable']
+          assert hashlib.sha256(Path(executable['path']).read_bytes()).hexdigest() == executable['sha256']
+          Path('results/hosted/installed-identities.json').write_text(json.dumps({'direct': actual_direct, 'packages': sorted(actual), 'compilerPackages': compilers}, indent=2) + '\n')
+          PY
+          node --version > results/hosted/environment.txt
+          pnpm --version >> results/hosted/environment.txt
+          pnpm exec tsc --version >> results/hosted/environment.txt
+      - name: Strictly check all maintained TypeScript
+        working-directory: ${{ env.MF_RESEARCH_DIRECTORY }}
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm check 2>&1 | tee results/hosted/typecheck.log
+      - name: Generate real webpack containers and host
+        working-directory: ${{ env.MF_RESEARCH_DIRECTORY }}
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm build 2>&1 | tee results/hosted/build.log
+      - name: Install the pinned Playwright Chromium
+        working-directory: ${{ env.MF_RESEARCH_DIRECTORY }}
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm exec playwright install --with-deps chromium 2>&1 | tee results/hosted/browser-install.log
+      - name: Exercise real replacement, sharing and container initialization
+        working-directory: ${{ env.MF_RESEARCH_DIRECTORY }}
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm test 2>&1 | tee results/hosted/native.log
+      - name: Retain exact sources, generated output and observed outcomes
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: module-federation-research-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.MF_RESEARCH_DIRECTORY }}/results/
+            ${{ env.MF_RESEARCH_DIRECTORY }}/dist/
+            ${{ env.MF_RESEARCH_DIRECTORY }}/.build/
+            ${{ env.MF_RESEARCH_DIRECTORY }}/fixture/
+            ${{ env.MF_RESEARCH_DIRECTORY }}/build.ts
+            ${{ env.MF_RESEARCH_DIRECTORY }}/probe.test.ts
+            ${{ env.MF_RESEARCH_DIRECTORY }}/package.json
+            ${{ env.MF_RESEARCH_DIRECTORY }}/pnpm-lock.yaml
+            ${{ env.MF_RESEARCH_DIRECTORY }}/tsconfig.json
+            ${{ env.MF_RESEARCH_DIRECTORY }}/dependency-audit.json
+            ${{ env.MF_RESEARCH_ROOT }}/third-party-licenses/
+            ${{ env.MF_RESEARCH_ROOT }}/frozen-inputs-v2.json
+            ${{ env.MF_RESEARCH_ROOT }}/PORTABILITY-V2.md
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30

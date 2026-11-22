@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "status": "browser-bootstrap-blocked",
+  "sourceHead": "4a95ba3026ad4721ed6585a38fbd192e5aba133d",
+  "compilerCheckExit": 0,
+  "webpackBuildExit": 0,
+  "nodeTestExit": 1,
+  "setupHookFailures": 4,
+  "semanticCasesExecuted": 0,
+  "inputAggregateSha256": "ab08d51b4182b3cfc15e648b4951afbd0209d42f5d21af86acdff9d122df6493",
+  "archive": "module-federation-v1-local-attempt1-20261122.tar.gz",
+  "bytes": 63632,
+  "sha256": "6c16dcd5a271198dc980cbd7911573db6bde73349d3814d8ccb019621151b1dd",
+  "members": [
+    {
+      "path": "QUALIFICATION.md",
+      "bytes": 2563,
+      "sha256": "20a837624ab3a57610c29d257119a01c76e09e6f34a1db45071c6390eb98e1ce"
+    },
+    {
+      "path": "dist/a/_build_fixture_remote_js.001d32d8.js",
+      "bytes": 1263,
+      "sha256": "dae81d1c71218e4da5e8bc445c5a4e73851b3dd93031ea23d15b813414151d48"
+    },
+    {
+      "path": "dist/a/remoteEntry.js",
+      "bytes": 14587,
+      "sha256": "c640d89a2b92340cfdd8cef30f3e99f344444b60a8cd3de115d90e17c8f172a0"
+    },
+    {
+      "path": "dist/b/_build_fixture_remote_js.9278e616.js",
+      "bytes": 1263,
+      "sha256": "3d4201071f67b544597ff83e1498f3c2290bba7df9604afbca56d1027eba1dda"
+    },
+    {
+      "path": "dist/b/remoteEntry.js",
+      "bytes": 14587,
+      "sha256": "0644b468238e8c34149360191e44fbd2975111b803176dc7c39ed8b642043277"
+    },
+    {
+      "path": "dist/c/_build_fixture_remote_js.dba0a3f7.js",
+      "bytes": 1263,
+      "sha256": "671f3a1da8349b2355a947541a7144c8fd2701de8d45d4a6c488f5abadc89f38"
+    },
+    {
+      "path": "dist/c/remoteEntry.js",
+      "bytes": 14587,
+      "sha256": "ca95bd5b63715e387fcc769427d046a9f5a79957d7998ca17f96a7155969c2ab"
+    },
+    {
+      "path": "dist/compatible/_build_fixture_consumer_js.348c0821.js",
+      "bytes": 881,
+      "sha256": "6810b03c1cf0f41451669ac8e83b0882e6ad0ffe62164e87374cc0a43c251ec0"
+    },
+    {
+      "path": "dist/compatible/remoteEntry.js",
+      "bytes": 24598,
+      "sha256": "51778bfd8a212ce6dd7ae9c4bac03f3af3d428529b32e20621e2b775ef1e766d"
+    },
+    {
+      "path": "dist/host.js",
+      "bytes": 295479,
+      "sha256": "75f5455176fb78bdddaa6be6a9a76296c7f72002c975857af731c53341f649aa"
+    },
+    {
+      "path": "dist/strict/_build_fixture_consumer_js.e428c64d.js",
+      "bytes": 869,
+      "sha256": "9030b5a0510c9d5ebbc2de0509781f80d85a608b2ddbe4ace3afa9b607766358"
+    },
+    {
+      "path": "dist/strict/remoteEntry.js",
+      "bytes": 24558,
+      "sha256": "6b5ff59693b77ff2c0475d78ed2de83cece67e18b495447c5274456922b541f1"
+    },
+    {
+      "path": "results/01-version.json",
+      "bytes": 415,
+      "sha256": "7eedeef30fdc4d71debd28faa27faf0cef671db1a0b9ba9fae7da642e3d75a19"
+    },
+    {
+      "path": "results/01-version.log",
+      "bytes": 14,
+      "sha256": "41024334022fa58f9c7337359517de307cbcfc6055c19f2b734245eacc2fe97a"
+    },
+    {
+      "path": "results/02-check.json",
+      "bytes": 179,
+      "sha256": "7b5f76e0c2345206d58de9c3b601763c980b02d859baf29ec478731b8f54ff2a"
+    },
+    {
+      "path": "results/02-check.log",
+      "bytes": 54,
+      "sha256": "ace66e11637f9a69a84d1178767cd9bb91010501ece0296cbc7ae8b32f5ed8a2"
+    },
+    {
+      "path": "results/03-build.json",
+      "bytes": 179,
+      "sha256": "cb6cc7738fec20056bd4122a1dd928a3998b4515e2b3abcaa92fc08921ccf97c"
+    },
+    {
+      "path": "results/03-build.log",
+      "bytes": 132,
+      "sha256": "274804b365108848211b6c370fb6e854eaf4e0056b43056aab8452f8fbaf9c9b"
+    },
+    {
+      "path": "results/04-native.json",
+      "bytes": 178,
+      "sha256": "1a9af0a2835320642f7e610c0855357744405aefc1cd16c6f48d0e02b8d9b82e"
+    },
+    {
+      "path": "results/04-native.log",
+      "bytes": 30559,
+      "sha256": "055ee8f341dcc87c3080d4bbc87a39c9980055f89e15c9425a5816abbab9ec91"
+    },
+    {
+      "path": "results/build-manifest.json",
+      "bytes": 2345,
+      "sha256": "11056242f646eaf9027b86a2b3af192c3e9741d733bc1d97026006e73ec21c98"
+    },
+    {
+      "path": "results/native-observations.json",
+      "bytes": 369,
+      "sha256": "2ba9b35e02423f15309381c1a174073b16e509d5e1ea3061bfaa8f3f146edda0"
+    },
+    {
+      "path": "third-party-licenses/manifest.json",
+      "bytes": 1613,
+      "sha256": "304c5fe78df09b73418607a1391a6cc9cb111b3814541197ccdb74060ca0a39c"
+    },
+    {
+      "path": "third-party-licenses/module-federation__error-codes-LICENSE",
+      "bytes": 1112,
+      "sha256": "8385c252568609183ceb9aead4ebac3b3bd8678c627739aee7aad29116409332"
+    },
+    {
+      "path": "third-party-licenses/module-federation__runtime-LICENSE",
+      "bytes": 1083,
+      "sha256": "74aeeff0b0117761910083b03d18a64a5a654917e794a841406410f909b427cf"
+    },
+    {
+      "path": "third-party-licenses/module-federation__runtime-core-LICENSE",
+      "bytes": 1083,
+      "sha256": "74aeeff0b0117761910083b03d18a64a5a654917e794a841406410f909b427cf"
+    },
+    {
+      "path": "third-party-licenses/module-federation__sdk-LICENSE",
+      "bytes": 1082,
+      "sha256": "62431fbe2f17fc691be95ed8302aa042c03200d2a7cdee7aab4bb0d2d3e16098"
+    },
+    {
+      "path": "third-party-licenses/webpack-LICENSE",
+      "bytes": 1071,
+      "sha256": "9068a8782d2fb4c6e432cfa25334efa56f722822180570802bf86e71b6003b1e"
+    }
+  ]
+}

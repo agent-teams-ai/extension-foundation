@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "status": "pass",
+  "sourceHead": "4a95ba3026ad4721ed6585a38fbd192e5aba133d",
+  "tests": 2,
+  "passed": 2,
+  "failed": 0,
+  "skipped": 0,
+  "inputManifestSha256": "7a006b61c25facb93692664cefca34f1c9a1c9cd226deeebe9b592c91a2f26c8",
+  "profile": "Node SystemJS6.15.1 loader binding mechanics",
+  "archive": "systemjs-rebinding-v1-attempt1-20261122.tar.gz",
+  "bytes": 3312,
+  "sha256": "5da7d918278dcf291694e96cc2469598971c3adadc0761b05b90facab1c1057a",
+  "members": [
+    {
+      "path": "RESULTS.md",
+      "bytes": 2365,
+      "sha256": "09d97f213c05c4faf8415369d77e03a66cf3b96be7d3396728de6cbe345bffeb"
+    },
+    {
+      "path": "RUN.json",
+      "bytes": 1685,
+      "sha256": "a714dcef058347b8265d3bc852432eba122faeaf7e5136e745125b88e2c1f19e"
+    },
+    {
+      "path": "THIRD-PARTY-NOTICES.json",
+      "bytes": 3894,
+      "sha256": "8cfff232065c62ea7d277cc8129f8b287aa0a31c64f5aef19c746e7589d47e60"
+    },
+    {
+      "path": "native-attempt1.log",
+      "bytes": 297,
+      "sha256": "78ddcd0e7b5ff9d81e07804c2bbb7da4fae17b5834365494297cf4a5e54ed494"
+    },
+    {
+      "path": "observations.json",
+      "bytes": 902,
+      "sha256": "f0c3dd6f30d55b8ef299605fbe0709bad59431564d2530ad0fee15b044d403da"
+    }
+  ]
+}
