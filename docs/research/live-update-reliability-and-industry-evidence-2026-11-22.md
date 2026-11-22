@@ -391,3 +391,25 @@ not qualify concurrent migration or guarantee that an old writer preserves newly
 added fields. Losing the application reply after a committed publication does not
 exercise a lost PostgreSQL wire acknowledgement. These scope limits remain even
 when the native suite is green.
+
+## Portable handoff
+
+The [complete project packet](evidence/standalone-live-library-deepening-20261122.tar.gz)
+and [external manifest](evidence/standalone-live-library-deepening-20261122.manifest.json)
+contain 532 files: the prior architecture/bootstrap material, all four research
+lanes, frozen inputs, native artifacts, reviews, current coverage and exact
+license notices. The reading source is the published commit
+`711c9ee1467bd82e669494d3584efcbb39fceda4`; the later archive-bearing commit
+is a descendant, avoiding a circular source identity.
+
+Root independently checked every archived file against the sealed directory,
+all 531 entries in its internal manifest, all 257 preserved prior files and the
+unchanged 11-file seed. Archive SHA-256:
+`30ac307e967b28c341ae9d04d9863442d9aa6ea69921001f07dfb47f1483f9a7`.
+The packet is 5,384,666 compressed bytes and contains no installed dependencies,
+Git directory or active workflow installation. Its `CURRENT.md` and coverage
+audit identify completed results without rewriting historical failed attempts.
+
+The remote repository still needs provisioning. The retained bootstrap document
+also records the shared Foundation/FMS/compiler cohort conflict; a green research
+workflow does not resolve that separate production-bootstrap qualification.
