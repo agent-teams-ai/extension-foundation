@@ -8,7 +8,7 @@ summary: Maintained source-backed lessons for module composition, plugin systems
 
 # Plugin System Research Reference
 
-<!-- cspell:words Directus NocoBase Pharo -->
+<!-- cspell:words Directus NocoBase Pharo Zephyr -->
 
 **Current follow-up: 2026-11-22; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
 module composition, extension ecosystems and production hot replacement. It
@@ -17,6 +17,13 @@ counterexamples and qualification scenarios. Research is not an accepted ADR,
 a released runtime, a security audit or a performance qualification.
 
 ## Current synthesis
+
+The [value, competition and implementation-size assessment](live-update-value-competition-and-implementation-size-2026-11-22.md)
+compares ready JS/UI and runtime alternatives, including Zephyr's documented
+Electron OTA and AI control. It rejects unproved uniqueness or superiority and
+estimates scoped library production code at 3–6k, 7–14k and 15–30k lines, with
+integration and tests separate. These are conditional engineering budgets, not
+accepted policies or measured readiness; the seven owner choices remain open.
 
 The [Module Federation and update-boundaries investigation](module-federation-update-boundaries-and-architecture-options-2026-11-22.md)
 deepens current Federation, browser delivery, desktop and industry replacement
