@@ -12,8 +12,9 @@ summary: Deepens the standalone library with source-backed failure mechanisms, n
 
 ## Scope and authority
 
-**Observation date: 2026-11-22, Europe/Kiev. Source review and strict compilation
-complete for the editor; new native execution is pending.** The owner accepts
+**Observation date: 2026-11-22, Europe/Kiev. Local Worker cases pass; the first
+editor run reproduced the source-replacement race and failed a later panel
+expectation. Native database execution is pending.** The owner accepts
 the architectural direction in
 [OD-003](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-confirmed-architecture-and-deeper-qualification-2026-11-22):
 a TypeScript control library, ordinary TypeScript plugins first, optional
@@ -41,6 +42,9 @@ preserves the independently reviewed plans, early findings, exact package
 provenance and source references before native execution. Evidence classes are
 kept separate: inspected release bytes, inspected upstream source, normative
 documentation, reported incident, proposed transfer and executed native result.
+The [second checkpoint](evidence/live-update-reliability-checkpoint2-20261122.json)
+adds the completed state, execution, editor and control-policy investigations,
+accepted review corrections and original browser failure analysis.
 
 ### Mechanism-level warnings
 
@@ -68,10 +72,10 @@ operations; it must not silently choose the update policy.
 
 | Outcome | Coordinator obligation | Consumer primitive or evidence |
 | --- | --- | --- |
-| Preparation fails before publication | Keep the selected predecessor; release every acquired candidate resource and expose any debt | Public resource scope and adapter readiness/close receipts |
+| Preparation fails before publication | Keep the selected predecessor if one exists; release every acquired candidate resource and expose any debt | Public resource scope and adapter readiness/close receipts |
 | Another attempt wins publication | Preserve the winner; release the losing candidate; any replan uses a new immutable attempt | Atomic expected-revision publication and recorded conflict |
 | Publication acknowledgement is lost | Reconcile the same attempt before deciding which execution can be destroyed or retried | Durable outcome lookup with an explicit unknown state |
-| Publication commits but useful behavior is not observed | Show selected versus useful separately; follow the declared recovery policy | Adapter health/render observation correlated to exact generation |
+| Publication commits but useful behavior is not observed | Show selected versus useful separately; follow the declared recovery policy | Consumer observation correlated to generation, relevant input revision and declared result criterion; readiness remains separate |
 | Previous work continues | Keep its admitted code/dependency cohort; apply the chosen old-write policy | Explicit operation affinity plus receiver-owned authority |
 | Cleanup fails or physical stop is unobserved | Retain the debt, owner and allowed next action; do not claim retirement | Scope report and native executor stop evidence |
 
@@ -80,6 +84,18 @@ The durable attempt identifies immutable inputs and a selected state baseline.
 Retrying it must not silently select a newer snapshot or turn an old token into
 the current authority. Restarting the host cannot reconstruct a lost worker
 heap merely because its artifact identity is persisted.
+
+Selection, useful behavior, observation freshness and predecessor cleanup are
+independent facts. A useful selected generation can coexist with cleanup debt.
+An unknown publication, disconnected observer and unconfirmed physical stop have
+different owners and next actions. Missing usefulness evidence does not by itself
+prove failed behavior. The UI must not derive destructive retries from one
+generic failed or unknown badge.
+
+Resource scopes track ownership, cleanup attempts and debt. The execution
+adapter retains the physical handle and implements the registered stop operation
+and receipt; the coordinator consumes that result through the existing scope.
+This delegation does not create two shutdown owners.
 
 ### Keep identities and retention reasons distinct
 
@@ -95,6 +111,13 @@ persisted snapshot, outstanding attempt and unresolved cleanup. Eligibility to
 stop execution is not eligibility to delete the artifact. A fixed generation
 budget must be checked before candidate acquisition; rejecting C after it has
 already consumed the final worker slot is too late.
+
+Each hold identifies what it retains: live execution, artifact bytes, a compatible
+state/history codec or recovery metadata. User Undo need not retain a running
+Worker. Clearing UI history does not release independent runtime or recovery
+holds. Candidate pause applies to future admission; it does not abandon a
+possibly committed attempt. Coalescing applies only to eligible unstarted
+candidates and preserves their recorded identities and outstanding holds.
 
 ## Open questions and validation
 
@@ -133,7 +156,7 @@ This matrix prevents several passing demonstrations from being presented as
 coverage of the entire system. New reports must state which row changed and
 what remains unproven.
 
-### Frozen native editor input
+### Original editor run and frozen input
 
 The independently reviewed
 [editor input](evidence/live-update-editor-input-20261122-v1.tar.gz) contains seven
@@ -143,6 +166,48 @@ Its [manifest and review](evidence/live-update-editor-input-20261122-v1.manifest
 retain the approved plan, per-file hashes and strict TypeScript 7.0.2 check.
 The [hosted workflow](../../.github/workflows/live-update-editor-reliability.yml)
 verifies the frozen bytes, installs the exact lock, repeats strict checking and
-runs one native browser E2E with seven distinct scenarios. No native pass is
-claimed at input publication. Original failures will remain separate from any
-corrective input or attempt.
+runs one native browser E2E with seven distinct scenarios.
+
+[Run 45042075044](https://github.com/agent-teams-ai/extension-foundation/actions/runs/45042075044)
+on `f4ff3a49e695caef4e75d119ff318259b5937dac` failed one test after completing
+CM-1 and CM-2: 27 of 28 executed comparisons matched. CM-2 reproduced the
+same-document source race: B diagnostics became visible, then late A diagnostics
+replaced them while B remained selected. In CM-3, the native changed-document
+guard correctly left the diagnostic state empty; the harness incorrectly
+expected no diagnostic DOM rows, while CodeMirror rendered its `No diagnostics`
+placeholder. This is a failed test expectation, not a demonstrated failure of
+that document guard. Later scenarios were not reached.
+
+The [original artifact](evidence/live-update-editor-v1-attempt1-20261122.zip) and
+[receipt](evidence/live-update-editor-v1-attempt1-20261122.json) preserve the
+trace, screenshot, source, compiler output and failure. Any corrected expectation
+uses a separate frozen input and run; this attempt remains a failure.
+
+The [corrected v2 input](evidence/live-update-editor-input-20261122-v2.tar.gz)
+changes only the native empty-state placeholder expectation. Its
+[manifest](evidence/live-update-editor-input-20261122-v2.manifest.json) preserves
+the exact diff, release-source confirmation, independent review and strict
+TypeScript check. Six other source/configuration files are identical. SHA-256:
+`c9d80c35364f9b2c5ed97a086f0a8ff24a9b2bc675c0666292c1e75ebedf81c3`.
+The corrected hosted outcome is pending at this checkpoint.
+
+### Frozen native backend input
+
+The [backend input](evidence/live-update-backend-input-20261122-v1.tar.gz) and
+[manifest](evidence/live-update-backend-input-20261122-v1.manifest.json) freeze
+15 files, including 12 strict TypeScript sources and one dependency lock.
+Archive SHA-256:
+`06e8e448698bb2fa7af417c68822bbd4fb5fa5af71c62d2047ab426934814a59`.
+The [workflow](../../.github/workflows/live-update-backend-reliability.yml)
+uses Node 24.22.3 and the digest-pinned PostgreSQL 18.7 image. Its 17 unique
+scenarios consist of 12 database cases, three Worker/Resources cases and two
+joint cases. Execution E02 and state S09 name the same case and count once.
+
+The [three independent Worker cases](evidence/live-update-worker-local-20261122.json)
+passed locally on the same frozen source:
+an abandoned close waiter left a responsive Worker; failed cleanup produced
+visible debt and a later public close stopped it; a two-live-generation policy
+refused C before acquisition and freed capacity only after A's native exit.
+The database and joint outcomes remain pending hosted execution. The local
+admission case is serial; the retained operation is a native async generator
+with controlled messages, not an HTTP or Readable transport qualification.

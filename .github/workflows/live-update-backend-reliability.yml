@@ -1,0 +1,140 @@
+name: Durable Plugin Update Reliability
+
+# Native PostgreSQL/Worker/public Resources research; no production adapter adoption.
+on:
+  push:
+    branches:
+      - docs/plugin-research-hot-reload-20261021
+    paths:
+      - .github/workflows/live-update-backend-reliability.yml
+      - docs/research/evidence/live-update-backend-input-20261122*.tar.gz
+      - docs/research/evidence/live-update-backend-input-20261122*.manifest.json
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18.7-bookworm@sha256:194e55feb2597b1465dbee81cc9fd8d204566cd2eb42c8d22fd6c931a38781b1
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: research-only
+          POSTGRES_DB: plugin_probe
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d plugin_probe"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      DATABASE_URL: postgresql://postgres:research-only@127.0.0.1:5432/plugin_probe
+      STATE_RESULTS_PATH: evidence/state-results.json
+      EXECUTION_RESULTS_PATH: evidence/execution-results.json
+      EXECUTION_STATE_RESULTS_PATH: evidence/execution-state-results.json
+      LIVE_BACKEND_RESEARCH_DIRECTORY: ${{ github.workspace }}/../live-update-backend-reliability
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify frozen source and extract with the standard data filter
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, json, os, tarfile
+          from pathlib import Path
+          base = Path('docs/research/evidence')
+          manifest = json.loads((base / 'live-update-backend-input-20261122-v1.manifest.json').read_text())
+          archive = base / 'live-update-backend-input-20261122-v1.tar.gz'
+          content = archive.read_bytes()
+          assert len(content) == manifest['archive']['bytes']
+          assert hashlib.sha256(content).hexdigest() == manifest['archive']['sha256']
+          destination = Path(os.environ['LIVE_BACKEND_RESEARCH_DIRECTORY']).resolve()
+          destination.mkdir()
+          expected = {entry['path']: entry for entry in manifest['files']}
+          assert len(expected) == len(manifest['files'])
+          with tarfile.open(archive) as handle:
+              members = handle.getmembers()
+              assert len(members) == len(expected)
+              assert {member.name for member in members} == set(expected)
+              assert all(member.isfile() for member in members)
+              handle.extractall(destination, filter='data')
+          for name, entry in expected.items():
+              content = (destination / name).read_bytes()
+              assert len(content) == entry['bytes']
+              assert hashlib.sha256(content).hexdigest() == entry['sha256']
+          evidence = destination / 'evidence'
+          evidence.mkdir()
+          receipt = {'commit': os.environ['GITHUB_SHA'], 'runId': os.environ['GITHUB_RUN_ID'],
+                     'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'], 'input': manifest['archive'],
+                     'workflow': hashlib.sha256(Path('.github/workflows/live-update-backend-reliability.yml').read_bytes()).hexdigest()}
+          (evidence / 'hosted-input-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          (evidence / 'input-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
+          with open(os.environ['GITHUB_ENV'], 'a') as environment:
+              environment.write(f'LIVE_BACKEND_RESEARCH_DIRECTORY={destination}\n')
+          PY
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        with:
+          version: 11.25.0
+          package_json_file: ${{ env.LIVE_BACKEND_RESEARCH_DIRECTORY }}/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.22.3
+      - name: Install exact disposable dependencies
+        working-directory: ${{ env.LIVE_BACKEND_RESEARCH_DIRECTORY }}
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies 2>&1 | tee evidence/hosted-install.log
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          package = json.loads(Path('package.json').read_text())
+          expected = {**package['dependencies'], **package['devDependencies']}
+          actual = {name: json.loads((Path('node_modules') / name / 'package.json').read_text())['version'] for name in expected}
+          assert actual == expected
+          assert actual['typescript'] == '7.0.2'
+          compilers = list(Path('node_modules/.pnpm').glob('typescript@*/node_modules/typescript/package.json'))
+          assert len(compilers) == 1
+          assert json.loads(compilers[0].read_text())['version'] == '7.0.2'
+          Path('evidence/installed-direct-identities.json').write_text(json.dumps(actual, indent=2) + '\n')
+          PY
+          node --version > evidence/hosted-environment.txt
+          pnpm --version >> evidence/hosted-environment.txt
+      - name: Strictly check all maintained TypeScript sources
+        working-directory: ${{ env.LIVE_BACKEND_RESEARCH_DIRECTORY }}
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm typecheck 2>&1 | tee evidence/hosted-typecheck.log
+      - name: Record native PostgreSQL image identity
+        working-directory: ${{ env.LIVE_BACKEND_RESEARCH_DIRECTORY }}
+        env:
+          POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
+        shell: bash
+        run: |
+          docker inspect --format '{{.Image}}' "$POSTGRES_CONTAINER_ID" > evidence/postgres-container-image.txt
+          docker image inspect 'postgres:18.7-bookworm@sha256:194e55feb2597b1465dbee81cc9fd8d204566cd2eb42c8d22fd6c931a38781b1' --format '{{json .RepoDigests}}' > evidence/postgres-image-digests.json
+      - name: Exercise concurrent publication, crash recovery and actual executor retirement
+        working-directory: ${{ env.LIVE_BACKEND_RESEARCH_DIRECTORY }}
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm test 2>&1 | tee evidence/hosted-runtime.log
+      - name: Retain source and observed outcomes
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: live-update-backend-reliability-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.LIVE_BACKEND_RESEARCH_DIRECTORY }}/evidence/
+            ${{ env.LIVE_BACKEND_RESEARCH_DIRECTORY }}/execution/
+            ${{ env.LIVE_BACKEND_RESEARCH_DIRECTORY }}/*.ts
+            ${{ env.LIVE_BACKEND_RESEARCH_DIRECTORY }}/package.json
+            ${{ env.LIVE_BACKEND_RESEARCH_DIRECTORY }}/pnpm-lock.yaml
+            ${{ env.LIVE_BACKEND_RESEARCH_DIRECTORY }}/tsconfig.json
+          if-no-files-found: error
+          retention-days: 30
