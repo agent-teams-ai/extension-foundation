@@ -42,6 +42,15 @@ confirmed Extism as a candidate and prefers investigating ordinary TypeScript
 plugins with an optional Wasm adapter; this does not select a runtime or license
 a second composition, lifecycle or supervision implementation.
 
+The owner's [standalone library clarification](docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-confirmed-standalone-library-and-continuous-research-2026-11-22)
+sets a separate, purpose-neutral project/repository as the delivery direction.
+Its cohesive features may be substantial; estimates for a small consumer adapter
+are not estimates for the whole library. Follow the
+[standalone blueprint](docs/research/standalone-live-plugin-library-blueprint-2026-11-22.md),
+retain source-backed patterns and counterexamples, and commit and immediately
+push useful research checkpoints. Keep user-facing reports concise and focused
+on findings. The new direction does not transfer existing mechanism ownership.
+
 The owner's [live plugin vision](docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-prioritized-live-plugin-vision-2026-11-14)
 is a high-priority design target across plugin categories, including changes
 authored by agents. Preserve it when designing new boundaries. The same record

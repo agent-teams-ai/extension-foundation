@@ -54,6 +54,40 @@ Foundation package, production graph runtime, or public SPI by implication.
 - Every production host remains subject to the accepted production-host safety
   closure and its own authority and termination evidence.
 
+## Owner-confirmed standalone library and continuous research, 2026-11-22
+
+The owner confirms that the live-plugin work is a **standalone, reusable library
+and separate repository**, potentially with substantial architecture and several
+cohesive features. Do not keep treating the entire project as a small
+product-local adapter. The earlier dated statement that the November 17 research
+request did not authorize repository creation describes that earlier request;
+this clarification establishes the separate-project delivery direction. Accepted
+composition, product authority, state ownership and publication constraints
+remain in force.
+
+Follow the organization's current library-first quality and Feature Module
+Standard requirements. Evaluate ordinary external consumers, strict dependency
+direction, narrow ports and independent conformance. Reuse existing mechanisms
+critically; neither a large framework by default nor artificially small code is
+the target. Ordinary TypeScript and optional native Effect execution profiles
+need explicit semantics; the application's Effect choice does not require all
+library consumers to adopt Effect. An optional Wasm adapter remains part of the
+architecture investigation.
+
+Continuously preserve useful and harmful patterns, concrete failure examples,
+primary sources, qualification gaps, state/old-version cleanup rules and live
+user feedback. Commit useful intermediate checkpoints and immediately push each
+commit. Research should proceed in parallel where the work is independent;
+user-facing reports should be about one third more concise and omit obvious
+explanations.
+
+The [standalone blueprint](../research/standalone-live-plugin-library-blueprint-2026-11-22.md)
+owns this follow-up research and its staged evidence. Repository provisioning,
+module boundaries and bootstrap qualification must be reported as actual
+outcomes. A separate repository does not itself publish a stable API, qualify a
+production host or approve consumer adoption. Runtime selection, state migration
+policy, ordinary-update defaults and final public contracts remain open.
+
 ## Owner-requested reuse-first design and granular updates, 2026-11-22
 
 The owner confirms that the remembered ready-made plugin library is **Extism**.

@@ -10,7 +10,7 @@ summary: Maintained source-backed lessons for module composition, plugin systems
 
 <!-- cspell:words Directus NocoBase Pharo -->
 
-**Current follow-up: 2026-11-21; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
+**Current follow-up: 2026-11-22; initial industry audit: 2026-10-21.** This is the maintained cross-repository reference for
 module composition, extension ecosystems and production hot replacement. It
 preserves industry experience so future agents can use the same evidence,
 counterexamples and qualification scenarios. Research is not an accepted ADR,
@@ -18,8 +18,20 @@ a released runtime, a security audit or a performance qualification.
 
 ## Current synthesis
 
+The [standalone library blueprint](standalone-live-plugin-library-blueprint-2026-11-22.md)
+records the owner's explicit separate-project direction, current organization
+requirements, reusable mechanisms, version/state retention and user-visible
+updates. It preserves source-pinned findings and the qualification status of
+new native probes as incremental pushed checkpoints. A small adapter estimate
+from an earlier study does not estimate the whole library.
+
+The [reuse-first investigation](reuse-first-live-plugin-updates-2026-11-22.md)
+retains the confirmed Extism candidate, ordinary TypeScript first with optional
+Wasm, 24 reuse warnings, 12 open checks and completed bounded Extism, Resources
+and browser experiments. Their original evidence and limitations remain intact.
+
 The [selectable-update and portable-runtime investigation](live-update-policies-and-portable-runtimes-2026-11-21.md)
-records the [owner's latest clarification](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-requested-selectable-updates-and-cross-language-research-2026-11-21):
+records the [owner's November 21 clarification](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-requested-selectable-updates-and-cross-language-research-2026-11-21):
 evaluate optional interruption, safe completion and isolated force for backend
 and frontend, alongside TypeScript compilation and cross-language execution.
 The completed study qualifies three backend HTTP/Worker cases, one real browser
