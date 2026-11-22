@@ -407,6 +407,45 @@ their extra conformance burden needs a real benefit. These scores compare design
 choices, not measured availability. The detailed alternatives and cost scopes
 are retained with the boundaries report.
 
+### Materialized standalone seed and tooling conflict
+
+The [seed base](evidence/standalone-live-library-seed-base-20261122.tar.gz)
+and [manifest](evidence/standalone-live-library-seed-base-20261122.manifest.json)
+already contain their own README/AGENTS, architecture proposal, a concrete
+bootstrap recipe, 15-source bill of materials and the entire immutable FMS 1.1
+source with verified provenance. They create no empty production packages. The
+completed research/probe directories are assembled separately into the final
+transfer payload. The name is provisional and the destination is private
+research until its own adoption is reviewed.
+
+The proposed first slice is a real controlled TS capability replacement: reject
+a bad candidate while A remains useful; activate B for new work while a held
+operation/stream retains A; report pending versus completed cleanup through the
+actual existing owner. Run that contract in a real application and an independent
+consumer of the packed artifact. AsyncLocalStorage is an internal building
+block, not a standalone wrapper product.
+
+A concrete bootstrap conflict remains at the pinned organization revision:
+the RECOMMENDED Docs cohort is `docs-2026-10-03-stable31`, with Docs 0.6.2,
+organization adapter 0.3.2 and Foundation 1.7.2. Its eager Foundation CLI imports
+reach API Extractor 7.58.12 and embedded TypeScript 5.9.3, below the required
+7.0.2 floor. The released FMS 0.3.0 Node runner also excludes Foundation 1.7.2
+from its peer window. Its kernel has no CLI; use the released Node API when the
+qualified toolchain route is resolved.
+
+Foundation 3.0.0, FMS 0.3.0, Stack Toolchain 0.1.1 and Docs 0.6.6 are published
+catalog candidates; their availability does not update that managed cohort.
+The seed retains exact metadata/source/archive evidence and the official
+scaffold plan/apply route. A qualified compatible successor or reviewed tooling
+transition is needed before claiming production bootstrap. No blocked old
+Foundation/scaffold runtime was executed locally for this work, and no dependency
+override or fabricated admission was introduced.
+
+The new repository's full compiler, native behavior, FMS/source coverage, packed
+external consumer, hosted execution and required-check enforcement must each be
+observed. Its first workflow cannot protect its own bootstrap PR. This condition
+does not invalidate the independently executed TS7.0.2 research probes.
+
 ## Open questions and validation
 
 1. Qualify the smallest useful end-to-end feature slice in an ordinary external
