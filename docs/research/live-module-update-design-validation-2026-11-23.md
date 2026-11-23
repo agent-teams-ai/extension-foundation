@@ -8,7 +8,7 @@ summary: Detailed design checkpoints, source-backed reuse decisions, bounded spi
 
 # Live Module Update Design Validation 2026-11-23
 
-<!-- cspell:words Piral -->
+<!-- cspell:words Piral OSGi OpenComponents -->
 
 ## Scope and authority
 
@@ -25,6 +25,11 @@ Research, proposed contracts, native results, published package availability,
 repository admission and production qualification remain separate claims.
 
 ## Detailed-design work
+
+The proposed [Live Module Update Operation](../architecture/live-module-update-operation.md)
+now specifies separate publication/adoption/cleanup outcomes, semantic ports,
+feature-local authoring, integration dimensions and 13 adverse cases. It keeps
+one substantive operation feature rather than creating a package per phase.
 
 | Work | Required concrete result |
 | --- | --- |
@@ -63,6 +68,60 @@ These are hypotheses/source observations. The final frozen plan, dependency
 audit and independent review precede execution. No new runtime test has passed
 at this planning checkpoint. Existing MF, SystemJS, editor and database results
 remain historical evidence rather than a new test count.
+
+### Detailed source review
+
+The [design review packet](evidence/live-module-design-review-20261123.tar.gz)
+and [manifest](evidence/live-module-design-review-20261123.manifest.json) preserve
+the complete architecture report, 24 classified findings, critical industry
+register, 42 source records and independent document/code reviews. They include
+the original review findings and their dispositions.
+
+| Finding | Design consequence |
+| --- | --- |
+| Public Resources owns cleanup; current GM lifecycle kernel remains private | Qualify a supported admission/custody mechanism through its owner; do not copy it or make each consumer implement counters |
+| GM ADR-0030 withdrew ADR-0028's old eligibility order | Preserve the supersession and ADR-0029's surviving gates; withdrawal does not imply publication |
+| Piral teardown is declared synchronous; page and extension disposers use different identities | Separate a cooperative resource bridge from arbitrary delayed registration cleanup; qualify the exact public path |
+| Effect repeated close can return before earlier finalizers finish | Retain the actual original close outcome; do not equate state idempotence with joined cleanup |
+| Effect already owns native Layer sharing and interruption accounting | Evaluate its public mechanisms in the optional native profile before adding a cache or reference counter |
+| OSGi binds a replacement before unbinding the old reference | Old cleanup must preserve the successor's exact ownership; this does not establish whole-cohort atomicity |
+| OTP offers a bounded native atomic-load operation and rechecks at finish | Expose each backend's actual guarantee; prepared does not imply publication is inevitable |
+| Native Federation has staged rollback; OpenComponents accounts for reconnect | Preserve those useful protections and their exact scope instead of labelling the systems universally deficient |
+
+These statements are source observations and proposed transfers. The primary
+URLs and exact package/source cohorts are retained in the packet. Native
+Federation's inspected source and published version differ; OC Node-client and
+browser cohorts differ; the new Effect observation does not change an existing
+consumer peer pin.
+
+### Bounded execution inputs
+
+The reviewed campaign has two declared Piral browser tests with five named
+cases, plus one Effect Node test. It uses actual published libraries, the real
+Piral renderer/registration APIs, a production bundle from its official code
+generator, and native listener observations. It does not qualify the complete
+live-update library or the previously proposed comparative application scenario.
+
+Preparation exposed a real public-declaration dependency gap: Piral's full base
+types require SystemJS declarations. The first strict compiler failure is
+retained; installing actual SystemJS packages resolved it without declaration
+shims or disabled library checking. Both fixture projects then passed strict
+TypeScript 7.0.2. This is preparation evidence, not a native test result.
+
+Independent source review corrected three evidence issues before execution:
+retain observations even when host cleanup fails; preserve scenario and cleanup
+errors separately; and record Effect assertion failures in its result. The
+Piral runner executes the reviewed production build, and the original close
+result remains retained across a successful cleanup retry.
+
+Frozen inputs are in the [97-file campaign](evidence/live-module-contracts-v1-input-20261123.tar.gz)
+and its [manifest](evidence/live-module-contracts-v1-input-20261123.manifest.json):
+144,946 bytes, SHA-256
+`5db80d05009fe298a6cc6d8a1a628a17c80fc8e429beb3dab811ecb5d1db99b1`.
+The bounded hosted workflow runs only when those inputs or its own definition
+change. It verifies archive members, exact installed dependency/TS identities,
+strict compilation and the real build before native execution. A published
+input is not a passed run; the result is recorded after actual completion.
 
 ## Repository and Foundation boundary
 

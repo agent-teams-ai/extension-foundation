@@ -1,0 +1,491 @@
+{
+  "sha256": "5db80d05009fe298a6cc6d8a1a628a17c80fc8e429beb3dab811ecb5d1db99b1",
+  "bytes": 144946,
+  "members": [
+    {
+      "path": "CODE-REVIEW-inputs.json",
+      "bytes": 3716,
+      "sha256": "f86f1c80b896f763de528ae0a4afc701aeb83a1e1f72c38adf0798e2ae6584f6"
+    },
+    {
+      "path": "CODE-REVIEW-v1.json",
+      "bytes": 4452,
+      "sha256": "f26cdc17895fdcddc8f83526a367fe9ffc98f5cfbec87f2b4b941b23a7e53e78"
+    },
+    {
+      "path": "CODE-REVIEW.md",
+      "bytes": 5196,
+      "sha256": "2c59fda96cdbd4b09ec4bc7093c4736fa379547629724b651d88153ec84cfa2f"
+    },
+    {
+      "path": "FROZEN-INPUTS.json",
+      "bytes": 17455,
+      "sha256": "797fa9691f42fb855eb0d88850da4a7372aefb052a8477d2f7acd5d20ba6600b"
+    },
+    {
+      "path": "PREPARATION-RECEIPT.json",
+      "bytes": 2149,
+      "sha256": "0e10f9edf3413493958948b28c912d6e230e268af85827e3ea5f35708ca4a625"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3408,
+      "sha256": "9495ab7dca7a78a42e50ef65132e681d961f711a350a393f117c5c926277ed5f"
+    },
+    {
+      "path": "SOURCE-INVENTORY.json",
+      "bytes": 13169,
+      "sha256": "bd013972522eeb403073d01dfcf322d3afe86ae1665e05dae06dc182c89653d0"
+    },
+    {
+      "path": "SPIKE-PLAN.md",
+      "bytes": 21612,
+      "sha256": "8019a329df90e2ff0c9cc4da69da07d245f81f881a1c76d5ac29dfb5d6ab722b"
+    },
+    {
+      "path": "SPIKE-REVIEW.md",
+      "bytes": 6075,
+      "sha256": "f5408057cdd96d61c9dfc6da1de120bc897b7972e18739e9d95f75dd347a6d3c"
+    },
+    {
+      "path": "effect-close/dependency-audit.json",
+      "bytes": 1750,
+      "sha256": "fa2da98b418c2dd71369dc9f03caaa065f8718d0cb6239d608f7cf26b7c58af7"
+    },
+    {
+      "path": "effect-close/package.json",
+      "bytes": 397,
+      "sha256": "6e282a03eb93facf7aeddca431d73aa5f1cb1ee30643a6d29c8a402f82825b10"
+    },
+    {
+      "path": "effect-close/pnpm-lock.yaml",
+      "bytes": 8261,
+      "sha256": "729793dc7ca379df359b05bf2445fc6ae28aea73b68cee68387e205ef18ce77c"
+    },
+    {
+      "path": "effect-close/probe.ts",
+      "bytes": 4019,
+      "sha256": "f69823a44036cbba7f4477dd86390b95190af232e8cdba15a38e72eaecd46d34"
+    },
+    {
+      "path": "effect-close/tsconfig.json",
+      "bytes": 514,
+      "sha256": "e7bd429598a47e93948369e7428a8119774f51004e1210c649cf5f5069528092"
+    },
+    {
+      "path": "live-module-contracts-research.yml",
+      "bytes": 9705,
+      "sha256": "8135d6092a78d434fa10172f989bc890429b37ac7c7a5219b13244edd149d1ae"
+    },
+    {
+      "path": "piral-lifecycle/app.tsx",
+      "bytes": 7359,
+      "sha256": "c663183664b4a32c66a9da82e92db23da89ab324ab5ee98af8f65d0ca367bcf8"
+    },
+    {
+      "path": "piral-lifecycle/dependency-audit.json",
+      "bytes": 13013,
+      "sha256": "eaf6c63527d11b5d32edecfcc8524cf9bccef9a4c506acf76babecd548a5ef67"
+    },
+    {
+      "path": "piral-lifecycle/index.html",
+      "bytes": 207,
+      "sha256": "7145567ee7abcfdfddc4f7c58d9cbd64539a169feb82f0e1a128a19082bb407d"
+    },
+    {
+      "path": "piral-lifecycle/owned.ts",
+      "bytes": 2626,
+      "sha256": "3697680d21cc634b9ca8ec6b38f9469c1eddbebd4824a61f94e09d9eb4d7aaf0"
+    },
+    {
+      "path": "piral-lifecycle/package.json",
+      "bytes": 886,
+      "sha256": "e907bae6a2d89a58f8dafe0a3c1ca6b6b4d1cebc04181cf2739b129ebe5fbce7"
+    },
+    {
+      "path": "piral-lifecycle/piral.json",
+      "bytes": 82,
+      "sha256": "83325663be036ae2dd3a7629d26c4ad73a6fc7724e612f21fb2352f8d491f263"
+    },
+    {
+      "path": "piral-lifecycle/pnpm-lock.yaml",
+      "bytes": 33870,
+      "sha256": "1e6b7a29ade52b60d9130a1fe7ab3581f5d60d4997208a7f1785a50ba23de415"
+    },
+    {
+      "path": "piral-lifecycle/runner.ts",
+      "bytes": 11542,
+      "sha256": "77df00964b5ed4351f1f2767d1be3b5aa4b8aaa3bbeaedc713f5fa929d8de928"
+    },
+    {
+      "path": "piral-lifecycle/tsconfig.json",
+      "bytes": 609,
+      "sha256": "64b4ff4c3a906edfc478368df0bad783af702f09e585d8888b547128f0b2a82d"
+    },
+    {
+      "path": "piral-lifecycle/types.ts",
+      "bytes": 1250,
+      "sha256": "52c753a60a829fd193fe5d4ff9bfc352ace8038829eddf8fc7d4100ca57412ef"
+    },
+    {
+      "path": "piral-lifecycle/vite.config.ts",
+      "bytes": 266,
+      "sha256": "5305b2bc405471d313fd22d2ea59e9a069735373489c05c96f9cec49c08854d8"
+    },
+    {
+      "path": "preparation/effect-install.log",
+      "bytes": 695,
+      "sha256": "97c8d1fe57c606bdafcfdad0e1ded6fe7b2fbb73ba09ad0a982b7935d20d700e"
+    },
+    {
+      "path": "preparation/effect-typecheck-final.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "preparation/piral-build-preparation-01.log",
+      "bytes": 286,
+      "sha256": "ae95e126f24986db0eca6c1db36f356fa8f9dedef495fb5a541fdf32aa2f6fe7"
+    },
+    {
+      "path": "preparation/piral-install-02.log",
+      "bytes": 471,
+      "sha256": "afef1ec742b9a4923caa602e431f64097775538644c1b82732a7b345ae3c1eb9"
+    },
+    {
+      "path": "preparation/piral-install.log",
+      "bytes": 1371,
+      "sha256": "411260f9c3de3dc2c28d4afae4692aa622322f48d33bcd7490fb1e5f6ba36ca6"
+    },
+    {
+      "path": "preparation/piral-preparation-red-01.json",
+      "bytes": 2045,
+      "sha256": "4f409a821aa954e45e76242586fd1b3af762df7bb57e2c915d5e037ea571ef3e"
+    },
+    {
+      "path": "preparation/piral-preparation-red-01.tar.gz",
+      "bytes": 25439,
+      "sha256": "ecf190c74f44cc841ba54edd9d9a4130b95584dac48c7ebed86108f524853490"
+    },
+    {
+      "path": "preparation/piral-typecheck-final.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "preparation/piral-typecheck-preparation-01.log",
+      "bytes": 814,
+      "sha256": "924b161fd7b72f67dbaccf78ab0c41d87cfb0240e1ec96dbadfda561816fba09"
+    },
+    {
+      "path": "third-party-licenses/babel__runtime@7.29.15/LICENSE",
+      "bytes": 1106,
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "third-party-licenses/csstype@3.2.4/LICENSE",
+      "bytes": 1062,
+      "sha256": "11d55bd4541c75ee7879547ac49089c489163dae49551389713c3d026cab383e"
+    },
+    {
+      "path": "third-party-licenses/detect-libc@2.1.2/LICENSE",
+      "bytes": 11357,
+      "sha256": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1"
+    },
+    {
+      "path": "third-party-licenses/effect@4.1.5/LICENSE",
+      "bytes": 1083,
+      "sha256": "774c3bc5924ad8ae6c5a75f1c53db13feb238ade15989625c513d07b60dedf30"
+    },
+    {
+      "path": "third-party-licenses/effect@4.1.5/THIRD_PARTY_NOTICES.md",
+      "bytes": 8251,
+      "sha256": "f11bc0621809224ebffc6436b2a01b55c54dbe2e332dc91e6cba28fae478641b"
+    },
+    {
+      "path": "third-party-licenses/fdir@6.5.0/LICENSE",
+      "bytes": 1053,
+      "sha256": "9a39f2aadab11a3697edd668ff2d8ad885b649737b7ab4d3bf12b34e5ada0c86"
+    },
+    {
+      "path": "third-party-licenses/get-modular__resources@0.2.2/LICENSE",
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "path": "third-party-licenses/history@4.10.1/LICENSE",
+      "bytes": 1076,
+      "sha256": "079b9fe13858745a8faeaf305231a339b63ba13f36b65e6e9eca94d89196c456"
+    },
+    {
+      "path": "third-party-licenses/hoist-non-react-statics@3.3.2/LICENSE.md",
+      "bytes": 1662,
+      "sha256": "eb32ff0ec52b6ea86e3d3e06c6ad1b68ee03798b6729af13919f6d5c14b368f3"
+    },
+    {
+      "path": "third-party-licenses/index.json",
+      "bytes": 20010,
+      "sha256": "7741dcc513b943ddbf117966def5299036fa4a61fd54610fc4c988dd2634266e"
+    },
+    {
+      "path": "third-party-licenses/isarray@0.0.1/LICENSE-from-README.md",
+      "bytes": 1097,
+      "sha256": "41199fc577f56d37d06db42992c3a89f669b3ea406da5699bb458bf5f7a0bb25"
+    },
+    {
+      "path": "third-party-licenses/js-tokens@4.0.0/LICENSE",
+      "bytes": 1103,
+      "sha256": "2213d91c606205c71eb051a199478cdc2adde945893404d7f1421436dd6d5cc1"
+    },
+    {
+      "path": "third-party-licenses/lightningcss-linux-x64-gnu@1.33.0/LICENSE",
+      "bytes": 15648,
+      "sha256": "5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e"
+    },
+    {
+      "path": "third-party-licenses/lightningcss@1.33.0/LICENSE",
+      "bytes": 15648,
+      "sha256": "5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e"
+    },
+    {
+      "path": "third-party-licenses/loose-envify@1.4.0/LICENSE",
+      "bytes": 1100,
+      "sha256": "4eb7543b08d955a6d23fcc224601d43ff566e775be918805e26210d7f6eb4893"
+    },
+    {
+      "path": "third-party-licenses/nanoid@3.3.20/LICENSE",
+      "bytes": 1095,
+      "sha256": "da4db1480d9beea3483a2eda5c53b22238d0827d57da162b48f122e04d2d9987"
+    },
+    {
+      "path": "third-party-licenses/object-assign@4.1.1/license",
+      "bytes": 1119,
+      "sha256": "6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c"
+    },
+    {
+      "path": "third-party-licenses/oxc-project__types@0.156.0/LICENSE",
+      "bytes": 1119,
+      "sha256": "95ced5ecf1133fbf41d409b5555c86c344f83f3b019926057ddbc07cfdcc27b3"
+    },
+    {
+      "path": "third-party-licenses/path-to-regexp@1.9.0/LICENSE",
+      "bytes": 1103,
+      "sha256": "4eeb3271453a891df609e5a9f4ee79a68307f730c13417a3bfeffa604ac8cf25"
+    },
+    {
+      "path": "third-party-licenses/picocolors@1.1.1/LICENSE",
+      "bytes": 787,
+      "sha256": "6582629e2979466878f6014313dcc2f3756c9616148682227ce3063dde310750"
+    },
+    {
+      "path": "third-party-licenses/picomatch@4.0.7/LICENSE",
+      "bytes": 1091,
+      "sha256": "d0cd141b0c322fded5dfad1d4645bb2fedfc05b7321fe1009469638190d59ef9"
+    },
+    {
+      "path": "third-party-licenses/piral-base@1.12.5/LICENSE",
+      "bytes": 1071,
+      "sha256": "edf0450da24433717c8a2163c46d770d93f710459d61fba77760cf063a3b7714"
+    },
+    {
+      "path": "third-party-licenses/piral-core@1.12.5/LICENSE",
+      "bytes": 1071,
+      "sha256": "edf0450da24433717c8a2163c46d770d93f710459d61fba77760cf063a3b7714"
+    },
+    {
+      "path": "third-party-licenses/piral-debug-utils@1.12.5/LICENSE",
+      "bytes": 1071,
+      "sha256": "edf0450da24433717c8a2163c46d770d93f710459d61fba77760cf063a3b7714"
+    },
+    {
+      "path": "third-party-licenses/playwright-core@1.65.1/LICENSE",
+      "bytes": 11601,
+      "sha256": "45873d00a0dd243596deb4aa23b2493b3d1f0671921bf2538ea431d7380220eb"
+    },
+    {
+      "path": "third-party-licenses/playwright-core@1.65.1/NOTICE",
+      "bytes": 254,
+      "sha256": "6d602191187b35b9b01d2cffa01c8469c2c8d9de8a96f1bf868e0f264f51c81d"
+    },
+    {
+      "path": "third-party-licenses/playwright@1.65.1/LICENSE",
+      "bytes": 11601,
+      "sha256": "45873d00a0dd243596deb4aa23b2493b3d1f0671921bf2538ea431d7380220eb"
+    },
+    {
+      "path": "third-party-licenses/playwright@1.65.1/NOTICE",
+      "bytes": 254,
+      "sha256": "6d602191187b35b9b01d2cffa01c8469c2c8d9de8a96f1bf868e0f264f51c81d"
+    },
+    {
+      "path": "third-party-licenses/postcss@8.5.33/LICENSE",
+      "bytes": 1095,
+      "sha256": "5be1f3465bba68a626777f984878814aaf35e7ef8e9fd314d469bcf887050fb8"
+    },
+    {
+      "path": "third-party-licenses/prop-types@15.8.1/LICENSE",
+      "bytes": 1080,
+      "sha256": "f657f99d3fb9647db92628e96007aabb46e5f04f33e49999075aab8e250ca7ce"
+    },
+    {
+      "path": "third-party-licenses/react-dom@18.3.1/LICENSE",
+      "bytes": 1086,
+      "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85"
+    },
+    {
+      "path": "third-party-licenses/react-is@16.13.1/LICENSE",
+      "bytes": 1086,
+      "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85"
+    },
+    {
+      "path": "third-party-licenses/react-router-dom@5.3.4/LICENSE",
+      "bytes": 1115,
+      "sha256": "f8028d6599b4b781d151ba12c534ff23a9fce4f3bb3f417778302ed8970306e2"
+    },
+    {
+      "path": "third-party-licenses/react-router@5.3.4/LICENSE",
+      "bytes": 1115,
+      "sha256": "f8028d6599b4b781d151ba12c534ff23a9fce4f3bb3f417778302ed8970306e2"
+    },
+    {
+      "path": "third-party-licenses/react@18.3.1/LICENSE",
+      "bytes": 1086,
+      "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85"
+    },
+    {
+      "path": "third-party-licenses/resolve-pathname@3.0.0/LICENSE",
+      "bytes": 1077,
+      "sha256": "e0dca6c79586466b5df4c3b31766391152dc4074978fd3c68fe10da744d0f114"
+    },
+    {
+      "path": "third-party-licenses/rolldown@1.2.19/LICENSE",
+      "bytes": 1302,
+      "sha256": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734"
+    },
+    {
+      "path": "third-party-licenses/rolldown__pluginutils@1.1.1/LICENSE",
+      "bytes": 1106,
+      "sha256": "e1919b3b98b8bf6c1b99fcc60a0ed46027c97ac947432e1278446c9606f50161"
+    },
+    {
+      "path": "third-party-licenses/scheduler@0.23.2/LICENSE",
+      "bytes": 1086,
+      "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85"
+    },
+    {
+      "path": "third-party-licenses/source-map-js@1.2.4/LICENSE",
+      "bytes": 1526,
+      "sha256": "6cb0631f71c7749763fd3dd1d5bee52dd1070ec17f2edc1710079ad070bd2fbd"
+    },
+    {
+      "path": "third-party-licenses/systemjs@6.15.1/LICENSE",
+      "bytes": 1095,
+      "sha256": "35048ac1954e55e64ea0208b3adf5aa2e22b740370443bc830060cf10ea6b078"
+    },
+    {
+      "path": "third-party-licenses/tiny-invariant@1.3.3/LICENSE",
+      "bytes": 1073,
+      "sha256": "b1c501095de70182748cb8e8d97ac5577701a4ef3b755ba30d59fd87b24bdb0f"
+    },
+    {
+      "path": "third-party-licenses/tiny-warning@1.0.3/LICENSE",
+      "bytes": 1073,
+      "sha256": "b1c501095de70182748cb8e8d97ac5577701a4ef3b755ba30d59fd87b24bdb0f"
+    },
+    {
+      "path": "third-party-licenses/tinyglobby@0.2.17/LICENSE",
+      "bytes": 1076,
+      "sha256": "22c68811e174cbbfb3813d4135918df4f540959c14d872e601d9abe83d3cde8f"
+    },
+    {
+      "path": "third-party-licenses/tslib@2.9.1/LICENSE.txt",
+      "bytes": 655,
+      "sha256": "210b19e543130388c68654b7497e967119ce17145f66ab7d85688fbd70f08751"
+    },
+    {
+      "path": "third-party-licenses/types__history@4.7.11/LICENSE",
+      "bytes": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "third-party-licenses/types__node@24.13.3/LICENSE",
+      "bytes": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "third-party-licenses/types__prop-types@15.7.15/LICENSE",
+      "bytes": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "third-party-licenses/types__react-dom@18.3.7/LICENSE",
+      "bytes": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "third-party-licenses/types__react-router-dom@5.3.3/LICENSE",
+      "bytes": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "third-party-licenses/types__react-router@5.1.20/LICENSE",
+      "bytes": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "third-party-licenses/types__react@18.3.31/LICENSE",
+      "bytes": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "third-party-licenses/types__systemjs@6.15.4/LICENSE",
+      "bytes": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "third-party-licenses/typescript@7.0.2/LICENSE",
+      "bytes": 9197,
+      "sha256": "a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47"
+    },
+    {
+      "path": "third-party-licenses/typescript@7.0.2/NOTICE.txt",
+      "bytes": 48860,
+      "sha256": "f5c708b59114507b8b27b48181b6883d106bbca0c1634bbee45b5e344237b66b"
+    },
+    {
+      "path": "third-party-licenses/typescript__typescript-linux-x64@7.0.2/LICENSE",
+      "bytes": 9197,
+      "sha256": "a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47"
+    },
+    {
+      "path": "third-party-licenses/typescript__typescript-linux-x64@7.0.2/NOTICE.txt",
+      "bytes": 48860,
+      "sha256": "f5c708b59114507b8b27b48181b6883d106bbca0c1634bbee45b5e344237b66b"
+    },
+    {
+      "path": "third-party-licenses/undici-types@7.18.2/LICENSE",
+      "bytes": 1090,
+      "sha256": "a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27"
+    },
+    {
+      "path": "third-party-licenses/value-equal@1.0.1/LICENSE",
+      "bytes": 1077,
+      "sha256": "e0dca6c79586466b5df4c3b31766391152dc4074978fd3c68fe10da744d0f114"
+    },
+    {
+      "path": "third-party-licenses/vite-plugin-codegen@2.1.0/LICENSE",
+      "bytes": 1077,
+      "sha256": "65fd8dbdd8b0902b978959e32e8f809980e22dbde44309baf7069ea562a0bb7c"
+    },
+    {
+      "path": "third-party-licenses/vite@8.3.8/LICENSE.md",
+      "bytes": 98196,
+      "sha256": "a22152baa1aef74402443008e767e7c689a524c0909d19b0431d97f5ab066a13"
+    },
+    {
+      "path": "third-party-licenses/zustand@3.7.2/LICENSE",
+      "bytes": 1070,
+      "sha256": "c1e6e266563517467b1bf874817d23e426f3149252bd7d42758cd697514b8417"
+    }
+  ]
+}

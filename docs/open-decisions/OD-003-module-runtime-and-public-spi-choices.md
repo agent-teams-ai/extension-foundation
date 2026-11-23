@@ -639,6 +639,24 @@ subject to the independent state-custody authorization and exact attachment
 identity required by ADR-0011. Product migrations and canonical product state
 do not move into Foundation.
 
+## Owner-requested detailed design and project preparation (2026-11-23)
+
+The owner requested deeper responsibility, pattern, technology and adapter
+design, integrated with Get Modular, the plugin system and Engineering
+Foundation. The library should serve ordinary open-source consumers and eligible
+features across the owner's projects. The owner also authorized preparing and
+creating a separate repository with a descriptive public name; the working name
+is `live-module-updates`.
+
+The [operation proposal](../architecture/live-module-update-operation.md) and
+[validation record](../research/live-module-update-design-validation-2026-11-23.md)
+carry this work. Record competitors' useful implementations, tradeoffs and
+counterexamples; use bounded spikes where their result can change a choice.
+Commit useful checkpoints and immediately push them. The request does not
+accept a public API, select Q1-Q7 defaults or qualify every project/module for
+live replacement. Repository creation, actual admission and production delivery
+remain separately observable steps.
+
 ## Required Evidence
 
 The maintained [plugin research reference](../research/plugin-system-research-reference.md)

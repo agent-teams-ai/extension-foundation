@@ -115,6 +115,11 @@ consumer still applies its actual artifact and authority rules.
 
 ## Structure
 
+The proposed [complete operation contract](live-module-update-operation.md)
+details semantic ports, independent outcome dimensions, feature authoring,
+adapter boundaries and adverse cases. Its [design validation record](../research/live-module-update-design-validation-2026-11-23.md)
+keeps source observations and experiments separate from acceptance.
+
 ### Complete operation, narrow consumer primitives
 
 These are responsibilities to specify and qualify, not a frozen state machine

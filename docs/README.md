@@ -25,6 +25,7 @@ Read by responsibility:
 | Concern | Document |
 | --- | --- |
 | Current module/plugin/live-update direction and implementation owners | [Live Extension System Map](architecture/live-extension-system-map.md) |
+| Proposed complete operation, semantic ports, feature authoring and adverse outcomes | [Live Module Update Operation](architecture/live-module-update-operation.md) |
 | Product boundary and topology | [Architecture overview](architecture/overview.md) |
 | Feature ownership, standard identity and scoped checks | [Feature Module Standard Profile](architecture/feature-module-standard-profile.md) |
 | Extension terminology and ownership | [Extension model](architecture/extension-model.md) |

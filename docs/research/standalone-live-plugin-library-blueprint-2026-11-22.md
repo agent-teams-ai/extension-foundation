@@ -248,7 +248,8 @@ inspection of Effect/XState is still distinct from browser execution.
 | Concern | First mechanism to inspect or reuse | Qualification still required |
 | --- | --- | --- |
 | Graph and bindings | Get Modular | Exact changed-feature plan and supported external consumer |
-| Plain TS resources | Get Modular Resources/lifecycle | Admission race, stream lifetime, observed release, bounded retention |
+| Plain TS cleanup | Public Get Modular Resources | Late acquisition, cleanup debt, original close completion and actual native release |
+| Invocation and generation custody | Existing qualified Host mechanism or Get Modular lifecycle candidate after its owning publication route | Atomic admission, stream lifetime and bounded retention; Resources alone does not supply these |
 | Native Effect lifetime | Effect Scope/Layer and Get Modular Effect profile | Layer identity, memoization sharing and native cancellation semantics |
 | Node operation context | AsyncLocalStorage/snapshot | Mutable captured stores, delayed callbacks, iterator consumption |
 | View replacement | Framework refresh/HMR, explicit unmount/mount | Dirty draft, focus/caret, undo, fallback identity and cleanup failure |
