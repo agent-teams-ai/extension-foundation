@@ -64,10 +64,10 @@ Two candidate discriminators are narrower than another framework survey:
   from its first close. Check the exact public native mechanism before using
   a repeated call as evidence that old resources are gone.
 
-These are hypotheses/source observations. The final frozen plan, dependency
-audit and independent review precede execution. No new runtime test has passed
-at this planning checkpoint. Existing MF, SystemJS, editor and database results
-remain historical evidence rather than a new test count.
+At the initial planning checkpoint these were hypotheses/source observations.
+The frozen plan, dependency audit and independent review preceded execution.
+The actual results appear below. Existing MF, SystemJS, editor and database
+results remain historical evidence rather than a new test count.
 
 ### Detailed source review
 
@@ -153,6 +153,36 @@ The next correction initializes both paths in the first runner step through
 checks passed; only actual hosted completion can establish evidence delivery.
 The fixture and frozen archive are unchanged. The failed validation attempt
 adds zero native executions and zero coverage.
+
+### Observed native results
+
+Corrected [run 45208310980](https://github.com/agent-teams-ai/extension-foundation/actions/runs/45208310980)
+completed successfully on `b86e05988334f657d933fa412a02572b455dcd7e`.
+Both native execution and artifact delivery passed. The [result packet](evidence/live-module-contracts-results-20261123.tar.gz)
+and [manifest](evidence/live-module-contracts-results-20261123.manifest.json)
+retain the two original downloaded ZIPs, full job logs, observations, exact
+bindings and independent result review. Both ZIP digests match GitHub metadata
+and upload logs; their contents passed integrity checks.
+
+| Case | Actual bounded observation | Consequence for the proposed contract |
+| --- | --- | --- |
+| P1 | New setup rejected after acquiring a listener; outer action fulfilled and old managed contributions were already removed | Readiness must be separate from action completion; a captured callback is not a restored useful contribution |
+| P2 | Delayed old page disposer removed the successor at the same route; the reference-specific extension survived | Require exact-instance ownership for the supported registration path; do not generalize every disposer as unsafe |
+| B1 | The cooperative bridge exposed readiness rejection and closed the failed candidate's listener; old contributions remained absent | Failed-candidate cleanup is useful but does not provide nondestructive preparation or automatic rollback |
+| B2/B3 | The successor remained useful while the old scope reported real cleanup debt; explicit retry removed the old listener, preserved the successor and retained the first failure report | Adoption, cleanup debt and successful retry are separate facts; reuse the existing Resources scope |
+| E1 | Second Effect close returned before the original finalizer gate was released; joining the first close then established listener removal | Retain the actual original close outcome instead of treating repeated close as a join |
+
+The delivered evidence records **3 tests, 6 named cases and 66 explicit
+comparisons**: Piral 2 tests/5 cases/61 comparisons, Effect 1/1/5. All tests
+passed with zero failures, cancellations or skips. Piral recorded no page or
+infrastructure failures; its two deliberate setup-rejection console messages
+remain in the observations. Repeated execution does not increase this coverage.
+
+Both projects used Node 24.22.3, pnpm 11.25.0 and strict TypeScript 7.0.2.
+The installed native-platform package graphs, real generated Piral bundle and
+compiler identities were checked. These results qualify the frozen fixtures;
+they do not implement the complete library, accept an adapter, prove arbitrary
+foreign-plugin safety, select Q1-Q7 or establish comparative product advantage.
 
 ## Repository and Foundation boundary
 
