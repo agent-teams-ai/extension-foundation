@@ -138,6 +138,22 @@ early-failure artifact paths. Fixture code, test oracles and the 97-file input
 archive remain byte-identical. The corrected execution receives a new source
 and workflow identity; repeating these tests adds no distinct coverage.
 
+The first path correction on `3b511d2a75829169c011baf3c114ec62c8c254b3`
+produced [run 45207513737](https://github.com/agent-teams-ai/extension-foundation/actions/runs/45207513737),
+which failed before any job or test ran. The source used `runner` in job-level
+`env`, where the official [context table](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#context-availability)
+does not permit it. The exact hosted validator annotation was unavailable;
+this diagnosis is tied to the source and documented restriction, not a quoted
+error. The [context failure packet](evidence/live-module-contracts-context-failure-20261123.tar.gz)
+and [manifest](evidence/live-module-contracts-context-failure-20261123.manifest.json)
+preserve that attempt and the corrected independent review.
+
+The next correction initializes both paths in the first runner step through
+`GITHUB_ENV`, before checkout or extraction. Review and bounded shell/path
+checks passed; only actual hosted completion can establish evidence delivery.
+The fixture and frozen archive are unchanged. The failed validation attempt
+adds zero native executions and zero coverage.
+
 ## Repository and Foundation boundary
 
 The current organization [bootstrap route](https://github.com/agent-teams-ai/.github/blob/0b44c64c824f536bd1b085341e7669bcc64ef124/docs/repository-admission.md#new-repository-bootstrap)
