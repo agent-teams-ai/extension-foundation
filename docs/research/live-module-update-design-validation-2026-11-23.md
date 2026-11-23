@@ -184,6 +184,40 @@ compiler identities were checked. These results qualify the frozen fixtures;
 they do not implement the complete library, accept an adapter, prove arbitrary
 foreign-plugin safety, select Q1-Q7 or establish comparative product advantage.
 
+## Current standalone transfer
+
+The [Live Module Updates project](evidence/live-module-updates-standalone-20261123.tar.gz)
+and its [content manifest](evidence/live-module-updates-standalone-20261123.manifest.json)
+complete the portable research and specification transfer for this iteration.
+The current README routes to the operation, architecture review, industry
+findings, open choices, bootstrap and final native results. The source register
+now identifies all ten immutable packets: the four historical sources plus the
+plan, design review, frozen inputs, both unsuccessful attempts and final result.
+Those original archives and ledgers retain their bytes and evidence classes.
+
+The recovered standalone directory still described native execution as pending.
+Its current validation now distinguishes preparation at `f40968f`, corrected
+execution at `b86e059`, and durable result publication at `cc079593`. The source
+reports remain dated observations; their earlier proposed experiments are not
+rewritten into new evidence. The corrected operation-planner ownership remains
+explicit: the library consumes Get Modular, while applications supply narrow
+authority and state primitives.
+
+The [delivery validation](evidence/live-module-updates-standalone-20261123.validation.json)
+binds the final archive, independent review and actual local documentation gate.
+The [finalization evidence](evidence/live-module-updates-finalization-20261123.tar.gz)
+and [manifest](evidence/live-module-updates-finalization-20261123.manifest.json)
+retain the plan, review inputs, findings and raw validation results. Archive
+extraction and a rejected tampered copy qualify this transfer's integrity;
+they do not add native test coverage. The frozen native inputs and workflow are
+unchanged, so run `45208310980` remains the execution evidence.
+
+The manifest's actual inventory owns the file count. An earlier conversation
+mentioned 21 new files, but no corresponding sealed packet was recovered; that
+unresolved description is not used as an inventory or a completeness claim.
+The transfer contains no production package, accepted public API or activated
+workflow. Q1-Q7 and the first complete-library consumer remain open.
+
 ## Repository and Foundation boundary
 
 The current organization [bootstrap route](https://github.com/agent-teams-ai/.github/blob/0b44c64c824f536bd1b085341e7669bcc64ef124/docs/repository-admission.md#new-repository-bootstrap)
@@ -199,12 +233,15 @@ Docs admission and enforced checks. Keep immutable standards and historical
 evidence unchanged. Route repository instructions to central authority rather
 than copying a second policy.
 
-Repository creation is not yet observed. In this session the connected GitHub
-tools have no creation operation, `gh` is unauthenticated, and the browser
-extension requires the originating connected browser context. This limits
-creation, not architecture, fixtures, review or publishing the prepared project
-material in the existing branch. No organization registration is fabricated for
-a nonexistent repository.
+Repository creation was rechecked during finalization on 2026-11-23. The target
+`agent-teams-ai/live-module-updates` returned 404 through the authorized lookup;
+this does not prove namespace availability. The connected GitHub tools expose
+no creation operation, `gh` remains unauthenticated, and the browser reports
+that its originating connected context is unavailable. The owner has already
+authorized creation. The completed transfer is published in the existing
+research branch; creating the separate remote still needs an ordinary
+authenticated creation route. No repository identity, registration or admission
+is inferred from the archive.
 
 ## Open questions and validation
 

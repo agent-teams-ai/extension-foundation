@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS bounded research transfer and local documentation gate; remote publication/checks observed separately",
+  "sourceCommit": "cc07959309f65ab2401f838c982911743075fe1e",
+  "transfer": {
+    "path": "docs/research/evidence/live-module-updates-standalone-20261123.tar.gz",
+    "name": "live-module-updates-standalone-20261123.tar.gz",
+    "bytes": 75907,
+    "sha256": "ce70e0ef74bf4bec0c67e7deb1db4b744142bb78c24dfdc194831bd2d4855c93"
+  },
+  "transferManifest": {
+    "path": "docs/research/evidence/live-module-updates-standalone-20261123.manifest.json",
+    "bytes": 12802,
+    "sha256": "9650ffb30c58ad9175fae5cfc6d0bf0a3a609694b86d2802cf1704b88fe81ce2"
+  },
+  "finalizationEvidence": {
+    "path": "docs/research/evidence/live-module-updates-finalization-20261123.tar.gz",
+    "bytes": 20178,
+    "sha256": "db6adebc2445bd2e3ed3d250daa586fd7ec472e41a27570eb7a04ba60d60cd16"
+  },
+  "finalizationManifest": {
+    "path": "docs/research/evidence/live-module-updates-finalization-20261123.manifest.json",
+    "bytes": 4742,
+    "sha256": "9407db073aa92890b52d04614cac97b655e032f22e136fb1a6917eb96514c5aa"
+  },
+  "governedDocuments": [
+    {
+      "path": "docs/architecture/live-extension-system-map.md",
+      "bytes": 23980,
+      "sha256": "0119a363a1bed4ea50d818b6202dcb57c9abe7e5537749fc4bf9929537bb3965"
+    },
+    {
+      "path": "docs/research/live-module-update-design-validation-2026-11-23.md",
+      "bytes": 17639,
+      "sha256": "2208787d40c790835b275bb3182c9e061e517a15b33f1804a7ba6fac5f89c394"
+    }
+  ],
+  "independentReviews": {
+    "rounds": 2,
+    "verdict": "PASS",
+    "reports": [
+      "review-work/PLAN-REVIEW.md",
+      "review-work/FINAL-REVIEW.md"
+    ]
+  },
+  "transferChecks": {
+    "regularFiles": 18,
+    "roundTrip": "exact",
+    "tamperControls": [
+      {
+        "control": "original manifest",
+        "reason": "archive byte count mismatch"
+      },
+      {
+        "control": "outer hash recomputed, member hashes unchanged",
+        "reason": "member hash: AGENTS.md"
+      }
+    ],
+    "relativeMarkdownLinks": 28,
+    "immutableGitObjects": 29,
+    "immutableSiblingPackets": 10,
+    "historicalEvidenceFilesUnchanged": 148,
+    "externalUrlsNotRevalidated": 66
+  },
+  "localDocumentationGate": {
+    "command": [
+      "pnpm",
+      "docs:protocol:check"
+    ],
+    "cwd": "/workspace/scratch/c5be46753601/extension-foundation-finalize",
+    "startedAt": "2026-11-23T16:48:39.457816+00:00",
+    "completedAt": "2026-11-23T16:59:32.485384+00:00",
+    "exitCode": 0,
+    "log": "docs-protocol-check.log",
+    "logBytes": 1525,
+    "logSha256": "56653a7b63265d42957491e7925d4a59d29cd05da36e58c496523b8bf8c725b0",
+    "frozenInputs": "FROZEN-INPUTS.json",
+    "scope": "Standalone Docs Protocol catalog, Markdown/spelling and authoring contract tests; not native rerun or full Foundation toolgraph qualification"
+  },
+  "nativeEvidence": {
+    "runId": 45208310980,
+    "attempt": 1,
+    "executionCommit": "b86e05988334f657d933fa412a02572b455dcd7e",
+    "resultPublicationCommit": "cc07959309f65ab2401f838c982911743075fe1e",
+    "tests": 3,
+    "cases": 6,
+    "explicitComparisons": 66,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "frozenInputUnchanged": true,
+    "executedWorkflowUnchanged": true,
+    "newNativeExecutionsDuringFinalization": 0
+  },
+  "remaining": {
+    "destinationRepository": "Not created: authorized, but authenticated creation route unavailable",
+    "ownerChoices": "Q1-Q7 remain open",
+    "productionQualification": "No complete-library consumer, public API, production package or repository admission is claimed",
+    "localFullFoundationGate": "Not executed: installed Foundation 1.7.2 loads embedded TypeScript 5.9.3; no pins or gates changed",
+    "hostedChecks": "Observe actual results on the containing publication commit; not predeclared by this receipt"
+  }
+}

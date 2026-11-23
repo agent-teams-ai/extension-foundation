@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Finalization plan, independent reviews, exact transfer verification and actual standalone Docs gate",
+  "sourceRepository": "agent-teams-ai/extension-foundation",
+  "sourceCommit": "cc07959309f65ab2401f838c982911743075fe1e",
+  "archive": {
+    "path": "docs/research/evidence/live-module-updates-finalization-20261123.tar.gz",
+    "bytes": 20178,
+    "sha256": "db6adebc2445bd2e3ed3d250daa586fd7ec472e41a27570eb7a04ba60d60cd16"
+  },
+  "memberCount": 12,
+  "members": [
+    {
+      "path": "CAPABILITY-OBSERVATIONS.json",
+      "bytes": 1265,
+      "sha256": "a59078aee4f9a6064543270e2d30fa5225163a494e212b2ea6fe65fe06f5df47"
+    },
+    {
+      "path": "FINALIZATION-PLAN.md",
+      "bytes": 3163,
+      "sha256": "f707acd9f9a1e4a1f9c5aa9ae23920744c287ef0ad2a435b993dbdd499f61eb3"
+    },
+    {
+      "path": "FROZEN-INPUTS.json",
+      "bytes": 1049,
+      "sha256": "d9b9fb76e0bb7323291439b629e89c83630bae1ad88a6d740f8797024dcb4743"
+    },
+    {
+      "path": "SOURCE-BINDING.json",
+      "bytes": 3450,
+      "sha256": "cb196ae7781ff0946753a694aefe2a7a56f98abaca381ec125602df51e392ea2"
+    },
+    {
+      "path": "docs-protocol-check.json",
+      "bytes": 591,
+      "sha256": "67a2f6b7f38ffa4a2ebd7b0e32b30504c5f5b0ebcdb2f7c67ddf513be5d7c08d"
+    },
+    {
+      "path": "docs-protocol-check.log",
+      "bytes": 1525,
+      "sha256": "56653a7b63265d42957491e7925d4a59d29cd05da36e58c496523b8bf8c725b0"
+    },
+    {
+      "path": "review-work/ARTIFACT-REVIEW.json",
+      "bytes": 21750,
+      "sha256": "b219c156e27b20443bf5bf6bef9596b0bb254b8a793ef37584d9b776f38c22df"
+    },
+    {
+      "path": "review-work/FINAL-REVIEW-inputs.json",
+      "bytes": 2925,
+      "sha256": "8fa98fa403218589a2c6967c01e34dfff1aa1abed0346207a7f2a8f3a5be03b2"
+    },
+    {
+      "path": "review-work/FINAL-REVIEW.md",
+      "bytes": 7259,
+      "sha256": "6d2da67fcd229b074b6d63b9569395caa78c04945473dba3437250a4b5f88eed"
+    },
+    {
+      "path": "review-work/PLAN-REVIEW.md",
+      "bytes": 4357,
+      "sha256": "5bab1042a1d0928a8f7b60fd23715d406ad565d3e30a254f8cefad3bf27aeec7"
+    },
+    {
+      "path": "review-work/verify_transfer.py",
+      "bytes": 16834,
+      "sha256": "a7ccb1efc8b8a0c9f79c2fbec08255cbfe0e2fa7e180616f806ec8b2fa4e9f1c"
+    },
+    {
+      "path": "standalone-edit-receipt.json",
+      "bytes": 5536,
+      "sha256": "889a5f7afaa837863101d0a79c917f7b41fb0fe754a4df17891f29f7dcc42ce1"
+    }
+  ],
+  "reviewedInputs": {
+    "sourceCommit": "cc07959309f65ab2401f838c982911743075fe1e",
+    "projectTreeSha256": "30720ed8fe2f9e2f4893c254f4ff6ab93efe2d494a4a6567d22d70e44e95acca",
+    "archive": {
+      "path": "docs/research/evidence/live-module-updates-standalone-20261123.tar.gz",
+      "name": "live-module-updates-standalone-20261123.tar.gz",
+      "bytes": 75907,
+      "sha256": "ce70e0ef74bf4bec0c67e7deb1db4b744142bb78c24dfdc194831bd2d4855c93"
+    },
+    "manifest": {
+      "path": "docs/research/evidence/live-module-updates-standalone-20261123.manifest.json",
+      "bytes": 12802,
+      "sha256": "9650ffb30c58ad9175fae5cfc6d0bf0a3a609694b86d2802cf1704b88fe81ce2"
+    },
+    "governedDocuments": [
+      {
+        "path": "docs/architecture/live-extension-system-map.md",
+        "bytes": 23980,
+        "sha256": "0119a363a1bed4ea50d818b6202dcb57c9abe7e5537749fc4bf9929537bb3965"
+      },
+      {
+        "path": "docs/research/live-module-update-design-validation-2026-11-23.md",
+        "bytes": 17639,
+        "sha256": "2208787d40c790835b275bb3182c9e061e517a15b33f1804a7ba6fac5f89c394"
+      }
+    ]
+  },
+  "gate": {
+    "command": [
+      "pnpm",
+      "docs:protocol:check"
+    ],
+    "cwd": "/workspace/scratch/c5be46753601/extension-foundation-finalize",
+    "startedAt": "2026-11-23T16:48:39.457816+00:00",
+    "completedAt": "2026-11-23T16:59:32.485384+00:00",
+    "exitCode": 0,
+    "log": "docs-protocol-check.log",
+    "logBytes": 1525,
+    "logSha256": "56653a7b63265d42957491e7925d4a59d29cd05da36e58c496523b8bf8c725b0",
+    "frozenInputs": "FROZEN-INPUTS.json",
+    "scope": "Standalone Docs Protocol catalog, Markdown/spelling and authoring contract tests; not native rerun or full Foundation toolgraph qualification"
+  },
+  "boundaries": [
+    "Independent round 2 covers frozen project/archive/manifest and two governed documents",
+    "This post-gate envelope is assembled separately and verified by root",
+    "The raw local gate binds unchanged governed Markdown and executable inputs; generated evidence envelopes are added after the gate",
+    "Hosted final-head results and publication identity are observed after this commit and recorded in the PR checkpoint",
+    "No new native execution, production API adoption, merge or separate repository creation"
+  ]
+}
