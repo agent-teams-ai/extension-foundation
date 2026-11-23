@@ -23,8 +23,8 @@ jobs:
       matrix:
         profile: [piral-lifecycle, effect-close]
     env:
-      CONTRACT_RESEARCH_ROOT: ${{ github.workspace }}/../live-module-contracts-${{ matrix.profile }}
-      CONTRACT_RESEARCH_DIRECTORY: ${{ github.workspace }}/../live-module-contracts-${{ matrix.profile }}/${{ matrix.profile }}
+      CONTRACT_RESEARCH_ROOT: ${{ runner.temp }}/live-module-contracts-${{ matrix.profile }}
+      CONTRACT_RESEARCH_DIRECTORY: ${{ runner.temp }}/live-module-contracts-${{ matrix.profile }}/${{ matrix.profile }}
       CONTRACT_RESEARCH_PROFILE: ${{ matrix.profile }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

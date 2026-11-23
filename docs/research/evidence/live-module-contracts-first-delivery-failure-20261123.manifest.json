@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "archive": "live-module-contracts-first-delivery-failure-20261123.tar.gz",
+  "bytes": 22802,
+  "sha256": "8c42813e08bf933a33be06a768c38607cc1c16d6ec3c64a4b54fdcfdb24802da",
+  "runId": 45205566932,
+  "sourceHead": "f40968f88a1fd29bea3dfcf207bab56e32b90e0d",
+  "memberCount": 3,
+  "members": [
+    {
+      "path": "FAILURE-RECEIPT.json",
+      "bytes": 1559,
+      "sha256": "06c496413111f46c719ac9d64a65a3b50035cbfd6bd8c8b4bd897448680c622e"
+    },
+    {
+      "path": "effect-job-137800221981.log",
+      "bytes": 35795,
+      "sha256": "4e83c35fc2149b490b84cb86a054316733c5a76c7c013138d7ebe066a77d07d8"
+    },
+    {
+      "path": "piral-job-137800221788.log",
+      "bytes": 69577,
+      "sha256": "44c1262321c35d9fcc3d7a1e91782c1434fda58500c135599cc0612de7ae9f4d"
+    }
+  ]
+}

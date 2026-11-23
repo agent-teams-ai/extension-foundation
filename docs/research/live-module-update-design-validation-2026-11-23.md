@@ -123,6 +123,21 @@ change. It verifies archive members, exact installed dependency/TS identities,
 strict compilation and the real build before native execution. A published
 input is not a passed run; the result is recorded after actual completion.
 
+The first hosted [run 45205566932](https://github.com/agent-teams-ai/extension-foundation/actions/runs/45205566932)
+completed on `f40968f88a1fd29bea3dfcf207bab56e32b90e0d`: native logs report
+Piral 2/2 and Effect 1/1 passed, with no failed or skipped tests. Both jobs then
+failed artifact upload because the uploader rejects paths containing `..`.
+No observation JSON was delivered, so comparison counts are not inferred from
+the planned assertions. The [original failure packet](evidence/live-module-contracts-first-delivery-failure-20261123.tar.gz)
+and [manifest](evidence/live-module-contracts-first-delivery-failure-20261123.manifest.json)
+preserve complete job logs and the distinction between native success and
+failed evidence delivery.
+
+The correction uses canonical `runner.temp` roots for both profiles, including
+early-failure artifact paths. Fixture code, test oracles and the 97-file input
+archive remain byte-identical. The corrected execution receives a new source
+and workflow identity; repeating these tests adds no distinct coverage.
+
 ## Repository and Foundation boundary
 
 The current organization [bootstrap route](https://github.com/agent-teams-ai/.github/blob/0b44c64c824f536bd1b085341e7669bcc64ef124/docs/repository-admission.md#new-repository-bootstrap)
