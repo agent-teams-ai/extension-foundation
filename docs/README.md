@@ -44,6 +44,7 @@ These source-backed references are evidence and design recommendations. They do
 not accept a runtime, publish a package, or replace an approved ADR.
 
 - [Plugin System Research Reference](research/plugin-system-research-reference.md)
+- [Live Module Update Design Validation 2026-11-23](research/live-module-update-design-validation-2026-11-23.md)
 - [Live Extension Documentation Audit 2026-11-23](research/live-extension-documentation-audit-2026-11-23.md)
 - [Live Update Ready Stack Comparison 2026-11-23](research/live-update-ready-stack-comparison-2026-11-23.md)
 - [Live Update Value Competition and Implementation Size 2026-11-22](research/live-update-value-competition-and-implementation-size-2026-11-22.md)
