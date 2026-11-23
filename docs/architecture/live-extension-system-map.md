@@ -254,7 +254,7 @@ readiness instead of counting research pages as completed implementation design.
 
 For the bounded TS-first library and its first real delivery, the
 [audit rubric](../research/live-extension-documentation-audit-2026-11-23.md#readiness-rubric)
-estimates vision at **85–90%**, documentation at **80–85% after final review**,
+estimates vision at **85–90%**, documentation at **80–85%**,
 and the implementation plan at **50–60%**. These are coarse planning judgments,
 not implementation completion or reliability measurements. The main missing
 work is the actual first consumer, applicable owner choices and an exact selected

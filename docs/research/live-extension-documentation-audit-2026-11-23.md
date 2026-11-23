@@ -36,8 +36,8 @@ authority and implementation without becoming a new decision.
 | --- | --- | --- |
 | 1. Inventory and authority | Baseline entry points, accepted constraints and owner direction; 15 architecture/planning findings | Complete; original report and source inventory preserved |
 | 2. Custody and semantics | Compare available working reports to actual tracked/archive text; disposition unmatched reports and original failures | Complete; six original files rescued and archive bytes independently verified |
-| 3. Synthesis and challenge | Current map, format/profile register, readiness rubric and fair ready-stack comparison | Consolidated; second authority/custody reviews complete, final corrections and delta review in progress |
-| 4. Delivery audit | Re-read changed documents against findings; validate navigation, final source and remote bytes | Final qualification and publication receipt pending |
+| 3. Synthesis and challenge | Current map, format/profile register, readiness rubric and fair ready-stack comparison | Complete; second and third independent reviews retained, material corrections rechecked |
+| 4. Delivery audit | Re-read changed documents against findings; validate navigation, final source and remote bytes | Content/navigation review complete; exact final-source gate and remote receipts recorded through PR 55 |
 
 Three independent lanes cover authority/readiness, evidence custody and
 ready-stack capabilities. The main review reconciles them and checks the
@@ -180,8 +180,24 @@ the current handoff is the **532-file deepening base plus a separate 167-file
 supplement**, durable recovery facts depend on the selected recovery profile,
 and TS/Rust through jco/generated JS does not imply native Wasmtime execution.
 The role glossary and two additional historical successor notes then closed its
-small remaining navigation gaps. Final consolidated review is still tracked
-separately from this immutable first-pass packet.
+small remaining navigation gaps. The third passes also checked the separate
+Get Modular stability gate, dated two residual historical recommendations,
+corrected Piral event/cleanup wording and made the bad-candidate oracle depend
+on the declared predecessor-preservation profile.
+
+The [final review archive](evidence/live-extension-audit-reviews-20261123.tar.gz)
+and [manifest](evidence/live-extension-audit-reviews-20261123.manifest.json)
+preserve all six second/third-pass reports and their input identities, the exact
+navigation checks and the root's final delta review. These are separate from the
+immutable first-pass packet. Each review identifies the bytes it actually read;
+later publication metadata is not silently attributed to an earlier reviewer.
+
+| Final review lane | Result and concrete coverage |
+| --- | --- |
+| Authority / architecture | PASS on all A01–A15 dispositions; five distinct gates, current direction, readiness arithmetic and seven OPEN choices |
+| Custody / source-to-summary | PASS on CUST-001–007; all 41 explicitly named archive/member paths and 30 ledger destinations resolve; original failures retain their scope |
+| Ready stacks / comparative claims | PASS after the two Piral/scenario refinements; exact cohorts, existing mechanisms and unexecuted common comparison remain explicit |
+| Root reconciliation | Reviews reconciled, publication-only delta separated, historical packets unchanged and no new runtime/adoption claim |
 
 ## Open questions and validation
 
@@ -197,7 +213,7 @@ judgment as coarse ranges, not a measured completion or reliability probability.
 | Axis | Criteria and weights | Baseline | After this consolidation |
 | --- | --- | ---: | ---: |
 | Vision | Owner outcomes 25%; audience/non-goals 20%; boundaries 20%; user promises 20%; scope priorities 15% | 85–90% | **85–90%** |
-| Documentation | Authority traceability 25%; current navigation 20%; bounded evidence 20%; profile/contract completeness 20%; maintenance/dispositions 15% | 65–75% | **Approximately 80–85%**, subject to closing final review/qualification below |
+| Documentation | Authority traceability 25%; current navigation 20%; bounded evidence 20%; profile/contract completeness 20%; maintenance/dispositions 15% | 65–75% | **Approximately 80–85%** after the recorded review and documentation gate |
 | Implementation plan | Named first consumer 20%; necessary policy closure 20%; complete-operation contract 20%; ordered acceptance 20%; reuse/release/bootstrap 20% | 50–60% | **50–60%** |
 
 If one overall number is needed, weights of vision 25%, documentation 35% and
@@ -250,6 +266,14 @@ The baseline's CI
 [45082709665](https://github.com/agent-teams-ai/extension-foundation/actions/runs/45082709665)
 completed **5/5 jobs** on `7611e1a`; its separate Docs run passed 4/4 jobs and
 8/8 semantic tests. These are historical results, not qualification for this
-consolidation. Final-source documentation and remote verification are still
-pending at this checkpoint. PR 55 remains Draft/open; no merge or standalone
-remote creation is claimed.
+consolidation.
+
+Checkpoint 2 was committed and immediately pushed as
+[`0fd566c`](https://github.com/agent-teams-ai/extension-foundation/commit/0fd566c81878bfd078237a488915e267865f0d40).
+Its source/evidence tree was verified against the remote. Final qualification
+belongs to the Documentation Protocol workflow on the final source, with exact
+run identity, result and branch head in the current delivery block of
+[Draft PR 55](https://github.com/agent-teams-ai/extension-foundation/pull/55).
+A queued run is not a pass. This avoids qualifying a later commit with an older
+receipt or creating an endless commit-after-CI receipt cycle. PR 55 remains
+Draft/open; no merge or standalone remote creation is claimed.
