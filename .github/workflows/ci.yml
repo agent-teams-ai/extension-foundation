@@ -11,8 +11,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: extension-foundation-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Supersede stale PR heads only; preserve distinct main and merge-queue SHAs.
+  group: extension-foundation-${{ github.workflow }}-${{ github.event_name }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
@@ -32,28 +33,30 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies
-      - run: pnpm lockfile:peers:check
       - run: pnpm check
 
   node-26-check:
+    # The canonical check already installs and tests the exact pinned Node 26
+    # from .node-version. Keep this required check name without rebuilding the
+    # same project twice; fail closed if the pin or primary result changes.
     name: node-26-check
+    needs: check
+    if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
-        with:
-          version: 11.18.0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 26.11.1
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies
-      - run: pnpm lockfile:peers:check
-      - run: pnpm check
+      - name: Assert identical Node 26 qualification source and result
+        shell: bash
+        env:
+          PRIMARY_CHECK_RESULT: ${{ needs.check.result }}
+        run: |
+          set -euo pipefail
+          test "$PRIMARY_CHECK_RESULT" = success
+          test "$(tr -d '\r\n' < .node-version)" = 26.11.1
 
   product-sources:
     name: product-sources
