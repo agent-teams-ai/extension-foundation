@@ -8,6 +8,14 @@ summary: Final implementation-backed synthesis of live evolution, portable owner
 
 # Live Plugin Evolution Final Research And Architecture 2026-11-17
 
+**Current direction, 2026-11-23:** this is the November 17 evidence synthesis.
+Its small-residual/recipe and repository alternatives are historical proposals.
+The owner subsequently confirmed a separate TypeScript-first library providing
+the complete update operation. Start with the
+[current system map](../architecture/live-extension-system-map.md) and
+[November 22 confirmation](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-confirmed-architecture-and-deeper-qualification-2026-11-22).
+The source observations and immutable evidence below retain their original scope.
+
 ## Scope and authority
 
 <!-- cspell:words Golem wasmCloud Restate Erlang OSGi Felix relup appup gen_server RcRef ScopedRef Wasmtime wasmcloud TTL xDS RDS MCP ESM WASI WIT replayed replayable quiescence binders rollback deduplication deduplicate Liskov -->
@@ -16,7 +24,7 @@ Observation: **2026-11-17, Europe/Kiev**. The owner requested the findings in
 plain language and an even deeper final study of universally reusable live
 extension mechanisms. This report adds new implementation and contract evidence
 to the [ten-case portable mechanism study](portable-live-plugin-mechanisms-and-library-design-2026-11-17.md).
-It is the current decision-oriented synthesis; the earlier reports and immutable
+At the November 17 research cut, this was the decision-oriented synthesis; earlier reports and immutable
 experiment packets remain available through the [research reference](plugin-system-research-reference.md).
 
 The [owner's all-category live vision and portability direction](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md)

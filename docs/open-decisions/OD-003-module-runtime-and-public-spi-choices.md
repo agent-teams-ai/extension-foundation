@@ -54,6 +54,27 @@ Foundation package, production graph runtime, or public SPI by implication.
 - Every production host remains subject to the accepted production-host safety
   closure and its own authority and termination evidence.
 
+## Owner-requested documentation audit and stack comparison, 2026-11-23
+
+<!-- cspell:words Piral OpenComponents -->
+
+The owner requests repeated review of all available module, plugin and live-update
+documentation and evidence, preservation of omitted conclusions, and a structured
+current entry point outside the research chronology. The
+[system map](../architecture/live-extension-system-map.md) routes current
+direction and ownership; the
+[audit](../research/live-extension-documentation-audit-2026-11-23.md) records
+the finite corpus, corrections, readiness rubric and independent rechecks.
+Commit and immediately push useful checkpoints.
+
+Explicitly classify Piral, Module Federation, Native Federation and OpenComponents:
+which layer each supplies, how it intersects plugin lifecycle, whether a proposed
+adapter would reuse it, and what is actually selected or qualified. Mention in
+competitor research is not an adapter commitment. Compare complete ready stacks
+against the same practical consumer scenario and identify useful differentiation
+without assuming uniqueness. Assess vision, documentation and implementation-plan
+readiness separately. The seven disputed questions below remain OPEN.
+
 ## Owner-requested Module Federation and unresolved alternatives, 2026-11-22
 
 The owner requests another deeper, parallel investigation of Module Federation,
@@ -540,6 +561,13 @@ TODO: discuss the shared implementation boundary with the product owner before
 selecting the first cross-product Host mechanism. Keep this choice open while
 the Agent Runtime Host architecture is being designed.
 
+**Current scope of this TODO, 2026-11-23:** the owner has already confirmed the
+standalone repository direction and a library implementing the complete update
+operation. Those are not still awaiting selection. The remaining discussion
+concerns exact public/internal contracts, first consumers and qualified profiles,
+integration with existing lifecycle/custody owners and unresolved product policy.
+The dated research proposals below must be read with that clarification.
+
 Product ownership of authorization and lifecycle does not require a separate
 copy of every technical implementation. Evaluate common protocol validation,
 request correlation, cancellation transport and conformance fixtures first.
@@ -568,9 +596,11 @@ The **2026-10-22 research follow-up** narrows this discussion:
   and [executed adapter experiment](../research/worker-adapter-replacement-experiment.md)
   distinguish actual closure observations from a generic success result.
 - Design a demonstrated shared concern as a purpose-neutral ordinary library
-  from its first real consumer plus external conformance delivery. Whether a
-  residual mechanism warrants another package or independent repository remains
-  open; a separate repository is not required for package independence.
+  from its first real consumer plus external conformance delivery. The later
+  [November 22 confirmation](#owner-confirmed-standalone-library-and-continuous-research-2026-11-22)
+  resolves the independent-repository direction for the complete live-update
+  library. Package count, public contracts and admitted profiles remain open;
+  existing independent mechanisms retain their owners.
 - [Package admission](../architecture/overview.md#package-admission), stable
   public extension SPI publication and Orchestrator's production-adoption gate
   are separate claims with their own evidence. Do not demand the strongest gate

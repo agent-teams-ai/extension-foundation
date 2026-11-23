@@ -1,0 +1,494 @@
+{
+  "schema": "live-extension-documentation-audit/v1",
+  "observedDate": "2026-11-23",
+  "timezone": "Europe/Kiev",
+  "baselineRevision": "7611e1a44542204d77e489a166f92a2e31b0020a",
+  "scope": {
+    "productionLinesChanged": 0,
+    "newNativeRuntimeExecutions": 0,
+    "adaptersAdopted": 0,
+    "ownerPoliciesAdopted": 0,
+    "semanticLimit": "Finite available corpus; inventory/hash verification is not line-by-line semantic qualification of every archived dependency file",
+    "unavailableHistoricalScratch": "Historical Nov17/18/21 reports inspected through actual retained archives, not vanished working directories"
+  },
+  "status": "checkpoint-2-consolidated-final-review-pending",
+  "custodyCounts": {
+    "tracked_scope_files": 163,
+    "archive_containers": 52,
+    "regular_archive_members": 3781,
+    "embedded_multiline_strings": 316,
+    "local_candidate_files": 1320,
+    "local_exact_text_matches": 1035,
+    "local_markdown_files": 304,
+    "local_markdown_exact_text_matches": 285,
+    "manifests_with_archive_comparison": 29,
+    "declared_manifest_members_compared": 2095,
+    "archived_markdown_members": 536,
+    "unique_local_markdown_contents": 133,
+    "unique_matched_local_markdown_contents": 114,
+    "unmatched_local_inline_strings": 136,
+    "unique_unmatched_local_inline_strings": 130
+  },
+  "authoritySourceFileObservations": 46,
+  "sourceReview": {
+    "readyStackSourceEntries": 40,
+    "additionalCurrentResourceSources": 3,
+    "completeComparisonExecuted": false,
+    "destinations": [
+      "docs/research/live-update-ready-stack-comparison-2026-11-23.md"
+    ]
+  },
+  "authorityFindingDispositions": [
+    {
+      "id": "A01",
+      "title": "Complete-operation library absent from current three-owner summaries",
+      "kind": "current_projection_issue",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/authority-findings.json",
+      "disposition": "projection-corrected",
+      "destinations": [
+        "docs/architecture/live-extension-system-map.md#authority-and-reusable-implementation",
+        "docs/README.md#ownership-at-a-glance",
+        "docs/research/plugin-system-research-reference.md#keep-authority-and-reusable-implementation-distinct"
+      ],
+      "policyAdopted": false
+    },
+    {
+      "id": "A02",
+      "title": "Active historical recommendations can be mistaken for current scope",
+      "kind": "historical_projection_issue",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/authority-findings.json",
+      "disposition": "historical-notes-added",
+      "destinations": [
+        "docs/research/live-extension-documentation-audit-2026-11-23.md#what-was-missing-or-misleading-and-its-disposition"
+      ],
+      "policyAdopted": false
+    },
+    {
+      "id": "A03",
+      "title": "Older shared-mechanics TODO still says separate repository remains open",
+      "kind": "partial_resolution_visibility",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/authority-findings.json",
+      "disposition": "confirmed-partial-resolution-projected",
+      "destinations": [
+        "docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md"
+      ],
+      "policyAdopted": false
+    },
+    {
+      "id": "A04",
+      "title": "First actual library consumer, feature and independent integration not selected",
+      "kind": "specification_gap",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/authority-findings.json",
+      "disposition": "open-specification-explicit",
+      "destinations": [
+        "docs/research/live-extension-documentation-audit-2026-11-23.md#specification-still-needed"
+      ],
+      "policyAdopted": false
+    },
+    {
+      "id": "A05",
+      "title": "Seven OPEN alternatives are not product defaults or complete implementation backlog",
+      "kind": "decision_boundary",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/authority-findings.json",
+      "disposition": "open-decisions-preserved",
+      "destinations": [
+        "docs/architecture/live-extension-system-map.md#open-decisions-and-specification-work"
+      ],
+      "policyAdopted": false
+    },
+    {
+      "id": "A06",
+      "title": "Runtime, loading, ABI, trust and cleanup scopes lack one current capability matrix",
+      "kind": "specification_gap",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/authority-findings.json",
+      "disposition": "role-register-added-production-contract-open",
+      "destinations": [
+        "docs/architecture/live-extension-system-map.md#module-format-and-execution-profile-register",
+        "docs/research/live-update-ready-stack-comparison-2026-11-23.md#existing-project-coverage-and-integration-roles"
+      ],
+      "policyAdopted": false
+    },
+    {
+      "id": "A07",
+      "title": "Complete-operation first profile lacks one selected implementable transition/recovery contract",
+      "kind": "specification_gap",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/authority-findings.json",
+      "disposition": "responsibilities-mapped-exact-contract-open",
+      "destinations": [
+        "docs/architecture/live-extension-system-map.md#complete-operation-narrow-consumer-primitives",
+        "docs/research/live-extension-documentation-audit-2026-11-23.md#specification-still-needed"
+      ],
+      "policyAdopted": false
+    },
+    {
+      "id": "A08",
+      "title": "Smallest update unit depends on sharing, realm, closure and references",
+      "kind": "specification_gap",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/authority-findings.json",
+      "disposition": "constraint-preserved-selected-boundary-open",
+      "destinations": [
+        "docs/architecture/live-extension-system-map.md#complete-operation-narrow-consumer-primitives",
+        "docs/architecture/live-extension-system-map.md#open-decisions-and-specification-work"
+      ],
+      "policyAdopted": false
+    },
+    {
+      "id": "A09",
+      "title": "State and return-to-old-version promise requires profile-specific continuity specification",
+      "kind": "specification_gap",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/authority-findings.json",
+      "disposition": "state-owners-mapped-selected-promise-open",
+      "destinations": [
+        "docs/architecture/live-extension-system-map.md#state-and-old-version-lifetimes"
+      ],
+      "policyAdopted": false
+    },
+    {
+      "id": "A10",
+      "title": "Old-client, artifact and state retention/adoption promises remain unstated for a product",
+      "kind": "specification_gap",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/authority-findings.json",
+      "disposition": "retention-observations-mapped-policy-open",
+      "destinations": [
+        "docs/architecture/live-extension-system-map.md#state-and-old-version-lifetimes"
+      ],
+      "policyAdopted": false
+    },
+    {
+      "id": "A11",
+      "title": "Reuse availability and standalone tooling are unresolved production prerequisites",
+      "kind": "dependency_qualification_gap",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/authority-findings.json",
+      "disposition": "qualification-prerequisites-preserved",
+      "destinations": [
+        "docs/research/live-extension-documentation-audit-2026-11-23.md#specification-still-needed",
+        "docs/research/live-update-ready-stack-comparison-2026-11-23.md#pinned-completion-boundaries-where-integration-matters"
+      ],
+      "policyAdopted": false
+    },
+    {
+      "id": "A12",
+      "title": "No complete packaged library plus actual and independent consumer acceptance chain",
+      "kind": "qualification_gap",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/authority-findings.json",
+      "disposition": "complete-acceptance-gap-explicit",
+      "destinations": [
+        "docs/research/live-extension-documentation-audit-2026-11-23.md#specification-still-needed",
+        "docs/research/live-update-ready-stack-comparison-2026-11-23.md#one-complete-falsifiable-consumer-scenario"
+      ],
+      "policyAdopted": false
+    },
+    {
+      "id": "A13",
+      "title": "Ordinary library, package, GM1.0, public SPI and production-host gates are distinct",
+      "kind": "preservation_guardrail",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/authority-findings.json",
+      "disposition": "separate-gates-mapped",
+      "destinations": [
+        "docs/architecture/live-extension-system-map.md#separate-gates"
+      ],
+      "policyAdopted": false
+    },
+    {
+      "id": "A14",
+      "title": "Module roles, formats and adapters have no compact current dimensional map",
+      "kind": "navigation_gap",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/authority-findings.json",
+      "disposition": "role-glossary-added",
+      "destinations": [
+        "docs/architecture/live-extension-system-map.md#modules-plugins-and-live-replacement-are-related-distinct-concerns"
+      ],
+      "policyAdopted": false
+    },
+    {
+      "id": "A15",
+      "title": "Structural documentation validation cannot prevent semantic staleness",
+      "kind": "maintenance_gap",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/authority-findings.json",
+      "disposition": "maintenance-rule-added",
+      "destinations": [
+        "docs/research/live-extension-documentation-audit-2026-11-23.md#documentation-structure-and-maintenance",
+        "docs/architecture/live-extension-system-map.md#open-decisions-and-specification-work"
+      ],
+      "policyAdopted": false
+    }
+  ],
+  "custodyFindingDispositions": [
+    {
+      "id": "CUST-001",
+      "kind": "full-report-text-custody",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/custody-findings.json",
+      "disposition": "six-exact-originals-preserved",
+      "destinations": [
+        "docs/research/live-extension-documentation-audit-2026-11-23.md#new-evidence-packet-and-independent-rechecks"
+      ]
+    },
+    {
+      "id": "CUST-002",
+      "kind": "historical-workspace-availability",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/custody-findings.json",
+      "disposition": "scope-limit-explicit",
+      "destinations": [
+        "docs/research/live-extension-documentation-audit-2026-11-23.md#finite-corpus-and-what-was-actually-checked"
+      ]
+    },
+    {
+      "id": "CUST-003",
+      "kind": "archive-and-manifest-custody",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/custody-findings.json",
+      "disposition": "archive-integrity-verified",
+      "destinations": [
+        "docs/research/live-extension-documentation-audit-2026-11-23.md#finite-corpus-and-what-was-actually-checked"
+      ]
+    },
+    {
+      "id": "CUST-004",
+      "kind": "negative-history",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/custody-findings.json",
+      "disposition": "failure-history-preserved",
+      "destinations": [
+        "docs/research/live-extension-documentation-audit-2026-11-23.md#original-failures-and-correction-history"
+      ]
+    },
+    {
+      "id": "CUST-005",
+      "kind": "archived-detail-discoverability",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/custody-findings.json",
+      "disposition": "exact-member-navigation-added",
+      "destinations": [
+        "docs/research/live-extension-documentation-audit-2026-11-23.md#exact-routes-to-detailed-findings"
+      ]
+    },
+    {
+      "id": "CUST-006",
+      "kind": "superseded-material",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/custody-findings.json",
+      "disposition": "all-other-unmatched-prose-dispositioned",
+      "destinations": [
+        "docs/research/live-extension-documentation-audit-2026-11-23.md#what-was-missing-or-misleading-and-its-disposition"
+      ]
+    },
+    {
+      "id": "CUST-007",
+      "kind": "previous-custody-gaps",
+      "sourceReport": "live-extension-audit-checkpoint2-20261123.tar.gz!audit/custody-findings.json",
+      "disposition": "baseline-fixes-preserved",
+      "destinations": [
+        "docs/research/live-extension-documentation-audit-2026-11-23.md#what-was-missing-or-misleading-and-its-disposition"
+      ]
+    }
+  ],
+  "ownerQuestionStatuses": [
+    {
+      "id": "Q1",
+      "status": "OPEN"
+    },
+    {
+      "id": "Q2",
+      "status": "OPEN"
+    },
+    {
+      "id": "Q3",
+      "status": "OPEN"
+    },
+    {
+      "id": "Q4",
+      "status": "OPEN"
+    },
+    {
+      "id": "Q5",
+      "status": "OPEN"
+    },
+    {
+      "id": "Q6",
+      "status": "OPEN"
+    },
+    {
+      "id": "Q7",
+      "status": "OPEN"
+    }
+  ],
+  "readiness": {
+    "kind": "coarse_engineering_judgment_about_plan_documentation_vision",
+    "not_implementation_progress": true,
+    "denominator": "Planning/specification package for bounded TS-first library and first real delivery; not all future runtime/platform breadth.",
+    "criterion_weights_percent": {
+      "vision": {
+        "owner_outcomes": 25,
+        "audience_and_non_goals": 20,
+        "semantic_boundaries": 20,
+        "user_promises": 20,
+        "scope_priorities": 15
+      },
+      "documentation": {
+        "authority_traceability": 25,
+        "current_discoverability": 20,
+        "bounded_evidence": 20,
+        "profile_and_contract_completeness": 20,
+        "maintenance_dispositions": 15
+      },
+      "plan": {
+        "actual_first_consumer": 20,
+        "required_policy_closure": 20,
+        "complete_operation_contract": 20,
+        "ordered_acceptance": 20,
+        "reuse_release_bootstrap": 20
+      }
+    },
+    "ordinal_levels": [
+      "absent",
+      "named",
+      "alternatives_and_limits_documented",
+      "coherent_for_named_scope",
+      "traced_reviewed_with_acceptance_plan"
+    ],
+    "optional_aggregate_weights_percent": {
+      "vision": 25,
+      "documentation": 35,
+      "plan": 40
+    },
+    "optional_aggregate_arithmetic_before_rounding": [
+      64,
+      72.75
+    ],
+    "optional_communicated_aggregate_percent": [
+      65,
+      75
+    ],
+    "confidence": "Moderate for relative gaps; percentages are not measurements, probabilities, or linear remaining effort.",
+    "baseline_ranges_percent": {
+      "vision": [
+        85,
+        90
+      ],
+      "documentation": [
+        65,
+        75
+      ],
+      "plan": [
+        50,
+        60
+      ]
+    },
+    "post_consolidation_ranges_percent": {
+      "vision": [
+        85,
+        90
+      ],
+      "documentation": [
+        80,
+        85
+      ],
+      "plan": [
+        50,
+        60
+      ]
+    },
+    "documentation_final_review_condition": "Final consolidated review and documentation qualification pending at checkpoint 2",
+    "post_consolidation_aggregate_arithmetic_before_rounding": [
+      69.25,
+      76.25
+    ],
+    "post_consolidation_communicated_aggregate_percent": [
+      70,
+      75
+    ]
+  },
+  "evidencePacket": {
+    "schemaVersion": 1,
+    "observationDate": "2026-11-23",
+    "sourceBaseline": "7611e1a44542204d77e489a166f92a2e31b0020a",
+    "repository": "agent-teams-ai/extension-foundation",
+    "purpose": "Complete first-pass audit/source reports and recovered review text; not runtime qualification",
+    "archive": "live-extension-audit-checkpoint2-20261123.tar.gz",
+    "bytes": 371754,
+    "sha256": "09f1e923dd7d9ad84d10bcf116958b0100df42cd8e0f8e3a54e7c634b1174140",
+    "memberCount": 14,
+    "members": [
+      {
+        "path": "README.md",
+        "bytes": 1455,
+        "sha256": "7db3a78fb69e07e568a06343199a56694a5aed7f4ded8174dd412fd39a3508fb"
+      },
+      {
+        "path": "audit/authority-findings.json",
+        "bytes": 35492,
+        "sha256": "69fdc2d9f461ae597e743559b13b7018dee118c886899a03dc4ff16d84c4f249"
+      },
+      {
+        "path": "audit/authority-review.md",
+        "bytes": 27584,
+        "sha256": "eaf6960ef295f7fdb73a3c438c21c3cc6fc27e0bd828b43d783f944ab60e9d0c"
+      },
+      {
+        "path": "audit/custody-findings.json",
+        "bytes": 2606293,
+        "sha256": "f4937a344e694cefe4b32a0c263dab3b74fd4c28a0df166380d642c1c9cee72b"
+      },
+      {
+        "path": "audit/custody-review.md",
+        "bytes": 22585,
+        "sha256": "42352cc10fd85090be308deba56711fb7b13e49632a3cc1d4680ae754b24afba"
+      },
+      {
+        "path": "audit/root-runtime-sources.json",
+        "bytes": 1876,
+        "sha256": "c00ca6d518575b755cf11a854c3147da244c5b5aefa482efc7bd666e51d96803"
+      },
+      {
+        "path": "audit/stack-review.md",
+        "bytes": 39820,
+        "sha256": "9de6f05affe73a5fb92df4c004cd1f0dc072603fe1f5ccde6e549e2b0150a55e"
+      },
+      {
+        "path": "audit/stack-sources.json",
+        "bytes": 36567,
+        "sha256": "60431c5b3e222d27cbae48535909c7be46b60c8089b675fa0c182908fa6083e5"
+      },
+      {
+        "path": "retained-value-review/competition-js-registry.json",
+        "bytes": 8155,
+        "sha256": "ebeb28b9085d28a45ceb9ec685a76e5c567278221b56ef9be06163362d58e45a"
+      },
+      {
+        "path": "retained-value-review/competition-js-sources.json",
+        "bytes": 17273,
+        "sha256": "7f150e2cdc9179bcd43bf1dd888b2a4b6767c61e71cadb41a93811e09a58df65"
+      },
+      {
+        "path": "retained-value-review/competition-js.md",
+        "bytes": 16908,
+        "sha256": "45a1e6bee5fed208a541334f3adea1ed11f2ca9586d2554a06f0b932b98ab570"
+      },
+      {
+        "path": "retained-value-review/competition-runtime-sources.json",
+        "bytes": 12406,
+        "sha256": "c660afc430b575a8b7736f337d68e1e8b126f1dd63748b8e2a286fafde39abb7"
+      },
+      {
+        "path": "retained-value-review/competition-runtime.md",
+        "bytes": 20127,
+        "sha256": "cbb026d7f44df58598c075834d538355848d3373bb5b507996ed641b6b3748d1"
+      },
+      {
+        "path": "retained-value-review/sizing-and-critique.md",
+        "bytes": 33211,
+        "sha256": "137de3f1fad4f6c3e56c1ba6a6fc71b8595fcaccd6e1ee53965e72a24e926c02"
+      }
+    ]
+  },
+  "reviews": {
+    "authorityPass2": "PASS for reviewed projection; exact snapshot and remaining delivery items in original report",
+    "custodyPass2": "PASS all 14 members; 13 originals byte-exact plus new scope README",
+    "stackPass2": "SP2-01 emit/unload wording and SP2-02 conditional predecessor oracle corrected; recheck pending",
+    "finalArchive": null
+  },
+  "publication": {
+    "checkpoint1": "e182dc1a3f30f3e86511276a9b327ac476320972",
+    "checkpoint2": null,
+    "finalQualification": "pending",
+    "pr": 55,
+    "prDraft": true,
+    "standaloneRemoteCreated": false
+  }
+}

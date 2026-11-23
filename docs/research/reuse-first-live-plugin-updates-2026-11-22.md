@@ -12,6 +12,14 @@ summary: Investigates existing plugin runtimes, granular live updates, resource 
 
 ## Recommendation and authority
 
+**Later owner confirmation, current on 2026-11-23:** the full update operation is
+to be implemented in a standalone reusable library. Earlier residual or small
+consumer-adapter estimates below do not size that library or delegate its flow
+to each consumer. Read the [current system map](../architecture/live-extension-system-map.md)
+for ownership and the [current size assessment](live-update-value-competition-and-implementation-size-2026-11-22.md)
+for scoped library estimates. The 24 reuse warnings and original experiments
+remain valid within their recorded boundaries.
+
 **Keep ordinary TypeScript plugins as the first implementation profile. Preserve
 narrow consumer-owned contracts and explicit state/resource lifetimes now;
 qualify an optional WebAssembly adapter when one actual capability needs another
@@ -550,7 +558,7 @@ code is excluded. Alternatives are not additive.
 
 | Option | Confidence / 10 | Achievable reliability in this scope / 10 | Complexity / 10 | P / I / T new LOC | Scope and qualification |
 | --- | ---: | ---: | ---: | --- | --- |
-| Native TS with existing composition/resources recipe | 8 | 8 | 3 | 0 / 150–350 / 350–750 | Total for this one integration, before unrelated product work; current preferred starting slice. |
+| Native TS with existing composition/resources recipe | 8 | 8 | 3 | 0 / 150–350 / 350–750 | Total for this one integration, before unrelated product work; preferred in this initial bounded integration study. |
 | Add one Extism adapter | 6 | 7 | 5 | 0–250 / 150–400 / 500–1,000 | Incremental over the native slice; requires SDK typing, shutdown and resource-profile qualification. |
 | Add one generated Component Model adapter | 6 | 7 | 6 | 0–350 / 200–500 / 600–1,200 | Incremental alternative to Extism; typed richer boundary and target/toolchain qualification remain. |
 | Build a universal loader, supervisor and state-migration platform | 2 | Unrated | 10 | Not responsibly estimated | Scope is undefined and duplicates known owners; do not infer reliability or cost from a small prototype. |

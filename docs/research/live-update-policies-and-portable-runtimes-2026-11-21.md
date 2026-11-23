@@ -10,6 +10,13 @@ summary: Evaluates selectable interruption policies, compilation and optional cr
 
 <!-- cspell:words bindgen -->
 
+**Current direction, 2026-11-23:** ordinary TypeScript first and optional execution
+profiles are now owner-confirmed. The complete update operation belongs in the
+standalone library; any small consumer-adapter allowance below is not its total
+implementation estimate. The [current system map](../architecture/live-extension-system-map.md)
+routes the later confirmation, owners and open choices. The runtime experiments
+and their exact limitations below remain historical evidence.
+
 **November 22 follow-up:** the owner confirmed that Extism was the remembered
 library. The [new reuse and granular-update investigation](reuse-first-live-plugin-updates-2026-11-22.md)
 adds actual Extism SDK, released resource-lifetime and native browser HMR

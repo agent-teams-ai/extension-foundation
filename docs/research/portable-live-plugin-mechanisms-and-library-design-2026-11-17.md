@@ -12,6 +12,13 @@ summary: Deep source comparison and portable library design for live plugin evol
 
 ## Scope and authority
 
+**Current direction, 2026-11-23:** subsequent owner confirmation requires a
+standalone repository and one library implementation of the complete update
+operation. The implementation alternatives below retain their November 17 scope;
+the [current system map](../architecture/live-extension-system-map.md) identifies
+which direction is confirmed and which contract/profile choices remain open.
+Existing mechanism ownership and immutable evidence are unchanged.
+
 The subsequent [final live evolution study](live-plugin-evolution-final-research-and-architecture-2026-11-17.md)
 adds mature-runtime, durable-state, MCP and JavaScript implementation evidence.
 Its remote-execution clarification below narrows an assumption without changing

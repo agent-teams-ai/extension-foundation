@@ -7,6 +7,11 @@ This repository will provide common technical infrastructure for Orchestrator,
 Agent Runtime, Frontend, and future products. Every product retains its own
 domain language, feature-owned extension points, authority, state, and host.
 
+Start with the [current live extension system map](docs/architecture/live-extension-system-map.md)
+for the conclusions about modules, plugins and hot replacement, their owners,
+integration candidates, evidence and open choices. The map distinguishes the
+planned standalone operation implementation from each consumer's authority.
+
 ## Product vision: live application evolution
 
 **High priority: users and agents should be able to change substantive frontend

@@ -10,6 +10,13 @@ summary: Expanded owner vision, additional source-backed mechanisms and bounded 
 
 <!-- cspell:words Directus NocoBase Pharo EBADF -->
 
+**Current direction, 2026-11-23:** the retained experiments below qualify their
+named profiles. Later owner confirmation selects a standalone library as the
+implementation direction for the complete reusable update operation; a small
+consumer adapter is not the size or responsibility of that library. Use the
+[current system map](../architecture/live-extension-system-map.md) for current
+ownership and delivery status. The original results are unchanged.
+
 ## Scope and authority
 
 **Observed: 2026-11-18, Europe/Kiev.** The owner wants substantive application

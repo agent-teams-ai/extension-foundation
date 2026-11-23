@@ -12,6 +12,7 @@ the vision and its open choices; a spike does not adopt a production runtime.
 
 Start with:
 
+- [Current live extension system map](docs/architecture/live-extension-system-map.md)
 - [Repository overview](README.md)
 - [Documentation index](docs/README.md)
 - [Architecture overview](docs/architecture/overview.md)

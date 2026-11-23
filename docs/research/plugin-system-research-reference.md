@@ -18,6 +18,21 @@ a released runtime, a security audit or a performance qualification.
 
 ## Current synthesis
 
+Start with the [current live extension system map](../architecture/live-extension-system-map.md)
+for the conclusions by responsibility, implementation owners, integration
+candidates and remaining specification work. The
+[repeated documentation audit](live-extension-documentation-audit-2026-11-23.md)
+tracks preservation and source-to-conclusion coverage. This research chronology
+retains evidence and historical corrections; it is not the only current entry.
+
+The [ready-stack comparison](live-update-ready-stack-comparison-2026-11-23.md)
+inspects existing shell, loader, lifecycle and recovery mechanisms, exact package
+cohorts and compiler constraints. It proposes one full editor/state/old-work/
+cleanup comparison against strong ready stacks. This common scenario remains
+unexecuted; adapter candidates and comparative benefit are not adopted support
+or proven superiority. The audit preserves three complete value-review reports
+and provides exact routes to detailed archived findings.
+
 The [value, competition and implementation-size assessment](live-update-value-competition-and-implementation-size-2026-11-22.md)
 compares ready JS/UI and runtime alternatives, including Zephyr's documented
 Electron OTA and AI control. It rejects unproved uniqueness or superiority and
@@ -234,7 +249,7 @@ companion records has its own observation date and exact revision or an explicit
 moving-documentation caveat. A newer repository head does not retroactively
 change what was observed at a recorded pin.
 
-## Keep the three implementation boundaries
+## Keep authority and reusable implementation distinct
 
 **Owner clarification, 2026-11-22:** the remembered library is Extism. The
 [reuse-first live-update study](reuse-first-live-plugin-updates-2026-11-22.md)
@@ -246,8 +261,14 @@ updates. Read its duplication warnings before introducing a new runtime manager.
 | Get Modular | Inert declarations, contract/implementation/slot identities, deterministic graph preparation, immutable plans, typed construction, cooperative resource primitives and the separately gated local lifecycle candidate | Executable discovery, product authorization, durable publication, routing, process supervision or distributed fencing |
 | Extension Foundation | Neutral extension/artifact/install identities, trust and distribution rules, admission/custody/retirement protocol obligations, evidence and reusable conformance boundaries when separately qualified | Product domain models, a universal service locator, duplicate GM composition or an implicitly admitted runtime package |
 | Consuming product | Concrete capabilities and declarations, literal loaders, policy/grants, execution placement, readiness, canonical active state, admission, operation/effect recovery and physical retirement | Authority to weaken its domain invariants or treat a manifest/signature as a permission grant |
+| Planned standalone live-update library | One reusable implementation of the complete update operation, including planning, switching, reconciliation, cleanup coordination and observable results | A second product authority, canonical active-head store, graph engine, lifecycle kernel or physical supervisor |
 
-These are existing boundaries, not a new framework selection. EF
+The standalone implementation direction is
+[owner-confirmed](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-confirmed-architecture-and-deeper-qualification-2026-11-22).
+The older three-row summary omitted it; product authority must not be read as
+requiring each consumer to assemble the complete flow. The remote, public API
+and production qualification remain undelivered. Existing boundaries are not a
+new framework selection. EF
 [ADR-0015](../decisions/0015-authorize-get-modular-semantic-extraction.md)
 separates the neutral cores; a product-owned adapter may consume both. EF
 [ADR-0014](../decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md)

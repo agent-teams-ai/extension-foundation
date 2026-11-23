@@ -11,6 +11,11 @@ code_anchors:
 
 # Documentation
 
+**Current conclusions:** [Live Extension System Map](architecture/live-extension-system-map.md)
+separates module composition, distributable plugins and the complete reusable
+update operation. Start there for owner-confirmed direction, candidate
+integrations, exact evidence routes and the remaining decisions.
+
 **Product priority:** [live application evolution](open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-prioritized-live-application-platform-vision-2026-11-18)
 through live logic changes, persistent/shareable plugins and manageable built-in
 features. Read this owner vision before choosing new module boundaries.
@@ -19,6 +24,7 @@ Read by responsibility:
 
 | Concern | Document |
 | --- | --- |
+| Current module/plugin/live-update direction and implementation owners | [Live Extension System Map](architecture/live-extension-system-map.md) |
 | Product boundary and topology | [Architecture overview](architecture/overview.md) |
 | Feature ownership, standard identity and scoped checks | [Feature Module Standard Profile](architecture/feature-module-standard-profile.md) |
 | Extension terminology and ownership | [Extension model](architecture/extension-model.md) |
@@ -39,6 +45,7 @@ not accept a runtime, publish a package, or replace an approved ADR.
 
 - [Plugin System Research Reference](research/plugin-system-research-reference.md)
 - [Live Extension Documentation Audit 2026-11-23](research/live-extension-documentation-audit-2026-11-23.md)
+- [Live Update Ready Stack Comparison 2026-11-23](research/live-update-ready-stack-comparison-2026-11-23.md)
 - [Live Update Value Competition and Implementation Size 2026-11-22](research/live-update-value-competition-and-implementation-size-2026-11-22.md)
 - [Module Federation Update Boundaries and Architecture Options 2026-11-22](research/module-federation-update-boundaries-and-architecture-options-2026-11-22.md)
 - [Live Update Reliability and Industry Evidence 2026-11-22](research/live-update-reliability-and-industry-evidence-2026-11-22.md)
@@ -86,7 +93,14 @@ not accept a runtime, publish a package, or replace an approved ADR.
 | --- | --- |
 | Get Modular | Neutral identity grammar, declaration schemas, dependency cardinality and bindings, deterministic graph compilation, canonical plans and digests, composition diagnostics |
 | Consuming product | Concrete declaration instances, capability payloads and ports, product adapters, desired-profile revisions, literal executable loaders, authorization, generations, lifecycle, routing, and recovery |
+| Planned standalone live-update library | Reusable implementation of the complete planning, switching, reconciliation, cleanup and observation operation; calls narrow product authority/state primitives without creating another canonical authority |
 | Extension Foundation | Extension, publisher, artifact, installation, contribution, and artifact-generation identity schemas; trust, OCI distribution, admission, isolation, revocation, retirement, and extension host-protocol primitives |
+
+Product operational authority does not require consumer-written orchestration.
+The owner-confirmed standalone library supplies the full reusable operation;
+existing graph, resource and physical-custody mechanisms keep their owners.
+Its remote and public production contract are not yet delivered. See the
+[current map](architecture/live-extension-system-map.md#authority-and-reusable-implementation).
 
 Document IDs are repository-scoped. Extension Foundation `OD-003` governs
 extension hosts, public extension SPI, invocation, and extension-state
