@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "archive": "live-module-contracts-context-failure-20261123.tar.gz",
+  "bytes": 7113,
+  "sha256": "bc4817c96318b3cd4ef38f12d54abaaf2995394ce9f95155121d9e141f897317",
+  "runId": 45207513737,
+  "sourceHead": "3b511d2a75829169c011baf3c114ec62c8c254b3",
+  "nativeExecutions": 0,
+  "memberCount": 7,
+  "members": [
+    {
+      "path": "corrected-workflow.yml",
+      "bytes": 9879,
+      "sha256": "d31e67757c0e1f7a08a135c444de8e94876f92f6b40ed395065f2f87d63c52f6"
+    },
+    {
+      "path": "failed-workflow.yml",
+      "bytes": 9689,
+      "sha256": "d52fda2017a6b89d60afb189de2c4da6d72eb9f1ed5b65fc61652319d0e46942"
+    },
+    {
+      "path": "original-path-review.json",
+      "bytes": 803,
+      "sha256": "d877c0aa401fe8d980f404f086b9a34f62842c10eda67cce7ef12305788120db"
+    },
+    {
+      "path": "path-initialization-review.json",
+      "bytes": 1431,
+      "sha256": "7e4d9846b8cdc1465059676e917c130d8185be075670101e7eacd73fa1229026"
+    },
+    {
+      "path": "validation-failure-run-45207513737.json",
+      "bytes": 16057,
+      "sha256": "0e07d0c6bb345e911109cf49330b13cd635c783c88599b68d4bb7725ef518066"
+    },
+    {
+      "path": "workflow-validation-failure-45207513737-receipt.json",
+      "bytes": 1637,
+      "sha256": "1696bd6eea8023065b571bed499993ba341fd4f5e312290458ae5d4bfaa959e0"
+    },
+    {
+      "path": "workflow-validation-failure-45207513737.md",
+      "bytes": 1071,
+      "sha256": "f53487ef725844d1196b479d21eab67e1655b3076aba99a14be8e2b91e046a43"
+    }
+  ]
+}

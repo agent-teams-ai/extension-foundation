@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "observationDate": "2026-11-23",
+  "sourceBaseline": "7611e1a44542204d77e489a166f92a2e31b0020a",
+  "repository": "agent-teams-ai/extension-foundation",
+  "purpose": "Complete first-pass audit/source reports and recovered review text; not runtime qualification",
+  "archive": "live-extension-audit-checkpoint2-20261123.tar.gz",
+  "bytes": 371754,
+  "sha256": "09f1e923dd7d9ad84d10bcf116958b0100df42cd8e0f8e3a54e7c634b1174140",
+  "memberCount": 14,
+  "members": [
+    {
+      "path": "README.md",
+      "bytes": 1455,
+      "sha256": "7db3a78fb69e07e568a06343199a56694a5aed7f4ded8174dd412fd39a3508fb"
+    },
+    {
+      "path": "audit/authority-findings.json",
+      "bytes": 35492,
+      "sha256": "69fdc2d9f461ae597e743559b13b7018dee118c886899a03dc4ff16d84c4f249"
+    },
+    {
+      "path": "audit/authority-review.md",
+      "bytes": 27584,
+      "sha256": "eaf6960ef295f7fdb73a3c438c21c3cc6fc27e0bd828b43d783f944ab60e9d0c"
+    },
+    {
+      "path": "audit/custody-findings.json",
+      "bytes": 2606293,
+      "sha256": "f4937a344e694cefe4b32a0c263dab3b74fd4c28a0df166380d642c1c9cee72b"
+    },
+    {
+      "path": "audit/custody-review.md",
+      "bytes": 22585,
+      "sha256": "42352cc10fd85090be308deba56711fb7b13e49632a3cc1d4680ae754b24afba"
+    },
+    {
+      "path": "audit/root-runtime-sources.json",
+      "bytes": 1876,
+      "sha256": "c00ca6d518575b755cf11a854c3147da244c5b5aefa482efc7bd666e51d96803"
+    },
+    {
+      "path": "audit/stack-review.md",
+      "bytes": 39820,
+      "sha256": "9de6f05affe73a5fb92df4c004cd1f0dc072603fe1f5ccde6e549e2b0150a55e"
+    },
+    {
+      "path": "audit/stack-sources.json",
+      "bytes": 36567,
+      "sha256": "60431c5b3e222d27cbae48535909c7be46b60c8089b675fa0c182908fa6083e5"
+    },
+    {
+      "path": "retained-value-review/competition-js-registry.json",
+      "bytes": 8155,
+      "sha256": "ebeb28b9085d28a45ceb9ec685a76e5c567278221b56ef9be06163362d58e45a"
+    },
+    {
+      "path": "retained-value-review/competition-js-sources.json",
+      "bytes": 17273,
+      "sha256": "7f150e2cdc9179bcd43bf1dd888b2a4b6767c61e71cadb41a93811e09a58df65"
+    },
+    {
+      "path": "retained-value-review/competition-js.md",
+      "bytes": 16908,
+      "sha256": "45a1e6bee5fed208a541334f3adea1ed11f2ca9586d2554a06f0b932b98ab570"
+    },
+    {
+      "path": "retained-value-review/competition-runtime-sources.json",
+      "bytes": 12406,
+      "sha256": "c660afc430b575a8b7736f337d68e1e8b126f1dd63748b8e2a286fafde39abb7"
+    },
+    {
+      "path": "retained-value-review/competition-runtime.md",
+      "bytes": 20127,
+      "sha256": "cbb026d7f44df58598c075834d538355848d3373bb5b507996ed641b6b3748d1"
+    },
+    {
+      "path": "retained-value-review/sizing-and-critique.md",
+      "bytes": 33211,
+      "sha256": "137de3f1fad4f6c3e56c1ba6a6fc71b8595fcaccd6e1ee53965e72a24e926c02"
+    }
+  ]
+}

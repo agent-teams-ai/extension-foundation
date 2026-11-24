@@ -1,0 +1,1014 @@
+{
+  "schema_version": 1,
+  "assessment_date": "2026-11-22",
+  "baseline_commit": "7a45769634db5dfe506a0b5c32ed40607acb792b",
+  "authority": "RESEARCH_ONLY_ALL_SEVEN_OWNER_CHOICES_OPEN",
+  "new_production_lines": 0,
+  "new_native_executions": 0,
+  "evidence_limits": [
+    "Source inspection is not native competitive qualification",
+    "No exhaustive global competitor or market-demand claim",
+    "No omission in documentation treated as proof of absent capability",
+    "No comparison of planned guarantees as shipped quality",
+    "All sizing scenarios are conditional, not adopted defaults"
+  ],
+  "js_sources": [
+    {
+      "id": "J01",
+      "title": "Module Federation Runtime API",
+      "exact_urls": [
+        "https://module-federation.io/guide/runtime/runtime-api"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_official_living_documentation",
+      "release": null,
+      "commit": null,
+      "limits": [
+        "Living docs; native 2.9.3 qualification belongs to previous study and was not rerun",
+        "Do not interpret cache replacement as state/resource transaction"
+      ]
+    },
+    {
+      "id": "J02",
+      "title": "Zephyr Electron OTA Updates (Beta)",
+      "exact_urls": [
+        "https://docs.zephyr-cloud.io/features/electron-ota-updates"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_official_living_documentation",
+      "release": null,
+      "commit": null,
+      "limits": [
+        "Explicit Beta; guide/sample not independent production qualification",
+        "No measured zero-downtime or arbitrary state migration guarantee"
+      ]
+    },
+    {
+      "id": "J03",
+      "title": "Zephyr Versions",
+      "exact_urls": [
+        "https://docs.zephyr-cloud.io/features/versions"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_official_living_documentation",
+      "release": null,
+      "commit": null,
+      "limits": [
+        "Vendor architecture documentation; permanence/works forever not independently verified"
+      ]
+    },
+    {
+      "id": "J04",
+      "title": "Zephyr Environment-Level Overrides",
+      "exact_urls": [
+        "https://docs.zephyr-cloud.io/features/environment-overrides"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_official_living_documentation",
+      "release": null,
+      "commit": null,
+      "limits": [
+        "Serve-time/client-resolution configuration is not itself a guarantee for already evaluated references"
+      ]
+    },
+    {
+      "id": "J05",
+      "title": "Zephyr Instant Rollbacks",
+      "exact_urls": [
+        "https://docs.zephyr-cloud.io/features/instant-rollbacks"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_official_living_documentation",
+      "release": null,
+      "commit": null,
+      "limits": [
+        "Published capability description, not measured outage performance",
+        "Previous target availability and compatibility requirements apply"
+      ]
+    },
+    {
+      "id": "J06",
+      "title": "Zephyr Locking Tags & Environments",
+      "exact_urls": [
+        "https://docs.zephyr-cloud.io/features/locking-tags-environments"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_official_living_documentation",
+      "release": null,
+      "commit": null,
+      "limits": [
+        "Control-plane locks do not revoke already evaluated client JavaScript"
+      ]
+    },
+    {
+      "id": "J07",
+      "title": "Zephyr API MCP / home",
+      "exact_urls": [
+        "https://docs.zephyr-cloud.io/tools/api-mcp",
+        "https://docs.zephyr-cloud.io/"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_official_living_documentation",
+      "release": null,
+      "commit": null,
+      "limits": [
+        "No account used and no real mutation tested",
+        "AI operational wrapper already exists; no inference about comparative usability"
+      ]
+    },
+    {
+      "id": "J08",
+      "title": "Piral published release and registry metadata",
+      "exact_urls": [
+        "https://github.com/smapiot/piral/releases/tag/v1.12.5",
+        "https://registry.npmjs.org/piral/latest",
+        "https://registry.npmjs.org/piral-core/latest",
+        "https://registry.npmjs.org/piral-base/latest"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_release_and_registry_metadata",
+      "release": "1.12.5",
+      "commit": "15af4fd41e049b5880916af81e130cf22e6ac44b",
+      "limits": [
+        "No package execution/install performed",
+        "Selected registry metadata is retained in this ledger under registry_receipt; this is not a package execution or signature verification."
+      ]
+    },
+    {
+      "id": "J09",
+      "title": "Piral pilet lifecycle",
+      "exact_urls": [
+        "https://github.com/smapiot/piral/blob/15af4fd41e049b5880916af81e130cf22e6ac44b/docs/concepts/I07-pilet-lifecycle.md"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_commit_pinned_documentation",
+      "release": "1.12.5",
+      "commit": "15af4fd41e049b5880916af81e130cf22e6ac44b",
+      "limits": [
+        "Progressive rollout in this concept document is guidance for feed implementation, not all feeds' mandatory implementation"
+      ]
+    },
+    {
+      "id": "J10",
+      "title": "Piral add/inject/remove actions",
+      "exact_urls": [
+        "https://github.com/smapiot/piral/blob/15af4fd41e049b5880916af81e130cf22e6ac44b/src/framework/piral-core/src/actions/app.ts"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_commit_pinned_implementation",
+      "release": "1.12.5",
+      "commit": "15af4fd41e049b5880916af81e130cf22e6ac44b",
+      "limits": [
+        "Static source inspection only",
+        "No claim that arbitrary external effects are tracked"
+      ]
+    },
+    {
+      "id": "J11",
+      "title": "Piral cleanup and invocation semantics",
+      "exact_urls": [
+        "https://github.com/smapiot/piral/blob/15af4fd41e049b5880916af81e130cf22e6ac44b/src/framework/piral-base/src/lifecycle/cleanup.ts",
+        "https://github.com/smapiot/piral/blob/15af4fd41e049b5880916af81e130cf22e6ac44b/src/framework/piral-base/src/lifecycle/setup.ts",
+        "https://github.com/smapiot/piral/blob/15af4fd41e049b5880916af81e130cf22e6ac44b/src/framework/piral-base/src/utils/helpers.ts"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_commit_pinned_implementation",
+      "release": "1.12.5",
+      "commit": "15af4fd41e049b5880916af81e130cf22e6ac44b",
+      "limits": [
+        "Source path behavior is not a whole-product bug claim",
+        "Other integrations may implement additional orchestration",
+        "No new native execution"
+      ]
+    },
+    {
+      "id": "J12",
+      "title": "Piral debug emulator integration",
+      "exact_urls": [
+        "https://github.com/smapiot/piral/blob/15af4fd41e049b5880916af81e130cf22e6ac44b/docs/reference/C12-debug-utils.md"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_commit_pinned_documentation",
+      "release": "1.12.5",
+      "commit": "15af4fd41e049b5880916af81e130cf22e6ac44b",
+      "limits": [
+        "Dev emulator path, not evidence of production transactional state continuation"
+      ]
+    },
+    {
+      "id": "J13",
+      "title": "Piral Cloud current documentation",
+      "exact_urls": [
+        "https://docs.piral.cloud/"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_official_living_documentation",
+      "release": null,
+      "commit": null,
+      "limits": [
+        "Direct open served JavaScript-required shell; claims read in web-indexed official page excerpts",
+        "Cloud implementation source not audited; no native account check",
+        "Feed-spec recommendations are not conflated with every implementation"
+      ]
+    },
+    {
+      "id": "J14",
+      "title": "single-spa Applications API",
+      "exact_urls": [
+        "https://single-spa.js.org/docs/api/"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_official_living_documentation",
+      "release": null,
+      "commit": null,
+      "limits": [
+        "Current 6.x documentation; no new runtime qualification",
+        "Lifecycle completion does not by itself prove all resource cleanup"
+      ]
+    },
+    {
+      "id": "J15",
+      "title": "single-spa recommended setup",
+      "exact_urls": [
+        "https://single-spa.js.org/docs/recommended-setup/"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_official_living_documentation",
+      "release": null,
+      "commit": null,
+      "limits": [
+        "Contains historically stale MF and browser-support prose; those claims were not adopted",
+        "No exclusive choice between all composable systems implied"
+      ]
+    },
+    {
+      "id": "J16",
+      "title": "import-map-deployer README",
+      "exact_urls": [
+        "https://github.com/single-spa/import-map-deployer"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_official_living_documentation",
+      "release": null,
+      "commit": null,
+      "limits": [
+        "No claim of distributed universal transaction/authority",
+        "Delivery mapping differs from runtime adoption"
+      ]
+    },
+    {
+      "id": "J17",
+      "title": "import-map-overrides README",
+      "exact_urls": [
+        "https://github.com/single-spa/import-map-overrides"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_official_living_documentation",
+      "release": null,
+      "commit": null,
+      "limits": [
+        "Browser-local preference is not production cohort policy"
+      ]
+    },
+    {
+      "id": "J18",
+      "title": "single-spa devtools",
+      "exact_urls": [
+        "https://single-spa.js.org/docs/devtools/"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_official_living_documentation",
+      "release": null,
+      "commit": null,
+      "limits": [
+        "Devtools not runtime safety proof"
+      ]
+    },
+    {
+      "id": "J19",
+      "title": "Theia extensions and plugins",
+      "exact_urls": [
+        "https://theia-ide.org/docs/extensions/"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_official_living_documentation",
+      "release": null,
+      "commit": null,
+      "limits": [
+        "Runtime installability not asserted to imply arbitrary no-restart hot replacement",
+        "Defined API/dedicated process not automatically a permissions sandbox"
+      ]
+    },
+    {
+      "id": "J20",
+      "title": "Theia composing applications",
+      "exact_urls": [
+        "https://theia-ide.org/docs/composing_applications/"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_official_living_documentation",
+      "release": null,
+      "commit": null,
+      "limits": [
+        "Profile-specific constraint, not limitation of every Theia deployment"
+      ]
+    },
+    {
+      "id": "J21",
+      "title": "single-spa ecosystem npm latest metadata",
+      "exact_urls": [
+        "https://registry.npmjs.org/single-spa/latest",
+        "https://registry.npmjs.org/import-map-overrides/latest",
+        "https://registry.npmjs.org/import-map-deployer/latest"
+      ],
+      "retrieval_date": "2026-11-22",
+      "evidence_class": "primary_registry_metadata",
+      "release": {
+        "single-spa": "6.0.3",
+        "import-map-overrides": "6.1.0",
+        "import-map-deployer": "7.0.0"
+      },
+      "commit": null,
+      "limits": [
+        "No install or native rerun; versions alone do not prove lifecycle behavior",
+        "Selected registry metadata is retained in this ledger under registry_receipt; this is not a package execution or signature verification."
+      ]
+    }
+  ],
+  "runtime_sources": [
+    {
+      "id": "S1",
+      "family": "OSGi",
+      "url": "https://docs.osgi.org/specification/osgi.core/8.0.0/framework.lifecycle.html",
+      "versionScope": "OSGi Core R8, lifecycle1.10",
+      "evidenceClass": "normative specification",
+      "limits": "Does not establish automatic cleanup of arbitrary application objects, threads or state.",
+      "locations": "4.3;4.4.8;4.4.9"
+    },
+    {
+      "id": "S2",
+      "family": "OSGi",
+      "url": "https://docs.osgi.org/specification/osgi.core/8.0.0/framework.wiring.html",
+      "versionScope": "OSGi Core R8, wiring1.2",
+      "evidenceClass": "normative specification",
+      "limits": "Framework refresh scope, not a global transaction over external effects.",
+      "locations": "7.5.1"
+    },
+    {
+      "id": "S3",
+      "family": "OSGi",
+      "url": "https://docs.osgi.org/specification/osgi.cmpn/8.0.0/service.component.html",
+      "versionScope": "OSGi Compendium R8, DS1.5",
+      "evidenceClass": "normative specification",
+      "limits": "Dynamic components must correctly handle concurrent binding changes.",
+      "locations": "Reference policies;112.13.12 STATIC/DYNAMIC"
+    },
+    {
+      "id": "S4",
+      "family": "OSGi",
+      "url": "https://docs.osgi.org/specification/osgi.core/8.0.0/framework.service.html",
+      "versionScope": "OSGi Core R8, service1.10",
+      "evidenceClass": "normative specification",
+      "limits": "Not evidence that all implementations or applications leak, nor that our planned lease API is superior.",
+      "locations": "5.7"
+    },
+    {
+      "id": "S5",
+      "family": "OSGi/Felix",
+      "url": "https://felix.apache.org/documentation/subprojects/apache-felix-framework/apache-felix-framework-8-upgrade-guide.html",
+      "versionScope": "Felix Framework8.0.0 guide, living master documentation",
+      "evidenceClass": "official implementation documentation",
+      "limits": "Specific Felix branch; custom SecurityProvider qualification remains. No inference about every OSGi implementation.",
+      "locations": "What changed / security layer"
+    },
+    {
+      "id": "S6",
+      "family": "OSGi/Karaf",
+      "url": "https://karaf.apache.org/manual/latest/provisioning",
+      "versionScope": "Karaf Container4.x latest manual, living URL",
+      "evidenceClass": "official documentation",
+      "limits": "No claim of arbitrary application-state transactional rollback or current binary qualification.",
+      "locations": "Provisioning;autoRefresh;feature:install"
+    },
+    {
+      "id": "S7",
+      "family": "Erlang/OTP",
+      "url": "https://www.erlang.org/doc/apps/kernel/code.html",
+      "versionScope": "OTP29.1.2, kernel11.0.4",
+      "evidenceClass": "official version-labelled documentation",
+      "limits": "Atomic module loading has documented restrictions (on_load, old code); not global effect/state atomicity.",
+      "locations": "Current and Old Code;atomic_load"
+    },
+    {
+      "id": "S8",
+      "family": "Erlang/OTP",
+      "url": "https://www.erlang.org/doc/system/release_handling.html",
+      "versionScope": "OTP29.1.2",
+      "evidenceClass": "official version-labelled documentation",
+      "limits": "Application compatibility/state transformation and distributed orchestration remain contract-dependent.",
+      "locations": "Release Handling Principles;Aspects;Distributed Systems;update"
+    },
+    {
+      "id": "S9",
+      "family": "Erlang/OTP",
+      "url": "https://www.erlang.org/doc/apps/sasl/appup.html",
+      "versionScope": "OTP29.1.2, sasl4.4",
+      "evidenceClass": "official version-labelled documentation",
+      "limits": "Brutal purge may terminate old-code processes; migration is explicit behaviour/special-process contract.",
+      "locations": "High-Level Instructions:update"
+    },
+    {
+      "id": "S10",
+      "family": "Erlang/OTP",
+      "url": "https://www.erlang.org/doc/apps/sasl/release_handler.html",
+      "versionScope": "OTP29.1.2, sasl4.4",
+      "evidenceClass": "official version-labelled documentation",
+      "limits": "check_install_release executes instructions before point_of_no_return; not necessarily pure inspection.",
+      "locations": "check_install_release;install_release;make_permanent"
+    },
+    {
+      "id": "S11",
+      "family": "wasmCloud",
+      "url": "https://wasmcloud.com/docs/migration/",
+      "versionScope": "Current docs v2, living URL",
+      "evidenceClass": "official migration guide; upstream self-report where historical",
+      "limits": "Historical resiliency issues/performance statements are upstream reports, not reproduced incidents or our benchmark.",
+      "locations": "What changed and why;CRD hierarchy"
+    },
+    {
+      "id": "S12",
+      "family": "wasmCloud",
+      "url": "https://wasmcloud.com/docs/kubernetes-operator/crds/",
+      "versionScope": "Current docs v2; runtime.wasmcloud.dev/v1alpha1; includes2.12.0 additions",
+      "evidenceClass": "official current documentation",
+      "limits": "No binary/native qualification; do not assume in-memory user state transfer from deployment resource semantics.",
+      "locations": "Artifact;Workload;WorkloadDeployment;WorkloadDaemonSet"
+    },
+    {
+      "id": "S13",
+      "family": "wasmCloud",
+      "url": "https://wasmcloud.com/docs/faq/",
+      "versionScope": "Current docs v2, living URL",
+      "evidenceClass": "official current documentation",
+      "limits": "v1 and v2 must not be conflated. No performance numbers used.",
+      "locations": "Migration fromv1"
+    },
+    {
+      "id": "S14",
+      "family": "wasmCloud",
+      "url": "https://wasmcloud.com/docs/kubernetes-operator/api-reference/",
+      "versionScope": "Current docs v2; runtime.wasmcloud.dev/v1alpha1",
+      "evidenceClass": "official API schema documentation",
+      "limits": "DaemonSet guarantee is not promoted to every resource or fleet-wide atomicity.",
+      "locations": "WorkloadDaemonSetSpec;WorkloadDeploymentSpec"
+    },
+    {
+      "id": "S15",
+      "family": "wasmCloud",
+      "url": "https://wasmcloud.com/docs/v1/hosts/lattice-protocols/control-interface/",
+      "versionScope": "Explicitly v1 documentation, not current v2 architecture",
+      "evidenceClass": "official legacy-version documentation",
+      "limits": "Retained as a version-qualified design precedent, not a v2 API claim.",
+      "locations": "Update component"
+    },
+    {
+      "id": "S16",
+      "family": "Extism",
+      "url": "https://extism.org/docs/concepts/plug-in-system/",
+      "versionScope": "Living concepts docs; no installed SDK/version qualification",
+      "evidenceClass": "official current documentation",
+      "limits": "No inference about absence of update features from a concepts page.",
+      "locations": "What is a Plug-in System"
+    },
+    {
+      "id": "S17",
+      "family": "Extism",
+      "url": "https://extism.org/docs/concepts/runtime-apis/",
+      "versionScope": "Living C runtime API docs; no installed SDK/version qualification",
+      "evidenceClass": "official current API documentation",
+      "limits": "These primitives are not themselves evidence of full consumer-state migration; cancellation guarantees require SDK/host-callback qualification.",
+      "locations": "extism_plugin_new/free/config/reset/cancel;hostfunctions"
+    },
+    {
+      "id": "S18",
+      "family": "Extism",
+      "url": "https://extism.org/docs/concepts/memory/",
+      "versionScope": "Living concepts docs; SDK-dependent usage stated",
+      "evidenceClass": "official current documentation",
+      "limits": "Extism-managed memory must not be conflated with all guest Wasm memory or application state.",
+      "locations": "How it Works;Usage"
+    },
+    {
+      "id": "S19",
+      "family": "OSGi/Equinox",
+      "url": "https://eclipse.dev/eclipse/",
+      "versionScope": "Current Eclipse project description",
+      "evidenceClass": "official project documentation",
+      "limits": "No blanket claim that every Eclipse extension supports transparent runtime replacement.",
+      "locations": "Equinox"
+    },
+    {
+      "id": "S20",
+      "family": "Extism",
+      "url": "https://extism.org/docs/concepts/manifest/",
+      "versionScope": "Living manifest documentation",
+      "evidenceClass": "official current documentation",
+      "limits": "Do not infer missing features from this partial schema or equate hash checks with update authorization.",
+      "locations": "The Manifest;Schema"
+    }
+  ],
+  "additional_sources": [
+    {
+      "id": "A01",
+      "url": "https://vite.dev/guide/features.html",
+      "class": "primary_living_documentation",
+      "retrieved": "2026-11-22"
+    },
+    {
+      "id": "A02",
+      "url": "https://docs.temporal.io/worker-versioning",
+      "class": "primary_living_documentation",
+      "retrieved": "2026-11-22"
+    },
+    {
+      "id": "A03",
+      "url": "https://docs.temporal.io/production-deployment/worker-deployments/worker-versioning",
+      "class": "primary_living_documentation",
+      "retrieved": "2026-11-22"
+    }
+  ],
+  "estimates": {
+    "kind": "engineering_judgment_not_statistical_forecast",
+    "unit": "authored production TypeScript physical nonblank noncomment SLOC; authored shipped declarations included",
+    "excluded": [
+      "dependencies",
+      "generated code",
+      "tests and fixtures",
+      "examples and benchmarks",
+      "build and CI",
+      "documentation",
+      "consumer business logic"
+    ],
+    "rows": [
+      {
+        "name": "contracts",
+        "mvp": [
+          400,
+          800
+        ],
+        "stable_ts": [
+          900,
+          1700
+        ],
+        "broader": [
+          1400,
+          2700
+        ]
+      },
+      {
+        "name": "complete_operation",
+        "mvp": [
+          650,
+          1300
+        ],
+        "stable_ts": [
+          1600,
+          3100
+        ],
+        "broader": [
+          2400,
+          4700
+        ]
+      },
+      {
+        "name": "operation_resource_affinity",
+        "mvp": [
+          350,
+          750
+        ],
+        "stable_ts": [
+          800,
+          1600
+        ],
+        "broader": [
+          1600,
+          3200
+        ]
+      },
+      {
+        "name": "execution_adapters",
+        "mvp": [
+          250,
+          550
+        ],
+        "stable_ts": [
+          700,
+          1500
+        ],
+        "broader": [
+          2600,
+          5300
+        ]
+      },
+      {
+        "name": "state_view_coordination",
+        "mvp": [
+          300,
+          600
+        ],
+        "stable_ts": [
+          800,
+          1700
+        ],
+        "broader": [
+          1800,
+          3600
+        ]
+      },
+      {
+        "name": "retention_cleanup",
+        "mvp": [
+          200,
+          450
+        ],
+        "stable_ts": [
+          650,
+          1300
+        ],
+        "broader": [
+          1200,
+          2300
+        ]
+      },
+      {
+        "name": "observation_results",
+        "mvp": [
+          300,
+          650
+        ],
+        "stable_ts": [
+          700,
+          1500
+        ],
+        "broader": [
+          1400,
+          2800
+        ]
+      },
+      {
+        "name": "delivery_authority_adapters",
+        "mvp": [
+          200,
+          450
+        ],
+        "stable_ts": [
+          650,
+          1400
+        ],
+        "broader": [
+          1800,
+          3800
+        ]
+      }
+    ],
+    "arithmetic_totals": {
+      "mvp": [
+        2650,
+        5550
+      ],
+      "stable_ts": [
+        6800,
+        13800
+      ],
+      "broader": [
+        14200,
+        28400
+      ]
+    },
+    "rounded_totals": {
+      "mvp": [
+        3000,
+        6000
+      ],
+      "stable_ts": [
+        7000,
+        14000
+      ],
+      "broader": [
+        15000,
+        30000
+      ]
+    },
+    "confidence_out_of_ten": {
+      "mvp": 5,
+      "stable_ts": 4,
+      "broader": 3
+    },
+    "stages_are_not_additive": true,
+    "test_fixture_e2e_sloc_separate_lower_confidence": {
+      "mvp": [
+        4000,
+        9000
+      ],
+      "stable_ts": [
+        12000,
+        25000
+      ],
+      "broader": [
+        25000,
+        55000
+      ]
+    },
+    "first_consumer_integration_sloc_with_existing_boundaries": {
+      "mvp": [
+        400,
+        1200
+      ],
+      "stable_ts": [
+        1000,
+        3000
+      ]
+    },
+    "scenario_limits": {
+      "mvp": "One trusted TS host, one UI framework, existing authority/state/resource owners; whole-host durable recovery and arbitrary history/schema migration excluded",
+      "stable_ts": "Declared browser and Node profiles, one UI framework, one versioned attempt/receipt schema and one recovery policy; library owns recovery coordination",
+      "broader": "Stable TS plus native Effect, one Worker OR process logic profile and one Wasm/Extism profile; no universal runtime combination"
+    },
+    "unresolved_dependency_gates": [
+      "Public availability of inspected private lifecycle kernel",
+      "Recorded SDK/strict-declaration qualification gaps remain open"
+    ],
+    "largest_scope_multipliers": [
+      "State/history preservation promise",
+      "Recovery after external effects",
+      "Old-client/artifact support window",
+      "Legacy application ownership refactor"
+    ]
+  },
+  "review_dispositions": [
+    {
+      "challenge": "A term in the architecture must not become another graph, store, supervisor or engine",
+      "disposition": "Reuse explicitly excluded those implementations and separated overlapping responsibilities"
+    },
+    {
+      "challenge": "Existing authority/resources/loader do not solve crash recovery or unknown cleanup for the complete operation",
+      "disposition": "Stable estimate limited to one attempt schema and recovery policy; library retains recovery coordination"
+    },
+    {
+      "challenge": "Complete operations, live UI replacement and AI control already exist",
+      "disposition": "No uniqueness or superiority claim; compare equivalent consumer scenarios against a ready stack"
+    },
+    {
+      "challenge": "Two ledger entries referenced raw npm metadata available only in scratch",
+      "disposition": "Retained selected registry response fields inline under registry_receipt and corrected the references"
+    },
+    {
+      "challenge": "Draining is defined on Worker Deployment Version, not an individual worker process",
+      "disposition": "Temporal comparison now says old deployment versions draining"
+    }
+  ],
+  "value_ratings_are_judgments": {
+    "long_lived_user_outcome": 8,
+    "own_library_over_ready_stack": [
+      6,
+      7
+    ],
+    "ordinary_site_additional_value": [
+      3,
+      4
+    ]
+  },
+  "review_input_sha256": {
+    "competition-js.md": "45a1e6bee5fed208a541334f3adea1ed11f2ca9586d2554a06f0b932b98ab570",
+    "competition-runtime.md": "cbb026d7f44df58598c075834d538355848d3373bb5b507996ed641b6b3748d1",
+    "sizing-and-critique.md": "137de3f1fad4f6c3e56c1ba6a6fc71b8595fcaccd6e1ee53965e72a24e926c02"
+  },
+  "registry_receipt": {
+    "retrieved_at": "2026-11-22T19:42:05.544782+00:00",
+    "scope": "Selected registry response fields; signatures and package artifacts not independently validated",
+    "packages": [
+      {
+        "name": "piral",
+        "url": "https://registry.npmjs.org/piral/latest",
+        "version": "1.12.5",
+        "gitHead": "15af4fd41e049b5880916af81e130cf22e6ac44b",
+        "tarball": "https://registry.npmjs.org/piral/-/piral-1.12.5.tgz",
+        "integrity": "sha512-EcdUTDXZUjRui+3dSmDOz1agM7U8W/X3Z78ytH2GZdv0zNlJ3T2NTI9do9Np1r+CrBbHEs5hQcA5PmS7SzYs3Q=="
+      },
+      {
+        "name": "piral-core",
+        "url": "https://registry.npmjs.org/piral-core/latest",
+        "version": "1.12.5",
+        "gitHead": "15af4fd41e049b5880916af81e130cf22e6ac44b",
+        "tarball": "https://registry.npmjs.org/piral-core/-/piral-core-1.12.5.tgz",
+        "integrity": "sha512-onvyiLUDUhgzCCyQRViCq+eaGghOBmMbn2/fDUa2cfjFXVk3VNYizSAZ7Fv6uJMbKFImNePzMHE/2r8i+kzSFg=="
+      },
+      {
+        "name": "piral-base",
+        "url": "https://registry.npmjs.org/piral-base/latest",
+        "version": "1.12.5",
+        "gitHead": "15af4fd41e049b5880916af81e130cf22e6ac44b",
+        "tarball": "https://registry.npmjs.org/piral-base/-/piral-base-1.12.5.tgz",
+        "integrity": "sha512-rtwOpRdIRrCKCp8FItun/P9CIMtfn7GOmf2txckmf0NMCAoKUI3wKacy7FETJsYbYYdpFdzgu1rIBvHTdNJlHw=="
+      },
+      {
+        "name": "piral-debug-utils",
+        "url": "https://registry.npmjs.org/piral-debug-utils/latest",
+        "version": "1.12.5",
+        "gitHead": "15af4fd41e049b5880916af81e130cf22e6ac44b",
+        "tarball": "https://registry.npmjs.org/piral-debug-utils/-/piral-debug-utils-1.12.5.tgz",
+        "integrity": "sha512-k2I2E8ZxEeAk+Cz0iMIcBSFvwgTmYzztKmIxRK5iAgVYZzKrAzqa+B3/jFrJzQlpCrVVzqNOTRalL6GJ+metlA=="
+      },
+      {
+        "name": "single-spa",
+        "url": "https://registry.npmjs.org/single-spa/latest",
+        "version": "6.0.3",
+        "gitHead": null,
+        "tarball": "https://registry.npmjs.org/single-spa/-/single-spa-6.0.3.tgz",
+        "integrity": "sha512-pXlwHXHhs3hx/MnGQHBLdFCVAN2rlm9TLBKazbDMyZ25QRxoen2vlUZ47MyXKa9K8Gd5UZs/gkuQad4TGbViwg=="
+      },
+      {
+        "name": "import-map-overrides",
+        "url": "https://registry.npmjs.org/import-map-overrides/latest",
+        "version": "6.1.0",
+        "gitHead": null,
+        "tarball": "https://registry.npmjs.org/import-map-overrides/-/import-map-overrides-6.1.0.tgz",
+        "integrity": "sha512-RgrnojVe/aEMW9SauUQizSbjt80Xf5clkmbFo0p6h/0igAI6WAb25d3OhHGDJNdppUHEeHpPEimYP1liDSZn+A=="
+      },
+      {
+        "name": "import-map-deployer",
+        "url": "https://registry.npmjs.org/import-map-deployer/latest",
+        "version": "7.0.0",
+        "gitHead": null,
+        "tarball": "https://registry.npmjs.org/import-map-deployer/-/import-map-deployer-7.0.0.tgz",
+        "integrity": "sha512-NnyNbMGVWWjCuneeDFZDDp2Tr5SqsU+KV9HJetE5DRfK6pw4LghdSb1FWwAItL7cyz7QvACgftzFwRqC40Gyhg=="
+      }
+    ]
+  },
+  "validation_context": {
+    "baseline_commit": "7a45769634db5dfe506a0b5c32ed40607acb792b",
+    "isolation": "Fresh detached worktree; creation preview/apply completed successfully with the same reviewed plan; existing locked dependency installation reused",
+    "creation_plan": "sha256:85f1bba6ebde6ac7cbde788a9b5905589bc8404994464c85163bce3602c76ddd",
+    "node": "24.22.3",
+    "observed_pnpm": "11.25.0",
+    "original_checkout_state_preserved": true,
+    "original_checkout_attempts": [
+      {
+        "command": "docs-protocol context and pnpm docs:check",
+        "result": "Processes stopped with SIGKILL / exit 137; cause not established"
+      },
+      {
+        "command": "pnpm docs:check, sequential retry",
+        "result": "docs.adoption.recovery-state-active"
+      },
+      {
+        "command": "pnpm docs:doctor",
+        "result": "recoverable document transaction; exact document-authoring Foundation 0.3.2 build identified"
+      },
+      {
+        "command": "pnpm docs:recover",
+        "result": "MUTATION_LEASE_INVALID: active owner or not safely recoverable; lock and evidence left intact"
+      }
+    ],
+    "fresh_worktree_creation": "docs.new success with terminal exit 0",
+    "runtime_tests_added_or_run": 0,
+    "local_gate_attempts": [
+      {
+        "name": "docs-check",
+        "command": [
+          "pnpm",
+          "docs:check"
+        ],
+        "started_at": "2026-11-22T20:03:36.279515+00:00",
+        "exit_code": 0,
+        "seconds": 8.11,
+        "log": "docs-check.log"
+      },
+      {
+        "name": "docs-protocol-check",
+        "command": [
+          "pnpm",
+          "docs:protocol:check"
+        ],
+        "started_at": "2026-11-22T20:03:44.396716+00:00",
+        "exit_code": 1,
+        "seconds": 14.83,
+        "log": "docs-protocol-check-first-attempt.log"
+      },
+      {
+        "name": "docs-protocol-check-final",
+        "command": [
+          "pnpm",
+          "docs:protocol:check"
+        ],
+        "started_at": "2026-11-22T20:04:48.918276+00:00",
+        "exit_code": 1,
+        "seconds": 164.37,
+        "log": "docs-protocol-check.log",
+        "governed_input_sha256": {
+          "docs/research/live-update-value-competition-and-implementation-size-2026-11-22.md": "ba6943c599fac228eebd173f28ab7b1ecd16f9ace43e7fc931ec915a7ffab6d0",
+          "docs/research/plugin-system-research-reference.md": "c3afac20cb773133147f0144a016d7e3ef2d28ffd676c05983856fbd076606e0",
+          "docs/README.md": "f50e3abe018d8fa7f87232dd1707b7e2ccd5207180fb453429f4f2d5f2ad3455"
+        }
+      }
+    ],
+    "full_gate_outcome": {
+      "status": "FAIL_RETAINED",
+      "tests": 8,
+      "pass": 6,
+      "fail": 2,
+      "skipped": 0,
+      "failing_assertion": "child CLI process status null rather than zero; termination cause not established",
+      "catalog_focused_retry": {
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "semantic_adoption": "PASS_95_DOCUMENTS",
+      "markdown_and_spelling": "PASS_101_FILES",
+      "next_gate": "Hosted CI after checkpoint push; do not treat this local run as passed"
+    },
+    "retained_log": {
+      "path": "live-update-value-validation-20261122.txt",
+      "sha256": "9a9eb72a7723e4c001cdc7835045339928c0924cd9136ec172602f3753438c11",
+      "normalization": "Trailing whitespace removed; diagnostic content retained"
+    }
+  },
+  "competition_followup": {
+    "date": "2026-11-23",
+    "date_timezone": "Europe/Kiev",
+    "baseline_remote_head": "a0b6ad8372b50030de3abefb70cc08af84630a23",
+    "kind": "QUALITATIVE_PRODUCT_JUDGMENT_NOT_MARKET_MEASUREMENT",
+    "all_seven_owner_choices": "OPEN",
+    "new_production_lines": 0,
+    "new_plugin_runtime_experiments": 0,
+    "ratings": {
+      "competitive_pressure_including_substitutes": 8,
+      "start_library_with_real_internal_consumer": 7,
+      "build_whole_broad_platform_upfront": 4,
+      "confidence_in_competitive_assessment": 5
+    },
+    "limits": [
+      "No representative buyer sample, adoption census or willingness-to-pay measurement",
+      "No established uniqueness or absence of an equivalent competitor",
+      "Broad platform functionality is source evidence, not proof of identical lifecycle guarantees",
+      "The whole vision remains possible; these ratings do not select disputed execution/state policies"
+    ],
+    "additional_primary_sources": [
+      {
+        "id": "C17",
+        "url": "https://www.piral.cloud/comparison",
+        "class": "official_capability_matrix",
+        "scope": "Multiple discovery formats; no cross-format state/cleanup equivalence claim"
+      },
+      {
+        "id": "C18",
+        "url": "https://docs.zephyr-cloud.io/features/react-native-native-shell",
+        "class": "official_living_documentation",
+        "scope": "Explicit Beta Native Shell + Host architecture; native compatibility still bounds updates"
+      }
+    ],
+    "custody_audit": {
+      "result_before_followup": "Main research and conclusions preserved; three detailed findings only in working reports",
+      "remote_pr": 55,
+      "remote_state": "OPEN_DRAFT_NOT_MERGED",
+      "research_branch": "docs/plugin-research-hot-reload-20261021",
+      "separate_library_remote": "NOT_CREATED_TRANSFER_PACKET_PRESERVED",
+      "scope": "Maintained studies and primary/supplement/transfer evidence compared with latest three review reports",
+      "hashes_are_not_report_text": true,
+      "retained_findings": [
+        {
+          "existing_source_ids": [
+            "J19",
+            "J20"
+          ],
+          "document_reference": "C19",
+          "finding": "Theia browser-only profile supports bundled extensions but runtime Open VSX installation needs a backend",
+          "limit": "Not a limitation of every Theia deployment"
+        },
+        {
+          "existing_source_ids": [
+            "S18"
+          ],
+          "document_reference": "C20",
+          "finding": "Extism exchange buffers reset between calls and output is accessible until the next call",
+          "limit": "Does not describe all guest Wasm memory or business-state persistence"
+        },
+        {
+          "existing_source_ids": [
+            "S12",
+            "S14"
+          ],
+          "document_reference": "C21",
+          "finding": "WorkloadDaemonSet RollingUpdate overlaps new/old instances per host; maxConcurrentHosts bounds rollout concurrency; Recreate differs",
+          "limit": "Not fleet-wide atomicity or a promise for every resource"
+        }
+      ]
+    },
+    "independent_review": {
+      "competition": "Broad roadmap does not establish uniqueness; consumers can select substitutes with different APIs",
+      "custody": "Three missing detailed findings recovered explicitly; duplicate working drafts and superseded tentative scores are not authoritative conclusions"
+    },
+    "historical_validation": "Existing validation_context describes the November22 checkpoint; it is not qualification for this follow-up"
+  }
+}

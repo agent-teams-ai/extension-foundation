@@ -1,0 +1,155 @@
+{
+  "runId": 45042722838,
+  "runAttempt": 1,
+  "runUrl": "https://github.com/agent-teams-ai/extension-foundation/actions/runs/45042722838",
+  "jobId": 137270527195,
+  "commit": "719a6095445d67b1da7fa285bbb5ef8ecc589322",
+  "conclusion": "success",
+  "input": {
+    "path": "live-update-editor-input-20261122-v2.tar.gz",
+    "bytes": 18027,
+    "sha256": "c9d80c35364f9b2c5ed97a086f0a8ff24a9b2bc675c0666292c1e75ebedf81c3"
+  },
+  "workflowSha256": "6a1a90f5567de760598604572de2e6bb92fed2bcb2a52b52c8664996ad88024c",
+  "archive": {
+    "path": "live-update-editor-v2-attempt1-20261122.zip",
+    "bytes": 1207123,
+    "sha256": "cf885324cc600c3d39037043ec4e5fbec34bd8e285af93e9260e5f6228f0a97e",
+    "artifactId": 14762675791
+  },
+  "sourceFilesVerifiedAfterRun": 7,
+  "files": [
+    {
+      "path": "evidence/CM-2-native-late-source.png",
+      "bytes": 63389,
+      "sha256": "1fdc12a02833ef83a21e841db2576e61d61813acccaae6d24b02006b45422282"
+    },
+    {
+      "path": "evidence/CM-4-current-result-retained.png",
+      "bytes": 67357,
+      "sha256": "77994c8efd428ad785c9d45500b66682c443b71d010fec568dfe221930ac1dac"
+    },
+    {
+      "path": "evidence/CM-7-history-codec-boundary.png",
+      "bytes": 53622,
+      "sha256": "204f682508ab6cbbc431609bd004dce1a5ba943e690f936e027176cc15dd82b3"
+    },
+    {
+      "path": "evidence/browser-trace.zip",
+      "bytes": 1049854,
+      "sha256": "9b4aa915752326a722cd31ec99b094c63488e10413e59ba7d7b1578e1d445256"
+    },
+    {
+      "path": "evidence/final.png",
+      "bytes": 53622,
+      "sha256": "204f682508ab6cbbc431609bd004dce1a5ba943e690f936e027176cc15dd82b3"
+    },
+    {
+      "path": "evidence/hosted-browser-install.log",
+      "bytes": 17638,
+      "sha256": "7cbd1e7791137efb3fa10b4453291a5e8a730b8dbeecabe4e1dde1f94062009c"
+    },
+    {
+      "path": "evidence/hosted-environment.txt",
+      "bytes": 17,
+      "sha256": "92d8a2199a84055aeb15998c3d5df8df5787b2a93f9cfa0bdcb57cb1de2825bb"
+    },
+    {
+      "path": "evidence/hosted-input-receipt.json",
+      "bytes": 366,
+      "sha256": "1a5886cacfe265c384e9b074687451c82b2ef2155cbb801daaefcfdfbc6ad637"
+    },
+    {
+      "path": "evidence/hosted-install.log",
+      "bytes": 802,
+      "sha256": "7d162cf63caa8af0b7f9927bfaa6fc181824ae302b8e520572177a1c0f6016a3"
+    },
+    {
+      "path": "evidence/hosted-runtime.log",
+      "bytes": 18847,
+      "sha256": "6f91663b12633dca1f136fb5329e1d767771277ff6b96001ca86fef8af344d07"
+    },
+    {
+      "path": "evidence/hosted-typecheck.log",
+      "bytes": 54,
+      "sha256": "ace66e11637f9a69a84d1178767cd9bb91010501ece0296cbc7ae8b32f5ed8a2"
+    },
+    {
+      "path": "evidence/input-manifest.json",
+      "bytes": 18004,
+      "sha256": "30d53531c39ac668ecfc7e2791e028352c54025b12922e677727d2508adcf0a6"
+    },
+    {
+      "path": "evidence/installed-direct-identities.json",
+      "bytes": 233,
+      "sha256": "84323c9fe04494b7c6e9c4981076c96ad5305b706833e61bd12214f4d2745a49"
+    },
+    {
+      "path": "evidence/result.json",
+      "bytes": 27772,
+      "sha256": "2f77d4ee031e2faca375fcfc838438ab5a9bc87e2633bde9d650feefa3ecc17b"
+    },
+    {
+      "path": "fixture/index.html",
+      "bytes": 1859,
+      "sha256": "6de10bf8ac3ca54b37fff3a0f391c31ecaf039e44d4592a0220bbb3e788b3363"
+    },
+    {
+      "path": "fixture/main.ts",
+      "bytes": 9794,
+      "sha256": "163f4a6f839a2e9ff7889c31bde7020611c3bc3aadcc543509c17ba3210ed9ba"
+    },
+    {
+      "path": "fixture/probe.ts",
+      "bytes": 1364,
+      "sha256": "4e842e3b477b98f48b4c4b909ba1ce2f88a4cf713dfdeda3005c15876bc85ca0"
+    },
+    {
+      "path": "browser.test.ts",
+      "bytes": 17083,
+      "sha256": "eeb06fc7723f7de3cbf91883a05e0febb44e0802ea5bd0731c58b5c20bfe0665"
+    },
+    {
+      "path": "package.json",
+      "bytes": 556,
+      "sha256": "789a14d47aaada00e674fd03c37170b392c9e113e2998d99ff5e8ec80cfcfbd6"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 28115,
+      "sha256": "96105e7cc9a063d2be813e6f01ad38f34365dee6591a3cd4ff8f6684db0f524a"
+    },
+    {
+      "path": "tsconfig.json",
+      "bytes": 550,
+      "sha256": "3113436c7a3639d6103b15fc56f6eb0148cc4c7fc0f3a2c97875f065cb98a312"
+    }
+  ],
+  "testCounts": {
+    "tests": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "scenarios": [
+    "CM-1",
+    "CM-2",
+    "CM-3",
+    "CM-4",
+    "CM-5",
+    "CM-6",
+    "CM-7"
+  ],
+  "comparisonCounts": {
+    "executed": 70,
+    "matching": 70
+  },
+  "nativeRuntime": {
+    "node": "v24.22.3",
+    "chromium": "159.0.8154.6",
+    "typescript": "7.0.2"
+  },
+  "pageErrors": [],
+  "cleanupErrors": [],
+  "scope": "seven native CodeMirror scenarios; same-document source race, narrow generation/revision arrival gate, reconfiguration/history; no OS IME, future freshness, production update coordinator or remote resync qualification"
+}

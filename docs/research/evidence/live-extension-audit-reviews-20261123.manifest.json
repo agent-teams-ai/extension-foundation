@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "observationDate": "2026-11-23",
+  "sourceBaseline": "7611e1a44542204d77e489a166f92a2e31b0020a",
+  "consolidatedCheckpoint": "0fd566c81878bfd078237a488915e267865f0d40",
+  "purpose": "Independent pass2/pass3 reviews and root final delta; no runtime qualification",
+  "archive": "live-extension-audit-reviews-20261123.tar.gz",
+  "bytes": 31242,
+  "sha256": "512b704b75a9f899db16197727697f256e42b34b211bed657f97a6a440f7876c",
+  "memberCount": 16,
+  "members": [
+    {
+      "path": "README.md",
+      "bytes": 956,
+      "sha256": "4bd8a5adf4811d5c8e44edaf352619a70a020d7fcd6e08a9318ddd92a610b6a5"
+    },
+    {
+      "path": "reviews/authority-review-pass2-inputs.json",
+      "bytes": 2171,
+      "sha256": "d470447e61327a2663e3518d94cff0b9e0260fe74b4dfa4e84496e1dd025f04b"
+    },
+    {
+      "path": "reviews/authority-review-pass2.md",
+      "bytes": 8578,
+      "sha256": "12a189d5b39484d19eedc18b7f124743d01d1485d33e7259ec97d8dcac4cfbb2"
+    },
+    {
+      "path": "reviews/authority-review-pass3-inputs.json",
+      "bytes": 5128,
+      "sha256": "e9c41a3ccf5b682f61e199b4bce9712be3070e982db06b6709b8f6dfc6f4f207"
+    },
+    {
+      "path": "reviews/authority-review-pass3.md",
+      "bytes": 9674,
+      "sha256": "6a4aa5f75251616952afec2cfffb22410f5a0fbeeb37a8c757c6f982f6f191ca"
+    },
+    {
+      "path": "reviews/custody-pass3-navigation-check.json",
+      "bytes": 14951,
+      "sha256": "de1e4899d7a8c25b1b60778ed84aa6547eadaaacf786e2163bdea376cbf1657f"
+    },
+    {
+      "path": "reviews/custody-review-pass2-inputs.json",
+      "bytes": 8919,
+      "sha256": "8a908a9f10b26a246d923fcd4a614804157cf8b5d10663e86d5b1231ba1eb2ac"
+    },
+    {
+      "path": "reviews/custody-review-pass2.md",
+      "bytes": 5814,
+      "sha256": "fe620a4423cea33ed9d48e994e95b41b6e5b89e1cd51f2c6d33c6621538164d5"
+    },
+    {
+      "path": "reviews/custody-review-pass3-inputs.json",
+      "bytes": 28314,
+      "sha256": "0a0c3266b416a688e4c245e2dfbe543c91313d65609b2a98a0b02fb41d079943"
+    },
+    {
+      "path": "reviews/custody-review-pass3.md",
+      "bytes": 8198,
+      "sha256": "2104a663a52916dd8c6caec0ba1ee777bae1ad196917ba4c7740e803ae3857d0"
+    },
+    {
+      "path": "reviews/stack-review-pass2-inputs.json",
+      "bytes": 4112,
+      "sha256": "52da23ac7509e3f40fda1fd5d789607aadc63c0223222d92a3cb1fab05aaff0a"
+    },
+    {
+      "path": "reviews/stack-review-pass2.md",
+      "bytes": 6918,
+      "sha256": "5f0227565b0e05d8ebf262f91279567db6f1e83aaa0d742221ca9cae02bde9eb"
+    },
+    {
+      "path": "reviews/stack-review-pass3-inputs.json",
+      "bytes": 3350,
+      "sha256": "f8646c49eb10c01d0c5a0eb53f35b781c80f66b231c4148cec1d87130f8c208b"
+    },
+    {
+      "path": "reviews/stack-review-pass3.md",
+      "bytes": 3979,
+      "sha256": "79c6ac9c88a2e23b72557cfe9205c77a13eab3ed4babed6ea623c0ed41a2dec6"
+    },
+    {
+      "path": "root/FINAL-REVIEW-INPUTS.json",
+      "bytes": 4522,
+      "sha256": "411594e8112517519c1aa2a419e2c51df40e1936a7984ab55f9fb188e256535f"
+    },
+    {
+      "path": "root/FINAL-REVIEW.md",
+      "bytes": 7140,
+      "sha256": "061156a1b0272713a19eca8a109ce80b41dd8b6cfd96d9e1b870d061713cc4b9"
+    }
+  ]
+}

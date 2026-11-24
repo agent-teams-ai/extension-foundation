@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "status": "planning-only",
+  "sourceHead": "f285333c5869b1f69070efee29b205da8fd19e49",
+  "members": [
+    {
+      "path": "DESIGN-DELIVERY-PLAN.md",
+      "bytes": 7631,
+      "sha256": "361d410f33264cdcb27bb4c7b88ab5d63b5cb5feb2edc7c2848f4d093c716756"
+    },
+    {
+      "path": "OBSERVATIONS.json",
+      "bytes": 682,
+      "sha256": "76d5fd04c8c88dccf8d5b9aa174aece181cadb31a7c4cc3c4109b2d23400e7f9"
+    },
+    {
+      "path": "industry/SPIKE-BRIEF.md",
+      "bytes": 5443,
+      "sha256": "a8222c45f60a0fc89c2c06ac73d7b21a41552ca0f81f51cbc22a9ef9d8e3c129"
+    }
+  ],
+  "archive": {
+    "path": "live-module-design-plan-20261123.tar.gz",
+    "bytes": 6124,
+    "sha256": "fbddc7c4f56502341abc8e75e15325de3457dd76039c8a18ba7b31964c2d125e",
+    "regularMembers": 3
+  }
+}

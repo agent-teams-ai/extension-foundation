@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "observationDate": "2026-11-18",
+  "timezone": "Europe/Kiev",
+  "purpose": "Frozen disposable browser qualification inputs; no production or public SPI adoption.",
+  "archive": {
+    "path": "live-application-browser-input-20261118.tar.gz",
+    "bytes": 14532,
+    "sha256": "ee51b6c1cddd63f33b4a56a505140b46876fb8e2414b62920345705b38138ac4"
+  },
+  "compiler": "typescript@7.0.2",
+  "browserDriver": "playwright@1.62.1",
+  "files": [
+    {
+      "path": "frontend-spike/app.ts",
+      "bytes": 12039,
+      "sha256": "205f0a5316ccd6d75df29a806ba225e3e1e895aea156d103052c7b7e12bb0dd8"
+    },
+    {
+      "path": "frontend-spike/browser.test.ts",
+      "bytes": 12909,
+      "sha256": "b44b477ae4a3e374f10b262b2e830f2ac6fc9422877275ba3fddc9a50087f631"
+    },
+    {
+      "path": "frontend-spike/evidence/source-hashes-hosted-input.json",
+      "bytes": 1587,
+      "sha256": "c0e144f7700e6d57cbea87c2e39362c12ccf1227810ea73f8fadc3a6bf119ad3"
+    },
+    {
+      "path": "frontend-spike/fixture-server.ts",
+      "bytes": 1847,
+      "sha256": "fac9e6032bf7b34fb98a205b0c332e215f1e3cb4655be4db9118a521b7ecb3c0"
+    },
+    {
+      "path": "frontend-spike/index.html",
+      "bytes": 5119,
+      "sha256": "3163936b9f2898ce3141a17d74cd3d5bd10a228689545a233558b51422c090be"
+    },
+    {
+      "path": "frontend-spike/plugins/rejected.ts",
+      "bytes": 294,
+      "sha256": "e391b9cf4b4262299be2d5c7ab1559da50c2436efb9b0b7ddf4dd53fed5e93f9"
+    },
+    {
+      "path": "frontend-spike/plugins/v1.ts",
+      "bytes": 285,
+      "sha256": "e23a7e61a44d23842db15e5010fe3720c04b53fa3c95d523ad40d25bad4db81c"
+    },
+    {
+      "path": "frontend-spike/plugins/v2.ts",
+      "bytes": 301,
+      "sha256": "dcb86fa80579e425f5f0d4fbf95a9bd59aa31f847116b9cabcb76cc8a22e7dd0"
+    },
+    {
+      "path": "frontend-spike/serve-local.ts",
+      "bytes": 533,
+      "sha256": "57ed172ac3c24d9f8e75390030fa02eebae488b7e64e8c69b198990a3abcff5a"
+    },
+    {
+      "path": "frontend-spike/tsconfig.browser.json",
+      "bytes": 487,
+      "sha256": "0a8b9fed4d7764eeff595cd7a48bff0ea58b28d221af06f2bbbc1ff367fbde18"
+    },
+    {
+      "path": "frontend-spike/tsconfig.node.json",
+      "bytes": 529,
+      "sha256": "159fcd058ce624ee8053e83bb160fd3b7816ae4dfb78e93b6d3210c68f9b5eee"
+    },
+    {
+      "path": "frontend-spike/tsconfig.v2.json",
+      "bytes": 75,
+      "sha256": "06afd9fa38735339ead5e782dbed78903cbbb04bb7770981c5d43bdaabd46320"
+    },
+    {
+      "path": "package.json",
+      "bytes": 530,
+      "sha256": "d27ce859713298d3253ffba69018f00573308d77fd6f3c2f84a546c6dede5ec7"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 10489,
+      "sha256": "9b16d2a88ad6548d63959050788357edc66bfdbdc6abbcec66a673557cf0832e"
+    }
+  ],
+  "runtimeStatus": "Inputs only; execution results are separately retained and bound to this digest."
+}

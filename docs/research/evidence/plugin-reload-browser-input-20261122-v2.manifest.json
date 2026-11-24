@@ -1,0 +1,103 @@
+{
+  "schema": "agent-teams.research-input/v1",
+  "researchDate": "2026-11-22",
+  "scope": "Disposable independent-edit native development-HMR profile; v2 preserves original failed inputs and all behavior assertions",
+  "previousInputSha256": "8e6170d5470857c2d5ed9302d2aabbc81fc71db6fd905fc2ee4e82dd92962d9c",
+  "archive": {
+    "file": "plugin-reload-browser-input-20261122-v2.tar.gz",
+    "bytes": 15911,
+    "sha256": "430b3c063c920e0a5e1153d2ed1beca7ebbb65d0e658e7ad54f941169d31b1a5"
+  },
+  "files": [
+    {
+      "path": "browser.test.ts",
+      "bytes": 12905,
+      "sha256": "7bcd47c5898bc4f20cfd911084c4a7f0f9a74526fa813521cd75efd2c4fa5bb9"
+    },
+    {
+      "path": "fixture/Host.tsx",
+      "bytes": 368,
+      "sha256": "35d8d6a91e5eb32b8811f52dff0bba99dfa28b33aa2df2f36bc2f9256446a926"
+    },
+    {
+      "path": "fixture/Plugin.tsx",
+      "bytes": 42,
+      "sha256": "e91d36edd472f1bed3942c46d7380e1114da348bd80b2f24623992015b2d5f04"
+    },
+    {
+      "path": "fixture/Plugin.v1.tsx",
+      "bytes": 932,
+      "sha256": "82f9c4f8090b4ba48db273a7706c70623eebe0b36d0389ab374e169d8a91f996"
+    },
+    {
+      "path": "fixture/Plugin.v2.tsx",
+      "bytes": 889,
+      "sha256": "2c08b13773da2256f52b6bf9e08105dc8ae493d199b0e38ce6e8ecc9764366dc"
+    },
+    {
+      "path": "fixture/Plugin.v3.tsx",
+      "bytes": 749,
+      "sha256": "b216ba7b3168480212eb8b4f992347e07adab0ef468303fafe4acb8cb9f6839b"
+    },
+    {
+      "path": "fixture/Plugin.v4.tsx",
+      "bytes": 749,
+      "sha256": "07409a0e786f326cd7d65317cf3a0337b9f21645f77bcb64b886e6c654bd2243"
+    },
+    {
+      "path": "fixture/index.html",
+      "bytes": 197,
+      "sha256": "5b26a89b9afe54fea5c77a8860ec5a0c6d908815afdbf0c00d2b7a26d20b9d50"
+    },
+    {
+      "path": "fixture/main.tsx",
+      "bytes": 246,
+      "sha256": "2d6bcccf78d3fc6fc826be4ad3a47c22f041b243bfdf7275c9b55d0876bc2415"
+    },
+    {
+      "path": "fixture/probe.ts",
+      "bytes": 526,
+      "sha256": "d36b595715a051f09383d8fbf8e4e9c8e85456aa663944ea05937fd1b3b45c36"
+    },
+    {
+      "path": "fixture/volatile.broken.ts",
+      "bytes": 141,
+      "sha256": "36fca33603e193e850a129ad7a6404fefdc218760837bf8d925f34ba2bcd9f21"
+    },
+    {
+      "path": "fixture/volatile.ts",
+      "bytes": 44,
+      "sha256": "72c2ac644c7dc50abea6e638da8ad4e4b15276166412594eb8cbaf31fceac960"
+    },
+    {
+      "path": "fixture/volatile.v1.ts",
+      "bytes": 616,
+      "sha256": "990daa62df1868692dcddc0e78d866348864413d3aca46bbbf2ca48ef21ff8f2"
+    },
+    {
+      "path": "fixture/volatile.v3.ts",
+      "bytes": 616,
+      "sha256": "4600322788605ed37c2c6d1a0f56fbdd8299dcac6489ca025f21d7b66a09845e"
+    },
+    {
+      "path": "package.json",
+      "bytes": 557,
+      "sha256": "27ddbf31db0e3ff09d699460106314b172b11dff0829f6843855f4404b4e70ca"
+    },
+    {
+      "path": "plan.md",
+      "bytes": 3882,
+      "sha256": "9d463b54c4eb9be4a5af0286b9eb8ed7926f1fc4d7a46da639c96815a46c0648"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 27162,
+      "sha256": "a54aa653a90119f8cca9d8da6c7507de17e43e27f46f2ce1c10647fd5ea450e3"
+    },
+    {
+      "path": "tsconfig.json",
+      "bytes": 594,
+      "sha256": "a6dd912ba4ca00935629e593a33ba3908a3c6fb0d4c9086c12767f841b993f76"
+    }
+  ]
+}

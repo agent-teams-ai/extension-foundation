@@ -1,0 +1,186 @@
+{
+  "researchDate": "2026-11-22",
+  "timezone": "Europe/Kiev",
+  "run": {
+    "id": 45033310718,
+    "attempt": 1,
+    "head": "bbff6146693fdf6eca320efbb6b67a6ef7a6be1d",
+    "url": "https://github.com/agent-teams-ai/extension-foundation/actions/runs/45033310718",
+    "conclusion": "failure",
+    "jobId": 137241448742
+  },
+  "artifact": {
+    "id": 14758428722,
+    "file": "standalone-live-library-browser-attempt1-20261122.zip",
+    "bytes": 76884,
+    "sha256": "d0818be500ebf20631e69c6bac5ca934c1c1a1d15ecce2ee41976657f4a7af6d"
+  },
+  "input": {
+    "file": "standalone-live-library-browser-input-20261122.tar.gz",
+    "bytes": 16829,
+    "sha256": "f34fa84596ccf743bcf90cc033d33baaf7c49486f46ec3928c271d4cdb96ee28"
+  },
+  "workflowSha256": "510d0a9ffbb923410e70742e5b5162fa006a696a6c06b26af964c05d9afbf28b",
+  "inputFilesVerified": 16,
+  "runtime": {
+    "node": "24.22.3",
+    "chromium": "159.0.8154.6",
+    "typescript": "7.0.2"
+  },
+  "testResult": {
+    "tests": 1,
+    "passed": 0,
+    "failed": 1,
+    "skipped": 0,
+    "comparisonsReached": 31,
+    "comparisonsMatched": 31,
+    "completedPhases": [
+      "compatible-native-hmr",
+      "hook-signature-remount"
+    ],
+    "failure": "Timeout waiting for repaired v4 useful output after actual candidate evaluation failure; native watcher and hot-updated log appeared but usable v3 remained."
+  },
+  "observed": [
+    "Compatible HMR and hook-signature remount retained host draft/history/focus/selection",
+    "After rejecting import, new edits and Undo still used v3",
+    "Repaired source did not become usefully active before 15-second observation timeout"
+  ],
+  "inferenceStatus": "Cause under source investigation; no rerun or successful recovery claimed",
+  "members": [
+    {
+      "path": "evidence/final-page.png",
+      "bytes": 28284,
+      "sha256": "2153a2360cd7e2b77be188e08077547d052ae173244a50f98361d6a557f8664b"
+    },
+    {
+      "path": "evidence/hosted-browser-install.log",
+      "bytes": 17638,
+      "sha256": "e501d3d00222556e964a8c240d42873799e210024ee527ff40a9006c43a440ff"
+    },
+    {
+      "path": "evidence/hosted-environment.txt",
+      "bytes": 17,
+      "sha256": "92d8a2199a84055aeb15998c3d5df8df5787b2a93f9cfa0bdcb57cb1de2825bb"
+    },
+    {
+      "path": "evidence/fixture-final-source.json",
+      "bytes": 1243,
+      "sha256": "76b65d4cfab516f76439699f41fee2676b6ca6e876827fd6a8a071e086e752e2"
+    },
+    {
+      "path": "evidence/hosted-input-receipt.json",
+      "bytes": 376,
+      "sha256": "d4937e7a8dcfb59f4f496c4c62491c3646461a4ec251734e4c29c91b4ce3ad27"
+    },
+    {
+      "path": "evidence/hosted-install.log",
+      "bytes": 818,
+      "sha256": "e56516c50a05f6a09fd9782be1969e250c2f06b18596bb3cd6aec457d1bf3cf4"
+    },
+    {
+      "path": "evidence/hosted-runtime.log",
+      "bytes": 7744,
+      "sha256": "aece2ca8027474626ad636d62fb8fe181d74befeaf7e1884e11169e211b163e6"
+    },
+    {
+      "path": "evidence/hosted-typecheck.log",
+      "bytes": 54,
+      "sha256": "ace66e11637f9a69a84d1178767cd9bb91010501ece0296cbc7ae8b32f5ed8a2"
+    },
+    {
+      "path": "evidence/installed-direct-identities.json",
+      "bytes": 262,
+      "sha256": "705aa41817db3482e67101e161c7a948f1e1e5eef49d48b8ac4c8626d053fcd3"
+    },
+    {
+      "path": "evidence/observations.json",
+      "bytes": 8643,
+      "sha256": "e6ad224bd434dcd362ca0557b715db7dd54b79f48a3c3574a4d7f4ec027dd563"
+    },
+    {
+      "path": "evidence/rejected-candidate.png",
+      "bytes": 28293,
+      "sha256": "bc111e5622856c2f2584e8b0a4d000b49c3d71e8aec4389caafac8a7517741b7"
+    },
+    {
+      "path": "fixture/Host.tsx",
+      "bytes": 1671,
+      "sha256": "a802e9a2141016ab780ff65b080efa00f33bef66a7110a9463dc6639fe549cec"
+    },
+    {
+      "path": "fixture/Plugin.reject.tsx",
+      "bytes": 448,
+      "sha256": "70b651e8f1bd138649dfbd323eba34eb54b43f5276a2639440f8acef318485aa"
+    },
+    {
+      "path": "fixture/Plugin.tsx",
+      "bytes": 1085,
+      "sha256": "f4f3105e0bbaa6891c18f0f28ab0cb13ea2396bcb24837c5cff6d19a56727635"
+    },
+    {
+      "path": "fixture/Plugin.v1.tsx",
+      "bytes": 1085,
+      "sha256": "f4f3105e0bbaa6891c18f0f28ab0cb13ea2396bcb24837c5cff6d19a56727635"
+    },
+    {
+      "path": "fixture/Plugin.v2.tsx",
+      "bytes": 1099,
+      "sha256": "e0c3bf7d10d3052295e7d6a7fc59a4a7ad1114b309c4afcbc105c55bf593655f"
+    },
+    {
+      "path": "fixture/Plugin.v3.tsx",
+      "bytes": 1185,
+      "sha256": "2e408c82fbec49937bc9233f42164069558d688c92c6e79785c5d531df9cc097"
+    },
+    {
+      "path": "fixture/Plugin.v4.tsx",
+      "bytes": 1186,
+      "sha256": "d46a4cecd3c9fc75f960f394e25681def97ee92f8101da66ba3ffd6fd35c34e9"
+    },
+    {
+      "path": "fixture/index.html",
+      "bytes": 197,
+      "sha256": "5b26a89b9afe54fea5c77a8860ec5a0c6d908815afdbf0c00d2b7a26d20b9d50"
+    },
+    {
+      "path": "fixture/main.tsx",
+      "bytes": 237,
+      "sha256": "b006b843f27869029c23325465de08f5946d11254fc50a5c75d6fa3cca89c2fe"
+    },
+    {
+      "path": "fixture/probe.ts",
+      "bytes": 669,
+      "sha256": "b2cbcc619451a0d63b05a8a7d7fa6195fd9c530d05ae7e69e2a1f09ba6309034"
+    },
+    {
+      "path": "fixture/state.ts",
+      "bytes": 761,
+      "sha256": "147314dacc2ed3d5d7eda24dedabaa4f0e0b5e04f8f851a23a469ac1f7b4ee5e"
+    },
+    {
+      "path": "browser.test.ts",
+      "bytes": 14440,
+      "sha256": "dfc43599657f016986fe6320c0276badbc80aaeeda2828d8982b1a25b2ffae4c"
+    },
+    {
+      "path": "package.json",
+      "bytes": 590,
+      "sha256": "69c563a9aa6c33b66c77f8703706a2f55c4e01789eca4768066eb904468a54e5"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 27893,
+      "sha256": "bf60f9609153a5c2496ef757cbec93f4e70916d2646bc05a25813e05f976cce4"
+    },
+    {
+      "path": "tsconfig.json",
+      "bytes": 594,
+      "sha256": "a6dd912ba4ca00935629e593a33ba3908a3c6fb0d4c9086c12767f841b993f76"
+    },
+    {
+      "path": "plan.md",
+      "bytes": 3009,
+      "sha256": "ad53f52123d8b02e8d9bd64aa63671d80f0b29012e872c52a257d21cce03ffe4"
+    }
+  ]
+}

@@ -2,6 +2,25 @@
   "schemaVersion": 2,
   "scenarios": [
     {
+      "id": "research",
+      "type": "research",
+      "intent": {
+        "id": "research.qualification",
+        "title": "Qualification Research",
+        "owner": "architecture/tooling",
+        "summary": "Qualifies research creation separately from architecture decisions."
+      },
+      "expected": {
+        "documentPath": "docs/research/qualification-research.md",
+        "metadataStorage": "frontmatter",
+        "reachability": {
+          "state": "manual-required",
+          "indexPath": "docs/README.md",
+          "markdownLink": "[Qualification Research](research/qualification-research.md)"
+        }
+      }
+    },
+    {
       "id": "adr",
       "type": "adr",
       "intent": {

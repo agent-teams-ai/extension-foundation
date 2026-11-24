@@ -1,0 +1,534 @@
+{
+  "researchDate": "2026-11-22",
+  "timezone": "Europe/Kiev",
+  "checkpoint": "7",
+  "lanes": {
+    "versions": {
+      "researchDate": "2026-11-22",
+      "status": "complete",
+      "findings": [
+        {
+          "id": "VF01",
+          "title": "Retirement needs separate runtime, work and historical-code frontiers",
+          "evidenceClass": "documented behavior; proposed transfer",
+          "sources": [
+            "V01",
+            "V03",
+            "V10",
+            "V12"
+          ],
+          "goodPattern": "Expose no-new-work, no-running-pins, cleanup-complete and historical/replay/query retention as separate observations with an owner and age.",
+          "badPattern": "Delete a deployment or report full retirement solely because an open-operation count reaches zero.",
+          "counterexample": "Temporal Drained can coexist with closed-workflow query demand inside retention; delayed reclamation callbacks can remain pending.",
+          "qualification": "Close last ordinary operation, then query retained history and test actual supported behavior after executor stop; delay cleanup separately."
+        },
+        {
+          "id": "VF02",
+          "title": "Code pinning does not pin shared state or every remote dependency",
+          "evidenceClass": "documented behavior; proposed transfer",
+          "sources": [
+            "V01",
+            "V03",
+            "V07"
+          ],
+          "goodPattern": "State owner declares mixed-version readers/writers; dependency contract records independent remote versioning boundaries.",
+          "badPattern": "Treat invocation deployment pin as a global snapshot of every service and persistent record.",
+          "counterexample": "Restate Virtual Object state survives versions; Temporal Independent Activities use their own Task Queue version.",
+          "qualification": "Hold v1 while v2 writes shared schema; issue an independent downstream call after downstream rollout; require explicitly chosen compatibility or rejection."
+        },
+        {
+          "id": "VF03",
+          "title": "A recovery strategy must keep its durable identity across restart",
+          "evidenceClass": "release-pinned-documentation-and-inspected-source-tests",
+          "sources": [
+            "V19",
+            "V20",
+            "V21",
+            "V25",
+            "V26"
+          ],
+          "goodPattern": "Own one update attempt identity and persist the exact snapshot/replay selection before executing it; distinguish pending retry from terminal failure.",
+          "badPattern": "After restart reselect whatever latest snapshot or revision is now available and call it the original attempt.",
+          "counterexample": "Golem v1.6 documentation selects baseline when queued update runs and durably retains that selection; automatic and manual modes have different stopping boundaries.",
+          "qualification": "Released selection code and named upstream integration tests corroborate the mechanism. Those tests were not executed; no Golem service was started."
+        },
+        {
+          "id": "VF04",
+          "title": "Bound retention and backlog without inventing completion",
+          "evidenceClass": "documented behavior; proposed transfer",
+          "sources": [
+            "V03",
+            "V11",
+            "V12"
+          ],
+          "goodPattern": "Account retained generations, operations and cleanup separately; use admission/backpressure or explicit supported cancel/restart policy.",
+          "badPattern": "Keep unlimited old versions for perfect draining, or reclaim after a timer while readers still own resources.",
+          "counterexample": "A stalled RCU reader blocks grace periods; update callbacks can accumulate faster than reclamation. Restate recommends bounded handler durations because old endpoints must remain available.",
+          "qualification": "Hold a real reader/stream while repeatedly preparing versions; prove candidate admission is bounded and old resource remains valid."
+        },
+        {
+          "id": "VF05",
+          "title": "A CLI drain preflight is not a server-side safe-deletion transaction",
+          "evidenceClass": "inspected-released-implementation-and-test",
+          "sources": [
+            "V17",
+            "V18"
+          ],
+          "goodPattern": "Expose whether a backend enforces graceful deletion; finish stop-admission and retention checks through its existing authority.",
+          "badPattern": "Display a preflight as an atomic retirement guarantee or invoke force behind a generic safe-delete abstraction.",
+          "counterexample": "Restate 1.8.1 CLI checks deployment status then sends force=true; server rejects force=false, and bulk_delete_validation asserts that rejection.",
+          "qualification": "Upstream tests inspected, not executed. A concurrent schema/routing change between query and delete is a proposed negative probe, not a reproduced incident."
+        },
+        {
+          "id": "VF06",
+          "title": "Delete propagation and reactivation can race even when the public state machine looks simple",
+          "evidenceClass": "inspected-released-implementation",
+          "sources": [
+            "V14",
+            "V15"
+          ],
+          "goodPattern": "Use the existing authority's ordered transition/revision controls; retain tombstones or serialize unversioned forget propagation with republish.",
+          "badPattern": "Treat deleting the local routing entry as globally completed cleanup, then immediately revive the same identity.",
+          "counterexample": "Temporal serializes outstanding propagation before forgetting; relevant history-version/reactivation branches wait for delete propagation because the deleted flag lacks revision protection. Other version data has revision protection.",
+          "qualification": "Inspect TestDeleteVersion_ThenRecreateByPolling and race branches; no Temporal server started."
+        },
+        {
+          "id": "VF07",
+          "title": "Native context tracking is usable; resource lifetime and revocation remain separate",
+          "evidenceClass": "executed-native-probe",
+          "sources": [
+            "V24",
+            "V30"
+          ],
+          "goodPattern": "Capture a frozen operation identity at admission and bind delayed continuation or iterator consumption where context would otherwise be chosen again.",
+          "badPattern": "Assume snapshot clones the store, bind all future user actions to the registration version, or treat context as an ownership lease.",
+          "counterexample": "5/5 native cases: mutable snapshot reflects mutation; unbound iterator uses consumer context; bound old context survives native file close while read fails EBADF.",
+          "qualification": "Node 24.22.3 only; process/worker/browser propagation and cancellation not exercised. Runtime ownership must remain with the host's existing lifetime mechanism."
+        },
+        {
+          "id": "VF08",
+          "title": "A cleanup callback can require old code after all its readers have finished",
+          "evidenceClass": "primary-documentation-and-source-inspection",
+          "sources": [
+            "V10",
+            "V11",
+            "V27",
+            "V29"
+          ],
+          "goodPattern": "Expose distinct receipts for operations quiescent and callback/resource cleanup completed; stop re-enqueuing producers before the final cleanup barrier.",
+          "badPattern": "Free the runtime on readers-zero or claim a timeout proves cleanup; wait for finalization while a callback can enqueue more work.",
+          "counterexample": "Linux module unload needs rcu_barrier after blocking new callbacks; synchronize_rcu alone does not wait for callbacks. Crossbeam defer_destroy gives no deadline.",
+          "qualification": "Analogy for lifecycle obligations, not a TS RCU implementation or proof of JS memory-order requirements."
+        },
+        {
+          "id": "VF09",
+          "title": "Compatibility policy and version preference are separate decisions",
+          "evidenceClass": "inspected-released-implementation-and-test",
+          "sources": [
+            "V07",
+            "V08",
+            "V22",
+            "V23",
+            "V28",
+            "V32"
+          ],
+          "goodPattern": "Select among versions whose declared contract/schema compatibility is accepted; separately decide minimum/latest/cohort preference and per-session pin.",
+          "badPattern": "Treat numeric version order or semver range as evidence that saved state and all operations can be replayed.",
+          "counterexample": "Orleans default backward director tests requestedVersion <= currentVersion; MinimumVersion then chooses minimum accepted available number. Metadata cannot infer application semantics.",
+          "qualification": "Upstream UpgradeTests inspected only. Require mixed old/new reader-writer qualification for the actual plugin state."
+        }
+      ],
+      "timezone": "UTC"
+    },
+    "feedback": {
+      "researchDate": "2026-11-22",
+      "status": "completed lane; native qualification and limits recorded",
+      "findings": [
+        {
+          "id": "FB01",
+          "title": "Force registration does not attest application retirement",
+          "sources": [
+            "F01",
+            "F10",
+            "F17"
+          ],
+          "status": "pinned source inspected; historical issue not reproduced",
+          "action": "Reuse runtime loader and hooks; preserve immutable entry/chunk/dependency identity and separate owner cleanup.",
+          "applicability": "Remote modules with shared-runtime closure under a real federation bundler.",
+          "falsifier": "Load both releases; invoke a retained old export; trace chunk identities and shared provider selection; inspect actual owner resources."
+        },
+        {
+          "id": "FB02",
+          "title": "Timeout rejection does not stop the underlying lifecycle",
+          "sources": [
+            "F02",
+            "F03",
+            "F18"
+          ],
+          "status": "pinned source inspected",
+          "action": "Expose stalled cleanup and eventual completion separately; keep actual cleanup owner.",
+          "applicability": "Application/parcel lifecycle composition, not arbitrary capability functions.",
+          "falsifier": "Delay unmount past deadline, then release it; inspect late effects after wrapper rejection."
+        },
+        {
+          "id": "FB03",
+          "title": "Undo capture can span a version boundary",
+          "sources": [
+            "F04",
+            "F09",
+            "P01"
+          ],
+          "status": "confirmed released Yjs public API; strict TypeScript 7.0.2",
+          "nativeCases": [
+            2
+          ],
+          "action": "Keep stable document/history owner and deliberately stop capture at meaningful semantic boundaries.",
+          "applicability": "Compatible collaborative document schema and retained UndoManager.",
+          "falsifier": "Adjacent edits from different tracked origins yield one undo entry unless stopCapturing is called."
+        },
+        {
+          "id": "FB04",
+          "title": "History-origin filtering and destroy are not write authorization",
+          "sources": [
+            "F04",
+            "F05",
+            "F13",
+            "P01"
+          ],
+          "status": "confirmed released API, including deliberate post-destroy misuse negative control",
+          "nativeCases": [
+            3,
+            7
+          ],
+          "action": "Validate authority before mutation at the state owner; avoid giving retired plugins raw mutable document references.",
+          "applicability": "A plugin/state adapter with control over the real mutation ingress; no in-process sandbox claim.",
+          "falsifier": "Removed origin or destroyed retained text can still change document and the changes transfer to a peer."
+        },
+        {
+          "id": "FB05",
+          "title": "Exact view disposal can preserve draft and undo history",
+          "sources": [
+            "P01"
+          ],
+          "status": "confirmed real observer/history APIs",
+          "nativeCases": [
+            1
+          ],
+          "action": "View owns exact subscriptions; document/history owner outlives compatible views.",
+          "applicability": "Compatible shared document; not proof of DOM or renderer behavior.",
+          "falsifier": "Retired observer receives a later edit, or undo state is lost when only the binding changes."
+        },
+        {
+          "id": "FB06",
+          "title": "Document restoration does not restore local UndoManager history",
+          "sources": [
+            "P01"
+          ],
+          "status": "confirmed real public binary encoding and merge",
+          "nativeCases": [
+            4,
+            5
+          ],
+          "action": "Expose content restore, history reset/retention, and draft discard as distinct policies.",
+          "applicability": "Current Yjs document codec; not a claim that another history persistence layer is impossible.",
+          "falsifier": "Restore content to a fresh document/history and inspect undo availability before accepting session continuity."
+        },
+        {
+          "id": "FB07",
+          "title": "Relative cursor state handles compatible sequence edits",
+          "sources": [
+            "F12",
+            "P01"
+          ],
+          "status": "confirmed public relative-position codec and real peer update",
+          "nativeCases": [
+            6
+          ],
+          "action": "Use existing editor/CRDT binding when needed; handle null resolution explicitly.",
+          "applicability": "Sequence-relative positions in supported document types; no IME/focus/render qualification.",
+          "falsifier": "Remote prepend shifts numeric index while encoded relative position preserves logical end; deletion of referenced type needs fallback."
+        },
+        {
+          "id": "FB08",
+          "title": "Fallback load success is not requested candidate readiness",
+          "sources": [
+            "F01",
+            "F11"
+          ],
+          "status": "pinned load path plus official hooks inspected",
+          "action": "Expose original error and recovered fallback; candidate, selected provider, and useful output remain distinct.",
+          "applicability": "Loader hooks expose these facts; semantic readiness remains product-defined.",
+          "falsifier": "A failed real remote resolves to fallback while diagnostics incorrectly claim candidate ready."
+        },
+        {
+          "id": "FB09",
+          "title": "Active code removal needs explicit eligibility and a supported fallback boundary",
+          "sources": [
+            "F06",
+            "F08",
+            "F16"
+          ],
+          "status": "pinned VS Code path and official runtime profiles",
+          "action": "Advertise capability/host eligibility and actual restart consequences; keep browser and Node execution profiles explicit.",
+          "applicability": "IDE host architecture as reference, not embedding VS Code as a generic library.",
+          "falsifier": "Restart the chosen host with dirty documents and work; compare the actual surviving state to the preview."
+        },
+        {
+          "id": "FB10",
+          "title": "Compile-time DI modules and runtime-installed extensions are different units",
+          "sources": [
+            "F14",
+            "F15"
+          ],
+          "status": "official Theia documentation, including deprecated page warning",
+          "action": "Separate composition modules from API-bound runtime plugins; do not use legacy direct-UI plugin examples as compatibility commitments.",
+          "applicability": "Architecture analogy; Theia implementation was not executed.",
+          "falsifier": "Attempt dynamic replacement through the chosen supported extension API and verify the claimed boundary."
+        },
+        {
+          "id": "FB11",
+          "title": "Custom-element registries do not provide arbitrary redefinition",
+          "sources": [
+            "F07"
+          ],
+          "status": "normative specification inspected; browser matrix not executed",
+          "action": "Use supported fresh subtree/registry or generation tag when Web Components fit; qualify move/disconnect behavior.",
+          "applicability": "Product browser matrix and chosen component mechanism.",
+          "falsifier": "Repeat define, preserve/move existing element, and inspect reactions in every supported browser."
+        },
+        {
+          "id": "FB12",
+          "title": "Diagnostic status must remain a bounded read-only projection",
+          "sources": [
+            "F11",
+            "P01"
+          ],
+          "status": "design inference informed by loader provenance and state-owner probe",
+          "action": "Use owner revisions, snapshots, coalesced component status, and bounded diagnostics; commands return to authority.",
+          "applicability": "Existing telemetry/event/state owners, no second manager or state store.",
+          "falsifier": "After out-of-order events or reconnect, projection should resync and cannot authorize an obsolete transition."
+        },
+        {
+          "id": "FB13",
+          "title": "Rollback selects code; Undo changes content",
+          "sources": [
+            "P01"
+          ],
+          "status": "design inference; no migration or rollback protocol executed",
+          "action": "Retain old artifact eligibility separately from current document/history/schema compatibility.",
+          "applicability": "Versioned implementation updates with live user drafts.",
+          "falsifier": "Old code must reject incompatible current state or use an explicit migration; undo must not accidentally select implementation."
+        },
+        {
+          "id": "FB14",
+          "title": "Old artifacts, documents, history, views, and executors need distinct retention",
+          "sources": [
+            "F04",
+            "F05",
+            "P01"
+          ],
+          "status": "design requirement; no prolonged-edit memory measurement",
+          "action": "Use existing owners to define budgets and pin reasons; release views without clearing user content or unlimited history retention.",
+          "applicability": "Product-specific memory and rollback policy.",
+          "falsifier": "Prolonged editing and repeated replacement should expose retained owner counts and explicit pin reasons; no leak-free claim follows from seven cases."
+        }
+      ]
+    },
+    "boundaries": [
+      {
+        "id": "B01",
+        "status": "verified",
+        "finding": "Separate-library direction matches current organization library-first policy; old integration-only estimates are not estimates of the library.",
+        "evidence": [
+          "O1",
+          "P1"
+        ],
+        "consequence": "Record a successor owner decision, retaining single-owner lifecycle/authority boundaries."
+      },
+      {
+        "id": "B02",
+        "status": "verified",
+        "finding": "New production repositories require full FMS v1.1 and real Foundation/native gates at the first reviewed bootstrap; SDK/library is not an exemption.",
+        "evidence": [
+          "O4",
+          "O2"
+        ],
+        "consequence": "A research checkpoint can precede production bootstrap but cannot claim production admission based on documentation links."
+      },
+      {
+        "id": "B03",
+        "status": "verified",
+        "finding": "Feature ownership is mandatory; feature=package and empty architecture scaffolding are not.",
+        "evidence": [
+          "O2"
+        ],
+        "consequence": "Start a small number of cohesive modules with real features, split Effect/runtime adapters only at real dependency or lifetime boundaries."
+      },
+      {
+        "id": "B04",
+        "status": "verified",
+        "finding": "Get Modular native Effect construction is optional and distinct from ordinary Promise construction; app-native Effect adoption is separate.",
+        "evidence": [
+          "G1",
+          "G2",
+          "G5",
+          "G7"
+        ],
+        "consequence": "Keep neutral data/authority contracts and ordinary TypeScript external consumers; add an optional native Effect execution surface without inventing a universal Task/Fiber/Scope abstraction."
+      },
+      {
+        "id": "B05",
+        "status": "verified",
+        "finding": "Resources cooperative cleanup debt/retry and native Effect Scope/finalizer semantics are different contracts.",
+        "evidence": [
+          "G1",
+          "G3",
+          "G7"
+        ],
+        "consequence": "Runtime capability profiles must not strengthen backend guarantees; separate revocation, operation settlement, stop observation, physical cleanup and unresolved effects."
+      },
+      {
+        "id": "B06",
+        "status": "verified",
+        "finding": "Private lifecycle kernel owns single-agent synchronous generation/lease bookkeeping only and is not a released general runtime.",
+        "evidence": [
+          "G4"
+        ],
+        "consequence": "Do not copy/deep-import; official public-owner route or explicit blocked capability before production use."
+      },
+      {
+        "id": "B07",
+        "status": "verified",
+        "finding": "Layer memoization uses Layer identity in MemoMap. Fresh Scope and fresh GM mapper identities do not clone borrowed values or private captured Layers.",
+        "evidence": [
+          "E4",
+          "G7",
+          "G8"
+        ],
+        "consequence": "Generation-specific configuration/state and deliberately shared application resources require explicit identity/ownership."
+      },
+      {
+        "id": "B08",
+        "status": "verified",
+        "finding": "RcMap owner close closes currently indexed entries irrespective of refCount; invalidate removes the old entry and defers closing while references remain.",
+        "evidence": [
+          "E1"
+        ],
+        "consequence": "A cache/refcount mechanism is not the whole generation-retention authority; avoid duplicate authoritative counts."
+      },
+      {
+        "id": "B09",
+        "status": "verified",
+        "finding": "ManagedRuntime disposal completion Deferred is completed with Exit.void in ensuring, so later dispose does not replay first close failure.",
+        "evidence": [
+          "E2"
+        ],
+        "consequence": "A stable portable terminal receipt must preserve the first observed outcome; do not imply retryable Effect Scope cleanup."
+      },
+      {
+        "id": "B10",
+        "status": "verified",
+        "finding": "XState5.33.4 pure transition API collects actions without running them; Promise actors abort and ignore later resolve/reject when stopped.",
+        "evidence": [
+          "X1",
+          "X2",
+          "X4",
+          "D1",
+          "D2"
+        ],
+        "consequence": "Pure statechart engine is a conditional reuse candidate; live actor stop cannot own late foreign acquisition cleanup by itself."
+      },
+      {
+        "id": "B11",
+        "status": "recommendation",
+        "finding": "Start one portable module with planning/replacement/observation features; split real runtime and optional native dependency lifecycles, not every feature into a package.",
+        "evidence": [
+          "O1",
+          "O2",
+          "G7"
+        ],
+        "consequence": "Preserve one update policy and existing authority/resource owners; grow from an external-consumer vertical slice."
+      },
+      {
+        "id": "B12",
+        "status": "recommendation",
+        "finding": "Ordinary and native Effect profiles may share finite domain-specific update facts/decisions; avoid both Promise-erasing native semantics and a universal task DSL.",
+        "evidence": [
+          "G1",
+          "G5",
+          "G7",
+          "X2"
+        ],
+        "consequence": "Select two execution drivers only if two real consumers demonstrate the requirement; qualify cross-driver conformance."
+      },
+      {
+        "id": "B13",
+        "status": "verified_metadata_only",
+        "finding": "Registry metadata confirms @get-modular/effect0.1.1 with exactEffect4.1.4 and Core/Assembly^0.8.0 peers.",
+        "evidence": [
+          "R1"
+        ],
+        "consequence": "Do not conflate existence metadata with installed artifact or production behavior qualification."
+      },
+      {
+        "id": "B14",
+        "status": "verified",
+        "finding": "Current stable XState tag inspected is5.33.4;v6 persistence documentation is beta and has different APIs.",
+        "evidence": [
+          "X3",
+          "R3",
+          "D3",
+          "D4"
+        ],
+        "consequence": "Do not mix release profiles or infer transactional external-effect recovery from persisted actor snapshots."
+      },
+      {
+        "id": "B15",
+        "status": "estimate",
+        "finding": "First portable one-mode/one-runtime library band:P900–1800/I500–1000/T1800–3500/docs-tooling600–1200, estimateconfidence4/10; incremental adapter/native/durable bands separate.",
+        "evidence": [
+          "O1",
+          "P1"
+        ],
+        "consequence": "OldP0/I150–350 estimate is integration-only; all bands are planning judgments, not measuredLOC/reliability."
+      }
+    ],
+    "browser": [
+      {
+        "id": "BR01",
+        "status": "native-observed-failure",
+        "finding": "Vite hot-updated notification after a repaired module did not establish useful v4 rendering after an evaluation failure in this exact fixture.",
+        "evidence": "standalone-live-library-browser-attempt1-20261122.json",
+        "consequence": "Require useful generation acknowledgement; define supported recovery/restart after rejected evaluation.",
+        "limits": "One exact native development-HMR run. Source-supported callback-registration explanation retained; explicit public recovery qualification is a separate v2 experiment."
+      },
+      {
+        "id": "BR02",
+        "status": "native-observed-explicit-recovery",
+        "finding": "A repaired module can register acceptance while its current update has already captured an empty callback list. Public Vite reloadModule can request a separate HMR application without implementing another accept protocol.",
+        "evidence": [
+          "HMR01",
+          "HMR02",
+          "HMR03",
+          "HMR04",
+          "standalone-live-library-browser-input-20261122-v2.manifest.json",
+          "standalone-live-library-browser-v2-attempt1-20261122.json"
+        ],
+        "consequence": "Expose recovery as an explicit action with its own useful-generation acknowledgement and state/history contract; preserve direct-repair failure separately.",
+        "limits": "V2 first native run succeeded: one test, three phases,49 comparisons, exactlyone explicit public reloadModule. Exact module-body failure fixture, not all HMR errors or production replacement."
+      },
+      {
+        "id": "BR03",
+        "status": "recommendation-from-native-observation",
+        "finding": "The explicit recovery reevaluates the repaired module. Its transport receipt, request completion and useful view acknowledgement have distinct identities.",
+        "evidence": [
+          "standalone-live-library-browser-v2-attempt1-20261122.json",
+          "HMR01",
+          "HMR03"
+        ],
+        "consequence": "Expose the recovery action and its state/history consequences; require an explicit effect-safety policy before automatically repeating side-effectful preparation.",
+        "limits": "No arbitrary external-effect rollback or idempotency guarantee follows from this UI fixture."
+      }
+    ]
+  }
+}

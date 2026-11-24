@@ -1,0 +1,112 @@
+{
+  "archive": {
+    "file": "standalone-live-library-browser-input-20261122-v2.tar.gz",
+    "bytes": 18520,
+    "sha256": "ccfb6d1e509576712d21aa34156e37264997bf355efc55e97df235667c6d1e8f"
+  },
+  "files": [
+    {
+      "path": "browser.test.ts",
+      "bytes": 17612,
+      "sha256": "9f627f1ffaba191ff1bd1f1cd2d1d97b008f7a00f7825951ba11827532d07205"
+    },
+    {
+      "path": "fixture/Host.tsx",
+      "bytes": 1671,
+      "sha256": "a802e9a2141016ab780ff65b080efa00f33bef66a7110a9463dc6639fe549cec"
+    },
+    {
+      "path": "fixture/Plugin.reject.tsx",
+      "bytes": 448,
+      "sha256": "70b651e8f1bd138649dfbd323eba34eb54b43f5276a2639440f8acef318485aa"
+    },
+    {
+      "path": "fixture/Plugin.tsx",
+      "bytes": 1085,
+      "sha256": "f4f3105e0bbaa6891c18f0f28ab0cb13ea2396bcb24837c5cff6d19a56727635"
+    },
+    {
+      "path": "fixture/Plugin.v1.tsx",
+      "bytes": 1085,
+      "sha256": "f4f3105e0bbaa6891c18f0f28ab0cb13ea2396bcb24837c5cff6d19a56727635"
+    },
+    {
+      "path": "fixture/Plugin.v2.tsx",
+      "bytes": 1099,
+      "sha256": "e0c3bf7d10d3052295e7d6a7fc59a4a7ad1114b309c4afcbc105c55bf593655f"
+    },
+    {
+      "path": "fixture/Plugin.v3.tsx",
+      "bytes": 1185,
+      "sha256": "2e408c82fbec49937bc9233f42164069558d688c92c6e79785c5d531df9cc097"
+    },
+    {
+      "path": "fixture/Plugin.v4.tsx",
+      "bytes": 1256,
+      "sha256": "10ce73d5fce0e8409438904441d3a3201b31b44e20f21ee61eb8cb133f268a68"
+    },
+    {
+      "path": "fixture/index.html",
+      "bytes": 197,
+      "sha256": "5b26a89b9afe54fea5c77a8860ec5a0c6d908815afdbf0c00d2b7a26d20b9d50"
+    },
+    {
+      "path": "fixture/main.tsx",
+      "bytes": 237,
+      "sha256": "b006b843f27869029c23325465de08f5946d11254fc50a5c75d6fa3cca89c2fe"
+    },
+    {
+      "path": "fixture/probe.ts",
+      "bytes": 1111,
+      "sha256": "423f96ab2aa78313d2875caee7f2b87512f85d95d1a8aac30114a2356c973749"
+    },
+    {
+      "path": "fixture/state.ts",
+      "bytes": 761,
+      "sha256": "147314dacc2ed3d5d7eda24dedabaa4f0e0b5e04f8f851a23a469ac1f7b4ee5e"
+    },
+    {
+      "path": "package.json",
+      "bytes": 590,
+      "sha256": "69c563a9aa6c33b66c77f8703706a2f55c4e01789eca4768066eb904468a54e5"
+    },
+    {
+      "path": "plan.md",
+      "bytes": 4798,
+      "sha256": "add3d1efda944118e0f551507c9d39967e64d24da9250bb5b55bc56cba721694"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 27893,
+      "sha256": "bf60f9609153a5c2496ef757cbec93f4e70916d2646bc05a25813e05f976cce4"
+    },
+    {
+      "path": "tsconfig.json",
+      "bytes": 594,
+      "sha256": "a6dd912ba4ca00935629e593a33ba3908a3c6fb0d4c9086c12767f841b993f76"
+    }
+  ],
+  "scope": {
+    "inputVersion": 2,
+    "testCount": 1,
+    "plannedPhases": 3,
+    "comparisonStatements": 49,
+    "explicitRecoveryRequests": 1,
+    "recoveryApi": "ViteDevServer.reloadModule",
+    "browserExecution": "pending new hosted CI run",
+    "localStrictTypecheckExit": 0,
+    "typescript": "7.0.2"
+  },
+  "preservedFirstAttempt": {
+    "runId": 45033310718,
+    "attempt": 1,
+    "headSha": "bbff6146693fdf6eca320efbb6b67a6ef7a6be1d",
+    "conclusion": "failure",
+    "successfulComparisons": 31,
+    "archive": {
+      "file": "standalone-live-library-browser-input-20261122.tar.gz",
+      "bytes": 16829,
+      "sha256": "f34fa84596ccf743bcf90cc033d33baaf7c49486f46ec3928c271d4cdb96ee28"
+    }
+  }
+}

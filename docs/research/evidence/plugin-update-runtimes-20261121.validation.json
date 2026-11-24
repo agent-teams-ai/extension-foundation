@@ -1,0 +1,1292 @@
+{
+  "schemaVersion": 1,
+  "observationDate": "2026-11-21",
+  "timezone": "Europe/Kiev",
+  "deliveryReviewedAt": "2026-11-21T20:04:53.947536+02:00",
+  "inputCheckpoint": "118e2d226b0daed23e9fdbbbb5c1366da2880ad9",
+  "scope": "Completed research and disposable backend/browser/Component Model qualification; no production runtime, public SPI, package publication or merge adoption.",
+  "archiveSha256": "873a2c7aa48d49211a3d93a2a11d886a8cd46062283c875b4240494fb4e9a184",
+  "manifestSha256": "492dbdefc9d35317d1b9d18bf744e29be4dd020af51a9ccf95e4116288b0574b",
+  "archiveBytes": 17266914,
+  "archiveMembers": 368,
+  "reportSha256": "5452650b76f2907ee2eeaf9023de4a300456d262125dd83d5ba9c38d3401a132",
+  "documentIdentities": {
+    "docs/research/live-update-policies-and-portable-runtimes-2026-11-21.md": "5452650b76f2907ee2eeaf9023de4a300456d262125dd83d5ba9c38d3401a132",
+    "docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md": "642add77406bd48570d8a09d550bb9c8da92bf746fefff3204d8c7ed56d0acfa",
+    "docs/research/plugin-system-research-reference.md": "ac69224faaf4db4d6de1a34a50259230987cea7e881fdb7121c1944c25dace89",
+    "docs/research/plugin-research-review-and-decision-record.md": "d8258bcc21ea768f9127d676e67aabe7749b6a504d9b8bee634e4093cb76cf90"
+  },
+  "unchangedExperimentInputs": {
+    "path": "docs/research/evidence/plugin-update-runtime-input-20261121.tar.gz",
+    "archiveSha256": "b7b6058e4d0d8b95634ee722d272353ab3591ec581f2459b672ea77a37f3b34f",
+    "workflowPath": ".github/workflows/plugin-update-runtime-spikes.yml",
+    "workflowSha256": "99414424a0d85424d36e98473741c2295f69876a384b1c22bba84af7c494acef",
+    "workflowRun": 44924688888,
+    "sourceCommit": "118e2d226b0daed23e9fdbbbb5c1366da2880ad9",
+    "result": "Both native hosted profiles completed successfully; publication only reuses their unchanged frozen inputs."
+  },
+  "backendResult": {
+    "tests": 3,
+    "passed": 3,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "source": "backend-policy/result.json and backend-policy/runtime-final.log inside frozen packet",
+    "resultFileSha256": "0958822811b973c2e93bc09f7720cae469fe84dec60fac869a2d1055ce0db17a"
+  },
+  "browserResult": {
+    "tests": 1,
+    "passed": 1,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "recordedComparisons": 31,
+    "workflowRun": 44924688888,
+    "artifactId": 14715381698,
+    "artifactSha256": "4fefd5316a286b02558405f7a7bf6e6dc601d38767e2d491e3474c4e3ad76c88",
+    "artifactBytes": 168525
+  },
+  "componentResult": {
+    "tests": 1,
+    "passed": 1,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "recordedComparisons": 19,
+    "expectedRejectionMechanisms": 5,
+    "workflowRun": 44924688888,
+    "artifactId": 14715018254,
+    "artifactSha256": "6b9c63e2d604e56e2324b890e61ba4ecd6c9d4d7b4981e4664abd5c6ed6e35a2",
+    "artifactBytes": 7933388
+  },
+  "archiveReview": {
+    "status": "passed",
+    "reviewSha256": "b52d25607df79ba9a314777f67f66f436b1aaf6a979e7bb6a9d0bd529e1fa923",
+    "fullReview": "# Independent frozen evidence archive review — 2026-11-21\n\nReviewer: `/root/frontend_compilation_21`.\n\n**PASS — no custody, inventory or recognizable-secret findings.** This review\nreads the frozen packet and retained originals. It performs no native test\nrerun and changes no archive, manifest, repository document, source input or\nworkflow. This report and its JSON companion are saved outside the packet.\nThe complete Docs Protocol is a separate root-owned validation, not claimed by\nthis custody review.\n\n## Frozen packet identity and safe inventory\n\n`docs/research/evidence/plugin-update-runtimes-20261121.tar.gz`:\n\n- Compressed bytes: **17,266,914**.\n- SHA-256: `873a2c7aa48d49211a3d93a2a11d886a8cd46062283c875b4240494fb4e9a184`.\n- Manifest SHA-256: `492dbdefc9d35317d1b9d18bf744e29be4dd020af51a9ccf95e4116288b0574b`.\n- **368 regular members**, expanded total **18,803,140 bytes**.\n- Largest member: **7,933,388 bytes**, below 8 MiB.\n\nEvery member has a unique normalized relative path, including uniqueness under\ncase folding. No absolute paths, traversal segments, backslashes, drive prefixes,\nlinks or nonregular entries. The member set exactly equals the manifest; every\nsize and SHA-256 matches; every retained member also equals its scratch original\nbyte for byte. No extraction into the repository was required.\n\nThe packet contains no dependency installation/cache, credential-file paths or\nupstream implementation trees. Large Wasm/component binaries and generated\nWasm JavaScript glue occur only inside the original ZIPs; their adjacent custody\nJSON still lists every original entry. Selected decoded inputs, logs, result\nreceipts and generated declarations match their original ZIP bytes. The five\nfiles under `wasm/attribution/` are retained license/attribution material and\nare not misclassified as an upstream implementation tree.\n\n## Six original artifacts retained and fully bound\n\nFor each original ZIP, recomputed size and digest against both the retained\nofficial GitHub artifact metadata and its custody record. Checked unique safe\nZIP paths and no symlinks, then checked every entry's bytes/size/hash against\nthe complete custody list. No ZIP entry is omitted from that list.\n\n| Run | Profile | Artifact ID | ZIP bytes | ZIP entries | Outcome retained |\n| --- | --- | ---: | ---: | ---: | --- |\n| 44922588804 | Frontend | 14714835163 | 168,029 | 41 | Profile passed; whole workflow failed |\n| 44922588804 | Wasm | 14714407273 | 35,517 | 24 | WIT filesystem build failure |\n| 44923955219 | Frontend | 14714054072 | 166,842 | 41 | Profile passed; whole workflow failed |\n| 44923955219 | Wasm | 14714771908 | 7,932,331 | 49 | Build passed; positive host-import control failed |\n| 44924688888 | Frontend | 14715381698 | 168,525 | 41 | Passed |\n| 44924688888 | Wasm | 14715018254 | 7,933,388 | 50 | Passed |\n\nAll six full SHA-256 values and source commit bindings are recorded in\n`archive-review.json`. The final profile results are preserved exactly:\nfrontend 1 E2E / 31 matching comparisons; Wasm 1 E2E / 19 matching comparisons\nand five expected rejections. Both final job conclusions are successful.\nBoth instrumented Wasm compiler-load arrays are empty. The prior two failed\nwhole workflows are not reclassified by the final pass.\n\n## Three input revisions retain their exact source relationships\n\nEvery input tar has 25 safe unique regular source/config members, all checked\nagainst its own manifest. For each associated run/profile, checked the ZIP's\ninput receipt commit/run/attempt/profile and archive digest, exact manifest\ndeclaration, and each source byte: 14 frontend inputs and 11 Wasm inputs.\n\n| Input | Commit | Archive SHA-256 |\n| --- | --- | --- |\n| Attempt 1 | `5d47513f6ef6f19068e7ee1ee711df184ec2d70c` | `e3b288d964bc013a550e03dde625db8b07467c2e5d5fb07c849293c33cd1bffb` |\n| Attempt 2 | `9e06980d0c29b3063a5d13a95288fd76438f9e1a` | `240331483a7da66da60257bbc1aaaf555341d99dd6d8913926fef84b12be4752` |\n| Attempt 3 | `118e2d226b0daed23e9fdbbbb5c1366da2880ad9` | `b7b6058e4d0d8b95634ee722d272353ab3591ec581f2459b672ea77a37f3b34f` |\n\n## Final report, content review and workflow identity\n\nThe repository's final report\n`docs/research/live-update-policies-and-portable-runtimes-2026-11-21.md` is\nbyte-identical to retained `root/review-inputs/root-final.md` and the scratch\nsynthesis. SHA-256:\n`1f6426fe5ee7e2404ae749b94fb2da6150413ee37bb08aa265b8368113b4b082`.\nAll four document hashes in `root/final-docs-input-identities.json` match the\ncurrent repository documents.\n\nThe retained independent final content review has SHA-256\n`e4d30283805708df105d0a1a15da4eeb7d6ea91d271950b204a67f449cc32e2a`.\nThe repository workflow equals its retained copy and the previously reviewed\nworkflow SHA-256\n`99414424a0d85424d36e98473741c2295f69876a384b1c22bba84af7c494acef`.\n\n## Previous research remains unchanged\n\nChecked all five November 14/17/18 tar archives against both current HEAD\n`118e2d226b0daed23e9fdbbbb5c1366da2880ad9` and the initial task commit\n`d1d307f0fdbe99c7f0e985c0b43375972cfa3386` using exact Git blob identities.\nEvery archive matches both baselines. Their SHA-256 values are also recorded in\nthe JSON companion:\n\n- `live-plugin-evolution-20261114.tar.gz`\n- `live-plugin-final-study-20261117.tar.gz`\n- `portable-live-plugins-20261117.tar.gz`\n- `live-application-evolution-20261118.tar.gz`\n- `live-application-browser-input-20261118.tar.gz`\n\n## Bounded secret review and audit limitation\n\nScanned **356 UTF-8 outer members** and **227 UTF-8 entries inside original\nZIPs** for private-key markers, recognizable GitHub/Slack tokens, AWS access\nidentifiers, unmasked authorization values, signed-download credentials and\nassigned authentication secrets. No matches. Forbidden credential/cache/source\ninventory paths also yielded no findings. Masked GitHub job-log credentials are\nnot treated as disclosed secrets. This is a bounded recognizable-pattern and\ninventory review, not a proof that arbitrary secrets cannot exist in another\nencoding or in a binary.\n\nThe first nested audit stopped on the reviewer's attempted lookup of\n`root/synthesis-draft.md`, a duplicate intentionally omitted from the packet.\nThe corrected audit used the actual retained `root/review-inputs/root-final.md`\nand independently compared it with both the repository report and scratch draft.\nThis was a reviewer lookup correction, not a failed product test, missing final\nreport or packet mutation. The successful complete audit records all checks\nabove; no native evidence was rerun.\n",
+    "data": {
+      "reviewer": "/root/frontend_compilation_21",
+      "reviewedAt": "2026-11-21",
+      "scope": "Read-only frozen-packet custody/inventory audit; no native runtime retesting",
+      "packet": {
+        "bytes": 17266914,
+        "sha256": "873a2c7aa48d49211a3d93a2a11d886a8cd46062283c875b4240494fb4e9a184",
+        "manifestSha256": "492dbdefc9d35317d1b9d18bf744e29be4dd020af51a9ccf95e4116288b0574b",
+        "memberCount": 368,
+        "expandedBytes": 18803140,
+        "largestMemberBytes": 7933388,
+        "safeUniqueRegularMembers": true,
+        "allMembersMatchManifestAndScratch": true
+      },
+      "inputRevisions": [
+        {
+          "attempt": 1,
+          "runId": "44922588804",
+          "commit": "5d47513f6ef6f19068e7ee1ee711df184ec2d70c",
+          "archiveBytes": 35126,
+          "archiveSha256": "e3b288d964bc013a550e03dde625db8b07467c2e5d5fb07c849293c33cd1bffb",
+          "manifestSha256": "f2d7c00f515eaec565229768a7a2a112226e6d5aa81330e86537db93e44f730d",
+          "sourceFiles": 25,
+          "archiveAndManifestMatch": true
+        },
+        {
+          "attempt": 2,
+          "runId": "44923955219",
+          "commit": "9e06980d0c29b3063a5d13a95288fd76438f9e1a",
+          "archiveBytes": 35589,
+          "archiveSha256": "240331483a7da66da60257bbc1aaaf555341d99dd6d8913926fef84b12be4752",
+          "manifestSha256": "5df3c142afb16843321665d5532c28b5f0c4e267c18abd1f19b22ee25186555a",
+          "sourceFiles": 25,
+          "archiveAndManifestMatch": true
+        },
+        {
+          "attempt": 3,
+          "runId": "44924688888",
+          "commit": "118e2d226b0daed23e9fdbbbb5c1366da2880ad9",
+          "archiveBytes": 35638,
+          "archiveSha256": "b7b6058e4d0d8b95634ee722d272353ab3591ec581f2459b672ea77a37f3b34f",
+          "manifestSha256": "c4bcf6cebc27a7ff932cc45945654228f9731963f48252f9e40314d46df2a7ee",
+          "sourceFiles": 25,
+          "archiveAndManifestMatch": true
+        }
+      ],
+      "originalZipArtifacts": [
+        {
+          "runId": "44922588804",
+          "profile": "frontend",
+          "artifactId": 14714835163,
+          "sha256": "df946075bf9a1cb1fc27fd8d83d2e721eebdc448ef1ae4c0b315b9e2e26e59c2",
+          "bytes": 168029,
+          "files": 41,
+          "inputFilesBound": 14,
+          "officialMetadataMatch": true,
+          "custodyAllEntriesMatch": true
+        },
+        {
+          "runId": "44922588804",
+          "profile": "wasm",
+          "artifactId": 14714407273,
+          "sha256": "d9537a28b013c383faa6c1dac0ff6d12ea47b0001ddc86f58a14cccb0999b607",
+          "bytes": 35517,
+          "files": 24,
+          "inputFilesBound": 11,
+          "officialMetadataMatch": true,
+          "custodyAllEntriesMatch": true
+        },
+        {
+          "runId": "44923955219",
+          "profile": "frontend",
+          "artifactId": 14714054072,
+          "sha256": "764230d8139df4b227fc351a5cbe4556674d4f73ff3ccd1c3db2e203f6a3b3cd",
+          "bytes": 166842,
+          "files": 41,
+          "inputFilesBound": 14,
+          "officialMetadataMatch": true,
+          "custodyAllEntriesMatch": true
+        },
+        {
+          "runId": "44923955219",
+          "profile": "wasm",
+          "artifactId": 14714771908,
+          "sha256": "53303c2a0375aabeda542768b07c4c11fb6764d290ef642cf2d570e07989ee28",
+          "bytes": 7932331,
+          "files": 49,
+          "inputFilesBound": 11,
+          "officialMetadataMatch": true,
+          "custodyAllEntriesMatch": true
+        },
+        {
+          "runId": "44924688888",
+          "profile": "frontend",
+          "artifactId": 14715381698,
+          "sha256": "4fefd5316a286b02558405f7a7bf6e6dc601d38767e2d491e3474c4e3ad76c88",
+          "bytes": 168525,
+          "files": 41,
+          "inputFilesBound": 14,
+          "officialMetadataMatch": true,
+          "custodyAllEntriesMatch": true
+        },
+        {
+          "runId": "44924688888",
+          "profile": "wasm",
+          "artifactId": 14715018254,
+          "sha256": "6b9c63e2d604e56e2324b890e61ba4ecd6c9d4d7b4981e4664abd5c6ed6e35a2",
+          "bytes": 7933388,
+          "files": 50,
+          "inputFilesBound": 11,
+          "officialMetadataMatch": true,
+          "custodyAllEntriesMatch": true
+        }
+      ],
+      "finalDocumentIdentities": {
+        "docs/research/live-update-policies-and-portable-runtimes-2026-11-21.md": "1f6426fe5ee7e2404ae749b94fb2da6150413ee37bb08aa265b8368113b4b082",
+        "docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md": "642add77406bd48570d8a09d550bb9c8da92bf746fefff3204d8c7ed56d0acfa",
+        "docs/research/plugin-system-research-reference.md": "ac69224faaf4db4d6de1a34a50259230987cea7e881fdb7121c1944c25dace89",
+        "docs/research/plugin-research-review-and-decision-record.md": "f1fdf7bcef525f624a665b7adb676057e9a9a743bcc0f1a99a06a432581c052c"
+      },
+      "finalReportArchivedCopyMatches": true,
+      "finalContentReviewSha256": "e4d30283805708df105d0a1a15da4eeb7d6ea91d271950b204a67f449cc32e2a",
+      "workflowSha256": "99414424a0d85424d36e98473741c2295f69876a384b1c22bba84af7c494acef",
+      "priorArchives": [
+        {
+          "path": "docs/research/evidence/live-application-browser-input-20261118.tar.gz",
+          "sha256": "ee51b6c1cddd63f33b4a56a505140b46876fb8e2414b62920345705b38138ac4",
+          "gitBlob": "a456ee1ff856af56523fa178c9fbfe99f429002f",
+          "baseline": "118e2d226b0daed23e9fdbbbb5c1366da2880ad9",
+          "unchanged": true,
+          "alsoMatchesInitialCommit": "d1d307f0fdbe99c7f0e985c0b43375972cfa3386"
+        },
+        {
+          "path": "docs/research/evidence/live-application-evolution-20261118.tar.gz",
+          "sha256": "b179090be0ebdc3d875a58ab14d886c7599d92eb23659fc0a91e59d3a4e1c16e",
+          "gitBlob": "ff3dad263065470de5375217898a2747d688849b",
+          "baseline": "118e2d226b0daed23e9fdbbbb5c1366da2880ad9",
+          "unchanged": true,
+          "alsoMatchesInitialCommit": "d1d307f0fdbe99c7f0e985c0b43375972cfa3386"
+        },
+        {
+          "path": "docs/research/evidence/live-plugin-evolution-20261114.tar.gz",
+          "sha256": "0469a42a636150beaedde54969359cd1d342b728fe2bdd717db5d75c58cf1d29",
+          "gitBlob": "d3a4a4053b7258ecbedb03a2b66d6f223e9c85d6",
+          "baseline": "118e2d226b0daed23e9fdbbbb5c1366da2880ad9",
+          "unchanged": true,
+          "alsoMatchesInitialCommit": "d1d307f0fdbe99c7f0e985c0b43375972cfa3386"
+        },
+        {
+          "path": "docs/research/evidence/live-plugin-final-study-20261117.tar.gz",
+          "sha256": "ac5e3c1666c809d05b1ad24fdccc935dd1e5ac0f84179b311e41e171f6acdcb1",
+          "gitBlob": "fea6de6b112e893b835c91c004e382c4e38d963d",
+          "baseline": "118e2d226b0daed23e9fdbbbb5c1366da2880ad9",
+          "unchanged": true,
+          "alsoMatchesInitialCommit": "d1d307f0fdbe99c7f0e985c0b43375972cfa3386"
+        },
+        {
+          "path": "docs/research/evidence/portable-live-plugins-20261117.tar.gz",
+          "sha256": "d814e91516b382d9351b13ae8600284089de3aa767b57aee46285e2de5434acf",
+          "gitBlob": "0d661f245b8613ae81266557aaf3ae5762b7c848",
+          "baseline": "118e2d226b0daed23e9fdbbbb5c1366da2880ad9",
+          "unchanged": true,
+          "alsoMatchesInitialCommit": "d1d307f0fdbe99c7f0e985c0b43375972cfa3386"
+        }
+      ],
+      "boundedInventory": {
+        "forbiddenPaths": [],
+        "largeWasmOrGlueOutsideOriginalZips": [],
+        "licenseAttributionFiles": [
+          "wasm/attribution/ComponentizeJS-and-jco-LICENSE.txt",
+          "wasm/attribution/README.md",
+          "wasm/attribution/SpiderMonkey-LICENSE.txt",
+          "wasm/attribution/SpiderMonkey-upstream-license.html",
+          "wasm/attribution/StarlingMonkey-LICENSE.txt",
+          "wasm/attribution/file-identities.json"
+        ]
+      },
+      "boundedSecretScan": {
+        "outerTextFiles": 356,
+        "zipTextEntries": 227,
+        "patterns": [
+          "private-key",
+          "github-token",
+          "aws-access-id",
+          "slack-token",
+          "authorization-token",
+          "signed-download-url",
+          "assigned-auth-token"
+        ],
+        "findings": [],
+        "limit": "Recognizable-pattern and inventory review, not proof of absence of arbitrary secrets in every encoding."
+      },
+      "finalResults": {
+        "wasmComparisons": 19,
+        "wasmExpectedRejections": 5,
+        "frontendComparisons": 31,
+        "comparisonValuesAllMatch": true,
+        "nodeCompilerGuard": {
+          "loaded": [],
+          "rejected": []
+        },
+        "jobConclusions": {
+          "initialJobs": [
+            {
+              "name": "spike-frontend",
+              "conclusion": "success"
+            },
+            {
+              "name": "spike-wasm",
+              "conclusion": "failure"
+            }
+          ],
+          "repairJobs": [
+            {
+              "name": "spike-frontend",
+              "conclusion": "success"
+            },
+            {
+              "name": "spike-wasm",
+              "conclusion": "failure"
+            }
+          ],
+          "finalJobs": [
+            {
+              "name": "spike-wasm",
+              "conclusion": "success"
+            },
+            {
+              "name": "spike-frontend",
+              "conclusion": "success"
+            }
+          ]
+        }
+      },
+      "reviewAttemptNote": "First nested inspection stopped on reviewer lookup root/synthesis-draft.md, an intentionally omitted duplicate. Corrected lookup to retained root/review-inputs/root-final.md; repository and scratch draft bytes both match. No product evidence or archive mutation.",
+      "verdict": "PASS",
+      "frozenPacketModified": false,
+      "nativeRetestPerformed": false,
+      "docsProtocol": "Separate root-owned validation, not claimed by this custody review."
+    }
+  },
+  "continuationIndependentReview": {
+    "reviewSha256": "448514ebf1bfef3e983929d95f03e8a07d0f69e4da01a38d7e1949c2453235f7",
+    "data": {
+      "schemaVersion": 1,
+      "reviewer": "/root/audit_delivery_evidence",
+      "observedAt": "2026-11-21T18:04:05.105024+00:00",
+      "verdict": "pass within bounded report and evidence custody scope; final delivery validation/publication remain root gates",
+      "sourceCommit": "118e2d226b0daed23e9fdbbbb5c1366da2880ad9",
+      "documentSha256": {
+        "docs/research/live-update-policies-and-portable-runtimes-2026-11-21.md": "1f6426fe5ee7e2404ae749b94fb2da6150413ee37bb08aa265b8368113b4b082",
+        "docs/research/plugin-research-review-and-decision-record.md": "f1fdf7bcef525f624a665b7adb676057e9a9a743bcc0f1a99a06a432581c052c",
+        "docs/research/plugin-system-research-reference.md": "ac69224faaf4db4d6de1a34a50259230987cea7e881fdb7121c1944c25dace89",
+        "docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md": "642add77406bd48570d8a09d550bb9c8da92bf746fefff3204d8c7ed56d0acfa"
+      },
+      "archive": {
+        "bytes": 17266914,
+        "sha256": "873a2c7aa48d49211a3d93a2a11d886a8cd46062283c875b4240494fb4e9a184",
+        "regularMembers": 368,
+        "allMemberPathsSizesHashesMatched": true,
+        "duplicates": 0,
+        "nonregularMembers": 0,
+        "unsafePaths": 0,
+        "retainedZipCount": 6,
+        "allZipCrcChecksPassed": true
+      },
+      "inputArchive": {
+        "bytes": 35638,
+        "sha256": "b7b6058e4d0d8b95634ee722d272353ab3591ec581f2459b672ea77a37f3b34f",
+        "files": 25,
+        "allPathsSizesHashesMatched": true
+      },
+      "hosted": {
+        "runId": 44924688888,
+        "attempt": 1,
+        "liveArtifactMetadataAndJobStepsRead": true,
+        "nativeJobsSucceeded": [
+          "spike-frontend",
+          "spike-wasm"
+        ],
+        "profileSpecificSetupStepsSkippedNotCountedAsTests": true,
+        "frontend": {
+          "artifactId": 14715381698,
+          "bytes": 168525,
+          "sha256": "4fefd5316a286b02558405f7a7bf6e6dc601d38767e2d491e3474c4e3ad76c88",
+          "custodyEntries": 41,
+          "decodedCopiesMatched": 41,
+          "inputFilesMatched": 14,
+          "testPass": 1,
+          "testFail": 0,
+          "testSkipped": 0,
+          "comparisons": 31,
+          "allComparisonsMatched": true,
+          "screenshotVisuallyInspected": true
+        },
+        "wasm": {
+          "artifactId": 14715018254,
+          "bytes": 7933388,
+          "sha256": "6b9c63e2d604e56e2324b890e61ba4ecd6c9d4d7b4981e4664abd5c6ed6e35a2",
+          "custodyEntries": 50,
+          "decodedCopiesMatched": 36,
+          "inputFilesMatched": 11,
+          "testPass": 1,
+          "testFail": 0,
+          "testSkipped": 0,
+          "comparisons": 19,
+          "allComparisonsMatched": true,
+          "expectedRejectionMechanisms": 5
+        }
+      },
+      "backend": {
+        "retainedNativeTestsPassed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "rawLogAndResultMatch": true,
+        "testSourceInspected": true
+      },
+      "findings": [],
+      "knownRootDeliveryTasks": [
+        "Create missing plugin-update-runtimes-20261121.validation.json only after actual final Docs Protocol pass.",
+        "Bind final document identities and hosted publication status accurately; the reviewed report describes those as completed delivery."
+      ],
+      "limitations": [
+        "No native scenario rerun; read-only inspection of exact retained outputs and live GitHub metadata.",
+        "Browser Worker termination remains invocation evidence, not physical-exit/finalizer proof.",
+        "Wasm comparisons are observations inside one scalar Node E2E; five rejections are not five additional tests.",
+        "No production runtime/public SPI/adoption, complete LLM authoring loop, hostile-code isolation, async Wasm/state migration or fleet-scale guarantee.",
+        "Full ecosystem source research was not independently re-fetched in this narrow custody/results audit."
+      ],
+      "auditCorrection": "First input-archive check used the outer manifest member key; corrected to the actual files schema and completed all 25 member validations. This was an auditor lookup error, not a fixture failure."
+    }
+  },
+  "originalArchivesVerifiedUnchanged": [
+    {
+      "path": "docs/research/evidence/live-application-browser-input-20261118.tar.gz",
+      "sha256": "ee51b6c1cddd63f33b4a56a505140b46876fb8e2414b62920345705b38138ac4",
+      "gitBlob": "a456ee1ff856af56523fa178c9fbfe99f429002f",
+      "baseline": "118e2d226b0daed23e9fdbbbb5c1366da2880ad9",
+      "unchanged": true,
+      "alsoMatchesInitialCommit": "d1d307f0fdbe99c7f0e985c0b43375972cfa3386"
+    },
+    {
+      "path": "docs/research/evidence/live-application-evolution-20261118.tar.gz",
+      "sha256": "b179090be0ebdc3d875a58ab14d886c7599d92eb23659fc0a91e59d3a4e1c16e",
+      "gitBlob": "ff3dad263065470de5375217898a2747d688849b",
+      "baseline": "118e2d226b0daed23e9fdbbbb5c1366da2880ad9",
+      "unchanged": true,
+      "alsoMatchesInitialCommit": "d1d307f0fdbe99c7f0e985c0b43375972cfa3386"
+    },
+    {
+      "path": "docs/research/evidence/live-plugin-evolution-20261114.tar.gz",
+      "sha256": "0469a42a636150beaedde54969359cd1d342b728fe2bdd717db5d75c58cf1d29",
+      "gitBlob": "d3a4a4053b7258ecbedb03a2b66d6f223e9c85d6",
+      "baseline": "118e2d226b0daed23e9fdbbbb5c1366da2880ad9",
+      "unchanged": true,
+      "alsoMatchesInitialCommit": "d1d307f0fdbe99c7f0e985c0b43375972cfa3386"
+    },
+    {
+      "path": "docs/research/evidence/live-plugin-final-study-20261117.tar.gz",
+      "sha256": "ac5e3c1666c809d05b1ad24fdccc935dd1e5ac0f84179b311e41e171f6acdcb1",
+      "gitBlob": "fea6de6b112e893b835c91c004e382c4e38d963d",
+      "baseline": "118e2d226b0daed23e9fdbbbb5c1366da2880ad9",
+      "unchanged": true,
+      "alsoMatchesInitialCommit": "d1d307f0fdbe99c7f0e985c0b43375972cfa3386"
+    },
+    {
+      "path": "docs/research/evidence/portable-live-plugins-20261117.tar.gz",
+      "sha256": "d814e91516b382d9351b13ae8600284089de3aa767b57aee46285e2de5434acf",
+      "gitBlob": "0d661f245b8613ae81266557aaf3ae5762b7c848",
+      "baseline": "118e2d226b0daed23e9fdbbbb5c1366da2880ad9",
+      "unchanged": true,
+      "alsoMatchesInitialCommit": "d1d307f0fdbe99c7f0e985c0b43375972cfa3386"
+    }
+  ],
+  "localGeneralGate": {
+    "status": "not-executed",
+    "reason": "Unchanged Foundation 1.7.2 general route initializes API Extractor embedded TypeScript 5.9.3, below the current 7.0.2 requirement. No pinned dependency or required gate was weakened; unrelated Foundation upgrade is not part of this research delivery."
+  },
+  "hostedDeliveryChecks": "Not claimed by this pre-publication receipt. Exact final source and completed hosted checks are recorded in existing Draft PR 55 after publication.",
+  "publicationScope": "Existing Draft PR 55; retain open product choices and all historical failures. No merge or release.",
+  "outputReceiptNote": "Final archive bytes and original member manifest remain frozen. Binary parts reconstruct that exact archive. This adjacent receipt distinguishes the archived report from the current delivery-link clarification and preserves gate/review evidence without circular repacking.",
+  "resumedStandaloneDocsCheck": {
+    "command": "pnpm docs:check",
+    "exitCode": 0,
+    "status": "passed",
+    "logSha256": "039e4a888fb206d8317da61aa01a0508f789140c37e5a913b5ffc49f585b3a5a",
+    "fullLog": "$ agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml\ndocs.check: success\nProject: extension-foundation\nCatalog: complete (90 documents)\nAdoption: valid\n",
+    "scope": "Successful standalone gate before the later parts-link clarification; superseded for current source by the fresh final full Docs Protocol gate."
+  },
+  "archivedReviewedReportSha256": "1f6426fe5ee7e2404ae749b94fb2da6150413ee37bb08aa265b8368113b4b082",
+  "retainedDocumentationGate": {
+    "status": "passed-on-exact-retained-governed-document-inputs",
+    "command": "pnpm docs:protocol:check",
+    "evidenceReuse": "Historical full gate on the exact pre-storage-clarification report and unchanged remaining governed inputs. The fresh finalDocumentationGate below covers the current report.",
+    "catalogDocuments": 90,
+    "lintedFiles": 96,
+    "tests": 8,
+    "passed": 8,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "durationMs": 277328.89333,
+    "logSha256": "1d8f4326a04b0cc94c01c30c9ca36444b6f14435bf1d8aa23b3720ed69e48442",
+    "fullLog": "$ pnpm docs:check && pnpm docs:quality && pnpm docs:contract-test\n$ agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml\ndocs.check: success\nProject: extension-foundation\nCatalog: complete (90 documents)\nAdoption: valid\n$ markdownlint-cli2 --config architecture/tooling/markdownlint-cli2.mjs && cspell --config .cspell.json --no-progress\nmarkdownlint-cli2 v0.23.2 (markdownlint v0.41.1)\nFinding: README.md AGENTS.md docs/**/*.md\nLinting: 96 files\nSummary: 0 issues in 0 files\nCSpell: Files checked: 96, Issues found: 0 in 0 files.\n$ node --test tests/document-authoring.test.mjs tests/docs-protocol-qualification.test.mjs\n✔ managed integration owns a data-only v3 qualification contract and external gate (4.537631ms)\n✔ unified info and check expose the declared Extension authority (3903.477487ms)\n✔ find combines catalog and relation filters and treats zero matches as success (10270.685744ms)\n✔ catalog preserves reciprocal supersession and resolved-decision evidence (3236.077007ms)\n✔ new previews and applies every supported type only inside a disposable repository (235507.009564ms)\n✔ required code anchors pass when reachable and fail closed when stale (7040.130329ms)\n✔ invalid owner, metadata, and duplicate identity fail without mutation (13836.033968ms)\n✔ portable adoption rejects a Skill without executable context guidance (3437.064168ms)\nℹ tests 8\nℹ suites 0\nℹ pass 8\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 277328.89333\n",
+    "documentIdentitiesAtExecution": {
+      "docs/research/live-update-policies-and-portable-runtimes-2026-11-21.md": "1f6426fe5ee7e2404ae749b94fb2da6150413ee37bb08aa265b8368113b4b082",
+      "docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md": "642add77406bd48570d8a09d550bb9c8da92bf746fefff3204d8c7ed56d0acfa",
+      "docs/research/plugin-system-research-reference.md": "ac69224faaf4db4d6de1a34a50259230987cea7e881fdb7121c1944c25dace89",
+      "docs/research/plugin-research-review-and-decision-record.md": "f1fdf7bcef525f624a665b7adb676057e9a9a743bcc0f1a99a06a432581c052c"
+    }
+  },
+  "archiveStorage": {
+    "partsIndex": "docs/research/evidence/plugin-update-runtimes-20261121.parts.json",
+    "partsIndexSha256": "74fce3413268a569e51ba3e34922e06b4b969db0f12ad54e920fa3b08e83323f",
+    "parts": [
+      {
+        "path": "plugin-update-runtimes-20261121.tar.gz.part01",
+        "bytes": 8400000,
+        "sha256": "74c9a4f1407f85a5716bec18159227ced39e930fb7de90ddd3f89522d3007456"
+      },
+      {
+        "path": "plugin-update-runtimes-20261121.tar.gz.part02",
+        "bytes": 8866914,
+        "sha256": "51fefb2745c0867b1d46ab17c37ba153ab9d55fd88e0953c8ab93b4d1cbbd393"
+      }
+    ],
+    "reconstructionVerified": true,
+    "archiveBytesUnchanged": true,
+    "memberManifestUnchanged": true
+  },
+  "finalDocumentationGate": {
+    "status": "passed-before-final-reference-correction",
+    "command": "pnpm docs:protocol:check",
+    "exitCode": 0,
+    "catalogDocuments": 90,
+    "lintedFiles": 96,
+    "tests": 8,
+    "passed": 8,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "durationMs": 345373.571255,
+    "documentIdentitiesAtExecution": {
+      "docs/research/live-update-policies-and-portable-runtimes-2026-11-21.md": "5452650b76f2907ee2eeaf9023de4a300456d262125dd83d5ba9c38d3401a132",
+      "docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md": "642add77406bd48570d8a09d550bb9c8da92bf746fefff3204d8c7ed56d0acfa",
+      "docs/research/plugin-system-research-reference.md": "ac69224faaf4db4d6de1a34a50259230987cea7e881fdb7121c1944c25dace89",
+      "docs/research/plugin-research-review-and-decision-record.md": "f1fdf7bcef525f624a665b7adb676057e9a9a743bcc0f1a99a06a432581c052c"
+    },
+    "logSha256": "889536c67842430df4bd982d7659dc0655ffe47a7b264af31abbe3de912a2023",
+    "fullLog": "$ pnpm docs:check && pnpm docs:quality && pnpm docs:contract-test\n$ agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml\ndocs.check: success\nProject: extension-foundation\nCatalog: complete (90 documents)\nAdoption: valid\n$ markdownlint-cli2 --config architecture/tooling/markdownlint-cli2.mjs && cspell --config .cspell.json --no-progress\nmarkdownlint-cli2 v0.23.2 (markdownlint v0.41.1)\nFinding: README.md AGENTS.md docs/**/*.md\nLinting: 96 files\nSummary: 0 issues in 0 files\nCSpell: Files checked: 96, Issues found: 0 in 0 files.\n$ node --test tests/document-authoring.test.mjs tests/docs-protocol-qualification.test.mjs\n✔ managed integration owns a data-only v3 qualification contract and external gate (5.03352ms)\n✔ unified info and check expose the declared Extension authority (4118.085391ms)\n✔ find combines catalog and relation filters and treats zero matches as success (11233.007687ms)\n✔ catalog preserves reciprocal supersession and resolved-decision evidence (3718.558258ms)\n✔ new previews and applies every supported type only inside a disposable repository (292272.840906ms)\n✔ required code anchors pass when reachable and fail closed when stale (11377.77026ms)\n✔ invalid owner, metadata, and duplicate identity fail without mutation (18024.679637ms)\n✔ portable adoption rejects a Skill without executable context guidance (4516.57542ms)\nℹ tests 8\nℹ suites 0\nℹ pass 8\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 345373.571255\n",
+    "executionProfile": {
+      "command": "pnpm docs:protocol:check",
+      "observer": "Strict TypeScript 7.0.2 transparent spawnSync result logger; unchanged returned values, arguments, tests and deadlines",
+      "observerTypecheckExitCode": 0,
+      "exitCode": 0,
+      "durationSeconds": 355.88213205337524,
+      "TMPDIR": "/workspace/scratch/6b51c86fe5f1/t",
+      "globalOomCounterBefore": [
+        "oom_kill 97"
+      ],
+      "globalOomCounterAfter": [
+        "oom_kill 98"
+      ],
+      "sourceOrAssertionChanges": false
+    },
+    "environmentLimit": "Instrumented unchanged-source execution using a disk-backed task TMPDIR. Startup/logging overhead differs from the original environment; no argument, child result, timeout or assertion was modified.",
+    "scope": "Full local gate on the result delivery before the final single evidence-link correction. Original input identities remain recorded. The focused correction gate below and normal full hosted Docs Protocol on the new published head complete the final source validation; hosted results are recorded in PR55 metadata."
+  },
+  "deliveryValidatedAt": "2026-11-21T20:20:30.504759+02:00",
+  "continuationFailedAttempts": [
+    {
+      "command": "pnpm docs:protocol:check",
+      "exitCode": 1,
+      "tests": 8,
+      "passed": 7,
+      "failed": 1,
+      "cancelled": 0,
+      "skipped": 0,
+      "test": "new previews and applies every supported type only inside a disposable repository",
+      "observation": "Repeated apply child returned status null and no retained error/stdout/stderr. Original helper did not record its signal. Cause remains unestablished; no OOM attribution is claimed.",
+      "logSha256": "46ff5b7cff44508971efe67784113110434b1bf7ae0b85ea297ebb61ec5f1846",
+      "fullLog": "$ pnpm docs:check && pnpm docs:quality && pnpm docs:contract-test\n$ agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml\ndocs.check: success\nProject: extension-foundation\nCatalog: complete (90 documents)\nAdoption: valid\n$ markdownlint-cli2 --config architecture/tooling/markdownlint-cli2.mjs && cspell --config .cspell.json --no-progress\nmarkdownlint-cli2 v0.23.2 (markdownlint v0.41.1)\nFinding: README.md AGENTS.md docs/**/*.md\nLinting: 96 files\nSummary: 0 issues in 0 files\nCSpell: Files checked: 96, Issues found: 0 in 0 files.\n$ node --test tests/document-authoring.test.mjs tests/docs-protocol-qualification.test.mjs\n✔ managed integration owns a data-only v3 qualification contract and external gate (4.468396ms)\n✔ unified info and check expose the declared Extension authority (4079.231635ms)\n✔ find combines catalog and relation filters and treats zero matches as success (10489.209658ms)\n✔ catalog preserves reciprocal supersession and resolved-decision evidence (3513.5605ms)\n✖ new previews and applies every supported type only inside a disposable repository (94524.417504ms)\n✔ required code anchors pass when reachable and fail closed when stale (10845.508413ms)\n✔ invalid owner, metadata, and duplicate identity fail without mutation (16104.567499ms)\n✔ portable adoption rejects a Skill without executable context guidance (4477.644117ms)\nℹ tests 8\nℹ suites 0\nℹ pass 7\nℹ fail 1\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 144134.001975\n\n✖ failing tests:\n\ntest at tests/document-authoring.test.mjs:156:1\n✖ new previews and applies every supported type only inside a disposable repository (94524.417504ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  null !== 0\n  \n      at run (file:///workspace/scratch/6b51c86fe5f1/extension-foundation/tests/document-authoring.test.mjs:41:10)\n      at TestContext.<anonymous> (file:///workspace/scratch/6b51c86fe5f1/extension-foundation/tests/document-authoring.test.mjs:204:22)\n      at async Test.run (node:internal/test_runner/test:1409:7)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: null,\n    expected: 0,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n[ELIFECYCLE] Command failed with exit code 1.\n[ELIFECYCLE] Command failed with exit code 1.\n"
+    },
+    {
+      "command": "strace -f -qq -e trace=process pnpm docs:protocol:check",
+      "status": "diagnostic-setup-unavailable",
+      "testExecuted": false,
+      "exitCode": 1,
+      "reason": "Kernel ptrace permission denied; no escalation or retry of that restricted mechanism. A normal in-process transparent result observer was used instead.",
+      "logSha256": "01c79a7d47475a07737aecab58d739206fd0dcf4a572f2efdab84f037f393c00",
+      "fullLog": "strace: test_ptrace_get_syscall_info: PTRACE_TRACEME: Operation not permitted\nstrace: ptrace(PTRACE_TRACEME, ...): Operation not permitted\nstrace: PTRACE_SETOPTIONS: Operation not permitted\nstrace: cleanup: waitpid(-1, __WALL): No child processes\n"
+    }
+  ],
+  "diagnosticObserver": {
+    "language": "TypeScript",
+    "compilerVersion": "7.0.2",
+    "strictTypecheckExitCode": 0,
+    "typecheckLogSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sourceSha256": "d7b7a8618f21af8e9280a319477682bbe9e34e1b37631188584aa85e0349980c",
+    "source": "import childProcess from \"node:child_process\";\nimport { appendFileSync } from \"node:fs\";\nimport { syncBuiltinESMExports } from \"node:module\";\n\nconst log = \"/workspace/scratch/6b51c86fe5f1/validation/docs-child-observations.jsonl\";\nconst original = childProcess.spawnSync;\n\nchildProcess.spawnSync = new Proxy(original, {\n  apply(target, receiver: unknown, args: unknown[]): unknown {\n    const started = Date.now();\n    const result: unknown = Reflect.apply(target, receiver, args);\n    if (result !== null && typeof result === \"object\") {\n      const error = \"error\" in result ? result.error : undefined;\n      appendFileSync(log, JSON.stringify({\n        observerPid: process.pid,\n        command: args[0],\n        args: args[1],\n        durationMs: Date.now() - started,\n        pid: \"pid\" in result ? result.pid : undefined,\n        status: \"status\" in result ? result.status : undefined,\n        signal: \"signal\" in result ? result.signal : undefined,\n        error: error instanceof Error ? error.message : undefined,\n        errorCode: error !== null && typeof error === \"object\" && \"code\" in error\n          ? error.code : undefined,\n      }) + \"\\n\");\n    }\n    return result;\n  },\n});\nsyncBuiltinESMExports();\n",
+    "tsconfig": {
+      "compilerOptions": {
+        "strict": true,
+        "exactOptionalPropertyTypes": true,
+        "noUncheckedIndexedAccess": true,
+        "module": "NodeNext",
+        "target": "ES2024",
+        "types": [
+          "node"
+        ],
+        "typeRoots": [
+          "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/@types"
+        ],
+        "noEmit": true
+      },
+      "files": [
+        "observe-docs-children.ts"
+      ]
+    },
+    "observationsSha256": "5f23da3eb7ea0582f131e336ba089b250053d2cdc137b77d0b0dda5e1d1568f2",
+    "observations": [
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "info",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/extension-foundation",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 473,
+        "pid": 171,
+        "status": 0,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "check",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/extension-foundation",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 3642,
+        "pid": 188,
+        "status": 0,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "find",
+          "--type",
+          "open-decision",
+          "--status",
+          "open",
+          "--owner",
+          "architecture",
+          "--related",
+          "ADR-0003",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/extension-foundation",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 3375,
+        "pid": 205,
+        "status": 0,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "find",
+          "--id",
+          "ADR-9999",
+          "--related",
+          "ADR-0001",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/extension-foundation",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 3488,
+        "pid": 222,
+        "status": 0,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "pnpm",
+        "args": [
+          "docs:find",
+          "--",
+          "--id",
+          "OD-001",
+          "--json"
+        ],
+        "durationMs": 4369,
+        "pid": 239,
+        "status": 0,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "find",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/extension-foundation",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 3717,
+        "pid": 271,
+        "status": 0,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "new",
+          "--type",
+          "adr",
+          "--id",
+          "ADR-0099",
+          "--title",
+          "Disposable Contract Proof",
+          "--owner",
+          "architecture/tooling",
+          "--summary",
+          "Proves unified authoring in an isolated fixture.",
+          "--related",
+          "ADR-0001",
+          "--blocked-by",
+          "OD-002",
+          "--code-anchor",
+          "{\"enforcement\":\"advisory\",\"pattern\":\"package.json\"}",
+          "--dry-run",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/t/atd-e-VdGMRJ",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 13949,
+        "pid": 292,
+        "status": 0,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "new",
+          "--type",
+          "adr",
+          "--id",
+          "ADR-0099",
+          "--title",
+          "Disposable Contract Proof",
+          "--owner",
+          "architecture/tooling",
+          "--summary",
+          "Proves unified authoring in an isolated fixture.",
+          "--related",
+          "ADR-0001",
+          "--blocked-by",
+          "OD-002",
+          "--code-anchor",
+          "{\"enforcement\":\"advisory\",\"pattern\":\"package.json\"}",
+          "--apply",
+          "--expect",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/t/atd-e-VdGMRJ",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 11342,
+        "pid": 309,
+        "status": 1,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "new",
+          "--type",
+          "adr",
+          "--id",
+          "ADR-0099",
+          "--title",
+          "Disposable Contract Proof",
+          "--owner",
+          "architecture/tooling",
+          "--summary",
+          "Proves unified authoring in an isolated fixture.",
+          "--related",
+          "ADR-0001",
+          "--blocked-by",
+          "OD-002",
+          "--code-anchor",
+          "{\"enforcement\":\"advisory\",\"pattern\":\"package.json\"}",
+          "--apply",
+          "--expect",
+          "sha256:30af057c45feabd8881c9df888f7b318489071ee74a1b3de34193a288cc306d9",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/t/atd-e-VdGMRJ",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 51896,
+        "pid": 326,
+        "status": 0,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "new",
+          "--type",
+          "adr",
+          "--id",
+          "ADR-0099",
+          "--title",
+          "Disposable Contract Proof",
+          "--owner",
+          "architecture/tooling",
+          "--summary",
+          "Proves unified authoring in an isolated fixture.",
+          "--related",
+          "ADR-0001",
+          "--blocked-by",
+          "OD-002",
+          "--code-anchor",
+          "{\"enforcement\":\"advisory\",\"pattern\":\"package.json\"}",
+          "--apply",
+          "--expect",
+          "sha256:30af057c45feabd8881c9df888f7b318489071ee74a1b3de34193a288cc306d9",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/t/atd-e-VdGMRJ",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 34215,
+        "pid": 343,
+        "status": 0,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "new",
+          "--type",
+          "open-decision",
+          "--id",
+          "OD-099",
+          "--title",
+          "Disposable Open Choice",
+          "--owner",
+          "architecture",
+          "--summary",
+          "Proves open decision placement in an isolated fixture.",
+          "--dry-run",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/t/atd-e-VdGMRJ",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 13901,
+        "pid": 360,
+        "status": 0,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "new",
+          "--type",
+          "open-decision",
+          "--id",
+          "OD-099",
+          "--title",
+          "Disposable Open Choice",
+          "--owner",
+          "architecture",
+          "--summary",
+          "Proves open decision placement in an isolated fixture.",
+          "--apply",
+          "--expect",
+          "sha256:c5f2d7171562b4ebffdb9a4c4a6e3f3aa08b810cbd62bb36502efff698257436",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/t/atd-e-VdGMRJ",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 41238,
+        "pid": 377,
+        "status": 0,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "new",
+          "--type",
+          "architecture",
+          "--id",
+          "architecture.disposable",
+          "--title",
+          "Disposable Architecture",
+          "--owner",
+          "architecture/tooling",
+          "--summary",
+          "Proves architecture placement in an isolated fixture.",
+          "--dry-run",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/t/atd-e-VdGMRJ",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 12777,
+        "pid": 394,
+        "status": 0,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "new",
+          "--type",
+          "architecture",
+          "--id",
+          "architecture.disposable",
+          "--title",
+          "Disposable Architecture",
+          "--owner",
+          "architecture/tooling",
+          "--summary",
+          "Proves architecture placement in an isolated fixture.",
+          "--apply",
+          "--expect",
+          "sha256:b04b62dad8f10becc0da412d36e93e03986bca740fd98289af642cc597fdf6d1",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/t/atd-e-VdGMRJ",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 41967,
+        "pid": 411,
+        "status": 0,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "new",
+          "--type",
+          "research",
+          "--id",
+          "research.disposable",
+          "--title",
+          "Disposable Research",
+          "--owner",
+          "architecture/tooling",
+          "--summary",
+          "Proves that evidence has its own non-normative authoring route.",
+          "--dry-run",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/t/atd-e-VdGMRJ",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 12447,
+        "pid": 428,
+        "status": 0,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "new",
+          "--type",
+          "research",
+          "--id",
+          "research.disposable",
+          "--title",
+          "Disposable Research",
+          "--owner",
+          "architecture/tooling",
+          "--summary",
+          "Proves that evidence has its own non-normative authoring route.",
+          "--apply",
+          "--expect",
+          "sha256:8b8743a12ff17b122f106750310e8abd21271e2c2fabe503944181fe6ec4f7b9",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/t/atd-e-VdGMRJ",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 41097,
+        "pid": 445,
+        "status": 0,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "context",
+          "--text",
+          "disposable",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/t/atd-e-VdGMRJ",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 10582,
+        "pid": 462,
+        "status": 0,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "check",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/t/atd-e-VdGMRJ",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 4649,
+        "pid": 479,
+        "status": 0,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "doctor",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/t/atd-e-VdGMRJ",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 1629,
+        "pid": 496,
+        "status": 0,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "recover",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/t/atd-e-VdGMRJ",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 371,
+        "pid": 513,
+        "status": 0,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "check",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/t/atd-e-8e9U5V",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 6143,
+        "pid": 530,
+        "status": 0,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "check",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/t/atd-e-8e9U5V",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 5059,
+        "pid": 547,
+        "status": 1,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "new",
+          "--type",
+          "adr",
+          "--id",
+          "ADR-0098",
+          "--title",
+          "Invalid Proof",
+          "--summary",
+          "Must fail without publishing a document.",
+          "--dry-run",
+          "--owner",
+          "unknown-owner",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/t/atd-e-srGe6S",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 656,
+        "pid": 564,
+        "status": 2,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "new",
+          "--type",
+          "adr",
+          "--id",
+          "ADR-0098",
+          "--title",
+          "Invalid Proof",
+          "--summary",
+          "Must fail without publishing a document.",
+          "--dry-run",
+          "--owner",
+          "architecture",
+          "--metadata",
+          "unknown=true",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/t/atd-e-srGe6S",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 9299,
+        "pid": 581,
+        "status": 3,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "new",
+          "--type",
+          "adr",
+          "--id",
+          "ADR-0001",
+          "--title",
+          "Duplicate",
+          "--owner",
+          "architecture",
+          "--summary",
+          "Must reject duplicate identity.",
+          "--dry-run",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/t/atd-e-srGe6S",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 7869,
+        "pid": 598,
+        "status": 3,
+        "signal": null
+      },
+      {
+        "observerPid": 152,
+        "command": "/workspace/scratch/6b51c86fe5f1/extension-foundation/node_modules/.bin/agent-teams-docs",
+        "args": [
+          "check",
+          "--consumer",
+          "/workspace/scratch/6b51c86fe5f1/t/atd-e-GKLFTQ",
+          "--profile",
+          "architecture/foundation/docs-protocol.yaml",
+          "--json"
+        ],
+        "durationMs": 4406,
+        "pid": 615,
+        "status": 1,
+        "signal": null
+      }
+    ],
+    "review": "Independent read-only reviewer confirmed exact original call forwarding and identical returned result; synchronous log IO can introduce failure/overhead but cannot fabricate a passing status.",
+    "globalResourceCounterLimit": "The global OOM counter changed from97 to98 during the successful diagnostic run, without any observed signaled child. It does not identify the earlier failing process or establish causation."
+  },
+  "archiveTransportReview": {
+    "reviewSha256": "0ad3096e7ba90dcc438c088efed4a0282263fa5dedeb6aeb998a3aead74b8feb",
+    "data": {
+      "schemaVersion": 1,
+      "reviewer": "/root/audit_delivery_evidence",
+      "reviewedAt": "2026-11-21T18:10:43.953322+00:00",
+      "scope": "Read-only binary delivery segmentation and report-link adaptation; no native rerun or final full-docs-gate certification in this review",
+      "partsIndexSha256": "74fce3413268a569e51ba3e34922e06b4b969db0f12ad54e920fa3b08e83323f",
+      "parts": [
+        {
+          "path": "plugin-update-runtimes-20261121.tar.gz.part01",
+          "bytes": 8400000,
+          "sha256": "74c9a4f1407f85a5716bec18159227ced39e930fb7de90ddd3f89522d3007456",
+          "gitBlob": "08f58a82ae2db498cf3e3a0e6caf85b4bbab3938"
+        },
+        {
+          "path": "plugin-update-runtimes-20261121.tar.gz.part02",
+          "bytes": 8866914,
+          "sha256": "51fefb2745c0867b1d46ab17c37ba153ab9d55fd88e0953c8ab93b4d1cbbd393",
+          "gitBlob": "4b14d4d14f03cb4c44bde1e9c17e7408a015f270"
+        }
+      ],
+      "reconstructedArchive": {
+        "bytes": 17266914,
+        "sha256": "873a2c7aa48d49211a3d93a2a11d886a8cd46062283c875b4240494fb4e9a184",
+        "equalsTaskRetainedOriginal": true,
+        "equalsPriorWorkspaceOriginal": true,
+        "all368MemberHashesStillMatch": true
+      },
+      "memberManifestUnchanged": true,
+      "archivedReviewedReportSha256": "1f6426fe5ee7e2404ae749b94fb2da6150413ee37bb08aa265b8368113b4b082",
+      "currentDeliveryReportSha256": "5452650b76f2907ee2eeaf9023de4a300456d262125dd83d5ba9c38d3401a132",
+      "reportDelta": "Only packet link changes to parts index and one explanatory storage/verification paragraph. Execution results, architecture conclusions and authority limits are unchanged.",
+      "otherGovernedDocumentsUnchanged": {
+        "docs/research/plugin-research-review-and-decision-record.md": true,
+        "docs/research/plugin-system-research-reference.md": true,
+        "docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md": true
+      },
+      "problems": [],
+      "verdict": "PASS",
+      "remainingRootGate": "Fresh full Docs Protocol and accurate final validation receipt required because governed report changed. Final publication/ref and hosted checks remain outside this local transport audit."
+    }
+  },
+  "postPublicationReferenceCorrection": {
+    "previousCommit": "fecf775679166804df15aec012efbc2e9039ec07",
+    "path": "docs/research/plugin-research-review-and-decision-record.md",
+    "beforeSha256": "f1fdf7bcef525f624a665b7adb676057e9a9a743bcc0f1a99a06a432581c052c",
+    "afterSha256": "d8258bcc21ea768f9127d676e67aabe7749b6a504d9b8bee634e4093cb76cf90",
+    "change": "Correct the current November21 full-packet link from the unavailable monolithic .tar.gz to the delivered .parts.json index. No historical archive or member manifest changed.",
+    "focusedGate": {
+      "command": "pnpm docs:changed",
+      "exitCode": 0,
+      "status": "passed",
+      "logSha256": "0d18cf8a94226c6328bf770c2248b325a5cc907350da55ef75f9a66d68af119d",
+      "fullLog": "$ pnpm docs:check && pnpm docs:quality\n$ agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml\ndocs.check: success\nProject: extension-foundation\nCatalog: complete (90 documents)\nAdoption: valid\n$ markdownlint-cli2 --config architecture/tooling/markdownlint-cli2.mjs && cspell --config .cspell.json --no-progress\nmarkdownlint-cli2 v0.23.2 (markdownlint v0.41.1)\nFinding: README.md AGENTS.md docs/**/*.md\nLinting: 96 files\nSummary: 0 issues in 0 files\nCSpell: Files checked: 96, Issues found: 0 in 0 files.\n"
+    },
+    "directMarkdownEvidenceLinks": [
+      {
+        "source": "docs/research/plugin-research-review-and-decision-record.md",
+        "target": "evidence/plugin-update-runtimes-20261121.parts.json",
+        "exists": true
+      },
+      {
+        "source": "docs/research/plugin-research-review-and-decision-record.md",
+        "target": "evidence/plugin-update-runtimes-20261121.manifest.json",
+        "exists": true
+      },
+      {
+        "source": "docs/research/plugin-research-review-and-decision-record.md",
+        "target": "evidence/plugin-update-runtimes-20261121.validation.json",
+        "exists": true
+      },
+      {
+        "source": "docs/research/live-update-policies-and-portable-runtimes-2026-11-21.md",
+        "target": "evidence/plugin-update-runtimes-20261121.parts.json",
+        "exists": true
+      },
+      {
+        "source": "docs/research/live-update-policies-and-portable-runtimes-2026-11-21.md",
+        "target": "evidence/plugin-update-runtimes-20261121.manifest.json",
+        "exists": true
+      },
+      {
+        "source": "docs/research/live-update-policies-and-portable-runtimes-2026-11-21.md",
+        "target": "evidence/plugin-update-runtimes-20261121.validation.json",
+        "exists": true
+      }
+    ],
+    "fullHostedGate": "Must pass on final published head; exact run links and outcomes recorded in existing Draft PR55 metadata after completion."
+  }
+}

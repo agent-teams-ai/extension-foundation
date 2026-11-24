@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "archive": "live-module-contracts-results-20261123.tar.gz",
+  "bytes": 691662,
+  "sha256": "52ebb4aea355ae338cbc99d40f392cd85b1f600adb5c0e2c9efe1db82f0f73a8",
+  "executionHead": "b86e05988334f657d933fa412a02572b455dcd7e",
+  "runId": 45208310980,
+  "inputSha256": "5db80d05009fe298a6cc6d8a1a628a17c80fc8e429beb3dab811ecb5d1db99b1",
+  "distinctCoverage": {
+    "tests": 3,
+    "namedCases": 6,
+    "explicitComparisons": 66
+  },
+  "memberCount": 30,
+  "members": [
+    {
+      "path": "ROOT-NATIVE-VERIFICATION.json",
+      "bytes": 2052,
+      "sha256": "f7683b16e7bbe7728d92f9303caa7c5767192aea5d4002add094eb4c83be33c2"
+    },
+    {
+      "path": "hosted/RESULT.json",
+      "bytes": 22584,
+      "sha256": "572f1a2b80dbcc0c08f32fb133f90830e10ff8002da670a45a6b2f110004a9b7"
+    },
+    {
+      "path": "hosted/RESULT.md",
+      "bytes": 8636,
+      "sha256": "78e9b629e4a88eb7090a1b44ab559366be637cd1f9ce19bca56a184ba18e0b8c"
+    },
+    {
+      "path": "hosted/b86e0598-published-binding.json",
+      "bytes": 38066,
+      "sha256": "f0e62f16fa29c8a0e9e9c300d37f53631597b7f6bb224e21b7e5e223ce1e4873"
+    },
+    {
+      "path": "hosted/b86e0598-terminal-native-and-gates.json",
+      "bytes": 151615,
+      "sha256": "7aae89e3fb3beb651978c0ff2a1c3ccf2740d5a2c96ef83783d64d31aca6d0cc"
+    },
+    {
+      "path": "hosted/effect-close-45208310980.zip",
+      "bytes": 308046,
+      "sha256": "38e92383b7201bd5dec759e67e85f39d34caaaf47679345fd2c228a5e2c13929"
+    },
+    {
+      "path": "hosted/effect-close/artifact-inventory.json",
+      "bytes": 18114,
+      "sha256": "b5dd40a704ce972caf93f90b2c19017240db72fa86076180160b841f8968a696"
+    },
+    {
+      "path": "hosted/effect-close/hosted/environment.txt",
+      "bytes": 31,
+      "sha256": "a0d275dd7e7bedb7f3129597a127eedc28d8cc3fdcd55643ea6deca0d2f36c5c"
+    },
+    {
+      "path": "hosted/effect-close/hosted/input-receipt.json",
+      "bytes": 18405,
+      "sha256": "227539c5474f1423b72a9dbb3f270b4e90a6194c415fbdc73d744071ec4fdccb"
+    },
+    {
+      "path": "hosted/effect-close/hosted/installed-identities.json",
+      "bytes": 612,
+      "sha256": "dde0b04f9f24ef497dda022ab8419b591b086d2baff6b0be376e3478ca401745"
+    },
+    {
+      "path": "hosted/effect-close/hosted/native.log",
+      "bytes": 227,
+      "sha256": "ff7f5585689f2cf99f8755db840651751e7ae0e6930a557dca7d28302ea41373"
+    },
+    {
+      "path": "hosted/effect-close/hosted/typecheck.log",
+      "bytes": 15,
+      "sha256": "8366207267355d3e3d5bf3bf6e8c94c5f93f6078c34f08973fa2b38cdda6cc92"
+    },
+    {
+      "path": "hosted/effect-close/observations.json",
+      "bytes": 372,
+      "sha256": "8978e053ca2569dc60af0f90182eee7707580ff0d6d219e21608390c2b4f656f"
+    },
+    {
+      "path": "hosted/effect-job-137809978747.log",
+      "bytes": 36645,
+      "sha256": "c38bea260e2e38704e2c65afbfa1869cbdb2c9165761622dfbaad4fa7bd35edf"
+    },
+    {
+      "path": "hosted/path-initialization-review.json",
+      "bytes": 1431,
+      "sha256": "7e4d9846b8cdc1465059676e917c130d8185be075670101e7eacd73fa1229026"
+    },
+    {
+      "path": "hosted/piral-job-137809979399.log",
+      "bytes": 70220,
+      "sha256": "3bc2b95e9053c7e4b57f38b1fa5e60b127aad9eee0baef645aa9f974cfce7002"
+    },
+    {
+      "path": "hosted/piral-lifecycle-45208310980.zip",
+      "bytes": 408261,
+      "sha256": "aa2b566afaebd87eebca733830e58c32ac09ff091e186953913fab0e1e845afe"
+    },
+    {
+      "path": "hosted/piral-lifecycle/artifact-inventory.json",
+      "bytes": 20732,
+      "sha256": "b08170264cca36ad454f0fec3483f6fc8c4739eeaddd55b3f8fc2506a10441a1"
+    },
+    {
+      "path": "hosted/piral-lifecycle/hosted/browser-install.log",
+      "bytes": 17863,
+      "sha256": "6f6891042b0c37b114945e971f8abc51fa57fc5d708997979782e77450162e7e"
+    },
+    {
+      "path": "hosted/piral-lifecycle/hosted/build.log",
+      "bytes": 329,
+      "sha256": "78ad7708b6d2ae57d8164a9060890ed2a1ab972db4504a266f278866b43a2ce3"
+    },
+    {
+      "path": "hosted/piral-lifecycle/hosted/environment.txt",
+      "bytes": 31,
+      "sha256": "a0d275dd7e7bedb7f3129597a127eedc28d8cc3fdcd55643ea6deca0d2f36c5c"
+    },
+    {
+      "path": "hosted/piral-lifecycle/hosted/generated-output.json",
+      "bytes": 416,
+      "sha256": "44d6b76992cdd05c001c36a3ef6182d6fda4e5ba3d6f4ab6a4eccf3bf25433a3"
+    },
+    {
+      "path": "hosted/piral-lifecycle/hosted/input-receipt.json",
+      "bytes": 18408,
+      "sha256": "a42c213db2754d3996db919ea386d5b9d23503c97e4934eef906135b9b82159e"
+    },
+    {
+      "path": "hosted/piral-lifecycle/hosted/installed-identities.json",
+      "bytes": 3587,
+      "sha256": "e97743ed0d720ffeea7b1585d9ea4c0f0cefe4ac809ea4629275faef500dc314"
+    },
+    {
+      "path": "hosted/piral-lifecycle/hosted/native.log",
+      "bytes": 5084,
+      "sha256": "7aaf48db7776f71b2afd2b61203f10ec74918449080af74e190c0aae7d7e9d78"
+    },
+    {
+      "path": "hosted/piral-lifecycle/hosted/typecheck.log",
+      "bytes": 15,
+      "sha256": "8366207267355d3e3d5bf3bf6e8c94c5f93f6078c34f08973fa2b38cdda6cc92"
+    },
+    {
+      "path": "hosted/piral-lifecycle/observations.json",
+      "bytes": 11196,
+      "sha256": "e4ad7ff3833c8f51a2c9916225a4ee9093ae5014d9144b984ed73d2bd4d6be01"
+    },
+    {
+      "path": "hosted/workflow-validation-failure-45207513737-receipt.json",
+      "bytes": 1637,
+      "sha256": "1696bd6eea8023065b571bed499993ba341fd4f5e312290458ae5d4bfaa959e0"
+    },
+    {
+      "path": "industry/NATIVE-RESULT-REVIEW-inputs.json",
+      "bytes": 9591,
+      "sha256": "e7f2aba6048681d12e10d6444fa9ca1cff2fbd6385380eb9534475aa2a6403ee"
+    },
+    {
+      "path": "industry/NATIVE-RESULT-REVIEW.md",
+      "bytes": 13027,
+      "sha256": "aad7e7cdc06b75b54baf6df9e3be127eaa661e7e194f5d57b3af179f53fe2c2d"
+    }
+  ]
+}

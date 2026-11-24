@@ -1,0 +1,593 @@
+{
+  "schema": "research-delivery-validation/v1",
+  "researchDate": "2026-11-17",
+  "recordedAt": "2026-11-17T02:40:57.544850+02:00",
+  "timezone": "Europe/Kiev",
+  "status": "local-documentation-and-custody-pass",
+  "sourceHeadBeforeChange": "86fb39e3cc84140c1c07481ba8b0d74bfa389365",
+  "scope": "Source-backed research, navigation and discussion records only; no new runtime experiment, production implementation, public SPI, release or merge.",
+  "governedMarkdownInputs": [
+    {
+      "path": "README.md",
+      "bytes": 3326,
+      "sha256": "af08760657e4942ac32af26117e993dcdf5ffc44346d29c91517ea9200a331b7"
+    },
+    {
+      "path": "AGENTS.md",
+      "bytes": 7372,
+      "sha256": "5d996e4c1b11b95d51c34f1095fe3ab5aded1ffa357e75ef931885b8a0daac92"
+    },
+    {
+      "path": "docs/README.md",
+      "bytes": 6984,
+      "sha256": "df44233a96be34c942be92469c72a99e141a8a90332d3f68e94d9c6e8a9f994b"
+    },
+    {
+      "path": "docs/architecture/extension-model.md",
+      "bytes": 3879,
+      "sha256": "db15d71ec5a85a8d6eeaa42f4a50c98b9fb58566d5e4fd94ce1490043e97aeed"
+    },
+    {
+      "path": "docs/architecture/feature-module-standard-profile.md",
+      "bytes": 11695,
+      "sha256": "1be76bbaf7b9baf483b3ff4dedc0be25b1bc4381350f57ae2fd4247c154e098b"
+    },
+    {
+      "path": "docs/architecture/module-system-dogfooding.md",
+      "bytes": 145469,
+      "sha256": "f0cd500683bc8320ca089e1610e5a332a99a86cc9b96fbfaaa3157e45e11d8e7"
+    },
+    {
+      "path": "docs/architecture/overview.md",
+      "bytes": 13246,
+      "sha256": "8517e43a69eb33ce490562d140e2ea0d81b96582591b49f9f7110f44df05ddda"
+    },
+    {
+      "path": "docs/decisions/0001-product-neutral-extension-foundation-boundary.md",
+      "bytes": 1936,
+      "sha256": "b1c36e8b0ffd00cd6f7254caac565fefed9e29e31363546bf0bcafb8efb7e4ff"
+    },
+    {
+      "path": "docs/decisions/0002-oci-oras-and-cosign-distribution-baseline.md",
+      "bytes": 1705,
+      "sha256": "b099cadc0a6d4f9e00486d58881844565a80c37cca32bf912626a3c842a07927"
+    },
+    {
+      "path": "docs/decisions/0003-postgresql-canonical-catalog-state-and-signed-snapshots.md",
+      "bytes": 3885,
+      "sha256": "c4b44ef0fe8afc5d14ccd112c9c6e3a5bbaaab62cde2f5b9bd5ac95d3765840e"
+    },
+    {
+      "path": "docs/decisions/0004-deterministic-catalog-federation-and-namespace-authority.md",
+      "bytes": 2878,
+      "sha256": "2c1b3d4939d18cf2f06d6f6bf5510fead824e0476e9d2904fc68f0b4ae1cb3ed"
+    },
+    {
+      "path": "docs/decisions/0005-catalog-trust-and-moderation-boundaries.md",
+      "bytes": 3059,
+      "sha256": "1b34d820c1cce815e15e64e1a484ec1e633735ef6cb2272e18a411196880066d"
+    },
+    {
+      "path": "docs/decisions/0006-extension-module-safety-boundaries.md",
+      "bytes": 9196,
+      "sha256": "7f6cf34d873c2344bda45054c9bf01ea781e71066e50deb2e47c376768f04313"
+    },
+    {
+      "path": "docs/decisions/0007-extension-module-safety-boundary-clarifications.md",
+      "bytes": 12413,
+      "sha256": "593d266e736793b33ce5f10f3fae0104b7a4f55ec236e837ebdc13a430d8411e"
+    },
+    {
+      "path": "docs/decisions/0008-extension-authority-and-lifecycle-corrections.md",
+      "bytes": 13412,
+      "sha256": "dff8965e313608634ef95f6fd2989537240ac1bb631493342033847b83038e1a"
+    },
+    {
+      "path": "docs/decisions/0009-extension-activation-and-retirement-corrections.md",
+      "bytes": 6901,
+      "sha256": "083e05758ad425c2bd03318912f42d33de87cda61b9171e30d169c8da85b0b06"
+    },
+    {
+      "path": "docs/decisions/0010-extension-safety-floor-and-retirement-closure.md",
+      "bytes": 8449,
+      "sha256": "dc84bbc1ac4c1634fd6aa0f8bf5e804078bc34bfa2814652208d6d09649366e4"
+    },
+    {
+      "path": "docs/decisions/0011-extension-admission-custody-and-retirement-closure.md",
+      "bytes": 28338,
+      "sha256": "e48d6b13a37f8d55a5db5bb2b04c922fd92e8560422123d8f32d5ecb4830c30c"
+    },
+    {
+      "path": "docs/decisions/0012-reusable-library-module-and-plugin-boundaries.md",
+      "bytes": 10141,
+      "sha256": "3b294b03ddf625d145a4df74b3341a371ec77008df1465b9de8654531ddac516"
+    },
+    {
+      "path": "docs/decisions/0013-first-consumer-module-semantics-before-foundation-extraction.md",
+      "bytes": 9782,
+      "sha256": "5b9d35049b8eb06f2a03adedf497e62ab8bce4091c244c36b5cdebb21321d27e"
+    },
+    {
+      "path": "docs/decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md",
+      "bytes": 8595,
+      "sha256": "d83ca0ff5171a1631eccd91490c6d9ad4248d772563ecb64eb60aee34fa022e7"
+    },
+    {
+      "path": "docs/decisions/0015-authorize-get-modular-semantic-extraction.md",
+      "bytes": 7041,
+      "sha256": "529c32f896dd0a8e7519796c193167d91f8e666457c3b352d7a7494bbfbad0c2"
+    },
+    {
+      "path": "docs/decisions/README.md",
+      "bytes": 2176,
+      "sha256": "7d213acf93592f4ebe798ee4f302df55819b275e182d5ec8769eace810245355"
+    },
+    {
+      "path": "docs/open-decisions/OD-001-federated-extension-catalog-topology.md",
+      "bytes": 2710,
+      "sha256": "709ace1947e94212e65ba7dc8e298f90af9ca1306ab50d076e5fa6a8e0059e34"
+    },
+    {
+      "path": "docs/open-decisions/OD-002-catalog-security-and-offline-operational-parameters.md",
+      "bytes": 3823,
+      "sha256": "d16d97d297667b88909ed4af8048d42289b63ba2f27bc57b6b68b091adc6daa6"
+    },
+    {
+      "path": "docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md",
+      "bytes": 22605,
+      "sha256": "6cf6bef0d67e0603f72128e251e827e67deeec2bd17d834c3bc9edb5cd90eb59"
+    },
+    {
+      "path": "docs/open-decisions/README.md",
+      "bytes": 1469,
+      "sha256": "494a54a656dd4086942cb03d1957c05ca4a43558e81799603a9579a340cc0169"
+    },
+    {
+      "path": "docs/qualification/README.md",
+      "bytes": 705,
+      "sha256": "7d40385197cbf9b7bebb5d61a77367865d6dc46b134c1bd669c41a9df99b7a79"
+    },
+    {
+      "path": "docs/qualification/engineering-foundation-pr-99.md",
+      "bytes": 1459,
+      "sha256": "536231fa6e00f63d5d9dba0229ab59ae815739e1b20284b1dc837dae22580c33"
+    },
+    {
+      "path": "docs/qualification/module-system-v1-productization/README.md",
+      "bytes": 2793,
+      "sha256": "c99c82d68ac04ebd990ce61972ef67ab988813e40c353fb3093f828afc86bdf6"
+    },
+    {
+      "path": "docs/qualification/module-system-v1-productization/authoring-api-and-gap-matrix.md",
+      "bytes": 7373,
+      "sha256": "639a620889245247d35f3b1ed80b4e2452cfa9d350be526e8571226c98ec9193"
+    },
+    {
+      "path": "docs/qualification/module-system-v1-productization/consumer-admission.md",
+      "bytes": 3234,
+      "sha256": "5c2541b85046049ecdace0211f4468da921ac1b0c42a46468686b6fc645ab19e"
+    },
+    {
+      "path": "docs/qualification/module-system-v1-productization/executive-verdict.md",
+      "bytes": 4795,
+      "sha256": "9103280e430bd5b0d01c7bc9e3489df702d1b6b2d9926a1f6b09fc4b8ce6602e"
+    },
+    {
+      "path": "docs/qualification/module-system-v1-productization/module-authoring-measurement-proof.md",
+      "bytes": 5734,
+      "sha256": "a26088119f9dc918b6140b206696be5ed8dda7238c931931c5c14fbf069699e1"
+    },
+    {
+      "path": "docs/qualification/module-system-v1-productization/red-team-findings.md",
+      "bytes": 5967,
+      "sha256": "b2efd715dd4cb13b29dd20f7d0d0a111f43b3b7324b6a1df699e47a0c4bcb79e"
+    },
+    {
+      "path": "docs/qualification/module-system-v1-productization/roadmap.md",
+      "bytes": 6715,
+      "sha256": "5a2e1a9089a9985fa5bc89078d7f076bc0d8cf23a273fee667a6dc1518125cb9"
+    },
+    {
+      "path": "docs/qualification/package-policy-coordination-primitives.md",
+      "bytes": 4021,
+      "sha256": "f588b82930c02d88be92f45858f19d71b7d5173c1730cf56ff2232f6c8c3bc64"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/README.md",
+      "bytes": 8101,
+      "sha256": "6845043319d7fab7d38deb22213593b7c109777dc983ef1ded45d1cb9ff0f466"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/anti-patterns.md",
+      "bytes": 24203,
+      "sha256": "ebbe5927a85cc2f706eb27d532b0cb080c8aab48ae0b8b915be21e2dff9f3cc1"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/catalog-and-profiles.md",
+      "bytes": 11896,
+      "sha256": "ea63f82091201348b986db84642653265040c05e50ca2fff56d052f42035823b"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/conformance-plan.md",
+      "bytes": 25919,
+      "sha256": "4481b4fd13a470dd05b7fe6a7fa9fe1c2d6907c5d95f405ed16df9bdb4b9c1b7"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/current-state.md",
+      "bytes": 10999,
+      "sha256": "c0b2391f6fd38e9f83a044e4eb82c6805a9b21fb0e49dfdf0c45aaeaa87b93db"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/final-recommendation.md",
+      "bytes": 14421,
+      "sha256": "39634d5702a17cc616a6aa7dba9bbb283d28165c82f5c0a418cbbf4cb2affe76"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/invariant-map.md",
+      "bytes": 9790,
+      "sha256": "4340c73fd0a4642a805479749fffc5192fbe730bf612124b7b4484bd6eca89a6"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/lifecycle-and-concurrency.md",
+      "bytes": 45906,
+      "sha256": "fc68cbb2d5bce5d87850c1e6ed393a18a0e3156db53520bd108dd6f091ad4e3d"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/module-graph.md",
+      "bytes": 32415,
+      "sha256": "f38a9787f24829e44d455258a21adc46236a8cf9bb94a33d00d65e64a4654579"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/01-executive-report.md",
+      "bytes": 6268,
+      "sha256": "8c2a5e3ca27c64fe5fd32a9f3c485be0955b3826d245ac9c10a8c88b8a2c7a56"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/02-principles-matrix.md",
+      "bytes": 4274,
+      "sha256": "fec5118e49fc7663bc90da3662fdd7a1e21fcb472efdd05d1e16738aadebf85f"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/03-oss-lessons-and-anti-patterns.md",
+      "bytes": 4733,
+      "sha256": "33ab707f5e612691c72c5fdfd9b87055ba31b36fad5b22be0807a3ff9d65a716"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/04-cordis-verdict.md",
+      "bytes": 2303,
+      "sha256": "8e5159a1544cd663cc0a748c9dc7b74cb492c23734da9b74898f77a95d3f6e1c"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/05-module-api-comparison.md",
+      "bytes": 3804,
+      "sha256": "8fde9bdd38a8d70ce039ba661242fc858bdeacc2fd4e9f0afbb7ab0d5a4bda63"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/06-dependency-graph-and-di-decision.md",
+      "bytes": 5909,
+      "sha256": "c6f9de54af838c86862bc9275898a50bb4a828454aa0c889939b7ccb0273f4a2"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/07-module-federation-2-verdict.md",
+      "bytes": 2287,
+      "sha256": "76f2432c79edb134ed6344a3ad9a3bf11be4cbb1fd4341f1497def484df7fa34"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/08-umeq-decision-matrix.md",
+      "bytes": 4750,
+      "sha256": "f3dc9da56091312fd191ab6ec438c0895e933ec08ff1dd1604dfcfac4ec0f724"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/09-security-and-lifecycle-threat-model.md",
+      "bytes": 8248,
+      "sha256": "0936a86412a41035e3b230c1919b63bce76f398aa5e13cff8acd7773fe747f59"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/10-architecture-and-loc-roadmap.md",
+      "bytes": 7398,
+      "sha256": "b9f6299e111e4b27b0206be43990eb37e8b7f62da0ddd90c6b326ef619bd781d"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/11-approval-ready-adr-list.md",
+      "bytes": 3634,
+      "sha256": "2f3ac97ae7b387609ab0b46be59085c77d70ecf57f03689f7289ee385bead0a9"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/12-deferred-decisions.md",
+      "bytes": 4595,
+      "sha256": "d85a4abe75330aca436480b45b2eba56c858d3e09d92596adea0f82afa102d62"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/nightly/README.md",
+      "bytes": 2772,
+      "sha256": "1341ed0b2e5efa8cb70960c710735a731c1dd82ba7a60fbf0051be17e7ebca6a"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/oss-comparison.md",
+      "bytes": 7874,
+      "sha256": "6c1c66f2f23a76a0d961f779fb84c6b237b2a6f5ee25f7f401ff73e48f97d7f4"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/packaging-and-reuse.md",
+      "bytes": 12114,
+      "sha256": "6f202bd1964b1776a31992b9990576ce539d2cc6c6f49a7dc3bd223fdc017a64"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/performance-and-slo.md",
+      "bytes": 8356,
+      "sha256": "2fa42127c1225ee77ea341d390ccb7a3bf54405d8758a4151d60b4b66d2227f9"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/product-adoption.md",
+      "bytes": 13358,
+      "sha256": "1607bb46535443cc7e613f3fbe42c658108e52e962f68997810c975c4afff238"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/spike-results.md",
+      "bytes": 12217,
+      "sha256": "79106815667b548b8cad895b3cc3c85c4af4b8c647b356fb95a69b02279265f5"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/trust-and-security.md",
+      "bytes": 28232,
+      "sha256": "18b9173974642d76bdc1d5e29f0946b473849e11a28f0cc0ff65b789fb7e5d56"
+    },
+    {
+      "path": "docs/qualification/universal-module-extension-system/unresolved-decisions.md",
+      "bytes": 11438,
+      "sha256": "1e116acba96960f155ab9da9bcb5489ba113d6ffd6f23a172114bfa0935c5820"
+    },
+    {
+      "path": "docs/research/agent-framework-extension-evidence-2026-11-05.md",
+      "bytes": 63525,
+      "sha256": "3aabe97dd0a507e08cddc4bcd16e221b4a0ac1994b3385b09be40c98e8db2d47"
+    },
+    {
+      "path": "docs/research/critical-components-and-language-boundaries.md",
+      "bytes": 46335,
+      "sha256": "5d0f59b70d905c848fc5d11ad80985322967953f6f7ed534d1bc2765cb1e1cc8"
+    },
+    {
+      "path": "docs/research/customization-without-forks-and-scale.md",
+      "bytes": 15972,
+      "sha256": "8b88e54d52b8ec39c4fa5ae690fe8559a60d07325fa4efbf1bdabc34c771e67c"
+    },
+    {
+      "path": "docs/research/hot-reload-and-generation-replacement.md",
+      "bytes": 31375,
+      "sha256": "38b9eddadfdeb4032d7405d24261780ac9a9c68b30cd1fcb3d3c54296b383ca2"
+    },
+    {
+      "path": "docs/research/live-plugin-evolution-final-research-and-architecture-2026-11-17.md",
+      "bytes": 46794,
+      "sha256": "a02bef6a417ed109654c733f5bd7ae67aa141f0c7127f5269cfc515d81a10552"
+    },
+    {
+      "path": "docs/research/live-plugin-evolution-vision-and-evidence-2026-11-14.md",
+      "bytes": 34996,
+      "sha256": "7c1bc3f71249e0fd390f2589aa80635fa929b30efdb47afd76d3f26d67116c18"
+    },
+    {
+      "path": "docs/research/openclaw-plugin-and-reload-audit.md",
+      "bytes": 51184,
+      "sha256": "ad3f5ce061936929352ee1862ae046632a929c3f9eb5e9032dd8ee8b622662e3"
+    },
+    {
+      "path": "docs/research/packed-extension-consumer-e2e-2026-11-05.md",
+      "bytes": 14918,
+      "sha256": "3b7532031fbbfa8bbc9fbd38d64bb94d9f05349f30cfd7e3dc20e60741d2f620"
+    },
+    {
+      "path": "docs/research/plugin-boundary-and-failure-experiments.md",
+      "bytes": 33228,
+      "sha256": "404af6e3971bccb57ec0429dedad7074ed83075e3e95ee9cf6796161d31227fc"
+    },
+    {
+      "path": "docs/research/plugin-choice-deepening-2026-11-06.md",
+      "bytes": 30375,
+      "sha256": "3d83e0ff4a538ebf2e62a43fe6a640ef30763a58cbec4950bb188c31cc2ba620"
+    },
+    {
+      "path": "docs/research/plugin-ecosystem-scale-and-composition.md",
+      "bytes": 28197,
+      "sha256": "0f97c7de9ad513fe963e540c9c26d133254d140b10e04cc645840210a50e4d60"
+    },
+    {
+      "path": "docs/research/plugin-industry-and-scale-review-2026-11-05.md",
+      "bytes": 34021,
+      "sha256": "703861730f008dbfdc4f3cdf0cc03ca2393bdfe652277c7224e792853e5db41e"
+    },
+    {
+      "path": "docs/research/plugin-platform-reload-evidence.md",
+      "bytes": 17866,
+      "sha256": "031c07602428c48aab38991bec666bf4cc00db3b0a8bceb2da4bd8fbeb7f360c"
+    },
+    {
+      "path": "docs/research/plugin-research-review-and-decision-record.md",
+      "bytes": 47454,
+      "sha256": "75ae56fd22d61fc3eb9886e365e0d6840e9df6c9e9f69e727d286e620dae9cb7"
+    },
+    {
+      "path": "docs/research/plugin-research-synthesis-and-authority-2026-11-05.md",
+      "bytes": 40543,
+      "sha256": "b6320adf71edd410d57f53bc48699036ab54272601970051fdb586de3b6b7c74"
+    },
+    {
+      "path": "docs/research/plugin-system-research-reference.md",
+      "bytes": 30533,
+      "sha256": "35a12f4a6638bf1ace8a35623ed8ae4b4e7ed354b63a344c0fca0e3f2cb57e6d"
+    },
+    {
+      "path": "docs/research/portable-live-plugin-mechanisms-and-library-design-2026-11-17.md",
+      "bytes": 45199,
+      "sha256": "2ad43f7c1d1471938ed6ccdc378455df3b94a730bdd51131bc981feb0bf588df"
+    },
+    {
+      "path": "docs/research/production-reload-system-evidence.md",
+      "bytes": 46817,
+      "sha256": "d95405cc15271a22f974f0c107b55ce43f9adb2e4b060e13d9adbdbe33b6366c"
+    },
+    {
+      "path": "docs/research/reusable-generation-mechanisms-and-ownership.md",
+      "bytes": 57325,
+      "sha256": "3b105b64a75c99cecc0dc67c67beb9d9b82a2e0cf8978a2eda5eacf75d1308d9"
+    },
+    {
+      "path": "docs/research/specialist-plugin-framework-evidence-2026-11-05.md",
+      "bytes": 47587,
+      "sha256": "0ab6637c10379fbfaf18eb28593cb0ef83def33ce78fedad16513053aa3d8db7"
+    },
+    {
+      "path": "docs/research/stateful-upgrade-and-recovery-evidence.md",
+      "bytes": 20450,
+      "sha256": "12606b8af65e1b022b38de63d608695f5d38e457f10e430e33a9c4a3c32fabcf"
+    },
+    {
+      "path": "docs/research/static-composition-and-controlled-restart-validation.md",
+      "bytes": 21658,
+      "sha256": "76c2623610894522b0b0a4be37810d55361a00d563ac23cc5f3b00436619a0f1"
+    },
+    {
+      "path": "docs/research/temporal-and-rollout-orchestration.md",
+      "bytes": 46410,
+      "sha256": "8964f714f4b25e619034d2c1e3443f2c24d009f4bf9176a81c47bd845d380a66"
+    },
+    {
+      "path": "docs/research/worker-adapter-replacement-experiment.md",
+      "bytes": 21320,
+      "sha256": "fddf66df73833cc292241ac6a765ccf95bfa58f906a3a819352f2bc2aecfe558"
+    },
+    {
+      "path": "docs/templates/adr.md",
+      "bytes": 318,
+      "sha256": "dc7913072b964c6ae1a4cc711392ddad641dd8df6841ffafb06893fe9d362c6e"
+    },
+    {
+      "path": "docs/templates/architecture.md",
+      "bytes": 527,
+      "sha256": "46dd7bde7051f2a07e72487a334ea05c1c8f11295f06570cf2bb033094d310a0"
+    },
+    {
+      "path": "docs/templates/open-decision.md",
+      "bytes": 276,
+      "sha256": "e0bad53aa5921b3113c87ebe05d9dd8f97a877ff08696fe4de725a16bdc1bc26"
+    },
+    {
+      "path": "docs/templates/research.md",
+      "bytes": 687,
+      "sha256": "9f04005dc02b705eee4b899a39c3a1458d985daef6aff093726f664a5cb4ceab"
+    }
+  ],
+  "configurationAndContractInputs": [
+    {
+      "path": "package.json",
+      "bytes": 6657,
+      "sha256": "92ea2bd93076612b19698016ec4d00c76dffaae608ec6e1c2498b9934619e220"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 94819,
+      "sha256": "a947cfe3f4d5db4877124f04a822e7bf4d88a98852003d243bb92cd31e136c48"
+    },
+    {
+      "path": ".cspell.json",
+      "bytes": 302,
+      "sha256": "8f61d32d86ea12984177d8f32bb9d488b10472b5aab1783c9a01ebe689a42e00"
+    },
+    {
+      "path": "architecture/foundation/docs-protocol.yaml",
+      "bytes": 342,
+      "sha256": "a9861d049ebd1836e819bee5792b28f55960119684162d0d8ffeedd92b96c97c"
+    },
+    {
+      "path": "architecture/tooling/markdownlint-cli2.mjs",
+      "bytes": 230,
+      "sha256": "e4c89f911e966252ef8285bddd8ede6f0319f2e162db8671e27b9295f1cecd21"
+    },
+    {
+      "path": ".agents/skills/docs-authoring/SKILL.md",
+      "bytes": 2094,
+      "sha256": "a86d8c9b990124f11b50b1c6703e1aeb5e3b981d51f7e8f5c163c4f5b987d7c5"
+    },
+    {
+      "path": "tests/document-authoring.test.mjs",
+      "bytes": 14027,
+      "sha256": "32092c7db970c359861e1e11eb444c1485a84494b62b492b5131e8c4e81ab562"
+    },
+    {
+      "path": "tests/docs-protocol-qualification.test.mjs",
+      "bytes": 2247,
+      "sha256": "5ee68e68ce5b5279f36412b5619829441c5b06800329ece7e15ec3093b03c8e4"
+    }
+  ],
+  "archive": {
+    "path": "docs/research/evidence/live-plugin-final-study-20261117.tar.gz",
+    "bytes": 86040,
+    "sha256": "ac5e3c1666c809d05b1ad24fdccc935dd1e5ac0f84179b311e41e171f6acdcb1",
+    "regularFileCount": 20
+  },
+  "manifest": {
+    "path": "docs/research/evidence/live-plugin-final-study-20261117.manifest.json",
+    "bytes": 3729,
+    "sha256": "3c1f713453fbd67a8e7b1ec703a9a09bef7759f74dc2cae16c128427afe36c1c"
+  },
+  "preservedHistoricalArchives": [
+    {
+      "path": "docs/research/evidence/live-plugin-evolution-20261114.tar.gz",
+      "bytes": 263889,
+      "sha256": "0469a42a636150beaedde54969359cd1d342b728fe2bdd717db5d75c58cf1d29"
+    },
+    {
+      "path": "docs/research/evidence/portable-live-plugins-20261117.tar.gz",
+      "bytes": 70928,
+      "sha256": "d814e91516b382d9351b13ae8600284089de3aa767b57aee46285e2de5434acf"
+    }
+  ],
+  "authoringProtocol": {
+    "info": "Passed before authoring.",
+    "find": "Passed for live plugin.",
+    "context": "Initial wrong profile architecture rejected without mutation; exact architecture/foundation/docs-protocol.yaml call passed.",
+    "previewApplyPlanSha256": "1b42143abbbb3225f1cd5b13b0e42bf0f5b1bb426acc89bf46e1681a79ea28f5",
+    "note": "Preview and apply used the identical declared plan. Details are retained in the archive."
+  },
+  "command": "pnpm docs:protocol:check",
+  "result": {
+    "exitCode": 0,
+    "catalogDocuments": 88,
+    "markdownAndSpellingFiles": 94,
+    "contractTests": 8,
+    "passed": 8,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "contractDurationMs": 388973.531755,
+    "rawLogSha256": "87c59c2d478ec49ae221ec4330d1f1424b8fd6c6299dab0349153c62742fc32f",
+    "rawLog": "$ pnpm docs:check && pnpm docs:quality && pnpm docs:contract-test\n$ agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml\ndocs.check: success\nProject: extension-foundation\nCatalog: complete (88 documents)\nAdoption: valid\n$ markdownlint-cli2 --config architecture/tooling/markdownlint-cli2.mjs && cspell --config .cspell.json --no-progress\nmarkdownlint-cli2 v0.23.2 (markdownlint v0.41.1)\nFinding: README.md AGENTS.md docs/**/*.md\nLinting: 94 files\nSummary: 0 issues in 0 files\nCSpell: Files checked: 94, Issues found: 0 in 0 files.\n$ node --test tests/document-authoring.test.mjs tests/docs-protocol-qualification.test.mjs\n✔ managed integration owns a data-only v3 qualification contract and external gate (5.564276ms)\n✔ unified info and check expose the declared Extension authority (5112.596489ms)\n✔ find combines catalog and relation filters and treats zero matches as success (14238.766557ms)\n✔ catalog preserves reciprocal supersession and resolved-decision evidence (4936.896329ms)\n✔ new previews and applies every supported type only inside a disposable repository (332216.154694ms)\n✔ required code anchors pass when reachable and fail closed when stale (9424.493161ms)\n✔ invalid owner, metadata, and duplicate identity fail without mutation (17598.696218ms)\n✔ portable adoption rejects a Skill without executable context guidance (5324.3108ms)\nℹ tests 8\nℹ suites 0\nℹ pass 8\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 388973.531755\n"
+  },
+  "standaloneDocsCheck": {
+    "exitCode": 0,
+    "rawLog": "$ agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml\ndocs.check: success\nProject: extension-foundation\nCatalog: complete (88 documents)\nAdoption: valid\n"
+  },
+  "standaloneQuality": {
+    "initialResult": "Two spelling diagnostics, uncancellable and Liskov; corrected before final gate. Original failure is retained in archive validation/initial-quality-failure.log.",
+    "exitCodeAfterCorrection": 0,
+    "rawLogAfterCorrection": "$ markdownlint-cli2 --config architecture/tooling/markdownlint-cli2.mjs && cspell --config .cspell.json --no-progress\nmarkdownlint-cli2 v0.23.2 (markdownlint v0.41.1)\nFinding: README.md AGENTS.md docs/**/*.md\nLinting: 94 files\nSummary: 0 issues in 0 files\nCSpell: Files checked: 94, Issues found: 0 in 0 files.\n"
+  },
+  "localGeneralGate": "Not run: the unchanged Foundation 1.7.2 general route initializes API Extractor with embedded TypeScript 5.9.3, prohibited by the existing user restriction. No check:changed, check:fast or check pass is claimed. No dependency or workflow was changed to bypass the restriction. The standalone Docs Protocol gate ran normally.",
+  "runtime": {
+    "node": "v24.22.1",
+    "pnpm": "11.25.0",
+    "typescriptDeclared": "7.0.2"
+  },
+  "runtimeTestsExecuted": false,
+  "runtimeEvidenceBoundary": "Zero new runtime tests or benchmarks. Four historical native Effect scenarios retain their original evidence and scope; this follow-up did not rerun them.",
+  "custodyAudit": {
+    "bytes": 5602,
+    "sha256": "cbf1deeff0ac67006e006a1095567c2557c6c37819fda59d5eab53e4fe1e4310",
+    "verdict": "PASS",
+    "rawReport": "# Independent final research custody audit\n\nDate: 2026-11-17, Europe/Kiev.\n\n**Result: PASS for archive custody, reviewed document identity, current navigation\nand declared research scope. No material finding remains open in this audit.**\n\nThis was a read-only audit. The reviewer did not edit the repository, archive or\nmanifest, execute runtime tests, restart a validation gate or publish anything.\nThis audit file is deliberately outside the immutable packet.\n\n## Archive and manifest\n\nAudited archive:\n`extension-foundation/docs/research/evidence/live-plugin-final-study-20261117.tar.gz`\n\nSHA-256:\n`ac5e3c1666c809d05b1ad24fdccc935dd1e5ac0f84179b311e41e171f6acdcb1`\n\nSize: **86,040 bytes**. Members: **20 regular files**.\n\nThe adjacent manifest was parsed independently. Every member was read from the\narchive without extraction and checked against its manifest entry. Results:\n\n- **20/20** member sizes match both actual bytes and manifest sizes.\n- **20/20** member SHA-256 values match the manifest.\n- **20/20** archive members match the current corresponding scratch evidence\n  files byte-for-byte.\n- Archive/manifest membership sets are equal, without duplicate names.\n- All members are regular files with relative paths; no absolute/traversal path,\n  backslash path, symlink, hardlink or device entry is present.\n- All **four source ledgers** and the adjacent manifest parse as JSON.\n- All **six specialist reviews** and both exact **root review inputs** are\n  present. The packet also contains the root dispositions and original prose\n  validation failure.\n- The explicit member inventory contains no inspection-temp source copies,\n  dependencies, binary runtime, credentials file or raw downloaded upstream\n  implementation. It contains the research reports, ledgers and review records\n  described by its README.\n\n## Exact review and final document binding\n\n| Artifact | SHA-256 |\n| --- | --- |\n| Frozen round-1 root input | `089c7b60990a6c3fe1d91f2de751bc8bd149a72218d4474600886c323d25d9b4` |\n| Frozen round-2 root input | `a3f6beeb0b2d9b2944c7c241e1429b75143ae484ea3cbdefc3bf574156bbd2f3` |\n| Final governed root report | `a02bef6a417ed109654c733f5bd7ae67aa141f0c7127f5269cfc515d81a10552` |\n\nThe final report hash is explicitly bound in the archived portable-boundary\nround-2 review. An independent diff confirms that its only change from frozen\nround 2 replaces the ambiguous “no finite TTL” phrase with the precise omitted\n`idleTimeToLive` condition. The specialist review explains the explicit infinite\nTTL distinction. Other reviews retain their own inspected draft identities;\nthe evidence does not pretend every reviewer inspected the same final bytes.\n\nThe final emerging-runtime ledger has hash\n`0d03d02c15158ac92d50114dfae1d078f3a8322e46e6eb4eacf66d0637fdd9e2`,\nalso bound by the mature-runtime round-2 review. Its Go manual-update limitation\nnow points to the correct versioned how-to guide; `develop/updating.mdx` retains\nthe narrower replay/snapshot claim. An earlier review's older ledger hash is\naccurately historical, and the later corrected ledger is independently covered.\n\nThe archived mature-runtime report and ledger both include Felix's declared\nlazy-activation exception. The portable ledger's E1 entry distinguishes omitted\nTTL, finite non-invalidated TTL, invalidation and explicit infinity; M5 names\nthe actual protocol-version heading. Golem assisted-source guards remain scoped\nto the snapshot-assisted strategy, and wasmCloud cleanup includes reply drop on\nstore teardown. These corrections agree with the retained dispositions.\n\n## Historical archives preserved\n\n| Archive | Verified SHA-256 |\n| --- | --- |\n| `live-plugin-evolution-20261114.tar.gz` | `0469a42a636150beaedde54969359cd1d342b728fe2bdd717db5d75c58cf1d29` |\n| `portable-live-plugins-20261117.tar.gz` | `d814e91516b382d9351b13ae8600284089de3aa767b57aee46285e2de5434acf` |\n\nBoth equal the supplied original identities. This delivery did not rewrite\nthose retained source/experiment packets.\n\n## Navigation and semantic boundaries\n\nThe final study is linked from `docs/README.md`, the current synthesis in the\nresearch reference, OD-003 and the dated review/decision record. The existing\nAGENTS route leads through that research reference. The linked review-record\nheading exists. No competing accepted authority was added.\n\nThe earlier portable report's diff adds the new-report route and the narrow\nremote-MCP clarification. It does not change earlier experimental assertions or\npromote local client capture into remote executor affinity.\n\nThe packet and final report distinguish documented contracts, inspected source,\narchitectural inference and proposed checks. They explicitly report zero new\nruntime execution and zero production/integration code. The proposed outside\nconsumer and SDK overlap scenario remain unexecuted proposals, not existing\nadopters or reproduced defects. Ordinary-update interruption remains OPEN;\npublic SPI, package publication, runtime migration and merge are not selected.\n\n## Validation boundary\n\nThe final documentation gate, its adjacent receipt and exact-commit hosted CI\nare separate delivery evidence owned by root. Their completion was not asserted\nby this custody audit. The receipt's intentional creation after the gate is not\nan archive defect and was not edited by the reviewer.\n\nArchive hashes prove byte custody; they do not independently prove source\nbehavior, runtime conformance, hostile isolation, production capacity or future\ndependency availability. No broad new source re-audit or runtime experiment was\nneeded for this bounded delivery check.\n"
+  },
+  "reviewBoundary": "Six specialist reviews across two rounds retain the exact inspected draft identities. The final report hash is explicitly bound by portable round-2 review; its sole change from the frozen second draft narrows the omitted idleTimeToLive condition. The independent custody audit confirms that delta and current navigation.",
+  "hostedCI": "Exact new-head run links and observed job conclusions are recorded in Draft PR55 after publication; they are not claimed by this pre-publication receipt.",
+  "outputReceiptNote": "Generated after the original complete gate. This JSON receipt is not its own input. The governed Markdown/configuration/test bytes checked by the gate are bound above. Hosted results belong in PR metadata to avoid another result-only source commit."
+}

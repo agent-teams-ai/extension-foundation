@@ -1,0 +1,103 @@
+Trailing whitespace in log lines is normalized.
+Local documentation validation of the value/size research checkpoint.
+No plugin-runtime qualification is added.
+
+--- First quality attempt (terminology findings, corrected) ---
+$ pnpm docs:check && pnpm docs:quality && pnpm docs:contract-test
+$ agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml
+docs.check: success
+Project: extension-foundation
+Catalog: complete (95 documents)
+Adoption: valid
+$ markdownlint-cli2 --config architecture/tooling/markdownlint-cli2.mjs && cspell --config .cspell.json --no-progress
+markdownlint-cli2 v0.23.2 (markdownlint v0.41.1)
+Finding: README.md AGENTS.md docs/**/*.md
+Linting: 101 files
+Summary: 0 issues in 0 files
+docs/research/live-update-value-competition-and-implementation-size-2026-11-22.md:65:29 - Unknown word (Pilet)
+docs/research/live-update-value-competition-and-implementation-size-2026-11-22.md:66:37 - Unknown word (rebootstrap)
+docs/research/live-update-value-competition-and-implementation-size-2026-11-22.md:93:18 - Unknown word (wadm)
+docs/research/live-update-value-competition-and-implementation-size-2026-11-22.md:103:20 - Unknown word (noncomment)
+CSpell: Files checked: 101, Issues found: 4 in 1 file.
+[ELIFECYCLE] Command failed with exit code 1.
+[ELIFECYCLE] Command failed with exit code 1.
+
+--- Full gate after terminology correction ---
+$ pnpm docs:check && pnpm docs:quality && pnpm docs:contract-test
+$ agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml
+docs.check: success
+Project: extension-foundation
+Catalog: complete (95 documents)
+Adoption: valid
+$ markdownlint-cli2 --config architecture/tooling/markdownlint-cli2.mjs && cspell --config .cspell.json --no-progress
+markdownlint-cli2 v0.23.2 (markdownlint v0.41.1)
+Finding: README.md AGENTS.md docs/**/*.md
+Linting: 101 files
+Summary: 0 issues in 0 files
+CSpell: Files checked: 101, Issues found: 0 in 0 files.
+$ node --test tests/document-authoring.test.mjs tests/docs-protocol-qualification.test.mjs
+✔ managed integration owns a data-only v3 qualification contract and external gate (10.749189ms)
+✔ unified info and check expose the declared Extension authority (6098.474651ms)
+✔ find combines catalog and relation filters and treats zero matches as success (16513.801783ms)
+✖ catalog preserves reciprocal supersession and resolved-decision evidence (5391.628996ms)
+✖ new previews and applies every supported type only inside a disposable repository (80965.207942ms)
+✔ required code anchors pass when reachable and fail closed when stale (12728.09915ms)
+✔ invalid owner, metadata, and duplicate identity fail without mutation (21034.440888ms)
+✔ portable adoption rejects a Skill without executable context guidance (6005.035035ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 6
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 148928.924621
+
+✖ failing tests:
+
+test at tests/document-authoring.test.mjs:134:1
+✖ catalog preserves reciprocal supersession and resolved-decision evidence (5391.628996ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  null !== 0
+
+      at run (file:///workspace/scratch/95e187720be1/live-update-value-validation/tests/document-authoring.test.mjs:41:10)
+      at TestContext.<anonymous> (file:///workspace/scratch/95e187720be1/live-update-value-validation/tests/document-authoring.test.mjs:136:5)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/document-authoring.test.mjs:156:1
+✖ new previews and applies every supported type only inside a disposable repository (80965.207942ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  null !== 0
+
+      at run (file:///workspace/scratch/95e187720be1/live-update-value-validation/tests/document-authoring.test.mjs:41:10)
+      at TestContext.<anonymous> (file:///workspace/scratch/95e187720be1/live-update-value-validation/tests/document-authoring.test.mjs:199:21)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+[ELIFECYCLE] Command failed with exit code 1.
+[ELIFECYCLE] Command failed with exit code 1.
+
+--- Focused retry of failed catalog test ---
+Command: node --test --test-name-pattern=catalog preserves reciprocal tests/document-authoring.test.mjs
+Result: exit 0; 1 test, 1 pass, 0 fail, 0 skipped; 9737.832024 ms.
+This is not a substitute for the full gate.

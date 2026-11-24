@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "status": "frozen-before-hosted-execution",
+  "sourceHead": "4a95ba3026ad4721ed6585a38fbd192e5aba133d",
+  "inputAggregateSha256": "8299e58dd668163cb75d0adf2b124c2fce6c0f6c6d452fcb7e08fbfd22db3fbb",
+  "maintainedTypeScriptLOC": 520,
+  "productionLOC": 0,
+  "changedExecutableInputs": [
+    "probe/probe.test.ts"
+  ],
+  "nativeCasesExecuted": 0,
+  "archive": "module-federation-v2-input-20261122.tar.gz",
+  "bytes": 27743,
+  "sha256": "a2e6bfb6bb715c563026f72dc64a7c7460971d4a46d3eb711e8d0b5395cbefc6",
+  "members": [
+    {
+      "path": "PLAN.md",
+      "bytes": 10689,
+      "sha256": "5d03edd60d1418bb1b5d59edbc33600d732e1f2e3b590535d96df9e30295e5e4"
+    },
+    {
+      "path": "PORTABILITY-V2.md",
+      "bytes": 1293,
+      "sha256": "9a56821741c61203171fef898c9f1a95429f9e2ba442fe5cf0455ab89f669eda"
+    },
+    {
+      "path": "frozen-inputs-v2.json",
+      "bytes": 2749,
+      "sha256": "719f0df1ceabde010c05d0cab9a678e599053272bae3e47dc18be51f8dbdf2b2"
+    },
+    {
+      "path": "portability-v2.diff",
+      "bytes": 1312,
+      "sha256": "19c29ab3c58f0b98a6bcfe50dd4df8cb52d9c0f40e9ab4454480c23d112cdbac"
+    },
+    {
+      "path": "probe/build.ts",
+      "bytes": 3369,
+      "sha256": "fed0b9969d4f52cd1bc65a6e4fc670ac99c3060e44652a1eaf5af96c6d0172d2"
+    },
+    {
+      "path": "probe/dependency-audit.json",
+      "bytes": 19608,
+      "sha256": "987ab365c1cf60cbbef7bc2aaec34a776042068ab17fe4003e886d39d92db609"
+    },
+    {
+      "path": "probe/fixture/consumer.ts",
+      "bytes": 39,
+      "sha256": "2942adf7d60ce22be27d15f24c5c359bf420f6329e5942883ca4f89f3c412e50"
+    },
+    {
+      "path": "probe/fixture/host.ts",
+      "bytes": 7303,
+      "sha256": "668f715e947425477f77fc353077d0b19ea2bbe0ff8c9a18971b4cc6397f5c41"
+    },
+    {
+      "path": "probe/fixture/remote.ts",
+      "bytes": 580,
+      "sha256": "753744d6229bece714f3216a34fd668dc0b13e1035e572fd012cae3d34391a02"
+    },
+    {
+      "path": "probe/fixture/token.ts",
+      "bytes": 265,
+      "sha256": "455014b72ca736171310e767b09ffe3a135130a635de1bcd8621da50bfdb72cc"
+    },
+    {
+      "path": "probe/fixture/types.ts",
+      "bytes": 650,
+      "sha256": "f4bac6a9729f49fafaee5a9236769af1929281a1ce22c7da28a49fd42f47fa4f"
+    },
+    {
+      "path": "probe/package.json",
+      "bytes": 549,
+      "sha256": "a216cb0823ce3b08cb20459203db7b6d6fafb8c478789f1b5c435d8be1b94951"
+    },
+    {
+      "path": "probe/pnpm-lock.yaml",
+      "bytes": 27510,
+      "sha256": "1df71ecdaf9f1af044e444dc22419f9f0274adfdbc86cf59fd8709e74543c9f9"
+    },
+    {
+      "path": "probe/probe.test.ts",
+      "bytes": 6889,
+      "sha256": "e95b46270ef41bcac9c363f5d07028bd28828db3600a496b5524190b58d069c0"
+    },
+    {
+      "path": "probe/tsconfig.json",
+      "bytes": 587,
+      "sha256": "5d8262b5b4dea95af524d4f56c1931238e9a8eba2cec70c22ac02dcb1beaa53f"
+    },
+    {
+      "path": "third-party-licenses/manifest.json",
+      "bytes": 1613,
+      "sha256": "304c5fe78df09b73418607a1391a6cc9cb111b3814541197ccdb74060ca0a39c"
+    },
+    {
+      "path": "third-party-licenses/module-federation__error-codes-LICENSE",
+      "bytes": 1112,
+      "sha256": "8385c252568609183ceb9aead4ebac3b3bd8678c627739aee7aad29116409332"
+    },
+    {
+      "path": "third-party-licenses/module-federation__runtime-LICENSE",
+      "bytes": 1083,
+      "sha256": "74aeeff0b0117761910083b03d18a64a5a654917e794a841406410f909b427cf"
+    },
+    {
+      "path": "third-party-licenses/module-federation__runtime-core-LICENSE",
+      "bytes": 1083,
+      "sha256": "74aeeff0b0117761910083b03d18a64a5a654917e794a841406410f909b427cf"
+    },
+    {
+      "path": "third-party-licenses/module-federation__sdk-LICENSE",
+      "bytes": 1082,
+      "sha256": "62431fbe2f17fc691be95ed8302aa042c03200d2a7cdee7aab4bb0d2d3e16098"
+    },
+    {
+      "path": "third-party-licenses/webpack-LICENSE",
+      "bytes": 1071,
+      "sha256": "9068a8782d2fb4c6e432cfa25334efa56f722822180570802bf86e71b6003b1e"
+    }
+  ]
+}

@@ -1,0 +1,927 @@
+{
+  "researchDate": "2026-11-22",
+  "timezone": "Europe/Kiev",
+  "checkpoint": "6",
+  "note": "Source and execution evidence stay distinct; each lane preserves exact revisions and qualification limits.",
+  "lanes": {
+    "versions": {
+      "researchDate": "2026-11-22",
+      "timezone": "UTC",
+      "status": "complete",
+      "sources": [
+        {
+          "id": "V01",
+          "system": "Temporal",
+          "kind": "primary-documentation",
+          "url": "https://docs.temporal.io/worker-versioning",
+          "retrieved": "2026-11-22",
+          "identity": "moving docs; independent server release pin V02",
+          "claims": [
+            "Pinned versus Auto-Upgrade",
+            "Independent Activity exception",
+            "Drained can retain closed-workflow query demand"
+          ]
+        },
+        {
+          "id": "V02",
+          "system": "Temporal",
+          "kind": "released-source-identity",
+          "url": "https://github.com/temporalio/temporal/releases/tag/v1.32.2",
+          "version": "1.32.2",
+          "commit": "6d085822273f4336796e6959c73ab1d14a23eb77",
+          "publishedAt": "2026-11-02T18:38:48Z",
+          "claims": [
+            "Exact released source selected for inspection; runtime not executed"
+          ]
+        },
+        {
+          "id": "V03",
+          "system": "Restate",
+          "kind": "primary-documentation",
+          "url": "https://docs.restate.dev/services/versioning",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "Immutable deployment endpoints pin retries",
+            "Long invocation retention cost",
+            "Virtual Object state persists across code versions",
+            "Forced in-place development registration can cause journal mismatches"
+          ]
+        },
+        {
+          "id": "V04",
+          "system": "Restate",
+          "kind": "released-source-identity",
+          "url": "https://github.com/restatedev/restate/releases/tag/v1.8.1",
+          "version": "1.8.1",
+          "commit": "20efb1b83a39b8227451e531c366e067588ae9ee",
+          "tagObject": "655b13c9f3a73dd816ef3af30e86c95d4ee45c2d",
+          "publishedAt": "2026-10-21T12:31:17Z",
+          "claims": [
+            "Tag dereferenced to commit; implementation source selected, not executed"
+          ]
+        },
+        {
+          "id": "V05",
+          "system": "Golem",
+          "kind": "primary-versioned-documentation",
+          "url": "https://learn.golem.cloud/v1.6/how-to-guides/common/golem-update-running-agents",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "Automatic and manual update boundaries differ",
+            "Exact attempt and chosen recovery baseline",
+            "State-deleting reset differs from update",
+            "Current documentation may evolve inside version route; inspect release source separately"
+          ]
+        },
+        {
+          "id": "V06",
+          "system": "Golem",
+          "kind": "released-source-identity",
+          "url": "https://github.com/golemcloud/golem/releases/tag/v1.6.3",
+          "version": "1.6.3",
+          "commit": "b277b3ddfbcf02cf52b921e9c41f5816bbd55de7",
+          "publishedAt": "2026-11-06T19:02:36Z",
+          "claims": [
+            "Exact released source selected for inspection; runtime not executed"
+          ]
+        },
+        {
+          "id": "V07",
+          "system": "Orleans",
+          "kind": "primary-documentation",
+          "url": "https://learn.microsoft.com/en-us/dotnet/orleans/grains/grain-versioning/compatible-grains",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "Directional compatibility",
+            "Incompatible activation can be deactivated and replaced",
+            "Runtime policy does not infer semantic compatibility"
+          ]
+        },
+        {
+          "id": "V08",
+          "system": "Orleans",
+          "kind": "primary-documentation",
+          "url": "https://learn.microsoft.com/en-us/dotnet/orleans/grains/grain-versioning/deploying-new-versions-of-grains",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "Compatibility and version selection are separate strategies",
+            "Staging canary before swap",
+            "Stateless workers and streaming agents have explicit caveats"
+          ]
+        },
+        {
+          "id": "V09",
+          "system": "Orleans",
+          "kind": "released-source-identity",
+          "url": "https://github.com/dotnet/orleans/releases/tag/v10.4.2",
+          "version": "10.4.2",
+          "commit": "876ffe0338e41bc6339e85ee5696dbee6cf9a4c4",
+          "publishedAt": "2026-10-30T01:53:05Z",
+          "claims": [
+            "Exact release source selected; .NET runtime not executed"
+          ]
+        },
+        {
+          "id": "V10",
+          "system": "Linux RCU",
+          "kind": "primary-versioned-documentation",
+          "url": "https://docs.kernel.org/6.18/RCU/whatisRCU.html",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "Removal and reclamation phases",
+            "Only pre-existing readers hold removed object",
+            "Existing framework memory guarantees cannot be projected onto arbitrary plugin effects"
+          ]
+        },
+        {
+          "id": "V11",
+          "system": "Linux RCU",
+          "kind": "primary-documentation",
+          "url": "https://docs.kernel.org/RCU/Design/Requirements/Requirements.html",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "Stalled reader prevents grace-period completion",
+            "Callback rate can outrun cleanup and memory",
+            "Safety and forward progress require different evidence"
+          ]
+        },
+        {
+          "id": "V12",
+          "system": "Crossbeam Epoch",
+          "kind": "primary-api-documentation",
+          "url": "https://docs.rs/crossbeam-epoch/0.9.21/crossbeam_epoch/struct.Guard.html",
+          "version": "0.9.21",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "Pin before loading pointer",
+            "Deferred destructor has no exact completion deadline",
+            "Algorithm/library analogy for reclamation, not TS plugin-runtime adoption"
+          ],
+          "accessNote": "Exact docs.rs version route failed on open. Verified equivalent guard documentation from epoch 0.9.21 release source V27; use V27 for version-pinned claims."
+        },
+        {
+          "id": "V13",
+          "kind": "commit-pinned-source",
+          "repository": "temporalio/temporal",
+          "commit": "6d085822273f4336796e6959c73ab1d14a23eb77",
+          "path": "service/worker/workerdeployment/client.go",
+          "url": "https://github.com/temporalio/temporal/blob/6d085822273f4336796e6959c73ab1d14a23eb77/service/worker/workerdeployment/client.go",
+          "blob": "3b0c3035c319087f7e8f85c2b48946e7ac04745a",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "drain query counts Running + Pinned only"
+          ]
+        },
+        {
+          "id": "V14",
+          "kind": "commit-pinned-source",
+          "repository": "temporalio/temporal",
+          "commit": "6d085822273f4336796e6959c73ab1d14a23eb77",
+          "path": "service/worker/workerdeployment/version_workflow.go",
+          "url": "https://github.com/temporalio/temporal/blob/6d085822273f4336796e6959c73ab1d14a23eb77/service/worker/workerdeployment/version_workflow.go",
+          "blob": "8161c7e510ac13e56615a0370ed02b8c30dda551",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "serialized delete propagation and reactivation"
+          ]
+        },
+        {
+          "id": "V15",
+          "kind": "commit-pinned-source",
+          "repository": "temporalio/temporal",
+          "commit": "6d085822273f4336796e6959c73ab1d14a23eb77",
+          "path": "tests/worker_deployment_version_test.go",
+          "url": "https://github.com/temporalio/temporal/blob/6d085822273f4336796e6959c73ab1d14a23eb77/tests/worker_deployment_version_test.go",
+          "blob": "03ac71656811c9de7f1bd0c330759a3cfd528059",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "upstream deletion/reactivation tests; not executed"
+          ]
+        },
+        {
+          "id": "V16",
+          "kind": "commit-pinned-source",
+          "repository": "restatedev/restate",
+          "commit": "20efb1b83a39b8227451e531c366e067588ae9ee",
+          "path": "crates/invoker-impl/src/invocation_task/mod.rs",
+          "url": "https://github.com/restatedev/restate/blob/20efb1b83a39b8227451e531c366e067588ae9ee/crates/invoker-impl/src/invocation_task/mod.rs",
+          "blob": "d68183b9a480e70ee71c66b6805235cfd67a9bb5",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "retry pins deployment and protocol"
+          ]
+        },
+        {
+          "id": "V17",
+          "kind": "commit-pinned-source",
+          "repository": "restatedev/restate",
+          "commit": "20efb1b83a39b8227451e531c366e067588ae9ee",
+          "path": "cli/src/commands/deployments/remove.rs",
+          "url": "https://github.com/restatedev/restate/blob/20efb1b83a39b8227451e531c366e067588ae9ee/cli/src/commands/deployments/remove.rs",
+          "blob": "ea63cd5835fc06e7b5afaebc7f74f6be6474efab",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "CLI drain preflight then forced server delete"
+          ]
+        },
+        {
+          "id": "V18",
+          "kind": "commit-pinned-source",
+          "repository": "restatedev/restate",
+          "commit": "20efb1b83a39b8227451e531c366e067588ae9ee",
+          "path": "crates/admin/src/rest_api/deployments.rs",
+          "url": "https://github.com/restatedev/restate/blob/20efb1b83a39b8227451e531c366e067588ae9ee/crates/admin/src/rest_api/deployments.rs",
+          "blob": "5f26c30f301f69542bb3a56e89d72ad101f38e86",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "server accepts only forced delete; bulk_delete_validation not executed"
+          ]
+        },
+        {
+          "id": "V19",
+          "kind": "commit-pinned-source",
+          "repository": "golemcloud/golem",
+          "commit": "b277b3ddfbcf02cf52b921e9c41f5816bbd55de7",
+          "path": "golem-worker-executor/src/worker/status/update_queue/mod.rs",
+          "url": "https://github.com/golemcloud/golem/blob/b277b3ddfbcf02cf52b921e9c41f5816bbd55de7/golem-worker-executor/src/worker/status/update_queue/mod.rs",
+          "blob": "fec6bad9bdc407d1ce3d97f9cf2a195aee8920c3",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "admission, strategy refinement, outcome correlate by attempt index"
+          ]
+        },
+        {
+          "id": "V20",
+          "kind": "commit-pinned-source",
+          "repository": "golemcloud/golem",
+          "commit": "b277b3ddfbcf02cf52b921e9c41f5816bbd55de7",
+          "path": "golem-worker-executor-tests/tests/hot_update.rs",
+          "url": "https://github.com/golemcloud/golem/blob/b277b3ddfbcf02cf52b921e9c41f5816bbd55de7/golem-worker-executor-tests/tests/hot_update.rs",
+          "blob": "61b736254a504a01dd278a915d6c2abe3c0dc202",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "upstream recovery/update tests; not executed"
+          ]
+        },
+        {
+          "id": "V21",
+          "kind": "commit-pinned-source",
+          "repository": "golemcloud/golem",
+          "commit": "b277b3ddfbcf02cf52b921e9c41f5816bbd55de7",
+          "path": "docs/src/content/v1.6/how-to-guides/common/golem-update-running-agents.mdx",
+          "url": "https://github.com/golemcloud/golem/blob/b277b3ddfbcf02cf52b921e9c41f5816bbd55de7/docs/src/content/v1.6/how-to-guides/common/golem-update-running-agents.mdx",
+          "blob": "42b77699b43e0a9cdd9a811c7317b624d4988db1",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "release-pinned documentation"
+          ]
+        },
+        {
+          "id": "V22",
+          "kind": "commit-pinned-source",
+          "repository": "dotnet/orleans",
+          "commit": "876ffe0338e41bc6339e85ee5696dbee6cf9a4c4",
+          "path": "src/Orleans.Runtime/Versions/Compatibility/BackwardCompatilityDirector.cs",
+          "url": "https://github.com/dotnet/orleans/blob/876ffe0338e41bc6339e85ee5696dbee6cf9a4c4/src/Orleans.Runtime/Versions/Compatibility/BackwardCompatilityDirector.cs",
+          "blob": "6a50b66605d7fe9973c3902de64549074e871f21",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "numeric requested <= current; not inferred semantic compatibility"
+          ]
+        },
+        {
+          "id": "V23",
+          "kind": "commit-pinned-source",
+          "repository": "dotnet/orleans",
+          "commit": "876ffe0338e41bc6339e85ee5696dbee6cf9a4c4",
+          "path": "src/Orleans.Runtime/Versions/Selector/MinimumVersionSelector.cs",
+          "url": "https://github.com/dotnet/orleans/blob/876ffe0338e41bc6339e85ee5696dbee6cf9a4c4/src/Orleans.Runtime/Versions/Selector/MinimumVersionSelector.cs",
+          "blob": "a3b2aefd717512509bec794033c45b6072af571a",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "select minimum compatible available version"
+          ]
+        },
+        {
+          "id": "V24",
+          "kind": "commit-pinned-documentation",
+          "repository": "nodejs/node",
+          "commit": "e63cab040c09d43ceef8cb35508c40044614e906",
+          "path": "doc/api/async_context.md",
+          "url": "https://github.com/nodejs/node/blob/e63cab040c09d43ceef8cb35508c40044614e906/doc/api/async_context.md",
+          "blob": "1b6169c60d23255bc1b3ae68567d5bdb3a70e10c",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "native AsyncLocalStorage/snapshot semantics"
+          ],
+          "tag": "v24.22.3"
+        },
+        {
+          "id": "V25",
+          "kind": "commit-pinned-source",
+          "repository": "golemcloud/golem",
+          "commit": "b277b3ddfbcf02cf52b921e9c41f5816bbd55de7",
+          "path": "golem-worker-executor/src/worker/snapshot_selection/mod.rs",
+          "url": "https://github.com/golemcloud/golem/blob/b277b3ddfbcf02cf52b921e9c41f5816bbd55de7/golem-worker-executor/src/worker/snapshot_selection/mod.rs",
+          "blob": "24474441c8bc27765178b1397c935c7d214f0552",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "fixed strategy selection and same-record replay"
+          ]
+        },
+        {
+          "id": "V26",
+          "kind": "commit-pinned-source",
+          "repository": "golemcloud/golem",
+          "commit": "b277b3ddfbcf02cf52b921e9c41f5816bbd55de7",
+          "path": "golem-worker-executor/src/worker/start_outcome/mod.rs",
+          "url": "https://github.com/golemcloud/golem/blob/b277b3ddfbcf02cf52b921e9c41f5816bbd55de7/golem-worker-executor/src/worker/start_outcome/mod.rs",
+          "blob": "71fdb57370fdb910a7240f977ba3f6ed97535a26",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "failure table distinguishes unavailable, not-found, replay divergence, interrupted load"
+          ]
+        },
+        {
+          "id": "V27",
+          "kind": "commit-pinned-source",
+          "repository": "crossbeam-rs/crossbeam",
+          "commit": "2920c984290229ab4e0ca0452ef09e48a82063f3",
+          "path": "crossbeam-epoch/src/guard.rs",
+          "url": "https://github.com/crossbeam-rs/crossbeam/blob/2920c984290229ab4e0ca0452ef09e48a82063f3/crossbeam-epoch/src/guard.rs",
+          "blob": "590809fe6309bcae3673f0f2a121f18a76dea104",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "epoch 0.9.21 delayed destructor has no bounded execution guarantee"
+          ]
+        },
+        {
+          "id": "V28",
+          "kind": "commit-pinned-source",
+          "repository": "dotnet/orleans",
+          "commit": "876ffe0338e41bc6339e85ee5696dbee6cf9a4c4",
+          "path": "test/Orleans.Runtime.Tests/HeterogeneousSilosTests/UpgradeTests/UpgradeTests.cs",
+          "url": "https://github.com/dotnet/orleans/blob/876ffe0338e41bc6339e85ee5696dbee6cf9a4c4/test/Orleans.Runtime.Tests/HeterogeneousSilosTests/UpgradeTests/UpgradeTests.cs",
+          "blob": "86e5dfd5099e50d56a8056532215f416b80d4cca",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "minimum/latest/all-compatible strategies; upstream tests not executed"
+          ]
+        },
+        {
+          "id": "V31",
+          "kind": "commit-pinned-source",
+          "repository": "restatedev/restate",
+          "commit": "20efb1b83a39b8227451e531c366e067588ae9ee",
+          "path": "crates/worker/src/partition/state_machine/lifecycle/pinned_deployment.rs",
+          "url": "https://github.com/restatedev/restate/blob/20efb1b83a39b8227451e531c366e067588ae9ee/crates/worker/src/partition/state_machine/lifecycle/pinned_deployment.rs",
+          "blob": "9166d373098abc8491b1c5123d89e85d367cd97e",
+          "retrieved": "2026-11-22",
+          "claims": [
+            "persist invocation deployment identity; cancellation-after-pinning handling"
+          ]
+        },
+        {
+          "id": "V29",
+          "kind": "primary-documentation",
+          "url": "https://www.kernel.org/doc/html/latest/RCU/rcubarrier.html",
+          "retrieved": "2026-11-22",
+          "webRef": "turn681251286search2",
+          "claims": [
+            "reader quiescence and callback completion are different barriers; stop callback producers before unload"
+          ]
+        },
+        {
+          "id": "V30",
+          "kind": "executed-local-probe",
+          "path": "probe/async-context.test.ts",
+          "runtime": "Node 24.22.3",
+          "typescript": "7.0.2",
+          "nodeTypes": "24.13.3",
+          "packageManager": "pnpm 11.25.0",
+          "result": "strict typecheck exit 0; 5/5 native node:test; no failures/skips",
+          "evidence": [
+            "probe/PLAN.md",
+            "probe/install.log",
+            "probe/typecheck.log",
+            "probe/test.log",
+            "probe/results.json",
+            "probe/MANIFEST.sha256"
+          ],
+          "scope": "native context propagation and failure boundaries only"
+        },
+        {
+          "id": "V32",
+          "kind": "primary-documentation",
+          "url": "https://learn.microsoft.com/en-us/dotnet/orleans/grains/grain-versioning/backward-compatibility-guidelines",
+          "retrieved": "2026-11-22",
+          "webRef": "turn151948088search5",
+          "claims": [
+            "incremental contract evolution and rolling version compatibility"
+          ]
+        }
+      ]
+    },
+    "feedback": {
+      "researchDate": "2026-11-22",
+      "timezone": "Europe/Kiev",
+      "status": "completed lane; native probe 7/7 and strict TS 7.0.2 pass",
+      "sources": [
+        {
+          "id": "F01",
+          "project": "Module Federation",
+          "version": "2.9.3",
+          "revision": "40688424f13ea9d4338b9a0cf230e8f1ac4d3835",
+          "url": "https://github.com/module-federation/core/blob/40688424f13ea9d4338b9a0cf230e8f1ac4d3835/packages/runtime-core/src/remote/index.ts",
+          "blob": "e9d4a6ac166b0990f8ee3da690f907470df1c181",
+          "evidenceClass": "pinned implementation inspected, not executed",
+          "claim": "force registration removes runtime caches and global bookkeeping before adding replacement; removal catches/logs errors; no resource-disposal protocol is invoked by this path"
+        },
+        {
+          "id": "F02",
+          "project": "single-spa",
+          "version": "6.0.3",
+          "revision": "b619c26f0a39bbc8f175805a361a88a22fbd6d9b",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/applications/timeouts.js",
+          "blob": "2c6c0fea502e6ff7da28c173c61e544bb2ee9749",
+          "evidenceClass": "pinned implementation inspected, not executed",
+          "claim": "default lifecycle timeouts report without rejecting; dieOnTimeout rejects wrapper but does not cancel underlying lifecycle"
+        },
+        {
+          "id": "F03",
+          "project": "single-spa",
+          "version": "6.0.3",
+          "revision": "b619c26f0a39bbc8f175805a361a88a22fbd6d9b",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/lifecycles/unload.js",
+          "blob": "de7f40063d6485230f2238f96fb48b7b8b7b5469",
+          "evidenceClass": "pinned implementation inspected, not executed",
+          "claim": "unload requires prior unmount; successful unload resets lifecycle bookkeeping to NOT_LOADED; failure is distinct"
+        },
+        {
+          "id": "F04",
+          "project": "Yjs",
+          "version": "13.6.33",
+          "revision": "9ea3a4fb57b814292ce18dfd13c4f422e44e6c5c",
+          "url": "https://github.com/yjs/yjs/blob/9ea3a4fb57b814292ce18dfd13c4f422e44e6c5c/src/utils/UndoManager.js",
+          "blob": "e5c4dc82585b811b179ad4d9a7dfd9b25d98bf3f",
+          "evidenceClass": "pinned implementation inspected; released public API executed in seven-case native probe",
+          "claim": "trackedOrigins filters undo capture, time-window grouping ignores origin equality, stopCapturing separates edits, clear and destroy have different responsibilities"
+        },
+        {
+          "id": "F05",
+          "project": "Yjs",
+          "version": "13.6.33",
+          "revision": "9ea3a4fb57b814292ce18dfd13c4f422e44e6c5c",
+          "url": "https://github.com/yjs/yjs/blob/9ea3a4fb57b814292ce18dfd13c4f422e44e6c5c/src/utils/Doc.js",
+          "blob": "317f8c213b8d27e975f3a6677544ead5bebcae4a",
+          "evidenceClass": "pinned implementation inspected; released public API executed in seven-case native probe",
+          "claim": "Doc destroy sets isDestroyed and clears lifecycle observers; it is not visibly consulted by the public transact forwarding method"
+        },
+        {
+          "id": "F06",
+          "project": "VS Code",
+          "version": "1.147.0",
+          "revision": "8a14f0cc1b08d531eb83255ea3764ae22aa932b5",
+          "url": "https://github.com/microsoft/vscode/blob/8a14f0cc1b08d531eb83255ea3764ae22aa932b5/src/vs/workbench/services/extensions/common/abstractExtensionService.ts",
+          "blob": "30f356d7967f81b24e37abb58dc91d7d39b8cdf5",
+          "evidenceClass": "pinned implementation inspected, not executed",
+          "claim": "dynamic removal rejects activated extensions; whole-host stop gathers veto reasons and stops hosts in reverse order"
+        },
+        {
+          "id": "F07",
+          "project": "HTML Standard",
+          "version": "living standard observed 2026-11-22",
+          "url": "https://html.spec.whatwg.org/multipage/custom-elements.html",
+          "evidenceClass": "normative specification inspected; browser support not executed",
+          "claim": "same registry rejects repeated name/constructor; connectedMoveCallback separates state-preserving move from disconnect/reconnect; scoped registry is separate mechanism"
+        },
+        {
+          "id": "F08",
+          "project": "VS Code",
+          "version": "moving docs observed 2026-11-22",
+          "url": "https://code.visualstudio.com/api/advanced-topics/extension-host",
+          "evidenceClass": "official documentation",
+          "claim": "runtime/location profiles: local and remote Node host, browser WebWorker host; placement depends on available host and extension capability"
+        },
+        {
+          "id": "F09",
+          "project": "Yjs",
+          "version": "moving docs observed 2026-11-22",
+          "url": "https://docs.yjs.dev/api/undo-manager",
+          "evidenceClass": "official documentation",
+          "claim": "selective undo, capture boundaries, tracked origins and stack-item metadata"
+        },
+        {
+          "id": "F10",
+          "project": "Module Federation",
+          "version": "historical issue (2025), checked 2026-11-22",
+          "url": "https://github.com/module-federation/core/issues/4045#issuecomment-3285898841",
+          "evidenceClass": "upstream user report with maintainer response; not reproduced on 2.9.3",
+          "claim": "maintainer cautions forced registration can tear sharing/singleton state and suggests versioned build uniqueName; issue closed not_planned"
+        },
+        {
+          "id": "F11",
+          "project": "Module Federation",
+          "version": "moving docs observed 2026-11-22",
+          "url": "https://module-federation.io/guide/runtime/runtime-hooks",
+          "evidenceClass": "official documentation; loadRemote path cross-checked in F01",
+          "claim": "afterLoadRemote carries original error and recovered true for fallback; afterRegisterShare distinguishes candidate from registered record; afterLoadShare exposes selected provider"
+        },
+        {
+          "id": "F12",
+          "project": "Yjs",
+          "version": "moving docs observed 2026-11-22",
+          "url": "https://docs.yjs.dev/api/relative-positions",
+          "evidenceClass": "official documentation; public codec executed in native probe",
+          "claim": "relative positions track sequence locations; resolution can return null after loss/deletion of referenced type"
+        },
+        {
+          "id": "F13",
+          "project": "Yjs",
+          "version": "moving docs observed 2026-11-22",
+          "url": "https://docs.yjs.dev/api/y.doc",
+          "evidenceClass": "official documentation; destroy/transact source in F05; native negative control",
+          "claim": "destroy clears handlers and releases content unless references remain; transaction origin is metadata"
+        },
+        {
+          "id": "F14",
+          "project": "Theia",
+          "version": "moving docs observed 2026-11-22",
+          "url": "https://theia-ide.org/docs/extensions/",
+          "evidenceClass": "official documentation; platform not executed",
+          "claim": "runtime-installed API-bound extensions differ from compile-time DI extensions; special frontend plugin support is under discussion"
+        },
+        {
+          "id": "F15",
+          "project": "Theia",
+          "version": "moving docs observed 2026-11-22",
+          "url": "https://theia-ide.org/docs/authoring_plugins/",
+          "evidenceClass": "official deprecated documentation explicitly redirecting readers",
+          "claim": "page warns against relying on legacy Theia-plugin authoring guidance and recommends current extension mechanisms"
+        },
+        {
+          "id": "F16",
+          "project": "VS Code",
+          "version": "moving docs observed 2026-11-22",
+          "url": "https://code.visualstudio.com/api/extension-guides/web-extensions",
+          "evidenceClass": "official documentation; browser host not executed",
+          "claim": "web extensions run in a browser environment with browser entry and restrictions on Node APIs"
+        },
+        {
+          "id": "F17",
+          "project": "Module Federation",
+          "version": "moving docs observed 2026-11-22",
+          "url": "https://module-federation.io/guide/runtime/runtime-api",
+          "evidenceClass": "official documentation; force behavior cross-checked in pinned F01",
+          "claim": "force re-registration overwrites existing remote registration/cache and is explicitly risky"
+        },
+        {
+          "id": "F18",
+          "project": "single-spa",
+          "version": "moving docs observed 2026-11-22",
+          "url": "https://single-spa.js.org/docs/api/",
+          "evidenceClass": "official documentation; unload behavior cross-checked in pinned F03",
+          "claim": "unloadApplication supports waitForUnmount; lifecycle functions and loaded status can be reset for reloading"
+        },
+        {
+          "id": "P01",
+          "project": "Yjs native qualification",
+          "version": "Yjs 13.6.33; TypeScript 7.0.2; Node 24.22.3",
+          "artifact": "probe/evidence/results.json",
+          "evidenceClass": "executed seven-case released-library probe; first strict typecheck and runtime attempt passed",
+          "claim": "draft/history retention, capture boundaries, old-origin acceptance, clear-vs-content, history restore limit, relative caret, and post-destroy negative control",
+          "scope": "in-memory real binary document transfer; no renderer, network provider, durable store, distributed protocol, production revocation, schema migration, or leak-free claim",
+          "provenance": "probe/evidence/package-provenance.json"
+        }
+      ]
+    },
+    "boundaries": [
+      {
+        "id": "O1",
+        "repository": "agent-teams-ai/.github",
+        "commit": "0b44c64c824f536bd1b085341e7669bcc64ef124",
+        "path": "docs/engineering-quality-standard.md",
+        "blob": "9d4fc54d99249077bf6887be35a59ace1d5547bd",
+        "url": "https://github.com/agent-teams-ai/.github/blob/0b44c64c824f536bd1b085341e7669bcc64ef124/docs/engineering-quality-standard.md",
+        "retrieved_at": "2026-11-22",
+        "evidence": "source inspection; not an executed behavior test"
+      },
+      {
+        "id": "O2",
+        "repository": "agent-teams-ai/.github",
+        "commit": "0b44c64c824f536bd1b085341e7669bcc64ef124",
+        "path": "docs/architecture/feature-module-standard/v1.1.md",
+        "blob": "bd949a9a670862fea851a7791fce772fdef3b4fc",
+        "url": "https://github.com/agent-teams-ai/.github/blob/0b44c64c824f536bd1b085341e7669bcc64ef124/docs/architecture/feature-module-standard/v1.1.md",
+        "retrieved_at": "2026-11-22",
+        "evidence": "source inspection; not an executed behavior test"
+      },
+      {
+        "id": "O3",
+        "repository": "agent-teams-ai/.github",
+        "commit": "0b44c64c824f536bd1b085341e7669bcc64ef124",
+        "path": "docs/development-tools.md",
+        "blob": "cd6f3943fa68ebe60287490cb7d35fe53b7da847",
+        "url": "https://github.com/agent-teams-ai/.github/blob/0b44c64c824f536bd1b085341e7669bcc64ef124/docs/development-tools.md",
+        "retrieved_at": "2026-11-22",
+        "evidence": "source inspection; not an executed behavior test"
+      },
+      {
+        "id": "O4",
+        "repository": "agent-teams-ai/.github",
+        "commit": "0b44c64c824f536bd1b085341e7669bcc64ef124",
+        "path": "docs/repository-admission.md",
+        "blob": "f2cbf6513c450baa205964df69e2b1026fd40034",
+        "url": "https://github.com/agent-teams-ai/.github/blob/0b44c64c824f536bd1b085341e7669bcc64ef124/docs/repository-admission.md",
+        "retrieved_at": "2026-11-22",
+        "evidence": "source inspection; not an executed behavior test"
+      },
+      {
+        "id": "G1",
+        "repository": "agent-teams-ai/get-modular",
+        "commit": "33c032f829028967825428bc6b049ed6db1c56b2",
+        "path": "packages/effect/README.md",
+        "blob": "60bc494aba890cb72fc1ad442d75ffe7ae63fb33",
+        "url": "https://github.com/agent-teams-ai/get-modular/blob/33c032f829028967825428bc6b049ed6db1c56b2/packages/effect/README.md",
+        "retrieved_at": "2026-11-22",
+        "evidence": "source inspection; not an executed behavior test"
+      },
+      {
+        "id": "G2",
+        "repository": "agent-teams-ai/get-modular",
+        "commit": "33c032f829028967825428bc6b049ed6db1c56b2",
+        "path": "packages/effect/package.json",
+        "blob": "7a942ff5f9203792d6ddf39e17ebb1b3be2edd1e",
+        "url": "https://github.com/agent-teams-ai/get-modular/blob/33c032f829028967825428bc6b049ed6db1c56b2/packages/effect/package.json",
+        "retrieved_at": "2026-11-22",
+        "evidence": "source inspection; not an executed behavior test"
+      },
+      {
+        "id": "G3",
+        "repository": "agent-teams-ai/get-modular",
+        "commit": "33c032f829028967825428bc6b049ed6db1c56b2",
+        "path": "packages/resources/README.md",
+        "blob": "a134e34abcc6d102b69e64924bbe3e0f20c613e7",
+        "url": "https://github.com/agent-teams-ai/get-modular/blob/33c032f829028967825428bc6b049ed6db1c56b2/packages/resources/README.md",
+        "retrieved_at": "2026-11-22",
+        "evidence": "source inspection; not an executed behavior test"
+      },
+      {
+        "id": "G4",
+        "repository": "agent-teams-ai/get-modular",
+        "commit": "33c032f829028967825428bc6b049ed6db1c56b2",
+        "path": "packages/lifecycle-kernel/README.md",
+        "blob": "740d7e395231f0e5f1c5524e6ef136d9cdc2b7c8",
+        "url": "https://github.com/agent-teams-ai/get-modular/blob/33c032f829028967825428bc6b049ed6db1c56b2/packages/lifecycle-kernel/README.md",
+        "retrieved_at": "2026-11-22",
+        "evidence": "source inspection; not an executed behavior test"
+      },
+      {
+        "id": "G5",
+        "repository": "agent-teams-ai/get-modular",
+        "commit": "33c032f829028967825428bc6b049ed6db1c56b2",
+        "path": "docs/decisions/0043-plan-optional-native-effect-composition.md",
+        "blob": "2432140f8dc7ad513fdf083f1fb0cd553527eb0d",
+        "url": "https://github.com/agent-teams-ai/get-modular/blob/33c032f829028967825428bc6b049ed6db1c56b2/docs/decisions/0043-plan-optional-native-effect-composition.md",
+        "retrieved_at": "2026-11-22",
+        "evidence": "source inspection; not an executed behavior test"
+      },
+      {
+        "id": "G6",
+        "repository": "agent-teams-ai/get-modular",
+        "commit": "33c032f829028967825428bc6b049ed6db1c56b2",
+        "path": "docs/decisions/0044-admit-checked-public-release-automation-and-effect.md",
+        "blob": "40ab44ef5b9686b5126c471eeecf50f518b3294f",
+        "url": "https://github.com/agent-teams-ai/get-modular/blob/33c032f829028967825428bc6b049ed6db1c56b2/docs/decisions/0044-admit-checked-public-release-automation-and-effect.md",
+        "retrieved_at": "2026-11-22",
+        "evidence": "source inspection; not an executed behavior test"
+      },
+      {
+        "id": "G7",
+        "repository": "agent-teams-ai/get-modular",
+        "commit": "33c032f829028967825428bc6b049ed6db1c56b2",
+        "path": "packages/effect/docs/practices.md",
+        "blob": "2c06b8b17ac478fb3d3925d83c5d5a798897d26e",
+        "url": "https://github.com/agent-teams-ai/get-modular/blob/33c032f829028967825428bc6b049ed6db1c56b2/packages/effect/docs/practices.md",
+        "retrieved_at": "2026-11-22",
+        "evidence": "source inspection; not an executed behavior test"
+      },
+      {
+        "id": "P1",
+        "repository": "agent-teams-ai/extension-foundation",
+        "commit": "f727a488243e8de47bbffb7cf36e01850f79d899",
+        "path": "docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md",
+        "blob": "a9a4ef05c92ae825d10f9d220fb649c0f63b8137",
+        "url": "https://github.com/agent-teams-ai/extension-foundation/blob/f727a488243e8de47bbffb7cf36e01850f79d899/docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md",
+        "retrieved_at": "2026-11-22",
+        "evidence": "source inspection; not an executed behavior test"
+      },
+      {
+        "id": "E1",
+        "repository": "Effect-TS/effect",
+        "commit": "289a53f7b1fc40049219c6e69022db2fb859c356",
+        "path": "packages/effect/src/RcMap.ts",
+        "blob": "c98b0e34322e3f9147365cece2d1b90dd8786e32",
+        "url": "https://github.com/Effect-TS/effect/blob/289a53f7b1fc40049219c6e69022db2fb859c356/packages/effect/src/RcMap.ts",
+        "retrieved_at": "2026-11-22",
+        "evidence": "source inspection; not an executed behavior test"
+      },
+      {
+        "id": "E2",
+        "repository": "Effect-TS/effect",
+        "commit": "289a53f7b1fc40049219c6e69022db2fb859c356",
+        "path": "packages/effect/src/ManagedRuntime.ts",
+        "blob": "f5ba8669dcc1232ecbc2f55a1440e14c58a436f1",
+        "url": "https://github.com/Effect-TS/effect/blob/289a53f7b1fc40049219c6e69022db2fb859c356/packages/effect/src/ManagedRuntime.ts",
+        "retrieved_at": "2026-11-22",
+        "evidence": "source inspection; not an executed behavior test"
+      },
+      {
+        "id": "E3",
+        "repository": "Effect-TS/effect",
+        "commit": "289a53f7b1fc40049219c6e69022db2fb859c356",
+        "path": "packages/effect/src/Scope.ts",
+        "blob": "8ff3748f8dd9747b2ef5a277f55402f8259e5fc4",
+        "url": "https://github.com/Effect-TS/effect/blob/289a53f7b1fc40049219c6e69022db2fb859c356/packages/effect/src/Scope.ts",
+        "retrieved_at": "2026-11-22",
+        "evidence": "source inspection; not an executed behavior test"
+      },
+      {
+        "id": "E4",
+        "repository": "Effect-TS/effect",
+        "commit": "289a53f7b1fc40049219c6e69022db2fb859c356",
+        "path": "packages/effect/src/Layer.ts",
+        "blob": "2c7c6948fe1e7e5ad21daae32a43cf76f1ef584a",
+        "url": "https://github.com/Effect-TS/effect/blob/289a53f7b1fc40049219c6e69022db2fb859c356/packages/effect/src/Layer.ts",
+        "retrieved_at": "2026-11-22",
+        "evidence": "source inspection; not an executed behavior test"
+      },
+      {
+        "id": "G8",
+        "repository": "agent-teams-ai/get-modular",
+        "commit": "33c032f829028967825428bc6b049ed6db1c56b2",
+        "path": "packages/effect/src/features/construction/lower.ts",
+        "blob": "3d1d2b73f67a139077a6a78fff59ab1141834c4d",
+        "url": "https://github.com/agent-teams-ai/get-modular/blob/33c032f829028967825428bc6b049ed6db1c56b2/packages/effect/src/features/construction/lower.ts",
+        "retrieved_at": "2026-11-22",
+        "evidence": "source inspection; not an executed behavior test"
+      },
+      {
+        "id": "G9",
+        "repository": "agent-teams-ai/get-modular",
+        "commit": "33c032f829028967825428bc6b049ed6db1c56b2",
+        "path": "packages/resources/src/features/scope/scope.ts",
+        "blob": "763100921c643124ec6e23f1a6c7e9cf0a2d80b3",
+        "url": "https://github.com/agent-teams-ai/get-modular/blob/33c032f829028967825428bc6b049ed6db1c56b2/packages/resources/src/features/scope/scope.ts",
+        "retrieved_at": "2026-11-22",
+        "evidence": "source inspection; not an executed behavior test"
+      },
+      {
+        "id": "G10",
+        "repository": "agent-teams-ai/get-modular",
+        "commit": "33c032f829028967825428bc6b049ed6db1c56b2",
+        "path": "packages/lifecycle-kernel/package.json",
+        "blob": "a54ef330f875cd70e0f9e40bdde662e1f2da519e",
+        "url": "https://github.com/agent-teams-ai/get-modular/blob/33c032f829028967825428bc6b049ed6db1c56b2/packages/lifecycle-kernel/package.json",
+        "retrieved_at": "2026-11-22",
+        "evidence": "source inspection; not an executed behavior test"
+      },
+      {
+        "id": "R1",
+        "url": "https://registry.npmjs.org/@get-modular/effect/0.1.1",
+        "retrieved_at": "2026-11-22",
+        "evidence": "pnpm view registry metadata captured in gm-effect-registry.json; package tarball was not installed or executed",
+        "version": "0.1.1",
+        "integrity": "sha512-4aXowsB0rhJXS3xnDzbdUdvC7gnKK0vuK1/ItVmaDkI3N/9ybZnSDbJpTDjixd0a7tnuACCKSBNHaw8zNtRxjQ=="
+      },
+      {
+        "id": "X1",
+        "repository": "statelyai/xstate",
+        "commit": "bd77717b8d33c49af1c8ee4a7e22cebb936cc8b1",
+        "path": "packages/core/src/actors/promise.ts",
+        "blob": "3500647528b116d46904deff3cdbbd6dce55956d",
+        "url": "https://github.com/statelyai/xstate/blob/bd77717b8d33c49af1c8ee4a7e22cebb936cc8b1/packages/core/src/actors/promise.ts",
+        "retrieved_at": "2026-11-22",
+        "evidence": "pinned stable xstate@5.33.4 source inspection; not executed"
+      },
+      {
+        "id": "X2",
+        "repository": "statelyai/xstate",
+        "commit": "bd77717b8d33c49af1c8ee4a7e22cebb936cc8b1",
+        "path": "packages/core/src/transition.ts",
+        "blob": "024aa87b90f0f601c9b7318cfef3ed30c6bdabf0",
+        "url": "https://github.com/statelyai/xstate/blob/bd77717b8d33c49af1c8ee4a7e22cebb936cc8b1/packages/core/src/transition.ts",
+        "retrieved_at": "2026-11-22",
+        "evidence": "pinned stable xstate@5.33.4 source inspection; not executed"
+      },
+      {
+        "id": "X3",
+        "repository": "statelyai/xstate",
+        "commit": "bd77717b8d33c49af1c8ee4a7e22cebb936cc8b1",
+        "path": "packages/core/package.json",
+        "blob": "8e19438bff843e7e68b0dc6c6dceba03d8400c10",
+        "url": "https://github.com/statelyai/xstate/blob/bd77717b8d33c49af1c8ee4a7e22cebb936cc8b1/packages/core/package.json",
+        "retrieved_at": "2026-11-22",
+        "evidence": "pinned stable xstate@5.33.4 source inspection; not executed"
+      },
+      {
+        "id": "X4",
+        "repository": "statelyai/xstate",
+        "commit": "bd77717b8d33c49af1c8ee4a7e22cebb936cc8b1",
+        "path": "packages/core/src/createActor.ts",
+        "blob": "b974de024b8ccfe4b297b842647857a8edbcb16d",
+        "url": "https://github.com/statelyai/xstate/blob/bd77717b8d33c49af1c8ee4a7e22cebb936cc8b1/packages/core/src/createActor.ts",
+        "retrieved_at": "2026-11-22",
+        "evidence": "pinned stable xstate@5.33.4 source inspection; not executed"
+      },
+      {
+        "id": "D1",
+        "url": "https://stately.ai/docs/xstate/v5/pure-transitions",
+        "title": "Pure transition functions, XState v5 stable",
+        "retrieved_at": "2026-11-22",
+        "ref": "turn925914727view0",
+        "evidence": "official documentation"
+      },
+      {
+        "id": "D2",
+        "url": "https://stately.ai/docs/xstate/v5/promise-actors",
+        "title": "Promise actors, XState v5 stable",
+        "retrieved_at": "2026-11-22",
+        "ref": "turn925914727view1",
+        "evidence": "official documentation"
+      },
+      {
+        "id": "D3",
+        "url": "https://prod.stately.ai/docs/xstate/v5/persistence",
+        "title": "Persistence, XState v5",
+        "retrieved_at": "2026-11-22",
+        "ref": "turn386976918search0",
+        "evidence": "official documentation"
+      },
+      {
+        "id": "D4",
+        "url": "https://prod.stately.ai/docs/xstate/v6/persist-and-restore-actors",
+        "title": "Persist and restore actors, XState v6 beta",
+        "retrieved_at": "2026-11-22",
+        "ref": "turn386976918search4",
+        "evidence": "official beta documentation; not stable v5 capability evidence"
+      },
+      {
+        "id": "R2",
+        "url": "https://github.com/Effect-TS/effect/releases/tag/effect%404.1.4",
+        "repository": "Effect-TS/effect",
+        "tag": "effect@4.1.4",
+        "commit": "289a53f7b1fc40049219c6e69022db2fb859c356",
+        "published_at": "2026-11-11T04:00:01Z",
+        "prerelease": false,
+        "retrieved_at": "2026-11-22",
+        "evidence": "GitHub release and tag commit metadata"
+      },
+      {
+        "id": "R3",
+        "url": "https://github.com/statelyai/xstate/releases/tag/xstate%405.33.4",
+        "repository": "statelyai/xstate",
+        "tag": "xstate@5.33.4",
+        "commit": "bd77717b8d33c49af1c8ee4a7e22cebb936cc8b1",
+        "published_at": "2026-11-07T19:08:14Z",
+        "prerelease": false,
+        "retrieved_at": "2026-11-22",
+        "evidence": "GitHub latest stable release and tag commit metadata"
+      }
+    ],
+    "browser": [
+      {
+        "id": "HMR01",
+        "repository": "vitejs/vite",
+        "commit": "b39e6e63dcbfc3cf4be871acf3554efbd6d0e268",
+        "path": "packages/vite/src/shared/hmr.ts",
+        "blob": "6e2ef7de0de852aec6417e9d91b60556cc2f834b",
+        "url": "https://github.com/vitejs/vite/blob/b39e6e63dcbfc3cf4be871acf3554efbd6d0e268/packages/vite/src/shared/hmr.ts",
+        "retrieved_at": "2026-11-22",
+        "evidence": "exact source inspected independently by root and research agents; callback clearing/capture order, not runtime private-map inspection"
+      },
+      {
+        "id": "HMR02",
+        "repository": "rolldown/rolldown",
+        "commit": "b9c75ddc8bd50f2c1a4c7be0b548bdab5cba85ab",
+        "path": "crates/rolldown_plugin_vite_react_refresh_wrapper/src/lib.rs",
+        "blob": "620ef40166bb4705c97b1fc93fbf2722cc23768d",
+        "url": "https://github.com/rolldown/rolldown/blob/b9c75ddc8bd50f2c1a4c7be0b548bdab5cba85ab/crates/rolldown_plugin_vite_react_refresh_wrapper/src/lib.rs",
+        "retrieved_at": "2026-11-22",
+        "evidence": "exact source inspected independently; generated registration footer also observed in native local transform without executing the module"
+      },
+      {
+        "id": "HMR03",
+        "url": "https://vite.dev/guide/api-javascript#vitedevserver",
+        "retrieved_at": "2026-11-22",
+        "evidence": "official public reloadModule and moduleGraph API documentation; not an automatic recovery guarantee"
+      },
+      {
+        "id": "HMR04",
+        "url": "https://vite.dev/guide/api-hmr",
+        "retrieved_at": "2026-11-22",
+        "evidence": "official public hot event observation and HMR boundary documentation"
+      }
+    ]
+  }
+}

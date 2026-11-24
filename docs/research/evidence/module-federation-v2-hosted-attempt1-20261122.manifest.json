@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "status": "native-tests-pass-artifact-upload-failed",
+  "sourceHead": "4dd605c757ff8e06e131f906511119827c4a42f6",
+  "workflowRun": 45053736889,
+  "job": 137304298907,
+  "tests": 4,
+  "passed": 4,
+  "failed": 0,
+  "skipped": 0,
+  "artifacts": 0,
+  "inputArchiveSha256": "a2e6bfb6bb715c563026f72dc64a7c7460971d4a46d3eb711e8d0b5395cbefc6",
+  "archive": "module-federation-v2-hosted-attempt1-20261122.tar.gz",
+  "bytes": 18316,
+  "sha256": "0d7f1c223f591b4f4fdd03dc725fe7cc819bb2a15254fb70661f0a54f31272e4",
+  "members": [
+    {
+      "path": "HOSTED-ATTEMPT1-FAILURE.md",
+      "bytes": 1338,
+      "sha256": "4f9f5540d64c780910061fbc0022eb3041eec7d4ef2ac203ac56b463d8472748"
+    },
+    {
+      "path": "raw/ATTEMPT1-FAILURE.json",
+      "bytes": 1224,
+      "sha256": "31dae1a3c56938f7bca2d4dc53dd970bf62551801fe9acc5302977946f255762"
+    },
+    {
+      "path": "raw/attempt1-artifacts.json",
+      "bytes": 22,
+      "sha256": "fb09a9699b26ad536855bb4263ff01baa31a107d9af48b348e96cb4a9eb2b8d9"
+    },
+    {
+      "path": "raw/attempt1-jobs.json",
+      "bytes": 2993,
+      "sha256": "d40b32afaf385c40e129b0115376b4b72d9dd2fb6137c458a7042f8d337dd8df"
+    },
+    {
+      "path": "raw/attempt1-run.json",
+      "bytes": 14506,
+      "sha256": "5e8454775717f7fbff7d08131853398926dc227e20f1cdc06ddc47b7ff4acb24"
+    },
+    {
+      "path": "raw/job-137304298907.log",
+      "bytes": 59958,
+      "sha256": "1c2e4c8236c25bbb4fd6857336c94e3c41434fca95c99fbf8862133bf3acbcfd"
+    },
+    {
+      "path": "raw/workflow-attempt1.yml",
+      "bytes": 7586,
+      "sha256": "cd1a4af3b7712e63bad198fc318091cc1be7d9a0f917375268f7903cb0a49e90"
+    },
+    {
+      "path": "workflow-correction-review.json",
+      "bytes": 728,
+      "sha256": "088649669c40f0611f72f6b24e3268d6b6fa2ede2cc175f10205e8f801a84118"
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "evidence_date": "2026-11-05",
+  "scope": "Industrial mechanisms, bounded scale evidence and independent criticism; documentation validation only",
+  "archive": "plugin-industry-scale-20261105.tar.gz",
+  "sha256": "152f52825c03f5f1f79738cad962e8d71eb45759e9550d45c1818b78f2b65834",
+  "bytes": 64258,
+  "members": [
+    {
+      "path": "README.md",
+      "bytes": 1178,
+      "sha256": "bd0526a6dd96e1de1b2bed26b2404c271cb81107b518a9552249fd301df967a0"
+    },
+    {
+      "path": "context.md",
+      "bytes": 5957,
+      "sha256": "1d4333d54068231f24b0de1ac464689ea9b1add05827800541fc69b100ef0d8b"
+    },
+    {
+      "path": "reports/critic-industry-claims.md",
+      "bytes": 21730,
+      "sha256": "8dfe8a50fb876c665e86f0f0659d68c3fdde51e1bbb5bb46ce518660595f8bff"
+    },
+    {
+      "path": "reports/critic-plugin-author-experience.md",
+      "bytes": 11274,
+      "sha256": "31c9b2562e71a66b36cce0d0c71ae47ab2e01a21a44313648ca348adc1eec67b"
+    },
+    {
+      "path": "reports/critic-scale-and-design.md",
+      "bytes": 26507,
+      "sha256": "6ef6ecbb7d7bb27b1d56b9540cdda39f0ad9f656248a14c8ab6285a046092049"
+    },
+    {
+      "path": "reports/industry-agent-platforms.md",
+      "bytes": 26510,
+      "sha256": "46a7be787ed48359fc4ff7c8e40f488c4a50bc41ab0f9556e91a3a317fc2cf12"
+    },
+    {
+      "path": "reports/industry-mature-ecosystems.md",
+      "bytes": 27415,
+      "sha256": "cc5324c31827fbaaf79edd9f52ad33e2729c19e4f80f5531749b6940ec5a6ab2"
+    },
+    {
+      "path": "reports/internal-industry-and-scale-status.md",
+      "bytes": 31042,
+      "sha256": "93bf153eebdb3ceaee72a1429032c37a734e013f8a8f784c0d449cf938ced268"
+    },
+    {
+      "path": "reports/model-facing-scale.md",
+      "bytes": 4445,
+      "sha256": "af728a424c86b2f46e9b4a77c971117c8269cbcffcbdeb6d51518ecfe5c34c61"
+    },
+    {
+      "path": "reports/root-review-disposition.md",
+      "bytes": 9789,
+      "sha256": "73fbec3472c5b527c892ec436815bfcab0578988fde6c891bfe936038b66f8df"
+    },
+    {
+      "path": "validation/docs-changed-final.log",
+      "bytes": 540,
+      "sha256": "3162a65d845f2f01cb2f747ba8a4d3012a19945224957a3f56043828fad466c7"
+    },
+    {
+      "path": "validation/docs-check.log",
+      "bytes": 190,
+      "sha256": "019cefc6e6d2ee255302cc8f5af878f93f210de4fcc83db40097ad5ea602d04d"
+    },
+    {
+      "path": "validation/docs-context.log",
+      "bytes": 2754,
+      "sha256": "d63198e9d97de60809a333385a7a088df9fa84a8948b2a539fc5b6b39f68848b"
+    },
+    {
+      "path": "validation/docs-protocol-check.log",
+      "bytes": 1524,
+      "sha256": "cd058f50a6a7a860736713790ea4d8ca1a8eb2d0f48027071f473268b03bbe46"
+    },
+    {
+      "path": "validation/docs-quality.log",
+      "bytes": 710,
+      "sha256": "0118c30ec97fcca470e63d23691605232f6cd629d7067c4386c8f956b58de4e9"
+    },
+    {
+      "path": "validation/gm-hosted-ci-receipt.json",
+      "bytes": 26251,
+      "sha256": "d5a470bbf1b9745d25319a01172f3e9f7ea62393482bfe41bbf8fc9f2c3a6f30"
+    },
+    {
+      "path": "validation/toolchain-preflight.json",
+      "bytes": 1131,
+      "sha256": "6a8d6b19285b18e93314079dc681e9bb3b28836c52e0d4786a33fe08d3e06b70"
+    },
+    {
+      "path": "validation/validation-summary.json",
+      "bytes": 3282,
+      "sha256": "c974422bd6c13f4ea1780bf3bd8fc92d5b53c0c86886519dec0f74a77569fe7d"
+    }
+  ],
+  "draft_pr": "https://github.com/agent-teams-ai/extension-foundation/pull/55",
+  "replaces_historical_evidence": false,
+  "validation": {
+    "docs_protocol_check": "8 passed; no failures/cancellations/skips",
+    "final_docs_changed": "passed; catalog80 and lint/spelling86files",
+    "foundation_based_gates": "blocked-not-executed; embedded TypeScript5.9.3 under pinned Foundation1.7.2 violates current >=7.0.2 rule"
+  }
+}

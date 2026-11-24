@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "date": "2026-11-06",
+  "status": "research-and-proposed-owner-choices-only",
+  "evidenceClass": "source-inspection-and-independent-critique",
+  "baseCommit": "33c50b92b005b6e3da56cc1905aad51ce68352e1",
+  "archive": "plugin-decisions-20261106.tar.gz",
+  "archiveBytes": 52248,
+  "archiveSha256": "98883e6933d38966957668c2ad157509411302a73634a85512207fa80071016e",
+  "regularFileCount": 8,
+  "members": [
+    {
+      "path": "README.md",
+      "bytes": 917,
+      "sha256": "fe7fce714c633b6d3844bc845794edfd4de1ae363ca026927c6992cb7b2467b0"
+    },
+    {
+      "path": "brief.md",
+      "bytes": 6539,
+      "sha256": "2ef3aaa1287651009de808efb6a7d7ee7d253f79082b78d42e84f0e58cfc20c1"
+    },
+    {
+      "path": "quality-standard.md",
+      "bytes": 29214,
+      "sha256": "fdf0022fb276a012f21ecf1b3d23cf5a3dea94fe3a6c055ddf551f577f6970ff"
+    },
+    {
+      "path": "reports/authority-audit.md",
+      "bytes": 43611,
+      "sha256": "aa80d0bbffd04c0bcdb20b1b6874de931dd64b6c41f07254e5ad13e66a0662e5"
+    },
+    {
+      "path": "reports/mechanism-critique.md",
+      "bytes": 34421,
+      "sha256": "52d5c03fbc924a6fb7eb6652fb527b17d96ae4fef17fe640b5241d3598234542"
+    },
+    {
+      "path": "reports/product-options.md",
+      "bytes": 34215,
+      "sha256": "a49a5f03f83357a7ffcfeeccf8a393367d27f4423ee7c6aaf6f3561c00ec3d50"
+    },
+    {
+      "path": "reports/review-dispositions.md",
+      "bytes": 5526,
+      "sha256": "3ab12c5d2e647b7a9cebed34c48982a61723601e13aa8df3c2b451561fa161f3"
+    },
+    {
+      "path": "sources.json",
+      "bytes": 1837,
+      "sha256": "f02a20f40eb6c4f69dfd15e872b10efb83fac6fa7958360a30452fc5e7ff5b75"
+    }
+  ],
+  "newImplementationLines": {
+    "production": 0,
+    "integration": 0,
+    "tests": 0
+  },
+  "limitations": [
+    "No owner alternative adopted",
+    "No framework or product E2E rerun",
+    "No production or public SPI qualification",
+    "Planning estimates exclude missing baseline owners and native/release work"
+  ]
+}

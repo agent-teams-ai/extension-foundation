@@ -1,0 +1,279 @@
+{
+  "schemaVersion": 1,
+  "reviewer": "/root/architecture_decisions",
+  "kind": "read-only sealed packet delivery integrity review; no native execution",
+  "archive": "/workspace/scratch/95e187720be1/extension-foundation/docs/research/evidence/module-federation-research-supplement-20261122.tar.gz",
+  "archiveSha256": "8da74ec8776654caed6c359af25a1b69b9b7e45c689f27ecab176540abac6449",
+  "archiveBytes": 663845,
+  "regularFiles": 167,
+  "manifestSha256": "540f193d0bcc452835a12c7fcb1021d674f76dd6e295a72efa954795362b731d",
+  "readingSourceSnapshot": "52810c469783c77f852ee2a62be74ec259867747",
+  "basePacketSha256": "30ac307e967b28c341ae9d04d9863442d9aa6ea69921001f07dfb47f1483f9a7",
+  "basePacketUnchanged": true,
+  "checks": [
+    {
+      "check": "archive_expected_digest_size_count",
+      "passed": true,
+      "details": {
+        "sha256": "8da74ec8776654caed6c359af25a1b69b9b7e45c689f27ecab176540abac6449",
+        "bytes": 663845,
+        "regularFiles": 167
+      }
+    },
+    {
+      "check": "all_outer_members_regular_unique",
+      "passed": true
+    },
+    {
+      "check": "safe_payload_paths",
+      "passed": true
+    },
+    {
+      "check": "no_active_workflows_git_node_modules",
+      "passed": true,
+      "details": {
+        "blockedPaths": [],
+        "workflowSourceCopies": [
+          "workflow-sources/module-federation-research.yml"
+        ]
+      }
+    },
+    {
+      "check": "no_symlinks_or_hardlinks",
+      "passed": true
+    },
+    {
+      "check": "external_archive_metadata_matches",
+      "passed": true
+    },
+    {
+      "check": "external_all_file_hashes",
+      "passed": true,
+      "details": {
+        "rows": 167,
+        "mismatches": [],
+        "pathSetExact": true
+      }
+    },
+    {
+      "check": "internal_manifest_identity",
+      "passed": true
+    },
+    {
+      "check": "internal_all_payload_hashes",
+      "passed": true,
+      "details": {
+        "rows": 166,
+        "mismatches": [],
+        "pathSetExact": true
+      }
+    },
+    {
+      "check": "base_packet_unchanged",
+      "passed": true,
+      "details": {
+        "sha256": "30ac307e967b28c341ae9d04d9863442d9aa6ea69921001f07dfb47f1483f9a7",
+        "bytes": 5384666,
+        "regularFiles": 532
+      }
+    },
+    {
+      "check": "base_linkage_consistent",
+      "passed": true
+    },
+    {
+      "check": "base_internal_manifest_identity_retained",
+      "passed": true,
+      "details": {
+        "matchedPaths": [
+          "MANIFEST.json"
+        ]
+      }
+    },
+    {
+      "check": "transfer_readme_preserves_base",
+      "passed": true
+    },
+    {
+      "check": "frozen_reproduction_is_not_auto_activation",
+      "passed": true
+    },
+    {
+      "check": "mf_all_11_frozen_inputs",
+      "passed": true,
+      "details": {
+        "rows": 11,
+        "mismatches": [],
+        "pathSetExact": true
+      }
+    },
+    {
+      "check": "mf_frozen_count",
+      "passed": true
+    },
+    {
+      "check": "systemjs_frozen_input_table",
+      "passed": true,
+      "details": {
+        "rows": 30,
+        "mismatches": [],
+        "pathSetExact": true
+      }
+    },
+    {
+      "check": "module-federation-v2-input-20261122_exact_repository_copy",
+      "passed": true
+    },
+    {
+      "check": "module-federation-v2-input-20261122_retained_manifest",
+      "passed": true,
+      "details": {
+        "rows": 21,
+        "mismatches": [],
+        "pathSetExact": true
+      }
+    },
+    {
+      "check": "module-federation-v2-input-20261122_frozen_input_bytes",
+      "passed": true,
+      "details": {
+        "matched": 11,
+        "mismatches": []
+      }
+    },
+    {
+      "check": "module-federation-v2-input-20261122_no_links",
+      "passed": true
+    },
+    {
+      "check": "systemjs-rebinding-v1-input-20261122_exact_repository_copy",
+      "passed": true
+    },
+    {
+      "check": "systemjs-rebinding-v1-input-20261122_retained_manifest",
+      "passed": true,
+      "details": {
+        "rows": 39,
+        "mismatches": [],
+        "pathSetExact": true
+      }
+    },
+    {
+      "check": "systemjs-rebinding-v1-input-20261122_frozen_input_bytes",
+      "passed": true,
+      "details": {
+        "matched": 30,
+        "mismatches": []
+      }
+    },
+    {
+      "check": "systemjs-rebinding-v1-input-20261122_no_links",
+      "passed": true
+    },
+    {
+      "check": "latest_semantic_receipt",
+      "passed": true
+    },
+    {
+      "check": "semantic_frozen_identity_agrees",
+      "passed": true
+    },
+    {
+      "check": "raw_native_zip_present",
+      "passed": true,
+      "details": [
+        "evidence/module-federation-v2-hosted-attempt2-20261122.zip"
+      ]
+    },
+    {
+      "check": "raw_native_zip_digest",
+      "passed": true
+    },
+    {
+      "check": "hosted_zip_frozen_inputs_match",
+      "passed": true,
+      "details": {
+        "matched": 11,
+        "mismatches": []
+      }
+    },
+    {
+      "check": "hosted_observation_copies_exact",
+      "passed": true,
+      "details": {
+        "copies": 6,
+        "mismatches": []
+      }
+    },
+    {
+      "check": "raw_native_zip_safe_paths",
+      "passed": true
+    },
+    {
+      "check": "latest_seven_open_questions",
+      "passed": true
+    },
+    {
+      "check": "latest_question_and_review_bytes",
+      "passed": true
+    },
+    {
+      "check": "latest_review_final_evidence_addendum",
+      "passed": true
+    },
+    {
+      "check": "reading_source_tree_exact",
+      "passed": true
+    },
+    {
+      "check": "reading_source_identity_consistent",
+      "passed": true
+    },
+    {
+      "check": "reading_copies_match_canonical_source_with_only_link_expansion",
+      "passed": true,
+      "details": [
+        {
+          "path": "reading-copies/docs/README.md",
+          "bodyMatchesImmutableSource": true,
+          "links": 49,
+          "linkMismatches": [],
+          "sha256": "654bda6f00114b8c9f217ce2de3b4050a63e0c3c7eb8dad2c6659d2cb5d9524b"
+        },
+        {
+          "path": "reading-copies/docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md",
+          "bodyMatchesImmutableSource": true,
+          "links": 28,
+          "linkMismatches": [],
+          "sha256": "1ccd86a5d8c74adb017feace93d26246c1623bfe38941fdc3941621aaf0c9e7b"
+        },
+        {
+          "path": "reading-copies/docs/research/module-federation-update-boundaries-and-architecture-options-2026-11-22.md",
+          "bodyMatchesImmutableSource": true,
+          "links": 42,
+          "linkMismatches": [],
+          "sha256": "18c8e30443277d6f333a80f4307c99ce27e7b36b2b2388aac1ea7873f55ec1cb"
+        },
+        {
+          "path": "reading-copies/docs/research/plugin-system-research-reference.md",
+          "bodyMatchesImmutableSource": true,
+          "links": 79,
+          "linkMismatches": [],
+          "sha256": "461b14894da4323d6db07830135b09dd9ff3382d918503766bb839847a4506ee"
+        }
+      ]
+    },
+    {
+      "check": "stale_scratch_synthesis_excluded",
+      "passed": true
+    },
+    {
+      "check": "canonical_reading_copy_has_final_outcome",
+      "passed": true
+    }
+  ],
+  "failedChecks": [],
+  "status": "PASS",
+  "packetModified": false,
+  "nativeExecutions": 0
+}

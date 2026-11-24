@@ -1,0 +1,97 @@
+{
+  "schema": "research-delivery-validation/v1",
+  "researchDate": "2026-11-17",
+  "status": "local-documentation-and-custody-pass",
+  "sourceHeadBeforeChange": "4285fc983a954390d81d19ade861acb2c0a4177a",
+  "scope": "Research and navigation only; no new runtime experiment, production implementation, public SPI, release or merge.",
+  "inputs": [
+    {
+      "path": "AGENTS.md",
+      "bytes": 7372,
+      "sha256": "5d996e4c1b11b95d51c34f1095fe3ab5aded1ffa357e75ef931885b8a0daac92"
+    },
+    {
+      "path": "docs/README.md",
+      "bytes": 6837,
+      "sha256": "90a7bed3a37899129822efb31a08c2a3c0a47a66e7507f58ea5a075fa73405b2"
+    },
+    {
+      "path": "docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md",
+      "bytes": 22050,
+      "sha256": "b0d8ab43c7d4c697eaacbe7ed22198ae05a7ec62334bb3960ea431d81a7b1dc6"
+    },
+    {
+      "path": "docs/research/plugin-system-research-reference.md",
+      "bytes": 29669,
+      "sha256": "34c5b1fd0daa9b22bb86e56149de7270090d259d34aeedb1f711a2b5d09750f9"
+    },
+    {
+      "path": "docs/research/plugin-research-review-and-decision-record.md",
+      "bytes": 44621,
+      "sha256": "006162ba7c0b4575e7a0f77d198251840012e6cadd00a6263e92b13323a83dca"
+    },
+    {
+      "path": "docs/research/portable-live-plugin-mechanisms-and-library-design-2026-11-17.md",
+      "bytes": 44157,
+      "sha256": "efe1fe8626cee8328534226a903ee000e0540c16c4679615269922714eb7b749"
+    },
+    {
+      "path": "package.json",
+      "bytes": 6657,
+      "sha256": "92ea2bd93076612b19698016ec4d00c76dffaae608ec6e1c2498b9934619e220"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 94819,
+      "sha256": "a947cfe3f4d5db4877124f04a822e7bf4d88a98852003d243bb92cd31e136c48"
+    },
+    {
+      "path": "architecture/foundation/docs-protocol.yaml",
+      "bytes": 342,
+      "sha256": "a9861d049ebd1836e819bee5792b28f55960119684162d0d8ffeedd92b96c97c"
+    },
+    {
+      "path": ".agents/skills/docs-authoring/SKILL.md",
+      "bytes": 2094,
+      "sha256": "a86d8c9b990124f11b50b1c6703e1aeb5e3b981d51f7e8f5c163c4f5b987d7c5"
+    }
+  ],
+  "archive": {
+    "archive": "portable-live-plugins-20261117.tar.gz",
+    "bytes": 70928,
+    "sha256": "d814e91516b382d9351b13ae8600284089de3aa767b57aee46285e2de5434acf",
+    "regularFileCount": 23
+  },
+  "previousArchiveSha256": "0469a42a636150beaedde54969359cd1d342b728fe2bdd717db5d75c58cf1d29",
+  "localGeneralGate": "Not run: unchanged locked Foundation1.7.2 general route initializes API Extractor embedded TypeScript5.9.3, prohibited by existing user restriction. Standalone Docs Protocol gate used.",
+  "command": "pnpm docs:protocol:check",
+  "result": {
+    "exitCode": 0,
+    "catalogDocuments": 87,
+    "markdownAndSpellingFiles": 93,
+    "contractTests": 8,
+    "passed": 8,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "contractDurationMs": 365338.019741,
+    "rawLog": "$ pnpm docs:check && pnpm docs:quality && pnpm docs:contract-test\n$ agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml\ndocs.check: success\nProject: extension-foundation\nCatalog: complete (87 documents)\nAdoption: valid\n$ markdownlint-cli2 --config architecture/tooling/markdownlint-cli2.mjs && cspell --config .cspell.json --no-progress\nmarkdownlint-cli2 v0.23.2 (markdownlint v0.41.1)\nFinding: README.md AGENTS.md docs/**/*.md\nLinting: 93 files\nSummary: 0 issues in 0 files\nCSpell: Files checked: 93, Issues found: 0 in 0 files.\n$ node --test tests/document-authoring.test.mjs tests/docs-protocol-qualification.test.mjs\n✔ managed integration owns a data-only v3 qualification contract and external gate (8.715202ms)\n✔ unified info and check expose the declared Extension authority (5172.766188ms)\n✔ find combines catalog and relation filters and treats zero matches as success (14554.615774ms)\n✔ catalog preserves reciprocal supersession and resolved-decision evidence (4254.693195ms)\n✔ new previews and applies every supported type only inside a disposable repository (309113.874518ms)\n✔ required code anchors pass when reachable and fail closed when stale (9684.343685ms)\n✔ invalid owner, metadata, and duplicate identity fail without mutation (17611.300985ms)\n✔ portable adoption rejects a Skill without executable context guidance (4794.836168ms)\nℹ tests 8\nℹ suites 0\nℹ pass 8\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 365338.019741\n"
+  },
+  "hostedCI": "Recorded by exact run links in Draft PR55 after publishing; not claimed by this pre-run receipt.",
+  "runtime": {
+    "node": "v24.22.1",
+    "pnpm": "11.25.0",
+    "typescriptDeclared": "7.0.2",
+    "compilerNote": "No new runtime/compiler probe was run."
+  },
+  "standaloneDocsCheck": {
+    "exitCode": 0,
+    "rawLog": "$ agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml\ndocs.check: success\nProject: extension-foundation\nCatalog: complete (87 documents)\nAdoption: valid\n"
+  },
+  "custodyAudit": {
+    "sha256": "8b78412b9fc5328a6b808e196b941d4ef172977999d7c79da4d98d7c34277f8d",
+    "verdict": "PASS",
+    "rawReport": "# Portable live-plugin delivery custody audit\n\nAudited at `2026-11-16T23:25:34.678635+00:00`. Reviewer: effect_live_fit. Read-only archive/manifest and final-document inspection; no extraction, runtime tests, dependency installation, source re-audit or repository mutation. This audit is outside the frozen evidence packet.\n\n## Verdict\n\n**PASS.** All requested custody checks passed. The external-renderer paragraph is explicitly a proposed acceptance/conformance example, not a shipped implementation or existing adopter. The final root document continues to disclaim new production source, runtime tests and releases.\n\n## Exact identities\n\n| Artifact | Bytes | SHA-256 |\n| --- | ---: | --- |\n| New frozen archive | 70928 | `d814e91516b382d9351b13ae8600284089de3aa767b57aee46285e2de5434acf` |\n| Adjacent manifest | 5171 | `dc9fc2850585cc7634f5656ff03915871354e2acba63d87df7863d1b722141fd` |\n| Preserved November14 archive | 263889 | `0469a42a636150beaedde54969359cd1d342b728fe2bdd717db5d75c58cf1d29` |\n| Final root research document inspected | 44157 | `efe1fe8626cee8328534226a903ee000e0540c16c4679615269922714eb7b749` |\n\n## Verified facts\n\n- Archive has exactly23 members, all regular files; no directory, symlink, hardlink, device or FIFO members.\n- Every member has a unique canonical relative POSIX path under `portable-live-plugins-20261117/`; no absolute path, traversal component, backslash or NUL.\n- Member set exactly matches the manifest; all23 uncompressed byte lengths and SHA-256 digests match.\n- All three specialist lanes contain both round1 and round2 review artifacts: six reviews total. Browser research and root dispositions are also present.\n- All8 archived JSON files parse successfully, including the five required source/identity ledgers.\n- Ownership/library nested inventory covers exactly7 other artifacts in its directory, with matching member sizes and SHA-256 values; its own checksum is excluded as documented.\n- The member allowlist consists only of `.md`, `.json` and `.log` evidence files. No `inspection-temp`, dependency tree, downloaded third-party source code, runtime probe or temporary script is included.\n- The prior November14 archive still has the independently supplied full expected SHA-256; it was not replaced or modified.\n- Final root lines91–97 label the ordinary renderer as proposed external conformance, explicitly deny a claimed existing adopter, and require qualified package entrypoints or admitted packed candidates. This does not certify public availability of the private kernel.\n- Final validation/review navigation distinguishes exact reviewed hashes from later explanatory/link/spelling additions. These additions do not introduce an implementation/adoption claim.\n\n## Bounds\n\nThis is evidence custody and a bounded wording check, not validation of every upstream implementation claim, npm tarball/source equivalence, future package admission or production readiness. No new runtime experiment was performed. Only this standalone scratch audit file was written.\n"
+  },
+  "outputReceiptNote": "This receipt is generated after the gate and is not its own input. The unchanged governed document/config bytes checked by the gate are bound above. GitHub run results are recorded in PR metadata to avoid another result-only source commit."
+}

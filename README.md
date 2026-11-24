@@ -7,6 +7,28 @@ This repository will provide common technical infrastructure for Orchestrator,
 Agent Runtime, Frontend, and future products. Every product retains its own
 domain language, feature-owned extension points, authority, state, and host.
 
+Start with the [Plugin Delivery Plan](docs/architecture/plugin-delivery-plan.md)
+for the plugin-specific contracts, owners and qualification still needed. The
+[current system map](docs/architecture/live-extension-system-map.md) connects
+modules, plugins and live replacement to their decisions and evidence.
+The separate [Live Module Updates foundation plan](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/plans/foundation-delivery-plan.md)
+coordinates the shared application foundation and proposed update operation;
+its proposed design was published in [PR #1](https://github.com/agent-teams-ai/live-module-updates/pull/1).
+
+## Product vision: live application evolution
+
+**High priority: users and agents should be able to change substantive frontend
+and backend logic while the application remains running.** Changes should become
+reusable plugins that survive restart, can be shared, and can be enabled,
+disabled or removed. Eligible built-in features should be manageable through
+explicit module boundaries, with trusted product invariants preserved.
+
+Read the [owner's expanded vision](docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-prioritized-live-application-platform-vision-2026-11-18)
+before designing feature or module boundaries. It is a foundation for future
+design, with supported live-update profiles and reliability established through
+[source research and bounded spikes](docs/research/live-application-evolution-vision-and-executed-spikes-2026-11-18.md).
+The current implementation/adoption status remains explicit below.
+
 ## Status
 
 Architecture foundation only. No public runtime SPI or production package has
@@ -15,6 +37,14 @@ one admission basis retained by ADR-0015 from superseded ADR-0013 is proved: a
 second consumer, an independent replacement or release lifecycle, independent
 deployment or isolation, or a public SPI with two implementations and
 conformance evidence.
+
+For a new static application, start with the existing
+[Get Modular consumer quickstart](https://github.com/agent-teams-ai/get-modular/blob/main/docs/guides/consumer-quickstart.md)
+and the consumer's accepted artifact pins and admission. A reusable headless
+feature does not need a public plugin SPI or complete live replacement first.
+The [headless plugin and UI design](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/architecture/headless-plugins-and-ui.md)
+is a proposal for portable behavior and optional presentation, not a published
+SDK, renderer or universal UI language.
 
 ## Accepted Direction
 
@@ -40,6 +70,10 @@ authorization, lifecycle, readiness, routing, and recovery authority.
 
 See the [documentation index](docs/README.md) and
 [architecture decisions](docs/decisions/README.md).
+For industry patterns, production hot replacement and the pinned OpenClaw
+audit, start with the [plugin research reference](docs/research/plugin-system-research-reference.md).
+Research supplies evidence and qualification scenarios; it does not admit a
+runtime or replace an approved decision.
 
 ## Development
 

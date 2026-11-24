@@ -1,0 +1,228 @@
+{
+  "status": "PASS scoped native hosted execution, evidence delivery and independent semantic review",
+  "runId": 45054452281,
+  "jobId": 137306490663,
+  "runAttempt": 1,
+  "conclusion": "success",
+  "url": "https://github.com/agent-teams-ai/extension-foundation/actions/runs/45054452281",
+  "head": "44bf9c21fe55a048d6f942411695a4fd74dede67",
+  "tree": "098044add55de4811ec8df7505a13410621d79f6",
+  "workflowSha256": "e4e550260f511f0fae9c6bb3c90ac51ae00e9ff7428c2699e1c6ea879d33b2c5",
+  "inputArchiveSha256": "a2e6bfb6bb715c563026f72dc64a7c7460971d4a46d3eb711e8d0b5395cbefc6",
+  "inputAggregateSha256": "8299e58dd668163cb75d0adf2b124c2fce6c0f6c6d452fcb7e08fbfd22db3fbb",
+  "executableInputFilesMatched": 11,
+  "originalArchiveMembersRetainedAndMatched": 19,
+  "frozenDocumentsOutsideArtifactScope": [
+    "PLAN.md",
+    "portability-v2.diff"
+  ],
+  "artifact": {
+    "artifactId": 14766687520,
+    "fileName": "module-federation-research-45054452281-1.zip",
+    "bytes": 120101,
+    "sha256": "c3fa91cbaee87d44b7ee9e91205232e733805ae0fdc8a29b16b15fc9ea75d19c",
+    "apiDigestMatched": true,
+    "regularFiles": 47
+  },
+  "environment": {
+    "node": "v24.22.3",
+    "pnpm": "11.25.0",
+    "typescript": "7.0.2",
+    "webpack": "5.113.0",
+    "moduleFederationRuntime": "2.9.3",
+    "playwright": "1.65.1",
+    "browserVersion": "159.0.8154.6",
+    "browserRevision": 1255,
+    "observedLaunchExecutable": "/home/runner/.cache/ms-playwright/chromium_headless_shell-1255/chrome-headless-shell-linux64/chrome-headless-shell",
+    "receiptApiDefaultExecutable": "/home/runner/.cache/ms-playwright/chromium-1255/chrome-linux64/chrome",
+    "browserExitedCleanly": true
+  },
+  "dependencyClosure": {
+    "exactPairs": 70,
+    "compilerPackages": [
+      [
+        "@typescript/typescript-linux-x64",
+        "7.0.2"
+      ],
+      [
+        "typescript",
+        "7.0.2"
+      ]
+    ],
+    "compilerBinaryGate": "Workflow independently checked frozen compiler executable SHA before tsc execution; binary not uploaded, no local rehash claimed."
+  },
+  "build": {
+    "containerCount": 5,
+    "distFiles": 11,
+    "generatedFileHashesMatched": true,
+    "emittedHarnessFiles": 7,
+    "files": [
+      {
+        "path": "a/_build_fixture_remote_js.001d32d8.js",
+        "sha256": "dae81d1c71218e4da5e8bc445c5a4e73851b3dd93031ea23d15b813414151d48",
+        "bytes": 1263
+      },
+      {
+        "path": "a/remoteEntry.js",
+        "sha256": "c640d89a2b92340cfdd8cef30f3e99f344444b60a8cd3de115d90e17c8f172a0",
+        "bytes": 14587
+      },
+      {
+        "path": "b/_build_fixture_remote_js.9278e616.js",
+        "sha256": "3d4201071f67b544597ff83e1498f3c2290bba7df9604afbca56d1027eba1dda",
+        "bytes": 1263
+      },
+      {
+        "path": "b/remoteEntry.js",
+        "sha256": "0644b468238e8c34149360191e44fbd2975111b803176dc7c39ed8b642043277",
+        "bytes": 14587
+      },
+      {
+        "path": "c/_build_fixture_remote_js.dba0a3f7.js",
+        "sha256": "671f3a1da8349b2355a947541a7144c8fd2701de8d45d4a6c488f5abadc89f38",
+        "bytes": 1263
+      },
+      {
+        "path": "c/remoteEntry.js",
+        "sha256": "ca95bd5b63715e387fcc769427d046a9f5a79957d7998ca17f96a7155969c2ab",
+        "bytes": 14587
+      },
+      {
+        "path": "compatible/_build_fixture_consumer_js.348c0821.js",
+        "sha256": "6810b03c1cf0f41451669ac8e83b0882e6ad0ffe62164e87374cc0a43c251ec0",
+        "bytes": 881
+      },
+      {
+        "path": "compatible/remoteEntry.js",
+        "sha256": "51778bfd8a212ce6dd7ae9c4bac03f3af3d428529b32e20621e2b775ef1e766d",
+        "bytes": 24598
+      },
+      {
+        "path": "host.js",
+        "sha256": "75f5455176fb78bdddaa6be6a9a76296c7f72002c975857af731c53341f649aa",
+        "bytes": 295479
+      },
+      {
+        "path": "strict/_build_fixture_consumer_js.e428c64d.js",
+        "sha256": "9030b5a0510c9d5ebbc2de0509781f80d85a608b2ddbe4ace3afa9b607766358",
+        "bytes": 869
+      },
+      {
+        "path": "strict/remoteEntry.js",
+        "sha256": "6b5ff59693b77ff2c0475d78ed2de83cece67e18b495447c5274456922b541f1",
+        "bytes": 24558
+      }
+    ]
+  },
+  "native": {
+    "summary": {
+      "tests": 4,
+      "suites": 0,
+      "pass": 4,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "durationMs": 2514.376766,
+    "observationRows": 5,
+    "rows": [
+      {
+        "id": "N1",
+        "requests": 8,
+        "pageErrors": [],
+        "requestCounts": {
+          "/": 1,
+          "/host.js": 1,
+          "/a/remoteEntry.js": 1,
+          "/a/_build_fixture_remote_js.001d32d8.js": 1,
+          "/b/remoteEntry.js": 1,
+          "/b/_build_fixture_remote_js.9278e616.js": 1,
+          "/c/remoteEntry.js": 1,
+          "/c/_build_fixture_remote_js.dba0a3f7.js": 1
+        }
+      },
+      {
+        "id": "N2",
+        "requests": 5,
+        "pageErrors": [],
+        "requestCounts": {
+          "/": 1,
+          "/host.js": 1,
+          "/a/remoteEntry.js": 2,
+          "/a/_build_fixture_remote_js.001d32d8.js": 1
+        }
+      },
+      {
+        "id": "N3",
+        "requests": 6,
+        "pageErrors": [],
+        "requestCounts": {
+          "/": 1,
+          "/host.js": 1,
+          "/compatible/remoteEntry.js": 1,
+          "/compatible/_build_fixture_consumer_js.348c0821.js": 1,
+          "/strict/remoteEntry.js": 1,
+          "/strict/_build_fixture_consumer_js.e428c64d.js": 1
+        }
+      },
+      {
+        "id": "N4",
+        "requests": 4,
+        "pageErrors": [],
+        "requestCounts": {
+          "/": 1,
+          "/host.js": 1,
+          "/a/remoteEntry.js": 1,
+          "/a/_build_fixture_remote_js.001d32d8.js": 1
+        }
+      },
+      {
+        "id": "control",
+        "requests": 4,
+        "pageErrors": [],
+        "requestCounts": {
+          "/": 1,
+          "/host.js": 1,
+          "/a/remoteEntry.js": 1,
+          "/a/_build_fixture_remote_js.001d32d8.js": 1
+        }
+      }
+    ],
+    "recordedRequests": 27,
+    "allRecordedHttpStatus200": true,
+    "runtimeWarning": "N1 emits the upstream forced-replacement warning; captured separately from empty pageErrors. Browser process stderr includes D-Bus diagnostics."
+  },
+  "rawJobLog": {
+    "path": "job-137306490663.log",
+    "bytes": 65923,
+    "sha256": "55f5893a4544723de3f3a56d7833e4476b4b1586ce0106199bda136baffd9432",
+    "receivedUtf16Length": 63255,
+    "storedUtf16Length": 63255
+  },
+  "nativeJsonSha256": "6fa0e30d2a247e68a131e44bed048c1ccc6f21cc4699884a3221116524597ed8",
+  "carryForward": {
+    "firstHostedRun": 45053736889,
+    "firstHostedConclusion": "failure in artifact upload; native4/4; artifacts0",
+    "secondExecutionAddsDistinctCases": 0,
+    "newDistinctNativeCases": 4,
+    "localBrowserHookFailuresAreSemanticFailures": false,
+    "systemJsProfileSeparate": true,
+    "priorNativeProfilesUnchanged": true
+  },
+  "limits": [
+    "Not library E2E",
+    "Not Rspack/enhanced bundler HMR/SSR/Electron",
+    "No GC, security or performance guarantee"
+  ],
+  "auditActions": "Read-only metadata/source/log/artifact retrieval and byte comparisons. No tests, workflow dispatch or rerun performed by audit lane.",
+  "auditedAt": "2026-11-22T18:25:45.499348+00:00",
+  "semanticReview": {
+    "reviewer": "/root/mf_runtime",
+    "path": "federation/NATIVE-SEMANTIC-REVIEW.json",
+    "sha256": "f08d7461a8a3d2c7275f16677c8eec01e67736d52a5af83ccf67ad46baec01a1",
+    "verdict": "PASS for four declared cases of this profile; no broader production/library/GC/security/SSR/Electron claim",
+    "kind": "independent interpretation of retained artifact, no new runtime execution",
+    "reviewedAt": "2026-11-22T18:24:39.989242+00:00"
+  }
+}

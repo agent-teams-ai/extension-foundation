@@ -1,0 +1,109 @@
+{
+  "schema": "agent-teams.research-delivery-validation/v1",
+  "researchDate": "2026-11-22",
+  "timezone": "Europe/Kiev",
+  "sourceBaseline": "e9277b1c902aeb29a4132b5d5b7e20b908be6c2c",
+  "checkedSourceFiles": [
+    {
+      "path": "docs/research/standalone-live-plugin-library-blueprint-2026-11-22.md",
+      "bytes": 37914,
+      "sha256": "edf910c958d2a481e2ce3d09779e6784f2965335121902c086a343f34ec59eb9"
+    },
+    {
+      "path": ".github/workflows/standalone-live-library-spikes.yml",
+      "bytes": 5897,
+      "sha256": "0e84dcad9719bbc3d15b98cd1cba748788916eab907cfa996be675d061491507"
+    },
+    {
+      "path": "docs/research/evidence/standalone-live-library-browser-input-20261122-v2.manifest.json",
+      "bytes": 3352,
+      "sha256": "cd8d1fe8435895b7e41791f65ad23b2121bd02147fa1c845189a6261df630d90"
+    },
+    {
+      "path": "docs/research/evidence/standalone-live-library-browser-input-20261122-v2.tar.gz",
+      "bytes": 18520,
+      "sha256": "ccfb6d1e509576712d21aa34156e37264997bf355efc55e97df235667c6d1e8f"
+    },
+    {
+      "path": "docs/research/evidence/standalone-live-library-20261122.sources.json",
+      "bytes": 44766,
+      "sha256": "b8f7d1eaa13cb1f6c5dcb2b620fabbcbb29da86ee6405073756e1df99161ee4c"
+    },
+    {
+      "path": "docs/research/evidence/standalone-live-library-20261122.findings.json",
+      "bytes": 27803,
+      "sha256": "5d9cf0075322d487153f709d1a5c05b83bf4053493966509f4c69cb0eb34d710"
+    }
+  ],
+  "browser": {
+    "inputCommit": "0e0bfb1b6468df90391134f4731e3e3df52479d2",
+    "runId": 45034893087,
+    "attempt": 1,
+    "result": "success",
+    "tests": 1,
+    "comparisonsMatched": 49,
+    "phasesCompleted": 3,
+    "explicitPublicRecoveryRequests": 1,
+    "receipt": "standalone-live-library-browser-v2-attempt1-20261122.json",
+    "firstFailureRetained": "standalone-live-library-browser-attempt1-20261122.json",
+    "workflowAndInputUnchanged": true
+  },
+  "nativeProbes": {
+    "nodeAsyncContext": {
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    },
+    "yjsStateHistory": {
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    "compiler": "strict TypeScript7.0.2 with dependency declarations checked",
+    "artifact": "standalone-live-library-native-20261122.tar.gz"
+  },
+  "transfer": {
+    "archive": {
+      "file": "standalone-live-library-transfer-20261122.tar.gz",
+      "bytes": 777472,
+      "sha256": "603bae614abc1fec4cd051d1e993ddbcb0652c55a3a8c6aa65790c46f46e795b"
+    },
+    "fileCount": 257,
+    "uncompressedFileBytes": 2039189,
+    "synthesisSnapshot": "e9277b1c902aeb29a4132b5d5b7e20b908be6c2c",
+    "independentReview": {
+      "reviewer": "library_boundaries_research",
+      "sha256": "335117928f4a9fc2562b7507b297284d4f31223f315a8a5c89a2aa9b2d493b6c",
+      "text": "# Independent review: complete standalone transfer\n\nReviewer: library_boundaries_research. Date: 2026-11-22 UTC.\nScope: final transfer archive, manifests, staging content, current navigation and retained native evidence. No runtimes executed.\n\n**Verdict: no concrete blocker.** The deliverable is a complete research transfer project with explicit production/repository limits.\n\n## Archive and nested identity\n\n- Archive: 777,472 bytes; SHA-256 603bae614abc1fec4cd051d1e993ddbcb0652c55a3a8c6aa65790c46f46e795b.\n- All 257 unique regular members match external manifest names, lengths, SHA-256 values and staging bytes; 2,039,189 uncompressed bytes.\n- No absolute/parent-traversal members, links or special files.\n- The self-excluding inner manifest verifies all256 payload members.\n- All11 historical seed files match the retained seed manifest unchanged.\n- All46 referenced native inner-manifest records match their retained files.\n\n## Source synthesis and reading copy\n\nThe direct synthesis copy is byte-identical to git show at e9277b1c902aeb29a4132b5d5b7e20b908be6c2c and its recorded original SHA-256.\n\nThe reading copy differs only by18 relative Markdown link destinations resolved to that immutable origin, plus the declared transfer provenance note. Its recorded hash matches. Retaining the completed CP7 synthesis while a later delivery commit adds archive/navigation links is clear and avoids making the source snapshot self-referential.\n\n## Results and usability\n\nCURRENT.md and current READMEs point to the actual outcomes: native Node5 and Yjs7 passes, original browser failure after31 matching comparisons, and explicit-recovery v2 pass with49/49 comparisons, three phases and one public recovery. Both original browser artifact digests match their terminal validation records. The successful source/receipt and independent review remain present.\n\nSix current navigation entrypoints have no broken relative Markdown links. Historical plans/prechecks remain historical; current outcome documents explain which records supersede them. The original failed input has not been relabeled.\n\n## Scope and exclusions\n\nThe root contains no active hosted workflows, installed dependency tree, root dependency workspace, empty production packages or invented exports. Isolated private probe manifests and lockfiles remain as reproduction evidence. Workflow source under research is inert.\n\nNo credential files or recognized private-key/token/signed-URL markers were found. Upstream notices/provenance remain included; their exact identities were already reviewed.\n\nCurrent documentation explicitly preserves the remaining gaps: remote repository not created, production admission/tooling conflict unresolved, first real library/application/packed-consumer delivery still required, and the browser result limited to its exact development profile. No universal automatic-repair, production, durability, IME or leak-freedom claim is introduced.\n\nNo further research, test run or archive change is requested.\n\n"
+    },
+    "readOnlyAuditScope": "Manifest/source/notice/navigation/credential-pattern checks; no runtime rerun or universal security claim"
+  },
+  "sourceRecords": 85,
+  "findingsRecords": 41,
+  "localDocumentationGate": {
+    "status": "passed",
+    "command": "pnpm docs:protocol:check",
+    "exitCode": 0,
+    "tests": 8,
+    "passed": 8,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "catalogDocuments": 92,
+    "markdownAndSpellingInputs": 98,
+    "testDurationMs": 423477.044507,
+    "logSha256": "fe0a334653e2434ac148d0958d7596a5f827c2e36c21c38b1b2ea5e7fda784a9",
+    "output": "$ pnpm docs:check && pnpm docs:quality && pnpm docs:contract-test\n$ agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml\ndocs.check: success\nProject: extension-foundation\nCatalog: complete (92 documents)\nAdoption: valid\n$ markdownlint-cli2 --config architecture/tooling/markdownlint-cli2.mjs && cspell --config .cspell.json --no-progress\nmarkdownlint-cli2 v0.23.2 (markdownlint v0.41.1)\nFinding: README.md AGENTS.md docs/**/*.md\nLinting: 98 files\nSummary: 0 issues in 0 files\nCSpell: Files checked: 98, Issues found: 0 in 0 files.\n$ node --test tests/document-authoring.test.mjs tests/docs-protocol-qualification.test.mjs\n\u2714 managed integration owns a data-only v3 qualification contract and external gate (6.902142ms)\n\u2714 unified info and check expose the declared Extension authority (6653.819885ms)\n\u2714 find combines catalog and relation filters and treats zero matches as success (16847.907573ms)\n\u2714 catalog preserves reciprocal supersession and resolved-decision evidence (4862.696407ms)\n\u2714 new previews and applies every supported type only inside a disposable repository (359536.417725ms)\n\u2714 required code anchors pass when reachable and fail closed when stale (10982.178633ms)\n\u2714 invalid owner, metadata, and duplicate identity fail without mutation (19743.687328ms)\n\u2714 portable adoption rejects a Skill without executable context guidance (4676.923896ms)\n\u2139 tests 8\n\u2139 suites 0\n\u2139 pass 8\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 423477.044507\n",
+    "environmentObservedImmediatelyAfter": {
+      "node": "v24.22.3",
+      "pnpm": "11.25.0"
+    }
+  },
+  "hostedCi": "Final publication head must be audited separately after push; intermediate cancelled jobs or skipped push Docs are not passes. Final results will be bound in PR55.",
+  "limits": [
+    "Research qualification only; no production runtime/SPI/admission or public release",
+    "New standalone remote not created: no authenticated repository-creation operation and browser requires sign-in",
+    "Qualified Docs cohort Foundation1.7.2 reaches embedded TypeScript5.9.3; newer compatible cohort transition unresolved",
+    "No blocked Foundation CLI executed locally and no dependency override applied"
+  ]
+}

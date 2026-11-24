@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-23",
+  "sourceBaseline": "f285333c5869b1f69070efee29b205da8fd19e49",
+  "purpose": "Detailed source research and independent review, not native qualification",
+  "archive": "live-module-design-review-20261123.tar.gz",
+  "bytes": 70573,
+  "sha256": "72d46bab76bf6d5056001e7737c6e7e67c5f49dc59de2a67af921a5d594a5175",
+  "memberCount": 15,
+  "members": [
+    {
+      "path": "DESIGN-DELIVERY-PLAN.md",
+      "bytes": 7631,
+      "sha256": "361d410f33264cdcb27bb4c7b88ab5d63b5cb5feb2edc7c2848f4d093c716756"
+    },
+    {
+      "path": "OPERATION-DOCUMENT-BODY.md",
+      "bytes": 18514,
+      "sha256": "73740c529fd896a361b654db69925a97365be8adadaab196f2cfc9a6b0b9b453"
+    },
+    {
+      "path": "ROOT-REVIEW-DISPOSITIONS.md",
+      "bytes": 3208,
+      "sha256": "9cb5e443f570ae2df31f104aeb9cc8b336fd964a76cfb55570e58b5a671b968b"
+    },
+    {
+      "path": "architecture/REPORT.md",
+      "bytes": 51366,
+      "sha256": "c48f0e3edb125c85670c778f730d8c1f6748bcb924537254c1a156f8d89774a1"
+    },
+    {
+      "path": "architecture/ROOT-DOCUMENT-REVIEW.md",
+      "bytes": 6838,
+      "sha256": "d34a8bb638d4d28c28cd6ecd9652c1806b97008bb42241563c9e906006f2eedd"
+    },
+    {
+      "path": "architecture/findings.json",
+      "bytes": 29200,
+      "sha256": "3d303a8205ad52228219b789f48f3e82186b44df81e8b7d6cd69851da4747fe8"
+    },
+    {
+      "path": "industry/CODE-REVIEW-inputs.json",
+      "bytes": 3716,
+      "sha256": "f86f1c80b896f763de528ae0a4afc701aeb83a1e1f72c38adf0798e2ae6584f6"
+    },
+    {
+      "path": "industry/CODE-REVIEW-v1.json",
+      "bytes": 4452,
+      "sha256": "f26cdc17895fdcddc8f83526a367fe9ffc98f5cfbec87f2b4b941b23a7e53e78"
+    },
+    {
+      "path": "industry/CODE-REVIEW.md",
+      "bytes": 5196,
+      "sha256": "2c59fda96cdbd4b09ec4bc7093c4736fa379547629724b651d88153ec84cfa2f"
+    },
+    {
+      "path": "industry/REPORT.md",
+      "bytes": 38606,
+      "sha256": "e0afb09cdb5cb324ed7da46587c519bb121c68a3f2df2b1c2f46b5f3859de70d"
+    },
+    {
+      "path": "industry/ROOT-DOCUMENT-REVIEW-inputs.json",
+      "bytes": 363,
+      "sha256": "02ff2771fb7605067630eadc6e9425eee0fdd84aa213824734f5701f19b92d1d"
+    },
+    {
+      "path": "industry/ROOT-DOCUMENT-REVIEW.md",
+      "bytes": 2719,
+      "sha256": "4122c46bcbe126bb4ad9b7b20fa14bcb0f1479b40c7735d320e3ccad2987f264"
+    },
+    {
+      "path": "industry/SPIKE-BRIEF.md",
+      "bytes": 5658,
+      "sha256": "95add26df83ecbc57347e22d3b3754196bbf2c60a454bf427f10e26d501afdf9"
+    },
+    {
+      "path": "industry/findings.json",
+      "bytes": 24401,
+      "sha256": "88b886947964f3144473a6137b0a3f9e54130b82c2a5c148961a923e267ab352"
+    },
+    {
+      "path": "industry/sources.json",
+      "bytes": 45530,
+      "sha256": "bcca4094413a5b2e4c0966a2b59744743b7452c32a30475ca77d829f6862e6ca"
+    }
+  ]
+}

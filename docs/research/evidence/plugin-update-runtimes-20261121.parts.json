@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "archive": "plugin-update-runtimes-20261121.tar.gz",
+  "archiveBytes": 17266914,
+  "archiveSha256": "873a2c7aa48d49211a3d93a2a11d886a8cd46062283c875b4240494fb4e9a184",
+  "memberManifest": "plugin-update-runtimes-20261121.manifest.json",
+  "memberManifestSha256": "492dbdefc9d35317d1b9d18bf744e29be4dd020af51a9ccf95e4116288b0574b",
+  "encoding": "binary-concatenation",
+  "parts": [
+    {
+      "path": "plugin-update-runtimes-20261121.tar.gz.part01",
+      "bytes": 8400000,
+      "sha256": "74c9a4f1407f85a5716bec18159227ced39e930fb7de90ddd3f89522d3007456"
+    },
+    {
+      "path": "plugin-update-runtimes-20261121.tar.gz.part02",
+      "bytes": 8866914,
+      "sha256": "51fefb2745c0867b1d46ab17c37ba153ab9d55fd88e0953c8ab93b4d1cbbd393"
+    }
+  ],
+  "reconstruction": "Concatenate the binary parts in the listed order into the archive filename, then verify archiveBytes and archiveSha256 before extraction. This reproduces the original frozen gzip byte for byte; no archive member was changed.",
+  "deliveryReason": "The connected GitHub transport limits a request body to 16 MiB; each ordinary Git blob part fits without changing evidence or access controls."
+}

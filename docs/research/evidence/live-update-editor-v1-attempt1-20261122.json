@@ -1,0 +1,142 @@
+{
+  "runId": 45042075044,
+  "runAttempt": 1,
+  "runUrl": "https://github.com/agent-teams-ai/extension-foundation/actions/runs/45042075044",
+  "jobId": 137268512653,
+  "commit": "f4ff3a49e695caef4e75d119ff318259b5937dac",
+  "conclusion": "failure",
+  "testCounts": {
+    "tests": 1,
+    "passed": 0,
+    "failed": 1,
+    "skipped": 0
+  },
+  "completedScenarios": [
+    "CM-1",
+    "CM-2"
+  ],
+  "comparisonCounts": {
+    "executed": 28,
+    "matching": 27
+  },
+  "nativeRuntime": {
+    "node": "v24.22.3",
+    "chromium": "159.0.8154.6",
+    "typescript": "7.0.2"
+  },
+  "input": {
+    "path": "live-update-editor-input-20261122-v1.tar.gz",
+    "bytes": 18005,
+    "sha256": "4b94cb4d40019d77eff78b4cb01c5199197fd9eacbdb0c071c84797df0e63576"
+  },
+  "workflowSha256": "3842f1eb34dcbbc7e5c2d3e38d4aad439467c67dd8c120b6c299ce9d8e1d871a",
+  "archive": {
+    "path": "live-update-editor-v1-attempt1-20261122.zip",
+    "bytes": 605696,
+    "sha256": "5fef20edf7e0e8cc7879f709a4fa3e40b5cf7252f1f26c55acbfaf4131778d6b",
+    "artifactId": 14761563185
+  },
+  "inputFilesVerified": 7,
+  "observedFailure": {
+    "message": "CM-3 native changed-document protection: native diagnostics DOM remains empty\n+ actual - expected\n\n+ [\n+   'No diagnostics'\n+ ]\n- []\n",
+    "stack": "AssertionError [ERR_ASSERTION]: CM-3 native changed-document protection: native diagnostics DOM remains empty\n+ actual - expected\n\n+ [\n+   'No diagnostics'\n+ ]\n- []\n\n    at compare (file:///home/runner/work/extension-foundation/live-update-editor-reliability/browser.test.ts:47:12)\n    at TestContext.<anonymous> (file:///home/runner/work/extension-foundation/live-update-editor-reliability/browser.test.ts:135:5)\n    at async Test.run (node:internal/test_runner/test:1409:7)\n    at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)"
+  },
+  "interpretation": "CM1 and CM2 completed; native same-document stale-source overwrite reproduced. CM3 data guard succeeded; harness expected no diagnostic DOM rows but native panel displays No diagnostics placeholder. No claim for later scenarios.",
+  "files": [
+    {
+      "path": "evidence/CM-2-native-late-source.png",
+      "bytes": 63389,
+      "sha256": "1fdc12a02833ef83a21e841db2576e61d61813acccaae6d24b02006b45422282"
+    },
+    {
+      "path": "evidence/final.png",
+      "bytes": 56572,
+      "sha256": "4081ff98f5dec311ea754e3cdd41004c11c6263513eca847e83fd849a2d9b505"
+    },
+    {
+      "path": "evidence/browser-trace.zip",
+      "bytes": 469394,
+      "sha256": "453c3846a34bbc5eadf4b9e12bf502b931cdfb3572b4145144e849da23293188"
+    },
+    {
+      "path": "evidence/hosted-browser-install.log",
+      "bytes": 17638,
+      "sha256": "fbb0ae5c9987d2d888c1fca6048982cbfaf2f622d74ed469aafc4d484ae0453f"
+    },
+    {
+      "path": "evidence/hosted-environment.txt",
+      "bytes": 17,
+      "sha256": "92d8a2199a84055aeb15998c3d5df8df5787b2a93f9cfa0bdcb57cb1de2825bb"
+    },
+    {
+      "path": "evidence/hosted-install.log",
+      "bytes": 802,
+      "sha256": "40c4a8112df265ba69afe291eed16f6e01e7525c87be8fc32743a457b1f7c68c"
+    },
+    {
+      "path": "evidence/hosted-input-receipt.json",
+      "bytes": 366,
+      "sha256": "321c4ca02edd33513cc3cc90500f12c084598f748c207dbda8e33a96c1efc039"
+    },
+    {
+      "path": "evidence/hosted-runtime.log",
+      "bytes": 8453,
+      "sha256": "d95488043299a3d574bd6b6292e754776f5e1bfd30d064d721b953b156f015c2"
+    },
+    {
+      "path": "evidence/hosted-typecheck.log",
+      "bytes": 54,
+      "sha256": "ace66e11637f9a69a84d1178767cd9bb91010501ece0296cbc7ae8b32f5ed8a2"
+    },
+    {
+      "path": "evidence/input-manifest.json",
+      "bytes": 14878,
+      "sha256": "6738c6575ca92868e801a47672ad0ced401bd7f70d3414f4eec349c01058146e"
+    },
+    {
+      "path": "evidence/installed-direct-identities.json",
+      "bytes": 233,
+      "sha256": "84323c9fe04494b7c6e9c4981076c96ad5305b706833e61bd12214f4d2745a49"
+    },
+    {
+      "path": "evidence/result.json",
+      "bytes": 10463,
+      "sha256": "d82e2c0c5b0dbd544ceeb2e8fa43a6d55997eb1a37cddabc07691c9166af68a2"
+    },
+    {
+      "path": "fixture/index.html",
+      "bytes": 1859,
+      "sha256": "6de10bf8ac3ca54b37fff3a0f391c31ecaf039e44d4592a0220bbb3e788b3363"
+    },
+    {
+      "path": "fixture/main.ts",
+      "bytes": 9794,
+      "sha256": "163f4a6f839a2e9ff7889c31bde7020611c3bc3aadcc543509c17ba3210ed9ba"
+    },
+    {
+      "path": "fixture/probe.ts",
+      "bytes": 1364,
+      "sha256": "4e842e3b477b98f48b4c4b909ba1ce2f88a4cf713dfdeda3005c15876bc85ca0"
+    },
+    {
+      "path": "browser.test.ts",
+      "bytes": 17055,
+      "sha256": "8cd57ba5ac8164b6e860833136b640f6452bcf3078a69c920ab3c78b931c1034"
+    },
+    {
+      "path": "package.json",
+      "bytes": 556,
+      "sha256": "789a14d47aaada00e674fd03c37170b392c9e113e2998d99ff5e8ec80cfcfbd6"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 28115,
+      "sha256": "96105e7cc9a063d2be813e6f01ad38f34365dee6591a3cd4ff8f6684db0f524a"
+    },
+    {
+      "path": "tsconfig.json",
+      "bytes": 550,
+      "sha256": "3113436c7a3639d6103b15fc56f6eb0148cc4c7fc0f3a2c97875f065cb98a312"
+    }
+  ]
+}

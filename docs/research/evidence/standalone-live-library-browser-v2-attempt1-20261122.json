@@ -1,0 +1,205 @@
+{
+  "researchDate": "2026-11-22",
+  "timezone": "Europe/Kiev",
+  "run": {
+    "id": 45034893087,
+    "attempt": 1,
+    "head": "0e0bfb1b6468df90391134f4731e3e3df52479d2",
+    "url": "https://github.com/agent-teams-ai/extension-foundation/actions/runs/45034893087",
+    "conclusion": "success",
+    "jobId": 137246337441
+  },
+  "artifact": {
+    "id": 14759765045,
+    "file": "standalone-live-library-browser-v2-attempt1-20261122.zip",
+    "bytes": 101058,
+    "sha256": "ecef2ef8fa8a779a29383fbf6e0f94b9d26adbb17444d66e64b575df27e7afba"
+  },
+  "input": {
+    "file": "standalone-live-library-browser-input-20261122-v2.tar.gz",
+    "bytes": 18520,
+    "sha256": "ccfb6d1e509576712d21aa34156e37264997bf355efc55e97df235667c6d1e8f"
+  },
+  "workflowSha256": "0e84dcad9719bbc3d15b98cd1cba748788916eab907cfa996be675d061491507",
+  "inputFilesVerified": 16,
+  "runtime": {
+    "node": "24.22.3",
+    "chromium": "159.0.8154.6",
+    "typescript": "7.0.2"
+  },
+  "testResult": {
+    "tests": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "comparisonsReached": 49,
+    "comparisonsMatched": 49,
+    "completedPhases": [
+      "compatible-native-hmr",
+      "hook-signature-remount",
+      "candidate-rejection-and-recovery"
+    ],
+    "explicitRecoveryRequests": 1
+  },
+  "observed": [
+    "Compatible HMR and hook-signature remount retained host draft/history/focus/selection",
+    "Rejecting module body retained useful v3 including new editing and Undo",
+    "Repaired module evaluation and native transport receipt were correlated while visible view was still v3",
+    "One explicit public reloadModule produced actual v4 computation while retaining the original host draft, document, textarea, focus, selection and prior Undo/Redo",
+    "New user editing and Undo used only the current declared v4 observer; real custom event only reached the current v4 listener"
+  ],
+  "limits": [
+    "Exact development HMR module-body failure case; not all syntax, transform or dependency failures",
+    "One browser/OS/runtime/dependency profile, not production switching or a complete plugin library",
+    "No IME, durable/network persistence, schema migration, process-crash recovery, heap bound or leak-freedom claim"
+  ],
+  "members": [
+    {
+      "path": "browser.test.ts",
+      "bytes": 17612,
+      "sha256": "9f627f1ffaba191ff1bd1f1cd2d1d97b008f7a00f7825951ba11827532d07205"
+    },
+    {
+      "path": "evidence/final-page.png",
+      "bytes": 27210,
+      "sha256": "5780dabcad179074d8ff9e01aa855f7afac4238e9dfac5c62284d05dc0776009"
+    },
+    {
+      "path": "evidence/fixture-final-source.json",
+      "bytes": 1314,
+      "sha256": "4a53811a10caf524b52fdbb390aa93f9854d56d50bab63b4df7576b72ee7e877"
+    },
+    {
+      "path": "evidence/hosted-browser-install.log",
+      "bytes": 17638,
+      "sha256": "6967ba39520b4aa425bde26fc7f30a79cf077929d1025fa8b1a842bda09b2ec6"
+    },
+    {
+      "path": "evidence/hosted-environment.txt",
+      "bytes": 17,
+      "sha256": "92d8a2199a84055aeb15998c3d5df8df5787b2a93f9cfa0bdcb57cb1de2825bb"
+    },
+    {
+      "path": "evidence/hosted-input-receipt.json",
+      "bytes": 379,
+      "sha256": "79234f8cc88fa24f8da3522f7b7b4e234c8ff70bf6cc19d2d342c5482c732240"
+    },
+    {
+      "path": "evidence/hosted-install.log",
+      "bytes": 818,
+      "sha256": "9f92be0e5455b052f3b820c1d6802bab1c59ddbeaa2fd51dd691c62991e1c214"
+    },
+    {
+      "path": "evidence/hosted-runtime.log",
+      "bytes": 11823,
+      "sha256": "b4e865c129099d0d280877397701424a5604219db7f1d1d7dbdb78824e238e99"
+    },
+    {
+      "path": "evidence/hosted-typecheck.log",
+      "bytes": 54,
+      "sha256": "ace66e11637f9a69a84d1178767cd9bb91010501ece0296cbc7ae8b32f5ed8a2"
+    },
+    {
+      "path": "evidence/installed-direct-identities.json",
+      "bytes": 262,
+      "sha256": "705aa41817db3482e67101e161c7a948f1e1e5eef49d48b8ac4c8626d053fcd3"
+    },
+    {
+      "path": "evidence/observations.json",
+      "bytes": 15126,
+      "sha256": "e9cc5c92621422a2500e66ac66432fd60b981e97632b0b62cb336f8dda3f2c54"
+    },
+    {
+      "path": "evidence/recovered-view.png",
+      "bytes": 27206,
+      "sha256": "779f64bc9310c82c1a0ed5744dd7fcd9b1c3b41fc987657ea7b4b6b983232cef"
+    },
+    {
+      "path": "evidence/rejected-candidate.png",
+      "bytes": 28280,
+      "sha256": "0ab7460f2380dcdcccf5f60262478dac7f94dadc08044c9fb68777c29669be55"
+    },
+    {
+      "path": "fixture/Host.tsx",
+      "bytes": 1671,
+      "sha256": "a802e9a2141016ab780ff65b080efa00f33bef66a7110a9463dc6639fe549cec"
+    },
+    {
+      "path": "fixture/Plugin.reject.tsx",
+      "bytes": 448,
+      "sha256": "70b651e8f1bd138649dfbd323eba34eb54b43f5276a2639440f8acef318485aa"
+    },
+    {
+      "path": "fixture/Plugin.tsx",
+      "bytes": 1085,
+      "sha256": "f4f3105e0bbaa6891c18f0f28ab0cb13ea2396bcb24837c5cff6d19a56727635"
+    },
+    {
+      "path": "fixture/Plugin.v1.tsx",
+      "bytes": 1085,
+      "sha256": "f4f3105e0bbaa6891c18f0f28ab0cb13ea2396bcb24837c5cff6d19a56727635"
+    },
+    {
+      "path": "fixture/Plugin.v2.tsx",
+      "bytes": 1099,
+      "sha256": "e0c3bf7d10d3052295e7d6a7fc59a4a7ad1114b309c4afcbc105c55bf593655f"
+    },
+    {
+      "path": "fixture/Plugin.v3.tsx",
+      "bytes": 1185,
+      "sha256": "2e408c82fbec49937bc9233f42164069558d688c92c6e79785c5d531df9cc097"
+    },
+    {
+      "path": "fixture/Plugin.v4.tsx",
+      "bytes": 1256,
+      "sha256": "10ce73d5fce0e8409438904441d3a3201b31b44e20f21ee61eb8cb133f268a68"
+    },
+    {
+      "path": "fixture/index.html",
+      "bytes": 197,
+      "sha256": "5b26a89b9afe54fea5c77a8860ec5a0c6d908815afdbf0c00d2b7a26d20b9d50"
+    },
+    {
+      "path": "fixture/main.tsx",
+      "bytes": 237,
+      "sha256": "b006b843f27869029c23325465de08f5946d11254fc50a5c75d6fa3cca89c2fe"
+    },
+    {
+      "path": "fixture/probe.ts",
+      "bytes": 1111,
+      "sha256": "423f96ab2aa78313d2875caee7f2b87512f85d95d1a8aac30114a2356c973749"
+    },
+    {
+      "path": "fixture/state.ts",
+      "bytes": 761,
+      "sha256": "147314dacc2ed3d5d7eda24dedabaa4f0e0b5e04f8f851a23a469ac1f7b4ee5e"
+    },
+    {
+      "path": "package.json",
+      "bytes": 590,
+      "sha256": "69c563a9aa6c33b66c77f8703706a2f55c4e01789eca4768066eb904468a54e5"
+    },
+    {
+      "path": "plan.md",
+      "bytes": 4798,
+      "sha256": "add3d1efda944118e0f551507c9d39967e64d24da9250bb5b55bc56cba721694"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 27893,
+      "sha256": "bf60f9609153a5c2496ef757cbec93f4e70916d2646bc05a25813e05f976cce4"
+    },
+    {
+      "path": "tsconfig.json",
+      "bytes": 594,
+      "sha256": "a6dd912ba4ca00935629e593a33ba3908a3c6fb0d4c9086c12767f841b993f76"
+    }
+  ],
+  "independentReview": {
+    "reviewer": "library_boundaries_research",
+    "source": "reviews/browser-v2-result-by-boundaries.md",
+    "sha256": "d636424ab75a0980f64d737c8dc59c71ddd9b9eb42c7da127f729b2bd44fa790",
+    "result": "no blockers; bounded browser E2E passed",
+    "text": "# Independent review: executed browser recovery v2\n\nReviewer: library_boundaries_research. Date: 2026-11-22 UTC.\n\n**Verdict: the bounded browser E2E passed; no blocker to recording the result.** This reviews retained source, artifact and actual observations. No runtime rerun was performed.\n\n## Exact evidence checked\n\n- Run45034893087, attempt1, commit0e0bfb1b6468df90391134f4731e3e3df52479d2.\n- Artifact14759765045: 101,058 bytes; SHA-256 ecef2ef8fa8a779a29383fbf6e0f94b9d26adbb17444d66e64b575df27e7afba.\n- Independently recomputed ZIP digest and all 28 output member hashes/sizes; retained extracted bytes match.\n- All 16 frozen source-input files match the v2 manifest. Hosted receipt matches exact commit, run/attempt, input digest and retained workflow hash.\n- Runtime log's emitted observation object equals observations.json.\n- Exactly one test passed, with zero failures, cancellations, skips and todos. All 49 named comparisons match; all three sequential phases completed.\n- Source and observation record contain exactly one explicit public ViteDevServer.reloadModule recovery request.\n\n## What the result establishes\n\nCompatible native HMR and changed-hook remount retain the tested host document/draft/history and textarea identity, focus and selection. The rejecting module causes an actual native error while the previous v3 remains useful for new editing and Undo.\n\nThe repaired v4 module evaluates and has a correlated transport receipt while the displayed useful version is still v3. One explicit public native recovery follows. The result then shows actual v4 computation, v3 cleanup before v4 setup, only the current event/document callback responding, original textarea/document/draft retained, and working prior Undo/Redo plus a fresh user edit computed by v4.\n\nFocus and selection are checked at the recovery boundary before subsequent intentional Undo/Redo button clicks. The final snapshot being unfocused after those clicks does not contradict that bounded preservation assertion.\n\n## First failure remains separate\n\nOriginal v1 still records one failed test after31 matching comparisons and a15-second wait for useful v4. It is not relabeled as passing. v2 establishes explicit recovery for the tested failure, not automatic direct-repair success.\n\nThe useful distinction is now demonstrated: imported code and successful HMR transport are weaker evidence than a visibly functioning updated feature.\n\n## Limits\n\nExact React/Vite/Yjs development profile, Chromium159.0.8154.6 and Node24.22.3; strict compiler7.0.2. This is one same-module body-evaluation failure and its recovery. It is not proof for all syntax/transform/dependency failures, production switching, a complete plugin library, IME, durable/network persistence, schema migration, process-crash recovery, heap bounds or leak freedom.\n\nThe evidence supports ending this bounded experiment. No additional run is requested.\n\n"
+  }
+}

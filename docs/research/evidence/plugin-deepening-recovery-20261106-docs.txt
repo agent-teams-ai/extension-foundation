@@ -1,0 +1,39 @@
+Recovered research final local documentation gate
+Date: 2026-11-06 UTC
+Command: pnpm docs:protocol:check
+Input Git tree: 79f8d73bc32ed01d6151dafdbbfd6b18f5c5af61
+Node: 24.22.1; pnpm: 11.25.0
+Observed process exit: 0
+Scope: standalone documentation route; no general Foundation gate or new provider/runtime experiment.
+This retained receipt is added after the checked tree; documentation and executable inputs are unchanged.
+Hosted checks qualify the final published commit separately.
+
+$ pnpm docs:check && pnpm docs:quality && pnpm docs:contract-test
+$ agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml
+docs.check: success
+Project: extension-foundation
+Catalog: complete (85 documents)
+Adoption: valid
+$ markdownlint-cli2 --config architecture/tooling/markdownlint-cli2.mjs && cspell --config .cspell.json --no-progress
+markdownlint-cli2 v0.23.2 (markdownlint v0.41.1)
+Finding: README.md AGENTS.md docs/**/*.md
+Linting: 91 files
+Summary: 0 issues in 0 files
+CSpell: Files checked: 91, Issues found: 0 in 0 files.
+$ node --test tests/document-authoring.test.mjs tests/docs-protocol-qualification.test.mjs
+✔ managed integration owns a data-only v3 qualification contract and external gate (5.251609ms)
+✔ unified info and check expose the declared Extension authority (3506.125944ms)
+✔ find combines catalog and relation filters and treats zero matches as success (9530.927409ms)
+✔ catalog preserves reciprocal supersession and resolved-decision evidence (3237.098588ms)
+✔ new previews and applies every supported type only inside a disposable repository (234589.325412ms)
+✔ required code anchors pass when reachable and fail closed when stale (6870.947893ms)
+✔ invalid owner, metadata, and duplicate identity fail without mutation (12815.152313ms)
+✔ portable adoption rejects a Skill without executable context guidance (3095.344337ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 273735.384318

@@ -84,3 +84,40 @@ isolation. Internal helpers are not exposed merely to maximize plugin count.
 A public SPI requires two independent implementations, stable ownership,
 compatibility fixtures, and a conformance suite. Until then, the boundary stays
 internal even when its design is extension-ready.
+
+## Comparative Plugin Ideas: Nakama (Non-Normative)
+
+<!-- cspell:words Nakama -->
+
+This is a source-backed **idea list, not an architecture decision or implementation
+commitment**. Nakama's plugin features are useful established patterns, not
+unique technical breakthroughs. Evaluate them critically against a concrete
+Agent Teams product use case; do not copy its runtime or trust model.
+
+Reference snapshot: [Nakama plugin authoring](https://github.com/ahmadrosid/nakama/blob/ad8769484bdf705ae926dedaec86e233abac6fcf/docs/plugins.md)
+and [threat model](https://github.com/ahmadrosid/nakama/blob/ad8769484bdf705ae926dedaec86e233abac6fcf/THREAT_MODEL.md)
+(revision `ad876948`, reviewed 2026-11-02).
+
+| Observed pattern | Idea worth evaluating | Why it must not be copied blindly |
+| --- | --- | --- |
+| One package contributes agent actions, skills, a UI page, background workers, and private migrations | Offer a cohesive authoring and installation experience for related narrow contributions; retain the existing integration-bundle concept | Each contribution still needs a consumer-owned port, distinct permissions, lifecycle and evidence. Do not create a universal `PluginContext` or make every feature a plugin |
+| An agent prepares a local plugin draft, while an administrator previews source and executable artifacts before installation | A reviewable draft-to-install flow with content digest, file/diff inspection, and initial disabled state could improve author experience | Preview must not run candidate code; verified bytes must match installed bytes. Human review is not sandboxing or runtime authorization |
+| Package approval, organization enablement, and agent-profile tool assignment are separate actions | Make installation, per-organization activation, individual capability grants, and agent visibility intelligible to users | A signature, catalog label, prior approval or requested permission cannot become a grant. Revalidate current authority at invocation |
+| Content-based immutable releases and organization-specific selection preserve state during upgrades | Explore deliberate update, rollback, migration preview, and retained private state with visible failure/recovery outcomes | Migrations must respect custody and schema authorities, fenced generations and uncertain effects. No plugin writes another product context's canonical tables |
+| UI contribution slots and supervised plugin workers have explicit setup and cleanup | Explore host-owned UI placement, bounded worker lifetime, diagnostics and cleanup as separate product-local extension surfaces | Nakama documents trusted in-process Bun/browser execution without sandboxing. Do not inherit host privileges, expose raw secrets, or treat a worker/process as proof of isolation |
+| Curated official-plugin catalog reduces installation friction | Consider a low-friction reviewed first-party path, including local/offline discovery when useful | A convenient catalog is not product authority; an `official` badge alone cannot bypass digest, compatibility, revocation or capability checks |
+
+**Before adopting an idea:** identify its first real consumer and threat model;
+compare a built-in adapter with a plugin; prove source-to-installed-byte integrity,
+permission denial, failed setup/migration, restart/rollback and data retention;
+and use two independent implementations plus conformance before publishing a
+public SPI. Test user experience without creating another general-purpose host,
+manager, graph or broker. A static Get Modular composition with controlled
+restart remains distinct from dynamic plugin activation.
+
+This note changes **no accepted ADR**, extension lifecycle, product-specific
+SPI, installation policy, package admission or public API. For decisions and
+qualification requirements, follow [ADR-0011](../decisions/0011-extension-admission-custody-and-retirement-closure.md),
+[ADR-0014](../decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md),
+[ADR-0015](../decisions/0015-authorize-get-modular-semantic-extraction.md),
+and [OD-003](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md).

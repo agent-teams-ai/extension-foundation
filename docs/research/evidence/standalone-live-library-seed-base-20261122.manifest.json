@@ -1,0 +1,76 @@
+{
+  "schema": "agent-teams.research-evidence/v1",
+  "researchDate": "2026-11-22",
+  "timezone": "Europe/Kiev",
+  "scope": "Materialized standalone research seed foundation, full FMS1.1 snapshot, bootstrap recipe/BOM and verified tooling conflicts; research payload assembly still pending; no remote or production admission",
+  "sourceBaseline": "6735ac8018fead9d131f7fc25b99076c426348d5",
+  "archive": {
+    "file": "standalone-live-library-seed-base-20261122.tar.gz",
+    "bytes": 27829,
+    "sha256": "4e3aef1a197f57899cecd54c85dca24a92e18d430c2bc72a20cd2034456af061"
+  },
+  "fileCount": 12,
+  "uncompressedFileBytes": 87270,
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "bytes": 2959,
+      "sha256": "9d92d5db22745a913179418705a4e4b8b193a9c2bcd00cda6e2657f0a1dcd77a"
+    },
+    {
+      "path": "PAYLOAD.json",
+      "bytes": 3171,
+      "sha256": "5d148730fbe5e423ecebe3b91f62088b02ec2976682035ef51a23f892c2438c4"
+    },
+    {
+      "path": "README.md",
+      "bytes": 2353,
+      "sha256": "4176831cb74208af36d25c0fc18f61e172771dcfdc94bf3a9b7561634ad5bb14"
+    },
+    {
+      "path": "SEED-MANIFEST.sha256",
+      "bytes": 1097,
+      "sha256": "26a5cd5cd239d5c08f6b0885e17eaba2513e5d266377bfca758e6cbe065d0800"
+    },
+    {
+      "path": "docs/architecture/bootstrap-compiler-blocker.json",
+      "bytes": 2039,
+      "sha256": "5d020c69b16c0e6c8c03c90880094e2d3dcd83c75aa94ebe93bc2ee0e6b62adf"
+    },
+    {
+      "path": "docs/architecture/bootstrap-registry-metadata.json",
+      "bytes": 2738,
+      "sha256": "9b9dde910f81a0ea746b51e3b3863845c3f50aadb61af554e9743e99d987211b"
+    },
+    {
+      "path": "docs/architecture/proposal.md",
+      "bytes": 4501,
+      "sha256": "5e3dcce5eaf8e20cb9990de82ccf1e91499e8648034923927f3052494595cc00"
+    },
+    {
+      "path": "docs/architecture/repository-bootstrap.bom.json",
+      "bytes": 12123,
+      "sha256": "94550603d2f8b3d15833e0a7372dd2c82a881b74da12d9d9b0431c4e5c5b148c"
+    },
+    {
+      "path": "docs/architecture/repository-bootstrap.md",
+      "bytes": 15420,
+      "sha256": "a20c5169a0359d76e34adbad0ce46ef1f842325ddfbd8a0f666b14ff48aed797"
+    },
+    {
+      "path": "docs/architecture/source/feature-module-standard-v1.1.md",
+      "bytes": 38934,
+      "sha256": "cfa088ef7396139554fe5e3bcc839271b23299c6b60c569a3a7f1cd7c9f0bc6c"
+    },
+    {
+      "path": "docs/architecture/source/provenance.json",
+      "bytes": 697,
+      "sha256": "8946bb276d1a346c7f9fa470dac8f893ef9d58c75cdc48e54d967ee67e0c914e"
+    },
+    {
+      "path": "research/README.md",
+      "bytes": 1238,
+      "sha256": "52efed6c3cdbdf255bcd9d4dc7995eb100cd4589e0ac3b37853d3d5ae7c542fd"
+    }
+  ]
+}
