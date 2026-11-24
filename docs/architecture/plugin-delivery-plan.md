@@ -67,15 +67,37 @@ permissions do not merge into a universal `PluginContext`.
 
 ## Foundation-first decision packet, 2026-11-24
 
-The [global owner direction](https://github.com/agent-teams-ai/.github/blob/bb7b1c00f18a8c532681f286afa51dda954469b4/docs/architecture/ecosystem-vision.md) clarifies that the foundation serves multiple products, not a single product from which a framework is extracted later. This packet proposes the needed successor to retained product-first constraints; it does not approve package materialization, a production host or a public SPI. The current Live Module Updates plan retains ownership of the shared operation and is being developed separately.
+The [global owner direction](https://github.com/agent-teams-ai/.github/blob/47a9cd50cc6e2297c036dab3d7883a6c823b1654/docs/architecture/ecosystem-vision.md)
+confirms that the foundation serves multiple products. Independently usable
+Get Modular and Extension Foundation neutral cores and product-owned operational
+authority are accepted boundaries under
+[ADR-0015](../decisions/0015-authorize-get-modular-semantic-extraction.md).
+The retained production admission, package materialization and public-SPI
+choices still need their owning decisions. This packet does not approve them.
+Live Module Updates retains ownership of the proposed shared complete operation.
 
-| Alternative | Reliability /10 | Complexity /10 | Confidence /10 | Incremental implementation and test LOC |
-| --- | ---: | ---: | ---: | ---: |
-| Independent neutral mechanisms with one shared complete update operation and a coherent integration surface where needed | 9 | 7 | 9 | 5,000–12,000 |
-| One mandatory module/plugin runtime coupling composition, artifact trust and dynamic activation | 7 | 9 | 7 | 12,000–30,000 |
-| Separate product-local hosts that each implement the lifecycle algorithm | 7 | 8 | 9 | 8,000–15,000 per product |
+A compulsory runtime coupling neutral composition, artifact trust and product
+activation for every consumer, and each product duplicating the same shared
+update algorithm, are rejected counterexamples under those accepted boundaries.
+They are not open alternatives. Product-specific policy, lifecycle hooks,
+canonical state, custody and narrow integration adapters remain with their
+actual product owners.
 
-The first is the leading hypothesis, not a decision on the number of packages. Compare authoring effort, dependency closure, independent release/versioning, authority and lifecycle reuse, native/browser placement, failure behavior and independently authored consumers. A thin facade can give applications one coherent authoring/install/update experience without duplicating Core/Assembly, artifact trust, state custody or the complete LMU operation. A package split is justified by independent usage, trust, delivery or dependency needs, not by aesthetic modularity. A single integrated SDK or distribution that delegates to the same independently usable mechanisms is a packaging choice within the first option, not the second architecture. It remains a candidate if it preserves those properties. Validate it with a real authoring/install/invoke/update/remove flow; prove that the direct-library and integrated paths execute the same mechanisms, not two lifecycle algorithms. Estimates overlap the existing LMU work and must be recalibrated against its current plan, not summed as a second implementation.
+The remaining ergonomics question is direct library composition versus an
+optional thin coherent entry point or integration preset that delegates to the
+same independently usable mechanisms. Both preserve authority and independent
+dependency closure. A coherent SDK or distribution is allowed within those
+boundaries; no package per abstraction is required. Justify a package split by
+independent usage, trust, delivery or dependency needs.
+
+Compare authoring effort, dependency closure, independent release/versioning,
+native/browser placement, failure behavior and independently wired consumers.
+Qualify the selected profile through a representative authoring, installation,
+invocation, supported update and removal flow. Prove that direct-library and
+integrated paths execute the same mechanisms without a second shared update
+algorithm or canonical authority. Add the thin surface only when this evidence
+shows a concrete need. Keep detailed implementation and test estimates with
+the selected scope and current LMU plan; do not budget a duplicate operation.
 
 ### Open contribution vocabulary
 
