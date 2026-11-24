@@ -15,10 +15,11 @@ code_anchors:
 owns the EF plugin backlog and open contracts. The
 [Live Extension System Map](architecture/live-extension-system-map.md) routes
 the wider module/plugin/update relationships. The shared
-[foundation delivery plan](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/plans/foundation-delivery-plan.md)
-and [status/evidence guide](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/status.md) are maintained in Live Module
+[foundation delivery plan](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/plans/foundation-delivery-plan.md)
+and [status/evidence guide](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/status.md) are maintained in Live Module
 Updates; the proposed consolidation was published in
-[PR #1](https://github.com/agent-teams-ai/live-module-updates/pull/1).
+[PR #1](https://github.com/agent-teams-ai/live-module-updates/pull/1), with the
+fixture-first successor in [PR #2](https://github.com/agent-teams-ai/live-module-updates/pull/2).
 
 **Product priority:** [live application evolution](open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-prioritized-live-application-platform-vision-2026-11-18)
 through live logic changes, persistent/shareable plugins and manageable built-in
@@ -31,8 +32,8 @@ Read by responsibility:
 | Plan plugin artifacts, trust, installation, host adoption and public-SPI proof | [Plugin Delivery Plan](architecture/plugin-delivery-plan.md) |
 | Qualify the shared foundation before applications and compare UI boundaries | [Fixture and UI evidence, 2026-11-24](architecture/plugin-delivery-plan.md#fixture-and-ui-evidence-2026-11-24) |
 | Start a static application using existing admitted modules | [Get Modular consumer quickstart](https://github.com/agent-teams-ai/get-modular/blob/main/docs/guides/consumer-quickstart.md), then the consumer's accepted pins and local gate |
-| Define portable behavior and optional presentation | [Headless plugins and UI proposal](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/architecture/headless-plugins-and-ui.md) |
-| Coordinate the shared foundation and live-update work | [Live Module Updates foundation plan](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/plans/foundation-delivery-plan.md) |
+| Define portable behavior and optional presentation | [Headless plugins and UI proposal](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/architecture/headless-plugins-and-ui.md) |
+| Coordinate the shared foundation and live-update work | [Live Module Updates foundation plan](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/plans/foundation-delivery-plan.md) |
 | Current module/plugin/live-update direction and implementation owners | [Live Extension System Map](architecture/live-extension-system-map.md) |
 | November 23 operation design and its original evidence | [Live Module Update Operation](architecture/live-module-update-operation.md), retained design snapshot |
 | Product boundary and topology | [Architecture overview](architecture/overview.md) |
@@ -117,7 +118,7 @@ existing graph, resource and physical-custody mechanisms keep their owners.
 The [separate repository](https://github.com/agent-teams-ai/live-module-updates)
 now exists; its public production contract and first complete-operation consumer
 remain open. See the [current map](architecture/live-extension-system-map.md#authority-and-reusable-implementation)
-and the [shared delivery plan](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/plans/foundation-delivery-plan.md).
+and the [shared delivery plan](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/plans/foundation-delivery-plan.md).
 
 Document IDs are repository-scoped. Extension Foundation `OD-003` governs
 extension hosts, public extension SPI, invocation, and extension-state

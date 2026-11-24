@@ -11,7 +11,7 @@ summary: Current plugin delivery responsibilities, headless boundaries, open con
 ## Purpose
 
 **Delivery map dated 2026-11-24.** This is the plugin-specific workstream for
-Extension Foundation. The shared [foundation delivery plan](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/plans/foundation-delivery-plan.md)
+Extension Foundation. The shared [foundation delivery plan](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/plans/foundation-delivery-plan.md)
 in Live Module Updates owns the cross-repository sequence and proposed complete
 update operation. Its proposed consolidation was published in
 [PR #1](https://github.com/agent-teams-ai/live-module-updates/pull/1); the fixture-first
@@ -89,7 +89,7 @@ Before implementation, record concrete scope for Runtime v3, Orchestrator, Platf
 
 ### Minimum authoring contract for a representative fixture
 
-The [shared headless plugin and UI design](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/architecture/headless-plugins-and-ui.md)
+The [shared headless plugin and UI design](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/architecture/headless-plugins-and-ui.md)
 contains the cross-application proposal. Before implementing the selected
 fixture, record this contract with its semantic and test-Host owners. Use a
 realistic operation, such as reading and conditionally editing a document,
