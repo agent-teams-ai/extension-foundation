@@ -29,7 +29,7 @@ static application feature. Existing consumer pins and local gates still apply.
 
 ## Foundation-first owner clarification, 2026-11-24
 
-The [organization ecosystem vision](https://github.com/agent-teams-ai/.github/blob/bb7b1c00f18a8c532681f286afa51dda954469b4/docs/architecture/ecosystem-vision.md) records the owner's direction: design the complete system and shared module/plugin foundation before main greenfield product implementation. Multiple real and planned consumers justify early library design; do not force every application to implement the same technical mechanism first.
+The [organization ecosystem vision](https://github.com/agent-teams-ai/.github/blob/main/docs/architecture/ecosystem-vision.md) records the owner's direction: design the complete system and shared module/plugin foundation before main greenfield product implementation. Multiple real and planned consumers justify early library design; do not force every application to implement the same technical mechanism first.
 
 Reconcile the retained product-first extraction/host triggers in ADR-0015 and issue [#57](https://github.com/agent-teams-ai/extension-foundation/issues/57) with that direction through an owning successor decision. Distinguish early design and separately admitted provisional 0.x implementation from stable public SPI publication and production host admission. Preserve ADR-0011 safety closure, independent implementations, executable conformance and actual consumer evidence for the claims they qualify. No accepted ADR bytes or public SPI gates are changed by this open-decision note.
 
