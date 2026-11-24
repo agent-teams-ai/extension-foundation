@@ -37,12 +37,47 @@ The owner also wants extensibility rather than a closed list of plugin kinds. To
 
 Record the exact options in the existing plugin delivery plan and coordinate the common complete update operation with Live Module Updates. Treat restart-only, drain-and-replace, qualified live replacement and state migration as explicitly supported guarantees; migration is also a separate compatibility/custody obligation and need not be exclusive with the other update modes.
 
+## Fixture-first and runtime-boundary clarification, 2026-11-24
+
+The owner clarified that realistic capabilities, discriminating spikes and
+independent test Hosts must qualify the foundation before applications are
+ready. Do not select or implement a first product as an entry gate for this
+design and fixture work. Multiple waiting applications are intended consumers;
+their later adoption remains a separate useful-behavior and authority check.
+
+Browser, Desktop and untrusted third-party plugins are confirmed architecture
+targets. The remaining questions select concrete execution placement, shell,
+broker/containment mechanism, interruption, state and continuity guarantees;
+they do not reopen whether these targets matter. Prepare the narrow boundaries
+now and retain a separate native evidence row for each support claim.
+An ordinary trusted fixture need not implement every target to provide useful
+bounded evidence.
+
+Optional UI should reuse established interaction/component libraries behind
+renderer and shell adapters. Headless styling freedom, reuse across frontend
+frameworks, a portable business core and process/trust isolation are distinct.
+No UI vendor, universal renderer, declarative language or new widget engine is
+selected. The [fixture and UI evidence](../architecture/plugin-delivery-plan.md#fixture-and-ui-evidence-2026-11-24)
+records source-backed distinctions and proposed qualification cases.
+
+The exact retained admission delta is unchanged: ADR-0015 permits synthetic
+fixtures to drive Get Modular 0.x, but does not grant equivalent production EF
+Host/package or public-SPI admission. Fixture design and bounded qualification
+can proceed now. Before production code relies on a changed EF admission basis,
+record the owning successor and its exact scope. Keep ADR-0011 safety closure,
+artifact/authority separation, applicable independent implementations and
+executable conformance. Two Hosts using one artifact do not satisfy the
+independent-SPI-implementation gate; test-Host evidence is not product adoption.
+This note changes no accepted ADR, pin, production API or publication policy.
+
 ## Decision Required
 
-Choose any production extension host or runtime adapter, public extension SPI,
-invocation protocol, and extension-state migration semantics only after
-product-local static composition supplies the retained triggers and evidence
-from ADR-0013 as preserved by ADR-0015.
+Production extension Host/runtime admission, public SPI publication, invocation
+protocols and state-migration guarantees remain subject to the retained
+ADR-0013 requirements as preserved by ADR-0015, or an explicitly accepted
+successor for the selected scope. This is a production admission boundary;
+it is not a requirement to wait for a product before designing and qualifying
+representative foundation fixtures.
 
 This open decision does not select or redefine neutral module identities,
 declarations, dependency cardinalities, bindings, graph compilation, canonical

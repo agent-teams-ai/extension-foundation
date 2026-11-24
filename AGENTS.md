@@ -3,7 +3,22 @@
 This repository owns product-neutral extension infrastructure for Agent Teams
 products.
 
-**Foundation-first:** read the [organization ecosystem vision](https://github.com/agent-teams-ai/.github/blob/bb7b1c00f18a8c532681f286afa51dda954469b4/docs/architecture/ecosystem-vision.md) before selecting a shared boundary. Plan the foundation for many existing and intended consumers; coordinate with Live Module Updates rather than duplicating its operation. This route does not admit a public SPI or production host.
+**Foundation-first:** read the [organization ecosystem vision](https://github.com/agent-teams-ai/.github/blob/47a9cd50cc6e2297c036dab3d7883a6c823b1654/docs/architecture/ecosystem-vision.md) before selecting a shared boundary. Plan the foundation for many existing and intended consumers; coordinate with Live Module Updates rather than duplicating its operation. This route does not admit a public SPI or production host.
+
+**Qualify before applications:** use realistic fixtures, packaged behavior and
+independently wired test Hosts now. A first product feature is not a prerequisite
+for foundation design or bounded fixture qualification. Keep later product
+adoption and the applicable package/public-SPI admission gates separate. Read
+the [fixture and UI evidence](docs/architecture/plugin-delivery-plan.md#fixture-and-ui-evidence-2026-11-24)
+for current observations and missing tests.
+
+Browser, Desktop and untrusted third-party plugins are confirmed architecture
+targets. Name runtime placement, authority, state, transport and resource owners
+at the initial boundary; qualify each selected execution or isolation profile
+before claiming support. Reuse established UI libraries behind presentation
+adapters. Unstyled components, framework-neutral interaction logic, portable
+business behavior and hostile-code containment are distinct properties. No
+universal renderer, widget engine or generic service bag is selected.
 
 **High-priority owner vision:** [live application evolution](docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-prioritized-live-application-platform-vision-2026-11-18).
 Read it before designing any feature/module boundary: substantive live logic
@@ -16,8 +31,8 @@ Start with:
 
 - [Plugin delivery responsibilities and open contracts](docs/architecture/plugin-delivery-plan.md)
 - [Current live extension system map](docs/architecture/live-extension-system-map.md)
-- [Shared foundation delivery plan, proposed](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/plans/foundation-delivery-plan.md)
-- [Headless plugins and optional UI, proposed](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/architecture/headless-plugins-and-ui.md)
+- [Shared foundation delivery plan, proposed](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/plans/foundation-delivery-plan.md)
+- [Headless plugins and optional UI, proposed](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/architecture/headless-plugins-and-ui.md)
 - [November 23 update-operation design snapshot](docs/architecture/live-module-update-operation.md)
 - [Repository overview](README.md)
 - [Documentation index](docs/README.md)
@@ -108,8 +123,11 @@ does not publish a package or select a universal plugin interface.
 - Extension code is never invoked inside a product database transaction.
 - Ordinary extensions cannot replace product invariants, authorization,
   fencing, canonical state, or security enforcement.
-- Do not create packages or public contracts before a real product slice and an
-  independent conformance implementation prove the boundary.
+- Production EF package materialization and public-contract publication retain
+  their applicable accepted admission requirements. Fixture qualification may
+  proceed before a product; it does not count as product adoption or as two
+  independently authored implementations of a claimed public SPI. Record any
+  needed admission successor in OD-003 before implementing that changed scope.
 
 ## Engineering Workflow
 

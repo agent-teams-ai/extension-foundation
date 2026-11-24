@@ -22,7 +22,8 @@ reopening of the accepted constraints or owner-confirmed direction below.
 | --- | --- |
 | Current purpose, boundaries and integration candidates | This map |
 | EF plugin-specific delivery and open contracts | [Plugin Delivery Plan](plugin-delivery-plan.md) |
-| Shared foundation sequence and status | [Live Module Updates delivery plan](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/plans/foundation-delivery-plan.md) and [status guide](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/status.md), published through PR #1 |
+| Qualify before applications; Browser/Desktop/trust and UI seams | [Fixture and UI evidence](plugin-delivery-plan.md#fixture-and-ui-evidence-2026-11-24) and [owner clarification](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#fixture-first-and-runtime-boundary-clarification-2026-11-24) |
+| Shared foundation sequence and status | [Live Module Updates delivery plan](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/plans/foundation-delivery-plan.md) and [status guide](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/status.md), continued through [PR #2](https://github.com/agent-teams-ai/live-module-updates/pull/2) |
 | Exact owner confirmations and unresolved policy | [OD-003](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md) |
 | Independent documentation audit and readiness method | [Documentation audit](../research/live-extension-documentation-audit-2026-11-23.md) |
 | Full library features and evidence | [Standalone blueprint](../research/standalone-live-plugin-library-blueprint-2026-11-22.md) and [reliability study](../research/live-update-reliability-and-industry-evidence-2026-11-22.md) |
@@ -66,10 +67,22 @@ and [expanded live application vision](../open-decisions/OD-003-module-runtime-a
 7. Reuse existing composition, loaders, execution, resource scopes and state
    mechanisms. A missing end-to-end contract can justify coordination; it does
    not justify implementing another graph engine or runtime.
+8. Qualify the foundation on realistic fixtures and independent test Hosts now,
+   without waiting for the intended applications. Browser, Desktop and
+   untrusted plugins constrain boundaries from the start; exact execution,
+   containment and later adoption claims retain separate evidence. Reuse UI
+   libraries behind presentation adapters without building another widget
+   engine or coupling portable business contracts to a frontend framework.
 
 The earlier controlled-restart baseline still has its accepted delivery scope.
 The later live-evolution direction extends the design target; a passing research
 probe does not silently replace a production owner's accepted mechanism.
+The fixture-first clarification changes the order of design and qualification,
+not production authority or immutable admission requirements. The
+[plugin delivery plan](plugin-delivery-plan.md#runtime-and-trust-boundaries-required-from-the-start)
+owns the current target-specific obligations. Dated earlier proposals remain
+research inputs; their first-product assumptions are not current prerequisites
+for beginning this bounded fixture work.
 
 ## Boundaries
 
@@ -120,8 +133,8 @@ consumer still applies its actual artifact and authority rules.
 ## Structure
 
 Continue the shared operation and authoring design in the
-[Live Module Updates foundation plan](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/plans/foundation-delivery-plan.md)
-and [headless plugin/UI proposal](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/architecture/headless-plugins-and-ui.md).
+[Live Module Updates foundation plan](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/plans/foundation-delivery-plan.md)
+and [headless plugin/UI proposal](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/architecture/headless-plugins-and-ui.md).
 The EF [plugin delivery plan](plugin-delivery-plan.md) retains its own artifact,
 trust, installation and host-admission responsibilities.
 The local [complete operation contract](live-module-update-operation.md) and
