@@ -29,6 +29,7 @@ Read by responsibility:
 | Concern | Document |
 | --- | --- |
 | Plan plugin artifacts, trust, installation, host adoption and public-SPI proof | [Plugin Delivery Plan](architecture/plugin-delivery-plan.md) |
+| Qualify the shared foundation before applications and compare UI boundaries | [Fixture and UI evidence, 2026-11-24](architecture/plugin-delivery-plan.md#fixture-and-ui-evidence-2026-11-24) |
 | Start a static application using existing admitted modules | [Get Modular consumer quickstart](https://github.com/agent-teams-ai/get-modular/blob/main/docs/guides/consumer-quickstart.md), then the consumer's accepted pins and local gate |
 | Define portable behavior and optional presentation | [Headless plugins and UI proposal](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/architecture/headless-plugins-and-ui.md) |
 | Coordinate the shared foundation and live-update work | [Live Module Updates foundation plan](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/plans/foundation-delivery-plan.md) |
@@ -56,6 +57,7 @@ not rewritten as current qualification. Research does not accept a runtime,
 publish a package, or replace an approved ADR.
 
 - [Plugin System Research Reference](research/plugin-system-research-reference.md)
+- [Fixture and UI evidence, 2026-11-24](architecture/plugin-delivery-plan.md#fixture-and-ui-evidence-2026-11-24), current bounded successor in the owning delivery plan
 - [Live Module Update Design Validation 2026-11-23](research/live-module-update-design-validation-2026-11-23.md)
 - [Live Extension Documentation Audit 2026-11-23](research/live-extension-documentation-audit-2026-11-23.md)
 - [Live Update Ready Stack Comparison 2026-11-23](research/live-update-ready-stack-comparison-2026-11-23.md)
