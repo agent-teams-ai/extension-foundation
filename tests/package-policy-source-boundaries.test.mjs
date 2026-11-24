@@ -272,3 +272,53 @@ test("installed source gate includes dist source explicitly governed by a bounda
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("installed source gate keeps the shared qualification protocol portable", async () => {
+  const root = await checkerFixture();
+  const protocol = "tests/qualification/portable-protocol.mjs";
+  const declaration = "tests/qualification/portable-protocol.d.mts";
+  const adapter = "tests/qualification/fixtures/portable-worker.mjs";
+  try {
+    const append = async (path, text) => {
+      const target = join(root, path);
+      await writeFile(target, (await readFile(target, "utf8")) + "\n" + text + "\n");
+    };
+
+    // The Node adapter keeps its existing platform allowance. Only the shared
+    // code and its declaration are selected for this dependency restriction.
+    await append(adapter, 'import "node:fs";');
+    const allowed = await runChecker(root);
+    assert.equal(allowed.exitCode, 0, JSON.stringify(allowed));
+    assert.equal(allowed.summary.errors, 0, JSON.stringify(allowed));
+
+    await append(
+      protocol,
+      'import "node:fs"; const fixtureTarget = "node:fs"; void import(fixtureTarget);',
+    );
+    await append(declaration, 'export type FixtureLeak = import("node:fs").Stats;');
+    const rejected = await runChecker(root);
+    assert.notEqual(rejected.exitCode, 0, JSON.stringify(rejected));
+    const diagnostics = rejected.capabilities.flatMap((capability) => capability.diagnostics);
+    for (const [path, rule] of [
+      [protocol, "forbidden-builtin-dependency"],
+      [protocol, "unresolved-runtime-reference"],
+      [declaration, "forbidden-builtin-dependency"],
+    ]) {
+      assert.ok(
+        diagnostics.some(
+          (diagnostic) =>
+            diagnostic.location.path === path &&
+            diagnostic.ruleId === `architecture.source-dependencies.${rule}`,
+        ),
+        JSON.stringify(rejected),
+      );
+    }
+    assert.equal(
+      diagnostics.some((diagnostic) => diagnostic.location.path === adapter),
+      false,
+      JSON.stringify(rejected),
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
