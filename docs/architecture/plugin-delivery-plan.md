@@ -275,7 +275,7 @@ universal widget engine or declarative UI language is required by this plan.
 
 These observations motivate boundaries, not selection of Electron or a specific
 sandbox. The production shell, native isolation mechanism, resource budget,
-interruptibility and state guarantees remain explicit decisions. Record each
+interruption behavior and state guarantees remain explicit decisions. Record each
 selected profile's actual positive and rejecting evidence. A Browser result
 does not certify Desktop, and a trusted in-process result does not certify an
 untrusted third-party plugin.
