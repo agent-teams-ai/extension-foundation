@@ -57,6 +57,26 @@ artifact/admission lineage and its applicable lifecycle to reusable behavior.
 One plugin can provide several narrow contributions; their ownership and
 permissions do not merge into a universal `PluginContext`.
 
+## Foundation-first decision packet, 2026-11-24
+
+The [global owner direction](https://github.com/agent-teams-ai/.github/blob/bb7b1c00f18a8c532681f286afa51dda954469b4/docs/architecture/ecosystem-vision.md) clarifies that the foundation serves multiple products, not a single product from which a framework is extracted later. This packet proposes the needed successor to retained product-first constraints; it does not approve package materialization, a production host or a public SPI. The current Live Module Updates plan retains ownership of the shared operation and is being developed separately.
+
+| Alternative | Reliability /10 | Complexity /10 | Confidence /10 | Incremental implementation and test LOC |
+| --- | ---: | ---: | ---: | ---: |
+| Independent neutral mechanisms with one shared complete update operation and a coherent integration surface where needed | 9 | 7 | 9 | 5,000–12,000 |
+| One mandatory module/plugin runtime coupling composition, artifact trust and dynamic activation | 7 | 9 | 7 | 12,000–30,000 |
+| Separate product-local hosts that each implement the lifecycle algorithm | 7 | 8 | 9 | 8,000–15,000 per product |
+
+The first is the leading hypothesis, not a decision on the number of packages. Compare authoring effort, dependency closure, independent release/versioning, authority and lifecycle reuse, native/browser placement, failure behavior and independently authored consumers. A thin facade can give applications one coherent authoring/install/update experience without duplicating Core/Assembly, artifact trust, state custody or the complete LMU operation. A package split is justified by independent usage, trust, delivery or dependency needs, not by aesthetic modularity. A single integrated SDK or distribution that delegates to the same independently usable mechanisms is a packaging choice within the first option, not the second architecture. It remains a candidate if it preserves those properties. Validate it with a real authoring/install/invoke/update/remove flow; prove that the direct-library and integrated paths execute the same mechanisms, not two lifecycle algorithms. Estimates overlap the existing LMU work and must be recalibrated against its current plan, not summed as a second implementation.
+
+### Open contribution vocabulary
+
+Do not freeze a closed list of contribution kinds. Compare a closed enum, arbitrary untyped payloads, and a generic versioned envelope with owner-defined typed contribution contracts. Prefer the last hypothesis: identity and compatibility of a contribution contract are explicit; artifact installation does not grant an effect. Product-specific extension point semantics, trust tier, data and invocation remain at the owner. Support only the negotiated required/optional capabilities. A new independent consumer's typed contribution must not require editing the neutral core or exposing a global service bag. UI remains optional and headless behavior may also be used as an ordinary library.
+
+### Intended consumers and acceptance
+
+Before implementation, record concrete scope for Runtime v3, Orchestrator, Platform, a future frontend host and an independent external library consumer as applicable. Use small real seams and independent fixtures, not full applications as incubators. Prove neutral dependency closure and packed imports, different consumer-defined contribution schemas, no execution on discovery, denial before protected effects, generation/custody failure cases, and the chosen replacement profiles. Keep actual adoption separate from intended coverage. Stabilization/publication still requires the accepted independent implementation and conformance floor. Resolve the specific ADR-0015/OD-003 admission delta before production code; do not silently reinterpret immutable decisions or start a competing lifecycle library.
+
 ## Structure
 
 ### Minimum authoring contract to specify with a real feature
