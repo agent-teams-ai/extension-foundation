@@ -27,6 +27,16 @@ still open. This route does not resolve the owner choices below, adopt a public
 SPI, or make full live replacement a prerequisite for an already admitted
 static application feature. Existing consumer pins and local gates still apply.
 
+## Foundation-first owner clarification, 2026-11-24
+
+The [organization ecosystem vision](https://github.com/agent-teams-ai/.github/blob/bb7b1c00f18a8c532681f286afa51dda954469b4/docs/architecture/ecosystem-vision.md) records the owner's direction: design the complete system and shared module/plugin foundation before main greenfield product implementation. Multiple real and planned consumers justify early library design; do not force every application to implement the same technical mechanism first.
+
+Reconcile the retained product-first extraction/host triggers in ADR-0015 and issue [#57](https://github.com/agent-teams-ai/extension-foundation/issues/57) with that direction through an owning successor decision. Distinguish early design and separately admitted provisional 0.x implementation from stable public SPI publication and production host admission. Preserve ADR-0011 safety closure, independent implementations, executable conformance and actual consumer evidence for the claims they qualify. No accepted ADR bytes or public SPI gates are changed by this open-decision note.
+
+The owner also wants extensibility rather than a closed list of plugin kinds. Tool, skill, UI, worker, state and similar examples must not become a closed universal enum. Evaluate a versioned, namespaced contribution contract with owner-defined schema/semantics and explicit compatibility/requiredness. An arbitrary consumer-defined capability should be representable without changing neutral core logic; unknown required contracts fail closed. Each product still owns typed extension points, grants, effects, state and execution restrictions. Shared lifecycle algorithms are implemented once, not independently in each product.
+
+Record the exact options in the existing plugin delivery plan and coordinate the common complete update operation with Live Module Updates. Treat restart-only, drain-and-replace, qualified live replacement and state migration as explicitly supported guarantees; migration is also a separate compatibility/custody obligation and need not be exclusive with the other update modes.
+
 ## Decision Required
 
 Choose any production extension host or runtime adapter, public extension SPI,
