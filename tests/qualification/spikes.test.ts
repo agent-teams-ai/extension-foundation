@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
+import { readFileSync, writeFileSync } from "node:fs";
 import { once } from "node:events";
-import { access, mkdtemp, mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { access, mkdtemp, mkdir, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { performance } from "node:perf_hooks";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
@@ -15,6 +17,8 @@ import { Worker } from "node:worker_threads";
 import { Graph, alg } from "@dagrejs/graphlib";
 import { Context } from "@deepseek-ai/cordis";
 import fc from "fast-check";
+
+import { preflightBundle, type CandidateBundle, type HostAdmissionEvidence } from "./contribution-admission-candidate.ts";
 
 import {
   compileGraph,
@@ -4824,104 +4828,126 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
   const packageManagerTimeoutMs = process.platform === "win32" ? 90_000 : 30_000;
   const children = new Set<ReturnType<typeof spawn>>();
   const npmCli = await resolveNpmCli();
-  const npmArguments = (args: readonly string[]): string[] => [npmCli, ...args];
   t.after(async () => {
     await Promise.all(
       [...children].map(async (child) => {
-        if (child.exitCode !== null || child.signalCode !== null) {
-          return;
-        }
+        if (child.exitCode !== null || child.signalCode !== null) return;
         child.kill("SIGKILL");
         await once(child, "exit", { signal: AbortSignal.timeout(2_000) }).catch(() => undefined);
       }),
     );
     await rm(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   });
-  const fixtureManifest = JSON.parse(
-    await readFile(join(toyPackageRoot, "package.json"), "utf8"),
-  ) as {
+
+  // One owned process route for package management, public import and rejection.
+  // These are trusted cooperative test children, not an isolation mechanism.
+  async function runOwned(
+    args: readonly string[],
+    cwd: string,
+    expectedExit = 0,
+    timeout = packageManagerTimeoutMs,
+  ): Promise<{ stdout: string; stderr: string }> {
+    const child = spawn(process.execPath, [...args], { cwd, stdio: ["ignore", "pipe", "pipe"] });
+    children.add(child);
+    let stdout = "";
+    let stderr = "";
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => { stdout += chunk; });
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    const [code, signal] = await once(child, "close", { signal: AbortSignal.timeout(timeout) });
+    children.delete(child);
+    assert.equal(signal, null, stderr);
+    assert.equal(code, expectedExit, stderr);
+    return { stdout, stderr };
+  }
+  const npm = (args: readonly string[], cwd: string) => runOwned([npmCli, ...args], cwd);
+  const digest = (bytes: Uint8Array) => "sha256:" + createHash("sha256").update(bytes).digest("hex");
+  const packageName = "@agent-teams/qualification-toy-package";
+  const packageFiles = ["index.d.ts", "index.js", "package.json"] as const;
+  const built = new Map(await Promise.all(packageFiles.map(async (path) =>
+    [path, await readFile(join(toyPackageRoot, path))] as const)));
+  const fixtureManifest = JSON.parse(await readFile(join(toyPackageRoot, "package.json"), "utf8")) as {
     readonly private?: unknown;
   };
   assert.equal(fixtureManifest.private, true, "qualification fixture must not be publishable");
-  const pack = spawn(
-    process.execPath,
-    npmArguments([
-      "pack",
-      toyPackageRoot,
-      "--json",
-      "--ignore-scripts",
-      "--pack-destination",
-      root,
-    ]),
-    {
-      stdio: ["ignore", "pipe", "pipe"],
-    },
-  );
-  children.add(pack);
-  let stdout = "";
-  pack.stdout.setEncoding("utf8");
-  pack.stdout.on("data", (chunk) => {
-    stdout += chunk;
-  });
-  const [packCode] = await once(pack, "close", {
-    signal: AbortSignal.timeout(packageManagerTimeoutMs),
-  });
-  children.delete(pack);
-  assert.equal(packCode, 0);
-  const packed = JSON.parse(stdout) as Array<{ filename: string; files: Array<{ path: string }> }>;
-  assert.deepEqual(packed[0]?.files.map((file) => file.path).sort(), [
-    "index.d.ts",
-    "index.js",
-    "package.json",
-  ]);
+
+  const pack = await npm(["pack", toyPackageRoot, "--json", "--ignore-scripts", "--pack-destination", root], root);
+  const packed: unknown = JSON.parse(pack.stdout);
+  assert.ok(Array.isArray(packed) && packed.length === 1);
+  const item: unknown = packed[0];
+  assert.ok(typeof item === "object" && item !== null && "filename" in item && typeof item.filename === "string");
+  assert.equal(basename(item.filename), item.filename);
+  assert.ok("files" in item && Array.isArray(item.files));
+  const packFiles: readonly unknown[] = item.files;
+  assert.deepEqual(packFiles.map((file) => {
+    assert.ok(typeof file === "object" && file !== null && "path" in file && typeof file.path === "string");
+    return file.path;
+  }).sort(), [...packageFiles].sort());
+  const archive = join(root, item.filename);
+  const archiveBytes = await readFile(archive);
+  const artifactDigest = digest(archiveBytes);
+  assert.ok("integrity" in item);
+  assert.equal(item.integrity, "sha512-" + createHash("sha512").update(archiveBytes).digest("base64"));
+  for (const [path, bytes] of built) assert.deepEqual(await readFile(join(toyPackageRoot, path)), bytes);
 
   const consumer = join(root, "consumer");
   await mkdir(consumer);
-  await writeFile(
-    join(consumer, "package.json"),
-    JSON.stringify({ private: true, type: "module" }),
-  );
-  const install = spawn(
-    process.execPath,
-    npmArguments([
-      "install",
-      "--ignore-scripts",
-      "--package-lock=false",
-      "--no-audit",
-      "--offline",
-      join(root, packed[0]!.filename),
-    ]),
-    {
-      cwd: consumer,
-      stdio: "ignore",
-    },
-  );
-  children.add(install);
-  const [installCode] = await once(install, "close", {
-    signal: AbortSignal.timeout(packageManagerTimeoutMs),
-  });
-  children.delete(install);
-  assert.equal(installCode, 0);
-  const list = spawn(process.execPath, npmArguments(["ls", "--all", "--json"]), {
-    cwd: consumer,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  children.add(list);
-  let listOutput = "";
-  let listError = "";
-  list.stdout.setEncoding("utf8");
-  list.stderr.setEncoding("utf8");
-  list.stdout.on("data", (chunk) => {
-    listOutput += chunk;
-  });
-  list.stderr.on("data", (chunk) => {
-    listError += chunk;
-  });
-  const [listCode] = await once(list, "close", {
-    signal: AbortSignal.timeout(packageManagerTimeoutMs),
-  });
-  children.delete(list);
-  assert.equal(listCode, 0, listError);
+  await writeFile(join(consumer, "package.json"), JSON.stringify({ private: true, type: "module" }));
+  const installedRoot = join(consumer, "node_modules", "@agent-teams", "qualification-toy-package");
+  const bundle: CandidateBundle = {
+    installationId: "qualification/counter",
+    artifactDigest,
+    scope: testAuthorityScope,
+    contributions: [{ id: "review/sequence", kind: "tool", port: "review-sequence", permission: "review.assign" }],
+  };
+  // Local fixture-owner evidence only. Digest equality is not signed artifact
+  // trust, OCI admission, or authorization supplied by a plugin manifest.
+  const hostEvidence: HostAdmissionEvidence = {
+    scope: testAuthorityScope,
+    installationId: bundle.installationId,
+    currentHeadRevision: 7,
+    expectedHeadRevision: 7,
+    verifiedArtifactDigest: artifactDigest,
+    boundPorts: { "review/sequence": "tool:review-sequence" },
+    effectiveGrants: { "review/sequence": ["review.assign"] },
+    qualifiedPlacements: {},
+    custodyReceipts: {},
+  };
+  let installAttempts = 0;
+  const installSelected = async (path: string, candidate: CandidateBundle, authority: HostAdmissionEvidence) => {
+    const observed = digest(await readFile(path));
+    const selected = preflightBundle(candidate, {
+      ...authority,
+      verifiedArtifactDigest: observed === authority.verifiedArtifactDigest ? observed : null,
+    });
+    if (!selected.ok) return selected;
+    installAttempts += 1;
+    await npm(["install", "--ignore-scripts", "--package-lock=false", "--no-audit", "--offline", path], consumer);
+    return selected;
+  };
+  const tampered = join(root, "tampered.tgz");
+  const alteredBytes = Buffer.concat([archiveBytes, Buffer.from("different artifact bytes")]);
+  await writeFile(tampered, alteredBytes);
+  for (const [path, candidate, authority, reason] of [
+    [tampered, bundle, hostEvidence, "unverified-artifact"],
+    [tampered, { ...bundle, artifactDigest: digest(alteredBytes) }, hostEvidence, "unverified-artifact"],
+    [archive, { ...bundle, scope: "different/scope" }, hostEvidence, "wrong-authority-scope"],
+    [archive, bundle, { ...hostEvidence, expectedHeadRevision: 6 }, "stale-active-head"],
+    [archive, bundle, { ...hostEvidence, effectiveGrants: {} }, "permission-not-granted"],
+  ] as const) {
+    assert.deepEqual(await installSelected(path, candidate, authority), { ok: false, reason });
+    assert.equal(installAttempts, 0, "denied preflight must not start installation");
+    await assert.rejects(access(installedRoot), { code: "ENOENT" });
+  }
+  assert.deepEqual(await installSelected(archive, bundle, hostEvidence),
+    { ok: true, selected: bundle.contributions });
+  assert.equal(installAttempts, 1);
+  assert.deepEqual((await readdir(installedRoot)).sort(), [...packageFiles].sort());
+  for (const [path, bytes] of built) assert.deepEqual(await readFile(join(installedRoot, path)), bytes);
+  assert.equal(digest(await readFile(archive)), artifactDigest, "archive changed after selection");
+
+  const listed = await npm(["ls", "--all", "--json"], consumer);
   const dependencyNames = new Set<string>();
   const visitDependencies = (node: { readonly dependencies?: Record<string, unknown> }): void => {
     for (const [name, dependency] of Object.entries(node.dependencies ?? {})) {
@@ -4931,27 +4957,72 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
       }
     }
   };
-  visitDependencies(JSON.parse(listOutput) as { readonly dependencies?: Record<string, unknown> });
-  assert.deepEqual([...dependencyNames].sort(), ["@agent-teams/qualification-toy-package"]);
-  const execute = spawn(
-    process.execPath,
-    [
-      "--input-type=module",
-      "--eval",
-      'import { createCounter } from "@agent-teams/qualification-toy-package"; process.stdout.write(String(createCounter(3).next()));',
-    ],
-    { cwd: consumer, stdio: ["ignore", "pipe", "pipe"] },
-  );
-  children.add(execute);
-  let result = "";
-  execute.stdout.setEncoding("utf8");
-  execute.stdout.on("data", (chunk) => {
-    result += chunk;
-  });
-  const [executeCode] = await once(execute, "close", { signal: AbortSignal.timeout(10_000) });
-  children.delete(execute);
-  assert.equal(executeCode, 0);
-  assert.equal(result, "4");
+  visitDependencies(JSON.parse(listed.stdout) as { readonly dependencies?: Record<string, unknown> });
+  assert.deepEqual([...dependencyNames].sort(), [packageName]);
+
+  // The test Host owns a finite, synchronous effect boundary. The installed
+  // ordinary library computes a sequence value; it does not get the file path,
+  // current grant, installation authority, or write capability.
+  const stateFile = join(root, "owner-review-sequence.json");
+  writeFileSync(stateFile, JSON.stringify({ revision: 0, last: 3 }));
+  let granted = true;
+  let installed = true;
+  let invocations = 0;
+  const readState = (): { revision: number; last: number } => {
+    const state: unknown = JSON.parse(readFileSync(stateFile, "utf8"));
+    assert.ok(typeof state === "object" && state !== null && "revision" in state && "last" in state
+      && typeof state.revision === "number" && typeof state.last === "number");
+    return { revision: state.revision, last: state.last };
+  };
+  const evaluate = async () => {
+    assert.ok(installed && granted, "new invocation is not authorized");
+    const basis = readState();
+    const executed = await runOwned(["--input-type=module", "--eval",
+      'import { createCounter } from "@agent-teams/qualification-toy-package"; process.stdout.write(JSON.stringify({ entry: import.meta.resolve("@agent-teams/qualification-toy-package"), value: createCounter(Number(process.argv[1])).next() }));',
+      "--", String(basis.last)], consumer, 0, 10_000);
+    invocations += 1;
+    const result: unknown = JSON.parse(executed.stdout);
+    assert.ok(typeof result === "object" && result !== null && "entry" in result && "value" in result
+      && typeof result.entry === "string" && typeof result.value === "number");
+    assert.equal(await realpath(fileURLToPath(result.entry)), await realpath(join(installedRoot, "index.js")));
+    return { expectedRevision: basis.revision, value: result.value };
+  };
+  function commit(prepared: Awaited<ReturnType<typeof evaluate>>): "saved" | "denied" | "conflict" {
+    if (!installed || !granted) return "denied";
+    const current = readState();
+    if (current.revision !== prepared.expectedRevision) return "conflict";
+    writeFileSync(stateFile, JSON.stringify({ revision: current.revision + 1, last: prepared.value }));
+    return "saved";
+  }
+  const first = await evaluate();
+  const stale = await evaluate();
+  assert.deepEqual(first, { expectedRevision: 0, value: 4 });
+  assert.deepEqual(stale, first);
+  assert.equal(commit(first), "saved");
+  assert.equal(commit(stale), "conflict");
+  assert.deepEqual(readState(), { revision: 1, last: 4 });
+  const pending = await evaluate();
+  assert.deepEqual(pending, { expectedRevision: 1, value: 5 });
+  granted = false;
+  assert.equal(commit(pending), "denied", "preflight/prepare must not authorize a later revoked effect");
+  assert.deepEqual(readState(), { revision: 1, last: 4 });
+  await assert.rejects(evaluate(), /new invocation is not authorized/u);
+  assert.equal(invocations, 3, "denied work must not start a child");
+
+  await npm(["uninstall", "--ignore-scripts", "--package-lock=false", "--offline", "--no-audit", packageName], consumer);
+  installed = false;
+  granted = true; // Restoring a grant must not resurrect an absent installation.
+  await assert.rejects(access(installedRoot), { code: "ENOENT" });
+  const removed = await runOwned(["--input-type=module", "--eval",
+    'await import("@agent-teams/qualification-toy-package");'], consumer, 1, 10_000);
+  assert.match(removed.stderr, /ERR_MODULE_NOT_FOUND/u);
+  assert.equal(commit(pending), "denied");
+  await assert.rejects(evaluate(), /new invocation is not authorized/u);
+  assert.equal(invocations, 3);
+  assert.deepEqual(readState(), { revision: 1, last: 4 }, "uninstall must not delete or change owner state");
+  assert.equal(digest(await readFile(archive)), artifactDigest);
+  // This is not production EF admission, a durable transaction, hostile-code
+  // containment, or a claim that all dependency closures can be verified here.
 });
 
 test("Cordis qualifies only as a private scoped-resource candidate", async () => {
