@@ -15,7 +15,8 @@ Extension Foundation. The shared [foundation delivery plan](https://github.com/a
 in Live Module Updates owns the cross-repository sequence and proposed complete
 update operation. Its proposed consolidation was published in
 [PR #1](https://github.com/agent-teams-ai/live-module-updates/pull/1); the fixture-first
-qualification successor is tracked in [PR #2](https://github.com/agent-teams-ai/live-module-updates/pull/2).
+qualification successor was merged in [PR #2](https://github.com/agent-teams-ai/live-module-updates/pull/2)
+at [`9c9952ad`](https://github.com/agent-teams-ai/live-module-updates/commit/9c9952ad1edac0c773921e6aa3db73777ce04c10).
 Keep the two plans linked; do not copy the whole operation roadmap here.
 
 The owner wants user- and agent-authored plugins that persist across restart,
@@ -101,7 +102,7 @@ the selected scope and current LMU plan; do not budget a duplicate operation.
 
 ### Open contribution vocabulary
 
-Do not freeze a closed list of contribution kinds. Compare a closed enum, arbitrary untyped payloads, and a generic versioned envelope with owner-defined typed contribution contracts. Prefer the last hypothesis: identity and compatibility of a contribution contract are explicit; artifact installation does not grant an effect. Product-specific extension point semantics, trust tier, data and invocation remain at the owner. Support only the negotiated required/optional capabilities. A new independent consumer's typed contribution must not require editing the neutral core or exposing a global service bag. UI remains optional and headless behavior may also be used as an ordinary library.
+Extensible, owner-defined typed contributions are the confirmed direction. A closed category enum and arbitrary untyped payloads are rejected counterexamples, not open alternatives. A namespaced versioned envelope remains a candidate contract shape; keep its exact schema and required/optional compatibility negotiation open in OD-003 for the selected boundary. Contribution identity and compatibility must be explicit; artifact installation does not grant an effect. Product-specific extension point semantics, trust tier, data and invocation remain at the owner. Support only the negotiated required/optional capabilities. A new independent consumer's typed contribution must not require editing the neutral core or exposing a global service bag. UI remains optional and headless behavior may also be used as an ordinary library.
 
 ### Intended consumers and acceptance
 
@@ -240,7 +241,10 @@ archive SHA-256 is
 `1bfbbbac4098e35317b9c901a75578cbd4f01865b3e0d68be9f5ad0b731d44ef`.
 This is observed native-browser evidence, independent of the earlier local
 browser-download failure. The exact source and artifact identify the proof;
-the current delivery proposal remains in LMU PR #2.
+the fixture-first delivery successor is retained at LMU merge
+[`9c9952ad`](https://github.com/agent-teams-ai/live-module-updates/commit/9c9952ad1edac0c773921e6aa3db73777ce04c10).
+Its delivery plan remains proposed; this result does not qualify the complete
+update operation.
 
 The portable core validates input and expresses the conditional-edit use case.
 Each test Host owns canonical state, final permission/revision checks, receipts
