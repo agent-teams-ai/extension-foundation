@@ -10,6 +10,19 @@ summary: Detailed design checkpoints, source-backed reuse decisions, bounded spi
 
 <!-- cspell:words Piral OSGi OpenComponents -->
 
+## Publication successor note, 2026-11-24
+
+The [Live Module Updates repository](https://github.com/agent-teams-ai/live-module-updates)
+has been created. Current foundation planning and open contracts continue in its
+[delivery plan](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/plans/foundation-delivery-plan.md) and
+[status/evidence guide](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/status.md), published as proposals in
+[PR #1](https://github.com/agent-teams-ai/live-module-updates/pull/1).
+This note updates discovery only. The source identities, original preparation
+status, native results, failures and immutable packets below remain the November
+23 record; publication does not repeat or broaden their qualification.
+The [EF Plugin Delivery Plan](../architecture/plugin-delivery-plan.md) retains
+the plugin-specific backlog outside the shared operation roadmap.
+
 ## Scope and authority
 
 This delivery follows the owner's 2026-11-23 request to detail the reusable

@@ -14,6 +14,19 @@ related:
 
 # OD-003: Extension Host, Public SPI, And State Migration Choices
 
+## Current delivery route, 2026-11-24
+
+The separate [Live Module Updates repository](https://github.com/agent-teams-ai/live-module-updates)
+is available. Its [shared foundation plan](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/plans/foundation-delivery-plan.md)
+and [headless plugin/UI design](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/architecture/headless-plugins-and-ui.md)
+were published as proposals in [PR #1](https://github.com/agent-teams-ai/live-module-updates/pull/1).
+The [EF Plugin Delivery Plan](../architecture/plugin-delivery-plan.md) retains
+artifact/trust/installation and product host-adoption responsibilities here.
+The actual first complete-operation consumer and its concrete contract are
+still open. This route does not resolve the owner choices below, adopt a public
+SPI, or make full live replacement a prerequisite for an already admitted
+static application feature. Existing consumer pins and local gates still apply.
+
 ## Decision Required
 
 Choose any production extension host or runtime adapter, public extension SPI,

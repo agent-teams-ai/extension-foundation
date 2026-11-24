@@ -12,7 +12,7 @@ summary: Maps the current module, plugin and live-update direction to accepted o
 
 ## Purpose
 
-**Current direction: 2026-11-23.** Start here to understand what we have concluded
+**Current navigation: 2026-11-24; recorded direction and evidence retain their dates.** Start here to understand what we have concluded
 about modules, distributable plugins and live replacement. This map routes to
 the owning decisions and evidence; it does not create another decision authority.
 Its proposed status reflects the unresolved contracts it describes, not a
@@ -21,6 +21,8 @@ reopening of the accepted constraints or owner-confirmed direction below.
 | Need | Read next |
 | --- | --- |
 | Current purpose, boundaries and integration candidates | This map |
+| EF plugin-specific delivery and open contracts | [Plugin Delivery Plan](plugin-delivery-plan.md) |
+| Shared foundation sequence and status | [Live Module Updates delivery plan](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/plans/foundation-delivery-plan.md) and [status guide](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/status.md), published through PR #1 |
 | Exact owner confirmations and unresolved policy | [OD-003](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md) |
 | Independent documentation audit and readiness method | [Documentation audit](../research/live-extension-documentation-audit-2026-11-23.md) |
 | Full library features and evidence | [Standalone blueprint](../research/standalone-live-plugin-library-blueprint-2026-11-22.md) and [reliability study](../research/live-update-reliability-and-industry-evidence-2026-11-22.md) |
@@ -42,7 +44,9 @@ and [expanded live application vision](../open-decisions/OD-003-module-runtime-a
 
 1. Build a purpose-neutral **standalone library in a separate repository**.
    This is a substantial reusable concern, not an estimate for a small adapter.
-   The remote is not yet provisioned; the transfer package is preserved below.
+   The [Live Module Updates repository](https://github.com/agent-teams-ai/live-module-updates)
+   now exists and contains the proposed design. Its original transfer package
+   is preserved below; repository availability is not production qualification.
 2. Start with a **TypeScript control library and ordinary TypeScript plugins**.
    Wasm/Extism and native Effect are separate optional profiles. No particular
    engine, mandatory Effect dependency or production adapter is selected.
@@ -99,7 +103,7 @@ boundary without becoming an OCI artifact. See the accepted
 | --- | --- | --- |
 | Get Modular | Neutral composition, typed construction, public resource mechanisms and separately qualified lifecycle primitives | No product permission, executable discovery, durable active head or physical supervisor |
 | Extension Foundation | Artifact/trust/distribution vocabulary, admitted host obligations and separately qualified conformance primitives | No product domain model, duplicate composition core or universal plugin interface |
-| Planned standalone live-update library | One reusable implementation of planning, applying/reconciling and observing the complete update operation | Invokes the actual authority/custody owners; does not duplicate their canonical records or kernels |
+| Live Module Updates, proposed operation | Planned reusable implementation of planning, applying/reconciling and observing the complete update operation | Invokes the actual authority/custody owners; does not duplicate their canonical records or kernels |
 | Consuming product | Business extension contracts, concrete declarations, policy/grants, canonical state, authoritative publication and recovery decisions | Supplies narrow primitives; does not have to rebuild the library's update flow |
 | Existing execution/resource owner | Actual native scope release, process/thread lifecycle and physical stop evidence; Agent Runtime in its admitted product profiles | A library callback or loader result cannot invent a stronger stop/cleanup receipt |
 
@@ -115,10 +119,15 @@ consumer still applies its actual artifact and authority rules.
 
 ## Structure
 
-The proposed [complete operation contract](live-module-update-operation.md)
-details semantic ports, independent outcome dimensions, feature authoring,
-adapter boundaries and adverse cases. Its [design validation record](../research/live-module-update-design-validation-2026-11-23.md)
-keeps source observations and experiments separate from acceptance.
+Continue the shared operation and authoring design in the
+[Live Module Updates foundation plan](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/plans/foundation-delivery-plan.md)
+and [headless plugin/UI proposal](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/architecture/headless-plugins-and-ui.md).
+The EF [plugin delivery plan](plugin-delivery-plan.md) retains its own artifact,
+trust, installation and host-admission responsibilities.
+The local [complete operation contract](live-module-update-operation.md) and
+[design validation record](../research/live-module-update-design-validation-2026-11-23.md)
+retain the November 23 design/evidence snapshot; neither is a second current
+implementation roadmap or a published production API.
 
 ### Complete operation, narrow consumer primitives
 
@@ -222,7 +231,7 @@ and name the missing capability. The important categories are:
 | Live frontend/backend and cross-language execution | [November 18](../research/live-application-evolution-vision-and-executed-spikes-2026-11-18.md), [November 21](../research/live-update-policies-and-portable-runtimes-2026-11-21.md) | Bounded native fixtures; no generic public SDK or universal migration |
 | Resources, state/history and failure recovery | [Blueprint](../research/standalone-live-plugin-library-blueprint-2026-11-22.md), [reliability study](../research/live-update-reliability-and-industry-evidence-2026-11-22.md) | Real mechanism evidence and retained failures; no complete production-library claim |
 | Federation and rebinding | [MF/SystemJS study](../research/module-federation-update-boundaries-and-architecture-options-2026-11-22.md) | Four browser and two Node tests, with exact input/version boundaries |
-| Current standalone handoff | [Live Module Updates project](../research/evidence/live-module-updates-standalone-20261123.tar.gz), [manifest](../research/evidence/live-module-updates-standalone-20261123.manifest.json) and [delivery validation](../research/evidence/live-module-updates-standalone-20261123.validation.json) | Current specification, final bounded native results and ten immutable source-packet routes; separate repository creation and production qualification remain outstanding |
+| November 23 standalone handoff | [Live Module Updates project](../research/evidence/live-module-updates-standalone-20261123.tar.gz), [manifest](../research/evidence/live-module-updates-standalone-20261123.manifest.json) and [delivery validation](../research/evidence/live-module-updates-standalone-20261123.validation.json) | Frozen specification, bounded native results and ten immutable source-packet routes; the separate repository now exists, while production qualification remains outstanding |
 | Historical standalone evidence | [532-file base manifest](../research/evidence/standalone-live-library-deepening-20261122.manifest.json) and [167-file supplement manifest](../research/evidence/module-federation-research-supplement-20261122.manifest.json) | Separate immutable sibling packets, not an overlay; [earlier transfer seed](../research/evidence/standalone-live-library-transfer-20261122.manifest.json) remains historical |
 | Public lifecycle mechanisms | [Piral, Resources and Effect design validation](../research/live-module-update-design-validation-2026-11-23.md#observed-native-results) | Three tests, six cases and 66 comparisons on the frozen input; not complete-library or comparative application E2E |
 
@@ -259,13 +268,14 @@ adapter capabilities, authoring diagnostics, budgets and end-to-end consumer
 acceptance. The independent audit distinguishes vision clarity from specification
 readiness instead of counting research pages as completed implementation design.
 
-For the bounded TS-first library and its first real delivery, the
-[audit rubric](../research/live-extension-documentation-audit-2026-11-23.md#readiness-rubric)
-estimates vision at **85–90%**, documentation at **80–85%**,
-and the implementation plan at **50–60%**. These are coarse planning judgments,
-not implementation completion or reliability measurements. The main missing
-work is the actual first consumer, applicable owner choices and an exact selected
-operation/acceptance contract.
+The November 23 [audit rubric](../research/live-extension-documentation-audit-2026-11-23.md#readiness-rubric)
+is a historical estimate for bounded TypeScript-first live-update planning:
+vision **85–90%**, documentation **80–85%**, implementation plan **50–60%**,
+with a weighted planning result of **70–75%**. It is not an overall plugin-system
+readiness percentage, an implementation count or a reliability measurement.
+EF still has no production runtime package or public extension SPI. The actual
+first complete-operation consumer, applicable owner choices and exact selected
+operation/acceptance contract remain open.
 
 Update this map when an owning decision changes status or a declared profile is
 qualified. Put the decision in its existing authority, the implementation contract

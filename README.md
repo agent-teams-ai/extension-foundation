@@ -7,10 +7,13 @@ This repository will provide common technical infrastructure for Orchestrator,
 Agent Runtime, Frontend, and future products. Every product retains its own
 domain language, feature-owned extension points, authority, state, and host.
 
-Start with the [current live extension system map](docs/architecture/live-extension-system-map.md)
-for the conclusions about modules, plugins and hot replacement, their owners,
-integration candidates, evidence and open choices. The map distinguishes the
-planned standalone operation implementation from each consumer's authority.
+Start with the [Plugin Delivery Plan](docs/architecture/plugin-delivery-plan.md)
+for the plugin-specific contracts, owners and qualification still needed. The
+[current system map](docs/architecture/live-extension-system-map.md) connects
+modules, plugins and live replacement to their decisions and evidence.
+The separate [Live Module Updates foundation plan](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/plans/foundation-delivery-plan.md)
+coordinates the shared application foundation and proposed update operation;
+its proposed design was published in [PR #1](https://github.com/agent-teams-ai/live-module-updates/pull/1).
 
 ## Product vision: live application evolution
 
@@ -34,6 +37,14 @@ one admission basis retained by ADR-0015 from superseded ADR-0013 is proved: a
 second consumer, an independent replacement or release lifecycle, independent
 deployment or isolation, or a public SPI with two implementations and
 conformance evidence.
+
+For a new static application, start with the existing
+[Get Modular consumer quickstart](https://github.com/agent-teams-ai/get-modular/blob/main/docs/guides/consumer-quickstart.md)
+and the consumer's accepted artifact pins and admission. A reusable headless
+feature does not need a public plugin SPI or complete live replacement first.
+The [headless plugin and UI design](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/architecture/headless-plugins-and-ui.md)
+is a proposal for portable behavior and optional presentation, not a published
+SDK, renderer or universal UI language.
 
 ## Accepted Direction
 

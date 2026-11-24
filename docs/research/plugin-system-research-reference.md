@@ -16,6 +16,18 @@ preserves industry experience so future agents can use the same evidence,
 counterexamples and qualification scenarios. Research is not an accepted ADR,
 a released runtime, a security audit or a performance qualification.
 
+## Current delivery route, 2026-11-24
+
+Use the [EF Plugin Delivery Plan](../architecture/plugin-delivery-plan.md) for
+plugin-specific work and the [Live Module Updates foundation plan](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/plans/foundation-delivery-plan.md)
+for the shared application/update sequence. The separate repository exists;
+the proposed consolidation was published in
+[PR #1](https://github.com/agent-teams-ai/live-module-updates/pull/1).
+Optional headless UI is an explicit [design proposal](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/architecture/headless-plugins-and-ui.md),
+not an accepted universal renderer or DSL. The dated findings and source packets
+below retain their original scope. Historical readiness estimates describe the
+bounded live-update planning rubric, not overall plugin implementation readiness.
+
 ## Current synthesis
 
 Start with the [current live extension system map](../architecture/live-extension-system-map.md)

@@ -10,6 +10,18 @@ summary: Proposed complete update contract, feature ownership, integration seams
 
 <!-- cspell:words Piral XState OpenComponents CRDT -->
 
+## Dated successor route, 2026-11-24
+
+The [Live Module Updates repository](https://github.com/agent-teams-ai/live-module-updates)
+now exists. Continue the shared foundation and operation design in its
+[delivery plan](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/plans/foundation-delivery-plan.md), published through
+[PR #1](https://github.com/agent-teams-ai/live-module-updates/pull/1).
+This document retains the **November 23 proposed design snapshot** and its
+original evidence links. Wording below describes intended responsibilities,
+not a delivered runtime. The [EF Plugin Delivery Plan](plugin-delivery-plan.md)
+owns the separate artifact, trust, installation and host-admission backlog.
+No accepted decision, source pin or immutable evidence changes through this note.
+
 ## Scope and authority
 
 This is the proposed implementation contract for **live-module-updates**, the

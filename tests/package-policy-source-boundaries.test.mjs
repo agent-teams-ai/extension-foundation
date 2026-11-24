@@ -50,6 +50,8 @@ const governedFiles = [
   "tests/qualification/dogfooding-protocol-oracle.ts",
   "tests/qualification/dogfooding-protocol-reducer.ts",
   "tests/qualification/dogfooding-protocol.test.ts",
+  "tests/qualification/contribution-admission-candidate.ts",
+  "tests/qualification/contribution-admission-candidate.test.ts",
   "tests/qualification/dossier.test.ts",
   "tests/qualification/extism-feasibility.mjs",
   "tests/qualification/fixtures/portable-browser-worker.mjs",

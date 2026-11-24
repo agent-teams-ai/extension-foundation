@@ -12,8 +12,11 @@ the vision and its open choices; a spike does not adopt a production runtime.
 
 Start with:
 
+- [Plugin delivery responsibilities and open contracts](docs/architecture/plugin-delivery-plan.md)
 - [Current live extension system map](docs/architecture/live-extension-system-map.md)
-- [Proposed complete update operation](docs/architecture/live-module-update-operation.md)
+- [Shared foundation delivery plan, proposed](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/plans/foundation-delivery-plan.md)
+- [Headless plugins and optional UI, proposed](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/architecture/headless-plugins-and-ui.md)
+- [November 23 update-operation design snapshot](docs/architecture/live-module-update-operation.md)
 - [Repository overview](README.md)
 - [Documentation index](docs/README.md)
 - [Architecture overview](docs/architecture/overview.md)
@@ -22,6 +25,15 @@ Start with:
 - [Architecture decisions](docs/decisions/README.md)
 - [Open decisions](docs/open-decisions/README.md)
 - [Plugin system research reference](docs/research/plugin-system-research-reference.md)
+
+The Live Module Updates repository now exists. Continue the shared operation
+design there; retain EF's artifact/trust/installation and plugin-admission work
+in its own delivery plan. Keep portable behavior independent of the consuming
+product's internal domain model, UI framework, credentials, internal catalogs
+and Get Modular construction types;
+an outer consumer-owned adapter supplies those integrations. Optional Headless UI
+remains an explicit design choice, not an adopted DSL or renderer. Preserve
+historical source packets and add dated successor notes when status changes.
 
 Before designing plugin lifecycle, hot replacement, compatibility or scale,
 follow the research reference to relevant primary evidence and critic
