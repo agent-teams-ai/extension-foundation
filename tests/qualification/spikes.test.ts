@@ -4827,7 +4827,7 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
   const root = await mkdtemp(join(tmpdir(), "extension packed consumer-"));
   const packageManagerTimeoutMs = process.platform === "win32" ? 90_000 : 30_000;
   const children = new Set<ReturnType<typeof spawn>>();
-  const npmCli = await resolveNpmCli();
+  let spawnAttempts = 0;
   t.after(async () => {
     await Promise.all(
       [...children].map(async (child) => {
@@ -4838,6 +4838,7 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
     );
     await rm(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   });
+  const npmCli = await resolveNpmCli();
 
   // One owned process route for package management, public import and rejection.
   // These are trusted cooperative test children, not an isolation mechanism.
@@ -4847,6 +4848,7 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
     expectedExit = 0,
     timeout = packageManagerTimeoutMs,
   ): Promise<{ stdout: string; stderr: string }> {
+    spawnAttempts += 1;
     const child = spawn(process.execPath, [...args], { cwd, stdio: ["ignore", "pipe", "pipe"] });
     children.add(child);
     let stdout = "";
@@ -4929,6 +4931,7 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
   const tampered = join(root, "tampered.tgz");
   const alteredBytes = Buffer.concat([archiveBytes, Buffer.from("different artifact bytes")]);
   await writeFile(tampered, alteredBytes);
+  const beforeDeniedInstall = spawnAttempts;
   for (const [path, candidate, authority, reason] of [
     [tampered, bundle, hostEvidence, "unverified-artifact"],
     [tampered, { ...bundle, artifactDigest: digest(alteredBytes) }, hostEvidence, "unverified-artifact"],
@@ -4938,6 +4941,7 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
   ] as const) {
     assert.deepEqual(await installSelected(path, candidate, authority), { ok: false, reason });
     assert.equal(installAttempts, 0, "denied preflight must not start installation");
+    assert.equal(spawnAttempts, beforeDeniedInstall, "denied preflight must not start a child");
     await assert.rejects(access(installedRoot), { code: "ENOENT" });
   }
   assert.deepEqual(await installSelected(archive, bundle, hostEvidence),
@@ -4967,31 +4971,35 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
   writeFileSync(stateFile, JSON.stringify({ revision: 0, last: 3 }));
   let granted = true;
   let installed = true;
-  let invocations = 0;
-  const readState = (): { revision: number; last: number } => {
-    const state: unknown = JSON.parse(readFileSync(stateFile, "utf8"));
+  let enabled = true;
+  const readState = (path = stateFile): { revision: number; last: number } => {
+    const state: unknown = JSON.parse(readFileSync(path, "utf8"));
     assert.ok(typeof state === "object" && state !== null && "revision" in state && "last" in state
       && typeof state.revision === "number" && typeof state.last === "number");
     return { revision: state.revision, last: state.last };
   };
   const evaluate = async () => {
-    assert.ok(installed && granted, "new invocation is not authorized");
+    assert.ok(installed && enabled && granted, "new invocation is not authorized");
     const basis = readState();
     const executed = await runOwned(["--input-type=module", "--eval",
       'import { createCounter } from "@agent-teams/qualification-toy-package"; process.stdout.write(JSON.stringify({ entry: import.meta.resolve("@agent-teams/qualification-toy-package"), value: createCounter(Number(process.argv[1])).next() }));',
       "--", String(basis.last)], consumer, 0, 10_000);
-    invocations += 1;
     const result: unknown = JSON.parse(executed.stdout);
     assert.ok(typeof result === "object" && result !== null && "entry" in result && "value" in result
       && typeof result.entry === "string" && typeof result.value === "number");
     assert.equal(await realpath(fileURLToPath(result.entry)), await realpath(join(installedRoot, "index.js")));
     return { expectedRevision: basis.revision, value: result.value };
   };
-  function commit(prepared: Awaited<ReturnType<typeof evaluate>>): "saved" | "denied" | "conflict" {
-    if (!installed || !granted) return "denied";
-    const current = readState();
+  function commit(
+    prepared: Awaited<ReturnType<typeof evaluate>>,
+    destination = stateFile,
+    enforceGrant = true,
+  ): "saved" | "denied" | "conflict" {
+    // The false grant switch is used only by the isolated negative control below.
+    if (!installed || !enabled || (enforceGrant && !granted)) return "denied";
+    const current = readState(destination);
     if (current.revision !== prepared.expectedRevision) return "conflict";
-    writeFileSync(stateFile, JSON.stringify({ revision: current.revision + 1, last: prepared.value }));
+    writeFileSync(destination, JSON.stringify({ revision: current.revision + 1, last: prepared.value }));
     return "saved";
   }
   const first = await evaluate();
@@ -5001,13 +5009,53 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
   assert.equal(commit(first), "saved");
   assert.equal(commit(stale), "conflict");
   assert.deepEqual(readState(), { revision: 1, last: 4 });
-  const pending = await evaluate();
-  assert.deepEqual(pending, { expectedRevision: 1, value: 5 });
-  granted = false;
-  assert.equal(commit(pending), "denied", "preflight/prepare must not authorize a later revoked effect");
-  assert.deepEqual(readState(), { revision: 1, last: 4 });
+  const disabledWork = await evaluate();
+  assert.deepEqual(disabledWork, { expectedRevision: 1, value: 5 });
+  enabled = false;
+  const beforeDisabledWork = spawnAttempts;
+  assert.equal(commit(disabledWork), "denied", "disable must reject a previously prepared effect");
   await assert.rejects(evaluate(), /new invocation is not authorized/u);
-  assert.equal(invocations, 3, "denied work must not start a child");
+  assert.equal(spawnAttempts, beforeDisabledWork, "disabled work must not start a child");
+  assert.equal(installed && granted, true, "disable must remain separate from installation and grants");
+  for (const [path, bytes] of built) assert.deepEqual(await readFile(join(installedRoot, path)), bytes);
+  assert.deepEqual(JSON.parse(readFileSync(stateFile, "utf8")), { revision: 1, last: 4 });
+
+  enabled = true;
+  // Resume with a fresh public invocation; no claim about resurrecting old work.
+  const resumed = await evaluate();
+  assert.deepEqual(resumed, { expectedRevision: 1, value: 5 });
+  assert.equal(commit(resumed), "saved");
+  assert.deepEqual(JSON.parse(readFileSync(stateFile, "utf8")), { revision: 2, last: 5 });
+  const pending = await evaluate();
+  assert.deepEqual(pending, { expectedRevision: 2, value: 6 });
+  granted = false;
+  const beforeRevokedWork = spawnAttempts;
+  assert.equal(commit(pending), "denied", "preflight/prepare must not authorize a later revoked effect");
+  assert.deepEqual(JSON.parse(readFileSync(stateFile, "utf8")), { revision: 2, last: 5 });
+  await assert.rejects(evaluate(), /new invocation is not authorized/u);
+  assert.equal(spawnAttempts, beforeRevokedWork, "revoked work must not start a child");
+
+  // Run the same receiver on separate state, weakening only its live-grant check.
+  // A literal raw-file oracle must accept the real denial and detect the actual
+  // forbidden write; setup errors and unrelated assertion failures do not count.
+  const controlFile = join(root, "revoked-grant-control.json");
+  writeFileSync(controlFile, JSON.stringify({ revision: 2, last: 5 }));
+  const assertRevokedStateUnchanged = () => assert.deepEqual(
+    JSON.parse(readFileSync(controlFile, "utf8")),
+    { revision: 2, last: 5 },
+    "revoked-grant control must preserve owner state",
+  );
+  assert.equal(commit(pending, controlFile), "denied");
+  assertRevokedStateUnchanged();
+  assert.equal(commit(pending, controlFile, false), "saved");
+  assert.throws(assertRevokedStateUnchanged, {
+    code: "ERR_ASSERTION",
+    operator: "deepStrictEqual",
+    message: /revoked-grant control must preserve owner state/u,
+    actual: { revision: 3, last: 6 },
+    expected: { revision: 2, last: 5 },
+  });
+  assert.deepEqual(JSON.parse(readFileSync(stateFile, "utf8")), { revision: 2, last: 5 });
 
   await npm(["uninstall", "--ignore-scripts", "--package-lock=false", "--offline", "--no-audit", packageName], consumer);
   installed = false;
@@ -5016,10 +5064,12 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
   const removed = await runOwned(["--input-type=module", "--eval",
     'await import("@agent-teams/qualification-toy-package");'], consumer, 1, 10_000);
   assert.match(removed.stderr, /ERR_MODULE_NOT_FOUND/u);
+  const beforeRemovedWork = spawnAttempts;
   assert.equal(commit(pending), "denied");
   await assert.rejects(evaluate(), /new invocation is not authorized/u);
-  assert.equal(invocations, 3);
-  assert.deepEqual(readState(), { revision: 1, last: 4 }, "uninstall must not delete or change owner state");
+  assert.equal(spawnAttempts, beforeRemovedWork, "removed work must not start a child");
+  assert.deepEqual(JSON.parse(readFileSync(stateFile, "utf8")), { revision: 2, last: 5 },
+    "uninstall must not delete or change owner state");
   assert.equal(digest(await readFile(archive)), artifactDigest);
   // This is not production EF admission, a durable transaction, hostile-code
   // containment, or a claim that all dependency closures can be verified here.
