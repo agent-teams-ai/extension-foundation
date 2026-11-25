@@ -188,6 +188,7 @@ boundaries:
       - tests/qualification/github-evidence.test.ts
       - tests/qualification/graph-spike.ts
       - tests/qualification/lifecycle-spike.ts
+      - tests/qualification/prepare-ef-docs-cohort.ts
       - tests/qualification/product-source-evidence.test.ts
       - tests/qualification/productization.test.ts
       - tests/qualification/protocol-spike.ts
