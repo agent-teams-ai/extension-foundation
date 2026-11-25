@@ -1,0 +1,57 @@
+name: E1 Provider Evidence Research
+
+# Finite campaign. Historical witness expiry must not affect ordinary CI.
+on:
+  push:
+    branches:
+      - test/e1-provider-evidence-20261125
+      - main
+    paths:
+      - tests/qualification/github-evidence*.ts
+      - architecture/checks/package-policy.d.mts
+      - .github/workflows/e1-provider-research.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: e1-provider-research-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  online:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9
+        with:
+          version: 11.18.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 26.11.1
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies
+      - name: Strictly check maintained experiment sources
+        run: pnpm qualification:typecheck
+      - name: Execute controlled refusals and independent mutant
+        run: node --test --test-concurrency=1 tests/qualification/github-evidence.test.ts
+      - name: Observe the exact historical provider witness
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          E1_PROBE_SOURCE: ${{ github.sha }}
+          E1_REPORT_PATH: .qualification-output/github-provider-observation.json
+        run: node tests/qualification/github-evidence-online.ts
+      - name: Retain sanitized provider observation
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: e1-provider-observation-${{ github.sha }}-${{ github.run_attempt }}
+          path: .qualification-output/github-provider-observation.json
+          if-no-files-found: error
+          retention-days: 30

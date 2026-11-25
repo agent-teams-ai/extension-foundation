@@ -7,8 +7,10 @@ export type RefusalCode =
   | "redirect" | "size" | "deadline" | "malformed" | "unavailable";
 
 export class EvidenceRefusal extends Error {
-  constructor(readonly code: RefusalCode) {
+  readonly code: RefusalCode;
+  constructor(code: RefusalCode) {
     super("Provider evidence refused: " + code);
+    this.code = code;
     this.name = "EvidenceRefusal";
   }
 }

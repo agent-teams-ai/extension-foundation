@@ -33,7 +33,7 @@ export async function retrieveEvidence(
   const run = base + "/actions/runs/" + witness.runId + "/attempts/" + witness.attempt;
 
   async function discard(response: Response): Promise<void> {
-    await response.body?.cancel().catch(() => undefined);
+    void response.body?.cancel().catch(() => undefined);
   }
 
   async function request(url: string, authenticated: boolean, raw = false): Promise<Response> {
@@ -84,7 +84,7 @@ export async function retrieveEvidence(
       return result;
     } finally {
       controller.signal.removeEventListener("abort", abort);
-      await reader.cancel().catch(() => undefined);
+      void reader.cancel().catch(() => undefined);
       reader.releaseLock();
     }
   }
