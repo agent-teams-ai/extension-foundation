@@ -11,7 +11,7 @@ Start with the [Plugin Delivery Plan](docs/architecture/plugin-delivery-plan.md)
 for the plugin-specific contracts, owners and qualification still needed. The
 [current system map](docs/architecture/live-extension-system-map.md) connects
 modules, plugins and live replacement to their decisions and evidence.
-The separate [Live Module Updates foundation plan](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/plans/foundation-delivery-plan.md)
+The separate [Live Module Updates foundation plan](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/plans/foundation-delivery-plan.md)
 coordinates the shared application foundation and proposed update operation;
 its proposed design was published in [PR #1](https://github.com/agent-teams-ai/live-module-updates/pull/1).
 
@@ -31,18 +31,31 @@ The current implementation/adoption status remains explicit below.
 
 ## Status
 
-Architecture foundation only. No public runtime SPI or production package has
-been materialized yet. A package is created only after a real product slice and
-one admission basis retained by ADR-0015 from superseded ADR-0013 is proved: a
-second consumer, an independent replacement or release lifecycle, independent
-deployment or isolation, or a public SPI with two implementations and
-conformance evidence.
+Architecture and executable qualification research. No public runtime SPI or
+production package has been materialized yet. Representative fixtures and
+independently wired test Hosts qualify the foundation before applications are
+ready; a first product is not a prerequisite for that work.
+
+Production package materialization retains the applicable ADR-0015 requirements
+inherited from ADR-0013 until an owning successor accepts the exact changed
+scope. The [current admission question](docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md#fixture-first-and-runtime-boundary-clarification-2026-11-24)
+separates a proposed provisional 0.x package, production Host admission and
+stable public SPI publication. Independent deployment/isolation, replacement or
+release lifecycle, a second consumer, or a public SPI with two implementations
+remain distinct package bases; their applicable evidence is not interchangeable.
+
+The [November 25 implementation sequence](docs/architecture/plugin-delivery-plan.md#implementation-sequence-2026-11-25)
+records concrete steps, dependencies, estimates and unresolved choices. Its
+[evidence successor](docs/architecture/plugin-delivery-plan.md#qualification-successor-2026-11-25)
+includes the real packed Node artifact-to-effect scenario and the enforced
+portable-protocol source boundary. These results do not yet supply a durable
+installed-plugin lifecycle, signed OCI admission or the complete LMU operation.
 
 For a new static application, start with the existing
 [Get Modular consumer quickstart](https://github.com/agent-teams-ai/get-modular/blob/main/docs/guides/consumer-quickstart.md)
 and the consumer's accepted artifact pins and admission. A reusable headless
 feature does not need a public plugin SPI or complete live replacement first.
-The [headless plugin and UI design](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/architecture/headless-plugins-and-ui.md)
+The [headless plugin and UI design](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/architecture/headless-plugins-and-ui.md)
 is a proposal for portable behavior and optional presentation, not a published
 SDK, renderer or universal UI language.
 

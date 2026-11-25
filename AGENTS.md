@@ -31,8 +31,9 @@ Start with:
 
 - [Plugin delivery responsibilities and open contracts](docs/architecture/plugin-delivery-plan.md)
 - [Current live extension system map](docs/architecture/live-extension-system-map.md)
-- [Shared foundation delivery plan, proposed](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/plans/foundation-delivery-plan.md)
-- [Headless plugins and optional UI, proposed](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/architecture/headless-plugins-and-ui.md)
+- [Shared foundation delivery plan, proposed](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/plans/foundation-delivery-plan.md)
+- [Complete-operation implementation phases, proposed](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/plans/first-operation-implementation-plan.md)
+- [Headless plugins and optional UI, proposed](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/architecture/headless-plugins-and-ui.md)
 - [November 23 update-operation design snapshot](docs/architecture/live-module-update-operation.md)
 - [Repository overview](README.md)
 - [Documentation index](docs/README.md)

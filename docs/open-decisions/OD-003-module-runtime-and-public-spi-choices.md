@@ -14,6 +14,120 @@ related:
 
 # OD-003: Extension Host, Public SPI, And State Migration Choices
 
+## Implementation choices for the next slice, 2026-11-25
+
+The owner requested detailed phases and implementation steps before work whose
+contract or risk is unresolved, repeated critique, and continued progress on
+independent assigned work. The [E0–E6 execution sequence](../architecture/plugin-delivery-plan.md#implementation-sequence-2026-11-25)
+is the maintained work plan. This checkpoint records choices; merging it does
+not accept an option, materialize a package or supersede an ADR.
+
+The confirmed direction remains ordinary TypeScript first, independently usable
+GM/EF cores, one shared LMU update operation, owner-defined typed contributions,
+test-Host qualification before applications, and Browser/Desktop/untrusted
+architecture targets. A closed universal contribution enum, arbitrary untyped
+payloads, a second composition engine and consumer-copied update algorithms are
+already rejected; they are not options in the following comparisons.
+
+### Decision dependencies and work that remains available
+
+| Question | Resolving owner and affected work | Evidence needed / work that continues |
+| --- | --- | --- |
+| EF-A: exact provisional production admission delta | EF architecture successor for E0/E1; applicable product Host/public SPI decisions stay separate | Name changed ADR-0015/retained ADR-0013 clauses, package basis, source/byte/conformance proof and preserved ADR-0011 floor. Source investigation, fixture contracts and verifier design continue; production code depending on changed admission waits for its accepted scope |
+| EF-C: contribution compatibility contract | EF neutral envelope plus each extension-point owner; E2 | Two different typed owner contracts and required/optional rejecting examples. Artifact work with unchanged facts and independent Host investigations continue |
+| EF-V: package-evidence verification route | Repository package-admission tooling; E1 | Real stable repository IDs, immutable bytes and authenticated source/conformance lineage. It does not decide runtime trust or product grants |
+| EF-P: first complete artifact/Host qualification profile | Owning Host/profile decision; E3–E5 | Real effect/lifetime primitives and a bounded failure envelope. LMU routes Q1–Q7 to their owning decisions; no duplicate policy choice here |
+| Missing durable owner primitives | Each actual state, authority, execution or custody owner; E4/E5 | Inventory public implementations, unsupported guarantees and incremental estimates. Neutral contract work does not claim those primitives are already available |
+| Concrete Desktop/isolation/UI mechanism | Selected runtime, security or presentation owner; E6 | Native discriminating experiment and its supported target; other declared profiles remain independently deliverable |
+
+EF-A is a required reconciliation of already confirmed foundation-first direction,
+not a new vote on waiting for the first product. Draft the smallest successor
+that names its actual package/profile and evidence basis; do not invent a broad
+new exemption or silently accept it through this open-decision entry. Existing
+independent implementation and production Host requirements remain scoped to
+their actual claims.
+
+### EF-C: compatibility for owner-defined contributions
+
+The comparison covers neutral revision/compatibility handling only. Owners still
+control payload meaning and typed validation. All options reject unknown required
+contracts before evaluation and specify observable treatment of unsupported
+optional contributions. P/T estimates are incremental parts of the core budget,
+not additional totals. No option is selected.
+
+| Ranked candidate | Benefit, limit and rejecting example | P / T LOC; engineer-days | U / N / C |
+| --- | --- | --- | --- |
+| 1. Exact supported contract revision for the first bounded profile | Small explicit agreement, with deliberate breaking upgrades; refuses a required revision outside the supported set. Reject if independent consumer needs prove a compatibility transition that exact agreement cannot express | P 400–800; T 600–1,200; 3–6 days | 8 / 8 / 4 |
+| 2. Owner-authored explicit compatibility relation between revisions | Allows reviewed rolling compatibility without a universal schema interpreter; incorrect owner compatibility can admit unsafe behavior. Reject when cross-revision conformance contradicts the declared relation | P 700–1,300; T 1,000–1,800; 5–9 days | 7 / 8 / 6 |
+| 3. Negotiation among multiple explicitly implemented contract versions | Supports independently upgraded Hosts with more mapping and conformance work; ambiguous preference or silent downgrade is unsafe. Reject if the chosen version or required capability differs between the two ends | P 1,000–1,800; T 1,400–2,400; 7–12 days | 6 / 8 / 7 |
+
+Conditional recommendation: start with exact agreement if the representative
+owner contracts can express the useful behavior; add a broader policy only when
+the compatibility discriminator requires it. Choosing the exact envelope,
+required/optional representation and policy remains an E0 owner decision, not an
+implementation default inferred from this recommendation.
+
+### EF-V: how package admission verifies evidence
+
+The current CLI lacks an executable verifier for a nonempty catalog. Existing
+checks already validate request and receipt shape; the missing work must retain
+their binding rules. These are three retrieval/provenance investigations, not
+three permission levels or substitutes for evidence. Estimate only a bounded
+discriminator against the existing gate: P=0 production lines, T includes test
+adapters/fixtures. The selected production adapter is estimated after the exact
+provider/receipt contract and code-language scope are known.
+
+| Ranked candidate | Benefit, limit and falsifiable discriminator | Investigation P / T; engineer-days | U / N / C |
+| --- | --- | --- | --- |
+| 1. Authenticated online retrieval of immutable provider evidence | Fits current GitHub evidence; depends on authorized provider availability. Same source/bytes must accept, repository aliases, changed source/run binding and unavailable evidence must refuse | P 0; T 300–700; 2–4 days | 8 / 8 / 5 |
+| 2. Explicit authenticated offline evidence bundle | Supports repeatable offline checks only if its issuer/source/expiry policy is independently established; plain copied logs are insufficient. Tampered bytes, wrong repository ID or unverifiable provenance must refuse | P 0; T 500–900; 3–5 days | 6 / 8 / 7 |
+| 3. Explicit per-record online or offline route with one verification contract | Supports both environments with greater closure and maintenance cost. No automatic fallback; a failed online record must not be accepted through a different implicit route | P 0; T 700–1,200; 4–7 days | 5 / 8 / 8 |
+
+Conditional recommendation: investigate the current provider path first. Offline
+operation needs a demonstrated consumer need and authenticated evidence contract;
+it must not appear as a shortcut around an unavailable check. Stable repository
+identity, actual byte hashes, selected admission basis and applicable independent
+implementation proof are required whichever route is selected.
+
+### EF-P: first qualification envelope
+
+These alternatives rank what to prove first, not which confirmed target is
+allowed to exist. The estimates cover discriminating test work over existing
+mechanisms, with P=0 production lines. Durable installation/authority/custody
+primitives and the production Host remain unpriced until their exact owners and
+missing contracts are identified at E4; no option borrows the small adapter
+allowance as a complete lifecycle budget.
+
+| Ranked candidate | Useful first proof, limitation and rejecting example | Investigation P / T; engineer-days | U / N / C |
+| --- | --- | --- | --- |
+| 1. Trusted finite request contribution with known typed contracts | Reuses the current artifact-to-effect seam; proves no hostile containment or arbitrary stream continuity. Reject as the first envelope if the useful operation inherently outlives the finite receiver | P 0; T 400–900; 2–5 days | 8 / 8 / 5 |
+| 2. Trusted asynchronous contribution with retained work | Exposes a realistic await/session boundary and same-operation retention; needs a qualified public lifetime path. Reject if nested/reentrant work can escape the selected generation or cleanup receipt | P 0; T 700–1,400; 4–8 days | 7 / 8 / 7 |
+| 3. Selected isolated third-party contribution first | Exercises a confirmed future threat boundary immediately; requires real denied effects, resource bounds and termination evidence. Reject if the mechanism only supplies placement/transport or lacks the claimed physical stop | P 0; T 900–1,800; 6–12 days | 6 / 8 / 8 |
+
+Conditional recommendation: use the finite trusted seam for the first complete
+artifact/installation path while separately investigating the lifetime and
+isolation boundaries that can change its ports. Choose the async envelope first
+if useful behavior requires it. Do not infer an interruption policy or permission
+to execute hostile code in-process. The shared operation's trust, update unit,
+state continuity, adoption, admitted work, rollback and old-client policies stay
+in the [LMU decision register](https://github.com/agent-teams-ai/live-module-updates/blob/6083e89ba7781b12571a102d273058052ad94148/docs/decisions/open-decisions.md).
+
+All ranges assume one experienced engineer, existing prerequisites and focused
+review; they exclude generated/vendored code, documentation, provider deployment
+and native operating costs and are not calendar promises. U is confidence in
+fitness, N expected reliability only within the explicitly declared scope, and
+C implementation/maintenance complexity (higher is worse). These ordinal
+judgments are not measured availability; equal N scores do not equate different
+threat envelopes. Estimate confidence is 3/10. Keep alternatives and overlapping
+core/integration totals separate rather than summing them, and revise them using the actual selected
+mechanism before implementation.
+
+Questions stay OPEN until their proper owner records acceptance. At every
+handoff retain the pending choice, rejected alternatives, exact blocker and next
+independent step. A blocked E4 primitive does not stop E2 contract examples or a
+separately assigned native investigation; recording an option does not authorize
+additional unrelated work.
+
 ## Current delivery route, 2026-11-24
 
 The separate [Live Module Updates repository](https://github.com/agent-teams-ai/live-module-updates)
