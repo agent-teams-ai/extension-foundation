@@ -749,8 +749,28 @@ Online provider evidence and deterministic transport-controlled tests are
 separate results. Successful GitHub lineage does not prove semantic conformance,
 independent authorship, artifact trust, product grants or complete E1 readiness.
 EF-V route acceptance and the precise issuer/admission policy remain in OD-003.
-Implementation, review, hosted execution and merge remain pending until their
-exact-source observations are recorded in the delivery PR.
+The bounded experiment is implemented and independently reviewed. Its strict
+TypeScript 7.0.2 check, nine deterministic tests and actual online observation
+passed on source `fa77630a9d4ba86aa98e45e5df709d9c9976b8a4` in
+[run 45706786249, attempt 1](https://github.com/agent-teams-ai/extension-foundation/actions/runs/45706786249/attempts/1),
+[job 139530701427](https://github.com/agent-teams-ai/extension-foundation/actions/runs/45706786249/job/139530701427).
+The same strict project and all nine tests also passed locally on Node 24.22.3.
+The retained observation records `outcome: observed`, `packageAdmission: false`
+and `admissionReceiptAccepted: false`.
+
+The controlled cases cover valid custody and non-admission, identity/source/
+attempt drift with intact byte hashes, original BOM/newline custody, token
+confinement, redirects/pagination/provider refusal, actual streamed byte limits,
+non-settling cancellation, deadline/recovery and the independently detected
+omitted-attempt mutant. All nine completed without skips or cancellations.
+
+Full consumer gates and merged-source verification remain pending. The proposed
+compiler-safe generation-2 tuple passed actual published-artifact collection
+and independent data review, but both inspected managed adapters reject this
+consumer's Node 26 default pin while reading generation-2 source. A supported
+source-preserving transition must be established before adoption. A temporary
+pin rewrite, custom reader or hand-authored managed receipt is not a substitute.
+The existing main and its prior qualification remain separate from this branch.
 
 Primary contracts inspected on 2026-11-25:
 [GitHub workflow jobs](https://docs.github.com/en/rest/actions/workflow-jobs),
