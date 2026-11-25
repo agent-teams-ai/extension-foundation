@@ -655,6 +655,108 @@ authority with its owner, reuse neutral mechanisms and qualify each claimed
 boundary. Neither this audit nor the LMU portability result resolves the
 remaining production SPI, hostile-plugin, Desktop or full update obligations.
 
+## E1 provider investigation checkpoint, 2026-11-25
+
+The owner requested continuation of the remaining E2E work after the completed
+Get Modular #254/#255 delivery. This bounded next step investigates EF-V's
+online provider route. It does not accept EF-A/C/V/P, materialize a package,
+wire the topology CLI, publish an SPI or implement an extension Host.
+
+### Written plan and scope
+
+Use one private strict TypeScript experiment under `tests/qualification`, the
+existing package-admission request builder and receipt matcher, and one finite
+hosted research workflow. Production LOC: 0; estimated test/experiment code:
+450–700 lines; CI/configuration: 60–100 lines, excluding documentation. Initial
+estimate: 2–4 engineer-days including focused review and hosted qualification,
+not a delivery promise. Fitness confidence 8/10, reliability within this bounded
+read-only transport scope 8/10, complexity 5/10, estimate confidence 5/10.
+
+The exact historical witness is EF source
+`bf050098f4ef87c67d09f96d8b4d146159939574`, repository ID `1333298097`,
+push CI run `45516144384`, attempt `1`, workflow ID `333712065`,
+job `138875952992` named `check`, and `.github/workflows/ci.yml`.
+The original provider run and job have been read independently. Its 239/239
+qualification result remains evidence for that historical source, not a new
+execution of those product tests by this investigation.
+
+1. Pin the reviewed original workflow and log bytes before implementing their
+   assertions. Hash bytes before decoding; the real log starts with a UTF-8 BOM.
+2. Resolve the canonical repository through the fixed GitHub API and require
+   its actual numeric ID, exact full name and non-fork status. Aliases and
+   mirrors cannot create independent consumers or implementations.
+3. Retrieve the exact run attempt and its finite complete job inventory. Bind
+   run/source/repository/head-repository/workflow/event/status, and the selected
+   job's own run ID, attempt, SHA, name and status. Require unique successful
+   checkout and `Run pnpm check` steps. Refuse duplicate, missing, truncated
+   or paginated evidence; never substitute the latest attempt or another job.
+4. Retrieve exact-source workflow bytes and the exact job log; check the
+   independently pinned hashes and checkout/test markers. These observations
+   establish bounded provider lineage, not every byte arbitrary later commands
+   executed or the semantic validity of their assertions.
+5. Restrict initial requests to fixed HTTPS GitHub API endpoints. Refuse API
+   redirects; permit one API-issued log redirect to the documented blob host
+   family without Authorization or cookies. Reject credentials, wrong suffix
+   boundaries, fragments, non-default ports and subsequent redirects. The
+   Azure suffix is not exclusive GitHub ownership: authority comes from the
+   fixed authenticated API response plus the pinned log bytes.
+6. Bound total deadline, aggregate streamed bytes, each response and job count.
+   The deadline covers body reads. Test missing/false Content-Length, stalled
+   and oversized bodies. Persist closed refusal codes, never signed URLs,
+   tokens, provider error bodies or arbitrary exception messages.
+7. Use independent expected failures for identity/source/run/attempt/workflow/
+   job/step changes, altered bytes, unavailable evidence and transport bounds.
+   Keep valid workflow/log bytes and digests while changing lineage in at least
+   one case. One isolated mutant omits an actual lineage assertion; a separate
+   expected outcome must catch its incorrect acceptance. Verify valid recovery.
+8. Bind a research observation to a synthetic research request made by the
+   existing admission builder. Pass the observation to the existing receipt
+   matcher and require refusal even after live success. Never manufacture
+   `outcome: satisfied` or a catalog admission record.
+9. Keep deterministic tests in the ordinary qualification gate and all new
+   maintained `.ts` files in the effective strict TS 7.0.2+ project and source
+   boundary. Execute the actual online adapter in a dedicated finite campaign:
+   the research branch and main, filtered only to the experiment/workflow.
+   Do not install a standing required check for unrelated changes. Historical
+   logs can expire; their absence refuses observation and never enables an
+   offline fallback, automatic witness refresh or a false success.
+10. Use contents/actions read only, existing pinned actions, non-persisted
+    checkout credentials and an ephemeral GITHUB_TOKEN only in the retrieval
+    step. No repository secrets or pull_request_target. Independently review,
+    fix, qualify the exact candidate, merge normally and inspect actual-main
+    checks plus its fresh online observation.
+
+### Review and dependency prerequisite
+
+Two independent reviewers completed two plan rounds before implementation.
+Round one corrected expiring-log CI coupling, incomplete job-attempt binding,
+raw BOM handling, ambiguous transport authority and missing executable
+non-admission/token/streaming controls. Both approved the corrected bounded
+investigation in round two. This is plan approval, not source or E2E approval.
+
+Read-only dependency inspection found that the existing Foundation 1.7.2
+gate eagerly imports API Extractor 7.58.12 and its TypeScript 5.9.3, while the
+root compiler is 7.0.2. The old compiler must not be initialized for this new
+work. Resolve the effective dependency closure through the existing supported
+managed-cohort qualification and consumer-adoption route. A bare version bump,
+node_modules patch, version override or weakening of the gate is not accepted.
+Keep the historical cohort unchanged and any required owner-level prerequisite
+in its own repository; do not roll it out to unrelated consumers.
+
+### Evidence limit and remaining decisions
+
+Online provider evidence and deterministic transport-controlled tests are
+separate results. Successful GitHub lineage does not prove semantic conformance,
+independent authorship, artifact trust, product grants or complete E1 readiness.
+EF-V route acceptance and the precise issuer/admission policy remain in OD-003.
+Implementation, review, hosted execution and merge remain pending until their
+exact-source observations are recorded in the delivery PR.
+
+Primary contracts inspected on 2026-11-25:
+[GitHub workflow jobs](https://docs.github.com/en/rest/actions/workflow-jobs),
+[workflow runs](https://docs.github.com/en/rest/actions/workflow-runs), and
+[runner communication requirements](https://docs.github.com/en/actions/reference/runners/github-hosted-runners#communication-requirements-for-github-hosted-runners).
+
 ## Operational implications
 
 Artifact, installation and plugin-private-state custody must remain separate
