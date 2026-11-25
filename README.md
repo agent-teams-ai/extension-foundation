@@ -11,7 +11,7 @@ Start with the [Plugin Delivery Plan](docs/architecture/plugin-delivery-plan.md)
 for the plugin-specific contracts, owners and qualification still needed. The
 [current system map](docs/architecture/live-extension-system-map.md) connects
 modules, plugins and live replacement to their decisions and evidence.
-The separate [Live Module Updates foundation plan](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/plans/foundation-delivery-plan.md)
+The separate [Live Module Updates foundation plan](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/plans/foundation-delivery-plan.md)
 coordinates the shared application foundation and proposed update operation;
 its proposed design was published in [PR #1](https://github.com/agent-teams-ai/live-module-updates/pull/1).
 
@@ -55,7 +55,7 @@ For a new static application, start with the existing
 [Get Modular consumer quickstart](https://github.com/agent-teams-ai/get-modular/blob/main/docs/guides/consumer-quickstart.md)
 and the consumer's accepted artifact pins and admission. A reusable headless
 feature does not need a public plugin SPI or complete live replacement first.
-The [headless plugin and UI design](https://github.com/agent-teams-ai/live-module-updates/blob/fddfd82290a751e0890bce570bd3c4506743676d/docs/architecture/headless-plugins-and-ui.md)
+The [headless plugin and UI design](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/architecture/headless-plugins-and-ui.md)
 is a proposal for portable behavior and optional presentation, not a published
 SDK, renderer or universal UI language.
 

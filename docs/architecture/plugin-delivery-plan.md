@@ -11,13 +11,17 @@ summary: Current plugin delivery responsibilities, headless boundaries, open con
 ## Purpose
 
 **Delivery map updated 2026-11-25.** This is the plugin-specific workstream for
-Extension Foundation. The shared [foundation delivery plan](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/plans/foundation-delivery-plan.md)
+Extension Foundation. The shared [foundation delivery plan](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/plans/foundation-delivery-plan.md)
 in Live Module Updates owns the cross-repository sequence and proposed complete
 update operation. Its proposed consolidation was published in
 [PR #1](https://github.com/agent-teams-ai/live-module-updates/pull/1); the fixture-first
 qualification successor was merged in [PR #2](https://github.com/agent-teams-ai/live-module-updates/pull/2)
 at [`9c9952ad`](https://github.com/agent-teams-ai/live-module-updates/commit/9c9952ad1edac0c773921e6aa3db73777ce04c10).
 Keep the two plans linked; do not copy the whole operation roadmap here.
+The [LMU L0–L7 implementation plan](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/plans/first-operation-implementation-plan.md)
+provides the shared operation steps. The [joint review record](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/reviews/implementation-plans-2026-11-25.md)
+retains independent critiques and their corrections. These are current navigation
+links; the source and execution baselines below retain their exact identities.
 
 The [implementation sequence](#implementation-sequence-2026-11-25) makes the
 remaining work actionable. The [qualification successor](#qualification-successor-2026-11-25)
@@ -116,7 +120,7 @@ Before implementation, record concrete scope for Runtime v3, Orchestrator, Platf
 
 ### Minimum authoring contract for a representative fixture
 
-The [shared headless plugin and UI design](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/architecture/headless-plugins-and-ui.md)
+The [shared headless plugin and UI design](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/architecture/headless-plugins-and-ui.md)
 contains the cross-application proposal. Before implementing the selected
 fixture, record this contract with its semantic and test-Host owners. Use a
 realistic operation, such as reading and conditionally editing a document,
@@ -234,9 +238,10 @@ update coordinator.
    as rejected before evaluation. Do not infer an isolation guarantee from a
    process, Worker, signature or contribution category.
 3. Compare the [execution choices in OD-003](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#implementation-choices-for-the-next-slice-2026-11-25).
-   Select only facts required by this profile. LMU's existing Q1–Q7 remain the
-   authority for shared-update choices; record the exact dependency rather
-   than answering them again here.
+   Select only facts required by this profile. Use LMU's existing Q1–Q7 register
+   to reach the owning shared-update decisions; acceptance stays with the
+   applicable profile and contract owners. Record the exact dependency rather
+   than answering those questions again here.
 4. Draft the scoped successor required by ADR-0015/OD-003: affected clauses,
    provisional package/Host scope, semantic owner, materialization basis,
    retained ADR-0011 obligations, qualifying evidence and limits. Separate
@@ -307,7 +312,7 @@ effects nor a new public SPI by itself.
    the selected observable omission/refusal contract and gain no effects.
 4. Validate untrusted metadata at its receiving boundary through the trusted
    extension-point owner's validator, not executable validation supplied by an
-   undiscovered or unadmitted artifact. The inner typed
+   artifact that has not yet been discovered or admitted. The inner typed
    decision consumes validated facts and identifies their authority/byte/revision
    bindings; it does not accept a consumer's `allowed: true` as a universal grant.
 5. Pack the proposed package and compile/run an external consumer using only
@@ -450,7 +455,7 @@ production behavior. Generated, vendored and documentation lines are excluded.
 | Scope | P estimate | T estimate | Engineer-days and prerequisites |
 | --- | --- | --- | --- |
 | Neutral contribution/admission core | 2,000–4,000 | Included in the joint 4,000–8,000 below | Included in the conditional joint range below; selected E0 contracts |
-| One artifact adapter and trusted Host wiring | 1,000–3,000 | Joint core/integration qualification: 4,000–8,000 | Joint core, wiring, focused review and package delivery: 25–50 days for one experienced engineer, only with already qualified owner primitives |
+| One artifact adapter and trusted Host wiring | 1,000–3,000 | Joint core/integration qualification: 4,000–8,000 | Joint core, wiring, focused review and package delivery: 25–50 days for one experienced engineer, assuming an already qualified E1 verifier and owner primitives; creating those missing mechanisms is excluded |
 | Missing durable installation, authority, custody and recovery primitives | Not yet responsibly fixed | Not yet responsibly fixed | Inventory and a scoped owner estimate at E4; never hidden in the adapter allowance |
 | E1 evidence-verifier investigation | 0 | See EF-V option ranges in OD-003 | A bounded route comparison; production verifier cost follows selected provenance/receipt contract |
 | Complete live-update operation | Owned by LMU's current plan | Owned by LMU | Separate shared implementation; no duplicate EF update-engine budget |
