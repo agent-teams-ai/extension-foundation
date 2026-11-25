@@ -782,12 +782,23 @@ historical pin rule. An owner decision must choose a bounded published external
 controller preserving host Node 26 with managed Node 24, an explicitly qualified
 generation3 adoption that also resolves source admission, or a permanent
 consumer default change to Node 24 with a real separate Node 26 complete check.
-The [concrete comparison and retained preparation](https://github.com/agent-teams-ai/.github/blob/3e236715e0c7b888538d97e270bf95eaa8179d3b/governance/evidence/docs-cohorts/docs-2026-11-25-stable32/record-review.md)
+The [concrete comparison and retained preparation](https://github.com/agent-teams-ai/.github/blob/755c8515a5d106402a7e9e2cff621fb1fdc855cf/governance/evidence/docs-cohorts/docs-2026-11-25-stable32/record-review.md)
 records exact authorities, acceptance conditions, restoration requirements and
 planning estimates. The candidate package data and manual patch are preserved
 as inert evidence; no central registry entry, lifecycle event, desired policy or
 consumer managed file was applied. The current selected tuple cannot be treated
 as the coordinates of an unpublished successor.
+
+The preparation checkpoint was delivered through
+[central PR #425](https://github.com/agent-teams-ai/.github/pull/425) at
+`755c8515a5d106402a7e9e2cff621fb1fdc855cf`. Its actual merged-main
+[CI](https://github.com/agent-teams-ai/.github/actions/runs/45714106674/attempts/1)
+and [Node 24 compatibility](https://github.com/agent-teams-ai/.github/actions/runs/45714106650/attempts/1)
+both completed successfully, including the full central `pnpm check`.
+That verifies the preparation record; EF consumer adoption and full EF gates
+remain pending the owner decision above. The research implementation,
+workflow and source-boundary configuration remain byte-identical to the
+successful research source `fa77630a9d4ba86aa98e45e5df709d9c9976b8a4`.
 
 Primary contracts inspected on 2026-11-25:
 [GitHub workflow jobs](https://docs.github.com/en/rest/actions/workflow-jobs),
