@@ -21,7 +21,7 @@ import {
 import { retrieveEvidence } from "./github-evidence-http.ts";
 
 // Controlled transport data is deliberately not a genuine provider observation.
-const encode = (text: string): Uint8Array => new TextEncoder().encode(text);
+const encode = (text: string): Uint8Array<ArrayBuffer> => new TextEncoder().encode(text);
 const digest = (bytes: Uint8Array): string => createHash("sha256").update(bytes).digest("hex");
 const sourceRevision = "a".repeat(40);
 const workflow = encode("\uFEFFname: Controlled research\n");
