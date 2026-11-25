@@ -10,7 +10,7 @@ summary: Current plugin delivery responsibilities, headless boundaries, open con
 
 ## Purpose
 
-**Delivery map updated 2026-11-25.** This is the plugin-specific workstream for
+**Delivery map updated 2026-11-26.** This is the plugin-specific workstream for
 Extension Foundation. The shared [foundation delivery plan](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/plans/foundation-delivery-plan.md)
 in Live Module Updates owns the cross-repository sequence and proposed complete
 update operation. Its proposed consolidation was published in
@@ -26,6 +26,8 @@ links; the source and execution baselines below retain their exact identities.
 The [implementation sequence](#implementation-sequence-2026-11-25) makes the
 remaining work actionable. The [qualification successor](#qualification-successor-2026-11-25)
 updates current status while retaining the dated source observations below.
+The [scoped authoring qualification](#scoped-authoring-qualification-2026-11-26)
+adds executable exact-revision contribution evidence without admitting a package.
 
 The owner wants user- and agent-authored plugins that persist across restart,
 can be shared or transferred between applications, and can be enabled, disabled
@@ -503,6 +505,57 @@ verification, admission, installation, invocation and supported removal path.
 Production implementation of a changed EF package/Host boundary still requires
 the specific admission reconciliation recorded in OD-003; this plan does not
 authorize it implicitly. Historical evidence and accepted ADR bytes stay fixed.
+
+## Scoped authoring qualification, 2026-11-26
+
+The [scoped owner decision](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#scoped-authoring-profile-2026-11-26)
+selects exact revision matching for this TEST profile under the reviewed
+[modular authoring plan](https://github.com/agent-teams-ai/live-module-updates/blob/e47f192c955fd196280ad226eab8faef9a3b858f/docs/plans/module-authoring-implementation-plan.md).
+The repository still has no production EF package. E0/E2 receive concrete
+contract evidence; E1 and the production delivery sequence remain necessary.
+
+[Contribution compatibility](../../tests/qualification/contribution-compatibility.ts)
+is a pure, separately governed TypeScript qualification boundary. It knows only
+the inert envelope, trusted owner predicates and exact revision agreement.
+Text and numeric-range schemas in the
+[qualification tests](../../tests/qualification/contribution-compatibility.test.ts)
+extend it without changing its implementation or adding core categories. These
+are two schemas in one TEST suite, not independently authored public-SPI
+implementations.
+
+The selected carrier allows 1–64 descriptors, plain JSON data with finite
+numbers, depth at most 16, at most 2,048 visited values and 65,536 UTF-16 code
+units across keys and strings. Contract identifiers require a namespace; owner
+revisions are positive safe integers. Accessors, executable values, cycles,
+exotic objects and unknown envelope fields reject. These are local qualification
+bounds, not a universal schema, wire format or hostile-code containment claim.
+Unsupported optional payloads receive only carrier validation because their
+semantics are unknown. Valid supported data remains detached and frozen.
+
+The existing [packed consumer](../../tests/qualification/spikes.test.ts) now
+matches metadata before installation or public import. Unknown or mismatched
+required entries, a late invalid entry, an invalid supported optional payload
+and duplicate identities leave the installed package and Host effect file
+absent. An unsupported optional entry is explicitly omitted while the supported
+contribution follows the existing real pack/install/import/file-effect path.
+The original artifact digest, scope, revision, live grant, disable, removal and
+retained owner-data controls remain in that same test.
+
+The matcher does not replace `contribution-admission-candidate.ts`: the latter's
+five-category vocabulary belongs to its historical TEST Host policy. Matching
+does not authorize a contribution; its selected payload still passes that
+Host's admission and actual receiver checks. LMU's maintained authoring example
+owns semantic feature ports and ordinary GM composition independently. Sharing a
+production EF adapter requires its own admitted contract and evidence.
+
+Reproduce the focused evidence with `pnpm qualification:typecheck`,
+`node --test tests/qualification/contribution-compatibility.test.ts`,
+`pnpm qualification:packed-consumer:check` and
+`pnpm architecture:source-dependencies:check`. The existing source-boundary
+harness also rejects real platform imports in both implementation and type
+edges of the new matcher. The small fixture-list and case-table extension keeps
+that existing installed-checker route; no parallel checker or legacy harness
+migration is introduced. Full repository gates retain their normal scope.
 
 ## Qualification successor, 2026-11-25
 

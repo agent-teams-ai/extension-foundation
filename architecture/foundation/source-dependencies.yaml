@@ -142,6 +142,17 @@ boundaries:
       builtins: []
       packages: []
       runtimeReferences: []
+  - id: repository.qualification-contribution-compatibility
+    dependencyMode: development
+    roots:
+      - tests/qualification/contribution-compatibility.ts
+    entrypoints:
+      - tests/qualification/contribution-compatibility.ts
+    allow:
+      boundaries: []
+      builtins: []
+      packages: []
+      runtimeReferences: []
   # The same fixture protocol executes in Node, a browser Worker and a child process.
   # Keep platform I/O in the existing test adapters, not in its shared wire code.
   - id: repository.qualification-portable-protocol
@@ -175,6 +186,7 @@ boundaries:
       - tests/qualification/dogfooding-protocol.test.ts
       - tests/qualification/contribution-admission-candidate.ts
       - tests/qualification/contribution-admission-candidate.test.ts
+      - tests/qualification/contribution-compatibility.test.ts
       - tests/qualification/dossier.test.ts
       - tests/qualification/extism-feasibility.mjs
       - tests/qualification/fixtures/portable-browser-worker.mjs
@@ -200,6 +212,7 @@ boundaries:
       - tests/package-policy-source-boundaries.test.mjs
       - tests/scaffolding.test.mjs
       - tests/qualification/contribution-admission-candidate.test.ts
+      - tests/qualification/contribution-compatibility.test.ts
       - tests/qualification/dossier.test.ts
       - tests/qualification/product-source-evidence.test.ts
       - tests/qualification/productization.test.ts
@@ -212,6 +225,7 @@ boundaries:
         - repository.shared-policy-primitives
         - repository.qualification-toy-package
         - repository.qualification-portable-protocol
+        - repository.qualification-contribution-compatibility
       packages:
         - "@dagrejs/graphlib"
         - "@deepseek-ai/cordis"
