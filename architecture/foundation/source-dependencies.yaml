@@ -142,6 +142,21 @@ boundaries:
       builtins: []
       packages: []
       runtimeReferences: []
+  # The same fixture protocol executes in Node, a browser Worker and a child process.
+  # Keep platform I/O in the existing test adapters, not in its shared wire code.
+  - id: repository.qualification-portable-protocol
+    dependencyMode: development
+    roots:
+      - tests/qualification/portable-protocol.d.mts
+      - tests/qualification/portable-protocol.mjs
+    entrypoints:
+      - tests/qualification/portable-protocol.d.mts
+      - tests/qualification/portable-protocol.mjs
+    allow:
+      boundaries: []
+      builtins: []
+      packages: []
+      runtimeReferences: []
   - id: repository.tests
     dependencyMode: development
     roots:
@@ -168,8 +183,6 @@ boundaries:
       - tests/qualification/fixtures/standalone-lifecycle-deadline.mjs
       - tests/qualification/graph-spike.ts
       - tests/qualification/lifecycle-spike.ts
-      - tests/qualification/portable-protocol.d.mts
-      - tests/qualification/portable-protocol.mjs
       - tests/qualification/product-source-evidence.test.ts
       - tests/qualification/productization.test.ts
       - tests/qualification/protocol-spike.ts
@@ -198,6 +211,7 @@ boundaries:
         - repository.package-policy-sources
         - repository.shared-policy-primitives
         - repository.qualification-toy-package
+        - repository.qualification-portable-protocol
       packages:
         - "@dagrejs/graphlib"
         - "@deepseek-ai/cordis"
