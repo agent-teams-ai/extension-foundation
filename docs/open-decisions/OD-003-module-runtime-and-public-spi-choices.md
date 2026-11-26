@@ -14,6 +14,69 @@ related:
 
 # OD-003: Extension Host, Public SPI, And State Migration Choices
 
+## Coordinated implementation proposal, 2026-11-26
+
+The owner requested substantial parallel plans for the module foundation before
+broad product implementation. The [workstream A assignment](../architecture/plugin-delivery-plan.md#workstream-a-packaged-extension-foundation-2026-11-26)
+owns EF E0–E3 and applicable package qualification; the
+[LMU operation plan](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/plans/first-operation-implementation-plan.md)
+owns workstream B. The external installed consumer in
+[LMU #8](https://github.com/agent-teams-ai/live-module-updates/pull/8) is B's first
+checkpoint, not the limit of the larger programme. This owner request expands
+planning scope; the candidates below remain proposed until accepted at their
+actual owners. It does not accept a public SPI, select all production policies
+or authorize a second implementation of the shared operation.
+
+### Proposed first contract packet
+
+| Existing decision | Recommended bounded candidate | Evidence before dependent implementation |
+| --- | --- | --- |
+| EF-A | A package-specific fixture-first provisional admission successor, preserving the applicable ADR-0011 floor and stable-SPI gates | Identify exact retained ADR-0013/0015 clauses, actual package basis/owner, substantive behavior and authentic source/artifact/conformance lineage; preserve accepted ADR bytes |
+| EF-C | Exact owner contract revision, trusted typed validation and explicit required/optional outcomes | Two different owner payloads; unknown required or invalid supported payload refuses; optional unsupported entry is an observable omission; no candidate execution during discovery |
+| EF-V | Authenticated immutable provider evidence through the existing package-admission verifier interface | Bind stable repository ID, source, evidence bytes and actual conformance/run; unavailable or substituted evidence refuses, with no implicit offline fallback |
+| EF-P | Trusted finite Node artifact-to-entry path, with explicit compatible target and current authority | Real OCI/ORAS/Cosign route, executable-closure binding and denied evaluation/effects; no isolation, durable installation or stream claim |
+
+The existing three-option comparisons below remain the rationale and falsifiers
+for EF-C/V/P. The TEST exact-revision matcher below is counterevidence against
+inventing a more general negotiation engine now; it is not acceptance of the
+production carrier or evidence of stable-SPI conformance. The two owner schemas
+prove extensibility, not two independently authored SPI implementations.
+
+Keep contribution identity/revision, GM capability identity/revision, package
+version, artifact digest, installation identity, runtime generation and update
+attempt distinct. Product semantics and payload validators retain their owners.
+Do not encode product permission in a compatibility result or infer a supported
+execution target from package installation.
+
+### Shared-operation profile handoff
+
+Executor B prepares and tests the existing LMU option A packet: cooperative
+TypeScript requests with retained finite asynchronous work. Its conditional
+recommendations are trusted execution, a coherent affected dependency cohort,
+Host-owned canonical state with compatible reconstruction, useful next-request
+adoption, bounded retention of admitted work, and return to old code as a new
+authorized compatible transition. The exact Q1–Q7 meanings, rejection cases and
+Host-loss/old-client limits stay in the owning profile packet; this paragraph
+does not select product interruption, migration or offline recovery policy.
+
+For pre-product fixture qualification, the test-Host owner may select and record
+its own finite limits and independent expected outcomes. Such a fixture does not
+accept a product's default or establish production profile eligibility. A claim
+of supported library behavior still needs its applicable accepted contract and
+real mechanism evidence. Resolve an actual owner-level disagreement only for
+its dependent phase; continue independently assigned verifier, source, contract
+or qualification work.
+
+EF supplies verified artifact and compatibility facts to a consumer-owned outer
+adapter. LMU owns the complete operation; existing authority, invocation,
+resource and execution owners retain their mechanisms. A missing public
+primitive receives a minimal reproduction and an owner-specific change proposal;
+it is not filled with an imported/copied private kernel or an extra supervisor.
+
+The paired Draft PR descriptions hold current coordination heads and plan-review
+receipts. No status in this section closes EF-A/C/V/P, package admission, the
+broader production-host work in issue #57 or the public-SPI publication gate.
+
 ## Scoped authoring profile, 2026-11-26
 
 The owner authorized the modular authoring foundation after three review rounds
