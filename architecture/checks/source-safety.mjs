@@ -37,6 +37,13 @@ const DYNAMIC_MODULE_LOADING = "dynamic module loading";
 const ASSERTION_NAMESPACE_ESCAPE = "assertion namespace escape or mutation";
 const ASSERTION_NAMESPACE_REEXPORT = "assertion namespace re-export";
 const ASSERTION_MODULES = new Set(["node:assert", "node:assert/strict"]);
+const INERT_INSPECTION_ARITY = new Map([
+  ["Object.getOwnPropertyDescriptor", 2],
+  ["Object.getOwnPropertyDescriptors", 1],
+  ["Object.getOwnPropertySymbols", 1],
+  ["Object.getPrototypeOf", 1],
+  ["Reflect.ownKeys", 1],
+]);
 
 function hasRuntimeFunctionBody(body) {
   return (
@@ -70,6 +77,115 @@ function walk(value, visit, seen = new Set(), parent) {
       walk(child, visit, seen, value);
     }
   }
+}
+
+function directInspectionTarget(node) {
+  return ["Identifier", "ObjectExpression", "ArrayExpression"].includes(node?.type) ||
+    (node?.type === "ConditionalExpression" &&
+      directInspectionTarget(node.consequent) && directInspectionTarget(node.alternate));
+}
+
+function inspectionResultPosition(node, parents) {
+  let parent = parents.get(node);
+  while (
+    (parent?.type === "MemberExpression" && parent.object === node) ||
+    (["ChainExpression", "ParenthesizedExpression", "TSAsExpression", "TSNonNullExpression",
+      "TSSatisfiesExpression", "TSTypeAssertion"].includes(parent?.type) && parent.expression === node)
+  ) {
+    node = parent;
+    parent = parents.get(node);
+  }
+  return { node, parent };
+}
+
+function invokedInspectionResult({ node, parent }) {
+  return (["CallExpression", "NewExpression"].includes(parent?.type) && parent.callee === node) ||
+    (parent?.type === "TaggedTemplateExpression" && parent.tag === node);
+}
+
+function assignedInspectionResult({ node, parent }) {
+  if (parent?.type === "VariableDeclarator" && parent.init === node) return parent.id;
+  if (parent?.type === "AssignmentExpression" && parent.right === node) return parent.left;
+  return undefined;
+}
+
+// Descriptor inspection is necessary to reject accessors without executing
+// them. The allowance uses direct data targets and named, unmodified intrinsics.
+// Known result calls and local alias escapes remain forbidden; this bounded
+// structural check does not claim interprocedural taint or hostile-code containment.
+// Reuse the existing parsed tree and walker instead of introducing a classifier.
+function inertInspectionNodes(program) {
+  const candidates = [];
+  const parents = new Map();
+  const unavailableGlobals = new Set();
+  walk(program, (node, parent) => {
+    if (parent !== undefined) parents.set(node, parent);
+    if (node.type === "Identifier" && ["Object", "Reflect"].includes(node.name)) {
+      if (parent?.type !== "MemberExpression" || parent.object !== node) {
+        unavailableGlobals.add(node.name);
+      }
+    }
+    if (
+      node.type === "AssignmentExpression" ||
+      node.type === "UpdateExpression" ||
+      (node.type === "UnaryExpression" && node.operator === "delete")
+    ) {
+      const target = node.left ?? node.argument;
+      if (target?.type === "MemberExpression" && target.object?.type === "Identifier") {
+        unavailableGlobals.add(target.object.name);
+      }
+    }
+    const member = node.type === "CallExpression" ? node.callee : undefined;
+    if (
+      member?.type !== "MemberExpression" ||
+      member.computed || member.optional || node.optional ||
+      member.object?.type !== "Identifier" || member.property?.type !== "Identifier"
+    ) {
+      return;
+    }
+    const arity = INERT_INSPECTION_ARITY.get(`${member.object.name}.${member.property.name}`);
+    if (
+      arity !== undefined && node.arguments.length === arity &&
+      node.arguments.every((argument) => argument.type !== "SpreadElement") &&
+      directInspectionTarget(node.arguments[0])
+    ) {
+      candidates.push({ member, call: node });
+    }
+  });
+  const unsafeResults = new Set();
+  const resultBindings = new Map();
+  for (const { member, call } of candidates) {
+    // Key enumeration returns only strings/symbols; its ordinary array methods
+    // are used by the metadata guard. Descriptors/prototypes can expose functions.
+    if (["ownKeys", "getOwnPropertySymbols"].includes(member.property.name)) continue;
+    const position = inspectionResultPosition(call, parents);
+    if (invokedInspectionResult(position)) unsafeResults.add(member);
+    const binding = assignedInspectionResult(position);
+    if (binding !== undefined) {
+      if (binding.type !== "Identifier") unsafeResults.add(member);
+      else {
+        const members = resultBindings.get(binding.name) ?? new Set();
+        members.add(member);
+        resultBindings.set(binding.name, members);
+      }
+    }
+  }
+  walk(program, (node) => {
+    if (node.type !== "Identifier" || !resultBindings.has(node.name)) return;
+    const position = inspectionResultPosition(node, parents);
+    // Reject alias creation itself rather than implementing a data-flow engine.
+    if (invokedInspectionResult(position) || assignedInspectionResult(position) !== undefined) {
+      for (const member of resultBindings.get(node.name)) unsafeResults.add(member);
+    }
+  });
+  const permitted = new Set();
+  for (const { member } of candidates) {
+    if (!unavailableGlobals.has(member.object.name) && !unsafeResults.has(member)) {
+      permitted.add(member);
+      permitted.add(member.object);
+    }
+  }
+  return permitted;
 }
 
 function runtimeInitializer(node) {
@@ -938,6 +1054,8 @@ export function analyzeSource(filename, source) {
       hasTestRegistration: false,
       observedRuntimeImportSources: [],
       staticModuleDependencies: [],
+      dynamicModuleImports: [],
+      program: undefined,
     };
   }
   for (const error of result.errors.filter((error) => error.severity === "Error")) {
@@ -963,13 +1081,16 @@ export function analyzeSource(filename, source) {
   const runtimeExportNames = [
     ...new Set(runtimeExportBindings.map((binding) => binding.exportedName)),
   ];
+  const inertInspections = inertInspectionNodes(result.program);
+  const dynamicModuleImports = [];
   walk(result.program, (node, parent) => {
     if (node.type === "ImportExpression") {
+      dynamicModuleImports.push(node);
       errors.add(DYNAMIC_MODULE_LOADING);
     }
     if (node.type === "Identifier") {
       const label = FORBIDDEN_RUNTIME_IDENTIFIERS.get(node.name);
-      if (label !== undefined) {
+      if (label !== undefined && !inertInspections.has(node)) {
         errors.add(label);
       }
     }
@@ -980,7 +1101,7 @@ export function analyzeSource(filename, source) {
       const property = node.property.value ?? node.property.name;
       const label =
         FORBIDDEN_RUNTIME_IDENTIFIERS.get(property) ?? REFLECTIVE_RUNTIME_PROPERTIES.get(property);
-      if (label !== undefined) {
+      if (label !== undefined && !inertInspections.has(node)) {
         errors.add(label);
       }
     }
@@ -1020,5 +1141,7 @@ export function analyzeSource(filename, source) {
       unsafeNamespaces,
     ),
     staticModuleDependencies: staticDependencies,
+    dynamicModuleImports,
+    program: result.program,
   };
 }

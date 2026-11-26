@@ -29,6 +29,9 @@ Read by responsibility:
 
 | Concern | Document |
 | --- | --- |
+| Author owner-defined contribution contracts | [Core package guide](../packages/core/README.md) |
+| Verify a signed artifact and bind its exports to a Host contract | [Node artifact guide](../packages/node-artifact/README.md) |
+| Inspect package execution, source checks and remaining admission | [Packaged Foundation Qualification 2026-11-26](research/packaged-foundation-qualification-2026-11-26.md) |
 | Plan plugin artifacts, trust, installation, host adoption and public-SPI proof | [Plugin Delivery Plan](architecture/plugin-delivery-plan.md) |
 | Qualify the shared foundation before applications and compare UI boundaries | [Fixture and UI evidence, 2026-11-24](architecture/plugin-delivery-plan.md#fixture-and-ui-evidence-2026-11-24) |
 | Start a static application using existing admitted modules | [Get Modular consumer quickstart](https://github.com/agent-teams-ai/get-modular/blob/main/docs/guides/consumer-quickstart.md), then the consumer's accepted pins and local gate |
@@ -57,6 +60,7 @@ cohort relevant to a decision. Historical observations and archived packets are
 not rewritten as current qualification. Research does not accept a runtime,
 publish a package, or replace an approved ADR.
 
+- [Packaged Foundation Qualification 2026-11-26](research/packaged-foundation-qualification-2026-11-26.md)
 - [Plugin System Research Reference](research/plugin-system-research-reference.md)
 - [Fixture and UI evidence, 2026-11-24](architecture/plugin-delivery-plan.md#fixture-and-ui-evidence-2026-11-24), current bounded successor in the owning delivery plan
 - [Live Module Update Design Validation 2026-11-23](research/live-module-update-design-validation-2026-11-23.md)

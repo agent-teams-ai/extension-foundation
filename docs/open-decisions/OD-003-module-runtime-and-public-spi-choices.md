@@ -10,9 +10,41 @@ related:
   - ADR-0013
   - ADR-0014
   - ADR-0015
+  - ADR-0016
 ---
 
 # OD-003: Extension Host, Public SPI, And State Migration Choices
+
+## Accepted bounded package packet, 2026-11-26
+
+The owner authorized implementation of workstream A, with all EF changes in
+[PR #70](https://github.com/agent-teams-ai/extension-foundation/pull/70).
+[ADR-0016](../decisions/0016-provisional-contribution-and-verified-artifact-packages.md)
+now accepts EF-A/C/V/P for its exact two provisional ordinary libraries:
+
+- EF-A: private packages on the independent-release basis, with authentic
+  installed-conformance proof still required for actual admission.
+- EF-C: owner-defined identity and exact revision, synchronous trusted payload
+  predicates, explicit unsupported-optional omissions and whole-candidate refusal.
+- EF-V: authenticated GitHub repository/run/attempt/job/step evidence, bound to
+  the complete selected source inputs and actual tested package bytes.
+- EF-P: Linux x64 cooperative Node, pinned ORAS/Cosign executables, immutable
+  OCI digest, direct trusted publisher key, one captured self-contained ESM
+  bundle, inert assets and a current-authority typed evaluation boundary.
+
+The library code and independent consumers are implemented. See the
+[execution report](../research/packaged-foundation-qualification-2026-11-26.md)
+for actual passes and remaining integration. Acceptance of this bounded packet
+is distinct from a completed managed tooling rollout or a verified admission
+receipt. It does not close production Host, stable SPI, durable installation,
+cancellation, state migration or hostile-code questions below.
+
+LMU retains invocation, affected-cohort publication, rollback and retirement.
+Its outer Host may call `verify`, inspect the immutable facts and use
+`evaluate` with its own current-authority predicate and export validator.
+`verify` has bounded native commands but no cancellation signal; the Host must
+await settlement before declaring verification custody released. Raw evaluated
+exports do not become a substitute for LMU's invocation boundary.
 
 ## Coordinated implementation proposal, 2026-11-26
 

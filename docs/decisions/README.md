@@ -20,6 +20,7 @@ summary: Canonical index of proposed, accepted, and superseded Extension Foundat
 - [ADR-0011: Extension admission, custody, and retirement closure](0011-extension-admission-custody-and-retirement-closure.md)
 - [ADR-0014: Product-local module authoring, composition, and generation guardrails](0014-product-local-module-authoring-composition-and-generation-guardrails.md)
 - [ADR-0015: Authorize Get Modular semantic extraction](0015-authorize-get-modular-semantic-extraction.md)
+- [ADR-0016: Provisional contribution and verified artifact packages](0016-provisional-contribution-and-verified-artifact-packages.md)
 
 ## Superseded decisions
 

@@ -252,7 +252,7 @@ function sourcePolicy({ packageBoundary = false } = {}) {
     boundaries.push({
       id: "package.module.example",
       dependencyMode: "runtime",
-      roots: ["packages/example/src"],
+      roots: ["packages/example/src/index.ts"],
       entrypoints: ["packages/example/src/index.ts"],
       allow: {
         boundaries: ["package.module.example.feature.example"],
@@ -325,18 +325,22 @@ compositions:
   );
   await writeFixture(
     root,
-    "node_modules/@agent-teams/engineering-foundation/presets/typescript/node.json",
+    "node_modules/stack-toolchain/presets/typescript/node.json",
     '{"compilerOptions":{"module":"nodenext","moduleResolution":"nodenext","target":"es2024","strict":true}}\n',
   );
   await writeFixture(
     root,
     "tsconfig.json",
-    '{"extends":"@agent-teams/engineering-foundation/presets/typescript/node.json","compilerOptions":{"composite":true,"noEmit":true},"files":[]}\n',
+    '{"extends":"stack-toolchain/presets/typescript/node.json","compilerOptions":{"composite":true,"noEmit":true},"files":[]}\n',
   );
 }
 
-test("repository package topology is closed until an owned package is admitted", async () => {
-  assert.deepEqual(await validateRepositoryPackageTopology({ root: repositoryRoot }), []);
+test("repository structural topology uses an explicitly injected unit admission receipt", async () => {
+  // The separate architecture:topology:check CLI verifies actual admission evidence.
+  assert.deepEqual(await validateRepositoryPackageTopology({
+    root: repositoryRoot,
+    verifyAdmissionEvidence: async ({ request }) => ({ ...request, outcome: "satisfied" }),
+  }), []);
 });
 
 test("materialization plan paths are deterministic and collision-free for catalog punctuation", () => {
@@ -1726,7 +1730,7 @@ test("topology resolves tsconfig inheritance and rejects compiler input escapes"
     const errors = await validatePackageTopology({ root, resolveOwner: acceptedOwner });
     assert.ok(
       errors.includes(
-        "tsconfig.json: root config must exactly extend the pinned Foundation preset without compiler inputs",
+        "tsconfig.json: root config must exactly extend the pinned Stack preset without compiler inputs",
       ),
     );
     assert.ok(

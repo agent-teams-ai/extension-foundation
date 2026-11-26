@@ -1,0 +1,33 @@
+{
+  "name": "@extension-foundation/node-artifact",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --project tsconfig.json --pretty false",
+    "check": "pnpm run clean && pnpm run typecheck && pnpm run build && pnpm run test",
+    "clean": "node -e \"const fs=require('node:fs'); for (const path of ['dist','.cache']) fs.rmSync(path, { recursive: true, force: true })\"",
+    "prepack": "pnpm run clean && pnpm run build",
+    "test": "node --test --test-concurrency=1",
+    "typecheck": "tsc --project tsconfig.json --noEmit --pretty false"
+  },
+  "agentTeamsArchitecture": {
+    "role": "integration-adapter",
+    "ownerDocument": "ADR-0016"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "es-module-lexer": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:"
+  }
+}

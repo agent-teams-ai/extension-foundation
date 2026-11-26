@@ -26,3 +26,25 @@ compositions:
           documentRoots:
             - docs/decisions
     policies: []
+  - id: extension-foundation-node-adapter
+    scaffoldProfile:
+      ref:
+        id: foundation.node-typescript-pnpm-esm
+        contractVersion: 1
+      parameters:
+        tsconfigBase: tsconfig.node-adapter.json
+    recipe:
+      ref:
+        id: foundation.node-typescript-library-boundary
+        contractVersion: 1
+    targetRoles:
+      - integration-adapter
+    authorityVerifiers:
+      - id: foundation.markdown-yaml-owner
+        contractVersion: 1
+        parameters:
+          allowedStatuses:
+            - accepted
+          documentRoots:
+            - docs/decisions
+    policies: []

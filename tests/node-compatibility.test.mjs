@@ -449,7 +449,7 @@ test("runtime policy defaults to Node 26", async () => {
   ]);
   const manifest = JSON.parse(manifestText);
 
-  assert.equal(defaultVersion.trim(), "26.11.1");
+  assert.equal(defaultVersion.trim(), "26.12.1");
   assert.equal(manifest.packageManager, "pnpm@11.18.0");
 });
 
@@ -506,7 +506,7 @@ test("pinned pnpm rejects Node 25 and 27 and versions below each supported minim
   );
   // pnpm's engine-policy input simulates unsupported versions without changing
   // the actual test runtime or relaxing strictness. Positive installs use it unset.
-  for (const version of ["24.20.0", "25.0.0", "26.9.0", "27.0.0"]) {
+  for (const version of ["24.22.0", "25.0.0", "26.12.0", "27.0.0"]) {
     await assert.rejects(
       runPnpm(root, [
         "install",
@@ -520,7 +520,7 @@ test("pinned pnpm rejects Node 25 and 27 and versions below each supported minim
         const output = `${error.stdout}\n${error.stderr}`;
         assert.match(output, /ERR_PNPM_UNSUPPORTED_ENGINE/u);
         assert.ok(output.includes(root));
-        assert.ok(output.includes("Expected version: >=24.21.0 <25 || >=26.11.1 <27"));
+        assert.ok(output.includes("Expected version: >=24.22.1 <25 || >=26.12.1 <27"));
         assert.ok(output.includes(`Got: ${version}`));
         return true;
       },

@@ -44,10 +44,11 @@ observable failure cases; it need not become a product. Browser, Desktop and
 untrusted extensions constrain the architecture now. Successful execution,
 isolation and later product adoption each retain their own evidence.
 
-Current implementation status is **architecture and bounded qualification
-research**. The package catalog has no production packages; there is no released
-public extension SPI or complete production plugin Host. Test helpers are not
-shipping admission, installation or lifecycle implementations. The November 23
+Current implementation includes the two private provisional packages selected by
+[ADR-0016](../decisions/0016-provisional-contribution-and-verified-artifact-packages.md).
+Their [execution status](#workstream-a-execution-2026-11-26) separates actual
+package behavior from managed tooling and final admission. There is no released
+public extension SPI or complete production plugin Host. The November 23
 70–75% rubric concerns bounded live-update planning, not plugin completion.
 
 ## Boundaries
@@ -196,6 +197,44 @@ Manifest seam is a concrete candidate; its actual adopted Core/Assembly pins
 and owner admission still govern. It is not automatically selected as the
 first complete live-update consumer. Other greenfield consumers can qualify
 their own scoped static foundation while the broader update work continues.
+
+## Workstream A execution, 2026-11-26
+
+The owner authorized implementation, repeated review/corrections and ordinary
+merge, and then required one PR. [EF #70](https://github.com/agent-teams-ai/extension-foundation/pull/70)
+is the sole EF change. The planning text below remains the reviewed assignment;
+this dated section records its concrete execution and the later one-PR constraint.
+
+| Step | Implemented surface | Remaining acceptance |
+| --- | --- | --- |
+| A0 | ADR-0016 accepted packet and official baseline entry; exact private package ownership | Preserve accepted bytes and original admission obligations |
+| A1 | Authenticated evidence adapter, closed source inventory, policy binding, preparation/admission separation and rejecting controls | Actual hosted proof collection and final online admission |
+| A2 | Neutral contribution feature, two independent owner schemas, package root/types and clean installed consumers | Final package admission after real workflow proof |
+| A3 | Real OCI/ORAS/Cosign adapter, closed descriptor/data checks, current-authority typed evaluation and native process custody; actual packed Linux campaign passed, including 21 signed/transport rejection cases | Hosted current-source proof and ordinary package admission |
+| A4 | Public-root installed campaigns, declaration/deep-import controls and actual Foundation source-boundary fixtures | Current-source hosted evidence and complete repository gates |
+| A5 | Scoped FMS enforcement and source rejection controls; EF routes authors to GM's authoritative consumer quickstart | The GM copyable-template erratum remains with GM; it is not changed in this single EF PR |
+| A6 | Public facts/binding contract and tested-archive handoff for LMU's outer adapter | Actual combined EF-to-LMU operation in executor B's owned fixture |
+
+The [qualification report](../research/packaged-foundation-qualification-2026-11-26.md)
+holds concrete commands, source/tool identities, observed results and the
+managed-cohort closure mismatch. No gate is waived. Source checks with isolated
+supported Foundation 4.0.2 qualify that selected mechanism; they do not change
+this consumer's managed pins or certify its failed transition.
+
+The Node adapter owns only verified facts, captured bytes and typed evaluation.
+One selected invocation requests current authority immediately before importing
+captured bytes. Compatibility, signatures, installation and receiver-side effect
+authorization remain distinct. The Host owns retained work, attempt budgets,
+effect grants, module construction and cleanup after evaluation. Native command
+deadlines are finite; this API does not claim cancellation or physical module
+unloading. The core remains independent of Node, GM and consumer domain types.
+
+Implementation changes to legacy JavaScript are deliberately small bridges:
+owned package-scope recognition, scaffold preparation, actual admission injection,
+explicit compiler/layer topology and inert-descriptor inspection. New behavior
+and qualification are maintained in strict TypeScript. The substantial FMS
+checker and its tests were migrated together; no parallel parser or module
+resolver was added.
 
 ## Workstream A: packaged extension foundation, 2026-11-26
 

@@ -1,0 +1,79 @@
+name: Package conformance
+
+on:
+  pull_request:
+  merge_group:
+  push:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: extension-packages-${{ github.event_name }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  package-conformance:
+    name: package-conformance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      EF_ARTIFACT_TOOLS_DIR: ${{ runner.temp }}/ef-artifact-tools
+      EF_QUALIFICATION_ARTIFACT_DIR: ${{ runner.temp }}/ef-qualified-packages
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          cache: true
+      - run: pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --engine-strict --strict-peer-dependencies
+      - run: pnpm architecture:admission:test && pnpm architecture:feature-module-profile && pnpm architecture:feature-module-profile:test
+      - run: pnpm tooling:typecheck && pnpm qualification:typecheck && pnpm --recursive --filter "./packages/**" check
+      - run: mkdir -p "$EF_QUALIFICATION_ARTIFACT_DIR"
+      - name: Qualify independently installed core consumers
+        run: pnpm qualification:core-packed:check
+      - name: Install exact verified native tools
+        run: node tests/qualification/artifact/install-native-tools.ts
+      - name: Qualify signed OCI artifact through installed public package
+        run: pnpm qualification:artifact-packed:check
+      # Separate reviewed steps prevent candidate/test stdout from impersonating proof output.
+      - name: Core conformance proof
+        if: github.event_name == 'push'
+        run: node architecture/checks/admission-evidence/emit-proof.ts extension.core
+      - name: Artifact conformance proof
+        if: github.event_name == 'push'
+        run: node architecture/checks/admission-evidence/emit-proof.ts extension.node-artifact
+      - name: Retain the exact independently tested package archives
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: qualified-extension-packages
+          path: ${{ env.EF_QUALIFICATION_ARTIFACT_DIR }}/*.tgz
+          if-no-files-found: error
+          retention-days: 30
+
+  collect-evidence:
+    name: collect-evidence
+    if: github.event_name == 'push'
+    needs: package-conformance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+      - name: Read exact completed job-step evidence
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node architecture/checks/admission-evidence/collect-proof.ts

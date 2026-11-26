@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "composite": false,
+    "noEmit": true,
+    "skipLibCheck": false,
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "architecture/checks/**/*.ts",
+    "architecture/checks/**/*.mts",
+    "tests/*.ts",
+    "packages/*/test/**/*.ts",
+    "packages/node-artifact/qualification/**/*.ts"
+  ]
+}

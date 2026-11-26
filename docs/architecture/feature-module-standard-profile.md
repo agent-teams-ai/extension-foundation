@@ -3,48 +3,59 @@ id: architecture.feature-module-standard
 type: architecture
 status: accepted
 owner: architecture
-summary: Maps the pinned organization feature standard to pre-production Extension Foundation and its deterministic checks.
+summary: Maps the pinned feature standard to two provisional Extension Foundation packages and their scoped deterministic checks.
 related:
   - ADR-0015
+  - ADR-0016
   - OD-003
 code_anchors:
   - enforcement: required
     pattern: architecture/feature-module-standard-profile.json
   - enforcement: required
-    pattern: architecture/checks/feature-module-standard-profile.mjs
+    pattern: architecture/checks/feature-module-standard-profile.ts
 ---
 
 # Feature Module Standard Profile
 
 ## Purpose
 
-Extension Foundation adopts the organization `agent-teams.feature-module-standard`
-`v1` as the prospective rule for its first and subsequent production packages.
-The [central authority](https://github.com/agent-teams-ai/.github/blob/41ed61bfad895d7f46041532538de64202a1ec68/docs/architecture/feature-module-standard/v1.md)
+Extension Foundation applies the organization `agent-teams.feature-module-standard`
+`v1` to its cataloged production source. The
+[central authority](https://github.com/agent-teams-ai/.github/blob/41ed61bfad895d7f46041532538de64202a1ec68/docs/architecture/feature-module-standard/v1.md)
 remains the only definition of the shared standard. Its path is
 `docs/architecture/feature-module-standard/v1.md`, Git blob
 `d0bfff2033faf544fe65268c1dcdfd524d093015`, SHA-256
 `851653f96643cf0466b67ab22963661976b00de44840fa3144a48a8c054f95fa`.
+The pin is unchanged by this delivery.
 
-The machine-readable local profile is
-`architecture/feature-module-standard-profile.json`. The current status is
-`pre-production`; structural and runtime conformance are both `not-claimed`.
-Accepted guidance does not certify nonexistent production packages.
+The machine-readable profile is
+`architecture/feature-module-standard-profile.json`. Its `provisional-packages`
+status names the two ordinary libraries accepted in
+[ADR-0016](../decisions/0016-provisional-contribution-and-verified-artifact-packages.md).
+Structural conformance is `scoped` to those identities, roles and features;
+runtime conformance remains `not-claimed`. Passing this profile does not admit
+a production Host, a stable public SPI or another package role.
 
 ## Boundaries
 
-The prospective production root is `packages`, with one cataloged module per
-`packages/*`. There are no application roots. `architecture`, `docs`, root
-`tests` and `fixtures` contain development tooling, documentation and experiments;
-they are excluded from production FMS claims, not from existing Foundation
-source-dependency or documentation checks. Exclusions cannot host new production
-features as a way to bypass package admission.
+| Package | Catalog role | Owned feature | Inward boundary |
+| --- | --- | --- | --- |
+| `@extension-foundation/core` | `foundation-component` | `contributions` | Pure owner-contract matching; no Node, product, GM or adapter dependency |
+| `@extension-foundation/node-artifact` | `integration-adapter` | `verified-artifact` | Pure manifest policy beneath Node transport, staging and captured evaluation |
 
-The closed package catalog currently contains no production package. Its existing
-topology and executable admission rules remain authoritative. A package cannot
-be admitted merely by changing this profile's status. Its first delivery must
-also replace the pre-production profile guard with evidence for the exact
-materialized scope, while preserving the package-specific admission requirements.
+The production root is `packages`, with one cataloged module per `packages/*`.
+There are no application roots. `architecture`, `docs`, root `tests` and
+`fixtures` remain development tooling, documentation and qualification evidence.
+They are outside production FMS claims and remain governed by their existing
+source and documentation checks. Production features cannot move into those
+roots to evade admission.
+
+The closed catalog, effective accepted owner and authenticated package-evidence
+gate retain admission authority. Profile metadata alone cannot admit a package.
+Changing the package list, owned features, roles, source dependencies or claimed
+execution profile requires a coherent owner, implementation and evidence change.
+The scoped successor in ADR-0016 preserves the applicable ADR-0011 and ADR-0015
+obligations and does not transfer composition or update ownership into EF.
 
 ## Structure
 
@@ -52,83 +63,91 @@ materialized scope, while preserving the package-specific admission requirements
 | --- | --- |
 | Production module | Cataloged `packages/*` with role and accepted owner |
 | Source and feature | `src/features/<feature>/`, with a curated `index.ts` |
-| Module entry and thin assembly | `src/index.ts`, using feature entrypoints |
-| Feature implementation | Real value-level implementation reachable from its public entry |
-| Feature tests | Executable `test/features/<feature>/*.{test,spec}.ts` tests through the feature entry |
+| Module entry and thin assembly | `src/index.ts`, exporting feature entrypoints |
+| Feature implementation | Real value-level behavior reachable through its public entry |
+| Feature tests | Executable `test/features/<feature>/*.{test,spec}.ts` tests through that entry |
 | Application composition | Not present in this library repository |
 
-These mappings preserve the stricter current package envelope. They do not
-authorize new module-level helpers, a composition directory or additional public
-exports. Any such change requires a reviewed topology and profile change.
-There are no declared deviations from FMS v1. Domain modeling applies only to
-real invariants; codecs and technical verification features need no ceremonial
-domain aggregates or empty layers.
+The neutral contribution feature uses functions and owner-supplied predicates.
+It needs no domain aggregate or empty application layer. The Node adapter keeps
+its manifest/contract kernel independent of native processes, filesystem and
+execution. Its declared internal staging and evaluation boundaries carry only
+their exact dependencies. A runtime capability admitted to the evaluation file
+does not authorize arbitrary loading in another file or feature.
 
-The profile's `localExtensions` identifies TypeScript as the package language,
-closed catalog and owned-feature packaging, and static composition through the
-library module entrypoint. No transport or application composition is adopted.
-These are local applicability rules, not additional shared FMS requirements;
-changing them requires the same profile, topology and evidence review.
+`src/index.ts` remains a curated package entrypoint, and the package export map
+exposes only that public root. Foreign source and deep imports remain forbidden.
+No module-level helper directory, universal registry, generic service bag or
+additional public export is adopted. All six requirements in
+`productionEvidence.obligations` remain part of the acceptance gate.
 
-| FMS concern | Current evidence and remaining scope |
+| Obligation | Required evidence for this scope |
 | --- | --- |
-| Owned modules and features | Package catalog, accepted owner checks and topology rejecting fixtures already exist |
-| No unowned package behavior | Topology rejects paths outside the cataloged feature envelope; this is not a repository-wide semantic discovery claim |
-| Curated public surfaces | Topology checks package-to-feature export reachability and a real implementation |
-| Feature-owned tests | Topology requires executable assertions through the feature entrypoint |
-| Dependency boundaries | Existing Foundation source policy and source-boundary fixtures remain the single import-analysis path |
-| First module of each role | Pending real production package and role-specific positive evidence |
-| Internal layers, deep imports, undeclared edges and cycles | Pending exact production mapping and positive/rejecting evidence; development-boundary checks alone do not prove these |
-| Empty layers and ownership exceptions | Pending production fixtures and explicit owner review; no exception is currently admitted |
-| Compliant creation | Existing reviewable scaffold Plan/Apply and topology checks |
+| Valid feature per adopted role | Both real package features pass topology and the installed source analyzer; their packed public APIs execute useful consumer operations |
+| Role-specific layer direction | Core and Node manifest kernel reject platform/adapter imports; only the declared outer adapter layers may use native facilities |
+| Cross-feature deep import rejection | Existing Foundation source analysis rejects non-public and undeclared boundary edges |
+| Undeclared edge and cycle rejection | Existing Foundation diagnostics and the concrete package-boundary regression fixtures refuse those mutations |
+| Empty layer rejection | Topology requires reachable executable behavior and feature-owned tests; the concrete declared internal layers must remain present |
+| Owned module exception rejection | Catalog/accepted ownership is exact; unknown packages, features, roles or layer allowances refuse |
 
-## Enforcement and first-package acceptance
+The profile declares no deviations from FMS v1. Its local extensions select
+TypeScript, closed-catalog owned features and a static library entrypoint.
+Transport and Host lifecycle are not additional shared-standard requirements.
 
-`pnpm architecture:feature-module-profile` checks the reviewed identity, mapping,
-state, catalog, documentation route, development classification and blocking
-command paths. `pnpm architecture:feature-module-profile:test` runs positive and
-rejecting fixtures. Both execute in `architecture:check` and
-`architecture:check:fast`, reached by the full and fast repository gates.
-CI's `check` job must run the blocking full gate. Existing
-`architecture:topology:check` and `architecture:source-dependencies:check` keep
-their responsibilities; this adapter does not parse production imports.
+## Enforcement
 
-Before admitting the first real package, complete the six evidence items in
-`pendingProductionEvidence` for its actual role. Extend the existing classifier
-and source checks only where that concrete mapping exposes a gap. Preserve
-negative cases for code outside features, deep imports, cycles, empty layers
-and unknown ownership. A profile change without these checks cannot promote
-structural or runtime conformance. No empty package or invented feature is
-created to make an adoption dashboard green.
+`pnpm architecture:feature-module-profile` binds the reviewed authority, exact
+package scope, mapping, documentation route, source roots and blocking command
+paths. `pnpm architecture:feature-module-profile:test` preserves the positive
+and rejecting profile fixtures and the independent dogfooding-model budgets.
+`pnpm architecture:package-source:test` runs the installed analyzer against the
+actual package sources and rejecting mutations; the profile binds that campaign
+in the full architecture gate.
+The profile and its regression tests remain in the full and fast architecture chains, and CI's `check` job
+executes the blocking full gate.
 
-The profile's fail-closed checks do not prevent a privileged author from editing
-the checker and CI together; existing protected-policy review and semantic
-review remain necessary. No new production qualification is implied.
+`architecture:topology:check` owns package shape, ownership and genuine admission.
+`architecture:source-dependencies:check` invokes the installed Foundation source
+analyzer; this profile does not introduce another import parser. Strict package,
+test and tooling projects cover the new maintained TypeScript. The installed
+package campaigns compile ordinary external consumers against emitted
+declarations and execute the public package exports. Native artifact evidence
+names its actual Linux Node/OCI/direct-key profile separately.
+
+`architecture/checks/source-safety.mjs` remains a legacy analyzer. This change
+makes a localized correction to recognize direct inert descriptor inspection,
+needed to reject metadata accessors without calling them, and exposes parsed
+import facts for the exact artifact evaluation boundary. Its other loader,
+reflection and assertion-provenance refusals remain. The analyzer has a truthful
+declaration contract, but its JavaScript implementation is not claimed as
+strictly typechecked; new profile tooling and fixtures are TypeScript.
+
+These gates cannot prevent a privileged author from editing policy, checker and
+CI together. Existing protected review and independent semantic review remain
+necessary. Structural checks, packed behavior, artifact trust, runtime-profile
+qualification and product adoption are different claims.
 
 ## Operational implications
 
-The 2026-09-21 adoption review found no previous central FMS pin. The canonical
-bytes matched the v1 digest above; this is initial explicit adoption, not an
-automatic migration from the Orchestrator's local profile. Existing stronger
-package rules and immutable accepted ADRs are preserved.
+The original 2026-09-21 adoption review found no previous central FMS pin and
+matched the v1 digest above. This delivery changes its concrete package scope;
+it does not silently adopt another FMS version.
 
-The Get Modular Consumer Module Standard was reviewed at
+The retained Get Modular Consumer Module Standard review is pinned to
 `2d0181928915e3f35de9a453d5548219a64a1ae6`, whole-document SHA-256
 `d5bb71e5a700014f9f0a09b17d1f33d24b30b66c49b273c9fb65584672c51e4f`.
-This checkpoint adds no production composition boundary and adopts no Assembly
-Host scope. Fixed development helpers remain static dependencies. A future
-meaningful production composition boundary needs its own applicable CMS review;
-FMS adoption does not silently install Get Modular or create a runtime dependency.
+Neither package introduces a GM composition dependency or an Assembly Host.
+A consumer-owned outer adapter may compose EF with GM and Live Module Updates;
+its own accepted scope and qualification remain necessary.
 
-Shared-first review: the reusable source classifier and scaffold engine remain
-Engineering Foundation-owned. This small repository adapter binds local policy
-and invokes existing checks, as other consumers' profiles do. It introduces no
-second AST analyzer, runtime framework or cross-repository policy owner.
-Production source-coverage activation remains separate and pending its real scope.
+Shared source classification and scaffolding remain Engineering
+Foundation-owned. Repository adapters select exact applicability and admission
+facts. A future role or target extends its real positive and rejecting evidence
+before enlarging this profile.
 
-## Foundation 1.7.2 tooling migration
+## Retained Foundation 1.7.2 tooling migration evidence
 
-The official managed Docs Protocol upgrade through published adapter 0.3.2 has
+The earlier official managed Docs Protocol upgrade through published adapter 0.3.2
 applied cohort `docs-2026-10-03-stable31`. The consumer integration and managed
 state bind these exact published coordinates:
 
@@ -148,9 +167,9 @@ the shared `agent-teams-ai/.github` Docs Protocol workflow at
 `b30455e32cf5d54ade6d8301637701347e4ce57c`.
 
 The installed public `agent-teams-node-test` execution event contract admits both
-supported tooling runtimes: Node 24.21.0 or newer within Node 24, and Node 26.11.1
-or newer within Node 26. The default is `.node-version` at 26.11.1, used by the
-`check` job; `node-26-check` pins the same 26.11.1. Both run the strict frozen install,
+supported tooling runtimes: Node 24.22.1 or newer within Node 24, and Node 26.12.1
+or newer within Node 26. The default is `.node-version` at 26.12.1, used by the
+`check` job; `node-26-check` pins the same 26.12.1. Both run the strict frozen install,
 locked peer validation and full `pnpm check` with the same exact dependencies.
 Node 25 and Node 27 remain outside the supported policy.
 
@@ -181,13 +200,13 @@ Delivery requires operators to retain full-gate results, independent review and
 live consumer evidence for the final revision. OS-specific and canary
 qualification require their own executed evidence.
 
-All source-policy boundaries remain development boundaries. The empty package
-catalog and pre-production guard leave no typed production scope for
+At that retained checkpoint, all source-policy boundaries were development
+boundaries. The empty catalog and pre-production guard left no typed production scope for
 `quality.source-coverage` or its default unknown assertion bridge check.
-Qualification TypeScript still runs through `qualification:typecheck`; it is
-TEST evidence. No bridge admission, SDK growth grant or production qualification
-is introduced. The first real package must qualify its applicable production
-coverage and typed routes before promotion.
+The retained qualification TypeScript ran through `qualification:typecheck` as
+TEST evidence. That migration introduced no bridge admission, SDK growth grant or production
+qualification. The current two-package scope above separately requires its
+applicable production coverage and typed routes.
 
 The retained CMS delta review compares the digest-matching historical packet
 with upstream snapshot `4b56072ec6ca269fb16e3fdf131d31423af804bd` and document
@@ -200,5 +219,7 @@ scope. The reviewed CMS pin above remains unchanged.
 
 [ADR-0015](../decisions/0015-authorize-get-modular-semantic-extraction.md) preserves
 the independent neutral cores and package admission boundary.
+[ADR-0016](../decisions/0016-provisional-contribution-and-verified-artifact-packages.md)
+owns the exact provisional package successor.
 [OD-003](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md) keeps
 the Host and public SPI choices open. This profile changes neither decision.

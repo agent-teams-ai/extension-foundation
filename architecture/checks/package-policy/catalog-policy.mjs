@@ -11,7 +11,7 @@ export const CATALOG_ENTRY_KEYS = Object.freeze([
 ]);
 export const PACKAGE_ID = /^[a-z0-9][a-z0-9.-]*$/;
 export const PACKAGE_PATH = /^packages\/[a-z0-9][a-z0-9-]*(?:\/[a-z0-9][a-z0-9-]*)*$/;
-export const PACKAGE_NAME = /^@agent-teams\/[a-z0-9][a-z0-9._-]*$/;
+export const PACKAGE_NAME = /^@(agent-teams|extension-foundation)\/[a-z0-9][a-z0-9._-]*$/;
 export const FEATURE_NAME = /^[a-z0-9][a-z0-9-]*$/;
 export const OWNER_DOCUMENT = /^ADR-[0-9]{4}$/;
 
@@ -137,7 +137,7 @@ export function catalogPolicy(catalog, allowedRoles) {
       entryErrors.push(`${entry.id}: path must be a normalized directory under packages/`);
     }
     if (!PACKAGE_NAME.test(entry.package_name)) {
-      entryErrors.push(`${entry.id}: package_name must use the @agent-teams scope`);
+      entryErrors.push(`${entry.id}: package_name must use an owned package scope`);
     }
     if (!OWNER_DOCUMENT.test(entry.owner_document)) {
       entryErrors.push(`${entry.id}: owner_document must be an ADR identity`);

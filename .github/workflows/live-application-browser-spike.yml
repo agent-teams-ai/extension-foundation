@@ -64,17 +64,17 @@ jobs:
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write(f'directory={destination}\n')
           PY
-      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
-        with:
-          version: 11.25.0
-          package_json_file: ../live-application-browser-spike/package.json
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24.22.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: 11.25.0
+          package_json_file: ../live-application-browser-spike/package.json
       - name: Install exact disposable dependencies and official Chromium
         working-directory: ${{ steps.inputs.outputs.directory }}
         run: |
-          pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies
+          pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --engine-strict --strict-peer-dependencies
           pnpm exec playwright install --with-deps chromium
           node --version > frontend-spike/evidence/hosted-environment.txt
           pnpm --version >> frontend-spike/evidence/hosted-environment.txt

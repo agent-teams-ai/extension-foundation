@@ -1,7 +1,26 @@
 # Packages
 
-This directory is closed until an accepted package-specific ADR and a real
-feature-owned implementation slice admit a package through
+## Implemented provisional libraries
+
+| Public package root | Owned feature | Guide |
+| --- | --- | --- |
+| `@extension-foundation/core` | `contributions` | [Contract authoring and installed examples](core/README.md) |
+| `@extension-foundation/node-artifact` | `verified-artifact` | [Supported native profile and typed Host binding](node-artifact/README.md) |
+
+[ADR-0016](../docs/decisions/0016-provisional-contribution-and-verified-artifact-packages.md)
+owns these exact two private packages. Source, package scripts and declaration
+output use the reviewed official scaffold plans. The core selects no Node
+ambient types; the native adapter has its own explicitly selected compiler base.
+Both packages expose only their root through `exports`.
+
+Read the [current qualification report](../docs/research/packaged-foundation-qualification-2026-11-26.md)
+before treating a package as admitted. The workflow retains the actual tested
+archives; no npm publication or product rollout is implied.
+
+## Admission and new packages
+
+Every additional package requires an accepted package-specific ADR and a real
+feature-owned implementation slice admitted through
 `architecture/package-catalog.json`. Admission also requires a versioned
 `architecture/package-admissions/<encoded-package-id>.json` record proving one
 of the package bases preserved by ADR-0013: an independent deployment or isolation

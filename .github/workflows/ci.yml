@@ -17,6 +17,9 @@ concurrency:
 
 jobs:
   check:
+    permissions:
+      contents: read
+      actions: read
     name: check
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -25,15 +28,17 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
-        with:
-          version: 11.18.0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: 11.18.0
+          cache: true
+      - run: pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --engine-strict --strict-peer-dependencies
       - run: pnpm check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
   node-26-check:
     # The canonical check already installs and tests the exact pinned Node 26
@@ -56,7 +61,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$PRIMARY_CHECK_RESULT" = success
-          test "$(tr -d '\r\n' < .node-version)" = 26.11.1
+          test "$(tr -d '\r\n' < .node-version)" = 26.12.1
 
   product-sources:
     name: product-sources
@@ -85,14 +90,14 @@ jobs:
           ref: 85c0850e2fc312b995ba3116f8d4aa46dcb0b1dd
           path: .product-sources/frontend
           persist-credentials: false
-      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
-        with:
-          version: 11.18.0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: 11.18.0
+          cache: true
+      - run: pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --engine-strict --strict-peer-dependencies
       - run: pnpm lockfile:peers:check
       - name: Verify exact product sources
         env:
@@ -106,6 +111,9 @@ jobs:
           --repository frontend="$FRONTEND_SOURCE"
 
   architecture-windows:
+    permissions:
+      contents: read
+      actions: read
     name: architecture-windows
     runs-on: windows-2025
     timeout-minutes: 15
@@ -114,20 +122,25 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
-        with:
-          version: 11.18.0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: 11.18.0
+          cache: true
+      - run: pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --engine-strict --strict-peer-dependencies
       - run: pnpm lockfile:peers:check
       - run: pnpm architecture:check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - run: pnpm qualification:check
       - run: pnpm packages:check
 
   architecture-macos:
+    permissions:
+      contents: read
+      actions: read
     name: architecture-macos
     runs-on: macos-15
     timeout-minutes: 15
@@ -136,15 +149,17 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
-        with:
-          version: 11.18.0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile --ignore-scripts --engine-strict --strict-peer-dependencies
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: 11.18.0
+          cache: true
+      - run: pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --engine-strict --strict-peer-dependencies
       - run: pnpm lockfile:peers:check
       - run: pnpm architecture:check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - run: pnpm qualification:check
       - run: pnpm packages:check
