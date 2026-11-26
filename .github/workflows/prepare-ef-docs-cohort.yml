@@ -1,0 +1,73 @@
+name: Prepare EF Docs Cohort Evidence
+
+# Temporary candidate collection; the central trusted PR gates own admission.
+on:
+  push:
+    branches:
+      - test/ef-cohort-publication-20261126
+    paths:
+      - tests/qualification/prepare-ef-docs-cohort.ts
+      - .github/workflows/prepare-ef-docs-cohort.yml
+
+permissions:
+  contents: read
+
+jobs:
+  collect:
+    name: Collect exact published cohort evidence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: agent-teams-ai/.github
+          ref: 755c8515a5d106402a7e9e2cff621fb1fdc855cf
+          path: .cohort-controller
+          persist-credentials: false
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        id: pnpm-base
+        with:
+          version: 11.18.0
+          dest: ${{ runner.temp }}/ef-cohort-pnpm-base
+          run_install: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 26.11.1
+      - name: Install exact consumer dependencies without lifecycle scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --engine-strict --strict-peer-dependencies
+      - name: Verify the pinned compiler and strictly check the existing qualification project
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(jq -r .version node_modules/typescript/package.json)" = 7.0.2
+          pnpm qualification:typecheck
+      - name: Install reviewed central dependencies without lifecycle scripts
+        working-directory: .cohort-controller
+        run: pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        id: pnpm-cohort
+        with:
+          version: 11.20.0
+          dest: ${{ runner.temp }}/ef-cohort-pnpm-v2
+          package_json_file: .cohort-controller/governance/docs-qualified-cohorts.schema.json
+          run_install: false
+      - name: Collect exact Gen3 signatures, provenance, closure and packed policy
+        env:
+          DOCS_COHORT_PNPM_V2_BIN: ${{ steps.pnpm-cohort.outputs.bin_dest }}/pnpm
+        run: node tests/qualification/prepare-ef-docs-cohort.ts
+      - name: Retain candidate evidence and exact collector sources
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ef-docs-cohort-candidate-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .qualification-output/cohort-candidate/
+            tests/qualification/prepare-ef-docs-cohort.ts
+            .github/workflows/prepare-ef-docs-cohort.yml
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30

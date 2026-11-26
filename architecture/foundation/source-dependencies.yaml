@@ -258,3 +258,24 @@ boundaries:
         - node:util
         - node:worker_threads
       runtimeReferences: []
+  # Temporary delivery observer; remove with its branch-only launcher.
+  # Dynamic permits the whole boundary; reviewed adapters check concrete pins.
+  - id: repository.temporary-delivery-observer
+    dependencyMode: development
+    roots:
+      - tests/qualification/prepare-ef-docs-cohort.ts
+    entrypoints:
+      - tests/qualification/prepare-ef-docs-cohort.ts
+    allow:
+      boundaries: []
+      packages: []
+      builtins:
+        - node:child_process
+        - node:crypto
+        - node:fs/promises
+        - node:os
+        - node:path
+        - node:url
+        - node:util
+      runtimeReferences:
+        - dynamic
