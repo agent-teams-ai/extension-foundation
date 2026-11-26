@@ -157,8 +157,18 @@ async function publicGitHubBytes(path: string, raw = false): Promise<Buffer> {
         "User-Agent": "agent-teams-ef-cohort-collector",
       },
     });
-    requireValue(response.status === 200 && response.body !== null,
-      "Public GitHub evidence must return one successful body.");
+    if (response.status !== 200 || response.body === null) {
+      const headers: Record<string, string> = {};
+      for (const name of ["x-ratelimit-remaining", "x-ratelimit-reset", "retry-after", "x-github-request-id"]) {
+        const value = response.headers.get(name);
+        if (value !== null && /^[\x20-\x7e]{1,128}$/u.test(value)) headers[name] = value;
+      }
+      await saveJson("public-github-http-failure.json", {
+        method: "GET", url: "https://api.github.com/repos/" + path, status: response.status,
+        bodyPresent: response.body !== null, headers,
+      }).catch(() => undefined);
+      throw new CollectorError(`Public GitHub evidence must return one successful body; status=${response.status}.`);
+    }
     const declared = response.headers.get("content-length");
     requireValue(declared === null || (/^[0-9]+$/u.test(declared) && Number(declared) <= 1024 * 1024),
       "Public GitHub evidence exceeds its bound.");
