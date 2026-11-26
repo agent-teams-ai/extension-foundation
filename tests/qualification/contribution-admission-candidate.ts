@@ -2,6 +2,8 @@
  * Qualification-only experiment, not an Extension Foundation public SPI or host.
  * Product authority supplies independently verified evidence and exact bindings.
  * This pure preflight performs no loading, installation, state changes or effects.
+ * Its category enum is this historical TEST Host's policy, not generic authoring
+ * vocabulary. contribution-compatibility.ts qualifies owner-defined contracts.
  */
 export type ContributionKind = "tool" | "skill" | "ui" | "worker" | "state";
 
