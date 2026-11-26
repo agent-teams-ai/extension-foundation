@@ -52,6 +52,8 @@ const governedFiles = [
   "tests/qualification/dogfooding-protocol.test.ts",
   "tests/qualification/contribution-admission-candidate.ts",
   "tests/qualification/contribution-admission-candidate.test.ts",
+  "tests/qualification/contribution-compatibility.ts",
+  "tests/qualification/contribution-compatibility.test.ts",
   "tests/qualification/dossier.test.ts",
   "tests/qualification/extism-feasibility.mjs",
   "tests/qualification/fixtures/portable-browser-worker.mjs",
@@ -153,6 +155,20 @@ test(
           rule,
         ),
       );
+    }
+  },
+);
+
+test(
+  "official checker rejects platform implementation and declaration edges in contribution compatibility",
+  { skip: skipExpensiveIntegration },
+  async () => {
+    for (const source of [
+      'import "node:fs"; export const candidate = true;\n',
+      'import type { Stats } from "node:fs"; export type LeakedState = Stats;\n',
+    ]) {
+      await withMutation("tests/qualification/contribution-compatibility.ts", source,
+        "architecture.source-dependencies.forbidden-builtin-dependency");
     }
   },
 );

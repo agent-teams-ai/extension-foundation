@@ -14,6 +14,42 @@ related:
 
 # OD-003: Extension Host, Public SPI, And State Migration Choices
 
+## Scoped authoring profile, 2026-11-26
+
+The owner authorized the modular authoring foundation after three review rounds
+in the [shared implementation plan](https://github.com/agent-teams-ai/live-module-updates/blob/e47f192c955fd196280ad226eab8faef9a3b858f/docs/plans/module-authoring-implementation-plan.md).
+For this bounded **TEST qualification only**, use namespaced contract identity
+and one exact positive integer revision per trusted owner. The
+[matcher](../../tests/qualification/contribution-compatibility.ts) implements
+that choice; its [tests](../../tests/qualification/contribution-compatibility.test.ts)
+exercise two materially different owner payload schemas. This resolves the
+local experiment's representation, not the production EF-C or public SPI.
+
+Each descriptor has `id`, `contract`, `revision`, `required` and `payload`.
+The Host supplies synchronous typed payload predicates independently of artifact
+metadata. Required unknown or unsupported revisions reject the whole selection;
+unsupported optional entries produce explicit omissions and cannot reach owner
+validation or candidate execution. Every entry still needs a valid bounded inert
+carrier. A malformed envelope, duplicate identity, invalid supported payload,
+throwing validator or non-boolean validator result rejects the whole candidate.
+Optional does not mean that a known invalid payload is acceptable.
+
+The selected profile captures the complete trusted contract table before calling
+validators and returns detached, deeply frozen data in declaration order. The
+same frozen payload that passed its owner's predicate is selected; later caller
+mutation cannot change the result. Selection is not a grant, installation,
+invocation or live compatibility promise. Trusted validator side effects and
+hostile JavaScript objects are outside this inert-data qualification.
+
+The [delivery evidence](../architecture/plugin-delivery-plan.md#scoped-authoring-qualification-2026-11-26)
+connects this profile to the existing EF-local packed consumer and preserves its
+actual receiver checks. The older category enum remains that TEST Host's policy;
+it is not the neutral authoring vocabulary. LMU keeps its own semantic feature
+ports and does not import or copy EF test internals. A future admitted EF adapter
+may supply verified contribution facts to an LMU consumer; that runtime adapter
+is not implemented here. E1, package materialization, artifact trust, production
+Host requirements and the public-SPI evidence floor remain open at their owners.
+
 ## Implementation choices for the next slice, 2026-11-25
 
 The owner requested detailed phases and implementation steps before work whose

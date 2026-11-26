@@ -18,7 +18,8 @@ import { Graph, alg } from "@dagrejs/graphlib";
 import { Context } from "@deepseek-ai/cordis";
 import fc from "fast-check";
 
-import { preflightBundle, type CandidateBundle, type HostAdmissionEvidence } from "./contribution-admission-candidate.ts";
+import { preflightBundle, type CandidateBundle, type CandidateContribution, type HostAdmissionEvidence } from "./contribution-admission-candidate.ts";
+import { matchContributions, type OwnerContract } from "./contribution-compatibility.ts";
 
 import {
   compileGraph,
@@ -4917,16 +4918,35 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
     custodyReceipts: {},
   };
   let installAttempts = 0;
-  const installSelected = async (path: string, candidate: CandidateBundle, authority: HostAdmissionEvidence) => {
+  let contractValidations = 0;
+  const sequenceContract: OwnerContract<CandidateContribution> = {
+    id: "qualification/review-sequence", revision: 1,
+    validate: (value): value is CandidateContribution => {
+      contractValidations += 1;
+      return typeof value === "object" && value !== null &&
+        Object.keys(value).sort().join(",") === "id,kind,permission,port" &&
+        "id" in value && value.id === "review/sequence" &&
+        "kind" in value && value.kind === "tool" &&
+        "port" in value && value.port === "review-sequence" &&
+        "permission" in value && value.permission === "review.assign";
+    },
+  };
+  const declarations = (candidate: CandidateBundle) => candidate.contributions.map(payload => ({
+    id: payload.id, contract: sequenceContract.id, revision: 1, required: true, payload,
+  }));
+  const installSelected = async (path: string, candidate: CandidateBundle, authority: HostAdmissionEvidence,
+    metadata: unknown = declarations(candidate)) => {
+    const compatible = matchContributions(metadata, [sequenceContract]);
+    if (!compatible.ok) return compatible;
     const observed = digest(await readFile(path));
-    const selected = preflightBundle(candidate, {
+    const selected = preflightBundle({ ...candidate, contributions: compatible.selected.map(entry => entry.payload) }, {
       ...authority,
       verifiedArtifactDigest: observed === authority.verifiedArtifactDigest ? observed : null,
     });
     if (!selected.ok) return selected;
     installAttempts += 1;
     await npm(["install", "--ignore-scripts", "--package-lock=false", "--no-audit", "--offline", path], consumer);
-    return selected;
+    return { ...selected, omitted: compatible.omitted };
   };
   const tampered = join(root, "tampered.tgz");
   const alteredBytes = Buffer.concat([archiveBytes, Buffer.from("different artifact bytes")]);
@@ -4944,8 +4964,29 @@ test("packed toy package exercises an isolated consumer without Foundation, Cord
     assert.equal(spawnAttempts, beforeDeniedInstall, "denied preflight must not start a child");
     await assert.rejects(access(installedRoot), { code: "ENOENT" });
   }
-  assert.deepEqual(await installSelected(archive, bundle, hostEvidence),
-    { ok: true, selected: bundle.contributions });
+  const supported = declarations(bundle)[0]!;
+  for (const [metadata, reason] of [
+    [[supported, { ...supported, id: "other/feature", contract: "other/unknown" }], "unknown-required-contract"],
+    [[{ ...supported, revision: 2 }], "unsupported-required-revision"],
+    [[supported, { ...supported, id: "later/invalid", payload: { ...supported.payload, port: "foreign-port" } }],
+      "invalid-contribution-payload"],
+    [[{ ...supported, required: false, payload: {} }], "invalid-contribution-payload"],
+    [[supported, { ...supported, required: false }], "duplicate-contribution-identity"],
+  ] as const) {
+    assert.deepEqual(await installSelected(archive, bundle, hostEvidence, metadata), { ok: false, reason });
+    await assert.rejects(access(installedRoot), { code: "ENOENT" });
+    await assert.rejects(access(join(root, "owner-review-sequence.json")), { code: "ENOENT" });
+    assert.equal(installAttempts, 0);
+    assert.equal(spawnAttempts, beforeDeniedInstall, "failed contribution metadata must not evaluate candidate code");
+  }
+  const beforeAccepted = contractValidations;
+  assert.deepEqual(await installSelected(archive, bundle, hostEvidence, [
+    { id: "optional/preview", contract: "other/preview", revision: 1, required: false, payload: { unknown: true } },
+    supported,
+  ]), { ok: true, selected: bundle.contributions, omitted: [
+    { id: "optional/preview", contract: "other/preview", revision: 1, reason: "unknown-contract" },
+  ] });
+  assert.equal(contractValidations - beforeAccepted, 1, "omitted optional code has no validation or evaluation");
   assert.equal(installAttempts, 1);
   assert.deepEqual((await readdir(installedRoot)).sort(), [...packageFiles].sort());
   for (const [path, bytes] of built) assert.deepEqual(await readFile(join(installedRoot, path)), bytes);
