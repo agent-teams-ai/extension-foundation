@@ -3,7 +3,7 @@
 This repository owns product-neutral extension infrastructure for Agent Teams
 products.
 
-**Foundation-first:** read the [organization ecosystem vision](https://github.com/agent-teams-ai/.github/blob/47a9cd50cc6e2297c036dab3d7883a6c823b1654/docs/architecture/ecosystem-vision.md) before selecting a shared boundary. Plan the foundation for many existing and intended consumers; coordinate with Live Module Updates rather than duplicating its operation. This route does not admit a public SPI or production host.
+**Foundation-first:** read the [organization ecosystem vision](https://github.com/agent-teams-ai/.github/blob/main/docs/architecture/ecosystem-vision.md) before selecting a shared boundary. Plan the foundation for many existing and intended consumers; coordinate with Live Module Updates rather than duplicating its operation. This route does not admit a public SPI or production host.
 
 **Qualify before applications:** use realistic fixtures, packaged behavior and
 independently wired test Hosts now. A first product feature is not a prerequisite
