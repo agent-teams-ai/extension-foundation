@@ -35,6 +35,14 @@ jobs:
           cache: true
       - run: pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --engine-strict --strict-peer-dependencies
       - run: pnpm architecture:admission:test && pnpm architecture:feature-module-profile && pnpm architecture:feature-module-profile:test
+      - name: Select the exact patched browser for qualification
+        shell: bash
+        run: |
+          curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --output "$RUNNER_TEMP/ef-chrome.zip" 'https://storage.googleapis.com/chrome-for-testing-public/158.0.8127.88/linux64/chrome-linux64.zip'
+          printf '%s  %s\n' '59e3b43f8b3aaa292238fbdcfb36a93127debd53e212510dcdc2cc8812b4b57e' "$RUNNER_TEMP/ef-chrome.zip" | sha256sum --check --strict -
+          unzip -q "$RUNNER_TEMP/ef-chrome.zip" -d "$RUNNER_TEMP/ef-browser"
+          "$RUNNER_TEMP/ef-browser/chrome-linux64/chrome" --version
+          printf 'EF_QUALIFICATION_BROWSER=%s\n' "$RUNNER_TEMP/ef-browser/chrome-linux64/chrome" >> "$GITHUB_ENV"
       - run: pnpm tooling:typecheck && pnpm qualification:check && pnpm --recursive --filter "./packages/**" check
       - run: mkdir -p "$EF_QUALIFICATION_ARTIFACT_DIR"
       - name: Qualify independently installed core consumers

@@ -213,7 +213,7 @@ this dated section records its concrete execution and the later one-PR constrain
 | A3 | Real OCI/ORAS/Cosign adapter, closed descriptor/data checks, current-authority typed evaluation and native process custody; local and hosted packed Linux campaigns passed on both selected Node runtimes, including 21 signed/transport rejection cases | Ordinary package admission and complete repository gates |
 | A4 | Public-root installed campaigns, declaration/deep-import controls, actual Foundation source-boundary fixtures and successful hosted current-source evidence | Complete repository gates |
 | A5 | Scoped FMS enforcement and source rejection controls; EF routes authors to GM's authoritative consumer quickstart | The GM copyable-template erratum remains with GM; it is not changed in this single EF PR |
-| A6 | Public facts/binding contract and tested-archive handoff for LMU's outer adapter | Actual combined EF-to-LMU operation in executor B's owned fixture |
+| A6 | Public facts/binding contract, tested-archive handoff and independently verified five-scenario combined LMU receipt at `47c17f95` | Full repository admission gates and ordinary merge; the bounded joint fixture claims no staging-failure recovery |
 
 The [qualification report](../research/packaged-foundation-qualification-2026-11-26.md)
 holds concrete commands, source/tool identities, observed results and the

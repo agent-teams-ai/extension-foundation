@@ -132,6 +132,22 @@ skip or alternate harness is accepted as a successful full campaign. The actual
 hosted run supplies that complete result. The root compiler, dogfooding model
 and public Foundation4 mandatory custody runner were separately exercised.
 
+The existing hosted full suite passed all 246 scenarios at source
+`6c2334ae79b5e03dda0ea14e533ea882c9318acc`, including the real browser Worker.
+Review of its [actual runner image](https://github.com/actions/runner-images/blob/ubuntu24/20261122.23/images/ubuntu/Ubuntu2404-Readme.md)
+then found Chrome 158.0.8127.36. Google's
+[November 23 release](https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_01734282054.html)
+updates Linux to 158.0.8127.88 with a security correction. The selected package
+qualification now downloads that exact official Chrome for Testing archive and
+checks SHA-256 `59e3b43f8b3aaa292238fbdcfb36a93127debd53e212510dcdc2cc8812b4b57e`
+before extraction. This is the reviewed archive identity, not a vendor-signed
+checksum. `EF_QUALIFICATION_BROWSER` selects its absolute executable path; an
+explicit empty, relative or missing path refuses instead of falling back or
+skipping. All three rejecting controls passed. The default discovery behavior
+and actual Worker assertions remain unchanged. The local patched browser was
+prevented from starting by a socket permission denial; no permission or browser
+flag workaround was used. The patched hosted campaign remains the full result.
+
 The first real hosted campaign exposed a clean-runner assumption: a frozen root
 install supplies package bytes without necessarily caching registry metadata for
 a second independent install. The consumer now starts with an explicitly empty
@@ -213,12 +229,30 @@ awaits settlement before releasing verification custody, then owns the lifetime
 and effects of evaluated exports. Node may retain evaluated data-URL modules
 until process exit; no unloading or hostile-code containment claim is made.
 
-The live combined EF-to-LMU fixture remains owned by
+The live combined EF-to-LMU fixture is owned by
 [LMU PR #9](https://github.com/agent-teams-ai/live-module-updates/pull/9).
-Neither this report nor a successful local pack substitutes that separate
-integration receipt. The exact GM copyable-template correction also remains at
-its owner under the one-EF-PR limit; EF navigation points to GM's maintained
-consumer quickstart.
+Its actual [run 45916966246/1](https://github.com/agent-teams-ai/live-module-updates/actions/runs/45916966246),
+job `140238419593`, completed successfully at source
+`47c17f95f7c8cf3650c907ac4ed52d6127febe5c`. Independent review of its Host adapter
+found no material ownership or API violation. The retained
+[artifact 15163076062](https://github.com/agent-teams-ai/live-module-updates/actions/runs/45916966246/artifacts/15163076062)
+was downloaded and checked against its actual ZIP digest
+`33a2c7c30dd6440ee1ecbfe35b8407303c9cbce8774b5527342bf43a22f10952`.
+All seven package archives matched both their recorded SHA-256 and lockfile SRI.
+The EF archive is the same `151890f5...882f9` bytes qualified above.
+
+The actual Node 24.22.3 / TS7.0.2 receipt passed five distinct rows:
+`signed-overlap`, `tampered-signature`, `revoked-evaluation`,
+`closed-before-evaluation`, and `tampered-bytes`. The signed formatter changes
+the useful B result while retained A completes coherently. Rejections preserve
+the canonical state and occur before evaluation or publication. The observed
+native tool digests match this report's selected tools. Original staging-cleanup
+debt is preserved by the Host's Resources obligation in source review; this
+five-row receipt does not inject or qualify recovery of that failure. It also
+does not claim browser artifact loading, durable installation or module unload.
+
+The exact GM copyable-template correction remains at its owner under the
+one-EF-PR limit; EF navigation points to GM's maintained consumer quickstart.
 
 The managed upgrade reproduction below is a separate required dependency.
 It must be resolved by a qualified producer/consumer route before the full
