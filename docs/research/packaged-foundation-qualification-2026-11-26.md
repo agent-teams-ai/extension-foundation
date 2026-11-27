@@ -29,16 +29,17 @@ public contracts expose no GM construction types or product-specific domain.
 
 | Evidence | Actual observation | Limit |
 | --- | --- | --- |
-| Core package | Official scaffold, effective strict typecheck, build and 11 unit tests passed | Provisional private library |
+| Core package | Official scaffold, effective strict typecheck, build and 12 unit tests passed | Provisional private library |
 | Independent core consumers | Node 26.12.1, pnpm 11.18.0 and TS7.0.2; two separate clean installs compiled and executed the same archive | No runtime checkout aliases; this is not two SPI implementations |
-| Core artifact | SHA-256 `69e28e28eb7e134598903cbc09edd637599f69a4681581b2e93d4af388ef6802` | This hash identifies the observed local tested bytes; hosted current-source proof remains separate |
+| Core artifact | SHA-256 `69e28e28eb7e134598903cbc09edd637599f69a4681581b2e93d4af388ef6802` | Local and independently hosted tested archives have the same bytes |
 | Real native route | Actual Distribution registry, digest-addressed ORAS manifest/blob retrieval and Cosign direct-key verification executed | Disposable publisher, no transparency-log/keyless or GHCR/Harbor qualification claim |
-| Artifact package | Node 24.22.3 and 26.12.1, pnpm 11.18.0 and TS7.0.2; strict typecheck, build and 10 portable manifest/profile tests passed | Public factory refuses unsupported platforms before native work |
+| Artifact package | Patched Node, pnpm 11.18.0 and TS7.0.2; strict typecheck, build and 11 portable manifest/profile tests passed | Public factory refuses unsupported platforms before native work |
 | Independent artifact consumer | On both actual runtimes, 8 mandatory Linux campaign tests passed with zero skips, including 21 signed/transport rejection cases and native process/staging custody controls; each consumer started with an empty registry metadata cache | Linux x64 cooperative finite artifact profile; no hostile-code containment |
-| Artifact archive | Both runtime campaigns produced identical SHA-256 `151890f5a69798d4098cd557f03c249678c18f4feb77cdff7563202b935882f9` | Exact retained local tested bytes; hosted current-source proof remains separate |
+| Artifact archive | Both runtime campaigns produced identical SHA-256 `151890f5a69798d4098cd557f03c249678c18f4feb77cdff7563202b935882f9` | Both hosted runtime campaigns independently produced the same bytes |
 | Source boundaries | Actual published Foundation4.0.2 analyzed the working tree with zero diagnostics; 11 positive/rejecting production-source tests passed | Isolated selected-tool evidence, not managed consumer adoption |
 | Admission and preparation | Authenticated-provider controls, source-policy binding, source additions, malformed evidence and preparation refusal cases passed | Mock transport cases do not prove the live provider route |
 | FMS | 75 tests passed, including retained dogfooding budgets and new scoped production checks | Structural scope only; runtime conformance remains not claimed |
+| Existing topology | 27 tests passed with actual admission metadata in the independently qualified Foundation4 copy | Its injected unit receipt tests structure; it does not claim real online admission or managed adoption |
 
 The hosted [package-conformance workflow](../../.github/workflows/package-conformance.yml)
 runs the actual clean installed campaigns, retains their exact tested archives,
@@ -56,6 +57,37 @@ push run whose selected source bytes match the current checkout. The producing
 push run does not depend on its own admission receipt. This verifies the live
 evidence port separately from accepted ownership, source boundaries and the
 managed-toolchain gates; those obligations remain in the full repository gate.
+
+## Hosted qualification, 2026-11-27
+
+The actual [push run 45914561543, attempt 1](https://github.com/agent-teams-ai/extension-foundation/actions/runs/45914561543)
+completed successfully for source
+[`c0a8f2733b54323e2f85322b86167491a169af1d`](https://github.com/agent-teams-ai/extension-foundation/commit/c0a8f2733b54323e2f85322b86167491a169af1d).
+Its producer job `140230571298` passed both installed core consumers, the native
+artifact campaigns on Node 26.12.1 and 24.22.3, and the byte comparison of the two
+artifact archives. It retained the exact qualified archives and emitted core
+proof at step 16 and artifact proof at step 17.
+
+Collector job `140230964273` used the actual Actions-read credential and the
+GitHub step-log API successfully. Both returned proof records bind stable
+repository ID `1333298097` and source-input digest
+`sha256:bb1f93a57518c316855d640833739b7733ee85e604ff4ee9342a4c76fad38524`.
+The raw core step-log digest is
+`sha256:4e644080e33f16a04cfcfac4671807cbe0c60a3a4ad838554eb67078a75c0a77`;
+the raw artifact step-log digest is
+`sha256:4d592a86eb5928cc4bea9cdaaea6d157f8c40e7b33cd27c69acfb961d3a96c2b`.
+These are provider log identities, not hashes reconstructed from local JSON.
+
+The [evidence policy](../../architecture/package-evidence-policy.json) and
+[core](../../architecture/package-admissions/extension-dot-core.json) /
+[artifact](../../architecture/package-admissions/extension-dot-node-dash-artifact.json)
+admission records are derived from those actual completed-run values. Their
+existing strict policy validators passed, and materializing the metadata left
+the source-input digest unchanged. No verification receipt is stored or invented.
+The proposed-merge online gate validates the final records against the current
+source subject; its current result is recorded in [PR #70 checks](https://github.com/agent-teams-ai/extension-foundation/pull/70/checks).
+A successful producer/collector run alone does not satisfy the separate
+accepted-owner or managed-cohort gates.
 
 ## Review corrections
 
@@ -80,6 +112,15 @@ Linux qualification campaign, with their own narrow development source boundary.
 This preserves the repository's macOS/Windows package checks without skipping
 the Linux custody requirements, crossing package-private source boundaries or
 opening private package exports.
+
+Once real admission records existed, the complete structural topology fixture
+reached the package test-source checks and exposed five shape violations. The
+correction retained all existing assertions, used named assertion imports and
+inert annotation construction, and made the public limits/error contracts
+directly executable in their own tests. The original analyzer and negative
+controls remain unchanged. All 27 topology tests then passed in the supported
+Foundation4 copy. These test-source changes require fresh hosted proof even
+though the packaged runtime bytes are unchanged.
 
 The first real hosted campaign exposed a clean-runner assumption: a frozen root
 install supplies package bytes without necessarily caching registry metadata for

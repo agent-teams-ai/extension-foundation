@@ -31,11 +31,14 @@ test("non-JSON values, sparse arrays, symbols and hidden properties are rejected
   deepEqual(matchContributions(input, [anything]), invalid);
 });
 
-test("carrier bounds cover entries, depth, total nodes, property names and text", () => {
+test("the public carrier limits are exact and immutable", () => {
   deepEqual(contributionLimits, {
     contributions: 64, ownerContracts: 64, nodes: 2_048, depth: 16, textUnits: 65_536, identityUnits: 128,
   });
   equal(Object.isFrozen(contributionLimits), true);
+});
+
+test("carrier bounds cover entries, depth, total nodes, property names and text", () => {
   const sixtyFour = Array.from({ length: 64 }, (_, index) => entry(null, `test/item-${index}`));
   equal(matchContributions(sixtyFour, [anything]).ok, true);
   deepEqual(matchContributions([...sixtyFour, entry(null, "test/extra")], [anything]), invalid);

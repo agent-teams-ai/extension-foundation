@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "packages": [
+    {
+      "packageId": "extension.core",
+      "repository": "agent-teams-ai/extension-foundation",
+      "repositoryId": 1333298097,
+      "workflowPath": ".github/workflows/package-conformance.yml",
+      "workflowSha256": "sha256:bfcc323b43f9aeefb5cb119eb7bf9ff249c8483e7399c59b73a20e7a0c346b24",
+      "jobName": "package-conformance",
+      "stepName": "Core conformance proof",
+      "allowedEvents": [
+        "push"
+      ],
+      "conformanceVersion": "0.1.0",
+      "consumerId": "qualification.headline-and-quota",
+      "implementationId": "extension.core.contributions",
+      "conformanceSha256": "sha256:18064d33a88ca73973bf58851f6a51b76a602a930128f06b7c2a5b5705bf473b",
+      "artifactName": "extension-foundation-core-0.0.0.tgz",
+      "artifactSha256": "sha256:69e28e28eb7e134598903cbc09edd637599f69a4681581b2e93d4af388ef6802",
+      "sourceInputs": {
+        "roots": [
+          "architecture/checks",
+          "architecture/tooling",
+          "architecture/scaffolding-plans",
+          "packages/core/src",
+          "packages/core/test",
+          "packages/node-artifact/src",
+          "packages/node-artifact/test",
+          "packages/node-artifact/qualification",
+          "tests"
+        ],
+        "files": [
+          "LICENSE",
+          ".node-version",
+          ".npmrc",
+          ".github/workflows/package-conformance.yml",
+          "package.json",
+          "pnpm-lock.yaml",
+          "pnpm-workspace.yaml",
+          "tsconfig.json",
+          "tsconfig.node-adapter.json",
+          "tsconfig.qualification.json",
+          "tsconfig.tooling.json",
+          "architecture/package-catalog.json",
+          "architecture/foundation/source-dependencies.yaml",
+          "architecture/foundation/scaffolding.yaml",
+          "architecture/feature-module-standard-profile.json",
+          "architecture/decisions/accepted-decisions.json",
+          "docs/decisions/0016-provisional-contribution-and-verified-artifact-packages.md",
+          "packages/core/package.json",
+          "packages/core/tsconfig.json",
+          "packages/core/README.md",
+          "packages/node-artifact/package.json",
+          "packages/node-artifact/tsconfig.json",
+          "packages/node-artifact/README.md"
+        ]
+      }
+    },
+    {
+      "packageId": "extension.node-artifact",
+      "repository": "agent-teams-ai/extension-foundation",
+      "repositoryId": 1333298097,
+      "workflowPath": ".github/workflows/package-conformance.yml",
+      "workflowSha256": "sha256:bfcc323b43f9aeefb5cb119eb7bf9ff249c8483e7399c59b73a20e7a0c346b24",
+      "jobName": "package-conformance",
+      "stepName": "Artifact conformance proof",
+      "allowedEvents": [
+        "push"
+      ],
+      "conformanceVersion": "0.1.0",
+      "consumerId": "qualification.signed-artifact-host",
+      "implementationId": "extension.node-artifact.verified-artifact",
+      "conformanceSha256": "sha256:9e0e168479f056a9454e1fd140b10a0cf80a21413a48f57464f64850a60ea624",
+      "artifactName": "extension-foundation-node-artifact-0.0.0.tgz",
+      "artifactSha256": "sha256:151890f5a69798d4098cd557f03c249678c18f4feb77cdff7563202b935882f9",
+      "sourceInputs": {
+        "roots": [
+          "architecture/checks",
+          "architecture/tooling",
+          "architecture/scaffolding-plans",
+          "packages/core/src",
+          "packages/core/test",
+          "packages/node-artifact/src",
+          "packages/node-artifact/test",
+          "packages/node-artifact/qualification",
+          "tests"
+        ],
+        "files": [
+          "LICENSE",
+          ".node-version",
+          ".npmrc",
+          ".github/workflows/package-conformance.yml",
+          "package.json",
+          "pnpm-lock.yaml",
+          "pnpm-workspace.yaml",
+          "tsconfig.json",
+          "tsconfig.node-adapter.json",
+          "tsconfig.qualification.json",
+          "tsconfig.tooling.json",
+          "architecture/package-catalog.json",
+          "architecture/foundation/source-dependencies.yaml",
+          "architecture/foundation/scaffolding.yaml",
+          "architecture/feature-module-standard-profile.json",
+          "architecture/decisions/accepted-decisions.json",
+          "docs/decisions/0016-provisional-contribution-and-verified-artifact-packages.md",
+          "packages/core/package.json",
+          "packages/core/tsconfig.json",
+          "packages/core/README.md",
+          "packages/node-artifact/package.json",
+          "packages/node-artifact/tsconfig.json",
+          "packages/node-artifact/README.md"
+        ]
+      }
+    }
+  ]
+}

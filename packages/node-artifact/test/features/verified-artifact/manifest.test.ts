@@ -1,4 +1,4 @@
-import assert from "node:assert/strict";
+import { deepEqual, equal, ok, throws } from "node:assert/strict";
 import test from "node:test";
 import { ArtifactError } from "../../../src/features/verified-artifact/contracts.ts";
 import { decodeManifest, inspectManifest, isArtifactPath } from "../../../src/features/verified-artifact/manifest.ts";
@@ -28,16 +28,16 @@ function manifest() {
 }
 
 function refuses(value: unknown, code = "artifact.manifest"): void {
-  assert.throws(() => inspectManifest(value, expected, "publisher/example"),
+  throws(() => inspectManifest(value, expected, "publisher/example"),
     (error: unknown) => error instanceof ArtifactError && error.code === code);
 }
 
 test("the selected JSON representation refuses duplicate keys and alternate numeric or lexical spellings", () => {
   const input = manifest();
-  assert.deepEqual(decodeManifest(JSON.stringify(input)), input);
+  deepEqual(decodeManifest(JSON.stringify(input)), input);
   for (const source of ['{"size":1,"size":2}', '{"size":2,"size":2}', '{"size":2.0}', '{"size":2e0}',
     '{"size":-0}', '{ "size":2}', '{"size":2}\n', '{"path":"\\u0061"}', '{"size":']) {
-    assert.throws(() => decodeManifest(source), (error: unknown) => error instanceof ArtifactError && error.code === "artifact.manifest");
+    throws(() => decodeManifest(source), (error: unknown) => error instanceof ArtifactError && error.code === "artifact.manifest");
   }
 });
 
@@ -45,7 +45,7 @@ test("deep unsupported JSON receives a manifest refusal on either Node serialize
   const source = "[".repeat(20_000) + "0" + "]".repeat(20_000);
   // Node 24 can reject this during stringify; Node 26 can serialize it, then
   // the manifest decoder refuses its unsupported top-level array structure.
-  assert.throws(() => inspectManifest(decodeManifest(source), expected, "publisher/example"),
+  throws(() => inspectManifest(decodeManifest(source), expected, "publisher/example"),
     (error: unknown) => error instanceof ArtifactError && error.code === "artifact.manifest");
 });
 
@@ -54,32 +54,33 @@ test("the closed manifest returns ordered immutable layer facts, not caller-owne
   input.layers.push({ mediaType: "application/octet-stream", digest, size: 8,
     annotations: { "org.opencontainers.image.title": "data/style.json" } });
   const actual = inspectManifest(input, expected, "publisher/example");
-  assert.deepEqual(actual, {
+  deepEqual(actual, {
     entry: "entry.mjs", config: { mediaType: "application/vnd.oci.empty.v1+json", digest, size: 2 },
     files: [{ path: "entry.mjs", digest, size: 40, kind: "module" },
       { path: "data/style.json", digest, size: 8, kind: "asset" }],
   });
   input.layers.splice(0, 1);
-  assert.equal(actual.files.length, 2);
-  assert.ok(Object.isFrozen(actual.files));
-  assert.ok(actual.files.every(Object.isFrozen));
+  equal(actual.files.length, 2);
+  ok(Object.isFrozen(actual.files));
+  ok(actual.files.every(Object.isFrozen));
 });
 
 test("all target, scope, publisher and owner ABI identities agree before loading", () => {
   for (const key of ["target", "scope", "contract", "loader", "publisher", "revision"]) {
     const input = manifest();
-    refuses({ ...input, annotations: { ...input.annotations, [`dev.extension-foundation.${key}`]: "wrong" } }, "artifact.identity");
+    const annotations = Object.fromEntries([...Object.entries(input.annotations), [`dev.extension-foundation.${key}`, "wrong"]]);
+    refuses({ ...input, annotations }, "artifact.identity");
   }
 });
 
 test("paths reject traversal, absolute paths, separators, hidden names and aliases", () => {
   for (const path of ["../entry.mjs", "/entry.mjs", "a//entry.mjs", "a/./entry.mjs", "a/../entry.mjs",
     "a\\entry.mjs", "C:entry.mjs", ".entry.mjs", "a/.secret", "entry.mjs?x", "entry.mjs#x", "a%2fentry.mjs", "a/", ""]) {
-    assert.equal(isArtifactPath(path), false, path);
+    equal(isArtifactPath(path), false, path);
     const input = manifest();
     refuses({ ...input, layers: [{ ...moduleLayer(), annotations: { "org.opencontainers.image.title": path } }] });
   }
-  assert.equal(isArtifactPath("assets/report-2026_11.json"), true);
+  equal(isArtifactPath("assets/report-2026_11.json"), true);
 });
 
 test("a manifest has one entry, no external descriptor URLs, subject or executable data assets", () => {
