@@ -899,9 +899,11 @@ remains its own exact source and evidence; do not recreate those mechanisms.
 
 ### Complete installed-plugin acceptance
 
-E4-E6 must qualify one connected scenario through the actual selected durable
-state, artifact, invocation and resource owners, with independent effect
-observations. Separate stage successes are insufficient for a full-cycle claim.
+The E4-E6 planning milestones must collectively qualify one connected scenario
+through the actual selected durable state, artifact, invocation and resource
+owners, with independent effect observations. Separate stage successes are
+insufficient for a full-cycle claim; these are dependencies of claims, not a
+serial platform project.
 
 | Stage | Required useful outcome and rejecting case |
 | --- | --- |
