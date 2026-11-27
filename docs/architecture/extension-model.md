@@ -121,3 +121,25 @@ qualification requirements, follow [ADR-0011](../decisions/0011-extension-admiss
 [ADR-0014](../decisions/0014-product-local-module-authoring-composition-and-generation-guardrails.md),
 [ADR-0015](../decisions/0015-authorize-get-modular-semantic-extraction.md),
 and [OD-003](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md).
+
+## Evolution-readiness handoff (non-normative)
+
+The organization [evolution-readiness proposal](https://github.com/agent-teams-ai/.github/blob/ea13fbfc7965fce16d9af3c4d7cf8dcca6ff6d29/docs/architecture/evolution-readiness.md)
+distinguishes ordinary reusable static composition from independently
+admitted executable extensions. Preserve explicit contracts, inert
+declarations and owner-specific custody at first implementation without
+requiring OCI packaging, installation catalogs or a dynamic Host for internal
+libraries.
+
+At a real third-party or independent distribution boundary, verify immutable
+artifact and contribution identity, compatibility and trust through Extension
+Foundation. Reuse the qualified LMU operation for live replacement rather
+than implementing another resolver or updater. Product Hosts retain actual
+authorization, rollout eligibility, data and execution custody. A signed
+artifact, chosen implementation or rollout flag cannot grant a permission.
+
+Separately qualify mixed-version activation, delayed cleanup, denied authority
+and isolation where the chosen profile claims them. Keep shared evidence
+fixtures in their owning foundation only when assertions generalize. The
+public SPI requirements above and accepted ADRs remain unchanged; this
+navigation does not admit another package or profile.
