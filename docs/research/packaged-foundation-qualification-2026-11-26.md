@@ -14,8 +14,8 @@ summary: Records executed package qualification, the managed toolchain closure m
 
 This is execution evidence for the [workstream A plan](../architecture/plugin-delivery-plan.md#workstream-a-execution-2026-11-26)
 and [ADR-0016](../decisions/0016-provisional-contribution-and-verified-artifact-packages.md).
-It separates independently executed mechanisms from the incomplete managed
-consumer transition and final online package admission. All delivery belongs to
+It separates independently executed mechanisms and successful online package
+admission from the incomplete managed consumer transition. All delivery belongs to
 [EF PR #70](https://github.com/agent-teams-ai/extension-foundation/pull/70).
 Public npm publication remains deferred.
 
@@ -114,6 +114,28 @@ admission records use this completed source proof. The proposed-merge online
 gate separately verifies them against the current checkout and real GitHub
 evidence; its result belongs to [PR #70 checks](https://github.com/agent-teams-ai/extension-foundation/pull/70/checks).
 Admission metadata and this report do not change the qualified source inventory.
+
+### Actual online admission, 2026-11-27
+
+The proposed-merge [run 45920865467](https://github.com/agent-teams-ai/extension-foundation/actions/runs/45920865467)
+executed the online verifier at source
+`74892d548ae9ade1817719ab6e3deb3c90b8c1a9`. Its
+[package-admission job 140251022502](https://github.com/agent-teams-ai/extension-foundation/actions/runs/45920865467/job/140251022502)
+completed successfully. At `2026-11-27T01:09:05Z`, the actual provider route
+returned `phase-3-package-admission: satisfied` for both packages, bound to
+these exact admission records:
+
+| Package | Admission record SHA-256 |
+| --- | --- |
+| `extension.core` | `af3ef929b5cb950c4b07d0c8fbe679fbe3e91f09bddd82d72be3de915c58280b` |
+| `extension.node-artifact` | `a54db1af591c1f2b9f3ab7a88393812fbdea47c5a8cb92d308e789b3dc0b11c2` |
+
+The verifier used the real workflow credential, completed source proof and
+current source inventory. The receipts above describe the observed job result;
+no local receipt file substitutes for future verification. Accepted ownership,
+source architecture, managed adoption and the complete repository gate remain
+separate obligations. This success does not resolve the upstream transition
+documented below or establish ordinary merge.
 
 ## Review corrections
 

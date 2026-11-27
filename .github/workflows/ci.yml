@@ -63,6 +63,27 @@ jobs:
           test "$PRIMARY_CHECK_RESULT" = success
           test "$(tr -d '\r\n' < .node-version)" = 26.12.1
 
+  docs-authoring:
+    # Qualify the independent authoring contract even when a managed
+    # toolchain transition refuses. Canonical and managed gates remain separate.
+    name: docs-authoring
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: 11.18.0
+          cache: true
+      - run: pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --engine-strict --strict-peer-dependencies
+      - run: pnpm docs:protocol:check
+
   product-sources:
     name: product-sources
     runs-on: ubuntu-24.04

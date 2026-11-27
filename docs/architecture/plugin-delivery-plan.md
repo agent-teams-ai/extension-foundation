@@ -205,12 +205,12 @@ merge, and then required one PR. [EF #70](https://github.com/agent-teams-ai/exte
 is the sole EF change. The planning text below remains the reviewed assignment;
 this dated section records its concrete execution and the later one-PR constraint.
 
-| Step | Implemented surface | Remaining acceptance |
+| Step | Implemented surface | Remaining acceptance or continuing boundary |
 | --- | --- | --- |
 | A0 | ADR-0016 accepted packet and official baseline entry; exact private package ownership | Preserve accepted bytes and original admission obligations |
-| A1 | Authenticated evidence adapter, closed source inventory, policy binding, preparation/admission separation and rejecting controls; actual hosted proof collection passed | Final online verification of the materialized admission records |
-| A2 | Neutral contribution feature, two independent owner schemas, package root/types and clean installed consumers | Final package admission after real workflow proof |
-| A3 | Real OCI/ORAS/Cosign adapter, closed descriptor/data checks, current-authority typed evaluation and native process custody; local and hosted packed Linux campaigns passed on both selected Node runtimes, including 21 signed/transport rejection cases | Ordinary package admission and complete repository gates |
+| A1 | Authenticated evidence adapter, closed source inventory, policy binding, preparation/admission separation and rejecting controls; actual hosted proof collection and final online verification passed | Complete repository gates retain their separate evidence |
+| A2 | Neutral contribution feature, two independent owner schemas, package root/types, clean installed consumers and source-bound online admission | Complete owner/source/managed admission and ordinary merge |
+| A3 | Real OCI/ORAS/Cosign adapter, closed descriptor/data checks, current-authority typed evaluation and native process custody; local and hosted packed Linux campaigns passed on both selected Node runtimes, including 21 signed/transport rejection cases; online admission passed | Complete repository gates and ordinary merge |
 | A4 | Public-root installed campaigns, declaration/deep-import controls, actual Foundation source-boundary fixtures and successful hosted current-source evidence | Complete repository gates |
 | A5 | Scoped FMS enforcement and source rejection controls; EF routes authors to GM's authoritative consumer quickstart | The GM copyable-template erratum remains with GM; it is not changed in this single EF PR |
 | A6 | Public facts/binding contract, tested-archive handoff and independently verified five-scenario combined LMU receipt at `47c17f95` | Full repository admission gates and ordinary merge; the bounded joint fixture claims no staging-failure recovery |
