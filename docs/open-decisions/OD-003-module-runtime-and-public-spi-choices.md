@@ -882,3 +882,74 @@ or public surface, applicable host placements, compatibility and migration
 rules, negative cases, immutable evidence, and conformance results. Runtime,
 host, public-SPI, and state-migration choices may be resolved separately; none
 silently grants another.
+
+## Owner-required plugin lifecycle and public-contract outcomes, 2026-11-27
+
+The owner requires a modular plugin foundation whose long-term lifecycle,
+portability and operating guarantees are competitive with the reviewed systems.
+Use the [pinned research and counterexamples](https://github.com/agent-teams-ai/engineering-research/blob/e2a5f6c47e008f93094dc88ed39ea9618722f28d/docs/lessons/preimplementation-decisions.md#second-campaign-discriminate-the-remaining-design-decisions)
+to refine the existing [delivery plan](../architecture/plugin-delivery-plan.md).
+Full install, useful invocation, update with admitted old work, disable,
+uninstall and restart recovery are required target outcomes. A finite packaged
+artifact or restart-only fixture does not discharge the entire target.
+This clarification does not expand its supported envelope, rewrite accepted
+ADRs, publish a stable SPI or replace the separate product-adoption gates.
+The [bounded package delivery in PR #70](https://github.com/agent-teams-ai/extension-foundation/blob/8c16e5dbf24d8a09d9f33fe7c3ee8f38bf74599c/docs/architecture/plugin-delivery-plan.md#workstream-a-execution-2026-11-26)
+remains its own exact source and evidence; do not recreate those mechanisms.
+
+### Complete installed-plugin acceptance
+
+E4-E6 must qualify one connected scenario through the actual selected durable
+state, artifact, invocation and resource owners, with independent effect
+observations. Separate stage successes are insufficient for a full-cycle claim.
+
+| Stage | Required useful outcome and rejecting case |
+| --- | --- |
+| Install and enable | Bind immutable verified executable closure to installation and current grants. Reject known incompatible inert contract metadata, wrong scope or revoked evaluation admission before prohibited evaluation; the actual receiver separately enforces effect authority. |
+| Use | Invoke the installed public capability and observe its actual useful effect; discovery, import or worker readiness alone is insufficient. |
+| Update during work | Within the selected admitted-work budget, demonstrate useful fresh B work while permitted A work remains coherent through LMU's selected replacement profile; reject stale/revoked effects at the actual receiver and preserve unrelated installations. |
+| Disable | Close new admission and apply the explicit existing-work policy; retain uncertain effects, original cleanup and artifact holds instead of inferring physical stop. |
+| Uninstall | Remove routing only under current authority; preserve canonical user data and retained runtime/client assets, and apply the separately authorized private-state retention/deletion policy. |
+| Restart and recover | Interrupt after acquisition, committed publication with lost reply, and pending retirement; reconcile original identities/receipts against the real store and receiver. Disabled/removed installations and obsolete grants cannot revive from cached metadata. |
+
+At exhausted budgets, explicit refusal or deferred observation remains valid;
+it must not be reported as useful B adoption.
+The current finite evaluation profile makes no physical ESM-unload claim.
+Export validation after import may follow top-level execution; retain its custody
+and evaluation budget rather than claiming that no evaluation occurred.
+For continuous delivery, the actual loader/realm owner must account for
+cumulative evaluation attempts and captured bytes, including evaluation that
+fails export validation. Bound admission before further evaluation; distinguish
+retiring a logical generation from reclaiming its code. Use an explicitly
+qualified restart/recyclable-realm profile rather than unbounded cache-busting.
+LMU owns pin/drain, handover and retirement coordination; physical custody and
+state migration stay with their existing owners. EF supplies verified facts,
+not another lifecycle engine, canonical product store or universal supervisor.
+
+### Trust, headless contracts and author ergonomics
+
+Browser, Desktop and untrusted extensions remain required target profiles.
+Select trust explicitly: an artifact signature, capability declaration,
+same-process permission check or separate Worker does not prove containment.
+An isolation claim requires real denied filesystem/network/privileged IPC
+effects, resource limits and observed stop under its declared threat model.
+Shared-trust modules may share a realm; business agents do not each require a
+process. Protected product invariants and effect authority remain Host-owned.
+
+Public extension contracts must identify versioned semantic capabilities,
+required and optional contributions, bounded failure/diagnostic behavior and
+compatibility across retained old/new work. Keep existing owner-defined payloads
+and validators; do not replace them with a global service bag or category enum.
+Stable SPI publication retains independent implementations and conformance;
+two Hosts reusing one implementation prove a different reuse claim.
+
+Qualify the author path with one useful external headless plugin through
+independently wired Hosts and the applicable complete lifecycle. It must work
+without optional renderer/shell packages or organization credentials; verify
+public declarations and installed dependency closure. Optional UI uses the
+[existing headless/UI design](https://github.com/agent-teams-ai/live-module-updates/blob/77a3ecc4ace12509961bd3ff43e80703b0303c40/docs/architecture/headless-plugins-and-ui.md):
+current action authority, accessible interaction, stale-result rejection and
+promised dirty-state/client-asset continuity require their own evidence.
+Record time to first useful plugin, required glue, actionable refusal messages
+and upgrade/recovery steps. A facade or preset is justified only by this
+comparison; no new universal renderer, plugin DSL or duplicate SDK is selected.
