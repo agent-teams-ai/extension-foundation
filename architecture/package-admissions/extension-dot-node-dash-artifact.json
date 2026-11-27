@@ -8,9 +8,9 @@
       "consumer_id": "qualification.signed-artifact-host",
       "consumer_repository": "agent-teams-ai/extension-foundation",
       "evidence_kind": "independent-conformance",
-      "evidence_reference": "https://api.github.com/repos/agent-teams-ai/extension-foundation/actions/jobs/140244761321/steps/18/logs#sha256=d1effd6da39c90016ef6ea78e070988f0a0ea23a4f36597c05a0075952cfd3ae",
+      "evidence_reference": "https://api.github.com/repos/agent-teams-ai/extension-foundation/actions/jobs/140262679183/steps/18/logs#sha256=377ec4a83e41bd403b3fb6c9b019dd749d551360a9bc8496e2fe2d804103716d",
       "implementation_id": "extension.node-artifact.verified-artifact",
-      "source_revision": "4990f1f5047ef4b71e95aa74eba86fc646e84e35"
+      "source_revision": "24bd136a105c46dd75f7c92948cf680f1d008442"
     }
   ],
   "extraction_decision": "ADR-0016",

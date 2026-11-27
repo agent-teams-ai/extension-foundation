@@ -107,10 +107,10 @@ closed source-input digest is
 | `extension.core` | 17 | `2f88b8da080ecad6b815f573d4c5aa4e4ae0e74447cacbebdebf78f12d089aea` |
 | `extension.node-artifact` | 18 | `d1effd6da39c90016ef6ea78e070988f0a0ea23a4f36597c05a0075952cfd3ae` |
 
-The [evidence policy](../../architecture/package-evidence-policy.json) and
+At that stage, the [evidence policy](../../architecture/package-evidence-policy.json) and
 [core](../../architecture/package-admissions/extension-dot-core.json) /
 [artifact](../../architecture/package-admissions/extension-dot-node-dash-artifact.json)
-admission records use this completed source proof. The proposed-merge online
+admission records used this completed source proof. The proposed-merge online
 gate separately verifies them against the current checkout and real GitHub
 evidence; its result belongs to [PR #70 checks](https://github.com/agent-teams-ai/extension-foundation/pull/70/checks).
 Admission metadata and this report do not change the qualified source inventory.
@@ -136,6 +136,46 @@ no local receipt file substitutes for future verification. Accepted ownership,
 source architecture, managed adoption and the complete repository gate remain
 separate obligations. This success does not resolve the upstream transition
 documented below or establish ordinary merge.
+
+### Executable fixture coverage successor, 2026-11-27
+
+The continuation review found that `fixtures/qualification-toy-package` was
+packaged and executed by the full qualification suite but absent from its
+closed source inventory. Changing that fixture could leave the old source
+digest unchanged. Production package inputs were already covered; this was a
+gap in binding the complete qualification campaign to its executable inputs.
+
+[Repair 24bd136](https://github.com/agent-teams-ai/extension-foundation/commit/24bd136a105c46dd75f7c92948cf680f1d008442)
+adds the fixture directory to the canonical profile and both package policies.
+The filesystem regression first failed against the previous profile, then
+proved that changing its JavaScript, declarations or manifest invalidates the
+previous digest. All 83 admission controls and strict TS7 tooling compilation
+passed locally. A second independent review accepted the bounded correction.
+
+The actual [push run 45924531431, attempt 1](https://github.com/agent-teams-ai/extension-foundation/actions/runs/45924531431)
+then passed producer job `140262679183` and collector job `140263254682` on that
+source. It executed 246 qualification scenarios, 83 admission controls, 75 FMS
+tests, 12 core tests and 11 portable artifact tests with zero failures or skips.
+The real patched Chrome Worker, separately installed consumers and native
+campaigns on Node 26.12.1 and 24.22.3 passed. The two package archives retain
+their earlier exact hashes, so the existing joint LMU artifact evidence remains
+about the same runtime bytes.
+
+The collector authenticated the completed job and read its real proof steps.
+Both records bind the expanded source digest
+`sha256:d9d7662d54b464639a88ab581f9ed76c2f59d54adc123bd64dd70323c60e9994`.
+
+| Package | Actual proof step | Raw step-log SHA-256 |
+| --- | --- | --- |
+| `extension.core` | 17 | `3220f7a3399c8c724d86be7b23f7df8cddbac6bd1cf9b796b9ed56b5c6e84b5b` |
+| `extension.node-artifact` | 18 | `377ec4a83e41bd403b3fb6c9b019dd749d551360a9bc8496e2fe2d804103716d` |
+
+The current admission records now reference those observed steps and source
+`24bd136a105c46dd75f7c92948cf680f1d008442`. Their materialization preserved the
+expanded source digest exactly. The independent online admission job must
+verify these records against GitHub and the current checkout; creating these
+references does not itself assert a successful verifier result or waive the
+remaining managed transition and complete repository gates.
 
 ## Review corrections
 
@@ -441,6 +481,38 @@ activation in this same PR. Local edits to managed pins, receipts or expected
 digests cannot substitute for the missing upstream qualification. Implementing
 that upstream correction would require changes outside the owner's one-EF-PR
 scope and its separate release and qualification processes.
+
+The continuation review additionally checked the retained source reader, not
+only the target runtime selector. At the same producer revision, its
+[source observation](https://github.com/agent-teams-ai/engineering-foundation/blob/8432a9737486384f894436bfd9242500e422fa5a/packages/docs-protocol-agent-teams/src/consumer-integration/adapters/node-consumer-integration-runtime.ts)
+requires physical Node 24.21.0 and accepts a preserved Node 26 source pin only
+when its bytes are exactly `26.11.1\n`. The source, restoration and qualification
+contracts retain those coordinates under
+[ADR-0075](https://github.com/agent-teams-ai/engineering-foundation/blob/8432a9737486384f894436bfd9242500e422fa5a/docs/decisions/0075-retained-upgrade-preserving-source-node26-pin.md).
+EF now pins 26.12.1. Replacing one executable or changing only one version
+comparison cannot establish a supported transition or its recovery guarantees.
+
+The bounded prerequisite sequence is therefore:
+
+1. Publish a producer successor that qualifies the patched controller and
+   target runtimes together with preserved-pin admission, fresh finalization
+   and restoration. Preserve the compiler floor and existing mutation custody.
+2. Qualify a Central successor against EF's actual source lock and Node-types
+   peer graph, retaining exact closure verification and actual publication
+   provenance. An EF-specific qualified closure is the narrower first route;
+   a generalized target-lock feature is not assumed necessary.
+3. Select that real successor for EF, then execute ordinary preparation,
+   finalization and activation in this same PR. Verify the full repository,
+   platform and managed Docs gates before ordinary merge and final-main checks.
+
+The current standalone documentation result is separately confirmed:
+[docs-authoring job 140255987170](https://github.com/agent-teams-ai/extension-foundation/actions/runs/45922423565/job/140255987170)
+passed the unchanged complete `docs:protocol:check` on `c1aae9ad`. The failed
+canonical check in that same run refuses the embedded old compiler; the
+[trusted Docs authorization job](https://github.com/agent-teams-ai/extension-foundation/actions/runs/45922423704/job/140255987310)
+refuses the incompatible registry schema. These are completed failures, not
+runner queues, and the successful standalone documentation job does not replace
+either required gate.
 
 ## Independent official scaffold qualification completed
 

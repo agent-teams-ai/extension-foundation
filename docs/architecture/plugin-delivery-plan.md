@@ -208,7 +208,7 @@ this dated section records its concrete execution and the later one-PR constrain
 | Step | Implemented surface | Remaining acceptance or continuing boundary |
 | --- | --- | --- |
 | A0 | ADR-0016 accepted packet and official baseline entry; exact private package ownership | Preserve accepted bytes and original admission obligations |
-| A1 | Authenticated evidence adapter, closed source inventory, policy binding, preparation/admission separation and rejecting controls; actual hosted proof collection and final online verification passed | Complete repository gates retain their separate evidence |
+| A1 | Authenticated evidence adapter, closed source inventory including the executed packed fixture, policy binding, preparation/admission separation and 83 rejecting/accepting controls; actual hosted proof collection and live provider verification | Current online admission and complete repository gates retain their separate evidence |
 | A2 | Neutral contribution feature, two independent owner schemas, package root/types, clean installed consumers and source-bound online admission | Complete owner/source/managed admission and ordinary merge |
 | A3 | Real OCI/ORAS/Cosign adapter, closed descriptor/data checks, current-authority typed evaluation and native process custody; local and hosted packed Linux campaigns passed on both selected Node runtimes, including 21 signed/transport rejection cases; online admission passed | Complete repository gates and ordinary merge |
 | A4 | Public-root installed campaigns, declaration/deep-import controls, actual Foundation source-boundary fixtures and successful hosted current-source evidence | Complete repository gates |
