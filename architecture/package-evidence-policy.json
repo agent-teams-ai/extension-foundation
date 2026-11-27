@@ -6,7 +6,7 @@
       "repository": "agent-teams-ai/extension-foundation",
       "repositoryId": 1333298097,
       "workflowPath": ".github/workflows/package-conformance.yml",
-      "workflowSha256": "sha256:bfcc323b43f9aeefb5cb119eb7bf9ff249c8483e7399c59b73a20e7a0c346b24",
+      "workflowSha256": "sha256:b6b0e803372529ab81cc0972908c8aef7fdcf89ef28bae50e233efbc2cc3c8d4",
       "jobName": "package-conformance",
       "stepName": "Core conformance proof",
       "allowedEvents": [
@@ -62,7 +62,7 @@
       "repository": "agent-teams-ai/extension-foundation",
       "repositoryId": 1333298097,
       "workflowPath": ".github/workflows/package-conformance.yml",
-      "workflowSha256": "sha256:bfcc323b43f9aeefb5cb119eb7bf9ff249c8483e7399c59b73a20e7a0c346b24",
+      "workflowSha256": "sha256:b6b0e803372529ab81cc0972908c8aef7fdcf89ef28bae50e233efbc2cc3c8d4",
       "jobName": "package-conformance",
       "stepName": "Artifact conformance proof",
       "allowedEvents": [

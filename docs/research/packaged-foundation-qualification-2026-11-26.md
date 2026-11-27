@@ -78,16 +78,42 @@ the raw artifact step-log digest is
 `sha256:4d592a86eb5928cc4bea9cdaaea6d157f8c40e7b33cd27c69acfb961d3a96c2b`.
 These are provider log identities, not hashes reconstructed from local JSON.
 
+The first admission records were derived from those actual completed-run
+values. Their existing strict policy validators passed, and materializing the
+metadata left the source-input digest unchanged. Later qualification-source
+corrections required new completed-run evidence; the successor below records
+the current proof. No verification receipt is stored or invented. A successful
+producer/collector run alone does not satisfy the separate accepted-owner or
+managed-cohort gates.
+
+### Final source qualification successor, 2026-11-27
+
+The actual [push run 45918944244, attempt 1](https://github.com/agent-teams-ai/extension-foundation/actions/runs/45918944244)
+completed successfully for source
+[`4990f1f5047ef4b71e95aa74eba86fc646e84e35`](https://github.com/agent-teams-ai/extension-foundation/commit/4990f1f5047ef4b71e95aa74eba86fc646e84e35).
+Producer job `140244761321` executed Chrome for Testing 158.0.8127.88 and passed
+all 246 existing qualification scenarios, including the real browser Worker,
+with zero failures or skips. Admission controls, all 75 FMS tests, strict TS7
+compilation, both package checks and independent installed consumers passed.
+The real native artifact campaign passed on Node 26.12.1 and 24.22.3, and the
+exact archive comparison passed. Both package archives retain the digests above.
+
+Collector job `140245353539` successfully read the actual proof steps. The
+closed source-input digest is
+`sha256:d5d9e2032ef72ad7053b2b58ae4c86214905ea3cdc4ca6cc46e5bc79d5c83f12`.
+
+| Package | Actual proof step | Raw step-log SHA-256 |
+| --- | --- | --- |
+| `extension.core` | 17 | `2f88b8da080ecad6b815f573d4c5aa4e4ae0e74447cacbebdebf78f12d089aea` |
+| `extension.node-artifact` | 18 | `d1effd6da39c90016ef6ea78e070988f0a0ea23a4f36597c05a0075952cfd3ae` |
+
 The [evidence policy](../../architecture/package-evidence-policy.json) and
 [core](../../architecture/package-admissions/extension-dot-core.json) /
 [artifact](../../architecture/package-admissions/extension-dot-node-dash-artifact.json)
-admission records are derived from those actual completed-run values. Their
-existing strict policy validators passed, and materializing the metadata left
-the source-input digest unchanged. No verification receipt is stored or invented.
-The proposed-merge online gate validates the final records against the current
-source subject; its current result is recorded in [PR #70 checks](https://github.com/agent-teams-ai/extension-foundation/pull/70/checks).
-A successful producer/collector run alone does not satisfy the separate
-accepted-owner or managed-cohort gates.
+admission records use this completed source proof. The proposed-merge online
+gate separately verifies them against the current checkout and real GitHub
+evidence; its result belongs to [PR #70 checks](https://github.com/agent-teams-ai/extension-foundation/pull/70/checks).
+Admission metadata and this report do not change the qualified source inventory.
 
 ## Review corrections
 
@@ -361,6 +387,38 @@ qualified TS7-compatible Cohort alternative.
 The stable33 qualification record explicitly states `canaryExecuted: false`
 and `consumerFinalChecksCompleted: false`. Producer qualification therefore
 does not establish success of this actual EF consumer transition.
+
+### Current official-route review, 2026-11-27
+
+Fresh release, registry and open-change reads found a second independent
+constraint. The published controller 0.7.1 and the
+[current producer runtime selector](https://github.com/agent-teams-ai/engineering-foundation/blob/8432a9737486384f894436bfd9242500e422fa5a/packages/docs-protocol-agent-teams/src/consumer-integration/adapters/node-consumer-upgrade-runtime.ts)
+require exactly physical Node 24.21.0 or 26.11.1. The selector observes the real
+binary version and repeats that check before applying the transition. Its exact
+comparison rejects the patched runtimes used by this EF qualification. This is
+a source-reviewed restriction; the old binaries were not executed again. A
+closure correction alone would therefore leave the safe-runtime transition
+unavailable. The [current target-lock validator](https://github.com/agent-teams-ai/engineering-foundation/blob/8432a9737486384f894436bfd9242500e422fa5a/packages/docs-protocol-agent-teams/src/consumer-integration/adapters/node-consumer-target-lockfile.ts)
+also retains the generation 1-to-2-only route described above.
+
+The actual pending [producer release PR #482](https://github.com/agent-teams-ai/engineering-foundation/pull/482)
+changes Foundation, FMS and Stack versions, not the Docs controller or runtime
+policy. [Central stable34 PR #449](https://github.com/agent-teams-ai/.github/pull/449)
+retains the same controller and 88-package closure and selects only Orchestrator
+as its canary. [EF selection PR #434](https://github.com/agent-teams-ai/.github/pull/434)
+only changes the desired cohort. Their completion does not supply a compatible
+EF transition; the inspected active source-governance canaries do not change
+these inputs either.
+
+The mechanism owners must supply a published, qualified retained controller
+and runtime policy supporting the patched physical Node versions, together
+with an EF-compatible closure or an officially supported bounded target-lock
+route for generation 2-to-3. Its actual cohort must then be qualified in Central.
+EF can consume that result through ordinary preparation, finalization and
+activation in this same PR. Local edits to managed pins, receipts or expected
+digests cannot substitute for the missing upstream qualification. Implementing
+that upstream correction would require changes outside the owner's one-EF-PR
+scope and its separate release and qualification processes.
 
 ## Independent official scaffold qualification completed
 
