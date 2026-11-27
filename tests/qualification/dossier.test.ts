@@ -1396,11 +1396,34 @@ test("OSS comparison distinguishes immutable evidence from orientation research"
   }
 });
 
-test("no qualification result admits a production package", async () => {
+test("fixture qualification cannot admit unowned or public packages", async () => {
   const packageCatalog = JSON.parse(
     await readFile(resolve(repositoryRoot, "architecture/package-catalog.json"), "utf8"),
   ) as {
     readonly packages?: readonly unknown[];
   };
-  assert.deepEqual(packageCatalog.packages, []);
+  const expectedPackages = [
+    {
+      id: "extension.core",
+      role: "foundation-component",
+      path: "packages/core",
+      package_name: "@extension-foundation/core",
+      owner_document: "ADR-0016",
+    },
+    {
+      id: "extension.node-artifact",
+      role: "integration-adapter",
+      path: "packages/node-artifact",
+      package_name: "@extension-foundation/node-artifact",
+      owner_document: "ADR-0016",
+    },
+  ];
+  assert.deepEqual(packageCatalog.packages, expectedPackages);
+  for (const entry of expectedPackages) {
+    const manifest: unknown = JSON.parse(
+      await readFile(resolve(repositoryRoot, entry.path, "package.json"), "utf8"),
+    );
+    assert.ok(typeof manifest === "object" && manifest !== null && "private" in manifest);
+    assert.equal(manifest.private, true, `${entry.id} must remain private`);
+  }
 });

@@ -35,7 +35,7 @@ jobs:
           cache: true
       - run: pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --engine-strict --strict-peer-dependencies
       - run: pnpm architecture:admission:test && pnpm architecture:feature-module-profile && pnpm architecture:feature-module-profile:test
-      - run: pnpm tooling:typecheck && pnpm qualification:typecheck && pnpm --recursive --filter "./packages/**" check
+      - run: pnpm tooling:typecheck && pnpm qualification:check && pnpm --recursive --filter "./packages/**" check
       - run: mkdir -p "$EF_QUALIFICATION_ARTIFACT_DIR"
       - name: Qualify independently installed core consumers
         run: pnpm qualification:core-packed:check

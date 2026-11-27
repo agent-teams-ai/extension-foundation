@@ -8,9 +8,9 @@
       "consumer_id": "qualification.headline-and-quota",
       "consumer_repository": "agent-teams-ai/extension-foundation",
       "evidence_kind": "independent-conformance",
-      "evidence_reference": "https://api.github.com/repos/agent-teams-ai/extension-foundation/actions/jobs/140230571298/steps/16/logs#sha256=4e644080e33f16a04cfcfac4671807cbe0c60a3a4ad838554eb67078a75c0a77",
+      "evidence_reference": "https://api.github.com/repos/agent-teams-ai/extension-foundation/actions/jobs/140234719367/steps/16/logs#sha256=8b16d1c85545f776e7f4ec90cf49e55a9e74fcbc1169bd980168441568b98f60",
       "implementation_id": "extension.core.contributions",
-      "source_revision": "c0a8f2733b54323e2f85322b86167491a169af1d"
+      "source_revision": "d65212ea1b139545de049920d7a1118a141eceb9"
     }
   ],
   "extraction_decision": "ADR-0016",

@@ -122,6 +122,16 @@ controls remain unchanged. All 27 topology tests then passed in the supported
 Foundation4 copy. These test-source changes require fresh hosted proof even
 though the packaged runtime bytes are unchanged.
 
+The remaining independent qualification suite exposed an obsolete empty-catalog
+assertion. It now requires exactly the two ADR-0016 package identities, roles,
+paths and owners, and verifies both manifests remain private. The producer runs
+the entire existing `qualification:check`, including its real browser Worker
+scenario, instead of only the qualification compiler project. The local system
+browser launcher points into unavailable files on a read-only mount; no browser
+skip or alternate harness is accepted as a successful full campaign. The actual
+hosted run supplies that complete result. The root compiler, dogfooding model
+and public Foundation4 mandatory custody runner were separately exercised.
+
 The first real hosted campaign exposed a clean-runner assumption: a frozen root
 install supplies package bytes without necessarily caching registry metadata for
 a second independent install. The consumer now starts with an explicitly empty
