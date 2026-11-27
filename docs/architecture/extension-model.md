@@ -143,3 +143,36 @@ and isolation where the chosen profile claims them. Keep shared evidence
 fixtures in their owning foundation only when assertions generalize. The
 public SPI requirements above and accepted ADRs remain unchanged; this
 navigation does not admit another package or profile.
+
+## First useful plugin journey before a public management API (design guidance)
+
+For the first selected E4–E6 Host/profile, exercise **one independent authored
+plugin and an unrelated healthy plugin** before fixing the product's
+install/update/status UX or declaring industry parity. Reuse the existing
+[plugin-delivery E4–E6 plan](plugin-delivery-plan.md#e4-durable-installation-and-owner-state)
+and [research follow-up](https://github.com/agent-teams-ai/engineering-research/pull/32),
+not a second plugin manager or admission gate.
+
+- A cold listing or signed artifact is **not** active, granted or useful runtime
+  state. Observe actual first invocation, restart restoration, disable/uninstall
+  and retained user data through the selected Host, with an actionable error
+  when a prepared contribution cannot serve work.
+- Before applying an update that changes declared capabilities, the actual
+  product authority owns consent and any grant change. A preview can explain
+  identity, affected consumers, required restart and new permissions, but
+  cannot grant effects or prove that activation succeeded. Declined consent,
+  stale approval and denied receiver effects keep their original outcomes.
+- Prove A's update/failure cannot dispose B's independent registration or
+  borrowed resources. Retain captured source **including companion files**
+  while a late hook, provider, stream or cleanup owner still holds it; removal
+  from routing alone cannot authorize deletion of those bytes.
+- Keep ordinary headless/plugin authoring usable without a UI or production
+  fleet. Measure author steps, packed dependency closure, cold discovery and
+  first useful result in two independently wired test Hosts. A missing
+  supported guarantee is reported as such; neither Worker placement nor a
+  checked signature establishes hostile-code containment.
+
+This is a concrete future consumer discriminator, **not** a new public SPI,
+required production package, isolation profile, current PR #70 acceptance
+expansion or blanket retrofit. Existing ADR-0011/0015, OD-003 and real Host
+adoption/qualification remain the authority.
