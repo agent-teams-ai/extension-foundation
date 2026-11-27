@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { digestSourceInputs, readSourceInputs, sha256 } from "../architecture/checks/admission-evidence/index.ts";
+import { qualificationSourceInputs } from "../architecture/checks/admission-evidence/qualification-profile.ts";
 
 test("closed source inventory includes real files and detects additions/content changes while excluding receipt-only docs", async () => {
   const root = await mkdtemp(join(tmpdir(), "ef-admission-inputs-"));
@@ -26,6 +27,32 @@ test("closed source inventory includes real files and detects additions/content 
     assert.notEqual(digestSourceInputs(added), digestSourceInputs(before));
     await writeFile(join(root, "pnpm-lock.yaml"), "changed toolchain closure\n");
     assert.notEqual(digestSourceInputs(await readSourceInputs(root, selection)), digestSourceInputs(added));
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("qualification evidence changes when any executed toy package input changes", async () => {
+  const root = await mkdtemp(join(tmpdir(), "ef-qualification-inputs-"));
+  try {
+    for (const path of qualificationSourceInputs.roots) {
+      await mkdir(join(root, path), { recursive: true });
+    }
+    for (const path of qualificationSourceInputs.files) {
+      await mkdir(dirname(join(root, path)), { recursive: true });
+      await writeFile(join(root, path), "unchanged qualification input\n");
+    }
+    const fixture = join(root, "fixtures/qualification-toy-package");
+    await mkdir(fixture, { recursive: true });
+    const original = "qualified toy package input\n";
+    const names = ["index.js", "index.d.ts", "package.json"];
+    for (const name of names) await writeFile(join(fixture, name), original);
+    const provedInputs = digestSourceInputs(await readSourceInputs(root, qualificationSourceInputs));
+    for (const name of names) {
+      await writeFile(join(fixture, name), "changed toy package input\n");
+      assert.notEqual(digestSourceInputs(await readSourceInputs(root, qualificationSourceInputs)), provedInputs,
+        `${name} changes must invalidate the previously qualified source digest`);
+      await writeFile(join(fixture, name), original);
+    }
+    assert.equal(digestSourceInputs(await readSourceInputs(root, qualificationSourceInputs)), provedInputs);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 

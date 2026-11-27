@@ -9,7 +9,7 @@ export const qualificationRepositoryId = 1333298097;
 export const qualificationSourceInputs: SourceInputSelection = {
   roots: ["architecture/checks", "architecture/tooling", "architecture/scaffolding-plans",
     "packages/core/src", "packages/core/test", "packages/node-artifact/src", "packages/node-artifact/test",
-    "packages/node-artifact/qualification", "tests"],
+    "packages/node-artifact/qualification", "tests", "fixtures/qualification-toy-package"],
   files: ["LICENSE", ".node-version", ".npmrc", qualificationWorkflow, "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml",
     "tsconfig.json", "tsconfig.node-adapter.json", "tsconfig.qualification.json", "tsconfig.tooling.json", "architecture/package-catalog.json",
     "architecture/foundation/source-dependencies.yaml", "architecture/foundation/scaffolding.yaml",

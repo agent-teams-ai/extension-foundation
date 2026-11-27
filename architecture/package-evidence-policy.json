@@ -28,7 +28,8 @@
           "packages/node-artifact/src",
           "packages/node-artifact/test",
           "packages/node-artifact/qualification",
-          "tests"
+          "tests",
+          "fixtures/qualification-toy-package"
         ],
         "files": [
           "LICENSE",
@@ -84,7 +85,8 @@
           "packages/node-artifact/src",
           "packages/node-artifact/test",
           "packages/node-artifact/qualification",
-          "tests"
+          "tests",
+          "fixtures/qualification-toy-package"
         ],
         "files": [
           "LICENSE",
