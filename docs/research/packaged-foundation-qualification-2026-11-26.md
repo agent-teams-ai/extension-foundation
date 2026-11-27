@@ -33,9 +33,9 @@ public contracts expose no GM construction types or product-specific domain.
 | Independent core consumers | Node 26.12.1, pnpm 11.18.0 and TS7.0.2; two separate clean installs compiled and executed the same archive | No runtime checkout aliases; this is not two SPI implementations |
 | Core artifact | SHA-256 `69e28e28eb7e134598903cbc09edd637599f69a4681581b2e93d4af388ef6802` | This hash identifies the observed local tested bytes; hosted current-source proof remains separate |
 | Real native route | Actual Distribution registry, digest-addressed ORAS manifest/blob retrieval and Cosign direct-key verification executed | Disposable publisher, no transparency-log/keyless or GHCR/Harbor qualification claim |
-| Artifact package | Node 26.12.1, pnpm 11.18.0 and TS7.0.2; strict typecheck, build and 10 portable manifest/profile tests passed | Public factory refuses unsupported platforms before native work |
-| Independent artifact consumer | Actual installed public package; 8 mandatory Linux campaign tests passed with zero skips, including 21 signed/transport rejection cases and native process/staging custody controls | Linux x64 cooperative finite artifact profile; no hostile-code containment |
-| Artifact archive | SHA-256 `01b2b2fcaba5b700988954c276332d22dbf0b122ec1d5b858020405b6712e754` | Exact retained local tested bytes; hosted current-source proof remains separate |
+| Artifact package | Node 24.22.3 and 26.12.1, pnpm 11.18.0 and TS7.0.2; strict typecheck, build and 10 portable manifest/profile tests passed | Public factory refuses unsupported platforms before native work |
+| Independent artifact consumer | On both actual runtimes, 8 mandatory Linux campaign tests passed with zero skips, including 21 signed/transport rejection cases and native process/staging custody controls; each consumer started with an empty registry metadata cache | Linux x64 cooperative finite artifact profile; no hostile-code containment |
+| Artifact archive | Both runtime campaigns produced identical SHA-256 `151890f5a69798d4098cd557f03c249678c18f4feb77cdff7563202b935882f9` | Exact retained local tested bytes; hosted current-source proof remains separate |
 | Source boundaries | Actual published Foundation4.0.2 analyzed the working tree with zero diagnostics; 11 positive/rejecting production-source tests passed | Isolated selected-tool evidence, not managed consumer adoption |
 | Admission and preparation | Authenticated-provider controls, source-policy binding, source additions, malformed evidence and preparation refusal cases passed | Mock transport cases do not prove the live provider route |
 | FMS | 75 tests passed, including retained dogfooding budgets and new scoped production checks | Structural scope only; runtime conformance remains not claimed |
@@ -49,6 +49,13 @@ closed source inputs and tested archive hash. Failed or unavailable evidence
 refuses; neither local mock receipts nor arbitrary local evidence files can
 satisfy this gate. Final provider coordinates are recorded only after that
 actual workflow completes successfully.
+
+The proposed-merge admission job executes the same repository verifier with
+the workflow's real Actions-read credential. It consumes an already completed
+push run whose selected source bytes match the current checkout. The producing
+push run does not depend on its own admission receipt. This verifies the live
+evidence port separately from accepted ownership, source boundaries and the
+managed-toolchain gates; those obligations remain in the full repository gate.
 
 ## Review corrections
 
@@ -73,6 +80,17 @@ Linux qualification campaign, with their own narrow development source boundary.
 This preserves the repository's macOS/Windows package checks without skipping
 the Linux custody requirements, crossing package-private source boundaries or
 opening private package exports.
+
+The first real hosted campaign exposed a clean-runner assumption: a frozen root
+install supplies package bytes without necessarily caching registry metadata for
+a second independent install. The consumer now starts with an explicitly empty
+metadata cache and resolves its lockfile through the normal registry route. It
+then requires exactly the three reviewed registry packages, identical root-lock
+integrities and dependency edges, plus the exact local archive's SHA-512. The
+actual installation remains frozen and offline with scripts and hooks disabled.
+The reviewed transitive type dependency is pinned explicitly in the disposable
+consumer; no override or peer-policy relaxation is used. The repeated real
+Node 24.22.3 and 26.12.1 campaigns both passed this cold-cache route.
 
 ## Current compiler preset owner
 

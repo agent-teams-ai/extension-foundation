@@ -227,6 +227,7 @@ boundaries:
       - tests/qualification/artifact/registry-fixture.ts
       - tests/qualification/artifact/native-tools.ts
       - tests/qualification/artifact/install-native-tools.ts
+      - tests/qualification/artifact/install-consumer.ts
       - tests/qualification/artifact/packed.qualification.ts
       - tests/fixtures/packaged-artifact
       - tests/admission-evidence-repository.test.ts

@@ -7,6 +7,7 @@ import { arch, env, execPath, platform } from "node:process";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { createRegistryFixture, type SignedFixture } from "./registry-fixture.ts";
+import { installConsumer } from "./install-consumer.ts";
 import { releases, runFile, selectedTools, sha256 } from "./native-tools.ts";
 
 const repository = fileURLToPath(new URL("../../../", import.meta.url));
@@ -129,11 +130,6 @@ test("packed Node artifact consumer verifies a real signed OCI closure before ty
   await mkdir(directory);
   await mkdir(stagingRoot);
   await symlink(stagingRoot, symlinkStagingRoot, "dir");
-  await writeFile(join(directory, "package.json"), JSON.stringify({
-    name: "independent-artifact-consumer", private: true, type: "module",
-    dependencies: { "@extension-foundation/node-artifact": `file:${archive}` },
-    devDependencies: { "@types/node": types.version },
-  }, null, 2));
   await copyFile(join(repository, "tests", "fixtures", "packaged-artifact", "consumer.ts"), join(directory, "consumer.ts"));
   const inputs = { tools: { oras: tools.oras, cosign: tools.cosign }, stagingRoot, symlinkStagingRoot,
     originalModuleBlob: await registry.moduleBlob(good), good, failures };
@@ -146,8 +142,7 @@ test("packed Node artifact consumer verifies a real signed OCI closure before ty
       skipLibCheck: false, noEmitOnError: true, declaration: true, outDir: "output",
     }, files: ["consumer.ts", "inputs.ts"],
   }, null, 2));
-  await pnpm(["install", "--lockfile-only", "--offline", "--ignore-scripts", "--ignore-pnpmfile", "--strict-peer-dependencies"], directory);
-  await pnpm(["install", "--frozen-lockfile", "--offline", "--ignore-scripts", "--ignore-pnpmfile", "--strict-peer-dependencies"], directory);
+  await installConsumer(repository, directory, archive, types.version, join(temporary, "pnpm-metadata-cache"), pnpm);
   const compile = await runFile(execPath, [compiler, "--project", "tsconfig.json", "--listFiles", "--pretty", "false"],
     { cwd: directory, timeout: 60_000, maxBuffer: 4 * 1024 * 1024 });
   const files = compile.stdout.trim().split(/\r?\n/u);

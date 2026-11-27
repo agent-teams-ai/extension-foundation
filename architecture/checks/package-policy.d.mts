@@ -26,5 +26,15 @@ export interface PackageOwnerPolicy {
 export const PACKAGE_ADMISSION_DIRECTORY: string;
 export function loadPackagePolicy(root: string): Promise<PackagePolicy>;
 export function requireValidPackagePolicy(root: string): Promise<PackagePolicy>;
+export function packageAdmissionVerificationRequest(
+  entry: PackageCatalogEntry,
+  admission: unknown,
+  admissionRecordDigest: string | undefined,
+): {
+  readonly packageId: string;
+  readonly admissionRecordDigest: string;
+  readonly requiredGateId: string;
+};
+export function admissionVerificationReceiptMatches(request: unknown, receipt: unknown): boolean;
 export function createDocsOwnerResolver(root: string): (id: string) => Promise<unknown>;
 export function packageOwnerPolicy(entry: PackageCatalogEntry, owner: unknown): PackageOwnerPolicy | undefined;

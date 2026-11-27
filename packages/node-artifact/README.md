@@ -13,7 +13,7 @@ remaining installation and production Host work.
 ## Supported profile
 
 The initial native adapter requires **Linux x64**. Its qualification uses
-Node 26.12.1, ORAS 1.4.0, Cosign 3.1.6 and a disposable Distribution 3.1.2
+Node 24.22.3 and 26.12.1, ORAS 1.4.0, Cosign 3.1.6 and a disposable Distribution 3.1.2
 registry on IPv4 loopback. Other operating systems and architectures fail at
 verifier construction. Expanding that scope needs actual native qualification.
 HTTPS is the production transport option; the local campaign does not establish

@@ -344,6 +344,61 @@ upstream correction is implemented at that owner while independent assigned
 steps continue. No new generic SDK, registry, resolver, supervisor, workflow
 language, renderer or repository per diagram is part of this assignment.
 
+### A6: verified artifact handoff
+
+The outer Host adapter consumes the installed
+[`@extension-foundation/node-artifact` public root](../../packages/node-artifact/README.md#public-root-and-typed-binding)
+and its [actual contracts](../../packages/node-artifact/src/features/verified-artifact/contracts.ts).
+The LMU owner delivers the preparation, invocation and authority ports in
+[LMU #9](https://github.com/agent-teams-ai/live-module-updates/pull/9).
+This mapping introduces no shared manifest or additional runtime interface.
+
+| EF value | Host-owned mapping to LMU |
+| --- | --- |
+| `ArtifactRequest` and verified `facts` | Select an immutable repository/digest, publisher key, target, scope and known export binding; verify their agreement during preparation |
+| Manifest digest and layer facts | Bind the candidate's `closureId` to that exact artifact plus the fixed Host construction recipe and dependency cohort it uses |
+| Contract and positive integer revision | Map only the known owner contract to LMU's contract ID and revision string; for an agreed revision `1`, the matching LMU value is `"1"` |
+| `evaluationId` | Retain the distinct evaluation identity for evidence; the LMU attempt, generation and canonical head revision keep their own owners |
+| `evaluate({ contract, revision, loader, authorize, validate })` | Use the exact verified export tuple, synchronous current evaluation admission and the Host's trusted export guard; later effects still use current receiver authority |
+
+`CompatibilityPort.check` remains inert. `PreparationPort.open` creates the
+inert owner synchronously; verification, evaluation and GM construction run
+inside its captured `PreparationCustody.prepare`. Return the coherent callable
+through `PreparedGeneration.invoke`, with nested calls using LMU's supplied
+invocation context. Admit the initial generation through the same Host checks
+before transferring its existing lifetime to `createUpdateRuntime`.
+
+The current artifact profile accepts one self-contained ESM bundle. An unbundled
+GM entry with static imports does not satisfy that profile. A known exported
+factory can receive borrowed Host ports and participate in the existing GM
+construction adapter. The useful operation must execute that verified factory's
+behavior. Neither the artifact nor its export guard supplies a second update
+coordinator, permanent effect permission or hostile-code containment.
+
+Use the existing Resources owner for actual acquisitions and recovery.
+`ArtifactCleanupError.stagingDirectory` identifies unresolved staging custody;
+register recovery of that exact owned directory and preserve debt if recovery
+fails. An observed preparation failure alone does not discharge it. Verification
+normally removes its private staging child and returns captured bytes. The
+adapter has no abort signal or whole-operation deadline: await its original
+flight, including native process closure, before reporting preparation cleanup.
+The finite cooperative profile also makes no Node module-cache unloading claim.
+
+The [package profile](../../packages/node-artifact/README.md#supported-profile)
+and [native tool inventory](../../tests/qualification/artifact/native-tools.ts)
+identify the qualified environment and executable hashes. Protect those native
+executables and the existing staging root under Host custody. Provisioning
+tooling stays outside the installed consumer's runtime imports. Its closed
+dependency inventory includes the package's exact `es-module-lexer` dependency;
+an isolated install cannot assume warm registry metadata.
+
+B owns the actual combined signed-artifact-to-update fixture, useful B result,
+retained A work, exact cleanup and tampered/refused candidate witnesses. Its
+joint receipt binds both libraries' source and package bytes, the actual runtime
+and native tools, and the selected artifact/Host binding. EF's independent
+[qualification evidence](../research/packaged-foundation-qualification-2026-11-26.md)
+does not establish that joint result or ADR-0011 durable installation.
+
 ### Estimate for this assignment
 
 This is a bottom-up planning estimate for A0–A6, excluding the LMU implementation.

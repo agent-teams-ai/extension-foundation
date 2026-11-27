@@ -182,7 +182,13 @@ test("dogfooding model budget preserves structural scope and rejects growth", as
   const texts = await Promise.all(modelFiles.map(read));
   const execute = promisify(execFile);
   const fixture = await mkdtemp(join(tmpdir(), "ext-fo-model-budget-"));
-  const compact = (text: string) => text.replace(/^ +/gmu, "").replace("\n", " ");
+  // Each budget mutation intentionally changes exactly one line boundary.
+  const editFirstLineBreak = (text: string, replacement: string): string => {
+    const offset = text.indexOf("\n");
+    assert.ok(offset >= 0, "The budget fixture must contain a line boundary");
+    return text.slice(0, offset) + replacement + text.slice(offset + 1);
+  };
+  const compact = (text: string) => editFirstLineBreak(text.replace(/^ +/gmu, ""), " ");
   try {
     // Resolve the unchanged guard against this repository's already-installed dependencies.
     await symlink(join(root, "node_modules"), join(fixture, "node_modules"), "dir");
@@ -281,7 +287,7 @@ test("dogfooding model budget preserves structural scope and rejects growth", as
       assert.equal(actual.measurements.utf8Bytes, 370975);
     });
     for (const [name, mutate, expected] of [
-      ["UTF-8 byte", (text: string) => text.replace("\n", " \n"), /utf8Bytes is 370976, limit 370975/u],
+      ["UTF-8 byte", (text: string) => editFirstLineBreak(text, " \n"), /utf8Bytes is 370976, limit 370975/u],
       [
         "line width",
         (text: string) => `//${"x".repeat(199)}\n${compact(text)}`,
@@ -354,7 +360,7 @@ test("dogfooding model budget preserves structural scope and rejects growth", as
         (text: string) => `// retained header\n${text}`,
         /physicalLines is 10521, limit 10520/u,
       ],
-      ["one UTF-8 byte", (text: string) => text.replace("\n", " \n"), /utf8Bytes is 370976, limit 370975/u],
+      ["one UTF-8 byte", (text: string) => editFirstLineBreak(text, " \n"), /utf8Bytes is 370976, limit 370975/u],
       [
         "201-code-point line",
         (text: string) => `//${"x".repeat(199)}\n${compact(text)}`,
