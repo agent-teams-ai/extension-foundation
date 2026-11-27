@@ -1,0 +1,31 @@
+name: EF70 published controller H1 E2E
+
+on:
+  push:
+    branches: [docs/coordinated-module-foundation-20261126]
+    paths: [.github/workflows/ef70-published-campaign-qualification.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  await-qualifying-producer-preflight:
+    name: await-exact-producer-preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 210
+    steps:
+      - name: Wait for the existing immutable producer preflight
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          gh run watch 46073371138 --repo agent-teams-ai/engineering-foundation --exit-status --interval 60
+          test "$(gh run view 46073371138 --repo agent-teams-ai/engineering-foundation --json headSha --jq .headSha)" = "5ab08df342bcf219cf76857c85bc37f429c2ac1e"
+
+  real-managed-campaign:
+    needs: await-qualifying-producer-preflight
+    if: ${{ needs.await-qualifying-producer-preflight.result == 'success' }}
+    uses: agent-teams-ai/engineering-foundation/.github/workflows/ef70-managed-campaign.yml@5ab08df342bcf219cf76857c85bc37f429c2ac1e
+    with:
+      harness_revision: 5ab08df342bcf219cf76857c85bc37f429c2ac1e
+      preflight_run_id: "46073371138"
