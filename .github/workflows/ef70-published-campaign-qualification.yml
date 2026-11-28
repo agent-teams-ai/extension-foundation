@@ -10,9 +10,9 @@ permissions:
 
 jobs:
   real-managed-campaign:
-    uses: agent-teams-ai/engineering-foundation/.github/workflows/ef70-managed-campaign.yml@c39a561a778a9850174badc132cf60fd797b4585
+    uses: agent-teams-ai/engineering-foundation/.github/workflows/ef70-managed-campaign.yml@4a8b82ff2041f0fba7a531b4d742ba8e6ffa01dd
     with:
-      harness_revision: c39a561a778a9850174badc132cf60fd797b4585
-      preflight_run_id: "46122783987"
+      harness_revision: 4a8b82ff2041f0fba7a531b4d742ba8e6ffa01dd
+      preflight_run_id: "46137594005"
       authority_revision: "a9d0b5edc5a98337276a1f213dc8663fdb295beb"
 
