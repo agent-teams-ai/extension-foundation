@@ -25,7 +25,7 @@
         "required": ["package_id", "package_name", "package_path", "semantic_classification", "features"],
         "properties": {
           "package_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$"},
-          "package_name": {"type": "string", "pattern": "^@agent-teams/[a-z0-9][a-z0-9._-]*$"},
+          "package_name": {"type": "string", "pattern": "^@(agent-teams|extension-foundation)/[a-z0-9][a-z0-9._-]*$"},
           "package_path": {"type": "string", "pattern": "^packages/[a-z0-9][a-z0-9-]*(/[a-z0-9][a-z0-9-]*)*$"},
           "semantic_classification": {"enum": ["ordinary-library", "foundation-module-semantics"]},
           "features": {

@@ -15,11 +15,19 @@ code_anchors:
 owns the EF plugin backlog and open contracts. The
 [Live Extension System Map](architecture/live-extension-system-map.md) routes
 the wider module/plugin/update relationships. The shared
-[foundation delivery plan](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/plans/foundation-delivery-plan.md)
-and [status/evidence guide](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/status.md) are maintained in Live Module
-Updates; the proposed consolidation was published in
+[foundation delivery plan](https://github.com/agent-teams-ai/live-module-updates/blob/47c17f95f7c8cf3650c907ac4ed52d6127febe5c/docs/plans/foundation-delivery-plan.md)
+and [usage and ownership guide](https://github.com/agent-teams-ai/live-module-updates/blob/47c17f95f7c8cf3650c907ac4ed52d6127febe5c/docs/architecture/cooperative-operation-usage.md)
+route to the private implementation in [LMU PR #9](https://github.com/agent-teams-ai/live-module-updates/pull/9).
+The original proposed consolidation was published in
 [PR #1](https://github.com/agent-teams-ai/live-module-updates/pull/1), with the
 fixture-first successor in [PR #2](https://github.com/agent-teams-ai/live-module-updates/pull/2).
+
+**Execution checkpoint, 2026-11-27:** the two private EF packages and LMU's
+finite cooperative operation have actual implementations and qualification.
+The [current implementation checkpoint](architecture/live-extension-system-map.md#qualified-implementation-checkpoint-2026-11-27)
+links the exact EF source run and combined EF-to-LMU receipt. Package admission,
+ordinary merge, public publication and production Host adoption retain their
+separate outcomes; a passing fixture does not establish them.
 
 **Product priority:** [live application evolution](open-decisions/OD-003-module-runtime-and-public-spi-choices.md#owner-prioritized-live-application-platform-vision-2026-11-18)
 through live logic changes, persistent/shareable plugins and manageable built-in
@@ -29,11 +37,14 @@ Read by responsibility:
 
 | Concern | Document |
 | --- | --- |
+| Author owner-defined contribution contracts | [Core package guide](../packages/core/README.md) |
+| Verify a signed artifact and bind its exports to a Host contract | [Node artifact guide](../packages/node-artifact/README.md) |
+| Inspect package execution, source checks and remaining admission | [Packaged Foundation Qualification 2026-11-26](research/packaged-foundation-qualification-2026-11-26.md) |
 | Plan plugin artifacts, trust, installation, host adoption and public-SPI proof | [Plugin Delivery Plan](architecture/plugin-delivery-plan.md) |
 | Qualify the shared foundation before applications and compare UI boundaries | [Fixture and UI evidence, 2026-11-24](architecture/plugin-delivery-plan.md#fixture-and-ui-evidence-2026-11-24) |
 | Start a static application using existing admitted modules | [Get Modular consumer quickstart](https://github.com/agent-teams-ai/get-modular/blob/main/docs/guides/consumer-quickstart.md), then the consumer's accepted pins and local gate |
 | Define portable behavior and optional presentation | [Headless plugins and UI proposal](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/architecture/headless-plugins-and-ui.md) |
-| Coordinate the shared foundation and live-update work | [Live Module Updates foundation plan](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/plans/foundation-delivery-plan.md) |
+| Use the implemented cooperative operation and coordinate the shared work | [LMU usage contract](https://github.com/agent-teams-ai/live-module-updates/blob/47c17f95f7c8cf3650c907ac4ed52d6127febe5c/docs/architecture/cooperative-operation-usage.md) and [foundation plan](https://github.com/agent-teams-ai/live-module-updates/blob/47c17f95f7c8cf3650c907ac4ed52d6127febe5c/docs/plans/foundation-delivery-plan.md) |
 | Current module/plugin/live-update direction and implementation owners | [Live Extension System Map](architecture/live-extension-system-map.md) |
 | November 23 operation design and its original evidence | [Live Module Update Operation](architecture/live-module-update-operation.md), retained design snapshot |
 | Product boundary and topology | [Architecture overview](architecture/overview.md) |
@@ -57,6 +68,7 @@ cohort relevant to a decision. Historical observations and archived packets are
 not rewritten as current qualification. Research does not accept a runtime,
 publish a package, or replace an approved ADR.
 
+- [Packaged Foundation Qualification 2026-11-26](research/packaged-foundation-qualification-2026-11-26.md)
 - [Plugin System Research Reference](research/plugin-system-research-reference.md)
 - [Fixture and UI evidence, 2026-11-24](architecture/plugin-delivery-plan.md#fixture-and-ui-evidence-2026-11-24), current bounded successor in the owning delivery plan
 - [Live Module Update Design Validation 2026-11-23](research/live-module-update-design-validation-2026-11-23.md)
@@ -109,16 +121,18 @@ publish a package, or replace an approved ADR.
 | --- | --- |
 | Get Modular | Neutral identity grammar, declaration schemas, dependency cardinality and bindings, deterministic graph compilation, canonical plans and digests, composition diagnostics |
 | Consuming product | Concrete declaration instances, capability payloads and ports, product adapters, desired-profile revisions, literal executable loaders, authorization, generations, lifecycle, routing, and recovery |
-| Live Module Updates, proposed operation | Planned reusable implementation of the complete planning, switching, reconciliation, cleanup and observation operation; calls narrow product authority/state primitives without creating another canonical authority |
+| Live Module Updates | Private implementation of the finite cooperative update operation, including preparation, switching, reconciliation, cleanup and observation; calls narrow Host authority/state primitives without creating another canonical authority |
 | Extension Foundation | Extension, publisher, artifact, installation, contribution, and artifact-generation identity schemas; trust, OCI distribution, admission, isolation, revocation, retirement, and extension host-protocol primitives |
 
 Product operational authority does not require consumer-written orchestration.
 The owner-confirmed standalone library supplies the full reusable operation;
 existing graph, resource and physical-custody mechanisms keep their owners.
-The [separate repository](https://github.com/agent-teams-ai/live-module-updates)
-now exists; its public production contract and first complete-operation consumer
-remain open. See the [current map](architecture/live-extension-system-map.md#authority-and-reusable-implementation)
-and the [shared delivery plan](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/plans/foundation-delivery-plan.md).
+The [selected cooperative profile](https://github.com/agent-teams-ai/live-module-updates/blob/47c17f95f7c8cf3650c907ac4ed52d6127febe5c/docs/decisions/0001-cooperative-update-profile.md)
+owns the implemented contract. The [joint qualification record](research/packaged-foundation-qualification-2026-11-26.md#handoff-and-remaining-exits)
+records the actual installed EF-to-LMU Node fixture and its limits. Stable public
+SPI, durable installation and product Host adoption remain separate work.
+See the [current owner map](architecture/live-extension-system-map.md#authority-and-reusable-implementation)
+for the preserved responsibility boundaries.
 
 Document IDs are repository-scoped. Extension Foundation `OD-003` governs
 extension hosts, public extension SPI, invocation, and extension-state

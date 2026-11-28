@@ -19,6 +19,8 @@ import {
   packageOwnerPolicy,
 } from "./package-policy.mjs";
 import { analyzeSource } from "./source-safety.mjs";
+import { featureBoundaryRoots, hasOwnedNodeCompilerBase, ownedPackageLayers, ownedPackageQualificationRoots, permitsCapturedArtifactEvaluation, validateOwnedPackageLayers } from "./package-layers.ts";
+import { repositoryAdmissionVerifier } from "./admission-evidence/repository-verifier.ts";
 
 export { createDocsOwnerResolver } from "./package-policy.mjs";
 
@@ -37,7 +39,7 @@ const ALLOWED_PACKAGE_ENVELOPE_FILES = new Set([
   "package.json",
   "tsconfig.json",
 ]);
-const ROOT_TSCONFIG_PRESET = "@agent-teams/engineering-foundation/presets/typescript/node.json";
+const ROOT_TSCONFIG_PRESET = "stack-toolchain/presets/typescript/node.json";
 const TYPESCRIPT_ROOT = dirname(fileURLToPath(import.meta.resolve("typescript/package.json")));
 const TSC_PATH = join(TYPESCRIPT_ROOT, "bin", "tsc");
 const execFileAsync = promisify(execFile);
@@ -118,7 +120,7 @@ function packageForFile(entriesByPath, filePath) {
     )[0];
 }
 
-function unsupportedTsconfigDependencyFeature(config) {
+function unsupportedTsconfigDependencyFeature(config, allowNodeTypes = false) {
   if (!isRecord(config)) {
     return "tsconfig must be an object";
   }
@@ -131,6 +133,7 @@ function unsupportedTsconfigDependencyFeature(config) {
   }
   for (const key of ["baseUrl", "jsxImportSource", "paths", "rootDirs", "typeRoots", "types"]) {
     if (Object.hasOwn(options, key)) {
+      if (key === "types" && allowNodeTypes && exactStringArray(options.types, ["node"])) continue;
       return `compilerOptions.${key}`;
     }
   }
@@ -238,9 +241,12 @@ function rawRootTsconfigIsGoverned(config) {
     exactKeys(config, ["compilerOptions", "extends", "files"]) &&
     config.extends === ROOT_TSCONFIG_PRESET &&
     exactStringArray(config.files, []) &&
-    exactKeys(config.compilerOptions, ["composite", "noEmit"]) &&
+    isRecord(config.compilerOptions) &&
+    exactKeys(config.compilerOptions, ["composite", "noEmit",
+      ...(Object.hasOwn(config.compilerOptions, "rewriteRelativeImportExtensions") ? ["rewriteRelativeImportExtensions"] : [])]) &&
     config.compilerOptions.composite === true &&
-    config.compilerOptions.noEmit === true
+    config.compilerOptions.noEmit === true &&
+    (config.compilerOptions.rewriteRelativeImportExtensions === undefined || config.compilerOptions.rewriteRelativeImportExtensions === true)
   );
 }
 
@@ -259,11 +265,12 @@ function effectivePackageOutputsAreGoverned(configPath, config, packageRoot) {
   );
 }
 
-function packageEnvelopeError(packagePath, repositoryFilePath) {
-  const localPath = repositoryFilePath.slice(`${packagePath}/`.length);
+function packageEnvelopeError(entry, repositoryFilePath) {
+  const localPath = repositoryFilePath.slice(`${entry.path}/`.length);
   if (
     localPath.startsWith("src/") ||
     localPath.startsWith("test/") ||
+    ownedPackageQualificationRoots(entry).some((root) => repositoryFilePath.startsWith(`${root}/`)) ||
     ALLOWED_PACKAGE_ENVELOPE_FILES.has(localPath)
   ) {
     return undefined;
@@ -674,7 +681,7 @@ export async function validatePackageTopology({
     if (
       !hasBoundaryEnvelope(publicBoundary, {
         dependencyMode: "runtime",
-        roots: [runtimeRoot],
+        roots: [`${runtimeRoot}/index.ts`],
         entrypoints: [`${runtimeRoot}/index.ts`],
       }) ||
       !exactStringArray(publicBoundary.allow.boundaries, featureBoundaryIds) ||
@@ -698,13 +705,17 @@ export async function validatePackageTopology({
       );
       expectedPackageBoundaryIds.add(featureBoundaryId);
       expectedPackageBoundaryIds.add(testBoundaryId);
+      const layers = ownedPackageLayers(entry, feature);
+      const layerIds = layers.map((layer) => layer.id);
+      for (const id of layerIds) expectedPackageBoundaryIds.add(id);
+      errors.push(...validateOwnedPackageLayers(entry, feature, sourcePolicy.boundaries));
       if (
         !hasBoundaryEnvelope(featureBoundary, {
           dependencyMode: "runtime",
-          roots: [featureRoot],
+          roots: featureBoundaryRoots(entry, feature),
           entrypoints: [`${featureRoot}/index.ts`],
         }) ||
-        featureBoundary.allow.boundaries.some((target) => !featureBoundaryIds.includes(target))
+        featureBoundary.allow.boundaries.some((target) => !featureBoundaryIds.includes(target) && !layerIds.includes(target))
       ) {
         errors.push(
           `${entry.id}: feature ${feature} requires runtime boundary ${featureBoundaryId}`,
@@ -716,7 +727,7 @@ export async function validatePackageTopology({
           roots: [`${testRoot}/features/${feature}`],
           entrypoints: [],
         }) ||
-        !exactStringArray(testBoundary.allow.boundaries, [featureBoundaryId]) ||
+        !exactStringArray(testBoundary.allow.boundaries, [featureBoundaryId, ...layerIds.filter((id) => id.endsWith(".kernel"))]) ||
         !testBoundary.allow.builtins.includes("node:test")
       ) {
         errors.push(
@@ -754,7 +765,7 @@ export async function validatePackageTopology({
   }
   if (Array.isArray(sourcePolicy.governedRoots)) {
     const expectedPackageRoots = new Set(
-      packagePolicy.entries.flatMap((entry) => [`${entry.path}/src`, `${entry.path}/test`]),
+      packagePolicy.entries.flatMap((entry) => [`${entry.path}/src`, `${entry.path}/test`, ...ownedPackageQualificationRoots(entry)]),
     );
     for (const governedRoot of sourcePolicy.governedRoots.filter((rootPath) =>
       rootPath.startsWith("packages/"),
@@ -795,7 +806,7 @@ export async function validatePackageTopology({
       }
       continue;
     }
-    const envelopeError = packageEnvelopeError(entry.path, `packages/${path}`);
+    const envelopeError = packageEnvelopeError(entry, `packages/${path}`);
     if (envelopeError !== undefined) {
       errors.push(envelopeError);
     }
@@ -906,6 +917,8 @@ export async function validatePackageTopology({
       const analysis = analyzeSource(path, source);
       analysesByPath.set(path, analysis);
       for (const label of analysis.errors) {
+        if (label === "dynamic module loading" &&
+            permitsCapturedArtifactEvaluation(entry, path, analysis.dynamicModuleImports)) continue;
         errors.push(
           `${packagePath}/${path}: ${label} is prohibited until the shared source graph models it`,
         );
@@ -984,7 +997,12 @@ export async function validatePackageTopology({
           `${packagePath}/tsconfig.json: config differs from the reviewed Foundation materialization plan`,
         );
       }
-      const feature = unsupportedTsconfigDependencyFeature(effective);
+      const nodeAdapter = ownedPackageLayers(entry, "verified-artifact").length !== 0;
+      if (nodeAdapter && (rawTsconfig.extends !== "../../tsconfig.node-adapter.json" ||
+          !hasOwnedNodeCompilerBase(entry, await readJson(join(root, "tsconfig.node-adapter.json"))))) {
+        errors.push(`${packagePath}/tsconfig.json: Node ambient types require the exact owned Node adapter compiler base`);
+      }
+      const feature = unsupportedTsconfigDependencyFeature(effective, nodeAdapter);
       if (feature !== undefined) {
         errors.push(
           `${packagePath}/tsconfig.json: ${feature} is prohibited until the shared source graph models it`,
@@ -1021,7 +1039,7 @@ export async function validatePackageTopology({
     ]);
     if (!rawRootTsconfigIsGoverned(rawRootTsconfig)) {
       errors.push(
-        `tsconfig.json: root config must exactly extend the pinned Foundation preset without compiler inputs`,
+        `tsconfig.json: root config must exactly extend the pinned Stack preset without compiler inputs`,
       );
     }
     const feature = unsupportedTsconfigDependencyFeature(effectiveRootTsconfig);
@@ -1042,7 +1060,8 @@ export async function validatePackageTopology({
 
 async function runCli() {
   const root = fileURLToPath(new URL("../..", import.meta.url));
-  const errors = await validatePackageTopology({ root });
+  const verifyAdmissionEvidence = await repositoryAdmissionVerifier(root, process.env.GITHUB_TOKEN);
+  const errors = await validatePackageTopology({ root, verifyAdmissionEvidence });
   if (errors.length === 0) {
     console.log("Package topology check passed.");
     return;

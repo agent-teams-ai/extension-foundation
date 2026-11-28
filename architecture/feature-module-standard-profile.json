@@ -10,13 +10,22 @@
     "sha256": "851653f96643cf0466b67ab22963661976b00de44840fa3144a48a8c054f95fa"
   },
   "owner": "architecture",
-  "status": "pre-production",
+  "status": "provisional-packages",
   "profileDocument": "docs/architecture/feature-module-standard-profile.md",
   "scope": {
-    "productionRoots": ["packages"],
-    "moduleRoots": ["packages/*"],
+    "productionRoots": [
+      "packages"
+    ],
+    "moduleRoots": [
+      "packages/*"
+    ],
     "applicationRoots": [],
-    "excludedRoots": ["architecture", "docs", "tests", "fixtures"]
+    "excludedRoots": [
+      "architecture",
+      "docs",
+      "tests",
+      "fixtures"
+    ]
   },
   "mapping": {
     "sourceRoot": "src",
@@ -35,22 +44,49 @@
   "authorities": [
     "docs/architecture/overview.md",
     "docs/decisions/0015-authorize-get-modular-semantic-extraction.md",
+    "docs/decisions/0016-provisional-contribution-and-verified-artifact-packages.md",
     "docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md"
   ],
   "deviations": [],
-  "conformance": {"structural": "not-claimed", "runtime": "not-claimed"},
+  "conformance": {
+    "structural": "scoped",
+    "runtime": "not-claimed"
+  },
   "enforcement": {
     "profile": "architecture:feature-module-profile",
     "profileTests": "architecture:feature-module-profile:test",
     "topology": "architecture:topology:check",
-    "dependencies": "architecture:source-dependencies:check"
+    "dependencies": "architecture:source-dependencies:check",
+    "productionSources": "architecture:package-source:test"
   },
-  "pendingProductionEvidence": [
-    "valid-feature-per-adopted-role",
-    "role-specific-layer-direction",
-    "cross-feature-deep-import-rejection",
-    "undeclared-edge-and-cycle-rejection",
-    "empty-layer-rejection",
-    "owned-module-exception-rejection"
-  ]
+  "productionEvidence": {
+    "packages": [
+      {
+        "id": "extension.core",
+        "role": "foundation-component",
+        "path": "packages/core",
+        "packageName": "@extension-foundation/core",
+        "features": [
+          "contributions"
+        ]
+      },
+      {
+        "id": "extension.node-artifact",
+        "role": "integration-adapter",
+        "path": "packages/node-artifact",
+        "packageName": "@extension-foundation/node-artifact",
+        "features": [
+          "verified-artifact"
+        ]
+      }
+    ],
+    "obligations": [
+      "valid-feature-per-adopted-role",
+      "role-specific-layer-direction",
+      "cross-feature-deep-import-rejection",
+      "undeclared-edge-and-cycle-rejection",
+      "empty-layer-rejection",
+      "owned-module-exception-rejection"
+    ]
+  }
 }

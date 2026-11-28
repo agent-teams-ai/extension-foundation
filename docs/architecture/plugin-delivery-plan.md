@@ -44,10 +44,11 @@ observable failure cases; it need not become a product. Browser, Desktop and
 untrusted extensions constrain the architecture now. Successful execution,
 isolation and later product adoption each retain their own evidence.
 
-Current implementation status is **architecture and bounded qualification
-research**. The package catalog has no production packages; there is no released
-public extension SPI or complete production plugin Host. Test helpers are not
-shipping admission, installation or lifecycle implementations. The November 23
+Current implementation includes the two private provisional packages selected by
+[ADR-0016](../decisions/0016-provisional-contribution-and-verified-artifact-packages.md).
+Their [execution status](#workstream-a-execution-2026-11-26) separates actual
+package behavior from managed tooling and final admission. There is no released
+public extension SPI or complete production plugin Host. The November 23
 70–75% rubric concerns bounded live-update planning, not plugin completion.
 
 ## Boundaries
@@ -196,6 +197,270 @@ Manifest seam is a concrete candidate; its actual adopted Core/Assembly pins
 and owner admission still govern. It is not automatically selected as the
 first complete live-update consumer. Other greenfield consumers can qualify
 their own scoped static foundation while the broader update work continues.
+
+## Workstream A execution, 2026-11-26
+
+The owner authorized implementation, repeated review/corrections and ordinary
+merge, and then required one PR. [EF #70](https://github.com/agent-teams-ai/extension-foundation/pull/70)
+is the sole EF change. The planning text below remains the reviewed assignment;
+this dated section records its concrete execution and the later one-PR constraint.
+
+| Step | Implemented surface | Remaining acceptance or continuing boundary |
+| --- | --- | --- |
+| A0 | ADR-0016 accepted packet and official baseline entry; exact private package ownership | Preserve accepted bytes and original admission obligations |
+| A1 | Authenticated evidence adapter, closed source inventory including the executed packed fixture, policy binding, preparation/admission separation and 83 rejecting/accepting controls; actual hosted proof collection and live provider verification | Current online admission and complete repository gates retain their separate evidence |
+| A2 | Neutral contribution feature, two independent owner schemas, package root/types, clean installed consumers and source-bound online admission | Complete owner/source/managed admission and ordinary merge |
+| A3 | Real OCI/ORAS/Cosign adapter, closed descriptor/data checks, current-authority typed evaluation and native process custody; local and hosted packed Linux campaigns passed on both selected Node runtimes, including 21 signed/transport rejection cases; online admission passed | Complete repository gates and ordinary merge |
+| A4 | Public-root installed campaigns, declaration/deep-import controls, actual Foundation source-boundary fixtures and successful hosted current-source evidence | Complete repository gates |
+| A5 | Scoped FMS enforcement and source rejection controls; EF routes authors to GM's authoritative consumer quickstart | The GM copyable-template erratum remains with GM; it is not changed in this single EF PR |
+| A6 | Public facts/binding contract, tested-archive handoff and independently verified five-scenario combined LMU receipt at `47c17f95` | Full repository admission gates and ordinary merge; the bounded joint fixture claims no staging-failure recovery |
+
+The [qualification report](../research/packaged-foundation-qualification-2026-11-26.md)
+holds concrete commands, source/tool identities, observed results and the
+managed-cohort closure mismatch. No gate is waived. Source checks with isolated
+supported Foundation 4.0.2 qualify that selected mechanism; they do not change
+this consumer's managed pins or certify its failed transition.
+
+The Node adapter owns only verified facts, captured bytes and typed evaluation.
+One selected invocation requests current authority immediately before importing
+captured bytes. Compatibility, signatures, installation and receiver-side effect
+authorization remain distinct. The Host owns retained work, attempt budgets,
+effect grants, module construction and cleanup after evaluation. Native command
+deadlines are finite; this API does not claim cancellation or physical module
+unloading. The core remains independent of Node, GM and consumer domain types.
+
+Implementation changes to legacy JavaScript are deliberately small bridges:
+owned package-scope recognition, scaffold preparation, actual admission injection,
+explicit compiler/layer topology and inert-descriptor inspection. New behavior
+and qualification are maintained in strict TypeScript. The substantial FMS
+checker and its tests were migrated together; no parallel parser or module
+resolver was added.
+
+## Workstream A: packaged extension foundation, 2026-11-26
+
+The owner requested two substantial implementation plans before broad module
+adoption, with one executor per concern. This is the proposed assignment for
+**executor A, the author of the coordinated plans**. Executor B continues the
+[LMU complete-operation plan](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/plans/first-operation-implementation-plan.md),
+starting with the [installed-consumer proposal in LMU #8](https://github.com/agent-teams-ai/live-module-updates/pull/8).
+The [shared foundation plan](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/plans/foundation-delivery-plan.md)
+owns sequencing between the streams. E0–E6 below remain this stream's detailed
+steps; this section assigns a substantial bounded delivery rather than another
+roadmap. Proposed cross-repository sections are read from the paired Draft PRs
+until merged; their exact reviewed heads belong in the PR descriptions.
+
+### Result and implementation boundary
+
+Deliver a useful, admitted private pre-1.0 contribution/artifact foundation:
+one neutral core, the missing package-evidence verifier, a qualified Node
+artifact adapter where its dependency boundary warrants it, and installed
+consumer conformance. The ordinary reusable library stays independently usable.
+Current production implementation is absent; the TEST compatibility matcher is
+evidence to reuse critically, not an already accepted production contract.
+
+This work is **E0–E3 plus the applicable package/conformance part of E6**.
+E4/E5 durable installation, product grants/custody and a production plugin Host
+retain their named owners and separate implementation budgets. Their contracts
+are considered now; their absent stores or enforcement cannot be represented by
+successful stubs. Public npm publication remains deferred by the owner.
+Private package use, public release, stable SPI and product admission are
+different delivery states.
+
+Inspected planning sources: EF `a1b5007ae4777bb5b01adab35a9ee83546a62333`,
+GM `50a7148387a3c01163b319da76052ba07e0dbd84`, and LMU
+`a780597acd3fcae2936a2a258241f1da7ce62f94`. Refresh the actual main/PR heads
+before implementation. These observations are not dependency or adoption pins.
+EF's managed Docs cohort work in organization
+[PR #434](https://github.com/agent-teams-ai/.github/pull/434) remains separately
+owned; this stream does not copy or replace its managed files.
+
+### Contracts to establish before dependent feature expansion
+
+| Contract boundary | Workstream A result | Refactoring it prevents |
+| --- | --- | --- |
+| Module authoring | Reconcile GM's copyable consumer profile with its current reviewed quickstart; bind existing CMS/FMS and Conformance checks to actual source scopes | Projects copying incompatible cohorts or putting GM/provider types into application code |
+| Contribution compatibility | Accepted owner-defined identity/revision and required/optional rules, trusted payload validation and precise refusal/omission results | Copied contract maps, a closed plugin-category enum or per-product compatibility engines |
+| Artifact facts | Immutable artifact and executable-closure identity, actual provenance and supported target facts | Confusing a mutable package name or successful install with verified executable bytes |
+| Authority boundary | Separate compatibility, trust, installation, grants and permission at the receiver; pass only the facts each consumer needs | A universal boolean grant, service bag or a second canonical permission store |
+| LMU handoff | Exact candidate/loader binding and ownership transfer through an outer adapter; cleanup and invocation remain with their existing owners | A second update algorithm inside EF or public raw instances retained across replacement |
+
+Keep existing GM rules: permanent capability IDs, revision changes for every
+value-type change, complete transitive feature contracts and separate capability
+bases. No new capability SemVer negotiation, `/v2` identities, handwritten wire
+tokens or mandatory Effect migration is selected. Reuse existing Foundation
+source facts/policy and GM Conformance before adding any shared tooling.
+
+### Delivery packages and exits
+
+| Step | Substantive delivery | Required exit before its dependent step |
+| --- | --- | --- |
+| A0 / E0 | Record the concrete EF-A/C/V/P packet in OD-003; prepare the smallest necessary admission successor and contract examples | Exact package/profile owner and selected supported behavior; affected immutable clauses and preserved obligations identified; required acceptance recorded |
+| A1 / E1 | Implement the existing topology CLI's missing authenticated evidence adapter, including its strict source coverage | Genuine immutable evidence accepted; wrong digest/source/run, false repository independence, unavailable evidence and unsupported basis rejected |
+| A2 / E2 | Implement one neutral contribution/compatibility feature and its actual package/catalog/admission records | Two materially different owner schemas work without neutral dispatch edits; invalid or required-unsupported metadata refuses before evaluation; actual package is admitted |
+| A3 / E3 | Integrate the selected OCI/ORAS/Cosign route and exact verified executable closure | Real artifact verification, safe staging and known typed loader binding; tampering, wrong target/publisher/scope and changed executable bytes refuse at the claimed boundary |
+| A4 / E6 subset | Qualify packed public roots/declarations, external consumers, source boundaries and the artifact-to-typed-entry path | Useful behavior and independent no-evaluation/no-effect negative witnesses, exact artifacts and target-specific receipts; no checkout aliases or TEST-helper runtime imports |
+| A5 / GM owner follow-up | Correct the copyable adoption route and qualify applicable existing checks in the new EF scope | Reviewed cohort and source coverage agree with the example; rejecting controls catch forbidden imports, omitted boundaries and stale configuration; no product pin rollout |
+| A6 / shared join | Supply the admitted package and exact verified artifact facts to executor B's integrated fixture and review their meaning | One combined trusted Node artifact-to-update scenario uses both real implementations; each stream retains its own evidence and the joint run has a separate receipt |
+
+A5's GM adoption correction starts immediately alongside A0/A1; its later label
+does not put ordinary module authors behind artifact work. A1's verifier work
+can proceed independently of LMU. The first substantive A2
+package, catalog/admission records and actual candidate evidence land together;
+an empty package is not an earlier milestone. A3 can use a direct trusted digest
+route without building a catalog product. Node artifact loading stays outside
+the neutral core. Core/browser portability and a Node-specific loader are
+separate claims. Use no production credentials or real user effects in fixtures.
+
+At A5, correct the demonstrated GM template drift against its owning current
+route rather than choosing fresh versions from memory. The inspected template
+still names Core/Assembly 0.3.0 and Resources/Conformance 0.1.0, while the
+inspected quickstart names 0.8.0/0.8.0/0.2.2/0.5.2. Recheck before editing.
+This is a small GM-owned follow-up, not permission to change another project's
+accepted pins. Existing active consumer work must be reused, not overwritten.
+
+### Ownership and exact collaboration boundary
+
+| Surface | Primary executor | Coordination rule |
+| --- | --- | --- |
+| EF core, package policy/evidence verifier, artifact adapter and EF qualification | A | Follow E0-selected source/package roots and strict coverage; maintain the real verifier, not a parallel admission gate |
+| EF OD-003 and necessary successor decision | A | B supplies operation/profile evidence; acceptance remains with the actual contract owner |
+| GM template/cohort correction or demonstrated public mechanism gap | A, in GM | B supplies a minimal reproduction and required guarantee; no private import/copy or simultaneous upstream edit |
+| LMU operation, public invocation boundary and all LMU fixture integration files | B | A supplies reviewed contracts/artifacts; no concurrent edits to the portable-document packer, qualification or source-check files |
+| Cross-library qualification Host | B, in LMU | A reviews EF facts and trust binding; B owns the one complete-operation scenario and effect/lifetime witnesses |
+| Product canonical state, grants, custody and deployment | Actual product owners | This programme names required seams; it does not implement or migrate those products |
+
+Before code, agree semantics for immutable artifact/closure identity, contribution
+identity/revision, current authority, candidate/attempt binding and cleanup
+completion. These are a handoff checklist, not a new mandatory shared manifest
+or a fixed TypeScript API. EF produces validated facts; a consumer-owned outer
+adapter maps them to existing GM construction and the LMU-owned operation.
+Neither GM nor EF neutral core imports the other. LMU's inner operation imports
+no EF TEST helpers or product-private state. Artifact admission does not grant
+an effect; the actual receiver still enforces current authority.
+
+One executor owns each shared-file edit at a time. Record the current SHA,
+changed paths and next step in the implementation PR before handoff. A required
+upstream correction is implemented at that owner while independent assigned
+steps continue. No new generic SDK, registry, resolver, supervisor, workflow
+language, renderer or repository per diagram is part of this assignment.
+
+### A6: verified artifact handoff
+
+The outer Host adapter consumes the installed
+[`@extension-foundation/node-artifact` public root](../../packages/node-artifact/README.md#public-root-and-typed-binding)
+and its [actual contracts](../../packages/node-artifact/src/features/verified-artifact/contracts.ts).
+The LMU owner delivers the preparation, invocation and authority ports in
+[LMU #9](https://github.com/agent-teams-ai/live-module-updates/pull/9).
+This mapping introduces no shared manifest or additional runtime interface.
+
+| EF value | Host-owned mapping to LMU |
+| --- | --- |
+| `ArtifactRequest` and verified `facts` | Select an immutable repository/digest, publisher key, target, scope and known export binding; verify their agreement during preparation |
+| Manifest digest and layer facts | Bind the candidate's `closureId` to that exact artifact plus the fixed Host construction recipe and dependency cohort it uses |
+| Contract and positive integer revision | Map only the known owner contract to LMU's contract ID and revision string; for an agreed revision `1`, the matching LMU value is `"1"` |
+| `evaluationId` | Retain the distinct evaluation identity for evidence; the LMU attempt, generation and canonical head revision keep their own owners |
+| `evaluate({ contract, revision, loader, authorize, validate })` | Use the exact verified export tuple, synchronous current evaluation admission and the Host's trusted export guard; later effects still use current receiver authority |
+
+`CompatibilityPort.check` remains inert. `PreparationPort.open` creates the
+inert owner synchronously; verification, evaluation and GM construction run
+inside its captured `PreparationCustody.prepare`. Return the coherent callable
+through `PreparedGeneration.invoke`, with nested calls using LMU's supplied
+invocation context. Admit the initial generation through the same Host checks
+before transferring its existing lifetime to `createUpdateRuntime`.
+
+The current artifact profile accepts one self-contained ESM bundle. An unbundled
+GM entry with static imports does not satisfy that profile. A known exported
+factory can receive borrowed Host ports and participate in the existing GM
+construction adapter. The useful operation must execute that verified factory's
+behavior. Neither the artifact nor its export guard supplies a second update
+coordinator, permanent effect permission or hostile-code containment.
+
+Use the existing Resources owner for actual acquisitions and recovery.
+`ArtifactCleanupError.stagingDirectory` identifies unresolved staging custody;
+register recovery of that exact owned directory and preserve debt if recovery
+fails. An observed preparation failure alone does not discharge it. Verification
+normally removes its private staging child and returns captured bytes. The
+adapter has no abort signal or whole-operation deadline: await its original
+flight, including native process closure, before reporting preparation cleanup.
+The finite cooperative profile also makes no Node module-cache unloading claim.
+
+The [package profile](../../packages/node-artifact/README.md#supported-profile)
+and [native tool inventory](../../tests/qualification/artifact/native-tools.ts)
+identify the qualified environment and executable hashes. Protect those native
+executables and the existing staging root under Host custody. Provisioning
+tooling stays outside the installed consumer's runtime imports. Its closed
+dependency inventory includes the package's exact `es-module-lexer` dependency;
+an isolated install cannot assume warm registry metadata.
+
+B owns the actual combined signed-artifact-to-update fixture, useful B result,
+retained A work, exact cleanup and tampered/refused candidate witnesses. Its
+joint receipt binds both libraries' source and package bytes, the actual runtime
+and native tools, and the selected artifact/Host binding. EF's independent
+[qualification evidence](../research/packaged-foundation-qualification-2026-11-26.md)
+does not establish that joint result or ADR-0011 durable installation.
+
+### Estimate for this assignment
+
+This is a bottom-up planning estimate for A0–A6, excluding the LMU implementation.
+P includes handwritten runtime, integration and admission tooling; T includes
+meaningful tests/fixtures. These ranges replace, rather than add to, the
+overlapping November 25 core/wiring estimate for this selected scope.
+
+| Work | P LOC | T LOC |
+| --- | ---: | ---: |
+| Contribution compatibility and diagnostics | 600–1,000 | 900–1,500 |
+| Neutral artifact/admission fact contracts and validation | 500–900 | 700–1,200 |
+| Evidence verifier and installed CLI integration | 800–1,400 | 1,000–1,800 |
+| Node artifact verification, staging and typed boundary adapter | 700–1,300 | 1,100–1,900 |
+| Packed consumers, source-policy integration and EF-side handoff | 300–600 | 1,000–1,700 |
+| **EF subtotal** | **2,900–5,200** | **4,700–8,100** |
+| Small GM adoption-route follow-up, only where existing checks need it | 0–150 | 0–350 |
+
+Total assigned band: **2,900–5,350 P plus 4,700–8,450 T**, approximately
+**7,600–13,800 handwritten lines**. A prose-only GM correction reuses existing
+checks and needs zero new tests; add controls only for a demonstrated guard gap.
+Existing helpers reused unchanged, generated,
+vendored and documentation lines are excluded. Joint LMU Host code belongs to
+executor B's integration allowance, not this EF-side handoff row. The EF row
+includes its own installed consumers, not a duplicate of LMU #8.
+
+Allow approximately 35–65 engineer-days for one experienced engineer with focused
+review and the selected dependencies available; parallel agents change elapsed
+time, not the existence of the work. Estimate confidence is 4/10 until A0/A3
+discriminators finish. Fitness U=9/10, expected reliability within this declared
+scope N=8/10, complexity C=7/10 are judgments, not measured readiness.
+Substantive legacy-checker migration, missing upstream primitives, repository
+admission, registry provisioning and native release operations need explicit
+additional estimates if the source inventory demonstrates them. No LOC target
+justifies a new abstraction or duplicate implementation.
+
+### Readiness and scope limits
+
+Projects can expand ordinary static module code after their accepted CMS/FMS
+profile, public contract surface, ownership rules and applicable deterministic
+checks are usable. They do not wait for A3 or complete LMU if those capabilities
+are irrelevant to that scope. New extension consumers require the applicable
+A0–A4 contract/package proof and their own authority integration; live-update
+consumers additionally require executor B's selected completed operation.
+
+The combined A6/B7 result is an update of an EF-verified artifact in the selected
+trusted Node qualification Host. Package installation or verified artifact
+staging does not establish ADR-0011 durable extension installation. That stronger
+claim needs the actual E4/E5 owner mechanisms and their separate admission.
+
+The delivery does not claim durable installation stores, a production Host,
+stable public SPI, Desktop containment, hostile-plugin execution, full catalog
+federation, state migration, cross-process recovery or fleet adoption. Their
+boundaries constrain contracts now; supported implementation follows their
+existing owner phases. In particular, ordinary uninstall cannot erase canonical
+user data, and a disposal result cannot claim physical termination.
+
+Before implementation, review the actual coordinated plan twice from ownership,
+failure/security and packaging perspectives, correcting material findings.
+Implementation then has its own exact-source reviews, complete applicable
+checks, ordinary merge and actual-main verification. Plan review or successful
+documentation CI is not execution of these phases. Record review/source/check
+receipts in the owning PR instead of maintaining a second readiness ledger.
 
 ## Implementation sequence, 2026-11-25
 

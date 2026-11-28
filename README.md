@@ -31,25 +31,24 @@ The current implementation/adoption status remains explicit below.
 
 ## Status
 
-Architecture and executable qualification research. No public runtime SPI or
-production package has been materialized yet. Representative fixtures and
-independently wired test Hosts qualify the foundation before applications are
-ready; a first product is not a prerequisite for that work.
+Two private `0.0.0` package implementations are now materialized under
+[ADR-0016](docs/decisions/0016-provisional-contribution-and-verified-artifact-packages.md):
 
-Production package materialization retains the applicable ADR-0015 requirements
-inherited from ADR-0013 until an owning successor accepts the exact changed
-scope. The [current admission question](docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md#fixture-first-and-runtime-boundary-clarification-2026-11-24)
-separates a proposed provisional 0.x package, production Host admission and
-stable public SPI publication. Independent deployment/isolation, replacement or
-release lifecycle, a second consumer, or a public SPI with two implementations
-remain distinct package bases; their applicable evidence is not interchangeable.
+| Package | Responsibility | Public usage and executable examples |
+| --- | --- | --- |
+| `@extension-foundation/core` | Owner-defined contribution contracts, exact revisions, explicit omissions and bounded inert metadata | [Core guide](packages/core/README.md), [two installed consumers](tests/packaged-core.test.ts) |
+| `@extension-foundation/node-artifact` | Digest-pinned OCI retrieval, direct-key Cosign verification, captured bundle evaluation and a typed Host binding | [Node artifact guide](packages/node-artifact/README.md), [real native campaign](tests/qualification/artifact/packed.qualification.ts) |
 
-The [November 25 implementation sequence](docs/architecture/plugin-delivery-plan.md#implementation-sequence-2026-11-25)
-records concrete steps, dependencies, estimates and unresolved choices. Its
-[evidence successor](docs/architecture/plugin-delivery-plan.md#qualification-successor-2026-11-25)
-includes the real packed Node artifact-to-effect scenario and the enforced
-portable-protocol source boundary. These results do not yet supply a durable
-installed-plugin lifecycle, signed OCI admission or the complete LMU operation.
+These are provisional libraries. Their current execution and admission state is
+recorded in the [qualification report](docs/research/packaged-foundation-qualification-2026-11-26.md).
+The managed tooling transition, authenticated package-admission receipts and the
+joint LMU fixture are separate completion requirements. A compiled archive does
+not establish any of those requirements. Public npm publication remains deferred.
+
+Production Host admission, durable installation/grants, stable public SPI and
+hostile-code containment retain the existing owner gates. The
+[delivery plan](docs/architecture/plugin-delivery-plan.md#workstream-a-execution-2026-11-26)
+separates implemented package behavior from those later phases.
 
 For a new static application, start with the existing
 [Get Modular consumer quickstart](https://github.com/agent-teams-ai/get-modular/blob/main/docs/guides/consumer-quickstart.md)

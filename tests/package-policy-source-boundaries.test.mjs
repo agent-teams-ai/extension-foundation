@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import test from "node:test";
+import { createSourceBoundaryFixture } from "./source-boundary-fixture.ts";
 
 const execFileAsync = promisify(execFile);
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
@@ -14,84 +14,7 @@ const foundationCli = fileURLToPath(
 );
 const skipExpensiveIntegration =
   process.env.PACKAGE_POLICY_TEST_MODE === "fast" ? "skipped in package-policy fast mode" : false;
-const governedFiles = [
-  "architecture/checks/dogfooding-protocol-model.mjs",
-  "architecture/checks/evidence-custody-cli.mjs",
-  "architecture/checks/evidence-custody.mjs",
-  "architecture/checks/feature-module-standard-profile.mjs",
-  "architecture/checks/package-artifacts.mjs",
-  "architecture/checks/package-policy.d.mts",
-  "architecture/checks/package-policy.mjs",
-  "architecture/checks/package-policy/accepted-decision-policy.mjs",
-  "architecture/checks/package-policy/accepted-decision-source.mjs",
-  "architecture/checks/package-policy/admission-policy.mjs",
-  "architecture/checks/package-policy/catalog-policy.mjs",
-  "architecture/checks/package-policy/docs-owner-source.mjs",
-  "architecture/checks/package-policy/ownership-policy.mjs",
-  "architecture/checks/package-policy/repository-policy-source.mjs",
-  "architecture/checks/package-topology.mjs",
-  "architecture/checks/product-source-evidence-cli.mjs",
-  "architecture/checks/product-source-evidence.d.mts",
-  "architecture/checks/product-source-evidence.mjs",
-  "architecture/checks/scaffold.mjs",
-  "architecture/checks/source-safety.mjs",
-  "architecture/checks/strict-json.mjs",
-  "architecture/tooling/markdownlint-cli2.mjs",
-  "tests/architecture-topology.test.mjs",
-  "tests/docs-protocol-qualification.test.mjs",
-  "tests/document-authoring.test.mjs",
-  "tests/evidence-custody.test.mjs",
-  "tests/feature-module-standard-profile.test.mjs",
-  "tests/foundation-upgrade.test.mjs",
-  "tests/node-compatibility.test.mjs",
-  "tests/package-policy-characterization.test.mjs",
-  "tests/package-policy-source-boundaries.test.mjs",
-  "tests/qualification/dogfooding-protocol-contract.ts",
-  "tests/qualification/dogfooding-protocol-oracle.ts",
-  "tests/qualification/dogfooding-protocol-reducer.ts",
-  "tests/qualification/dogfooding-protocol.test.ts",
-  "tests/qualification/contribution-admission-candidate.ts",
-  "tests/qualification/contribution-admission-candidate.test.ts",
-  "tests/qualification/contribution-compatibility.ts",
-  "tests/qualification/contribution-compatibility.test.ts",
-  "tests/qualification/dossier.test.ts",
-  "tests/qualification/extism-feasibility.mjs",
-  "tests/qualification/fixtures/portable-browser-worker.mjs",
-  "tests/qualification/fixtures/portable-worker.mjs",
-  "tests/qualification/fixtures/process-child.mjs",
-  "tests/qualification/fixtures/standalone-lifecycle-deadline.mjs",
-  "fixtures/qualification-toy-package/index.d.ts",
-  "fixtures/qualification-toy-package/index.js",
-  "fixtures/qualification-toy-package/package.json",
-  "tests/qualification/graph-spike.ts",
-  "tests/qualification/lifecycle-spike.ts",
-  "tests/qualification/portable-protocol.d.mts",
-  "tests/qualification/portable-protocol.mjs",
-  "tests/qualification/product-source-evidence.test.ts",
-  "tests/qualification/productization.test.ts",
-  "tests/qualification/protocol-spike.ts",
-  "tests/qualification/recovery-spike.ts",
-  "tests/qualification/spikes.test.ts",
-  "tests/scaffolding.test.mjs",
-];
-
-async function checkerFixture() {
-  const root = await mkdtemp(join(tmpdir(), "extension-policy-boundary-"));
-  for (const path of governedFiles) {
-    await mkdir(dirname(join(root, path)), { recursive: true });
-    await cp(join(repositoryRoot, path), join(root, path), { recursive: true });
-  }
-  for (const path of [
-    "architecture/foundation/source-dependencies.yaml",
-    "foundation.config.yaml",
-    "package.json",
-    "pnpm-workspace.yaml",
-  ]) {
-    await mkdir(dirname(join(root, path)), { recursive: true });
-    await cp(join(repositoryRoot, path), join(root, path), { recursive: true });
-  }
-  return root;
-}
+const checkerFixture = () => createSourceBoundaryFixture(repositoryRoot);
 
 async function runChecker(root) {
   try {
@@ -126,6 +49,7 @@ test(
   { skip: skipExpensiveIntegration },
   async () => {
     const report = await runChecker(repositoryRoot);
+    assert.equal(report.exitCode, 0, JSON.stringify(report));
     assert.equal(report.summary.errors, 0, JSON.stringify(report));
   },
 );

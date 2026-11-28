@@ -7,7 +7,7 @@
   "type": "module",
   "packageManager": "pnpm@11.18.0",
   "engines": {
-    "node": ">=24.21.0 <25 || >=26.11.1 <27",
+    "node": ">=24.22.1 <25 || >=26.12.1 <27",
     "pnpm": ">=11.17.0 <12"
   },
   "repository": {
@@ -15,10 +15,10 @@
     "url": "git+https://github.com/agent-teams-ai/extension-foundation.git"
   },
   "scripts": {
-    "architecture:check": "pnpm architecture:feature-module-profile && pnpm architecture:feature-module-profile:test && pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && pnpm evidence:custody:test && node --import=\"data:text/javascript,process.env.PACKAGE_POLICY_TEST_MODE='full'\" --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/package-policy-characterization.test.mjs tests/package-policy-source-boundaries.test.mjs tests/scaffolding.test.mjs tests/foundation-upgrade.test.mjs",
-    "architecture:check:fast": "pnpm architecture:feature-module-profile && pnpm architecture:feature-module-profile:test && pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && pnpm evidence:custody:test && node --import=\"data:text/javascript,process.env.PACKAGE_POLICY_TEST_MODE='fast'\" --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/package-policy-characterization.test.mjs tests/package-policy-source-boundaries.test.mjs tests/scaffolding.test.mjs tests/foundation-upgrade.test.mjs",
-    "architecture:feature-module-profile": "node architecture/checks/feature-module-standard-profile.mjs",
-    "architecture:feature-module-profile:test": "node --test tests/feature-module-standard-profile.test.mjs",
+    "architecture:check": "pnpm tooling:qualified:check && pnpm architecture:feature-module-profile && pnpm architecture:feature-module-profile:test && pnpm architecture:admission:test && pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && pnpm evidence:custody:test && node --import=\"data:text/javascript,process.env.PACKAGE_POLICY_TEST_MODE='full'\" --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/package-policy-characterization.test.mjs tests/package-policy-source-boundaries.test.mjs tests/scaffolding.test.mjs tests/foundation-upgrade.test.mjs && pnpm architecture:package-source:test",
+    "architecture:check:fast": "pnpm tooling:qualified:check && pnpm architecture:feature-module-profile && pnpm architecture:feature-module-profile:test && pnpm architecture:admission:test && pnpm architecture:topology:check && pnpm architecture:source-dependencies:check && pnpm evidence:custody:test && node --import=\"data:text/javascript,process.env.PACKAGE_POLICY_TEST_MODE='fast'\" --test --test-concurrency=1 tests/architecture-topology.test.mjs tests/package-policy-characterization.test.mjs tests/package-policy-source-boundaries.test.mjs tests/scaffolding.test.mjs tests/foundation-upgrade.test.mjs",
+    "architecture:feature-module-profile": "node architecture/checks/feature-module-standard-profile.ts",
+    "architecture:feature-module-profile:test": "node --test tests/feature-module-standard-profile.test.ts",
     "architecture:package-artifacts:check": "node architecture/checks/package-artifacts.mjs",
     "architecture:scaffold:apply": "node architecture/checks/scaffold.mjs apply",
     "architecture:scaffold:plan": "node architecture/checks/scaffold.mjs plan",
@@ -27,9 +27,9 @@
     "architecture:topology:check": "node architecture/checks/package-topology.mjs",
     "evidence:custody": "node architecture/checks/evidence-custody-cli.mjs",
     "evidence:custody:test": "agent-teams-node-test --contract architecture/foundation/required-node-tests.json -- tests/evidence-custody.test.mjs",
-    "check": "pnpm lockfile:peers:check && pnpm foundation:check && pnpm docs:protocol:check && pnpm node-compatibility:check && pnpm architecture:check && pnpm typecheck && pnpm qualification:check && pnpm packages:check",
+    "check": "pnpm tooling:qualified:check && pnpm lockfile:peers:check && pnpm foundation:check && pnpm docs:protocol:check && pnpm node-compatibility:check && pnpm architecture:check && pnpm typecheck && pnpm qualification:check && pnpm packages:check && pnpm qualification:core-packed:check",
     "check:changed": "agent-teams-foundation agent-workflow changed --consumer .",
-    "check:fast": "pnpm lockfile:peers:check && pnpm foundation:check && pnpm docs:protocol:check && pnpm node-compatibility:check && pnpm architecture:check:fast && pnpm typecheck && pnpm packages:check",
+    "check:fast": "pnpm tooling:qualified:check && pnpm lockfile:peers:check && pnpm foundation:check && pnpm docs:protocol:check && pnpm node-compatibility:check && pnpm architecture:check:fast && pnpm typecheck && pnpm packages:check && pnpm qualification:core-packed:check",
     "docs:changed": "pnpm docs:check && pnpm docs:quality",
     "docs:check": "agent-teams-docs check --consumer . --profile architecture/foundation/docs-protocol.yaml",
     "docs:contract-test": "node --test tests/document-authoring.test.mjs tests/docs-protocol-qualification.test.mjs",
@@ -57,7 +57,13 @@
     "qualification:product-sources:check": "node architecture/checks/product-source-evidence-cli.mjs docs/qualification/module-system-v1-productization/consumer-source-evidence.yaml",
     "qualification:extism:experiment": "node tests/qualification/extism-feasibility.mjs",
     "qualification:typecheck": "tsc --project tsconfig.qualification.json --noEmit --pretty false",
-    "typecheck": "tsc --project tsconfig.json --noEmit --pretty false && pnpm --recursive --filter \"./packages/**\" typecheck"
+    "typecheck": "tsc --project tsconfig.json --noEmit --pretty false && pnpm --recursive --filter \"./packages/**\" typecheck && pnpm tooling:typecheck",
+    "architecture:package-source:test": "node --test tests/packaged-feature-boundaries.test.ts",
+    "architecture:admission:test": "node --test --test-concurrency=1 tests/admission-evidence.test.ts tests/admission-evidence-repository.test.ts tests/admission-evidence-provider.test.ts tests/admission-evidence-inputs.test.ts tests/scaffold-preparation.test.ts tests/package-layers.test.ts tests/source-safety-inert-metadata.test.ts",
+    "tooling:typecheck": "tsc --project tsconfig.tooling.json --noEmit --pretty false",
+    "qualification:core-packed:check": "node --test tests/packaged-core.test.ts",
+    "qualification:artifact-packed:check": "node --test packages/node-artifact/qualification/native-process.qualification.ts packages/node-artifact/qualification/staging.qualification.ts && node tests/qualification/artifact/packed.qualification.ts",
+    "tooling:qualified:check": "node architecture/checks/toolchain-qualification.ts"
   },
   "devDependencies": {
     "@agent-teams/docs-protocol": "0.6.2",
@@ -72,6 +78,9 @@
     "markdownlint-cli2": "catalog:",
     "oxc-parser": "catalog:",
     "typescript": "catalog:",
-    "yaml": "catalog:"
+    "yaml": "catalog:",
+    "@extension-foundation/core": "workspace:*",
+    "@extension-foundation/node-artifact": "workspace:*",
+    "stack-toolchain": "0.3.1"
   }
 }

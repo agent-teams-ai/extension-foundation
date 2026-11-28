@@ -1,4 +1,19 @@
 {
   "version": 1,
-  "packages": []
+  "packages": [
+    {
+      "id": "extension.core",
+      "role": "foundation-component",
+      "path": "packages/core",
+      "package_name": "@extension-foundation/core",
+      "owner_document": "ADR-0016"
+    },
+    {
+      "id": "extension.node-artifact",
+      "role": "integration-adapter",
+      "path": "packages/node-artifact",
+      "package_name": "@extension-foundation/node-artifact",
+      "owner_document": "ADR-0016"
+    }
+  ]
 }

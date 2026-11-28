@@ -4,12 +4,19 @@ workspace:
   manifest: pnpm-workspace.yaml
 packageRoots:
   - fixtures/qualification-toy-package
+  - packages/core
+  - packages/node-artifact
 rootPackage: true
 governedRoots:
   - architecture/checks
   - architecture/tooling
   - fixtures/qualification-toy-package
   - tests
+  - packages/core/src
+  - packages/core/test
+  - packages/node-artifact/src
+  - packages/node-artifact/test
+  - packages/node-artifact/qualification
 boundaries:
   - id: repository.architecture-checks
     dependencyMode: development
@@ -17,7 +24,7 @@ boundaries:
       - architecture/checks/dogfooding-protocol-model.mjs
       - architecture/checks/evidence-custody-cli.mjs
       - architecture/checks/evidence-custody.mjs
-      - architecture/checks/feature-module-standard-profile.mjs
+      - architecture/checks/feature-module-standard-profile.ts
       - architecture/checks/package-artifacts.mjs
       - architecture/checks/package-topology.mjs
       - architecture/checks/product-source-evidence-cli.mjs
@@ -25,18 +32,24 @@ boundaries:
       - architecture/checks/product-source-evidence.mjs
       - architecture/checks/scaffold.mjs
       - architecture/checks/source-safety.mjs
+      - architecture/checks/package-layers.ts
+      - architecture/checks/source-safety.d.mts
+      - architecture/checks/toolchain-qualification.ts
     entrypoints:
       - architecture/checks/evidence-custody.mjs
-      - architecture/checks/feature-module-standard-profile.mjs
+      - architecture/checks/feature-module-standard-profile.ts
       - architecture/checks/package-artifacts.mjs
       - architecture/checks/package-topology.mjs
       - architecture/checks/product-source-evidence.mjs
       - architecture/checks/scaffold.mjs
       - architecture/checks/source-safety.mjs
+      - architecture/checks/package-layers.ts
     allow:
       boundaries:
         - repository.package-policy
         - repository.shared-policy-primitives
+        - repository.admission-evidence
+        - repository.scaffold-preparation
       builtins:
         - node:child_process
         - node:crypto
@@ -45,6 +58,7 @@ boundaries:
         - node:path
         - node:url
         - node:util
+        - node:module
       packages:
         - "@agent-teams/docs-protocol"
         - "@agent-teams/engineering-foundation"
@@ -83,6 +97,7 @@ boundaries:
       - architecture/checks/package-policy/accepted-decision-policy.mjs
       - architecture/checks/package-policy/admission-policy.mjs
       - architecture/checks/package-policy/ownership-policy.mjs
+      - architecture/checks/package-policy/catalog-policy.d.mts
     entrypoints:
       - architecture/checks/package-policy/catalog-policy.mjs
       - architecture/checks/package-policy/accepted-decision-policy.mjs
@@ -113,6 +128,7 @@ boundaries:
     dependencyMode: development
     roots:
       - architecture/checks/strict-json.mjs
+      - architecture/checks/strict-json.d.mts
     entrypoints:
       - architecture/checks/strict-json.mjs
     allow:
@@ -153,8 +169,6 @@ boundaries:
       builtins: []
       packages: []
       runtimeReferences: []
-  # The same fixture protocol executes in Node, a browser Worker and a child process.
-  # Keep platform I/O in the existing test adapters, not in its shared wire code.
   - id: repository.qualification-portable-protocol
     dependencyMode: development
     roots:
@@ -175,7 +189,7 @@ boundaries:
       - tests/docs-protocol-qualification.test.mjs
       - tests/document-authoring.test.mjs
       - tests/evidence-custody.test.mjs
-      - tests/feature-module-standard-profile.test.mjs
+      - tests/feature-module-standard-profile.test.ts
       - tests/foundation-upgrade.test.mjs
       - tests/node-compatibility.test.mjs
       - tests/package-policy-characterization.test.mjs
@@ -201,12 +215,29 @@ boundaries:
       - tests/qualification/recovery-spike.ts
       - tests/qualification/spikes.test.ts
       - tests/scaffolding.test.mjs
+      - tests/admission-evidence.test.ts
+      - tests/admission-evidence-provider.test.ts
+      - tests/admission-evidence-inputs.test.ts
+      - tests/scaffold-preparation.test.ts
+      - tests/package-layers.test.ts
+      - tests/source-safety-inert-metadata.test.ts
+      - tests/packaged-core.test.ts
+      - tests/packaged-feature-boundaries.test.ts
+      - tests/fixtures/packaged-core
+      - tests/qualification/artifact/registry-fixture.ts
+      - tests/qualification/artifact/native-tools.ts
+      - tests/qualification/artifact/install-native-tools.ts
+      - tests/qualification/artifact/install-consumer.ts
+      - tests/qualification/artifact/packed.qualification.ts
+      - tests/fixtures/packaged-artifact
+      - tests/admission-evidence-repository.test.ts
+      - tests/source-boundary-fixture.ts
     entrypoints:
       - tests/architecture-topology.test.mjs
       - tests/docs-protocol-qualification.test.mjs
       - tests/document-authoring.test.mjs
       - tests/evidence-custody.test.mjs
-      - tests/feature-module-standard-profile.test.mjs
+      - tests/feature-module-standard-profile.test.ts
       - tests/foundation-upgrade.test.mjs
       - tests/package-policy-characterization.test.mjs
       - tests/package-policy-source-boundaries.test.mjs
@@ -217,6 +248,16 @@ boundaries:
       - tests/qualification/product-source-evidence.test.ts
       - tests/qualification/productization.test.ts
       - tests/qualification/spikes.test.ts
+      - tests/admission-evidence.test.ts
+      - tests/admission-evidence-provider.test.ts
+      - tests/admission-evidence-inputs.test.ts
+      - tests/scaffold-preparation.test.ts
+      - tests/package-layers.test.ts
+      - tests/source-safety-inert-metadata.test.ts
+      - tests/packaged-core.test.ts
+      - tests/packaged-feature-boundaries.test.ts
+      - tests/admission-evidence-repository.test.ts
+      - tests/source-boundary-fixture.ts
     allow:
       boundaries:
         - repository.architecture-checks
@@ -226,6 +267,10 @@ boundaries:
         - repository.qualification-toy-package
         - repository.qualification-portable-protocol
         - repository.qualification-contribution-compatibility
+        - repository.admission-evidence
+        - package.extension.core
+        - package.extension.node-artifact
+        - repository.scaffold-preparation
       packages:
         - "@dagrejs/graphlib"
         - "@deepseek-ai/cordis"
@@ -234,6 +279,9 @@ boundaries:
         - "@agent-teams/engineering-foundation"
         - fast-check
         - yaml
+        - "@extension-foundation/core"
+        - "@extension-foundation/node-artifact"
+        - oxc-parser
       builtins:
         - node:assert/strict
         - node:child_process
@@ -251,4 +299,192 @@ boundaries:
         - node:url
         - node:util
         - node:worker_threads
+        - node:process
+      runtimeReferences: []
+  - id: repository.admission-evidence
+    dependencyMode: development
+    roots:
+      - architecture/checks/admission-evidence
+    entrypoints:
+      - architecture/checks/admission-evidence/index.ts
+      - architecture/checks/admission-evidence/repository-verifier.ts
+      - architecture/checks/admission-evidence/qualification-profile.ts
+    allow:
+      boundaries:
+        - repository.package-policy
+        - repository.shared-policy-primitives
+      builtins:
+        - node:crypto
+        - node:fs
+        - node:fs/promises
+        - node:path
+        - node:url
+      packages: []
+      runtimeReferences: []
+  - id: package.extension.core
+    dependencyMode: runtime
+    roots:
+      - packages/core/src/index.ts
+    entrypoints:
+      - packages/core/src/index.ts
+    allow:
+      boundaries:
+        - package.extension.core.feature.contributions
+      packages: []
+      builtins: []
+      runtimeReferences: []
+    packageExports:
+      - .
+  - id: package.extension.core.feature.contributions
+    dependencyMode: runtime
+    roots:
+      - packages/core/src/features/contributions
+    entrypoints:
+      - packages/core/src/features/contributions/index.ts
+    allow:
+      boundaries: []
+      packages: []
+      builtins: []
+      runtimeReferences: []
+  - id: package.extension.core.feature.contributions.test
+    dependencyMode: development
+    roots:
+      - packages/core/test/features/contributions
+    entrypoints: []
+    allow:
+      boundaries:
+        - package.extension.core.feature.contributions
+      packages: []
+      builtins:
+        - node:assert/strict
+        - node:test
+      runtimeReferences: []
+  - id: package.extension.node-artifact
+    dependencyMode: runtime
+    roots:
+      - packages/node-artifact/src/index.ts
+    entrypoints:
+      - packages/node-artifact/src/index.ts
+    allow:
+      boundaries:
+        - package.extension.node-artifact.feature.verified-artifact
+      packages: []
+      builtins: []
+      runtimeReferences: []
+    packageExports:
+      - .
+  - id: package.extension.node-artifact.feature.verified-artifact
+    dependencyMode: runtime
+    roots:
+      - packages/node-artifact/src/features/verified-artifact/index.ts
+      - packages/node-artifact/src/features/verified-artifact/verify.ts
+    entrypoints:
+      - packages/node-artifact/src/features/verified-artifact/index.ts
+    allow:
+      boundaries:
+        - package.extension.node-artifact.feature.verified-artifact.kernel
+        - package.extension.node-artifact.feature.verified-artifact.io
+        - package.extension.node-artifact.feature.verified-artifact.evaluation
+      packages:
+        - es-module-lexer
+      builtins:
+        - node:crypto
+        - node:path
+        - node:process
+      runtimeReferences: []
+  - id: package.extension.node-artifact.feature.verified-artifact.kernel
+    dependencyMode: runtime
+    roots:
+      - packages/node-artifact/src/features/verified-artifact/contracts.ts
+      - packages/node-artifact/src/features/verified-artifact/manifest.ts
+    entrypoints:
+      - packages/node-artifact/src/features/verified-artifact/contracts.ts
+      - packages/node-artifact/src/features/verified-artifact/manifest.ts
+    allow:
+      boundaries: []
+      packages: []
+      builtins: []
+      runtimeReferences: []
+  - id: package.extension.node-artifact.feature.verified-artifact.io
+    dependencyMode: runtime
+    roots:
+      - packages/node-artifact/src/features/verified-artifact/native.ts
+      - packages/node-artifact/src/features/verified-artifact/staging.ts
+    entrypoints:
+      - packages/node-artifact/src/features/verified-artifact/native.ts
+      - packages/node-artifact/src/features/verified-artifact/staging.ts
+    allow:
+      boundaries:
+        - package.extension.node-artifact.feature.verified-artifact.kernel
+      packages: []
+      builtins:
+        - node:child_process
+        - node:crypto
+        - node:fs
+        - node:fs/promises
+        - node:path
+      runtimeReferences: []
+  - id: package.extension.node-artifact.feature.verified-artifact.evaluation
+    dependencyMode: runtime
+    roots:
+      - packages/node-artifact/src/features/verified-artifact/evaluate.ts
+    entrypoints:
+      - packages/node-artifact/src/features/verified-artifact/evaluate.ts
+    allow:
+      boundaries:
+        - package.extension.node-artifact.feature.verified-artifact.kernel
+      packages: []
+      builtins:
+        - node:buffer
+        - node:crypto
+      runtimeReferences:
+        - dynamic
+  - id: package.extension.node-artifact.feature.verified-artifact.test
+    dependencyMode: development
+    roots:
+      - packages/node-artifact/test/features/verified-artifact
+    entrypoints: []
+    allow:
+      boundaries:
+        - package.extension.node-artifact.feature.verified-artifact
+        - package.extension.node-artifact.feature.verified-artifact.kernel
+      packages: []
+      builtins:
+        - node:assert/strict
+        - node:process
+        - node:test
+      runtimeReferences: []
+  - id: repository.artifact-native-controls
+    dependencyMode: development
+    roots:
+      - packages/node-artifact/qualification/staging.qualification.ts
+      - packages/node-artifact/qualification/native-process.qualification.ts
+    entrypoints: []
+    allow:
+      boundaries:
+        - package.extension.node-artifact.feature.verified-artifact.kernel
+        - package.extension.node-artifact.feature.verified-artifact.io
+      packages: []
+      builtins:
+        - node:assert/strict
+        - node:fs/promises
+        - node:os
+        - node:path
+        - node:process
+        - node:test
+      runtimeReferences: []
+  - id: repository.scaffold-preparation
+    dependencyMode: development
+    roots:
+      - architecture/checks/scaffold-preparation.ts
+    entrypoints:
+      - architecture/checks/scaffold-preparation.ts
+    allow:
+      boundaries:
+        - repository.package-policy
+        - repository.package-policy-pure
+      packages: []
+      builtins:
+        - node:fs/promises
+        - node:path
       runtimeReferences: []

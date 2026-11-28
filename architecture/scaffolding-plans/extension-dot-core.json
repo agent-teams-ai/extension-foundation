@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "compiler": {
+    "id": "@agent-teams/engineering-foundation",
+    "version": "4.0.2"
+  },
+  "intent": {
+    "compositionId": "extension-foundation-library-boundary",
+    "schemaVersion": 1,
+    "targetRef": "extension.core"
+  },
+  "intentDigest": "sha256:c603dc0ab8a5f8125c9b5a71a982d859c1a39436a2254c7cb5424a31d839ba0f",
+  "composition": {
+    "id": "extension-foundation-library-boundary",
+    "scaffoldProfile": {
+      "id": "foundation.node-typescript-pnpm-esm",
+      "contractVersion": 1
+    },
+    "recipe": {
+      "id": "foundation.node-typescript-library-boundary",
+      "contractVersion": 1
+    },
+    "facets": [],
+    "policies": []
+  },
+  "definitions": [
+    {
+      "kind": "recipe",
+      "ref": {
+        "id": "foundation.node-typescript-library-boundary",
+        "contractVersion": 1
+      },
+      "contractDigest": "sha256:f3f5dff41767853e78f7bacedee3fbaef6b96a0fb70cbb843dcd311ed12b88c3"
+    },
+    {
+      "kind": "scaffold-profile",
+      "ref": {
+        "id": "foundation.node-typescript-pnpm-esm",
+        "contractVersion": 1
+      },
+      "contractDigest": "sha256:09c81de71ac8a4663d0834ef3fcf1db839527e7a7845e3fb77fd6b30f61a67da"
+    }
+  ],
+  "resolved": {
+    "profileParameters": {
+      "tsconfigBase": "tsconfig.json"
+    },
+    "recipeParameters": {},
+    "facets": [],
+    "policies": []
+  },
+  "operations": [
+    {
+      "id": "materialize/packages/core/package.json",
+      "kind": "materialize-file",
+      "path": "packages/core/package.json",
+      "precondition": {
+        "state": "absent"
+      },
+      "after": {
+        "digest": "sha256:e2ba07bece960cefffefa1ac77fbc381a2f70888251785c693b434258eff0167",
+        "size": 825,
+        "mode": "0644",
+        "mediaType": "application/json",
+        "contentBase64": "ewogICJuYW1lIjogIkBleHRlbnNpb24tZm91bmRhdGlvbi9jb3JlIiwKICAidmVyc2lvbiI6ICIwLjAuMCIsCiAgInByaXZhdGUiOiB0cnVlLAogICJ0eXBlIjogIm1vZHVsZSIsCiAgInNjcmlwdHMiOiB7CiAgICAiYnVpbGQiOiAidHNjIC0tcHJvamVjdCB0c2NvbmZpZy5qc29uIC0tcHJldHR5IGZhbHNlIiwKICAgICJjaGVjayI6ICJwbnBtIHJ1biBjbGVhbiAmJiBwbnBtIHJ1biB0eXBlY2hlY2sgJiYgcG5wbSBydW4gYnVpbGQgJiYgcG5wbSBydW4gdGVzdCIsCiAgICAiY2xlYW4iOiAibm9kZSAtZSBcImNvbnN0IGZzPXJlcXVpcmUoJ25vZGU6ZnMnKTsgZm9yIChjb25zdCBwYXRoIG9mIFsnZGlzdCcsJy5jYWNoZSddKSBmcy5ybVN5bmMocGF0aCwgeyByZWN1cnNpdmU6IHRydWUsIGZvcmNlOiB0cnVlIH0pXCIiLAogICAgInByZXBhY2siOiAicG5wbSBydW4gY2xlYW4gJiYgcG5wbSBydW4gYnVpbGQiLAogICAgInRlc3QiOiAibm9kZSAtLXRlc3QgLS10ZXN0LWNvbmN1cnJlbmN5PTEiLAogICAgInR5cGVjaGVjayI6ICJ0c2MgLS1wcm9qZWN0IHRzY29uZmlnLmpzb24gLS1ub0VtaXQgLS1wcmV0dHkgZmFsc2UiCiAgfSwKICAiYWdlbnRUZWFtc0FyY2hpdGVjdHVyZSI6IHsKICAgICJyb2xlIjogImZvdW5kYXRpb24tY29tcG9uZW50IiwKICAgICJvd25lckRvY3VtZW50IjogIkFEUi0wMDE2IgogIH0sCiAgImZpbGVzIjogWwogICAgImRpc3QiCiAgXSwKICAiZXhwb3J0cyI6IHsKICAgICIuIjogewogICAgICAidHlwZXMiOiAiLi9kaXN0L2luZGV4LmQudHMiLAogICAgICAiaW1wb3J0IjogIi4vZGlzdC9pbmRleC5qcyIKICAgIH0KICB9Cn0K"
+      },
+      "causes": [
+        "foundation.node-typescript-library-boundary"
+      ]
+    },
+    {
+      "id": "materialize/packages/core/src/index.ts",
+      "kind": "materialize-file",
+      "path": "packages/core/src/index.ts",
+      "precondition": {
+        "state": "absent"
+      },
+      "after": {
+        "digest": "sha256:8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+        "size": 11,
+        "mode": "0644",
+        "mediaType": "text/plain",
+        "contentBase64": "ZXhwb3J0IHt9Owo="
+      },
+      "causes": [
+        "foundation.node-typescript-library-boundary"
+      ]
+    },
+    {
+      "id": "materialize/packages/core/tsconfig.json",
+      "kind": "materialize-file",
+      "path": "packages/core/tsconfig.json",
+      "precondition": {
+        "state": "absent"
+      },
+      "after": {
+        "digest": "sha256:59202f3ec2a9117a6c05762edece1d97cf71086c5472fa06ff80d348a10a0100",
+        "size": 359,
+        "mode": "0644",
+        "mediaType": "application/json",
+        "contentBase64": "ewogICJleHRlbmRzIjogIi4uLy4uL3RzY29uZmlnLmpzb24iLAogICJjb21waWxlck9wdGlvbnMiOiB7CiAgICAiY29tcG9zaXRlIjogdHJ1ZSwKICAgICJkZWNsYXJhdGlvbiI6IHRydWUsCiAgICAiZGVjbGFyYXRpb25NYXAiOiB0cnVlLAogICAgIm5vRW1pdCI6IGZhbHNlLAogICAgIm91dERpciI6ICJkaXN0IiwKICAgICJyb290RGlyIjogInNyYyIsCiAgICAidHNCdWlsZEluZm9GaWxlIjogIi5jYWNoZS90c2NvbmZpZy50c2J1aWxkaW5mbyIKICB9LAogICJpbmNsdWRlIjogWwogICAgInNyYy8qKi8qLnRzIiwKICAgICJzcmMvKiovKi50c3giLAogICAgInNyYy8qKi8qLm10cyIsCiAgICAic3JjLyoqLyouY3RzIgogIF0KfQo="
+      },
+      "causes": [
+        "foundation.node-typescript-library-boundary"
+      ]
+    }
+  ],
+  "diagnostics": [],
+  "projectId": "extension-foundation",
+  "authority": {
+    "configPath": "architecture/foundation/scaffolding.yaml",
+    "targetCatalogPath": "architecture/package-catalog.json"
+  },
+  "authorityEvidence": {
+    "schemaVersion": 1,
+    "verifier": {
+      "id": "foundation.markdown-yaml-owner",
+      "contractVersion": 1
+    },
+    "projectId": "extension-foundation",
+    "targetRef": "extension.core",
+    "targetIdentityDigest": "sha256:bc81682efb862b5c7019f46c661155986a30fd38add0605610f36d81e8051d12",
+    "ownerDocument": {
+      "id": "ADR-0016",
+      "path": "docs/decisions/0016-provisional-contribution-and-verified-artifact-packages.md",
+      "status": "accepted"
+    },
+    "sources": [
+      {
+        "role": "config",
+        "assertion": {
+          "path": "architecture/foundation/scaffolding.yaml",
+          "state": "file",
+          "digest": "sha256:8eb6dab4a830fd3ccd56c611df01ae301b00169c2c25624fa3cc1e18dd58ec4a",
+          "size": 762
+        }
+      },
+      {
+        "role": "owner-document",
+        "assertion": {
+          "path": "docs/decisions/0016-provisional-contribution-and-verified-artifact-packages.md",
+          "state": "file",
+          "digest": "sha256:2cd769456092eebd9aa61668d986e3a2c553bea3ef11ac33ae22afc684d9c7bb",
+          "size": 11119
+        }
+      },
+      {
+        "role": "target-catalog",
+        "assertion": {
+          "path": "architecture/package-catalog.json",
+          "state": "file",
+          "digest": "sha256:a0188fc142a596aea73ce33fd3f7291c319343eb7d5e9fab5558fedee3a13a3d",
+          "size": 463
+        }
+      }
+    ],
+    "evidenceDigest": "sha256:e5c190c218d422b015ba8ba22157673d49415cebe06d8a925a495ce8364cd8f9"
+  },
+  "authoritySnapshotDigest": "sha256:b793ff4759ff21844c7bdbfabe777e2ab9cf693a23300f62a3ce77b3289a62c4",
+  "target": {
+    "id": "extension.core",
+    "role": "foundation-component",
+    "path": "packages/core",
+    "packageName": "@extension-foundation/core",
+    "ownerDocument": {
+      "id": "ADR-0016",
+      "path": "docs/decisions/0016-provisional-contribution-and-verified-artifact-packages.md"
+    }
+  },
+  "readSet": [
+    {
+      "path": "architecture/foundation/scaffolding.yaml",
+      "state": "file",
+      "digest": "sha256:8eb6dab4a830fd3ccd56c611df01ae301b00169c2c25624fa3cc1e18dd58ec4a",
+      "size": 762
+    },
+    {
+      "path": "architecture/package-catalog.json",
+      "state": "file",
+      "digest": "sha256:a0188fc142a596aea73ce33fd3f7291c319343eb7d5e9fab5558fedee3a13a3d",
+      "size": 463
+    },
+    {
+      "path": "docs/decisions/0016-provisional-contribution-and-verified-artifact-packages.md",
+      "state": "file",
+      "digest": "sha256:2cd769456092eebd9aa61668d986e3a2c553bea3ef11ac33ae22afc684d9c7bb",
+      "size": 11119
+    }
+  ],
+  "requiredAdapterCapabilities": [
+    "materialize-file/v1"
+  ],
+  "planDigest": "sha256:8b579708375a7da0d56dfb9293f9b4e60b01e16ac3fdeb32ec8d6634eba670c4"
+}

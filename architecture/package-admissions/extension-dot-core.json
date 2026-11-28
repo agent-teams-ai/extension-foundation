@@ -1,0 +1,23 @@
+{
+  "admission_basis": "independent-replacement-or-release-lifecycle",
+  "schema_version": 4,
+  "conformance_version": "0.1.0",
+  "consumer_evidence": [
+    {
+      "conformance_result": "passed",
+      "consumer_id": "qualification.headline-and-quota",
+      "consumer_repository": "agent-teams-ai/extension-foundation",
+      "evidence_kind": "independent-conformance",
+      "evidence_reference": "https://api.github.com/repos/agent-teams-ai/extension-foundation/actions/jobs/140262679183/steps/17/logs#sha256=3220f7a3399c8c724d86be7b23f7df8cddbac6bd1cf9b796b9ed56b5c6e84b5b",
+      "implementation_id": "extension.core.contributions",
+      "source_revision": "24bd136a105c46dd75f7c92948cf680f1d008442"
+    }
+  ],
+  "extraction_decision": "ADR-0016",
+  "neutrality_claim": "Ordinary library for consumer-owned contribution contracts. Contract identity, payload meaning and trusted payload validators remain with the consuming extension-point owner. The package has no product, Get Modular, Live Module Updates, Node adapter, credential or Host policy dependency.",
+  "owner_repository": "agent-teams-ai/extension-foundation",
+  "package_id": "extension.core",
+  "release_policy": "Private pre-1.0 0.0.0 qualification under ADR-0016, with an independent replacement or release lifecycle. Public npm publication is deferred and must reverify immutable package evidence through the applicable publication gate.",
+  "semantic_classification": "ordinary-library",
+  "semantic_extraction_decision": "not-applicable"
+}

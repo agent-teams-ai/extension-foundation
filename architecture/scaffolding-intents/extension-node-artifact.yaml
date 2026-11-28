@@ -1,0 +1,3 @@
+schemaVersion: 1
+compositionId: extension-foundation-node-adapter
+targetRef: extension.node-artifact

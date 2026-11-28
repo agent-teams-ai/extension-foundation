@@ -1,8 +1,9 @@
 {
-  "extends": "@agent-teams/engineering-foundation/presets/typescript/node.json",
+  "extends": "stack-toolchain/presets/typescript/node.json",
   "compilerOptions": {
     "composite": true,
-    "noEmit": true
+    "noEmit": true,
+    "rewriteRelativeImportExtensions": true
   },
   "files": []
 }

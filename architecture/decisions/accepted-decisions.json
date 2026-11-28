@@ -76,6 +76,11 @@
       "id": "ADR-0015",
       "path": "docs/decisions/0015-authorize-get-modular-semantic-extraction.md",
       "immutableDigest": "sha256:e34f1c05a692855a51c8f5f0c5626e4f295e9704ecc804024d3fbd432c752bab"
+    },
+    {
+      "id": "ADR-0016",
+      "path": "docs/decisions/0016-provisional-contribution-and-verified-artifact-packages.md",
+      "immutableDigest": "sha256:a47679f9768cddfbe91533b81d963775d1aaaaa1a16fb27a1377f8c512fb099d"
     }
   ]
 }

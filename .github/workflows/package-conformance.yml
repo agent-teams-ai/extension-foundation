@@ -1,0 +1,127 @@
+name: Package conformance
+
+on:
+  pull_request:
+  merge_group:
+  push:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: extension-packages-${{ github.event_name }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  package-conformance:
+    name: package-conformance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Select the runner-owned qualification directories
+        shell: bash
+        run: |
+          printf 'EF_ARTIFACT_TOOLS_DIR=%s/ef-artifact-tools\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'EF_QUALIFICATION_ARTIFACT_DIR=%s/ef-qualified-packages\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          cache: true
+      - run: pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --engine-strict --strict-peer-dependencies
+      - run: pnpm architecture:admission:test && pnpm architecture:feature-module-profile && pnpm architecture:feature-module-profile:test
+      - name: Select the exact patched browser for qualification
+        shell: bash
+        run: |
+          curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --output "$RUNNER_TEMP/ef-chrome.zip" 'https://storage.googleapis.com/chrome-for-testing-public/158.0.8127.88/linux64/chrome-linux64.zip'
+          printf '%s  %s\n' '59e3b43f8b3aaa292238fbdcfb36a93127debd53e212510dcdc2cc8812b4b57e' "$RUNNER_TEMP/ef-chrome.zip" | sha256sum --check --strict -
+          unzip -q "$RUNNER_TEMP/ef-chrome.zip" -d "$RUNNER_TEMP/ef-browser"
+          "$RUNNER_TEMP/ef-browser/chrome-linux64/chrome" --version
+          printf 'EF_QUALIFICATION_BROWSER=%s\n' "$RUNNER_TEMP/ef-browser/chrome-linux64/chrome" >> "$GITHUB_ENV"
+      - run: pnpm tooling:typecheck && pnpm qualification:check && pnpm --recursive --filter "./packages/**" check
+      - run: mkdir -p "$EF_QUALIFICATION_ARTIFACT_DIR"
+      - name: Qualify independently installed core consumers
+        run: pnpm qualification:core-packed:check
+      - name: Install exact verified native tools
+        run: node tests/qualification/artifact/install-native-tools.ts
+      - name: Qualify signed OCI artifact through installed public package
+        run: pnpm qualification:artifact-packed:check
+      - name: Select the LMU consumer runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.22.3
+      - name: Qualify the same artifact on the LMU consumer runtime
+        env:
+          EF_QUALIFICATION_ARTIFACT_DIR: ${{ runner.temp }}/ef-qualified-packages-node24
+        run: pnpm qualification:artifact-packed:check
+      - name: Require identical tested artifacts across runtimes
+        shell: bash
+        run: cmp "$EF_QUALIFICATION_ARTIFACT_DIR/extension-foundation-node-artifact-0.0.0.tgz" "$RUNNER_TEMP/ef-qualified-packages-node24/extension-foundation-node-artifact-0.0.0.tgz"
+      # Separate reviewed steps prevent candidate/test stdout from impersonating proof output.
+      - name: Core conformance proof
+        if: github.event_name == 'push'
+        run: node architecture/checks/admission-evidence/emit-proof.ts extension.core
+      - name: Artifact conformance proof
+        if: github.event_name == 'push'
+        run: node architecture/checks/admission-evidence/emit-proof.ts extension.node-artifact
+      - name: Retain the exact independently tested package archives
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: qualified-extension-packages
+          path: ${{ env.EF_QUALIFICATION_ARTIFACT_DIR }}/*.tgz
+          if-no-files-found: error
+          retention-days: 30
+
+  collect-evidence:
+    name: collect-evidence
+    if: github.event_name == 'push'
+    needs: package-conformance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+      - name: Read exact completed job-step evidence
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node architecture/checks/admission-evidence/collect-proof.ts
+
+  package-admission:
+    name: package-admission
+    # Admission consumes an already completed push proof. Keeping it on the
+    # proposed merge avoids making that producing run depend on its own receipt.
+    if: github.event_name != 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          cache: true
+      - run: pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --engine-strict --strict-peer-dependencies
+      - name: Verify current package admissions against completed GitHub evidence
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node architecture/checks/admission-evidence/verify-repository.ts

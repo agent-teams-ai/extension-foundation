@@ -16,8 +16,8 @@ import {
   isRecord,
   materializationPlanPath,
   packageOwnerPolicy,
-  requireValidPackagePolicy,
 } from "./package-policy.mjs";
+import { requireValidScaffoldPolicy } from "./scaffold-preparation.ts";
 
 const PLAN_DIRECTORY = "architecture/scaffolding-plans";
 const PLAN_PATH = /^architecture\/scaffolding-plans\/[a-z0-9][a-z0-9-]*\.json$/;
@@ -221,7 +221,8 @@ async function validatePlanAndCatalog(root, plan, resolveOwner, loadPackagePolic
   }
   if (
     ownerPolicy.semanticClassification !==
-    policy.admissionsById.get(entry.id)?.semantic_classification
+    (policy.admissionsById.get(entry.id)?.semantic_classification ??
+      policy.preparationsById?.get(entry.id)?.semanticClassification)
   ) {
     throw new Error(
       "scaffold admission semantic classification must equal the accepted owner ADR declaration",
@@ -249,7 +250,8 @@ async function validatePlanAndCatalog(root, plan, resolveOwner, loadPackagePolic
   }
   if (
     revalidatedOwnerPolicy.semanticClassification !==
-    revalidatedPolicy.admissionsById.get(revalidatedEntry.id)?.semantic_classification
+    (revalidatedPolicy.admissionsById.get(revalidatedEntry.id)?.semantic_classification ??
+      revalidatedPolicy.preparationsById?.get(revalidatedEntry.id)?.semanticClassification)
   ) {
     throw new Error(
       "scaffold admission semantic classification must equal the accepted owner ADR declaration",
@@ -277,7 +279,7 @@ async function validatePlanAndCatalog(root, plan, resolveOwner, loadPackagePolic
 }
 
 export async function validatePlanAgainstCatalog(root, plan, resolveOwner) {
-  return (await validatePlanAndCatalog(root, plan, resolveOwner, requireValidPackagePolicy)).plan;
+  return (await validatePlanAndCatalog(root, plan, resolveOwner, requireValidScaffoldPolicy)).plan;
 }
 
 async function publishScaffoldPlanWithPolicy(
@@ -440,7 +442,7 @@ export async function publishScaffoldPlan({
       planPath,
       onPublicationFault,
     },
-    requireValidPackagePolicy,
+    requireValidScaffoldPolicy,
   );
 }
 
@@ -451,7 +453,7 @@ export async function applyScaffoldPlan({ root, planPath, expectedPlanDigest }) 
       planPath,
       expectedPlanDigest,
     },
-    requireValidPackagePolicy,
+    requireValidScaffoldPolicy,
   );
 }
 

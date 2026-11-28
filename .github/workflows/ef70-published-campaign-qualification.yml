@@ -1,0 +1,18 @@
+name: EF70 published controller H1 E2E
+
+on:
+  push:
+    branches: [docs/coordinated-module-foundation-20261126]
+    paths: [.github/workflows/ef70-published-campaign-qualification.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  real-managed-campaign:
+    uses: agent-teams-ai/engineering-foundation/.github/workflows/ef70-managed-campaign.yml@4a8b82ff2041f0fba7a531b4d742ba8e6ffa01dd
+    with:
+      harness_revision: 4a8b82ff2041f0fba7a531b4d742ba8e6ffa01dd
+      preflight_run_id: "46137594005"
+      authority_revision: "a9d0b5edc5a98337276a1f213dc8663fdb295beb"
+

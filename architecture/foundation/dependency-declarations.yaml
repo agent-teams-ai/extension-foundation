@@ -20,3 +20,4 @@ policies:
     - "@agent-teams/docs-protocol"
     - "@agent-teams/docs-protocol-agent-teams"
     - "@agent-teams/engineering-foundation"
+    - stack-toolchain

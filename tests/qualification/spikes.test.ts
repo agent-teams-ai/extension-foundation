@@ -7,7 +7,7 @@ import { access, mkdtemp, mkdir, readFile, readdir, realpath, rm, writeFile } fr
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, isAbsolute, join } from "node:path";
 import { performance } from "node:perf_hooks";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
@@ -4436,11 +4436,15 @@ test(
   "browser Worker carries a portable generation-bound frame",
   { timeout: 300_000 },
   async (t) => {
+    const explicitBrowser = process.env.EF_QUALIFICATION_BROWSER;
+    if (explicitBrowser !== undefined) {
+      assert.ok(isAbsolute(explicitBrowser), "EF_QUALIFICATION_BROWSER must be a non-empty absolute path");
+    }
     const isCi = process.env.CI?.trim().toLowerCase() === "true";
     const debuggerStartupTimeoutMs = isCi ? 30_000 : 10_000;
     const pageDiscoveryTimeoutMs = isCi ? 20_000 : 8_000;
     const discoveryRequestTimeoutMs = isCi ? 2_000 : 500;
-    const candidates =
+    const defaultCandidates =
       process.platform === "darwin"
         ? [
             "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
@@ -4478,6 +4482,7 @@ test(
               ),
             ]
           : ["/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"];
+    const candidates = explicitBrowser === undefined ? defaultCandidates : [explicitBrowser];
     const availableBrowsers: string[] = [];
     const canonicalBrowserPaths = new Set<string>();
     for (const candidate of candidates) {
@@ -4494,6 +4499,9 @@ test(
       }
     }
     if (availableBrowsers.length === 0) {
+      if (explicitBrowser !== undefined) {
+        assert.fail("EF_QUALIFICATION_BROWSER is unavailable");
+      }
       if (isCi) {
         assert.fail("CI_BROWSER_NOT_AVAILABLE");
       }

@@ -29,6 +29,9 @@ the vision and its open choices; a spike does not adopt a production runtime.
 
 Start with:
 
+- [Implemented contribution core and contract examples](packages/core/README.md)
+- [Verified artifact adapter and explicit native limits](packages/node-artifact/README.md)
+- [Package qualification and remaining admission work](docs/research/packaged-foundation-qualification-2026-11-26.md)
 - [Plugin delivery responsibilities and open contracts](docs/architecture/plugin-delivery-plan.md)
 - [Current live extension system map](docs/architecture/live-extension-system-map.md)
 - [Shared foundation delivery plan, proposed](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/plans/foundation-delivery-plan.md)
@@ -133,9 +136,13 @@ does not publish a package or select a universal plugin interface.
 ## Engineering Workflow
 
 Engineering Foundation is an exact development dependency and must never enter
-production dependencies. The supported tooling runtimes are Node 24.21.0 or newer
-within Node 24, and Node 26.11.1 or newer within Node 26, including the installed
-Foundation 1.7.2 mandatory Node test runner. Node 26.11.1 is the default.
+production dependencies. The supported tooling runtimes are Node 24.22.1 or newer
+within Node 24, and Node 26.12.1 or newer within Node 26, with Node 26.12.1 as the default. Run `pnpm tooling:qualified:check` before
+invoking installed Foundation commands. The old managed Foundation 1.7.2
+initializes an embedded TypeScript 5.9 compiler; its official transition must
+finish before those gates may execute. Independent package checks use the
+actual TypeScript 7.0.2 compiler. The [qualification report](docs/research/packaged-foundation-qualification-2026-11-26.md)
+records the reproduced transition mismatch and the separately qualified tooling.
 `pnpm evidence:custody:test`
 protects exact critical identities in `architecture/foundation/required-node-tests.json`;
 the profile gate also binds its complete selected entry file list. Preserve that

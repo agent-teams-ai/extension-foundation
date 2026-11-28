@@ -282,13 +282,13 @@ capabilities:
   }
   await writeFixture(
     root,
-    "node_modules/@agent-teams/engineering-foundation/presets/typescript/node.json",
+    "node_modules/stack-toolchain/presets/typescript/node.json",
     '{"compilerOptions":{"module":"nodenext","moduleResolution":"nodenext","target":"es2024","strict":true}}\n',
   );
   await writeFixture(
     root,
     "tsconfig.json",
-    '{"extends":"@agent-teams/engineering-foundation/presets/typescript/node.json","compilerOptions":{"composite":true,"noEmit":true},"files":[]}\n',
+    '{"extends":"stack-toolchain/presets/typescript/node.json","compilerOptions":{"composite":true,"noEmit":true},"files":[]}\n',
   );
   return root;
 }
@@ -615,7 +615,7 @@ governedRoots: [packages/example/src, packages/example/test]
 boundaries:
   - id: package.module.example
     dependencyMode: runtime
-    roots: [packages/example/src]
+    roots: [packages/example/src/index.ts]
     entrypoints: [packages/example/src/index.ts]
     allow: {boundaries: [package.module.example.feature.example], packages: [], builtins: [], runtimeReferences: []}
   - id: package.module.example.feature.example

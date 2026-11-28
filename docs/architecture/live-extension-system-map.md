@@ -12,7 +12,7 @@ summary: Maps the current module, plugin and live-update direction to accepted o
 
 ## Purpose
 
-**Current navigation: 2026-11-24; recorded direction and evidence retain their dates.** Start here to understand what we have concluded
+**Current navigation: 2026-11-27; recorded direction and evidence retain their dates.** Start here to understand what we have concluded
 about modules, distributable plugins and live replacement. This map routes to
 the owning decisions and evidence; it does not create another decision authority.
 Its proposed status reflects the unresolved contracts it describes, not a
@@ -23,7 +23,7 @@ reopening of the accepted constraints or owner-confirmed direction below.
 | Current purpose, boundaries and integration candidates | This map |
 | EF plugin-specific delivery and open contracts | [Plugin Delivery Plan](plugin-delivery-plan.md) |
 | Qualify before applications; Browser/Desktop/trust and UI seams | [Fixture and UI evidence](plugin-delivery-plan.md#fixture-and-ui-evidence-2026-11-24) and [owner clarification](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md#fixture-first-and-runtime-boundary-clarification-2026-11-24) |
-| Shared foundation sequence and status | [Live Module Updates delivery plan](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/plans/foundation-delivery-plan.md) and [status guide](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/status.md), continued through [PR #2](https://github.com/agent-teams-ai/live-module-updates/pull/2) |
+| Shared foundation sequence and implemented operation | [LMU delivery plan](https://github.com/agent-teams-ai/live-module-updates/blob/47c17f95f7c8cf3650c907ac4ed52d6127febe5c/docs/plans/foundation-delivery-plan.md) and [usage contract](https://github.com/agent-teams-ai/live-module-updates/blob/47c17f95f7c8cf3650c907ac4ed52d6127febe5c/docs/architecture/cooperative-operation-usage.md), reviewed source in [PR #9](https://github.com/agent-teams-ai/live-module-updates/pull/9) |
 | Exact owner confirmations and unresolved policy | [OD-003](../open-decisions/OD-003-module-runtime-and-public-spi-choices.md) |
 | Independent documentation audit and readiness method | [Documentation audit](../research/live-extension-documentation-audit-2026-11-23.md) |
 | Full library features and evidence | [Standalone blueprint](../research/standalone-live-plugin-library-blueprint-2026-11-22.md) and [reliability study](../research/live-update-reliability-and-industry-evidence-2026-11-22.md) |
@@ -37,6 +37,28 @@ needs its stated qualification or decision; **executed evidence** proves only
 the recorded fixture and runtime profile. Source review is neither execution
 nor adoption. Do not convert a recommendation into a default through this map.
 
+## Qualified implementation checkpoint, 2026-11-27
+
+The [contribution core](../../packages/core/README.md) and
+[verified Node artifact adapter](../../packages/node-artifact/README.md) are
+implemented private `0.0.0` packages under
+[ADR-0016](../decisions/0016-provisional-contribution-and-verified-artifact-packages.md).
+LMU supplies an implemented private cooperative operation; its
+[usage contract](https://github.com/agent-teams-ai/live-module-updates/blob/47c17f95f7c8cf3650c907ac4ed52d6127febe5c/docs/architecture/cooperative-operation-usage.md)
+owns the actual API and Host obligations.
+
+| Qualified subject | Exact executed evidence | Scope |
+| --- | --- | --- |
+| EF source `4990f1f5047ef4b71e95aa74eba86fc646e84e35` | [Run 45918944244](https://github.com/agent-teams-ai/extension-foundation/actions/runs/45918944244) and [source-bound report](../research/packaged-foundation-qualification-2026-11-26.md#final-source-qualification-successor-2026-11-27) | Actual packages, installed consumers, native artifact verification and the existing qualification suite; managed admission remains a separate gate |
+| Combined EF-to-LMU source `47c17f95f7c8cf3650c907ac4ed52d6127febe5c` | [Run 45916966246](https://github.com/agent-teams-ai/live-module-updates/actions/runs/45916966246) and [retained receipt artifact 15163076062](https://github.com/agent-teams-ai/live-module-updates/actions/runs/45916966246/artifacts/15163076062) | Five signed/refused Node scenarios through the original qualified EF archive and installed LMU operation; useful B, retained A and native cleanup |
+
+The [owning qualification record](../research/packaged-foundation-qualification-2026-11-26.md#handoff-and-remaining-exits)
+retains exact input identities and limits, including the absence of a joint
+staging-failure recovery test. These results do not assert merged PRs, public npm
+publication, a stable public SPI, durable installation, production Host adoption
+or hostile-code containment. The historical research below retains its original
+inputs and outcomes.
+
 ## Where we have arrived
 
 The following direction is already recorded in
@@ -46,8 +68,9 @@ and [expanded live application vision](../open-decisions/OD-003-module-runtime-a
 1. Build a purpose-neutral **standalone library in a separate repository**.
    This is a substantial reusable concern, not an estimate for a small adapter.
    The [Live Module Updates repository](https://github.com/agent-teams-ai/live-module-updates)
-   now exists and contains the proposed design. Its original transfer package
-   is preserved below; repository availability is not production qualification.
+   now contains the private cooperative implementation and qualified fixtures
+   linked above. Its original transfer package is preserved below; production
+   adoption retains the consuming owner's separate qualification.
 2. Start with a **TypeScript control library and ordinary TypeScript plugins**.
    Wasm/Extism and native Effect are separate optional profiles. No particular
    engine, mandatory Effect dependency or production adapter is selected.
@@ -116,13 +139,13 @@ boundary without becoming an OCI artifact. See the accepted
 | --- | --- | --- |
 | Get Modular | Neutral composition, typed construction, public resource mechanisms and separately qualified lifecycle primitives | No product permission, executable discovery, durable active head or physical supervisor |
 | Extension Foundation | Artifact/trust/distribution vocabulary, admitted host obligations and separately qualified conformance primitives | No product domain model, duplicate composition core or universal plugin interface |
-| Live Module Updates, proposed operation | Planned reusable implementation of planning, applying/reconciling and observing the complete update operation | Invokes the actual authority/custody owners; does not duplicate their canonical records or kernels |
+| Live Module Updates | Private implementation of the finite cooperative update operation, including preparation, publication, reconciliation and retirement | Invokes the actual authority/custody owners; does not duplicate their canonical records or kernels |
 | Consuming product | Business extension contracts, concrete declarations, policy/grants, canonical state, authoritative publication and recovery decisions | Supplies narrow primitives; does not have to rebuild the library's update flow |
 | Existing execution/resource owner | Actual native scope release, process/thread lifecycle and physical stop evidence; Agent Runtime in its admitted product profiles | A library callback or loader result cannot invent a stronger stop/cleanup receipt |
 
 The accepted EF and Get Modular cores remain independent. A consuming adapter
 may use both under [ADR-0015](../decisions/0015-authorize-get-modular-semantic-extraction.md).
-The proposed standalone operation is another implementation concern, not a new
+The standalone operation is another implementation concern, not a new
 dependency edge between those cores.
 
 OCI/ORAS/Cosign and digest-pinned admission remain the accepted EF artifact
@@ -133,7 +156,7 @@ consumer still applies its actual artifact and authority rules.
 ## Structure
 
 Continue the shared operation and authoring design in the
-[Live Module Updates foundation plan](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/plans/foundation-delivery-plan.md)
+[Live Module Updates foundation plan](https://github.com/agent-teams-ai/live-module-updates/blob/47c17f95f7c8cf3650c907ac4ed52d6127febe5c/docs/plans/foundation-delivery-plan.md)
 and [headless plugin/UI proposal](https://github.com/agent-teams-ai/live-module-updates/blob/4cf4ca714f7ec6788417fcda1a75677615827dff/docs/architecture/headless-plugins-and-ui.md).
 The EF [plugin delivery plan](plugin-delivery-plan.md) retains its own artifact,
 trust, installation and host-admission responsibilities.
@@ -144,9 +167,10 @@ implementation roadmap or a published production API.
 
 ### Complete operation, narrow consumer primitives
 
-These are responsibilities to specify and qualify, not a frozen state machine
-or published API. The [reliability study](../research/live-update-reliability-and-industry-evidence-2026-11-22.md)
-owns the detailed failure cases and native mechanism evidence.
+This table maps responsibilities across profiles; the implemented finite
+cooperative profile uses LMU's linked usage contract. Broader profiles still
+need their own qualification. The [reliability study](../research/live-update-reliability-and-industry-evidence-2026-11-22.md)
+retains the earlier failure cases and native mechanism evidence.
 
 | Library responsibility | Reused mechanism or consumer primitive | Result that needs observation |
 | --- | --- | --- |
@@ -270,25 +294,25 @@ Passing one gate does not pass all five. Static Get Modular use does not acquire
 the operational production-host obligations merely through this map.
 
 The [seven-question matrix](../research/module-federation-update-boundaries-and-architecture-options-2026-11-22.md#owner-decision-matrix)
-remains the owner discussion entry point: Q1 trust, Q2 shared dependencies/update
+remains the discussion entry point for additional profiles: Q1 trust, Q2 shared dependencies/update
 unit, Q3 state continuity, Q4 visible adoption, Q5 admitted work, Q6 rollback
 meaning and Q7 old-client support. Its conditional preferences are not defaults.
 
-These seven questions are not the entire implementation backlog. The first
-selected slice still needs exact public/internal API, transition/error model,
-state schemas, compatibility rules, publication/reconciliation primitives,
-adapter capabilities, authoring diagnostics, budgets and end-to-end consumer
-acceptance. The independent audit distinguishes vision clarity from specification
-readiness instead of counting research pages as completed implementation design.
+The [selected cooperative profile](https://github.com/agent-teams-ai/live-module-updates/blob/47c17f95f7c8cf3650c907ac4ed52d6127febe5c/docs/decisions/0001-cooperative-update-profile.md)
+and usage contract now define the implemented finite operation, its authority,
+invocation affinity, budgets and cleanup obligations. Its actual qualification
+does not select those policies for streams, durable recovery, Desktop or
+untrusted code. New profiles retain their own contracts and acceptance evidence.
 
 The November 23 [audit rubric](../research/live-extension-documentation-audit-2026-11-23.md#readiness-rubric)
 is a historical estimate for bounded TypeScript-first live-update planning:
 vision **85–90%**, documentation **80–85%**, implementation plan **50–60%**,
 with a weighted planning result of **70–75%**. It is not an overall plugin-system
 readiness percentage, an implementation count or a reliability measurement.
-EF still has no production runtime package or public extension SPI. The actual
-first complete-operation consumer, applicable owner choices and exact selected
-operation/acceptance contract remain open.
+The current private EF packages and joint operation fixture are recorded in the
+dated checkpoint above. Stable SPI, production Host adoption and stronger
+execution/state profiles remain separate; the historical planning percentages
+do not measure the present implementation.
 
 Update this map when an owning decision changes status or a declared profile is
 qualified. Put the decision in its existing authority, the implementation contract

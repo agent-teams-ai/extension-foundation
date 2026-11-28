@@ -1,0 +1,23 @@
+{
+  "admission_basis": "independent-replacement-or-release-lifecycle",
+  "schema_version": 4,
+  "conformance_version": "0.1.0",
+  "consumer_evidence": [
+    {
+      "conformance_result": "passed",
+      "consumer_id": "qualification.signed-artifact-host",
+      "consumer_repository": "agent-teams-ai/extension-foundation",
+      "evidence_kind": "independent-conformance",
+      "evidence_reference": "https://api.github.com/repos/agent-teams-ai/extension-foundation/actions/jobs/140262679183/steps/18/logs#sha256=377ec4a83e41bd403b3fb6c9b019dd749d551360a9bc8496e2fe2d804103716d",
+      "implementation_id": "extension.node-artifact.verified-artifact",
+      "source_revision": "24bd136a105c46dd75f7c92948cf680f1d008442"
+    }
+  ],
+  "extraction_decision": "ADR-0016",
+  "neutrality_claim": "Node-only ordinary library for digest-bound artifact verification, captured-source evaluation and disposal under caller-owned trust and loading policy. Product permissions, grants, runtime lifecycle, migration and live update orchestration remain outside this package.",
+  "owner_repository": "agent-teams-ai/extension-foundation",
+  "package_id": "extension.node-artifact",
+  "release_policy": "Private pre-1.0 0.0.0 qualification under ADR-0016, with an independent replacement or release lifecycle. Public npm publication is deferred and must reverify immutable package evidence through the applicable publication gate.",
+  "semantic_classification": "ordinary-library",
+  "semantic_extraction_decision": "not-applicable"
+}
