@@ -9,24 +9,10 @@ permissions:
   contents: read
 
 jobs:
-  await-qualifying-producer-preflight:
-    name: await-exact-producer-preflight
-    runs-on: ubuntu-24.04
-    timeout-minutes: 210
-    steps:
-      - name: Wait for the existing immutable producer preflight
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -Eeuo pipefail
-          gh run watch 46084183470 --repo agent-teams-ai/engineering-foundation --exit-status --interval 60
-          test "$(gh run view 46084183470 --repo agent-teams-ai/engineering-foundation --json headSha --jq .headSha)" = "c2238aa924d3188c49061c64470d11c5444f1dad"
-
   real-managed-campaign:
-    needs: await-qualifying-producer-preflight
-    if: ${{ needs.await-qualifying-producer-preflight.result == 'success' }}
-    uses: agent-teams-ai/engineering-foundation/.github/workflows/ef70-managed-campaign.yml@c2238aa924d3188c49061c64470d11c5444f1dad
+    uses: agent-teams-ai/engineering-foundation/.github/workflows/ef70-managed-campaign.yml@78d8246bd1df93ed5a77764e493401d4670f3ed2
     with:
-      harness_revision: c2238aa924d3188c49061c64470d11c5444f1dad
-      preflight_run_id: "46084183470"
-      authority_revision: a9d0b5edc5a98337276a1f213dc8663fdb295beb
+      harness_revision: 78d8246bd1df93ed5a77764e493401d4670f3ed2
+      preflight_run_id: "46096435382"
+      authority_revision: "a9d0b5edc5a98337276a1f213dc8663fdb295beb"
+
